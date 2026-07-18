@@ -75,7 +75,7 @@ describe("ngWorker", () => {
   it("posts evaluated params and evaluates on-result", async () => {
     scope.payload = { count: 1 };
     compileWorker(
-      '<button ng-worker="/workers/echo.js" data-params="payload" data-on-result="received = $result">Run</button>',
+      '<button ng-worker="/workers/echo.js" data-params="payload" on-result="received = $result">Run</button>',
     );
 
     element.click();
@@ -85,6 +85,95 @@ describe("ngWorker", () => {
 
     expect(workers[0].sent).toEqual([{ count: 1 }]);
     expect(scope.received).toEqual({ ok: true });
+  });
+
+  it("queues worker messages and updates while scope is retention-paused", async () => {
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" data-params="{ x: 1 }" on-result="received = $result">Run</button>',
+    );
+
+    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    element.click();
+    workers[0].onmessage({ data: { ok: true } });
+    await wait();
+
+    expect(workers[0].sent).toEqual([]);
+    expect(scope.received).toBeUndefined();
+
+    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    await wait();
+
+    expect(workers[0].sent).toEqual([{ x: 1 }]);
+    expect(scope.received).toEqual({ ok: true });
+  });
+
+  it("keeps worker operations queued if the scope pauses again before flush", async () => {
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" data-params="{ x: 1 }" on-result="received = $result">Run</button>',
+    );
+
+    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    element.dispatchEvent(new Event("click"));
+    workers[0].onmessage({ data: { ok: true } });
+
+    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+
+    await wait();
+
+    expect(workers[0].sent).toEqual([]);
+    expect(scope.received).toBeUndefined();
+
+    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    await wait();
+
+    expect(workers[0].sent).toEqual([{ x: 1 }]);
+    expect(scope.received).toEqual({ ok: true });
+  });
+
+  it("ignores unrelated worker retention pause and resume modes", async () => {
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" data-params="{ x: 1 }">Run</button>',
+    );
+
+    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.$broadcast("$viewRetentionPause", { _pause: "background" });
+    element.dispatchEvent(new Event("click"));
+    await wait();
+
+    expect(workers[0].sent).toEqual([{ x: 1 }]);
+
+    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    element.dispatchEvent(new Event("click"));
+    scope.$broadcast("$viewRetentionResume", { _pause: "background" });
+    await wait();
+
+    expect(workers[0].sent).toEqual([{ x: 1 }]);
+
+    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    await wait();
+
+    expect(workers[0].sent).toEqual([{ x: 1 }, { x: 1 }]);
+  });
+
+  it("drops queued worker operations after scope destruction", async () => {
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" data-params="{ x: 1 }" on-result="received = $result">Run</button>',
+    );
+
+    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    element.dispatchEvent(new Event("click"));
+    workers[0].onmessage({ data: { ok: true } });
+    const staleMessageHandler = workers[0].onmessage;
+
+    scope.$destroy();
+    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    staleMessageHandler({ data: { ok: false } });
+
+    await wait();
+
+    expect(workers[0].sent).toEqual([]);
+    expect(scope.received).toBeUndefined();
   });
 
   it("falls back to undefined params when params expression fails", async () => {
@@ -107,10 +196,19 @@ describe("ngWorker", () => {
       '<button ng-worker="/workers/echo.js" disabled data-params="{ ok: true }">Run</button>',
     );
 
-    element.click();
+    element.dispatchEvent(new Event("click"));
     await wait();
 
     expect(workers[0].sent).toEqual([]);
+  });
+
+  it("uses innerHTML swap when no swap mode is configured", async () => {
+    compileWorker('<button ng-worker="/workers/echo.js">Run</button>');
+
+    workers[0].onmessage({ data: "<strong>Done</strong>" });
+    await wait();
+
+    expect(element.innerHTML).toBe("<strong>Done</strong>");
   });
 
   it("swaps results into the host when on-result is absent", async () => {
@@ -159,7 +257,7 @@ describe("ngWorker", () => {
 
   it("evaluates on-error expressions", async () => {
     compileWorker(
-      '<button ng-worker="/workers/echo.js" data-on-error="failed = $error.type">Run</button>',
+      '<button ng-worker="/workers/echo.js" on-error="failed = $error.type">Run</button>',
     );
 
     workers[0].onerror(new ErrorEvent("error"));
@@ -182,6 +280,19 @@ describe("ngWorker", () => {
 
     await wait(20);
 
+    expect(element.getAttribute("throttled")).toBe("false");
+  });
+
+  it("uses zero throttle delay when throttle is present without a numeric value", async () => {
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" data-throttle>Run</button>',
+    );
+
+    element.dispatchEvent(new Event("click"));
+    element.dispatchEvent(new Event("click"));
+    await wait();
+
+    expect(workers[0].sent.length).toBe(1);
     expect(element.getAttribute("throttled")).toBe("false");
   });
 
@@ -290,6 +401,17 @@ describe("ngWorker", () => {
     expect(workers[0].sent.length).toBe(1);
   });
 
+  it("uses zero delay when delay is present without a numeric value", async () => {
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" data-delay>Run</button>',
+    );
+
+    element.dispatchEvent(new Event("click"));
+    await wait();
+
+    expect(workers[0].sent.length).toBe(1);
+  });
+
   it("supports latch-driven dispatch and reconnects on attribute changes", async () => {
     compileWorker(
       '<button ng-worker="/workers/echo.js" data-latch>Run</button>',
@@ -319,6 +441,36 @@ describe("ngWorker", () => {
 
     expect(clearSpy).toHaveBeenCalled();
     expect(clearSpy.calls.first().args.length).toBe(1);
+  });
+
+  it("uses the default interval when interval is present without a numeric value", async () => {
+    const setIntervalSpy = spyOn(window, "setInterval").and.callThrough();
+
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" data-interval></button>',
+    );
+
+    await wait();
+
+    expect(workers[0].sent.length).toBe(0);
+    expect(setIntervalSpy).toHaveBeenCalledWith(jasmine.any(Function), 1000);
+
+    scope.$destroy();
+  });
+
+  it("terminates worker when host scope is destroyed", async () => {
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" data-params="{ ok: true }"></button>',
+    );
+
+    await wait();
+
+    expect(workers[0].terminated).toBeFalse();
+
+    scope.$destroy();
+    await wait();
+
+    expect(workers[0].terminated).toBeTrue();
   });
 
   it("does not crash when outerHTML swap has no parent node", async () => {

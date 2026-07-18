@@ -1,6 +1,11 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import { createAngularCustom } from "./index.ts";
+import { createAngular } from "./index.ts";
+import { orchestrationModule } from "./orchestration.ts";
+import { realtimeModule } from "./realtime.ts";
+import { routerModule } from "./router.ts";
+import { serviceWorkerModule } from "./service-worker.ts";
+import { wasmModule } from "./wasm.ts";
 import { defineAngularElement } from "./web-component.ts";
 import {
   ngBindDirective,
@@ -8,7 +13,7 @@ import {
   ngRepeatDirective,
 } from "../ng.ts";
 import { createElementFromHTML, dealoc, getScope } from "../shared/dom.ts";
-import { wait } from "../shared/test-utils.ts";
+import { wait, waitUntil } from "../shared/test-utils.ts";
 
 describe("custom runtime", () => {
   let element;
@@ -27,12 +32,10 @@ describe("custom runtime", () => {
   });
 
   it("creates ng from core providers and a custom directive list", async () => {
-    const angular = createAngularCustom({
-      ngModule: {
-        directives: {
-          ngBind: ngBindDirective,
-          ngRepeat: ngRepeatDirective,
-        },
+    const angular = createAngular({
+      directives: {
+        ngBind: ngBindDirective,
+        ngRepeat: ngRepeatDirective,
       },
     });
 
@@ -53,8 +56,30 @@ describe("custom runtime", () => {
     expect(element.textContent).toBe("ab");
   });
 
+  it("applies custom exception-handler configuration", () => {
+    const handled = [];
+    const angular = createAngular();
+
+    angular.module("exceptionApp", []).config({
+      $exceptionHandler: {
+        handler(error) {
+          handled.push(error);
+          throw error;
+        },
+      },
+    });
+    const handler = angular
+      .injector(["ng", "exceptionApp"])
+      .get("$exceptionHandler");
+    const error = new Error("configured");
+
+    expect(() => handler(error)).toThrow(error);
+    expect(handled).toEqual([error]);
+    angular._composition.destroy();
+  });
+
   it("compiles controlled bindings without an SCE provider", async () => {
-    const angular = createAngularCustom();
+    const angular = createAngular();
 
     const injector = angular.injector(["ng"]);
 
@@ -73,8 +98,410 @@ describe("custom runtime", () => {
     expect(element.getAttribute("href")).toBe("javascript:controlled()");
   });
 
+  it("allows custom runtimes to opt into the orchestration module", () => {
+    const angular = createAngular({
+      modules: [orchestrationModule],
+    });
+
+    const injector = angular.injector(["ng"]);
+
+    expect(injector.has("$machine")).toBe(true);
+    expect(injector.has("$workflow")).toBe(true);
+  });
+
+  it("keeps differently composed custom runtimes reactive on separate roots", async () => {
+    const orchestrationAngular = createAngular({
+      modules: [orchestrationModule],
+    });
+    const wasmAngular = createAngular({
+      modules: [wasmModule],
+    });
+    const wasmElement = createElementFromHTML("<p>{{message}}</p>");
+
+    element = createElementFromHTML("<p>{{message}}</p>");
+    document.body.append(element, wasmElement);
+
+    try {
+      const orchestrationInjector = orchestrationAngular.bootstrap(element);
+      const wasmInjector = wasmAngular.bootstrap(wasmElement);
+      const orchestrationRoot = orchestrationInjector.get("$rootScope");
+      const wasmRoot = wasmInjector.get("$rootScope");
+      const wasmResource = wasmInjector.get("$wasm").load({
+        source: "/src/directive/wasm/math.wasm",
+      });
+
+      orchestrationRoot.message = "orchestration runtime";
+      wasmRoot.message = "wasm runtime";
+      await wasmResource.ready;
+      await wait();
+
+      expect(element.textContent).toBe("orchestration runtime");
+      expect(wasmElement.textContent).toBe("wasm runtime");
+      expect(orchestrationInjector.get("$machine")).toEqual(
+        jasmine.any(Function),
+      );
+      expect(wasmResource.exports.add(2, 3)).toBe(5);
+    } finally {
+      orchestrationAngular._composition.destroy();
+      wasmAngular._composition.destroy();
+      dealoc(wasmElement);
+    }
+  });
+
+  it("bridges custom-runtime scope state through the opt-in WASM module", async () => {
+    const angular = createAngular({
+      modules: [wasmModule],
+    });
+    const injector = angular.injector(["ng"]);
+    const rootScope = injector.get("$rootScope");
+    const wasmResource = injector.get("$wasm").load({
+      source: "/integrations/wasm/c/examples/todo/main.wasm",
+    });
+    const binding = await wasmResource.bind(rootScope, {
+      name: "custom:player",
+    });
+
+    expect(binding.name).toBe("custom:player");
+    expect(binding.target).toBe(rootScope);
+    expect(binding.disposed).toBeFalse();
+
+    angular._composition.destroy();
+
+    expect(binding.disposed).toBeTrue();
+    expect(wasmResource.disposed).toBeTrue();
+  });
+
+  it("applies realtime defaults and closes custom-runtime connections", () => {
+    const RealWebSocket = window.WebSocket;
+    const RealEventSource = window.EventSource;
+    const webTransportDescriptor = Object.getOwnPropertyDescriptor(
+      window,
+      "WebTransport",
+    );
+    const sockets = [];
+    const eventSources = [];
+
+    window.WebSocket = class MockWebSocket {
+      constructor(url, protocols) {
+        this.url = url;
+        this.protocols = protocols;
+        this.closeCalls = 0;
+        sockets.push(this);
+      }
+
+      send() {}
+
+      close() {
+        this.closeCalls++;
+        this.onclose?.({ type: "close", code: 1000 });
+      }
+    };
+    window.EventSource = class MockEventSource {
+      constructor(url, options) {
+        this.url = url;
+        this.options = options;
+        this.listeners = {};
+        eventSources.push(this);
+      }
+
+      addEventListener(type, listener) {
+        this.listeners[type] = listener;
+      }
+
+      close() {}
+    };
+    Object.defineProperty(window, "WebTransport", {
+      configurable: true,
+      value: undefined,
+    });
+
+    const angular = createAngular({
+      modules: [realtimeModule],
+    });
+
+    try {
+      angular.module("realtimeApp", []).config({
+        $sse: {
+          defaults: { retryDelay: 250, maxRetries: 2 },
+        },
+        $websocket: {
+          defaults: {
+            protocols: ["json"],
+            heartbeatTimeout: 0,
+            maxRetries: 0,
+          },
+        },
+        $webTransport: {
+          defaults: { reconnect: true, retryDelay: 750, maxRetries: 3 },
+        },
+      });
+
+      const injector = angular.injector(["ng", "realtimeApp"]);
+
+      expect(injector.get("$sse")).toEqual(jasmine.any(Function));
+      expect(injector.get("$webTransport")).toEqual(jasmine.any(Function));
+
+      const events = injector.get("$sse")("/events");
+
+      injector.get("$websocket")("ws://example.test/custom-runtime");
+      expect(() =>
+        injector.get("$webTransport")("https://localhost:4433/webtransport"),
+      ).toThrowError("WebTransport API is not available in this browser");
+
+      expect(eventSources.length).toBe(1);
+      expect(sockets.length).toBe(1);
+      expect(sockets[0].url).toBe("ws://example.test/custom-runtime");
+      expect(sockets[0].protocols).toEqual(["json"]);
+
+      events.close();
+
+      angular._composition.destroy();
+
+      expect(sockets[0].closeCalls).toBe(1);
+    } finally {
+      angular._composition.destroy();
+      window.WebSocket = RealWebSocket;
+      window.EventSource = RealEventSource;
+
+      if (webTransportDescriptor) {
+        Object.defineProperty(window, "WebTransport", webTransportDescriptor);
+      } else {
+        delete window.WebTransport;
+      }
+    }
+  });
+
+  it("renders inline and fetched routes through the custom router module", async () => {
+    const realFetch = window.fetch;
+    const initialUrl = window.location.href;
+    const fetch = jasmine.createSpy("fetch").and.callFake((url) =>
+      Promise.resolve(
+        url === "/missing-route.html"
+          ? new Response("missing", { status: 503, statusText: "Unavailable" })
+          : new Response('<h2 data-testid="remote-route">Remote route</h2>', {
+              headers: { "Content-Type": "text/html" },
+              status: 200,
+            }),
+      ),
+    );
+
+    window.fetch = fetch;
+
+    const angular = createAngular({
+      modules: [routerModule],
+    });
+
+    angular
+      .module("routerApp", [])
+      .config({
+        $anchorScroll: { autoScrolling: false },
+        $aria: { diagnostics: true },
+        $location: { html5Mode: false },
+        $security: { allowInsecureTransport: false },
+      })
+      .router([
+        {
+          name: "inline",
+          url: "/inline",
+          template: '<h2 data-testid="inline-route">Inline route</h2>',
+        },
+        {
+          name: "remote",
+          url: "/remote",
+          templateUrl: "/route-template.html",
+        },
+        {
+          name: "missing",
+          url: "/missing",
+          templateUrl: "/missing-route.html",
+        },
+      ]);
+
+    element = createElementFromHTML(`
+      <main>
+        <a ng-state="'remote'" data-state-active>Remote</a>
+        <div ng-view></div>
+      </main>
+    `);
+    document.body.append(element);
+
+    try {
+      const injector = angular.bootstrap(element, ["routerApp"]);
+      const state = injector.get("$state");
+      const security = injector.get("$security");
+
+      expect(
+        await security.check({
+          operation: "request",
+          method: "GET",
+          url: "/private",
+          requestInit: { credentials: "include" },
+        }),
+      ).toEqual(jasmine.objectContaining({ type: "deny" }));
+
+      await state.go("inline");
+      await waitUntil(
+        () => element.querySelector('[data-testid="inline-route"]') !== null,
+      );
+
+      expect(
+        element.querySelector('[data-testid="inline-route"]'),
+      ).not.toBeNull();
+
+      await state.go("remote");
+      await wait();
+
+      expect(fetch).toHaveBeenCalledOnceWith("/route-template.html", {
+        headers: { Accept: "text/html" },
+      });
+      expect(
+        element.querySelector('[data-testid="remote-route"]'),
+      ).not.toBeNull();
+      expect(
+        element.querySelector("a").getAttribute("data-state-current"),
+      ).toBe("true");
+
+      await expectAsync(state.go("missing")).toBeRejected();
+
+      angular._composition.destroy();
+    } finally {
+      angular._composition.destroy();
+      window.fetch = realFetch;
+      window.history.replaceState(null, "", initialUrl);
+    }
+  });
+
+  it("owns named service-worker registration and listeners through the custom runtime", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      window.navigator,
+      "serviceWorker",
+    );
+    const listeners = {};
+    const registrationListeners = {};
+    const registration = {
+      scope: "/app/",
+      updateViaCache: "imports",
+      installing: null,
+      waiting: null,
+      active: null,
+      addEventListener(type, listener) {
+        registrationListeners[type] ??= [];
+        registrationListeners[type].push(listener);
+      },
+      removeEventListener(type, listener) {
+        registrationListeners[type] = (
+          registrationListeners[type] ?? []
+        ).filter((entry) => entry !== listener);
+      },
+    };
+    const register = jasmine.createSpy("register").and.resolveTo(registration);
+    const container = {
+      controller: null,
+      register,
+      addEventListener(type, listener) {
+        listeners[type] ??= [];
+        listeners[type].push(listener);
+      },
+      removeEventListener(type, listener) {
+        listeners[type] = (listeners[type] ?? []).filter(
+          (entry) => entry !== listener,
+        );
+      },
+    };
+
+    Object.defineProperty(window.navigator, "serviceWorker", {
+      configurable: true,
+      value: container,
+    });
+
+    const angular = createAngular({
+      modules: [serviceWorkerModule],
+    });
+
+    try {
+      angular
+        .module("app", [])
+        .serviceWorker("appWorker", "/service-worker.js", {
+          scope: "/app/",
+          autoRegister: true,
+        });
+
+      const service = angular.injector(["ng", "app"]).get("appWorker");
+      const stopMessages = service.onMessage(() => undefined);
+
+      await wait();
+
+      expect(service.supported).toBeTrue();
+      expect(service.status).toBe("registered");
+      expect(register).toHaveBeenCalledOnceWith("/service-worker.js", {
+        scope: "/app/",
+      });
+      expect(listeners.controllerchange.length).toBe(1);
+      expect(listeners.message.length).toBe(1);
+      expect(registrationListeners.updatefound.length).toBe(1);
+
+      stopMessages();
+      expect(listeners.message.length).toBe(0);
+
+      service.onMessage(() => undefined);
+      angular._composition.destroy();
+
+      expect(listeners.controllerchange.length).toBe(0);
+      expect(listeners.message.length).toBe(0);
+      expect(registrationListeners.updatefound.length).toBe(0);
+    } finally {
+      angular._composition.destroy();
+
+      if (descriptor) {
+        Object.defineProperty(window.navigator, "serviceWorker", descriptor);
+      } else {
+        delete window.navigator.serviceWorker;
+      }
+    }
+  });
+
+  it("disposes the default service-worker facade during runtime teardown", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      window.navigator,
+      "serviceWorker",
+    );
+    const addEventListener = jasmine.createSpy("addEventListener");
+    const removeEventListener = jasmine.createSpy("removeEventListener");
+
+    Object.defineProperty(window.navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        controller: null,
+        addEventListener,
+        removeEventListener,
+      },
+    });
+
+    const angular = createAngular({
+      modules: [serviceWorkerModule],
+    });
+
+    try {
+      const injector = angular.injector(["ng"]);
+      const service = injector.get("$serviceWorker");
+
+      expect(service.supported).toBeTrue();
+      expect(addEventListener).toHaveBeenCalledTimes(1);
+
+      angular._composition.destroy();
+
+      expect(removeEventListener).toHaveBeenCalledTimes(1);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(window.navigator, "serviceWorker", descriptor);
+      } else {
+        delete window.navigator.serviceWorker;
+      }
+    }
+  });
+
   it("attaches custom runtimes to window.angular", () => {
-    const angular = createAngularCustom();
+    const angular = createAngular();
 
     expect(window.angular).toBe(angular);
   });
@@ -84,14 +511,12 @@ describe("custom runtime", () => {
       this.value = 7;
     }
 
-    const angular = createAngularCustom({
-      ngModule: {
-        filters: {
-          suffix: () => (value) => `${value}!`,
-        },
-        services: {
-          counter: CounterService,
-        },
+    const angular = createAngular({
+      filters: {
+        suffix: () => (value) => `${value}!`,
+      },
+      services: {
+        counter: CounterService,
       },
     });
 
@@ -101,12 +526,31 @@ describe("custom runtime", () => {
     expect(injector.get("counter").value).toBe(7);
   });
 
+  it("applies interpolation config to the custom runtime compiler", async () => {
+    const angular = createAngular();
+
+    angular.module("app", []).config({
+      $interpolate: { startSymbol: "[[", endSymbol: "]]" },
+    });
+
+    const injector = angular.injector(["ng", "app"]);
+    const $rootScope = injector.get("$rootScope");
+
+    $rootScope.name = "Ada";
+    element = createElementFromHTML("<p>[[name]]</p>");
+    injector.get("$compile")(element)($rootScope);
+    await wait();
+
+    expect(element.textContent).toBe("Ada");
+    expect(injector.get("$interpolate").startSymbol()).toBe("[[");
+  });
+
   it("includes the normal controller provider", async () => {
     function TodoController() {
       this.title = "custom controller";
     }
 
-    const angular = createAngularCustom();
+    const angular = createAngular();
 
     angular
       .module("app", [])
@@ -132,7 +576,7 @@ describe("custom runtime", () => {
   });
 
   it("fetches directive templateUrl without a template request provider", async () => {
-    const angular = createAngularCustom();
+    const angular = createAngular();
 
     angular.module("app", []).directive("fetchedTemplate", () => ({
       templateUrl: "/public/test.html",
@@ -175,11 +619,8 @@ describe("custom runtime", () => {
     }
 
     class WasmProvider {
-      $get = () => (src, imports, opts) => ({
-        type: "wasm",
-        src,
-        imports,
-        opts,
+      $get = () => ({
+        load: (config) => ({ type: "wasm", config }),
       });
     }
 
@@ -188,10 +629,9 @@ describe("custom runtime", () => {
     }
 
     class WebSocketProvider {
-      $get = () => (url, protocols, config) => ({
+      $get = () => (url, config) => ({
         type: "websocket",
         url,
-        protocols,
         config,
       });
     }
@@ -224,16 +664,14 @@ describe("custom runtime", () => {
       },
     };
 
-    const angular = createAngularCustom({
-      ngModule: {
-        providers: {
-          $rest: RestProvider,
-          $worker: WorkerProvider,
-          $wasm: WasmProvider,
-          $sse: SseProvider,
-          $webTransport: WebTransportProvider,
-          $websocket: WebSocketProvider,
-        },
+    const angular = createAngular({
+      providers: {
+        $rest: RestProvider,
+        $worker: WorkerProvider,
+        $wasm: WasmProvider,
+        $sse: SseProvider,
+        $webTransport: WebTransportProvider,
+        $websocket: WebSocketProvider,
       },
     });
 
@@ -241,16 +679,13 @@ describe("custom runtime", () => {
       .module("app", [])
       .rest("posts", "/api/posts", PostEntity, { cache: true })
       .worker("backgroundWorker", "/workers/bg.js", { autoRestart: true })
-      .wasm(
-        "mathLib",
-        "/wasm/math.wasm",
-        { env: { table: "mock" } },
-        {
-          raw: true,
-        },
-      )
+      .wasm("mathLib", {
+        source: "/wasm/math.wasm",
+        imports: { env: { table: "mock" } },
+      })
       .sse("notifications", "/events", { retryDelay: 10 })
-      .websocket("chat", "wss://chat.example.com", ["json"], {
+      .websocket("chat", "wss://chat.example.com", {
+        protocols: ["json"],
         maxRetries: 1,
       })
       .webTransport("live", "https://localhost:4433/webtransport", {
@@ -273,9 +708,10 @@ describe("custom runtime", () => {
     });
     expect(injector.get("mathLib")).toEqual({
       type: "wasm",
-      src: "/wasm/math.wasm",
-      imports: { env: { table: "mock" } },
-      opts: { raw: true },
+      config: {
+        source: "/wasm/math.wasm",
+        imports: { env: { table: "mock" } },
+      },
     });
     expect(injector.get("notifications")).toEqual({
       type: "sse",
@@ -285,8 +721,7 @@ describe("custom runtime", () => {
     expect(injector.get("chat")).toEqual({
       type: "websocket",
       url: "wss://chat.example.com",
-      protocols: ["json"],
-      config: { maxRetries: 1 },
+      config: { protocols: ["json"], maxRetries: 1 },
     });
     expect(injector.get("live")).toEqual({
       type: "webTransport",
@@ -318,10 +753,9 @@ describe("custom runtime", () => {
     }
 
     class WebSocketProvider {
-      $get = () => (url, protocols, config) => ({
+      $get = () => (url, config) => ({
         type: "websocket",
         url,
-        protocols,
         config,
       });
     }
@@ -343,11 +777,8 @@ describe("custom runtime", () => {
     }
 
     class WasmProvider {
-      $get = () => (src, imports, opts) => ({
-        type: "wasm",
-        src,
-        imports,
-        opts,
+      $get = () => ({
+        load: (config) => ({ type: "wasm", config }),
       });
     }
 
@@ -356,13 +787,11 @@ describe("custom runtime", () => {
     const calls = {
       rest: 0,
       sse: 0,
-      websocketProtocols: 0,
       websocketConfig: 0,
       webTransport: 0,
       workerScript: 0,
       workerConfig: 0,
-      wasmImports: 0,
-      wasmOpts: 0,
+      wasmConfig: 0,
     };
 
     const makeRestOptions = () => {
@@ -377,16 +806,10 @@ describe("custom runtime", () => {
       return { retryDelay: 10 };
     };
 
-    const makeProtocols = () => {
-      calls.websocketProtocols++;
-
-      return ["json"];
-    };
-
     const makeWebsocketConfig = () => {
       calls.websocketConfig++;
 
-      return { maxRetries: 1 };
+      return { protocols: ["json"], maxRetries: 1 };
     };
 
     const makeWebTransportConfig = () => {
@@ -407,28 +830,23 @@ describe("custom runtime", () => {
       return { autoRestart: true };
     };
 
-    const makeWasmImports = () => {
-      calls.wasmImports++;
+    const makeWasmConfig = () => {
+      calls.wasmConfig++;
 
-      return { env: { table: { name: "dynamic" } } };
+      return {
+        source: "/wasm/math.wasm",
+        imports: { env: { table: { name: "dynamic" } } },
+      };
     };
 
-    const makeWasmOpts = () => {
-      calls.wasmOpts++;
-
-      return { raw: true };
-    };
-
-    const angular = createAngularCustom({
-      ngModule: {
-        providers: {
-          $rest: RestProvider,
-          $sse: SseProvider,
-          $websocket: WebSocketProvider,
-          $webTransport: WebTransportProvider,
-          $worker: WorkerProvider,
-          $wasm: WasmProvider,
-        },
+    const angular = createAngular({
+      providers: {
+        $rest: RestProvider,
+        $sse: SseProvider,
+        $websocket: WebSocketProvider,
+        $webTransport: WebTransportProvider,
+        $worker: WorkerProvider,
+        $wasm: WasmProvider,
       },
     });
 
@@ -436,19 +854,14 @@ describe("custom runtime", () => {
       .module("app", [])
       .rest("posts", "/api/posts", PostEntity, makeRestOptions)
       .sse("notifications", "/events", makeSseConfig)
-      .websocket(
-        "chat",
-        "wss://chat.example.com",
-        makeProtocols,
-        makeWebsocketConfig,
-      )
+      .websocket("chat", "wss://chat.example.com", makeWebsocketConfig)
       .webTransport(
         "live",
         "https://localhost:4433/webtransport",
         makeWebTransportConfig,
       )
       .worker("backgroundWorker", makeWorkerScript, makeWorkerConfig)
-      .wasm("mathLib", "/wasm/math.wasm", makeWasmImports, makeWasmOpts);
+      .wasm("mathLib", makeWasmConfig);
 
     const injector = angular.injector(["ng", "app"]);
 
@@ -466,8 +879,7 @@ describe("custom runtime", () => {
     expect(injector.get("chat")).toEqual({
       type: "websocket",
       url: "wss://chat.example.com",
-      protocols: ["json"],
-      config: { maxRetries: 1 },
+      config: { protocols: ["json"], maxRetries: 1 },
     });
     expect(injector.get("live")).toEqual({
       type: "webTransport",
@@ -481,21 +893,20 @@ describe("custom runtime", () => {
     });
     expect(injector.get("mathLib")).toEqual({
       type: "wasm",
-      src: "/wasm/math.wasm",
-      imports: { env: { table: { name: "dynamic" } } },
-      opts: { raw: true },
+      config: {
+        source: "/wasm/math.wasm",
+        imports: { env: { table: { name: "dynamic" } } },
+      },
     });
 
     expect(calls).toEqual({
       rest: 1,
       sse: 1,
-      websocketProtocols: 1,
       websocketConfig: 1,
       webTransport: 1,
       workerScript: 1,
       workerConfig: 1,
-      wasmImports: 1,
-      wasmOpts: 1,
+      wasmConfig: 1,
     });
   });
 
@@ -511,19 +922,25 @@ describe("custom runtime", () => {
         data: {
           attempt: 1,
         },
-        transitions: {
+        states: {
           setup: {
-            start(data) {
-              data.attempt += 1;
-
-              return "started";
+            on: {
+              start: {
+                to: "started",
+                update({ data }) {
+                  data.attempt += 1;
+                },
+              },
             },
           },
           started: {
-            reset(data) {
-              data.attempt = 1;
-
-              return "setup";
+            on: {
+              reset: {
+                to: "setup",
+                update({ data }) {
+                  data.attempt = 1;
+                },
+              },
             },
           },
         },
@@ -537,14 +954,18 @@ describe("custom runtime", () => {
         data: {
           attempt: 3,
         },
-        transitions: {
+        states: {
           idle: {
-            start(data) {
-              data.attempt += 1;
-
-              return "running";
+            on: {
+              start: {
+                to: "running",
+                update({ data }) {
+                  data.attempt += 1;
+                },
+              },
             },
           },
+          running: {},
         },
       };
     };
@@ -552,7 +973,9 @@ describe("custom runtime", () => {
     makeMachineConfig.$inject = ["appSettings"];
     makeWorkflowConfig.$inject = ["appSettings"];
 
-    const angular = createAngularCustom();
+    const angular = createAngular({
+      modules: [orchestrationModule],
+    });
 
     angular
       .module("app", [])
@@ -582,13 +1005,12 @@ describe("custom runtime", () => {
     const events = [];
 
     const definition = defineAngularElement(tagName, {
-      ngModule: {
-        directives: {
-          ngClick: ngEventDirectives.ngClick,
-        },
-        services: {
-          labelService: LabelService,
-        },
+      modules: [orchestrationModule],
+      directives: {
+        ngClick: ngEventDirectives.ngClick,
+      },
+      services: {
+        labelService: LabelService,
       },
       component: {
         shadow: true,
@@ -618,6 +1040,8 @@ describe("custom runtime", () => {
     expect(definition.injector.get("labelService").value).toBe(
       "custom runtime service",
     );
+    expect(definition.injector.has("$machine")).toBe(true);
+    expect(definition.injector.has("$workflow")).toBe(true);
     expect(definition.element).toBe(customElements.get(tagName));
 
     element = document.createElement(tagName);
@@ -647,5 +1071,37 @@ describe("custom runtime", () => {
     expect(element.shadowRoot.textContent).toContain(
       "Standalone / 3 / custom runtime service",
     );
+
+    element.remove();
+    await wait(10);
+    definition.angular._composition.destroy();
+  });
+
+  it("defines a standalone element without additional runtime modules", () => {
+    const tagName = `x-runtime-minimal-${++nextElementId}`;
+    const definition = defineAngularElement(tagName, {
+      component: { template: "minimal" },
+    });
+
+    expect(definition.angular.injector(["ng"]).has("$compile")).toBeTrue();
+    definition.angular._composition.destroy();
+  });
+
+  it("clears parsed component binding definitions during runtime teardown", () => {
+    const angular = createAngular();
+
+    angular.module("bindingCacheApp", []).component("cachedBinding", {
+      bindings: { value: "<sourceValue" },
+      template: "{{ $ctrl.value }}",
+    });
+    const injector = angular.injector(["ng", "bindingCacheApp"]);
+    const scope = injector.get("$rootScope");
+    const element = injector.get("$compile")(
+      '<cached-binding value="value"></cached-binding>',
+    )(scope);
+
+    angular._composition.destroy();
+
+    expect(element).toBeDefined();
   });
 });

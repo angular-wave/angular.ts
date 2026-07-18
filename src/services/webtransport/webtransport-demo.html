@@ -118,10 +118,10 @@
             data-transform="json"
             data-reconnect="true"
             data-retry-delay="500"
-            data-on-open="notice = 'Datagram session open'"
-            data-on-message="datagramEvents = [$message].concat(datagramEvents)"
-            data-on-reconnect="reconnects = $attempt"
-            data-on-error="notice = $error.message || 'Datagram error'"
+            on-open="notice = 'Datagram session open'"
+            on-message="datagramEvents = [$message].concat(datagramEvents)"
+            on-reconnect="reconnects = $attempt"
+            on-error="notice = $error.message || 'Datagram error'"
           ></div>
 
           <form class="form-grid" ng-submit="send()">
@@ -165,8 +165,8 @@
             data-transform="json"
             data-reconnect="true"
             data-retry-delay="1000"
-            data-on-message="streamEvents = [$message].concat(streamEvents)"
-            data-on-error="notice = $error.message || 'Stream error'"
+            on-message="streamEvents = [$message].concat(streamEvents)"
+            on-error="notice = $error.message || 'Stream error'"
           ></div>
 
           <div class="item-list">

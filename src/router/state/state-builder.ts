@@ -11,15 +11,20 @@ import {
   assertDefined,
 } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
-import { ResolveContext } from "../resolve/resolve-context.ts";
+import {
+  createResolveInvocationLocals,
+  ResolveContext,
+  type ResolveInvocationLocals,
+} from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
 import { normalizeNgViewTarget } from "./view-target.ts";
-import type { CompileProvider } from "../../core/compile/compile.ts";
+import type { CompileRegistry } from "../../core/compile/compile.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { ResolveFn, ResolvableLiteral } from "../resolve/interface.ts";
 import type {
   BuiltStateDeclaration,
+  InternalStateDeclaration,
   RouterInjectable,
   StateDeclaration,
   ViewDeclaration,
@@ -28,7 +33,7 @@ import { DefType, type Param } from "../params/param.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
 import { UrlMatcher } from "../url/url-matcher.ts";
-import type { RouterProvider } from "../router.ts";
+import type { RouterRuntimeState } from "../router.ts";
 import type {
   HookResult,
   TransitionStateHookFn,
@@ -44,6 +49,11 @@ type StateLifecyclePathName = "to" | "from";
 
 interface StateLifecycleHookContext {
   _$injector: ng.InjectorService | undefined;
+}
+
+interface StateLifecycleInvocationLocals extends ResolveInvocationLocals {
+  $state$: StateDeclaration;
+  $transition$: ng.Transition;
 }
 
 interface RouteComponentRegistrar {
@@ -74,7 +84,7 @@ function parseUrl(url: unknown): false | { val: string; root: boolean } {
 
 function buildUrl(
   stateObject: StateObject & BuiltStateDeclaration,
-  routerState: RouterProvider,
+  routerState: RouterRuntimeState,
   root: StateObject | BuiltStateDeclaration,
 ): UrlMatcher | null {
   const stateDec = stateObject.self;
@@ -297,20 +307,6 @@ function viewsBuilder(
   return views;
 }
 
-function getResolveLocals(ctx: ResolveContext): Record<string, unknown> {
-  const tokens = ctx.getTokens();
-
-  const locals: Record<string, unknown> = {};
-
-  tokens.forEach((key) => {
-    if (isString(key)) {
-      locals[key] = assertDefined(ctx.getResolvable(key)).data;
-    }
-  });
-
-  return locals;
-}
-
 function valueToResolvable(
   token: string,
   value: unknown,
@@ -415,7 +411,9 @@ function invokeStateLifecycleHook(
   hookName: StateLifecycleHookName,
   pathname: StateLifecyclePathName,
 ): HookResult {
-  const stateObject = (state as BuiltStateDeclaration)._state() as StateObject;
+  const stateObject = (
+    state as InternalStateDeclaration
+  )._state() as StateObject;
 
   const hook = stateObject[hookName];
 
@@ -432,12 +430,13 @@ function invokeStateLifecycleHook(
 
   const subContext = resolveContext.subContext(stateObject);
 
-  const locals = assign(getResolveLocals(subContext), {
+  const locals: StateLifecycleInvocationLocals = {
+    ...createResolveInvocationLocals(subContext),
     $state$: state,
     $transition$: trans,
-  });
+  };
 
-  return $injector.invoke(hook, hookContext, locals);
+  return $injector.invoke(hook, hookContext, locals) as HookResult;
 }
 
 function invokeOnEnterHook(
@@ -479,26 +478,26 @@ export class StateBuilder {
   /** @internal */
   _paramFactory: ParamFactory;
   /** @internal */
-  _routerState: RouterProvider;
+  _routerState: RouterRuntimeState;
   /** @internal */
-  _compileProvider: CompileProvider | undefined;
+  _compileRegistry: CompileRegistry | undefined;
   /** @internal */
   _registeredRouteComponents: Set<string>;
 
   /**
    * @param {StateMatcher} matcher
-   * @param {RouterProvider} routerState
+   * @param {RouterRuntimeState} routerState
    */
   constructor(
     matcher: StateMatcher,
-    routerState: RouterProvider,
-    compileProvider?: CompileProvider,
+    routerState: RouterRuntimeState,
+    compileRegistry?: CompileRegistry,
   ) {
     this._matcher = matcher;
     this._$injector = undefined;
     this._paramFactory = routerState._paramFactory;
     this._routerState = routerState;
-    this._compileProvider = compileProvider;
+    this._compileRegistry = compileRegistry;
     this._registeredRouteComponents = new Set();
   }
 
@@ -511,13 +510,13 @@ export class StateBuilder {
     const name = routeComponentName(stateName, viewName);
 
     if (!this._registeredRouteComponents.has(name)) {
-      if (!this._compileProvider) {
+      if (!this._compileRegistry) {
         throw new Error(
-          `State '${stateName}' cannot register inline component '${viewName}' before the compile provider is available`,
+          `State '${stateName}' cannot register inline component '${viewName}' before the compile registry is available`,
         );
       }
 
-      this._compileProvider.component(
+      this._compileRegistry.component(
         name,
         assign({}, component, { replace: true }),
       );

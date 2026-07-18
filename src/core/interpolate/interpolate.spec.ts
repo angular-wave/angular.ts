@@ -4,6 +4,12 @@ import { createInjector } from "../di/injector.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
 import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
+import {
+  applyInterpolateConfiguration,
+  createInterpolateRuntimeState,
+  createInterpolateService,
+  destroyInterpolateRuntimeState,
+} from "./interpolate.ts";
 
 describe("$interpolate", () => {
   let $interpolate, $injector, $rootScope, $sce;
@@ -229,12 +235,12 @@ describe("$interpolate", () => {
     });
 
     it("should support escaping custom interpolation start/end symbols", () => {
-      angular
-        .module("customInterpolationApp", ["ng"])
-        .config(function ($interpolateProvider) {
-          $interpolateProvider.startSymbol = "[[";
-          $interpolateProvider.endSymbol = "]]";
-        });
+      angular.module("customInterpolationApp", ["ng"]).config({
+        $interpolate: {
+          startSymbol: "[[",
+          endSymbol: "]]",
+        },
+      });
 
       $injector = createInjector(["customInterpolationApp"]);
       $interpolate = $injector.get("$interpolate");
@@ -264,13 +270,10 @@ describe("$interpolate", () => {
     });
 
     it("allows configuring start and end symbols", function () {
-      const injector = createInjector([
-        "ng",
-        function ($interpolateProvider) {
-          $interpolateProvider.startSymbol = "FOO";
-          $interpolateProvider.endSymbol = "OOF";
-        },
-      ]);
+      angular.module("customInterpolationApp", ["ng"]).config({
+        $interpolate: { startSymbol: "FOO", endSymbol: "OOF" },
+      });
+      const injector = createInjector(["customInterpolationApp"]);
 
       const $interpolate = injector.get("$interpolate");
 
@@ -279,13 +282,10 @@ describe("$interpolate", () => {
     });
 
     it("works with start and end symbols that differ from default", function () {
-      const injector = createInjector([
-        "ng",
-        function ($interpolateProvider) {
-          $interpolateProvider.startSymbol = "FOO";
-          $interpolateProvider.endSymbol = "OOF";
-        },
-      ]);
+      angular.module("customInterpolationApp", ["ng"]).config({
+        $interpolate: { startSymbol: "FOO", endSymbol: "OOF" },
+      });
+      const injector = createInjector(["customInterpolationApp"]);
 
       const $interpolate = injector.get("$interpolate");
 
@@ -295,13 +295,10 @@ describe("$interpolate", () => {
     });
 
     it("does not work with default symbols when reconfigured", function () {
-      const injector = createInjector([
-        "ng",
-        function ($interpolateProvider) {
-          $interpolateProvider.startSymbol = "FOO";
-          $interpolateProvider.endSymbol = "OOF";
-        },
-      ]);
+      angular.module("customInterpolationApp", ["ng"]).config({
+        $interpolate: { startSymbol: "FOO", endSymbol: "OOF" },
+      });
+      const injector = createInjector(["customInterpolationApp"]);
 
       const $interpolate = injector.get("$interpolate");
 
@@ -311,13 +308,10 @@ describe("$interpolate", () => {
     });
 
     it("supports unescaping for reconfigured symbols", function () {
-      const injector = createInjector([
-        "ng",
-        function ($interpolateProvider) {
-          $interpolateProvider.startSymbol = "FOO";
-          $interpolateProvider.endSymbol = "OOF";
-        },
-      ]);
+      angular.module("customInterpolationApp", ["ng"]).config({
+        $interpolate: { startSymbol: "FOO", endSymbol: "OOF" },
+      });
+      const injector = createInjector(["customInterpolationApp"]);
 
       const $interpolate = injector.get("$interpolate");
 
@@ -393,6 +387,41 @@ describe("$interpolate", () => {
       await wait();
       expect(text).toEqual("42");
     });
+
+    it("observes every expression in multipart interpolation", async () => {
+      const values = [];
+      const interp = $interpolate("{{first}}/{{second}}");
+
+      $rootScope.first = "A";
+      $rootScope.second = "B";
+      interp($rootScope, (value) => values.push(value));
+      await wait();
+
+      $rootScope.second = "C";
+      await wait();
+
+      expect(values).toContain("A/C");
+    });
+  });
+
+  it("invokes function-valued single expressions", () => {
+    expect($interpolate("{{value}}")({ value: () => 42 })).toBe("42");
+  });
+
+  it("reports evaluation failures through the interpolation error path", () => {
+    const context = {
+      get broken() {
+        throw new Error("broken interpolation");
+      },
+    };
+
+    expect(() => $interpolate("{{broken}}")?.(context)).toThrowError(
+      /broken interpolation/,
+    );
+  });
+
+  it("rejects incomplete expressions when an expression is required", () => {
+    expect($interpolate("{{unfinished", true)).toBeUndefined();
   });
 
   describe("interpolating in a trusted context", () => {
@@ -408,9 +437,7 @@ describe("$interpolate", () => {
             errors.push(exception.message);
           };
         })
-        .config(function ($sceProvider) {
-          $sceProvider.enabled(true);
-        });
+        .config({ $sce: { enabled: true } });
 
       $injector = createInjector(["customInterpolationApp"]);
       $interpolate = $injector.get("$interpolate");
@@ -455,14 +482,14 @@ describe("$interpolate", () => {
     });
   });
 
-  describe("provider", () => {
+  describe("custom delimiters", () => {
     beforeEach(() => {
-      angular
-        .module("customInterpolationApp", ["ng"])
-        .config(function ($interpolateProvider) {
-          $interpolateProvider.startSymbol = "--";
-          $interpolateProvider.endSymbol = "--";
-        });
+      angular.module("customInterpolationApp", ["ng"]).config({
+        $interpolate: {
+          startSymbol: "--",
+          endSymbol: "--",
+        },
+      });
 
       $injector = createInjector(["customInterpolationApp"]);
       $interpolate = $injector.get("$interpolate");
@@ -611,73 +638,67 @@ describe("$interpolate", () => {
     });
   });
 
-  describe("startSymbol", () => {
+  describe("delimiter configuration", () => {
     beforeEach(() => {
       angular
         .module("customInterpolationApp", ["ng"])
-        .config(function ($interpolateProvider) {
-          expect($interpolateProvider.startSymbol).toBe("{{");
-          $interpolateProvider.startSymbol = "((";
-        });
+        .config({ $interpolate: { startSymbol: "((" } })
+        .config({ $interpolate: { endSymbol: "))" } });
 
       $injector = createInjector(["customInterpolationApp"]);
       $interpolate = $injector.get("$interpolate");
     });
 
-    it("should expose the endSymbol in config phase", () => {
-      angular
-        .module("customInterpolationApp")
-        .config(function ($interpolateProvider) {
-          expect($interpolateProvider.startSymbol).toBe("((");
-        });
-    });
-
-    it("should expose the startSymbol in run phase", () => {
+    it("merges partial config blocks before service construction", () => {
       expect($interpolate.startSymbol()).toBe("((");
-    });
-
-    it("should not get confused by matching start and end symbols", () => {
-      angular
-        .module("customInterpolationApp", ["ng"])
-        .config(function ($interpolateProvider) {
-          $interpolateProvider.startSymbol = "--";
-          $interpolateProvider.endSymbol = "--";
-        });
-
-      $injector = createInjector(["customInterpolationApp"]);
-      $interpolate = $injector.get("$interpolate");
-
-      () => {
-        expect($interpolate("---").expressions).toEqual([]);
-        expect($interpolate("----")({})).toEqual("");
-        expect($interpolate("--1--")({})).toEqual("1");
-      };
+      expect($interpolate.endSymbol()).toBe("))");
+      expect($interpolate("((value))")({ value: 42 })).toBe("42");
     });
   });
 
-  describe("endSymbol", () => {
-    beforeEach(() => {
-      angular
-        .module("customInterpolationApp", ["ng"])
-        .config(function ($interpolateProvider) {
-          expect($interpolateProvider.endSymbol).toBe("}}");
-          $interpolateProvider.endSymbol = "))";
-        });
+  describe("runtime state", () => {
+    it("starts with default delimiters and applies partial configuration", () => {
+      const state = createInterpolateRuntimeState();
 
-      $injector = createInjector(["customInterpolationApp"]);
-      $interpolate = $injector.get("$interpolate");
+      applyInterpolateConfiguration(state, { startSymbol: "[[" });
+      applyInterpolateConfiguration(state, {});
+
+      expect(state.startSymbol).toBe("[[");
+      expect(state.endSymbol).toBe("}}");
     });
 
-    it("should expose the endSymbol in config phase", () => {
-      angular
-        .module("customInterpolationApp")
-        .config(function ($interpolateProvider) {
-          expect($interpolateProvider.endSymbol).toBe("))");
-        });
+    it("rejects configuration and service creation after disposal", () => {
+      const state = createInterpolateRuntimeState();
+
+      destroyInterpolateRuntimeState(state);
+      destroyInterpolateRuntimeState(state);
+
+      expect(() => applyInterpolateConfiguration(state, {})).toThrowError(
+        "Interpolation runtime has already been disposed.",
+      );
+      expect(() =>
+        createInterpolateService(state, () => undefined, {
+          getTrusted: (_context, value) => value,
+          getTrustedMediaUrl: (value) => value,
+          valueOf: (value) => value,
+        }),
+      ).toThrowError("Interpolation runtime has already been disposed.");
     });
 
-    it("should expose the endSymbol in run phase", () => {
-      expect($interpolate.endSymbol()).toBe("))");
+    it("contains security adapter failures while stringifying", () => {
+      const state = createInterpolateRuntimeState();
+      const service = createInterpolateService(state, $injector.get("$parse"), {
+        getTrusted: (_context, value) => value,
+        getTrustedMediaUrl: (value) => value,
+        valueOf() {
+          throw new Error("security adapter failed");
+        },
+      });
+
+      expect(() =>
+        service("value={{value}}")?.({ value: "unsafe" }),
+      ).toThrowError(/security adapter failed/);
+      destroyInterpolateRuntimeState(state);
     });
   });
 });

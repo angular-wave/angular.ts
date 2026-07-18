@@ -184,14 +184,12 @@
     </style>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        window.angular.module("routerViewTransition", []).config([
-          "$stateProvider",
-          ($stateProvider) => {
-            $stateProvider
-              .state({
-                name: "home",
-                url: "/src/router/router-view-transition-test.html",
-                template: `
+        window.angular
+          .module("routerViewTransition", [])
+          .router({
+            name: "home",
+            url: "/src/router/router-view-transition-test.html",
+            template: `
                   <main class="route-view home-view">
                     <h1>Overview</h1>
                     <p>The router now wraps view activation in the browser View Transition API, so the old and new routed templates can animate as one committed navigation.</p>
@@ -202,11 +200,11 @@
                     </section>
                   </main>
                 `,
-              })
-              .state({
-                name: "reports",
-                url: "/reports",
-                template: `
+          })
+          .router({
+            name: "reports",
+            url: "/reports",
+            template: `
                   <main class="route-view reports-view">
                     <h1>Reports</h1>
                     <p>Route changes replace the active ng-view content inside document.startViewTransition(), allowing CSS to animate the named routed view.</p>
@@ -217,14 +215,14 @@
                     </section>
                   </main>
                 `,
-              })
-              .state({
-                name: "settings",
-                url: "/settings",
-                template: `
+          })
+          .router({
+            name: "settings",
+            url: "/settings",
+            template: `
                   <main class="route-view settings-view">
                     <h1>Settings</h1>
-                    <p>The transition is driven by normal router navigation. Existing ng-sref links and state transitions keep using the same API.</p>
+                    <p>The transition is driven by normal router navigation. Existing ng-state links and state transitions keep using the same API.</p>
                     <section class="metrics">
                       <div class="metric"><strong>3</strong><span>Profiles</span></div>
                       <div class="metric"><strong>6</strong><span>Integrations</span></div>
@@ -232,9 +230,7 @@
                     </section>
                   </main>
                 `,
-              });
-          },
-        ]);
+          });
       });
     </script>
   </head>
@@ -242,9 +238,9 @@
     <div class="shell">
       <nav class="nav" aria-label="Demo views">
         <h2 class="brand">Router Demo</h2>
-        <a ng-sref="home">Overview</a>
-        <a ng-sref="reports">Reports</a>
-        <a ng-sref="settings">Settings</a>
+        <a ng-state="'home'">Overview</a>
+        <a ng-state="'reports'">Reports</a>
+        <a ng-state="'settings'">Settings</a>
       </nav>
       <section class="content">
         <ng-view></ng-view>

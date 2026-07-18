@@ -8,7 +8,18 @@ import { wait } from "../../shared/test-utils.ts";
 describe("SCE", () => {
   let $sce, $rootScope;
 
-  let sceDelegateProvider;
+  const sceDelegateConfig = {
+    trustedResourceUrlList(value) {
+      window.angular._composition.configRegistry.configure("$sceDelegate", {
+        trustedResourceUrlList: value,
+      });
+    },
+    bannedResourceUrlList(value) {
+      window.angular._composition.configRegistry.configure("$sceDelegate", {
+        bannedResourceUrlList: value,
+      });
+    },
+  };
 
   let logs = [];
 
@@ -19,18 +30,18 @@ describe("SCE", () => {
       window.angular = new Angular();
       window.angular
         .module("myModule", ["ng"])
+        .config({
+          $sce: { enabled: false },
+          $exceptionHandler: {
+            handler: (err) => logs.push(err.message),
+          },
+        })
         .decorator("$exceptionHandler", () => {
           return (exception) => {
             errorLog.push(exception.message);
           };
         });
-      createInjector([
-        "myModule",
-        ($sceProvider, $exceptionHandlerProvider) => {
-          $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
-          $sceProvider.enabled(false);
-        },
-      ]).invoke((_$sce_) => {
+      createInjector(["myModule"]).invoke((_$sce_) => {
         $sce = _$sce_;
       });
     });
@@ -44,15 +55,15 @@ describe("SCE", () => {
     beforeEach(() => {
       window.angular = new Angular();
       logs = [];
-      createInjector([
-        "ng",
-        ($sceProvider, $exceptionHandlerProvider) => {
-          $exceptionHandlerProvider.handler = (err) => {
+      window.angular.module("sceEnabled", ["ng"]).config({
+        $sce: { enabled: true },
+        $exceptionHandler: {
+          handler: (err) => {
             logs.push(err.message);
-          };
-          $sceProvider.enabled(true);
+          },
         },
-      ]).invoke((_$sce_) => {
+      });
+      createInjector(["sceEnabled"]).invoke((_$sce_) => {
         $sce = _$sce_;
       });
     });
@@ -76,6 +87,23 @@ describe("SCE", () => {
       expect($sce.getTrusted(SCE_CONTEXTS._URL, wrappedValue)).toBe(
         "original_value",
       );
+    });
+
+    it("should use a registered HTML sanitizer", () => {
+      const sanitize = jasmine
+        .createSpy("sanitize")
+        .and.callFake((value) => `sanitized:${value}`);
+
+      window.angular = new Angular();
+      window.angular
+        .module("sceWithSanitizer", ["ng"])
+        .value("$sanitize", sanitize)
+        .config({ $sce: { enabled: true } });
+
+      createInjector(["sceWithSanitizer"]).invoke((_$sce_) => {
+        expect(_$sce_.getTrustedHtml("<b>x</b>")).toBe("sanitized:<b>x</b>");
+      });
+      expect(sanitize).toHaveBeenCalledOnceWith("<b>x</b>");
     });
 
     it("should NOT wrap non-string values", () => {
@@ -155,6 +183,19 @@ describe("SCE", () => {
 
       expect(String($sce.getTrustedHtml(wrappedValue))).toBe(originalValue);
       expect(wrappedValue.toString()).toBe(originalValue.toString());
+      expect(wrappedValue.valueOf()).toBe(originalValue);
+    });
+
+    it("should preserve empty URL values", () => {
+      expect($sce.getTrustedUrl(null)).toBeNull();
+      expect($sce.getTrustedUrl(undefined)).toBeUndefined();
+      expect($sce.getTrustedUrl("")).toBe("");
+    });
+
+    it("should reject values requested for an unknown context", () => {
+      $sce.getTrusted("unknown", "value");
+
+      expect(logs[0]).toMatch(/unsafe/);
     });
 
     it("should return native trusted values for trusted HTML when available", () => {
@@ -172,22 +213,20 @@ describe("SCE", () => {
   describe("replace $sceDelegate", () => {
     it("should override the default $sce.trustAs/valueOf/etc.", () => {
       window.angular = new Angular();
-      createInjector([
-        "ng",
-        function ($provide) {
-          $provide.value("$sceDelegate", {
-            trustAs(type, value) {
-              return `wrapped:${value}`;
-            },
-            getTrusted(type, value) {
-              return `unwrapped:${value}`;
-            },
-            valueOf(value) {
-              return `valueOf:${value}`;
-            },
-          });
-        },
-      ]).invoke((_$sce_) => {
+      window.angular
+        .module("sceDelegateOverride", ["ng"])
+        .value("$sceDelegate", {
+          trustAs(type, value) {
+            return `wrapped:${value}`;
+          },
+          getTrusted(type, value) {
+            return `unwrapped:${value}`;
+          },
+          valueOf(value) {
+            return `valueOf:${value}`;
+          },
+        });
+      createInjector(["sceDelegateOverride"]).invoke((_$sce_) => {
         $sce = _$sce_;
       });
       expect($sce.valueOf("value")).toBe("valueOf:value");
@@ -195,15 +234,15 @@ describe("SCE", () => {
   });
 
   describe("$sce.parseAs", () => {
-    window.angular = new Angular();
     beforeEach(function () {
       logs = [];
-      createInjector([
-        "ng",
-        function ($exceptionHandlerProvider) {
-          $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
+      window.angular = new Angular();
+      window.angular.module("sceParseAs", ["ng"]).config({
+        $exceptionHandler: {
+          handler: (err) => logs.push(err.message),
         },
-      ]).invoke((_$sce_, _$rootScope_) => {
+      });
+      createInjector(["sceParseAs"]).invoke((_$sce_, _$rootScope_) => {
         $sce = _$sce_;
         $rootScope = _$rootScope_;
       });
@@ -244,13 +283,13 @@ describe("SCE", () => {
   describe("$sceDelegate resource url policies", () => {
     beforeEach(() => {
       logs = [];
-      createInjector([
-        "ng",
-        ($sceDelegateProvider, $exceptionHandlerProvider) => {
-          $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
-          sceDelegateProvider = $sceDelegateProvider;
+      window.angular = new Angular();
+      window.angular.module("sceResourcePolicies", ["ng"]).config({
+        $exceptionHandler: {
+          handler: (err) => logs.push(err.message),
         },
-      ]).invoke((_$sce_) => {
+      });
+      createInjector(["sceResourcePolicies"]).invoke((_$sce_) => {
         $sce = _$sce_;
       });
     });
@@ -260,22 +299,22 @@ describe("SCE", () => {
     });
 
     it("should reject everything when trusted resource URL list is empty", () => {
-      sceDelegateProvider.trustedResourceUrlList([]);
-      sceDelegateProvider.bannedResourceUrlList([]);
+      sceDelegateConfig.trustedResourceUrlList([]);
+      sceDelegateConfig.bannedResourceUrlList([]);
       $sce.getTrustedResourceUrl("#");
       expect(logs[0]).toMatch(/insecurl/);
     });
 
     it("should match against normalized urls", () => {
-      sceDelegateProvider.trustedResourceUrlList([/^foo$/]);
-      sceDelegateProvider.bannedResourceUrlList([]);
+      sceDelegateConfig.trustedResourceUrlList([/^foo$/]);
+      sceDelegateConfig.bannedResourceUrlList([]);
       $sce.getTrustedResourceUrl("foo");
       expect(logs[0]).toMatch(/insecurl/);
     });
 
     it("should not accept unknown matcher type", () => {
       expect(() => {
-        sceDelegateProvider.trustedResourceUrlList([{}]);
+        sceDelegateConfig.trustedResourceUrlList([{}]);
       }).toThrowError(/imatcher/);
     });
 
@@ -299,22 +338,22 @@ describe("SCE", () => {
 
     describe("regex matcher", () => {
       beforeEach(() => {
-        createInjector([
-          "ng",
-          ($sceDelegateProvider, $exceptionHandlerProvider) => {
-            $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
-            sceDelegateProvider = $sceDelegateProvider;
+        window.angular = new Angular();
+        window.angular.module("sceRegexMatcher", ["ng"]).config({
+          $exceptionHandler: {
+            handler: (err) => logs.push(err.message),
           },
-        ]).invoke((_$sce_) => {
+        });
+        createInjector(["sceRegexMatcher"]).invoke((_$sce_) => {
           $sce = _$sce_;
         });
       });
 
       it("should support custom regex", () => {
-        sceDelegateProvider.trustedResourceUrlList([
+        sceDelegateConfig.trustedResourceUrlList([
           /^http:\/\/example\.com\/.*/,
         ]);
-        sceDelegateProvider.bannedResourceUrlList([]);
+        sceDelegateConfig.bannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -328,10 +367,10 @@ describe("SCE", () => {
       });
 
       it("should match entire regex", () => {
-        sceDelegateProvider.trustedResourceUrlList([
+        sceDelegateConfig.trustedResourceUrlList([
           /https?:\/\/example\.com\/foo/,
         ]);
-        sceDelegateProvider.bannedResourceUrlList([]);
+        sceDelegateConfig.bannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -352,20 +391,20 @@ describe("SCE", () => {
     describe("string matchers", () => {
       beforeEach(() => {
         logs = [];
-        createInjector([
-          "ng",
-          ($sceDelegateProvider, $exceptionHandlerProvider) => {
-            $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
-            sceDelegateProvider = $sceDelegateProvider;
+        window.angular = new Angular();
+        window.angular.module("sceStringMatchers", ["ng"]).config({
+          $exceptionHandler: {
+            handler: (err) => logs.push(err.message),
           },
-        ]).invoke((_$sce_) => {
+        });
+        createInjector(["sceStringMatchers"]).invoke((_$sce_) => {
           $sce = _$sce_;
         });
       });
 
       it("should support strings as matchers", () => {
-        sceDelegateProvider.trustedResourceUrlList(["http://example.com/foo"]);
-        sceDelegateProvider.bannedResourceUrlList([]);
+        sceDelegateConfig.trustedResourceUrlList(["http://example.com/foo"]);
+        sceDelegateConfig.bannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -381,8 +420,8 @@ describe("SCE", () => {
       });
 
       it("should support the * wildcard", () => {
-        sceDelegateProvider.trustedResourceUrlList(["http://example.com/foo*"]);
-        sceDelegateProvider.bannedResourceUrlList([]);
+        sceDelegateConfig.trustedResourceUrlList(["http://example.com/foo*"]);
+        sceDelegateConfig.bannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -411,10 +450,8 @@ describe("SCE", () => {
       });
 
       it("should support the ** wildcard", () => {
-        sceDelegateProvider.trustedResourceUrlList([
-          "http://example.com/foo**",
-        ]);
-        sceDelegateProvider.bannedResourceUrlList([]);
+        sceDelegateConfig.trustedResourceUrlList(["http://example.com/foo**"]);
+        sceDelegateConfig.bannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -430,7 +467,7 @@ describe("SCE", () => {
 
       it("should not accept *** in the string", () => {
         expect(() => {
-          sceDelegateProvider.trustedResourceUrlList(["http://***"]);
+          sceDelegateConfig.trustedResourceUrlList(["http://***"]);
         }).toThrowError(/iwcard/);
       });
     });
@@ -438,42 +475,43 @@ describe("SCE", () => {
     describe('"self" matcher', () => {
       beforeEach(() => {
         logs = [];
-        createInjector([
-          "ng",
-          ($sceDelegateProvider, $exceptionHandlerProvider) => {
-            $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
-            sceDelegateProvider = $sceDelegateProvider;
+        window.angular = new Angular();
+        window.angular.module("sceSelfMatcher", ["ng"]).config({
+          $exceptionHandler: {
+            handler: (err) => logs.push(err.message),
           },
-        ]).invoke((_$sce_) => {
+        });
+        createInjector(["sceSelfMatcher"]).invoke((_$sce_) => {
           $sce = _$sce_;
         });
       });
 
       it('should support the special string "self" in trusted resource URL list', () => {
-        sceDelegateProvider.trustedResourceUrlList(["self"]);
-        sceDelegateProvider.bannedResourceUrlList([]);
+        sceDelegateConfig.trustedResourceUrlList(["self"]);
+        sceDelegateConfig.bannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("foo")).toEqual("foo");
       });
 
       it('should support the special string "self" in baneed resource URL list', () => {
-        sceDelegateProvider.trustedResourceUrlList([/.*/]);
-        sceDelegateProvider.bannedResourceUrlList(["self"]);
+        sceDelegateConfig.trustedResourceUrlList([/.*/]);
+        sceDelegateConfig.bannedResourceUrlList(["self"]);
         $sce.getTrustedResourceUrl("foo");
         expect(logs[0]).toMatch(/insecurl/);
       });
 
       describe("when the document base URL has changed", () => {
         beforeEach(() => {
-          createInjector([
-            "ng",
-            ($sceDelegateProvider, $exceptionHandlerProvider) => {
-              $exceptionHandlerProvider.handler = (err) =>
-                logs.push(err.message);
-              sceDelegateProvider = $sceDelegateProvider;
-              sceDelegateProvider.trustedResourceUrlList(["self"]);
-              sceDelegateProvider.bannedResourceUrlList([]);
+          window.angular = new Angular();
+          window.angular.module("sceChangedBase", ["ng"]).config({
+            $exceptionHandler: {
+              handler: (err) => logs.push(err.message),
             },
-          ]).invoke((_$sce_) => {
+            $sceDelegate: {
+              trustedResourceUrlList: ["self"],
+              bannedResourceUrlList: [],
+            },
+          });
+          createInjector(["sceChangedBase"]).invoke((_$sce_) => {
             $sce = _$sce_;
           });
         });
@@ -510,20 +548,20 @@ describe("SCE", () => {
       });
 
       it("should have the banned resource URL list override the trusted resource URL list", () => {
-        sceDelegateProvider.trustedResourceUrlList(["self"]);
-        sceDelegateProvider.bannedResourceUrlList(["self"]);
+        sceDelegateConfig.trustedResourceUrlList(["self"]);
+        sceDelegateConfig.bannedResourceUrlList(["self"]);
         $sce.getTrustedResourceUrl("foo");
         expect(logs[0]).toMatch(/insecurl/);
       });
 
       it("should support multiple items in both lists", () => {
-        sceDelegateProvider.trustedResourceUrlList([
+        sceDelegateConfig.trustedResourceUrlList([
           /^http:\/\/example.com\/1$/,
           /^http:\/\/example.com\/2$/,
           /^http:\/\/example.com\/3$/,
           "self",
         ]);
-        sceDelegateProvider.bannedResourceUrlList([
+        sceDelegateConfig.bannedResourceUrlList([
           /^http:\/\/example.com\/3$/,
           /.*\/open_redirect/,
         ]);
@@ -586,13 +624,10 @@ describe("SCE", () => {
 
       it("should sanitize URL contexts directly", () => {
         window.angular = new Angular();
-        window.angular.module("testSanitizeUri", ["ng"]);
-        createInjector([
-          "testSanitizeUri",
-          ($sceProvider, $exceptionHandlerProvider) => {
-            $sceProvider.enabled(true);
-          },
-        ]).invoke((_$sce_) => {
+        window.angular
+          .module("testSanitizeUri", ["ng"])
+          .config({ $sce: { enabled: true } });
+        createInjector(["testSanitizeUri"]).invoke((_$sce_) => {
           $sce = _$sce_;
         });
 

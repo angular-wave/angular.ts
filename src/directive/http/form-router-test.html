@@ -8,44 +8,43 @@
     <script type="module" src="../../auto.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        window.angular.module("router", []).config([
-          "$stateProvider",
-          "$locationProvider",
-          ($stateProvider, $locationProvider) => {
-            $locationProvider.html5ModeConf = {
-              enabled: true,
-              requireBase: false,
-              rewriteLinks: false,
-            };
-            $stateProvider
-              .state({
-                name: "home",
-                url: "/src/directive/http/form-router-test.html",
-                template: `
+        window.angular
+          .module("router", [])
+          .config({
+            $location: {
+              html5Mode: {
+                enabled: true,
+                requireBase: false,
+                rewriteLinks: false,
+              },
+            },
+          })
+          .router({
+            name: "home",
+            url: "/src/directive/http/form-router-test.html",
+            template: `
                   <section class="demo-panel">
                     <h2>Submit and transition</h2>
                     <p class="demo-note">
                       The successful POST navigates to the configured router state.
                     </p>
-                    <form ng-post="/mock/posthtml" state-success="page1">
+                    <form ng-post="/mock/posthtml" data-state-success="page1">
                       <input name="name" placeholder="Name" />
                       <button type="submit">Post and navigate</button>
                     </form>
                   </section>
                 `,
-              })
-              .state({
-                name: "page1",
-                url: "/src/directive/http/page1",
-                template: `
+          })
+          .router({
+            name: "page1",
+            url: "/src/directive/http/page1",
+            template: `
                   <section class="demo-panel">
                     <h2>Navigation complete</h2>
                     <p>The HTTP directive transitioned to this state.</p>
                   </section>
                 `,
-              });
-          },
-        ]);
+          });
       });
     </script>
   </head>

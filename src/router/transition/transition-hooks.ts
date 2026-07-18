@@ -11,20 +11,33 @@ import { Resolvable } from "../resolve/resolvable.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { TargetState } from "../state/target-state.ts";
 import {
+  createRetentionPolicyInvocationLocals,
+  createTransitionPolicyInvocationLocals,
+} from "../invocation-context.ts";
+import {
   loadViewConfig,
   type ViewConfig,
+  type ViewRetentionAssignment,
   type ViewService,
 } from "../view/view.ts";
 import { Rejection } from "./reject-factory.ts";
 import { Transition } from "./transition.ts";
+import type { NavigationPolicyContext } from "../../services/security/security.ts";
 import type {
   BuiltStateDeclaration,
+  InternalStateDeclaration,
   RedirectToResult,
+  StateNavigationPolicyDeclaration,
+  StateRetentionPolicyDeclaration,
+  StateRetentionPolicyContext,
   StateDeclaration,
+  StateTransitionPolicyContext,
+  StateTransitionLoadingPolicy,
+  StateTransitionLoadingPolicyContext,
 } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { StateProvider } from "../state/state-service.ts";
+import type { StateRuntime } from "../state/state-service.ts";
 import type { DeregisterFn, HookResult } from "./interface.ts";
 import type { TransitionService } from "./transition-service.ts";
 
@@ -35,6 +48,23 @@ function noop(): void {
 async function afterViewCommitTask(): Promise<void> {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, 0);
+  });
+}
+
+/** @internal */
+export async function afterPaintTask(): Promise<void> {
+  if (typeof requestAnimationFrame === "undefined") {
+    return new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  }
+
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resolve();
+      });
+    });
   });
 }
 
@@ -98,6 +128,9 @@ export function registerCoreTransitionHooks(
   registerAddCoreResolvables(transitionService);
   registerIgnoredTransitionHook(transitionService);
   registerInvalidTransitionHook(transitionService);
+  registerSecurityNavigationPolicyHook(transitionService);
+  registerTransitionLoadingPolicyHook(transitionService);
+  registerTransitionPolicyHook(transitionService);
   registerOnExitHook(transitionService);
   registerOnRetainHook(transitionService);
   registerOnEnterHook(transitionService);
@@ -115,6 +148,7 @@ export function registerRuntimeTransitionHooks(
   registerUpdateUrl(transitionService);
   registerRedirectToHook(transitionService);
   registerActivateViews(transitionService);
+  registerRouterUxHook(transitionService);
 }
 
 function registerAddCoreResolvables(
@@ -133,12 +167,6 @@ function registerAddCoreResolvables(
         Resolvable.fromData("$transition$", trans),
         "",
       );
-      addTransitionResolvable(
-        trans,
-        Resolvable.fromData("$stateParams", trans.params()),
-        "",
-      );
-
       const entering = trans.entering();
 
       entering.forEach((state) => {
@@ -259,6 +287,12 @@ function invalidTransitionHook(trans: Transition): void {
   }
 }
 
+function internalState(
+  state: StateDeclaration,
+): BuiltStateDeclaration | undefined {
+  return (state as Partial<InternalStateDeclaration>)._state?.();
+}
+
 function registerInvalidTransitionHook(
   transitionService: TransitionService,
 ): DeregisterFn {
@@ -271,21 +305,21 @@ function onExitHook(
   transition: Transition,
   state: StateDeclaration,
 ): HookResult {
-  return state._state?.().onExit?.(transition, state);
+  return internalState(state)?.onExit?.(transition, state);
 }
 
 function onRetainHook(
   transition: Transition,
   state: StateDeclaration,
 ): HookResult {
-  return state._state?.().onRetain?.(transition, state);
+  return internalState(state)?.onRetain?.(transition, state);
 }
 
 function onEnterHook(
   transition: Transition,
   state: StateDeclaration,
 ): HookResult {
-  return state._state?.().onEnter?.(transition, state);
+  return internalState(state)?.onEnter?.(transition, state);
 }
 
 function registerOnExitHook(
@@ -326,7 +360,7 @@ function hasRedirectTo(state?: StateObject): boolean {
 }
 
 function handleRedirectToResult(
-  stateService: StateProvider,
+  stateService: StateRuntime,
   trans: Transition,
   result: RedirectToResult,
 ): TargetState | undefined {
@@ -384,6 +418,585 @@ function registerRedirectToHook(
 
 const RESOLVE_HOOK_PRIORITY = 1000;
 
+const DEFAULT_RETENTION_MAX = 10;
+
+interface EffectiveNavigationPolicy {
+  require: string[];
+  permissions: string[];
+  redirectTo?: string;
+  reason?: string;
+  public?: boolean;
+  states: string[];
+}
+
+interface EffectiveRetentionPolicy {
+  mode: NonNullable<StateRetentionPolicyDeclaration["mode"]>;
+  key?: StateRetentionPolicyDeclaration["key"];
+  max?: number;
+  pause?: StateRetentionPolicyDeclaration["pause"];
+  evict?: StateRetentionPolicyDeclaration["evict"];
+  states: string[];
+}
+
+interface EffectiveTransitionLoadingPolicy {
+  policy: false | string | StateTransitionLoadingPolicy;
+  state: StateDeclaration;
+  states: string[];
+}
+
+function appendUnique(target: string[], source: string | string[] | undefined) {
+  if (source === undefined) return;
+
+  const items = Array.isArray(source) ? source : [source];
+
+  items.forEach((item) => {
+    if (!target.includes(item)) {
+      target.push(item);
+    }
+  });
+}
+
+function applyNavigationPolicy(
+  effective: EffectiveNavigationPolicy,
+  policy: StateNavigationPolicyDeclaration,
+  stateName: string,
+): void {
+  effective.states.push(stateName);
+
+  if (policy.public) {
+    effective.require = [];
+    effective.permissions = [];
+    effective.redirectTo = undefined;
+    effective.reason = policy.reason;
+    effective.public = true;
+
+    return;
+  }
+
+  effective.public = false;
+  appendUnique(effective.require, policy.require);
+  appendUnique(effective.permissions, policy.permissions);
+
+  if (policy.redirectTo !== undefined) {
+    effective.redirectTo = policy.redirectTo;
+  }
+
+  if (policy.reason !== undefined) {
+    effective.reason = policy.reason;
+  }
+}
+
+function applyRetentionPolicy(
+  effective: EffectiveRetentionPolicy,
+  policy: StateRetentionPolicyDeclaration,
+  stateName?: string,
+): void {
+  if (stateName !== undefined) {
+    effective.states.push(stateName);
+  }
+
+  if (policy.mode !== undefined) {
+    effective.mode = policy.mode;
+  }
+
+  if (policy.key !== undefined) {
+    effective.key = policy.key;
+  }
+
+  if (policy.max !== undefined) {
+    effective.max = policy.max;
+  }
+
+  if (policy.pause !== undefined) {
+    effective.pause = policy.pause;
+  }
+
+  if (policy.evict !== undefined) {
+    effective.evict = policy.evict;
+  }
+}
+
+function applyLoadingPolicy(
+  effective: { policy?: false | string | StateTransitionLoadingPolicy },
+  policy: boolean | string | StateTransitionLoadingPolicy,
+): void {
+  if (isString(policy) || isFunction(policy)) {
+    effective.policy = policy;
+
+    return;
+  }
+
+  if (!policy) {
+    effective.policy = false;
+
+    return;
+  }
+}
+
+/** @internal */
+export function buildEffectiveRetentionPolicy(
+  transition: Transition,
+): EffectiveRetentionPolicy | undefined {
+  return buildEffectiveRetentionPolicyFromPath(
+    transition._treeChanges.to,
+    transition._routerState._retention,
+  );
+}
+
+function buildEffectiveRetentionPolicyFromPath(
+  path: PathNode[],
+  routerPolicy?: StateRetentionPolicyDeclaration,
+): EffectiveRetentionPolicy | undefined {
+  const effective: EffectiveRetentionPolicy = {
+    mode: "destroy",
+    states: [],
+  };
+
+  let hasPolicy = false;
+
+  if (routerPolicy) {
+    applyRetentionPolicy(effective, routerPolicy);
+    hasPolicy = true;
+  }
+
+  path.forEach((node) => {
+    const policy = node.state.self.policy?.retention;
+
+    if (!policy) return;
+
+    applyRetentionPolicy(effective, policy, node.state.name);
+    hasPolicy = true;
+  });
+
+  return hasPolicy ? effective : undefined;
+}
+
+function buildEffectiveLoadingPolicy(
+  transition: Transition,
+): EffectiveTransitionLoadingPolicy | undefined {
+  const effective: {
+    policy?: false | string | StateTransitionLoadingPolicy;
+    state?: StateDeclaration;
+    states: string[];
+  } = {
+    states: [],
+  };
+
+  if (transition._routerState._loading !== undefined) {
+    applyLoadingPolicy(effective, transition._routerState._loading);
+    effective.state = transition.to();
+  }
+
+  transition._treeChanges.to.forEach((node) => {
+    const policy = node.state.self.policy?.transition?.loading;
+
+    if (policy === undefined) return;
+
+    applyLoadingPolicy(effective, policy);
+    effective.state = node.state.self;
+    effective.states.push(node.state.name);
+  });
+
+  return effective.state && effective.policy !== undefined
+    ? ({
+        policy: effective.policy,
+        state: effective.state,
+        states: effective.states,
+      } as EffectiveTransitionLoadingPolicy)
+    : undefined;
+}
+
+function pathParams(path: PathNode[]): Record<string, unknown> {
+  const params: Record<string, unknown> = {};
+
+  path.forEach((node) => {
+    keys(node.paramValues).forEach((key) => {
+      params[key] = node.paramValues[key];
+    });
+  });
+
+  return params;
+}
+
+function stableParamsKey(path: PathNode[]): string {
+  const params = pathParams(path);
+
+  return keys(params)
+    .sort()
+    .map((key) => `${key}:${String(params[key])}`)
+    .join("|");
+}
+
+function retentionKey(
+  transition: Transition,
+  viewConfig: ViewConfig,
+  policy: EffectiveRetentionPolicy,
+): string {
+  const stateName = viewConfig._path[viewConfig._path.length - 1].state.name;
+
+  let routeKey: string | undefined;
+
+  if (isString(policy.key)) {
+    routeKey = policy.key;
+  } else if (policy.key) {
+    const targetState = viewConfig._path[viewConfig._path.length - 1].state;
+
+    const context: StateRetentionPolicyContext = {
+      transition,
+      state: targetState.self,
+      params: pathParams(viewConfig._path),
+    };
+
+    const result = transition._routerState._injector?.invoke(
+      policy.key,
+      undefined,
+      createRetentionPolicyInvocationLocals(context),
+      "retention key policy",
+    );
+
+    if (!isString(result)) {
+      throw new Error("Retention key policy must return a string.");
+    }
+
+    routeKey = result;
+  }
+
+  routeKey ??= `${stateName}?${stableParamsKey(viewConfig._path)}`;
+
+  return `${routeKey}#${viewConfig._targetKey}`;
+}
+
+function retentionEviction(
+  policy: EffectiveRetentionPolicy,
+): ViewRetentionAssignment["_evict"] {
+  return policy.evict;
+}
+
+/** @internal */
+export function applyViewRetention(
+  transition: Transition,
+  viewConfig: ViewConfig,
+): void {
+  const policy = buildEffectiveRetentionPolicyFromPath(
+    viewConfig._path,
+    transition._routerState._retention,
+  );
+
+  if (!policy) {
+    viewConfig._retention = undefined;
+
+    return;
+  }
+
+  viewConfig._retention = {
+    _mode: policy.mode,
+    _key: retentionKey(transition, viewConfig, policy),
+    _max: policy.max ?? DEFAULT_RETENTION_MAX,
+    _pause: policy.pause,
+    _evict: retentionEviction(policy),
+    _state: viewConfig._path[viewConfig._path.length - 1].state.name,
+  };
+}
+
+function buildEffectiveNavigationPolicy(
+  transition: Transition,
+): EffectiveNavigationPolicy | undefined {
+  const effective: EffectiveNavigationPolicy = {
+    require: [],
+    permissions: [],
+    states: [],
+  };
+
+  transition._treeChanges.to.forEach((node) => {
+    const policy = node.state.self.policy?.navigation;
+
+    if (!policy) return;
+
+    applyNavigationPolicy(effective, policy, node.state.name);
+  });
+
+  return effective.states.length ? effective : undefined;
+}
+
+/**
+ * Evaluates the navigation policy for each transition before controller/view hooks.
+ */
+async function securityNavigationHook(
+  this: TransitionService,
+  transition: Transition,
+): Promise<TargetState | undefined> {
+  const from = transition.from();
+
+  const to = transition.to();
+
+  const context: NavigationPolicyContext = {
+    operation: "navigation",
+    from: {
+      name: from.name,
+      url: from.url,
+    },
+    to: {
+      name: to.name,
+      url: to.url,
+      params: transition.params("to") as Record<string, string>,
+    },
+    transition: {
+      id: String(transition.$id),
+    },
+    routePolicy: buildEffectiveNavigationPolicy(transition),
+    userAgent:
+      typeof navigator === "undefined" ? undefined : navigator.userAgent,
+  };
+
+  const decision = await this._security.check(context);
+
+  if (decision.type === "allow") {
+    return undefined;
+  }
+
+  if (decision.type === "redirect") {
+    if (!decision.target) {
+      return Promise.reject(
+        Rejection.errored("Security policy redirect missing target"),
+      );
+    }
+
+    return this._stateService.target(
+      decision.target,
+      transition.params(),
+      transition._options,
+    );
+  }
+
+  return Promise.reject(
+    Rejection.errored({
+      reason: decision.reason ?? "Security policy denied navigation",
+      status: decision.status,
+      target: decision.target,
+      detail: decision,
+    }),
+  );
+}
+
+function registerSecurityNavigationPolicyHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onBefore({}, securityNavigationHook, {
+    bind: transitionService,
+    priority: 200,
+  });
+}
+
+async function transitionLoadingPolicyHook(
+  this: TransitionService,
+  transition: Transition,
+): Promise<TargetState | undefined> {
+  if (
+    transition._options._loadingFor ||
+    transition._options._skipLoadingPolicy
+  ) {
+    return undefined;
+  }
+
+  const effectiveLoadingPolicy = buildEffectiveLoadingPolicy(transition);
+
+  if (!effectiveLoadingPolicy || effectiveLoadingPolicy.policy === false) {
+    return undefined;
+  }
+
+  if (
+    isString(effectiveLoadingPolicy.policy) ||
+    isInstanceOf(effectiveLoadingPolicy.policy, TargetState)
+  ) {
+    const redirectTarget = handleRedirectToResult(
+      this._stateService,
+      transition,
+      effectiveLoadingPolicy.policy,
+    );
+
+    if (!redirectTarget || redirectTarget.name() === transition.to().name) {
+      return undefined;
+    }
+
+    const options = assign({}, transition._options, {
+      _loadingFor: {
+        identifier: transition.to(),
+        params: transition.params(),
+        options: transition._options,
+      },
+      _skipLoadingPolicy: true,
+    });
+
+    return this._stateService.target(
+      redirectTarget.name(),
+      redirectTarget.params(),
+      options,
+    );
+  }
+
+  const context: StateTransitionLoadingPolicyContext = {
+    operation: "loading",
+    transition,
+    from: transition.from(),
+    to: transition.to(),
+    state: effectiveLoadingPolicy.state,
+  };
+
+  const target = transition._routerState._injector?.invoke(
+    effectiveLoadingPolicy.policy,
+    undefined,
+    createTransitionPolicyInvocationLocals(context),
+    "route loading policy",
+  );
+
+  const redirectTarget = await Promise.resolve(target);
+
+  if (!redirectTarget) {
+    return undefined;
+  }
+
+  if (redirectTarget === true) return undefined;
+
+  const loadingTarget = handleRedirectToResult(
+    this._stateService,
+    transition,
+    redirectTarget,
+  );
+
+  if (!loadingTarget || loadingTarget.name() === transition.to().name) {
+    return undefined;
+  }
+
+  const options = assign({}, transition._options, {
+    _loadingFor: {
+      identifier: transition.to(),
+      params: transition.params(),
+      options: transition._options,
+    },
+    _skipLoadingPolicy: true,
+  });
+
+  return this._stateService.target(
+    loadingTarget.name(),
+    loadingTarget.params(),
+    options,
+  );
+}
+
+function registerTransitionLoadingPolicyHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onBefore({}, transitionLoadingPolicyHook, {
+    bind: transitionService,
+    priority: 150,
+  });
+}
+
+/**
+ * Evaluates state transition policies for states being exited.
+ */
+async function transitionPolicyHook(
+  this: TransitionService,
+  transition: Transition,
+): Promise<TargetState | undefined> {
+  const from = transition.from();
+  const to = transition.to();
+
+  for (const state of transition.exiting()) {
+    const policy = state.policy?.transition;
+
+    if (!policy) continue;
+
+    if (policy.canExit) {
+      const context: StateTransitionPolicyContext = {
+        operation: "canExit",
+        transition,
+        from,
+        to,
+        state,
+      };
+
+      const result = await Promise.resolve(
+        this._routerState._injector?.invoke(
+          policy.canExit,
+          undefined,
+          createTransitionPolicyInvocationLocals(context),
+          "route canExit policy",
+        ),
+      );
+
+      if (result === true || result === undefined) {
+        // continue
+      } else if (result === false) {
+        throw Rejection.aborted("Route canExit policy blocked transition");
+      } else {
+        const redirectTarget = handleRedirectToResult(
+          this._stateService,
+          transition,
+          result,
+        );
+
+        if (redirectTarget) {
+          return redirectTarget;
+        }
+
+        throw new Error(
+          "Route canExit policy must return boolean or redirect.",
+        );
+      }
+    }
+
+    if (!policy.dirty) continue;
+
+    const dirtyPolicy = policy.dirty;
+    const context: StateTransitionPolicyContext = {
+      operation: "dirty",
+      transition,
+      from,
+      to,
+      state,
+    };
+    const shouldPrompt = await Promise.resolve(
+      this._routerState._injector?.invoke(
+        dirtyPolicy.when,
+        undefined,
+        createTransitionPolicyInvocationLocals(context),
+        "route dirty policy",
+      ),
+    );
+
+    if (!shouldPrompt) continue;
+
+    if (dirtyPolicy.redirectTo) {
+      return this._stateService.target(
+        dirtyPolicy.redirectTo,
+        transition.params(),
+        transition._options,
+      );
+    }
+
+    const prompt = dirtyPolicy.prompt;
+    if (!prompt) {
+      throw Rejection.aborted("Route dirty policy blocked transition");
+    }
+
+    if (!window.confirm(prompt)) {
+      throw Rejection.aborted("Route dirty policy blocked transition");
+    }
+  }
+
+  return undefined;
+}
+
+function registerTransitionPolicyHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onBefore({}, transitionPolicyHook, {
+    bind: transitionService,
+    priority: 100,
+  });
+}
+
 async function eagerResolvePath(trans: Transition): Promise<void> {
   return new ResolveContext(trans._treeChanges.to, trans._routerState._injector)
     .resolvePath(true, trans)
@@ -402,7 +1015,7 @@ async function lazyResolveState(
   trans: Transition,
   state: StateDeclaration,
 ): Promise<void> {
-  const stateObject = state._state?.();
+  const stateObject = internalState(state);
 
   if (!stateObject) {
     throw new Error(`State '${state.name}' is not built`);
@@ -465,9 +1078,18 @@ function registerLoadEnteringViews(
 
 function updateViewConfigs(
   viewService: ViewService,
+  transition: Transition,
   enteringViews: ViewConfig[],
   exitingViews: ViewConfig[],
 ): void {
+  exitingViews.forEach((view) => {
+    applyViewRetention(transition, view);
+  });
+
+  enteringViews.forEach((view) => {
+    applyViewRetention(transition, view);
+  });
+
   exitingViews.forEach((view) => {
     viewService._deactivateViewConfig(view);
   });
@@ -494,10 +1116,16 @@ async function activateViewsHook(
   }
 
   const updateViews = (): void => {
-    updateViewConfigs(viewService, enteringViews, exitingViews);
+    updateViewConfigs(viewService, transition, enteringViews, exitingViews);
   };
 
-  if (!hasConnectedNgView(viewService)) {
+  if (
+    transition._options._loadingFor ||
+    transition._options._skipLoadingPolicy ||
+    transition._options.redirectedFrom ||
+    transition._routerState._viewTransitions === false ||
+    !hasConnectedNgView(viewService)
+  ) {
     updateViews();
 
     return Promise.resolve();
@@ -511,6 +1139,159 @@ function registerActivateViews(
 ): DeregisterFn {
   return transitionService.onSuccess({}, activateViewsHook, {
     bind: transitionService,
+  });
+}
+
+/** @internal */
+export function resolveScrollTarget(
+  selector: string,
+  browserDocument: Document | null | undefined = (
+    globalThis as {
+      document?: Document;
+    }
+  ).document,
+): Element | null {
+  return browserDocument?.querySelector(selector) ?? null;
+}
+
+/** @internal */
+export function scrollToHash(
+  browserWindow: Window | null | undefined = (
+    globalThis as {
+      window?: Window;
+    }
+  ).window,
+  browserDocument: Document | null | undefined = (
+    globalThis as {
+      document?: Document;
+    }
+  ).document,
+): boolean {
+  if (!browserDocument || !browserWindow) {
+    return false;
+  }
+
+  const hash = browserWindow.location.hash;
+
+  if (!hash || hash === "#") return false;
+
+  const id = decodeURIComponent(hash.slice(1));
+
+  const target = browserDocument.getElementById(id);
+
+  if (!target) return false;
+
+  target.scrollIntoView();
+
+  return true;
+}
+
+/** @internal */
+export function applyRouterScroll(
+  routerState: TransitionService["_routerState"],
+  browserWindow: Window | null | undefined = (
+    globalThis as {
+      window?: Window;
+    }
+  ).window,
+  browserDocument: Document | null | undefined = (
+    globalThis as {
+      document?: Document;
+    }
+  ).document,
+): void {
+  const scroll = routerState._scroll;
+
+  if (!scroll || scroll === "preserve") return;
+
+  if (scroll === "hash") {
+    if (scrollToHash(browserWindow, browserDocument)) return;
+  }
+
+  if (isObject(scroll)) {
+    if (scroll.selector) {
+      resolveScrollTarget(scroll.selector, browserDocument)?.scrollIntoView({
+        behavior: scroll.behavior,
+      });
+
+      return;
+    }
+
+    if (browserWindow) {
+      browserWindow.scrollTo({
+        behavior: scroll.behavior,
+        left: scroll.left ?? 0,
+        top: scroll.top ?? 0,
+      });
+    }
+
+    return;
+  }
+
+  if (browserWindow) {
+    browserWindow.scrollTo({ left: 0, top: 0 });
+  }
+}
+
+/** @internal */
+export function resolveFocusTarget(
+  focus: Exclude<TransitionService["_routerState"]["_focus"], undefined>,
+  browserDocument: Document | null | undefined = (
+    globalThis as {
+      document?: Document;
+    }
+  ).document,
+): HTMLElement | null {
+  if (!browserDocument) return null;
+
+  if (isString(focus)) {
+    return browserDocument.querySelector<HTMLElement>(focus);
+  }
+
+  if (isObject(focus) && focus.selector) {
+    return browserDocument.querySelector<HTMLElement>(focus.selector);
+  }
+
+  return browserDocument.querySelector<HTMLElement>(
+    "[autofocus], [data-router-focus], main, h1",
+  );
+}
+
+/** @internal */
+export function applyRouterFocus(
+  routerState: TransitionService["_routerState"],
+  browserDocument: Document | null | undefined = (
+    globalThis as {
+      document?: Document;
+    }
+  ).document,
+): void {
+  const focus = routerState._focus;
+
+  if (!focus) return;
+
+  const target = resolveFocusTarget(focus, browserDocument);
+
+  if (!target) return;
+
+  const preventScroll = isObject(focus) ? focus.preventScroll : true;
+
+  target.focus({ preventScroll });
+}
+
+async function routerUxHook(this: TransitionService): Promise<void> {
+  await afterViewCommitTask();
+  await afterPaintTask();
+  applyRouterScroll(this._routerState);
+  applyRouterFocus(this._routerState);
+}
+
+function registerRouterUxHook(
+  transitionService: TransitionService,
+): DeregisterFn {
+  return transitionService.onSuccess({}, routerUxHook, {
+    bind: transitionService,
+    priority: -100,
   });
 }
 

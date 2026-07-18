@@ -310,7 +310,7 @@ export class Param {
    * default value, which may be the result of an injectable function.
    * @param {undefined} [value]
    */
-  value(value?: unknown): unknown {
+  value(value?: unknown, source: "model" | "url" = "model"): unknown {
     for (let i = 0; i < this.replace.length; i++) {
       const tuple = this.replace[i];
 
@@ -322,7 +322,9 @@ export class Param {
 
     return isUndefined(value)
       ? this._getDefaultValue()
-      : this.type.$normalize(value);
+      : source === "url"
+        ? this.type.decode(value)
+        : this.type.$normalize(value);
   }
 
   /** @internal */
@@ -372,7 +374,7 @@ export class Param {
 
     if (!this.type.is(normalized)) return false;
     // The value was of the correct type, but when encoded, did not match the ParamType's regexp
-    const encoded = normalized; // this.type.encode(normalized);
+    const encoded = this.type.encode(normalized);
 
     return !(isString(encoded) && !this.type.pattern.exec(encoded));
   }

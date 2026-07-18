@@ -10,7 +10,7 @@ import {
 import { wait } from "../shared/test-utils.ts";
 
 describe("ngProp*", () => {
-  let $compile, $rootScope, compileProvider, $sce;
+  let $compile, $rootScope, compileRegistry, $sce;
 
   let logs = [];
 
@@ -18,6 +18,7 @@ describe("ngProp*", () => {
     dealoc(document.getElementById("app"));
     logs = [];
     window.angular = new Angular();
+    compileRegistry = window.angular._composition.compileRegistry;
     window.angular
       .module("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
@@ -28,9 +29,6 @@ describe("ngProp*", () => {
 
     const injector = window.angular.bootstrap(document.getElementById("app"), [
       "myModule",
-      function ($compileProvider) {
-        compileProvider = $compileProvider;
-      },
     ]);
 
     $compile = injector.get("$compile");
@@ -198,7 +196,7 @@ describe("ngProp*", () => {
   it("should use the full ng-prop-* attribute name in $attr mappings", async () => {
     let snapshot;
 
-    compileProvider.directive("attrExposer", () => ({
+    compileRegistry.directive("attrExposer", () => ({
       link($scope, $element) {
         snapshot = {
           title: getNormalizedAttr($element, "title"),
@@ -245,7 +243,7 @@ describe("ngProp*", () => {
   it("should not conflict with (ng-attr-)attribute mappings of the same name", () => {
     let snapshot;
 
-    compileProvider.directive("attrExposer", () => ({
+    compileRegistry.directive("attrExposer", () => ({
       link($scope, $element) {
         snapshot = {
           title: getNormalizedAttr($element, "title"),
@@ -274,7 +272,7 @@ describe("ngProp*", () => {
   });
 
   it("should process property bindings in pre-linking phase at priority 100", async () => {
-    compileProvider.directive("propLog", () => ({
+    compileRegistry.directive("propLog", () => ({
       compile($element, $snapshot) {
         logs.push(`compile=${$element.myName}`);
 
@@ -291,7 +289,7 @@ describe("ngProp*", () => {
       },
     }));
 
-    compileProvider.directive("propLogHighPriority", () => ({
+    compileRegistry.directive("propLogHighPriority", () => ({
       priority: 101,
       compile() {
         return {
@@ -615,12 +613,10 @@ describe("ngProp*", () => {
       beforeEach(() => {
         dealoc(document.getElementById("app"));
         window.angular
-          .bootstrap(document.getElementById("app"), [
-            "myModule",
-            ($sceProvider) => {
-              $sceProvider.enabled(false);
-            },
-          ])
+          .module("propSceDisabled", ["myModule"])
+          .config({ $sce: { enabled: false } });
+        window.angular
+          .bootstrap(document.getElementById("app"), ["propSceDisabled"])
           .invoke((_$compile_, _$rootScope_, _$sce_) => {
             $compile = _$compile_;
             $rootScope = _$rootScope_;
@@ -654,16 +650,17 @@ describe("ngProp*", () => {
 
     describe("SCE enabled", () => {
       beforeEach(() => {
-        createInjector([
-          "myModule",
-          ($sceProvider) => {
-            $sceProvider.enabled(true);
-          },
-        ]).invoke((_$compile_, _$rootScope_, _$sce_) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $sce = _$sce_;
-        });
+        dealoc(document.getElementById("app"));
+        window.angular
+          .module("propSceEnabled", ["myModule"])
+          .config({ $sce: { enabled: true } });
+        window.angular
+          .bootstrap(document.getElementById("app"), ["propSceEnabled"])
+          .invoke((_$compile_, _$rootScope_, _$sce_) => {
+            $compile = _$compile_;
+            $rootScope = _$rootScope_;
+            $sce = _$sce_;
+          });
       });
 
       it("should NOT set html for untrusted values", async () => {
@@ -729,28 +726,29 @@ describe("ngProp*", () => {
           this.val = val;
         }
 
-        createInjector([
-          "myModule",
-          ($provide) => {
-            $provide.decorator("$sce", ($delegate) => {
-              $delegate.trustAsHtml = function (html) {
-                return new MySafeHtml(html);
-              };
-              $delegate.getTrusted = function (type, mySafeHtml) {
-                return mySafeHtml && mySafeHtml.val;
-              };
-              $delegate.valueOf = function (v) {
-                return v instanceof MySafeHtml ? v.val : v;
-              };
+        window.angular
+          .module("customSceProp", ["myModule"])
+          .decorator("$sce", ($delegate) => {
+            $delegate.trustAsHtml = function (html) {
+              return new MySafeHtml(html);
+            };
+            $delegate.getTrusted = function (type, mySafeHtml) {
+              return mySafeHtml && mySafeHtml.val;
+            };
+            $delegate.valueOf = function (v) {
+              return v instanceof MySafeHtml ? v.val : v;
+            };
 
-              return $delegate;
-            });
+            return $delegate;
+          });
+
+        createInjector(["customSceProp"]).invoke(
+          (_$compile_, _$rootScope_, _$sce_) => {
+            $compile = _$compile_;
+            $rootScope = _$rootScope_;
+            $sce = _$sce_;
           },
-        ]).invoke((_$compile_, _$rootScope_, _$sce_) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $sce = _$sce_;
-        });
+        );
 
         // Ref: https://github.com/angular/angular.js/issues/14526
         // Previous code used toString for change detection, which fails for custom objects

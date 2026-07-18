@@ -29,23 +29,18 @@ describe("ng-post", () => {
     el.innerHTML = "";
     const angular = new Angular();
 
-    angular.module("default", []).config([
-      "$stateProvider",
-      "$locationProvider",
-      ($stateProvider) => {
-        $stateProvider
-          .state({
-            name: "success",
-            url: "/success",
-            template: `success`,
-          })
-          .state({
-            name: "error",
-            url: "/error",
-            template: `error`,
-          });
-      },
-    ]);
+    angular
+      .module("default", [])
+      .router({
+        name: "success",
+        url: "/success",
+        template: `success`,
+      })
+      .router({
+        name: "error",
+        url: "/error",
+        template: `error`,
+      });
     angular
       .bootstrap(el, ["default"])
       .invoke((_$compile_, _$rootScope_, _$log_) => {
@@ -91,7 +86,7 @@ describe("ng-post", () => {
     const scope = $rootScope.$new();
 
     el.innerHTML =
-      '<form>{{ name }} <input name="name" value="Bob" /><button ng-post="/mock/json" type="button">Load</button></form>';
+      '<form>{{ name }} <input name="name" value="Bob" /><button ng-post="/mock/json" on-success="name = $res.name" type="button">Load</button></form>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
     await waitUntil(() => scope.name === "Bob");
@@ -102,7 +97,7 @@ describe("ng-post", () => {
     const scope = $rootScope.$new();
 
     el.innerHTML =
-      '<form id="external">{{ name }} <input name="name" value="Bob" /></form><div ng-post="/mock/json" form="external">Load</div>';
+      '<form id="external">{{ name }} <input name="name" value="Bob" /></form><div ng-post="/mock/json" on-success="name = $res.name" form="external">Load</div>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("div[ng-post]"), "click");
     await waitUntil(() => el.querySelector("form").innerText === "Bob ");
@@ -113,7 +108,7 @@ describe("ng-post", () => {
     const scope = $rootScope.$new();
 
     el.innerHTML =
-      '<input ng-post="/mock/json" name="name" value="Bob" />{{ name }}';
+      '<input ng-post="/mock/json" on-success="name = $res.name" name="name" value="Bob" />{{ name }}';
     $compile(el)(scope);
     browserTrigger(el.querySelector("input"), "change");
     await waitUntil(() => el.textContent === "Bob");
@@ -137,7 +132,7 @@ describe("ng-post", () => {
     const scope = $rootScope.$new();
 
     el.innerHTML =
-      '<form ng-post="/mock/json"> {{ name }} <input name="name" value="Bob" /><button type="submit">Load</button></form>';
+      '<form ng-post="/mock/json" on-success="name = $res.name"> {{ name }} <input name="name" value="Bob" /><button type="submit">Load</button></form>';
     $compile(el)(scope);
     browserTrigger(el.querySelector("form"), "submit");
     await waitForText("Bob Load");
@@ -623,12 +618,12 @@ describe("ng-post", () => {
     });
   });
 
-  describe("data-success", () => {
+  describe("on-success", () => {
     it("should evaluate expression passing result", async () => {
       const scope = $rootScope.$new();
 
       el.innerHTML =
-        '<button ng-post="/mock/hello" data-success="res = $res">Load</button>';
+        '<button ng-post="/mock/hello" on-success="res = $res">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
       await waitUntil(() => scope.res === "<div>Hello</div>");
@@ -669,12 +664,12 @@ describe("ng-post", () => {
     });
   });
 
-  describe("data-error", () => {
+  describe("on-error", () => {
     it("should evaluate expression passing result", async () => {
       const scope = $rootScope.$new();
 
       el.innerHTML =
-        '<button ng-post="/mock/422" data-error="res = $res">Load</button>';
+        '<button ng-post="/mock/422" on-error="res = $res">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
       await waitUntil(() => scope.res === "Invalid data");

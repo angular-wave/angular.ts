@@ -13,7 +13,8 @@
           }
 
           async test() {
-            this.y = (await this.adder).add(
+            await this.adder.ready;
+            this.y = this.adder.exports.add(
               Math.floor(Math.random() * 100),
               Math.floor(Math.random() * 100),
             );
@@ -22,7 +23,7 @@
         window.angular
           .module("todo", [])
           .controller("DemoCtrl", Demo)
-          .wasm("adder", "/src/directive/wasm/math.wasm");
+          .wasm("adder", { source: "/src/directive/wasm/math.wasm" });
       });
     </script>
   </head>
@@ -32,8 +33,16 @@
       <button ng-click="$ctrl.test()">test</button>
     </div>
     <ng-wasm src="/src/directive/wasm/math.wasm" as="demo1"></ng-wasm>
-    <input type="number" ng-model="a" ng-keyup="x = demo1.add(a, b)" />
-    <input type="number" ng-model="b" ng-keyup="x = demo1.add(a, b)" />
+    <input
+      type="number"
+      ng-model="a"
+      ng-keyup="x = demo1.status === 'ready' ? demo1.exports.add(a, b) : x"
+    />
+    <input
+      type="number"
+      ng-model="b"
+      ng-keyup="x = demo1.status === 'ready' ? demo1.exports.add(a, b) : x"
+    />
     {{ x }}
   </body>
 </html>

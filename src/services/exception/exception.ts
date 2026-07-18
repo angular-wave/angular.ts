@@ -7,7 +7,8 @@
  *
  * By default, `$exceptionHandler` simply rethrows the exception. This ensures fail-fast
  * behavior, making errors visible immediately in development and in unit tests.
- * Applications may override this service to introduce custom error handling.
+ * Applications may configure or decorate this service to introduce custom
+ * error handling.
  *
  * ### Example: Custom `$exceptionHandler`
  *
@@ -49,28 +50,84 @@
 export type ExceptionHandler = (exception: unknown) => never;
 
 /**
- * Provider for the `$exceptionHandler` service.
- *
- * The default implementation rethrows exceptions, enabling strict fail-fast behavior.
- * Applications may replace the handler via by setting `errorHandler`property or by providing their own
- * `$exceptionHandler` factory.
+ * Declarative configuration accepted by
+ * `NgModule.config({ $exceptionHandler: ... })`.
  */
-export class ExceptionHandlerProvider {
+export interface ExceptionHandlerConfig {
+  /**
+   * Handler used by `$exceptionHandler`.
+   *
+   * Custom handlers should rethrow after reporting because AngularTS treats
+   * `$exceptionHandler` as fail-fast.
+   */
+  handler?: ExceptionHandler;
+}
+
+/**
+ * Runtime state shared by the public service and early-composed framework
+ * consumers such as the router.
+ */
+/** @internal */
+export interface ExceptionHandlerRuntimeState {
   handler: ng.ExceptionHandlerService;
+  service: ng.ExceptionHandlerService;
+  destroyed: boolean;
+}
 
-  /**
-   * Creates the provider with the default rethrowing exception handler.
-   */
-  constructor() {
-    this.handler = (exception) => {
-      throw exception;
-    };
+function rethrowException(exception: unknown): never {
+  throw exception;
+}
+
+/** @internal */
+export function createExceptionHandlerRuntimeState(): ExceptionHandlerRuntimeState {
+  const state = {
+    handler: rethrowException,
+    service: undefined as unknown as ng.ExceptionHandlerService,
+    destroyed: false,
+  };
+
+  state.service = (exception: unknown): never => {
+    if (state.destroyed) {
+      throw new Error("Exception handler runtime has already been disposed.");
+    }
+
+    return state.handler(exception);
+  };
+
+  return state;
+}
+
+/** @internal */
+export function applyExceptionHandlerConfiguration(
+  state: ExceptionHandlerRuntimeState,
+  config: ExceptionHandlerConfig,
+): void {
+  if (state.destroyed) {
+    throw new Error("Exception handler runtime has already been disposed.");
   }
 
-  /**
-   * Returns the currently configured exception handler wrapper.
-   */
-  $get(): ng.ExceptionHandlerService {
-    return (exception: unknown) => this.handler(exception);
+  if (config.handler !== undefined) {
+    state.handler = config.handler;
   }
+}
+
+/** @internal */
+export function createExceptionHandlerService(
+  state: ExceptionHandlerRuntimeState,
+): ng.ExceptionHandlerService {
+  if (state.destroyed) {
+    throw new Error("Exception handler runtime has already been disposed.");
+  }
+
+  return state.service;
+}
+
+/** @internal */
+export function destroyExceptionHandlerRuntimeState(
+  state: ExceptionHandlerRuntimeState,
+): void {
+  if (state.destroyed) return;
+
+  state.destroyed = true;
+  state.handler = rethrowException;
 }

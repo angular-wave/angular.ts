@@ -6,7 +6,8 @@ import {
   isLinkRewritingEnabled,
   normalizePath,
   Location,
-  LocationProvider,
+  applyLocationConfiguration,
+  createLocationRuntimeState,
   parseAppUrl,
   stripBaseUrl,
   stripHash,
@@ -15,7 +16,7 @@ import {
   urlsEqual,
 } from "./location.ts";
 import { Angular } from "../../angular.ts";
-import { createInjector } from "../../core/di/injector.ts";
+import { wait } from "../../shared/test-utils.ts";
 
 describe("$location", () => {
   let module;
@@ -25,55 +26,385 @@ describe("$location", () => {
     module = window.angular.module("test1", ["ng"]);
   });
 
-  // function initService(options) {
-  //   module.config(($provide, $locationProvider) => {
-  //     $locationProvider.setHtml5Mode(options.html5Mode);
-  //     $locationProvider.hashPrefix(options.hashPrefix);
-  //     $provide.value("$sniffer", { history: options.supportHistory });
-  //   });
-  // }
-
   describe("defaults", () => {
     it('should have hashPrefix of "!"', () => {
-      const provider = new LocationProvider();
+      const state = createLocationRuntimeState(window);
 
-      expect(provider.hashPrefixConf).toBe("!");
+      expect(state.config.hashPrefix).toBe("!");
     });
 
     it("should default to html5 mode with no base and rewrite links", () => {
-      const provider = new LocationProvider();
+      const state = createLocationRuntimeState(window);
 
-      expect(provider.html5ModeConf.enabled).toBeTrue();
-      expect(provider.html5ModeConf.requireBase).toBeFalse();
-      expect(provider.html5ModeConf.rewriteLinks).toBeTrue();
+      expect(state.config.html5Mode.enabled).toBeTrue();
+      expect(state.config.html5Mode.requireBase).toBeFalse();
+      expect(state.config.html5Mode.rewriteLinks).toBeTrue();
     });
 
     it("should enable default rewriteLinks", () => {
-      const provider = new LocationProvider();
+      const state = createLocationRuntimeState(window);
 
-      expect(isLinkRewritingEnabled(provider.html5ModeConf.rewriteLinks)).toBe(
+      expect(isLinkRewritingEnabled(state.config.html5Mode.rewriteLinks)).toBe(
         true,
       );
     });
 
     it("should allow disabling rewriteLinks", () => {
-      const provider = new LocationProvider();
+      const state = createLocationRuntimeState(window);
 
-      provider.html5ModeConf.rewriteLinks = false;
+      applyLocationConfiguration(state, {
+        html5Mode: { rewriteLinks: false },
+      });
 
-      expect(isLinkRewritingEnabled(provider.html5ModeConf.rewriteLinks)).toBe(
+      expect(isLinkRewritingEnabled(state.config.html5Mode.rewriteLinks)).toBe(
         false,
       );
     });
 
     it("should allow explicitly forcing rewriteLinks on", () => {
-      const provider = new LocationProvider();
+      const state = createLocationRuntimeState(window);
 
-      provider.html5ModeConf.rewriteLinks = true;
+      applyLocationConfiguration(state, {
+        html5Mode: { rewriteLinks: true },
+      });
 
-      expect(isLinkRewritingEnabled(provider.html5ModeConf.rewriteLinks)).toBe(
+      expect(isLinkRewritingEnabled(state.config.html5Mode.rewriteLinks)).toBe(
         true,
       );
+    });
+
+    it("rejects configuration after runtime disposal", () => {
+      const state = createLocationRuntimeState(window);
+
+      state.destroy();
+
+      expect(() =>
+        applyLocationConfiguration(state, { hashPrefix: "~" }),
+      ).toThrowError("Location runtime has already been disposed.");
+    });
+
+    it("owns and disposes browser URL listeners", () => {
+      const state = createLocationRuntimeState(window);
+      const addEventListener = spyOn(
+        window,
+        "addEventListener",
+      ).and.callThrough();
+      const removeEventListener = spyOn(
+        window,
+        "removeEventListener",
+      ).and.callThrough();
+
+      state._onUrlChange(() => undefined);
+      state.destroy();
+      state.destroy();
+
+      expect(addEventListener).toHaveBeenCalledWith(
+        "popstate",
+        jasmine.any(Function),
+      );
+      expect(addEventListener).toHaveBeenCalledWith(
+        "hashchange",
+        jasmine.any(Function),
+      );
+      expect(removeEventListener).toHaveBeenCalledWith(
+        "popstate",
+        jasmine.any(Function),
+      );
+      expect(removeEventListener).toHaveBeenCalledWith(
+        "hashchange",
+        jasmine.any(Function),
+      );
+      expect(() => state._onUrlChange(() => undefined)).toThrowError(
+        "Location runtime has already been disposed.",
+      );
+    });
+  });
+
+  describe("browser runtime", () => {
+    function createHarness(config = {}) {
+      const windowListeners = {};
+      const scopeListeners = {};
+      const broadcasts = [];
+      const exceptions = [];
+      const fakeLocation = { href: "http://localhost/" };
+      const fakeHistory = {
+        state: null,
+        pushState(state, _title, url) {
+          this.state = state;
+          fakeLocation.href = String(url);
+        },
+      };
+      const fakeWindow = {
+        location: fakeLocation,
+        history: fakeHistory,
+        addEventListener(name, listener) {
+          windowListeners[name] = listener;
+        },
+        removeEventListener(name, listener) {
+          if (windowListeners[name] === listener) delete windowListeners[name];
+        },
+      };
+      let onBroadcast;
+      const rootScope = {
+        $on(name, listener) {
+          scopeListeners[name] = listener;
+
+          return () => delete scopeListeners[name];
+        },
+        $broadcast(name, ...args) {
+          const event = {
+            defaultPrevented: false,
+            preventDefault() {
+              this.defaultPrevented = true;
+            },
+          };
+
+          broadcasts.push([name, ...args]);
+          onBroadcast?.(name, event, ...args);
+
+          return event;
+        },
+      };
+      const rootElement = document.createElement("div");
+      const runtime = createLocationRuntimeState(fakeWindow);
+
+      applyLocationConfiguration(runtime, config);
+
+      const location = runtime.createService(rootScope, rootElement, (error) =>
+        exceptions.push(error),
+      );
+
+      return {
+        broadcasts,
+        exceptions,
+        fakeHistory,
+        fakeLocation,
+        location,
+        rootElement,
+        runtime,
+        scopeListeners,
+        setBroadcastHandler(handler) {
+          onBroadcast = handler;
+        },
+        windowListeners,
+      };
+    }
+
+    it("requires a base element when configured", () => {
+      const runtime = createLocationRuntimeState({
+        location: { href: "http://localhost/" },
+        history: { state: null },
+      });
+
+      applyLocationConfiguration(runtime, {
+        html5Mode: { requireBase: true },
+      });
+
+      expect(() =>
+        runtime.createService(
+          { $on() {}, $broadcast() {} },
+          document.createElement("div"),
+          () => undefined,
+        ),
+      ).toThrowError(/requires a <base> tag/);
+    });
+
+    it("rolls location state back when history updates fail", async () => {
+      const harness = createHarness();
+
+      await wait();
+      harness.fakeHistory.pushState = () => {
+        throw new Error("history failed");
+      };
+
+      harness.location.setPath("/next");
+      await wait();
+      await wait();
+
+      expect(harness.location.getPath()).toBe("/");
+      expect(harness.exceptions[0]).toEqual(jasmine.any(Error));
+    });
+
+    it("rewrites only eligible application links", () => {
+      const harness = createHarness({
+        html5Mode: { rewriteLinks: "data-internal" },
+      });
+      const ignored = document.createElement("a");
+      const accepted = document.createElement("a");
+
+      ignored.href = "http://localhost/ignored";
+      accepted.href = "http://localhost/accepted";
+      accepted.setAttribute("data-internal", "");
+      harness.rootElement.append(ignored, accepted);
+
+      const eventFor = (target, overrides = {}) => ({
+        button: 0,
+        ctrlKey: false,
+        defaultPrevented: false,
+        metaKey: false,
+        preventDefault: jasmine.createSpy("preventDefault"),
+        shiftKey: false,
+        target,
+        ...overrides,
+      });
+      const ignoredEvent = eventFor(ignored);
+      const modifiedEvent = eventFor(accepted, { ctrlKey: true });
+      const acceptedEvent = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      });
+
+      harness.runtime._rootClickHandler(ignoredEvent);
+      harness.runtime._rootClickHandler(modifiedEvent);
+      accepted.dispatchEvent(acceptedEvent);
+
+      expect(ignoredEvent.preventDefault).not.toHaveBeenCalled();
+      expect(modifiedEvent.preventDefault).not.toHaveBeenCalled();
+      expect(acceptedEvent.defaultPrevented).toBeTrue();
+      expect(harness.location.getPath()).toBe("/accepted");
+    });
+
+    it("ignores non-link and unsafe link clicks", () => {
+      const harness = createHarness();
+      const span = document.createElement("span");
+      const unsafe = document.createElement("a");
+
+      unsafe.href = "javascript:void(0)";
+      harness.rootElement.append(span, unsafe);
+
+      const spanEvent = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      });
+      const unsafeEvent = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      });
+
+      span.dispatchEvent(spanEvent);
+      unsafe.dispatchEvent(unsafeEvent);
+
+      expect(spanEvent.defaultPrevented).toBeFalse();
+      expect(unsafeEvent.defaultPrevented).toBeFalse();
+    });
+
+    it("normalizes SVG animated link hrefs", () => {
+      const harness = createHarness();
+      const event = {
+        button: 0,
+        ctrlKey: false,
+        defaultPrevented: false,
+        metaKey: false,
+        preventDefault() {
+          this.defaultPrevented = true;
+        },
+        shiftKey: false,
+        target: {
+          href: { animVal: "http://localhost/vector" },
+          getAttribute(name) {
+            return name === "href" ? "/vector" : null;
+          },
+          nodeName: "a",
+        },
+      };
+
+      harness.runtime._rootClickHandler(event);
+
+      expect(event.defaultPrevented).toBeTrue();
+      expect(harness.location.getPath()).toBe("/vector");
+    });
+
+    it("cancels and redirects incoming browser navigation", async () => {
+      const harness = createHarness();
+
+      await wait();
+      harness.setBroadcastHandler((name, event) => {
+        if (name === "$locationChangeStart") event.preventDefault();
+      });
+      harness.fakeLocation.href = "http://localhost/cancelled";
+      harness.windowListeners.popstate();
+      await wait();
+
+      expect(harness.location.getPath()).toBe("/");
+      expect(harness.fakeLocation.href).toBe("http://localhost/");
+
+      harness.setBroadcastHandler((name) => {
+        if (name === "$locationChangeStart") {
+          harness.location.setPath("/redirected");
+        }
+      });
+      harness.fakeLocation.href = "http://localhost/incoming";
+      harness.windowListeners.popstate();
+      await wait();
+
+      expect(harness.location.getPath()).toBe("/redirected");
+    });
+
+    it("cancels and redirects application-driven navigation", async () => {
+      const harness = createHarness();
+
+      await wait();
+      harness.setBroadcastHandler((name, event) => {
+        if (name === "$locationChangeStart") event.preventDefault();
+      });
+      harness.location.setPath("/cancelled");
+      await wait();
+      await wait();
+
+      expect(harness.location.getPath()).toBe("/");
+
+      harness.setBroadcastHandler((name) => {
+        if (name === "$locationChangeStart") {
+          harness.location.setPath("/redirected");
+        }
+      });
+      harness.location.setPath("/incoming");
+      await wait();
+      await wait();
+
+      expect(harness.location.getPath()).toBe("/redirected");
+    });
+
+    it("stops queued navigation work after root destruction", async () => {
+      const harness = createHarness();
+
+      harness.fakeLocation.href = "http://localhost/queued";
+      harness.windowListeners.popstate();
+      harness.scopeListeners.$destroy();
+      await wait();
+
+      expect(harness.location.getPath()).toBe("/");
+      expect(harness.windowListeners.popstate).toBeUndefined();
+    });
+
+    it("sends browser navigation outside the application to the platform", async () => {
+      const harness = createHarness();
+
+      await wait();
+      harness.fakeLocation.href = "https://example.com/outside";
+      harness.windowListeners.popstate();
+
+      expect(harness.fakeLocation.href).toBe("https://example.com/outside");
+      expect(harness.location.getPath()).toBe("/");
+    });
+
+    it("stops success notification when start listeners destroy the root", async () => {
+      const harness = createHarness();
+
+      await wait();
+      harness.broadcasts.length = 0;
+      harness.setBroadcastHandler((name) => {
+        if (name === "$locationChangeStart") {
+          harness.scopeListeners.$destroy();
+        }
+      });
+      harness.location.setPath("/destroyed");
+      await wait();
+      await wait();
+
+      expect(
+        harness.broadcasts.some(([name]) => name === "$locationChangeSuccess"),
+      ).toBeFalse();
     });
   });
 
@@ -139,6 +470,19 @@ describe("$location", () => {
       return locationUrl;
     }
 
+    it("keeps mutable URL state isolated between instances", () => {
+      const first = createLocationHtml5Url();
+      const second = new Location("http://server/", "http://server/", true);
+
+      second.setUrl("/second?owner=second#two");
+
+      expect(first.getUrl()).toBe("/path/b?search=a&b=c&d#hash");
+      expect(first.getPath()).toBe("/path/b");
+      expect(first.getSearch()).toEqual({ search: "a", b: "c", d: true });
+      expect(first.getHash()).toBe("hash");
+      expect(second.getUrl()).toBe("/second?owner=second#two");
+    });
+
     it("should provide common getters", () => {
       const locationUrl = createLocationHtml5Url();
 
@@ -149,6 +493,21 @@ describe("$location", () => {
       expect(locationUrl.getSearch()).toEqual({ search: "a", b: "c", d: true });
       expect(locationUrl.getHash()).toBe("hash");
       expect(locationUrl.getUrl()).toBe("/path/b?search=a&b=c&d#hash");
+    });
+
+    it("clears a hash with null", () => {
+      const locationUrl = createLocationHtml5Url();
+
+      locationUrl.setHash(null);
+
+      expect(locationUrl.getHash()).toBe("");
+    });
+
+    it("rejects undefined path and hash values passed to explicit setters", () => {
+      const locationUrl = createLocationHtml5Url();
+
+      expect(() => locationUrl.setPath(undefined)).toThrowError(/path/);
+      expect(() => locationUrl.setHash(undefined)).toThrowError(/hash/);
     });
 
     it("path() should change path", () => {
@@ -1170,15 +1529,6 @@ describe("$location", () => {
   });
 
   describe("parseAppUrl", () => {
-    let locationObj;
-
-    beforeEach(() => {
-      locationObj = new Location(
-        "http://www.domain.com:9877/",
-        "http://www.domain.com:9877/",
-      );
-    });
-
     it("should throw error on url starting with // or \\\\", () => {
       expect(() => parseAppUrl("//invalid/path", false)).toThrowError(
         /Invalid url/,
@@ -1189,37 +1539,34 @@ describe("$location", () => {
     });
 
     it("should add leading slash if missing and parse url correctly", () => {
-      parseAppUrl("some/path?foo=bar#hashValue", false);
-      expect(locationObj.getPath()).toBe("/some/path");
-      expect(locationObj.getSearch()).toEqual(
-        jasmine.objectContaining({ foo: "bar" }),
-      );
-      expect(locationObj.getHash()).toBe("hashValue");
+      const result = parseAppUrl("some/path?foo=bar#hashValue", false);
+
+      expect(result.path).toBe("/some/path");
+      expect(result.search).toEqual(jasmine.objectContaining({ foo: "bar" }));
+      expect(result.hash).toBe("hashValue");
     });
 
     it("should keep leading slash if present", () => {
-      parseAppUrl("/already/slashed?x=1#abc", locationObj, false);
-      expect(locationObj.getPath()).toBe("/already/slashed");
-      expect(locationObj.getSearch()).toEqual(
-        jasmine.objectContaining({ x: "1" }),
-      );
-      expect(locationObj.getHash()).toBe("abc");
+      const result = parseAppUrl("/already/slashed?x=1#abc", false);
+
+      expect(result.path).toBe("/already/slashed");
+      expect(result.search).toEqual(jasmine.objectContaining({ x: "1" }));
+      expect(result.hash).toBe("abc");
     });
 
     it("should remove leading slash from path if prefixed and path starts with slash", () => {
-      parseAppUrl("foo/bar", locationObj, false);
-      expect(locationObj.getPath().charAt(0)).toBe("/");
-      expect(locationObj.getPath()).toBe("/foo/bar");
+      const result = parseAppUrl("foo/bar", false);
+
+      expect(result.path.charAt(0)).toBe("/");
+      expect(result.path).toBe("/foo/bar");
     });
 
     it("should set empty $$search when no query params", () => {
-      parseAppUrl("/pathOnly", locationObj, false);
-      expect(locationObj.getSearch()).toEqual({});
+      expect(parseAppUrl("/pathOnly", false).search).toEqual({});
     });
 
     it("should decode hash correctly", () => {
-      parseAppUrl("/path#%23encoded", locationObj, false);
-      expect(locationObj.getHash()).toBe("#encoded");
+      expect(parseAppUrl("/path#%23encoded", false).hash).toBe("#encoded");
     });
   });
 
@@ -2986,13 +3333,13 @@ describe("$location", () => {
 
   //   it("should not mess up hash urls when clicking on links in hashbang mode with a prefix", () => {
   //     let base;
-  //     module(
-  //       ($locationProvider) =>
+  //     module.config({ $location: { hashPrefix: "!!" } });
+  //     module._config(
+  //       () =>
   //         function ($browser) {
   //           window.location.hash = "!!someHash";
   //           $browser.url((base = window.location.href));
   //           base = base.split("#")[0];
-  //           $locationProvider.hashPrefix("!!");
   //         },
   //     );
   //     inject(
@@ -3116,13 +3463,13 @@ describe("$location", () => {
 
   //   it("should not throw when clicking an SVGAElement link", () => {
   //     let base;
-  //     module(
-  //       ($locationProvider) =>
+  //     module.config({ $location: { hashPrefix: "!" } });
+  //     module._config(
+  //       () =>
   //         function ($browser) {
   //           window.location.hash = "!someHash";
   //           $browser.url((base = window.location.href));
   //           base = base.split("#")[0];
-  //           $locationProvider.hashPrefix("!");
   //         },
   //     );
   //     inject(
@@ -3536,8 +3883,8 @@ describe("$location", () => {
   //   });
 
   //   it("should listen on click events on href and prevent browser default in html5 mode", () => {
-  //     module(($locationProvider, $provide) => {
-  //       $locationProvider.setHtml5Mode(true);
+  //     module.config({ $location: { html5Mode: true } });
+  //     module._config(($provide) => {
   //       return function ($rootElement, $compile, $rootScope) {
   //         $rootElement.html('<a href="http://server/somePath">link</a>');
   //         $compile($rootElement)($rootScope);
@@ -3595,18 +3942,21 @@ describe("$location", () => {
   //   }));
   // });
 
-  describe("$locationProvider", () => {
-    describe("html5ModeConf", () => {
-      it("should have default values", () => {
-        module.config(($locationProvider) => {
-          expect($locationProvider.html5ModeConf).toEqual({
-            enabled: true,
-            requireBase: false,
-            rewriteLinks: true,
-          });
-        });
-        createInjector(["test1"]);
+  describe("runtime configuration", () => {
+    it("applies typed policy before creating the service", () => {
+      module.config({
+        $location: {
+          html5Mode: false,
+          hashPrefix: "~",
+        },
       });
+
+      const location = window.angular
+        .bootstrap(document.createElement("div"), ["test1"])
+        .get("$location");
+
+      expect(location.html5).toBeFalse();
+      expect(location.hashPrefix).toBe("#~");
     });
   });
 
@@ -3699,9 +4049,7 @@ describe("$location", () => {
 
     // it("should complain if no base tag present", () => {
     //   let module = window.angular.module("test1", ["ng"]);
-    //   module.config((_$locationProvider_) => {
-    //     $locationProvider.setHtml5Mode(true);
-    //   });
+    //   module.config({ $location: { html5Mode: true } });
 
     //   createInjector(["test1"]).invoke(($browser, $injector) => {
     //     $browser.$$baseHref = undefined;
@@ -3712,11 +4060,10 @@ describe("$location", () => {
     // });
 
     // it("should not complain if baseOptOut set to true in html5Mode", () => {
-    //   module.config(($locationProvider) => {
-    //     $locationProvider.setHtml5Mode({
-    //       enabled: true,
-    //       requireBase: false,
-    //     });
+    //   module.config({
+    //     $location: {
+    //       html5Mode: { enabled: true, requireBase: false },
+    //     },
     //   });
 
     //   inject(($browser, $injector) => {
@@ -3893,14 +4240,12 @@ describe("$location", () => {
   //       $window,
   //       $log,
   //       $sniffer,
-  //       $$taskTrackerFactory,
   //     ) {
   //       browser = new Browser(
   //         $window,
   //
   //         $log,
   //         $sniffer,
-  //         $$taskTrackerFactory,
   //       );
   //       browser.baseHref = () => {
   //         return options.baseHref;

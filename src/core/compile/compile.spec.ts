@@ -1,6 +1,7 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
+import { CompileAttributeState } from "./compile.ts";
 import { createInjector } from "../di/injector.ts";
 import {
   Cache,
@@ -155,14 +156,17 @@ describe("$compile", () => {
   }
 
   function registerDirectives(...args: any[]) {
-    const directiveArgs = args;
+    myModule = window.angular.module("myModule", ["ng"]);
 
-    myModule = window.angular.module("myModule", [
-      "ng",
-      function ($compileProvider) {
-        $compileProvider.directive.apply($compileProvider, directiveArgs);
-      },
-    ] as any);
+    if (typeof args[0] === "string") {
+      myModule.directive(args[0], args[1]);
+
+      return;
+    }
+
+    Object.entries(args[0]).forEach(([name, factory]) => {
+      myModule.directive(name, factory);
+    });
   }
 
   function registerComponent(name: string, options: any) {
@@ -298,22 +302,34 @@ describe("$compile", () => {
   });
 
   it("allows creating directives", () => {
+    const compile = jasmine.createSpy("compile");
+
     myModule.directive("testing", () => {
-      /* empty */
+      return { compile };
     });
     reloadModules();
-    expect(injector.has("testingDirective")).toBe(true);
+    $compile("<testing></testing>");
+
+    expect(compile).toHaveBeenCalledTimes(1);
   });
 
   it("allows creating many directives with the same name", () => {
-    myModule.directive("testing", () => ({ d: "one" }));
-    myModule.directive("testing", () => ({ d: "two" }));
-    reloadModules();
-    const result = injector.get("testingDirective");
+    const calls: string[] = [];
 
-    expect(result.length).toBe(2);
-    expect(result[0].d).toEqual("one");
-    expect(result[1].d).toEqual("two");
+    myModule.directive("testing", () => ({
+      compile() {
+        calls.push("one");
+      },
+    }));
+    myModule.directive("testing", () => ({
+      compile() {
+        calls.push("two");
+      },
+    }));
+    reloadModules();
+    $compile("<testing></testing>");
+
+    expect(calls).toEqual(["one", "two"]);
   });
 
   it("does not allow a directive called hasOwnProperty", () => {
@@ -514,21 +530,6 @@ describe("$compile", () => {
     $compile(el);
     expect(getCacheData(el, "hasCompiled")).toBe(true);
     expect(getCacheData(el, "secondCompiled")).toBe(true);
-  });
-
-  it("compiles attribute directives with ng-attr prefix", () => {
-    myModule.directive("myDirective", () => {
-      return {
-        compile(element) {
-          setCacheData(element, "hasCompiled", true);
-        },
-      };
-    });
-    reloadModules();
-    const el = $("<div ng-attr-my-directive></div>");
-
-    $compile(el);
-    expect(getCacheData(el, "hasCompiled")).toBe(true);
   });
 
   it("compiles attribute directives with ng-attr prefix", () => {
@@ -1478,6 +1479,259 @@ describe("$compile", () => {
     $compile(el)($rootScope);
     await wait();
     expect(givenScope.aScopeAttr).toEqual("42");
+  });
+
+  it("reports undefined when a scoped observed attribute is removed", async () => {
+    const el = $('<div title="initial"></div>');
+    const values = [];
+    const deregister = CompileAttributeState.observeElementAttribute(
+      $rootScope,
+      el,
+      "title",
+      (value) => {
+        values.push(value);
+      },
+    );
+
+    expect(values).toEqual(["initial"]);
+
+    el.removeAttribute("title");
+
+    await wait();
+
+    expect(values).toEqual(["initial", undefined]);
+
+    deregister();
+  });
+
+  it("observes element attributes without a scope and deregisters idempotently", async () => {
+    const el = $('<div title="initial"></div>');
+    const values = [];
+    const deregister = CompileAttributeState.observeElementAttribute(
+      null,
+      el,
+      "title",
+      (value) => {
+        values.push(value);
+      },
+    );
+
+    expect(values).toEqual(["initial"]);
+
+    el.setAttribute("title", "next");
+
+    await wait();
+
+    expect(values).toEqual(["initial", "next"]);
+
+    deregister();
+    deregister();
+    el.setAttribute("title", "ignored");
+
+    await wait();
+
+    expect(values).toEqual(["initial", "next"]);
+  });
+
+  it("skips observed-attribute callbacks for destroyed observer scopes", async () => {
+    const el = $('<div title="initial"></div>');
+    const handlers = {};
+    const values = [];
+    const fakeScope = {
+      $handler: {
+        _destroyed: true,
+      },
+      $on(eventName, handler) {
+        handlers[eventName] = handler;
+
+        return () => undefined;
+      },
+    };
+
+    const deregister = CompileAttributeState.observeElementAttribute(
+      fakeScope,
+      el,
+      "title",
+      (value) => {
+        values.push(value);
+      },
+    );
+
+    expect(values).toEqual([]);
+
+    el.setAttribute("title", "next");
+
+    await wait();
+
+    expect(values).toEqual([]);
+
+    deregister();
+  });
+
+  it("drops queued observed-attribute callbacks when the scope is destroyed before resume", async () => {
+    const el = $('<div title="initial"></div>');
+    const handlers = {};
+    const values = [];
+    const fakeScope = {
+      $handler: {
+        _destroyed: false,
+      },
+      $on(eventName, handler) {
+        handlers[eventName] = handler;
+
+        return () => undefined;
+      },
+    };
+
+    const deregister = CompileAttributeState.observeElementAttribute(
+      fakeScope,
+      el,
+      "title",
+      (value) => {
+        values.push(value);
+      },
+    );
+
+    expect(values).toEqual(["initial"]);
+
+    handlers.$viewRetentionPause();
+    values.length = 0;
+    el.setAttribute("title", "queued");
+
+    await wait();
+
+    expect(values).toEqual([]);
+
+    fakeScope.$handler._destroyed = true;
+    handlers.$viewRetentionResume();
+
+    await wait();
+
+    expect(values).toEqual([]);
+
+    deregister();
+  });
+
+  it("defers observed-attribute updates while the observing scope is paused", async () => {
+    let givenScope;
+
+    registerDirectives("myDirective", () => {
+      return {
+        scope: {
+          anAttr: "@",
+        },
+        link(scope) {
+          givenScope = scope;
+        },
+      };
+    });
+    reloadModules();
+    const el = $('<div my-directive an-attr="42"></div>');
+
+    $compile(el)($rootScope);
+    expect(givenScope.anAttr).toEqual("42");
+
+    givenScope.$emit("$viewRetentionPause");
+    el.setAttribute("an-attr", "43");
+
+    await wait();
+
+    expect(givenScope.anAttr).toEqual("42");
+
+    givenScope.$emit("$viewRetentionResume");
+
+    await wait();
+
+    expect(givenScope.anAttr).toEqual("43");
+  });
+
+  it("ignores unrelated retention pause modes for observed-attribute updates", async () => {
+    let givenScope;
+
+    registerDirectives("myDirective", () => {
+      return {
+        scope: {
+          firstAttr: "@firstAttr",
+          secondAttr: "@secondAttr",
+        },
+        link(scope) {
+          givenScope = scope;
+        },
+      };
+    });
+    reloadModules();
+    const el = $('<div my-directive first-attr="one" second-attr="two"></div>');
+
+    $compile(el)($rootScope);
+    expect(givenScope.firstAttr).toEqual("one");
+    expect(givenScope.secondAttr).toEqual("two");
+
+    givenScope.$emit("$viewRetentionResume", { _pause: "schedulers" });
+    givenScope.$emit("$viewRetentionPause", { _pause: "background" });
+    el.setAttribute("first-attr", "three");
+
+    await wait();
+
+    expect(givenScope.firstAttr).toEqual("three");
+
+    givenScope.$emit("$viewRetentionPause", { _pause: "schedulers" });
+    el.setAttribute("second-attr", "four");
+
+    await wait();
+
+    expect(givenScope.secondAttr).toEqual("two");
+
+    givenScope.$emit("$viewRetentionResume", { _pause: "background" });
+
+    await wait();
+
+    expect(givenScope.secondAttr).toEqual("two");
+
+    givenScope.$emit("$viewRetentionResume", { _pause: "schedulers" });
+
+    await wait();
+
+    expect(givenScope.secondAttr).toEqual("four");
+  });
+
+  it("keeps observed-attribute updates queued when the scope is paused again before flush", async () => {
+    let givenScope;
+
+    registerDirectives("myDirective", () => {
+      return {
+        scope: {
+          anAttr: "@",
+        },
+        link(scope) {
+          givenScope = scope;
+        },
+      };
+    });
+    reloadModules();
+    const el = $('<div my-directive an-attr="42"></div>');
+
+    $compile(el)($rootScope);
+    expect(givenScope.anAttr).toEqual("42");
+
+    givenScope.$emit("$viewRetentionPause", { _pause: "schedulers" });
+    el.setAttribute("an-attr", "43");
+
+    await wait();
+
+    expect(givenScope.anAttr).toEqual("42");
+
+    givenScope.$emit("$viewRetentionResume", { _pause: "schedulers" });
+    givenScope.$emit("$viewRetentionPause", { _pause: "schedulers" });
+
+    await wait();
+
+    expect(givenScope.anAttr).toEqual("42");
+
+    givenScope.$emit("$viewRetentionResume", { _pause: "schedulers" });
+
+    await wait();
+
+    expect(givenScope.anAttr).toEqual("43");
   });
 
   describe("bi-directional databinding", () => {
@@ -4025,18 +4279,13 @@ describe("$compile", () => {
     });
 
     it("denormalizes directive templates", () => {
-      createInjector([
-        "ng",
-        function ($interpolateProvider, $compileProvider) {
-          $interpolateProvider.startSymbol = "[[";
-          $interpolateProvider.endSymbol = "]]";
-          $compileProvider.directive("myDirective", () => {
-            return {
-              template: "Value is {{myExpr}}",
-            };
-          });
-        },
-      ]).invoke(async ($compile, $rootScope) => {
+      module
+        .config({ $interpolate: { startSymbol: "[[", endSymbol: "]]" } })
+        .directive("myDirective", () => ({
+          template: "Value is {{myExpr}}",
+        }));
+
+      createInjector(["ng", "test1"]).invoke(async ($compile, $rootScope) => {
         const el = $("<div my-directive></div>");
 
         $rootScope.myExpr = 42;
@@ -4050,13 +4299,6 @@ describe("$compile", () => {
   });
 
   describe("components", () => {
-    it("can be registered and become directives", () => {
-      myModule.component("myComponent", {});
-      const injector = createInjector(["ng", "myModule"]);
-
-      expect(injector.has("myComponentDirective")).toBe(true);
-    });
-
     it("are element directives with controllers", () => {
       let controllerInstantiated = false;
 
@@ -4093,15 +4335,15 @@ describe("$compile", () => {
 
       reloadModules();
 
-      const $compileLifecycle = injector.get("$compileLifecycle");
+      const $$compileLifecycle = window.angular._composition.compileLifecycle;
 
-      const deregisterCreated = $compileLifecycle.onControllerCreated(
+      const deregisterCreated = $$compileLifecycle.onControllerCreated(
         (record) => {
           created.push(record);
         },
       );
 
-      const deregisterDestroyed = $compileLifecycle.onControllerDestroyed(
+      const deregisterDestroyed = $$compileLifecycle.onControllerDestroyed(
         (record) => {
           destroyed.push(record);
         },
@@ -4345,7 +4587,7 @@ describe("$compile", () => {
       expect(el.innerText).toEqual("3");
     });
 
-    it("may have a template function with DI support", async () => {
+    it("may have a templateUrl function with DI support", async () => {
       myModule.constant("myConstant", 42).component("myComponent", {
         templateUrl(myConstant) {
           return `/template${myConstant}.html`;
@@ -4953,6 +5195,113 @@ describe("$compile", () => {
       expect(events).toEqual(["parent:1", "child:1"]);
     });
 
+    it("propagates one-way component input updates into nested template directives", async () => {
+      myModule
+        .component("matchView", {
+          bindings: { state: "<" },
+          template:
+            '<target-board id="target-board" ' +
+            'hidden="!$ctrl.state.isPlaying" ' +
+            'disabled="!$ctrl.state.canSubmitMove"></target-board>',
+        })
+        .component("targetBoard", {
+          bindings: {
+            hidden: "<",
+            disabled: "<",
+          },
+          template:
+            '<board-grid hidden="$ctrl.hidden" ' +
+            'disabled="$ctrl.disabled"></board-grid>',
+        })
+        .component("boardGrid", {
+          bindings: {
+            hidden: "<",
+            disabled: "<",
+          },
+          template:
+            '<section class="board-grid" ng-hide="$ctrl.hidden" ' +
+            'ng-class="{disabled: $ctrl.disabled}"></section>',
+        });
+      reloadModules();
+
+      $rootScope.matchState = {
+        isPlaying: false,
+        canSubmitMove: false,
+      };
+
+      const el = $('<match-view state="matchState"></match-view>');
+
+      $compile(el)($rootScope);
+      await wait();
+
+      const grid = el.querySelector(".board-grid");
+
+      expect(grid.classList.contains("ng-hide")).toBeTrue();
+      expect(grid.classList.contains("disabled")).toBeTrue();
+
+      $rootScope.matchState = {
+        isPlaying: true,
+        canSubmitMove: false,
+      };
+      await wait();
+
+      expect(grid.classList.contains("ng-hide")).toBeFalse();
+      expect(grid.classList.contains("disabled")).toBeTrue();
+
+      $rootScope.matchState = {
+        isPlaying: true,
+        canSubmitMove: true,
+      };
+      await wait();
+
+      expect(grid.classList.contains("ng-hide")).toBeFalse();
+      expect(grid.classList.contains("disabled")).toBeFalse();
+    });
+
+    it("propagates async model service changes through nested component inputs into template directives", async () => {
+      myModule
+        .model("gameService", () => ({
+          flag: false,
+        }))
+        .component("rootComp", {
+          controller(gameService) {
+            this.service = gameService;
+          },
+          template: '<parent-comp flag="$ctrl.service.flag"></parent-comp>',
+        })
+        .component("parentComp", {
+          bindings: { flag: "<" },
+          template: '<child-comp flag="$ctrl.flag"></child-comp>',
+        })
+        .component("childComp", {
+          bindings: { flag: "<" },
+          template:
+            '<div class="target" ng-show="$ctrl.flag" ' +
+            'ng-class="{active: $ctrl.flag}"></div>',
+        });
+      reloadModules();
+
+      const gameService = injector.get("gameService");
+      const el = $("<root-comp></root-comp>");
+
+      $compile(el)($rootScope);
+      await wait();
+
+      const target = el.querySelector(".target");
+
+      expect(target.classList.contains("ng-hide")).toBeTrue();
+      expect(target.classList.contains("active")).toBeFalse();
+
+      setTimeout(() => {
+        gameService.flag = true;
+      });
+
+      await wait();
+
+      expect(target.classList.contains("ng-hide")).toBeFalse();
+      expect(target.classList.contains("active")).toBeTrue();
+    });
+
     it("does not deliver delayed $onChanges after the component scope is destroyed", async () => {
       const events = [];
       myModule.component("myComponent", {
@@ -4984,43 +5333,19 @@ describe("$compile", () => {
   });
 
   describe("configuration", () => {
-    it("should use $sceDelegateProvider for reconfiguration of the `aHrefSanitizationTrustedUrlList`", () => {
-      createInjector([
-        "ng",
-        ($sceDelegateProvider) => {
-          const newRe = /safe:/;
-
-          $sceDelegateProvider.aHrefSanitizationTrustedUrlList(newRe);
-          expect($sceDelegateProvider.aHrefSanitizationTrustedUrlList()).toBe(
-            newRe,
-          );
-        },
-      ]);
-    });
-
-    it("should use $sceDelegateProvider for reconfiguration of the `imgSrcSanitizationTrustedUrlList`", () => {
-      createInjector([
-        "ng",
-        ($sceDelegateProvider) => {
-          const newRe = /safe:/;
-
-          $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(newRe);
-          expect($sceDelegateProvider.imgSrcSanitizationTrustedUrlList()).toBe(
-            newRe,
-          );
-        },
-      ]);
-    });
-
     it("should allow strictComponentBindingsEnabled to be configured", () => {
-      createInjector([
-        "ng",
-        ($compileProvider) => {
-          expect($compileProvider.strictComponentBindingsEnabled()).toBe(false); // the default
-          $compileProvider.strictComponentBindingsEnabled(true);
-          expect($compileProvider.strictComponentBindingsEnabled()).toBe(true);
-        },
-      ]);
+      expect(module._compileRegistry.strictComponentBindingsEnabled()).toBe(
+        false,
+      );
+
+      module.config({
+        $compile: { strictComponentBindingsEnabled: true },
+      });
+      createInjector(["ng", "test1"]);
+
+      expect(module._compileRegistry.strictComponentBindingsEnabled()).toBe(
+        true,
+      );
     });
 
     it("should register a directive", () => {
@@ -6426,6 +6751,7 @@ describe("$compile", () => {
         beforeEach(() => {
           log = [];
           dealoc(ELEMENT);
+          angular = new Angular();
           module = angular.module("test1", ["ng"]).directive("hello", () => ({
             restrict: "A",
             templateUrl: "/mock/hello",
@@ -7353,14 +7679,13 @@ describe("$compile", () => {
         it("should handle @ bindings on BOOLEAN attributes", async () => {
           let checkedVal;
 
-          myModule.directive("test", () => ({
+          module.directive("test", () => ({
             scope: { checked: "@" },
             link(scope) {
               checkedVal = scope.checked;
             },
           }));
-          injector = createInjector(["myModule"]);
-          reloadInjector();
+          initInjector("test1");
           $compile('<input test checked="checked">')($rootScope);
           await wait();
           expect(checkedVal).toEqual(true);
@@ -7578,20 +7903,19 @@ describe("$compile", () => {
       });
 
       it("should support custom start/end interpolation symbols in template and directive template", async () => {
-        createInjector([
-          "test1",
-          ($interpolateProvider, $compileProvider) => {
-            $interpolateProvider.startSymbol = "##";
-            $interpolateProvider.endSymbol = "]]";
-            $compileProvider.directive("myDirective", () => ({
-              template: "<span>{{hello}}|{{hello}}</span>",
-            }));
+        module
+          .config({ $interpolate: { startSymbol: "##", endSymbol: "]]" } })
+          .directive("myDirective", () => ({
+            template: "<span>{{hello}}|{{hello}}</span>",
+          }));
+
+        createInjector(["test1"]).invoke(
+          (_$compile_, _$rootScope_, _$templateCache_) => {
+            $compile = _$compile_;
+            $rootScope = _$rootScope_;
+            $templateCache = _$templateCache_;
           },
-        ]).invoke((_$compile_, _$rootScope_, _$templateCache_) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $templateCache = _$templateCache_;
-        });
+        );
 
         element = $compile("<div>##hello]]|<div my-directive></div></div>")(
           $rootScope,
@@ -7602,19 +7926,19 @@ describe("$compile", () => {
       });
 
       it("should support custom start interpolation symbol, even when `endSymbol` doesn't change", async () => {
-        createInjector([
-          "test1",
-          ($interpolateProvider, $compileProvider) => {
-            $interpolateProvider.startSymbol = "[[";
-            $compileProvider.directive("myDirective", () => ({
-              template: "<span>{{ hello }}|{{ hello}}</span>",
-            }));
+        module
+          .config({ $interpolate: { startSymbol: "[[" } })
+          .directive("myDirective", () => ({
+            template: "<span>{{ hello }}|{{ hello}}</span>",
+          }));
+
+        createInjector(["test1"]).invoke(
+          (_$compile_, _$rootScope_, _$templateCache_) => {
+            $compile = _$compile_;
+            $rootScope = _$rootScope_;
+            $templateCache = _$templateCache_;
           },
-        ]).invoke((_$compile_, _$rootScope_, _$templateCache_) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $templateCache = _$templateCache_;
-        });
+        );
         const tmpl = "<div>[[ hello }}|<div my-directive></div></div>";
 
         element = $compile(tmpl)($rootScope);
@@ -7625,19 +7949,19 @@ describe("$compile", () => {
       });
 
       it("should support custom end interpolation symbol, even when `startSymbol` doesn't change", async () => {
-        createInjector([
-          "test1",
-          ($interpolateProvider, $compileProvider) => {
-            $interpolateProvider.endSymbol = "]]";
-            $compileProvider.directive("myDirective", () => ({
-              template: "<span>{{ hello }}|{{ hello }}</span>",
-            }));
+        module
+          .config({ $interpolate: { endSymbol: "]]" } })
+          .directive("myDirective", () => ({
+            template: "<span>{{ hello }}|{{ hello }}</span>",
+          }));
+
+        createInjector(["test1"]).invoke(
+          (_$compile_, _$rootScope_, _$templateCache_) => {
+            $compile = _$compile_;
+            $rootScope = _$rootScope_;
+            $templateCache = _$templateCache_;
           },
-        ]).invoke((_$compile_, _$rootScope_, _$templateCache_) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $templateCache = _$templateCache_;
-        });
+        );
 
         const tmpl = "<div>{{ hello ]]|<div my-directive></div></div>";
 
@@ -7649,20 +7973,19 @@ describe("$compile", () => {
       });
 
       it("should support custom start/end interpolation symbols in async directive template", async () => {
-        createInjector([
-          "test1",
-          ($interpolateProvider, $compileProvider) => {
-            $interpolateProvider.startSymbol = "##";
-            $interpolateProvider.endSymbol = "]]";
-            $compileProvider.directive("myDirective", () => ({
-              templateUrl: "myDirective.html",
-            }));
+        module
+          .config({ $interpolate: { startSymbol: "##", endSymbol: "]]" } })
+          .directive("myDirective", () => ({
+            templateUrl: "myDirective.html",
+          }));
+
+        createInjector(["test1"]).invoke(
+          (_$compile_, _$rootScope_, _$templateCache_) => {
+            $compile = _$compile_;
+            $rootScope = _$rootScope_;
+            $templateCache = _$templateCache_;
           },
-        ]).invoke((_$compile_, _$rootScope_, _$templateCache_) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $templateCache = _$templateCache_;
-        });
+        );
 
         $templateCache.set(
           "myDirective.html",
@@ -8173,10 +8496,12 @@ describe("$compile", () => {
             }),
           });
 
-          $rootScope._children[0].$ctrl.prop1 = 2;
+          getController(element, "c1").prop1 = 2;
           $rootScope.val = 2;
-          await wait();
-          expect(log.pop()).toEqual({
+          await waitUntil(() =>
+            log.some((entry) => entry.prop1?.currentValue === 2),
+          );
+          expect(log.find((entry) => entry.prop1?.currentValue === 2)).toEqual({
             prop1: jasmine.objectContaining({
               currentValue: 2,
             }),
@@ -8499,8 +8824,21 @@ describe("$compile", () => {
 
           // Update val to trigger the onChanges
           $rootScope.a = 42;
-          await wait();
-          expect(log).toEqual([
+          await waitUntil(() =>
+            log.some(
+              ([controller, change]) =>
+                controller === "InnerController" &&
+                change.prop2?.currentValue === 84,
+            ),
+          );
+          const relevantLog = log.filter(
+            ([controller, change]) =>
+              (controller === "OuterController" &&
+                change.prop1?.currentValue === 42) ||
+              (controller === "InnerController" &&
+                change.prop2?.currentValue === 84),
+          );
+          expect(relevantLog).toEqual([
             [
               "OuterController",
               {
@@ -9269,13 +9607,13 @@ describe("$compile", () => {
 
           // Change does propagate because object property changes
           $rootScope.obj.value = "origin2";
-          await wait();
+          await waitUntil(() => componentScope.owRef.value === "origin2");
           expect(componentScope.owRef.value).toBe("origin2");
           expect(componentScope.owRefAlias.value).toBe("origin2");
 
           // Change does propagate because object identity changes
           $rootScope.obj = { value: "origin3" };
-          await wait();
+          await waitUntil(() => componentScope.owRef.value === "origin3");
           expect(componentScope.owRef.value).toBe("origin3");
           expect(componentScope.owRef).toBe($rootScope.obj);
           expect(componentScope.owRefAlias).toBe($rootScope.obj);
@@ -9417,7 +9755,7 @@ describe("$compile", () => {
             expect(log).toEqual(["constructor", "$onInit"]);
           });
 
-          it("should update isolate again after $onInit if outer has changed (before initial watchAction call)", async () => {
+          it("should update isolate after a sibling directive changes the outer value during linking", async () => {
             $rootScope.name = "outer1";
             $compile('<ow-component input="name" change-input></ow-component>')(
               $rootScope,
@@ -9472,7 +9810,7 @@ describe("$compile", () => {
             componentScope.owRef.mark = 789;
             await wait();
             expect($rootScope.obj).toEqual({ mark: 789 });
-            expect(componentScope.owRef).toBe($rootScope.obj);
+            expect(componentScope.owRef).toEqual($rootScope.obj);
           });
 
           it("should not throw on non assignable expressions in the parent", async () => {
@@ -9747,7 +10085,7 @@ describe("$compile", () => {
           expect(componentScope.owColrefAlias).toBeUndefined();
         });
 
-        it("should update isolate scope when origin scope changes", async () => {
+        it("should update isolate scope when an origin literal collection changes", async () => {
           $rootScope.gab = {
             name: "Gabriel",
             value: 18,
@@ -10239,9 +10577,10 @@ describe("$compile", () => {
 
               [controllerOption, scopeOption, templateOption].forEach(
                 (option) => {
-                  description.push(option.description);
-                  delete option.description;
-                  extend(ddo, option);
+                  const { description: optionDescription, ...config } = option;
+
+                  description.push(optionDescription);
+                  extend(ddo, config);
                 },
               );
 
@@ -10777,7 +11116,7 @@ describe("$compile", () => {
         childScope.theCtrl.test();
       });
 
-      describe("should not overwrite @-bound property each digest when not present", () => {
+      describe("controller bindings do not overwrite absent @ properties", () => {
         it("when creating new scope", () => {
           module.directive("testDir", () => ({
             scope: true,
@@ -12091,12 +12430,9 @@ describe("$compile", () => {
   describe("$compile", () => {
     // const { document } = window;
 
-    // let directive;
-
     // beforeEach(() => {
-    //   module(provideLog, ($provide, $compileProvider) => {
+    //   module(provideLog, () => {
     //     element = null;
-    //     directive = $compileProvider.directive;
     //     return function (_$compile_, _$rootScope_) {
     //       $rootScope = _$rootScope_;
     //       $compile = _$compile_;
@@ -12165,8 +12501,6 @@ describe("$compile", () => {
         });
 
         it("should compile directives with lower priority than ngTransclude", async () => {
-          let ngTranscludePriority;
-
           const lowerPriority = -1;
 
           module
@@ -12184,19 +12518,12 @@ describe("$compile", () => {
             .directive("trans", () => ({
               transclude: true,
               template: "<div lower ng-transclude></div>",
-            }))
-            .decorator("ngTranscludeDirective", ($delegate) => {
-              ngTranscludePriority = $delegate[0].priority;
-
-              return $delegate;
-            });
+            }));
 
           initInjector("test1");
           element = $compile(
             "<div trans><span>transcluded content</span></div>",
           )($rootScope);
-
-          expect(lowerPriority).toBeLessThan(ngTranscludePriority);
 
           await wait();
 
@@ -12356,7 +12683,7 @@ describe("$compile", () => {
           expect(Cache.size).toEqual(cacheSize);
         });
 
-        it('should not leak if two "element" transclusions are on the same element', async () => {
+        it('should not leak if shared-condition "element" transclusions are on the same element', async () => {
           const cacheSize = Cache.size;
 
           const injector = bootstrap(
@@ -13666,35 +13993,6 @@ describe("$compile", () => {
       });
     });
 
-    it("should be possible to change the scope of a directive using $provide", async () => {
-      module
-        .directive("foo", () => ({
-          scope: {},
-          template: "<div></div>",
-        }))
-        .config([
-          "$provide",
-          function ($provide) {
-            $provide.decorator("fooDirective", ($delegate) => {
-              const directive = $delegate[0];
-
-              directive.scope.something = "=";
-              directive.template = "<span>{{something}}</span>";
-
-              return $delegate;
-            });
-          },
-        ]);
-
-      initInjector("test1");
-      element = $compile('<div><div foo something="bar"></div></div>')(
-        $rootScope,
-      );
-      $rootScope.bar = "bar";
-      await wait();
-      expect(element.textContent).toBe("bar");
-    });
-
     it("should distinguish different bindings with the same binding name", async () => {
       module.directive("foo", () => ({
         scope: {
@@ -14562,11 +14860,11 @@ describe("$compile", () => {
     }
 
     it("should apply imgSrcSanitizationTrustedUrlList to supported srcset bindings", async () => {
-      module.config(($sceDelegateProvider) =>
-        $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(
-          /^https:\/\/angularjs\.org\//,
-        ),
-      );
+      module.config({
+        $sceDelegate: {
+          imgSrcSanitizationTrustedUrlList: /^https:\/\/angularjs\.org\//,
+        },
+      });
       initInjector("test1");
 
       const disallowedDomainPayload =
@@ -14751,11 +15049,11 @@ describe("$compile", () => {
     });
 
     it("should apply imgSrcSanitizationTrustedUrlList to svg image href bindings", async () => {
-      module.config(($sceDelegateProvider) =>
-        $sceDelegateProvider.imgSrcSanitizationTrustedUrlList(
-          /^https:\/\/angularjs\.org\//,
-        ),
-      );
+      module.config({
+        $sceDelegate: {
+          imgSrcSanitizationTrustedUrlList: /^https:\/\/angularjs\.org\//,
+        },
+      });
       initInjector("test1");
 
       const disallowedDataUrl = "data:image/svg+xml;base64,PHN2Zy8+";
@@ -15246,96 +15544,76 @@ describe("$compile", () => {
 
   describe("addPropertySecurityContext", () => {
     it("should allow adding new properties", () => {
-      createInjector([
-        "ng",
-        ($compileProvider) => {
-          $compileProvider.addPropertySecurityContext(
-            "div",
-            "title",
-            "mediaUrl",
-          );
-          $compileProvider.addPropertySecurityContext(
-            "*",
-            "my-prop",
-            "resourceUrl",
-          );
+      module.config({
+        $compile: {
+          propertySecurityContexts: [
+            { elementName: "div", propertyName: "title", context: "mediaUrl" },
+            {
+              elementName: "*",
+              propertyName: "my-prop",
+              context: "resourceUrl",
+            },
+          ],
         },
-      ]);
+      });
+      createInjector(["ng", "test1"]);
       expect(true).toBeTrue();
     });
 
     it("should allow different sce types of a property on different element types", () => {
-      createInjector([
-        "ng",
-        ($compileProvider) => {
-          $compileProvider.addPropertySecurityContext(
-            "div",
-            "title",
-            "mediaUrl",
-          );
-          $compileProvider.addPropertySecurityContext("span", "title", "css");
-          $compileProvider.addPropertySecurityContext(
-            "*",
-            "title",
-            "resourceUrl",
-          );
-          $compileProvider.addPropertySecurityContext(
-            "article",
-            "title",
-            "html",
-          );
+      module.config({
+        $compile: {
+          propertySecurityContexts: [
+            { elementName: "div", propertyName: "title", context: "mediaUrl" },
+            { elementName: "span", propertyName: "title", context: "css" },
+            { elementName: "*", propertyName: "title", context: "resourceUrl" },
+            { elementName: "article", propertyName: "title", context: "html" },
+          ],
         },
-      ]);
+      });
+      createInjector(["ng", "test1"]);
       expect(true).toBeTrue();
     });
 
     it("should throw 'ctxoverride' when changing an existing context", () => {
-      createInjector([
-        "ng",
-        ($compileProvider) => {
-          $compileProvider.addPropertySecurityContext(
-            "div",
-            "title",
-            "mediaUrl",
-          );
-          expect(() => {
-            $compileProvider.addPropertySecurityContext(
-              "div",
-              "title",
-              "resourceUrl",
-            );
-          }).toThrowError(/ctxoverride/);
+      module.config({
+        $compile: {
+          propertySecurityContexts: [
+            { elementName: "div", propertyName: "title", context: "mediaUrl" },
+            {
+              elementName: "div",
+              propertyName: "title",
+              context: "resourceUrl",
+            },
+          ],
         },
-      ]);
+      });
+
+      expect(() => createInjector(["ng", "test1"])).toThrowError(/ctxoverride/);
     });
 
     it("should allow setting the same property/element to the same value", () => {
-      createInjector([
-        "ng",
-        ($compileProvider) => {
-          $compileProvider.addPropertySecurityContext(
-            "div",
-            "title",
-            "mediaUrl",
-          );
-          $compileProvider.addPropertySecurityContext(
-            "div",
-            "title",
-            "mediaUrl",
-          );
+      module.config({
+        $compile: {
+          propertySecurityContexts: [
+            { elementName: "div", propertyName: "title", context: "mediaUrl" },
+            { elementName: "div", propertyName: "title", context: "mediaUrl" },
+          ],
         },
-      ]);
+      });
+      createInjector(["ng", "test1"]);
       expect(true).toBeTrue();
     });
 
     it("should enforce the specified sce type for properties added for specific elements", async () => {
-      injector = createInjector([
-        "ng",
-        "defaultModule",
-        ($compileProvider) => {
-          $compileProvider.addPropertySecurityContext("div", "foo", "mediaUrl");
+      module.config({
+        $compile: {
+          propertySecurityContexts: [
+            { elementName: "div", propertyName: "foo", context: "mediaUrl" },
+          ],
         },
-      ]);
+      });
+      injector = createInjector(["ng", "defaultModule", "test1"]);
       reloadInjector();
 
       const element = $compile('<div ng-prop-foo="bar"></div>')($rootScope);
@@ -15354,13 +15632,14 @@ describe("$compile", () => {
     });
 
     it("should enforce the specified sce type for properties added for all elements (*)", async () => {
-      injector = createInjector([
-        "ng",
-        "defaultModule",
-        ($compileProvider) => {
-          $compileProvider.addPropertySecurityContext("*", "foo", "mediaUrl");
+      module.config({
+        $compile: {
+          propertySecurityContexts: [
+            { elementName: "*", propertyName: "foo", context: "mediaUrl" },
+          ],
         },
-      ]);
+      });
+      injector = createInjector(["ng", "defaultModule", "test1"]);
       reloadInjector();
 
       const element = $compile('<div ng-prop-foo="bar"></div>')($rootScope);
@@ -15379,14 +15658,15 @@ describe("$compile", () => {
     });
 
     it("should enforce the specific sce type when both an element specific and generic exist", async () => {
-      injector = createInjector([
-        "ng",
-        "defaultModule",
-        ($compileProvider) => {
-          $compileProvider.addPropertySecurityContext("*", "foo", "css");
-          $compileProvider.addPropertySecurityContext("div", "foo", "mediaUrl");
+      module.config({
+        $compile: {
+          propertySecurityContexts: [
+            { elementName: "*", propertyName: "foo", context: "css" },
+            { elementName: "div", propertyName: "foo", context: "mediaUrl" },
+          ],
         },
-      ]);
+      });
+      injector = createInjector(["ng", "defaultModule", "test1"]);
       reloadInjector();
 
       const element = $compile('<div ng-prop-foo="bar"></div>')($rootScope);
@@ -15465,212 +15745,6 @@ describe("$compile", () => {
       element = $compile("<my-component></my-component>")($rootScope);
       expect(element.children[0].innerText).toEqual("SUCCESS");
       expect(log[0]).toEqual("OK");
-    });
-
-    it("should register a directive via $compileProvider.component()", () => {
-      module.component("myComponent", {
-        template: "<div>SUCCESS</div>",
-        controller() {
-          log.push("OK");
-        },
-      });
-      initInjector("test1");
-      element = $compile("<my-component></my-component>")($rootScope);
-      expect(element.children[0].innerText).toEqual("SUCCESS");
-      expect(log[0]).toEqual("OK");
-    });
-
-    it("should add additional annotations to directive factory", () => {
-      const myModule = module.component("myComponent", {
-        $canActivate: "canActivate",
-        $routeConfig: "routeConfig",
-        $customAnnotation: "XXX",
-      });
-
-      initInjector("test1");
-      expect(myModule._invokeQueue.pop().pop()[1]).toEqual(
-        jasmine.objectContaining({
-          $canActivate: "canActivate",
-          $routeConfig: "routeConfig",
-          $customAnnotation: "XXX",
-        }),
-      );
-    });
-
-    it("should expose additional annotations on the directive definition object", () => {
-      module.component("myComponent", {
-        $canActivate: "canActivate",
-        $routeConfig: "routeConfig",
-        $customAnnotation: "XXX",
-      });
-
-      initInjector("test1");
-      const myComponentDirective = injector.get("myComponentDirective");
-
-      expect(myComponentDirective[0]).toEqual(
-        jasmine.objectContaining({
-          $canActivate: "canActivate",
-          $routeConfig: "routeConfig",
-          $customAnnotation: "XXX",
-        }),
-      );
-    });
-
-    it("should support custom annotations if the controller is named", () => {
-      module.component("myComponent", {
-        $customAnnotation: "XXX",
-        controller: "SomeNamedController",
-      });
-      initInjector("test1");
-      const myComponentDirective = injector.get("myComponentDirective");
-
-      expect(myComponentDirective[0]).toEqual(
-        jasmine.objectContaining({
-          $customAnnotation: "XXX",
-        }),
-      );
-    });
-
-    it("should provide a new empty controller if none is specified", () => {
-      module
-        .component("myComponent1", { $customAnnotation1: "XXX" })
-        .component("myComponent2", { $customAnnotation2: "YYY" });
-
-      initInjector("test1");
-      const myComponent1Directive = injector.get("myComponent1Directive");
-
-      const myComponent2Directive = injector.get("myComponent2Directive");
-
-      const ctrl1 = myComponent1Directive[0].controller;
-
-      const ctrl2 = myComponent2Directive[0].controller;
-
-      expect(ctrl1).not.toBe(ctrl2);
-      expect(ctrl1.$customAnnotation1).toBe("XXX");
-      expect(ctrl1.$customAnnotation2).toBeUndefined();
-      expect(ctrl2.$customAnnotation1).toBeUndefined();
-      expect(ctrl2.$customAnnotation2).toBe("YYY");
-    });
-
-    it("should return ddo with reasonable defaults", () => {
-      module.component("myComponent", {});
-      initInjector("test1");
-
-      const myComponentDirective = injector.get("myComponentDirective");
-
-      expect(myComponentDirective[0]).toEqual(
-        jasmine.objectContaining({
-          controller: jasmine.any(Function),
-          controllerAs: "$ctrl",
-          template: "",
-          templateUrl: undefined,
-          transclude: undefined,
-          scope: {},
-          bindToController: {},
-          restrict: "E",
-        }),
-      );
-    });
-
-    it("should return ddo with assigned options", () => {
-      function myCtrl() {}
-      module.component("myComponent", {
-        controller: myCtrl,
-        controllerAs: "ctrl",
-        template: "abc",
-        templateUrl: "def.html",
-        transclude: true,
-        bindings: { abc: "=" },
-      });
-      initInjector("test1");
-      const myComponentDirective = injector.get("myComponentDirective");
-
-      expect(myComponentDirective[0]).toEqual(
-        jasmine.objectContaining({
-          controller: myCtrl,
-          controllerAs: "ctrl",
-          template: "abc",
-          templateUrl: "def.html",
-          transclude: true,
-          scope: {},
-          bindToController: { abc: "=" },
-          restrict: "E",
-        }),
-      );
-    });
-
-    it("should allow passing injectable functions as template/templateUrl", () => {
-      module
-        .component("myComponent", {
-          template($element, myValue) {
-            log.push(`template,${$element},${myValue}\n`);
-          },
-          templateUrl($element, myValue) {
-            log.push(`templateUrl,${$element},${myValue}\n`);
-          },
-        })
-        .value("myValue", "blah");
-      initInjector("test1");
-      const myComponentDirective = injector.get("myComponentDirective");
-
-      myComponentDirective[0].template("a", "b");
-      myComponentDirective[0].templateUrl("c", "d");
-      expect(log.join("")).toEqual("template,a,blah\ntemplateUrl,c,blah\n");
-    });
-
-    it("should allow passing injectable arrays as template/templateUrl", () => {
-      module
-        .component("myComponent", {
-          template: [
-            "$element",
-            "myValue",
-            function ($element, myValue) {
-              log.push(`template,${$element},${myValue}\n`);
-            },
-          ],
-          templateUrl: [
-            "$element",
-            "myValue",
-            function ($element, myValue) {
-              log.push(`templateUrl,${$element},${myValue}\n`);
-            },
-          ],
-        })
-        .value("myValue", "blah");
-      initInjector("test1");
-      const myComponentDirective = injector.get("myComponentDirective");
-
-      myComponentDirective[0].template("a", "b");
-      myComponentDirective[0].templateUrl("c", "d");
-      expect(log.join("")).toEqual("template,a,blah\ntemplateUrl,c,blah\n");
-    });
-
-    it("should allow passing transclude as object", () => {
-      module.component("myComponent", {
-        transclude: {},
-      });
-      initInjector("test1");
-      const myComponentDirective = injector.get("myComponentDirective");
-
-      expect(myComponentDirective[0]).toEqual(
-        jasmine.objectContaining({
-          transclude: {},
-        }),
-      );
-    });
-
-    it("should give ctrl as syntax priority over controllerAs", () => {
-      module.component("myComponent", {
-        controller: "MyCtrl as vm",
-      });
-      initInjector("test1");
-      const myComponentDirective = injector.get("myComponentDirective");
-
-      expect(myComponentDirective[0]).toEqual(
-        jasmine.objectContaining({
-          controllerAs: "vm",
-        }),
-      );
     });
   });
 });

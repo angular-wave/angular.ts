@@ -54,7 +54,7 @@ let canExitId = 0;
  * @internal
  */
 export function registerViewControllerCallbacks(
-  $transitions: ng.TransitionService,
+  $transitions: ng.TransitionsService,
   controllerInstance: ViewControllerInstance,
   $scope: ng.Scope,
   cfg: Pick<ViewConfig, "_viewDecl" | "_path"> &

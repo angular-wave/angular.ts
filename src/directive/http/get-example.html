@@ -14,8 +14,8 @@
         <h1>Declarative GET</h1>
         <p>
           Use <code>ng-get</code> to fetch HTML or JSON directly from markup.
-          Responses can target a DOM node, merge into scope, or animate through
-          the existing swap pipeline.
+          Responses can target a DOM node, update scope explicitly, or animate
+          through the existing swap pipeline.
         </p>
       </header>
 
@@ -27,7 +27,7 @@
           <button
             class="secondary"
             ng-get="/mock/jsonobject"
-            target="person"
+            on-success="person = $res"
             trigger="load"
           >
             Load JSON into scope
@@ -58,7 +58,7 @@
             <button
               ng-get="/mock/div-animate"
               animate="true"
-              target="#output"
+              data-target="#output"
               trigger="click"
             >
               Animate into output

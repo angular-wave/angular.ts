@@ -28,14 +28,24 @@ import {
   hasNormalizedAttr,
   setCacheData,
 } from "./shared/dom.ts";
-import type { AngularBootstrapConfig, InvocationDetail } from "./interface.ts";
+import type {
+  AngularBootstrapConfig,
+  InvocationDetail,
+  PublicInjectionTokens,
+} from "./interface.ts";
 import { createInjector, type ModuleLike } from "./core/di/injector.ts";
 import {
   NgModule,
   type ModuleConfigFn,
+  type RouterModule,
 } from "./core/di/ng-module/ng-module.ts";
+import type { RouteMap } from "./router/state/interface.ts";
 import { validateIsString } from "./shared/validate.ts";
-import type { ParseService } from "./core/parse/parse.ts";
+import { AppContext } from "./core/app-context/app-context.ts";
+import {
+  createCoreRuntime,
+  type RuntimeComposition,
+} from "./core/composition/runtime-composition.ts";
 
 const ngError = createErrorFactory("ng");
 
@@ -45,15 +55,20 @@ const rootScopeCleanupByElement = new WeakMap<Element | Document, () => void>();
 
 type ModuleRegistry = Record<string, NgModule | null>;
 
-const moduleRegistry: ModuleRegistry = {};
-
 /** @internal */
 interface AppElement {
   _element: HTMLElement;
   _module: string | null;
 }
 
-type AngularWindow = Window & { angular?: AngularRuntime };
+type AngularWindow = { angular?: AngularRuntime };
+type AngularRuntimeHost = {
+  angular?: {
+    _appContext?: AppContext;
+    _composition?: RuntimeComposition;
+    _moduleRegistry?: ModuleRegistry;
+  };
+};
 
 export interface AngularRuntimeOptions {
   /**
@@ -70,9 +85,10 @@ export interface AngularRuntimeOptions {
 
 export type AngularRuntimeConstructorInput = boolean | AngularRuntimeOptions;
 
-export type BuiltinNgModuleRegistrar = (angular: ng.Angular) => ng.NgModule;
+/** A framework module that can be installed into an AngularTS runtime. */
+export type RuntimeModule = (angular: AngularRuntime) => NgModule;
 
-let builtinNgModuleRegistrar: BuiltinNgModuleRegistrar | undefined;
+let builtinNgModuleRegistrar: RuntimeModule | undefined;
 
 let runtimeInjectionTokens: Readonly<Record<string, string>> | undefined;
 
@@ -82,9 +98,7 @@ let runtimeInjectionTokens: Readonly<Record<string, string>> | undefined;
  * The browser entrypoint installs the full registrar. Custom runtime entrypoints
  * intentionally skip this so they can assemble smaller builds.
  */
-export function configureBuiltinRuntime(
-  registrar: BuiltinNgModuleRegistrar,
-): void {
+export function configureBuiltinRuntime(registrar: RuntimeModule): void {
   builtinNgModuleRegistrar = registrar;
 }
 
@@ -107,9 +121,16 @@ export class AngularRuntime extends EventTarget {
   public _subapp: boolean;
   /** @internal */
   public _bootsrappedModules: ModuleLike[] = [];
+  /** @internal */
+  public _appContext: AppContext;
+  /** @internal */
+  public _composition: RuntimeComposition;
+  /** @internal */
+  public _moduleRegistry: ModuleRegistry;
+  private _injectorCreated = false;
 
   /** Application-wide event bus, available after bootstrap providers are created. */
-  public $eventBus!: ng.PubSubService;
+  public $eventBus!: ng.EventBusService;
   /** Application injector, available after `bootstrap()` or `injector()` completes. */
   public $injector!: ng.InjectorService;
   /** Root scope for the bootstrapped application. */
@@ -131,18 +152,30 @@ export class AngularRuntime extends EventTarget {
   /** Global framework error-handling configuration. */
   public errorHandlingConfig = errorHandlingConfig;
   /** Public injection token names keyed by token value. */
-  public $t: ng.InjectionTokens = {} as ng.InjectionTokens;
+  public $t: typeof PublicInjectionTokens = {} as typeof PublicInjectionTokens;
 
   /**
    * Creates the Angular runtime singleton or a sub-application instance.
    *
-   * @param subapp when `true`, skips assigning the instance to `window.angular`
+   * @param options runtime construction options. Passing `true` creates a
+   * sub-application and skips assigning the instance to `window.angular`.
    */
   constructor(options: AngularRuntimeConstructorInput = false) {
     super();
     const runtimeOptions = normalizeRuntimeOptions(options);
 
     this._subapp = runtimeOptions.subapp;
+    const hostRuntime = runtimeOptions.subapp
+      ? (window as AngularRuntimeHost).angular
+      : undefined;
+    this._composition = createCoreRuntime({
+      appContext:
+        hostRuntime?._composition?.appContext ?? hostRuntime?._appContext,
+      document,
+      window,
+    });
+    this._appContext = this._composition.appContext;
+    this._moduleRegistry = hostRuntime?._moduleRegistry ?? {};
 
     if (runtimeInjectionTokens) {
       values(runtimeInjectionTokens).forEach((token) => {
@@ -151,10 +184,10 @@ export class AngularRuntime extends EventTarget {
     }
 
     if (!runtimeOptions.subapp) {
-      (window as AngularWindow).angular = this;
+      (window as unknown as AngularWindow).angular = this;
     }
 
-    if (runtimeOptions.registerBuiltins) {
+    if (runtimeOptions.registerBuiltins && !hostRuntime?._moduleRegistry) {
       this.registerNgModule();
     }
   }
@@ -194,11 +227,12 @@ export class AngularRuntime extends EventTarget {
    * // register a new service
    * myModule.value('appName', 'MyCoolApp');
    *
-   * // configure existing services inside initialization blocks.
-   * myModule.config(['$locationProvider', function($locationProvider) {
-   *   // Configure existing providers
-   *   $locationProvider.hashPrefix('!');
-   * }]);
+   * // configure built-in services with typed object config.
+   * myModule.config({
+   *   location: {
+   *     hashPrefix: '!',
+   *   },
+   * });
    * ```
    *
    * Then you can create an injector and load your modules like this:
@@ -221,14 +255,24 @@ export class AngularRuntime extends EventTarget {
     name: string,
     requires?: string[],
     configFn?: ModuleConfigFn,
-  ): NgModule {
+  ): NgModule;
+  module<TRouteMap extends RouteMap>(
+    name: string,
+    requires?: string[],
+    configFn?: ModuleConfigFn,
+  ): RouterModule<TRouteMap>;
+  module(
+    name: string,
+    requires?: string[],
+    configFn?: ModuleConfigFn,
+  ): NgModule | RouterModule {
     assertNotHasOwnProperty(name, "module");
 
-    if (requires && hasOwn(moduleRegistry, name)) {
-      moduleRegistry[name] = null;
+    if (requires && hasOwn(this._moduleRegistry, name)) {
+      this._moduleRegistry[name] = null;
     }
 
-    return ensure(moduleRegistry, name, () => {
+    return ensure(this._moduleRegistry, name, () => {
       if (!requires) {
         throw $injectorError(
           "nomod",
@@ -237,7 +281,17 @@ export class AngularRuntime extends EventTarget {
         );
       }
 
-      return new NgModule(name, requires, configFn);
+      return new NgModule(
+        name,
+        requires,
+        configFn,
+        this._composition.animationRegistry,
+        this._composition.controllerRegistry,
+        this._composition.filterRegistry,
+        this._composition.compileRegistry,
+        this._composition.appContext,
+        this._composition.configRegistry,
+      );
     });
   }
 
@@ -250,7 +304,7 @@ export class AngularRuntime extends EventTarget {
   dispatchEvent(event: Event): boolean {
     const customEvent = event as CustomEvent<string | InvocationDetail>;
 
-    const $parse = this.$injector.get(_parse) as ParseService;
+    const $parse = this.$injector.get(_parse);
 
     const injectable = customEvent.type;
 
@@ -390,16 +444,16 @@ export class AngularRuntime extends EventTarget {
       this._bootsrappedModules = modules;
     }
 
-    this._bootsrappedModules.unshift([
-      "$provide",
-      ($provide: ng.ProvideService) => {
-        $provide.value(_rootElement, element);
-      },
-    ]);
-
     this._bootsrappedModules.unshift("ng");
 
-    const injector = createInjector(this._bootsrappedModules, config.strictDi);
+    const injector = createInjector(
+      this._bootsrappedModules,
+      config.strictDi,
+      (registry) => {
+        registry.value(_rootElement, element);
+      },
+      (name) => this.module(name),
+    );
 
     injector.invoke([
       _rootScope,
@@ -412,10 +466,18 @@ export class AngularRuntime extends EventTarget {
         compile: ng.CompileService,
         $injector: ng.InjectorService,
       ) => {
+        const appContext = this._composition.appContext;
+
+        this._appContext = appContext;
         this.$rootScope = scope;
         this.$injector = $injector;
+        this._injectorCreated = true;
 
         const rootElement = el as Element;
+        appContext.attachRoot(scope, {
+          injector: $injector,
+          rootElement,
+        });
 
         rootScopeCleanupByElement.set(rootElement, () => {
           const existingScope = getInheritedData(rootElement, _scope) as
@@ -472,7 +534,16 @@ export class AngularRuntime extends EventTarget {
    * @returns The created injector.
    */
   injector(modules: ModuleLike[], strictDi?: boolean): ng.InjectorService {
-    this.$injector = createInjector(modules, strictDi);
+    if (this._injectorCreated) {
+      this.$injector.loadNewModules(modules);
+
+      return this.$injector;
+    }
+
+    this.$injector = createInjector(modules, strictDi, undefined, (name) =>
+      this.module(name),
+    );
+    this._injectorCreated = true;
 
     return this.$injector;
   }
@@ -547,7 +618,7 @@ export class AngularRuntime extends EventTarget {
   getScopeByName(name: string): ng.Scope | undefined {
     validateIsString(name, "name");
 
-    const $rootScope = this.$injector.get(_rootScope) as ng.RootScopeService;
+    const $rootScope = this.$injector.get(_rootScope);
 
     const scope = $rootScope.$searchByName(name);
 

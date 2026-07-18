@@ -42,33 +42,36 @@ describe("ngController", () => {
 
   beforeEach(() => {
     angular = new Angular();
-    window.angular = new Angular();
-    injector = createInjector([
-      "ng",
-      ($controllerProvider) => {
-        $controllerProvider.register("PublicModule", function () {
-          this.mark = "works";
-        });
-        $controllerProvider.register("Greeter", Greeter);
+    window.angular = angular;
+    angular
+      .module("controllerDirectiveTests", ["ng"])
+      .controller("PublicModule", function () {
+        this.mark = "works";
+      })
+      .controller("Greeter", Greeter)
 
-        $controllerProvider.register("Child", ($scope) => {
-          $scope.name = "Adam";
-        });
+      .controller("Child", ($scope) => {
+        $scope.name = "Adam";
+      })
 
-        $controllerProvider.register("Public", function ($scope) {
-          this.mark = "works";
-        });
+      .controller("Public", function ($scope) {
+        this.mark = "works";
+      });
 
-        const Foo = function ($scope) {
-          $scope.mark = "foo";
-        };
+    const Foo = function ($scope) {
+      $scope.mark = "foo";
+    };
 
-        $controllerProvider.register("BoundFoo", ["$scope", Foo.bind(null)]);
+    angular
+      .module("controllerDirectiveTests")
+      .controller("BoundFoo", ["$scope", Foo.bind(null)]);
+
+    injector = createInjector(["controllerDirectiveTests"]).invoke(
+      (_$rootScope_, _$compile_) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
       },
-    ]).invoke((_$rootScope_, _$compile_) => {
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-    });
+    );
   });
 
   afterEach(() => {

@@ -6,7 +6,7 @@ import { wait } from "../shared/test-utils.ts";
 describe("collection filters", () => {
   let $compile: ng.CompileService;
 
-  let $rootScope: ng.RootScopeService;
+  let $rootScope: ng.Scope;
 
   let filter: ng.FilterService;
 
@@ -16,7 +16,7 @@ describe("collection filters", () => {
       (
         _$compile_: ng.CompileService,
         _$filter_: ng.FilterService,
-        _$rootScope_: ng.RootScopeService,
+        _$rootScope_: ng.Scope,
       ) => {
         $compile = _$compile_;
         filter = _$filter_;
@@ -158,7 +158,7 @@ describe("collection filters", () => {
 
     it("should work when evaluating expression filters", () => {
       createInjector(["ng"]).invoke(
-        ($rootScope: ng.RootScopeService, $parse: ng.ParseService) => {
+        ($rootScope: ng.Scope, $parse: ng.ParseService) => {
           $rootScope.params = new URLSearchParams("?page=2");
 
           expect($parse("params | entries")($rootScope)).toEqual([

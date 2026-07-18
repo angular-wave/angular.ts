@@ -14,7 +14,7 @@ describe("ngRepeat", () => {
 
   let $exceptionHandler;
 
-  let $compileProvider;
+  let compileRegistry;
 
   let $templateCache;
 
@@ -31,6 +31,7 @@ describe("ngRepeat", () => {
     delete window.angular;
     logs = [];
     window.angular = new Angular();
+    compileRegistry = window.angular._composition.compileRegistry;
     window.angular
       .module("defaultModule", ["ng"])
       .decorator("$exceptionHandler", function () {
@@ -40,12 +41,7 @@ describe("ngRepeat", () => {
         };
       });
 
-    injector = window.angular.bootstrap(el, [
-      "defaultModule",
-      (_$compileProvider_) => {
-        $compileProvider = _$compileProvider_;
-      },
-    ]);
+    injector = window.angular.bootstrap(el, ["defaultModule"]);
     $compile = injector.get("$compile");
     $exceptionHandler = injector.get("$exceptionHandler");
     scope = injector.get("$rootScope");
@@ -110,6 +106,39 @@ describe("ngRepeat", () => {
 
       expect(link).toEqual(jasmine.any(Function));
     });
+  });
+
+  it("disposes animated repeat fragments after completed leave", async () => {
+    const root = document.createElement("div");
+    const completed = [false, true];
+    const animate = {
+      enter: () => ({ done: () => undefined }),
+      move: () => ({ done: () => undefined }),
+      leave: jasmine.createSpy("leave").and.callFake(() => ({
+        done(callback) {
+          callback(completed.shift());
+        },
+      })),
+    };
+    const angular = new Angular();
+
+    document.body.appendChild(root);
+    angular.module("animatedRepeat", []).value("$animate", animate);
+    const localInjector = angular.bootstrap(root, ["animatedRepeat"]);
+    const localScope = localInjector.get("$rootScope");
+
+    localScope.items = [1, 2, 3];
+    localInjector.get("$compile")(
+      '<ul><li ng-repeat="item in items" data-animate="true">{{item}}</li></ul>',
+    )(localScope);
+    await wait();
+
+    localScope.items = [1];
+    await wait();
+
+    expect(animate.leave).toHaveBeenCalledTimes(2);
+    angular._composition.destroy();
+    root.remove();
   });
 
   it("should iterate over an array of objects", async () => {
@@ -1060,7 +1089,7 @@ describe("ngRepeat", () => {
 
   describe("nesting in replaced directive templates", () => {
     it("should work when placed on a non-root element of attr directive with SYNC replaced template", async () => {
-      $compileProvider.directive("rr", () => ({
+      compileRegistry.directive("rr", () => ({
         restrict: "A",
         replace: true,
         template: '<div ng-repeat="i in items">{{i}}|</div>',
@@ -1082,7 +1111,7 @@ describe("ngRepeat", () => {
     });
 
     it("should work when placed on a non-root element of attr directive with ASYNC replaced template", async () => {
-      $compileProvider.directive("rr", () => ({
+      compileRegistry.directive("rr", () => ({
         restrict: "A",
         replace: true,
         templateUrl: "rr.html",
@@ -1105,7 +1134,7 @@ describe("ngRepeat", () => {
     });
 
     it("should work when placed on a root element of attr directive with SYNC replaced template", async () => {
-      $compileProvider.directive("replaceMeWithRepeater", () => ({
+      compileRegistry.directive("replaceMeWithRepeater", () => ({
         replace: true,
         template: '<span ng-repeat="i in items">{{log(i)}}</span>',
       }));
@@ -1127,7 +1156,7 @@ describe("ngRepeat", () => {
     });
 
     it("should work when placed on a root element of attr directive with ASYNC replaced template", async () => {
-      $compileProvider.directive("replaceMeWithRepeater", () => ({
+      compileRegistry.directive("replaceMeWithRepeater", () => ({
         replace: true,
         templateUrl: "replace-me-with-repeater.html",
       }));
@@ -1152,7 +1181,7 @@ describe("ngRepeat", () => {
     });
 
     it("should work when placed on a root element of element directive with SYNC replaced template", async () => {
-      $compileProvider.directive("replaceMeWithRepeater", () => ({
+      compileRegistry.directive("replaceMeWithRepeater", () => ({
         restrict: "E",
         replace: true,
         template: '<div ng-repeat="i in [1,2,3]">{{i}}</div>',
@@ -1166,7 +1195,7 @@ describe("ngRepeat", () => {
     });
 
     it("should work when placed on a root element of element directive with ASYNC replaced template", async () => {
-      $compileProvider.directive("replaceMeWithRepeater", () => ({
+      compileRegistry.directive("replaceMeWithRepeater", () => ({
         restrict: "E",
         replace: true,
         templateUrl: "replace-me-with-repeater.html",
@@ -1184,7 +1213,7 @@ describe("ngRepeat", () => {
     });
 
     it("should work when combined with an ASYNC template that loads after the first digest", async () => {
-      $compileProvider.directive("test", () => ({
+      compileRegistry.directive("test", () => ({
         templateUrl: "/public/test.html",
       }));
       element = createElementFromHTML(
@@ -1401,7 +1430,7 @@ describe("ngRepeat", () => {
 
   describe("compatibility", () => {
     it("should allow mixing ngRepeat and another element transclusion directive", async () => {
-      $compileProvider.directive("elmTrans", () => ({
+      compileRegistry.directive("elmTrans", () => ({
         transclude: "element",
         controller($transclude, $scope, $element) {
           $transclude((transcludedNodes) => {
@@ -1449,7 +1478,7 @@ describe("ngRepeat", () => {
     it("should allow access to directive controller from children when used in a replace template", () => {
       let controller;
 
-      $compileProvider
+      compileRegistry
         .directive("template", () => ({
           template: '<div ng-repeat="l in [1]"><span test></span></div>',
           replace: true,
@@ -1475,7 +1504,7 @@ describe("ngRepeat", () => {
     });
 
     it("should use the correct transcluded scope", async () => {
-      $compileProvider.directive("iso", () => ({
+      compileRegistry.directive("iso", () => ({
         restrict: "E",
         transclude: true,
         template: '<div ng-repeat="a in [1]"><div ng-transclude></div></div>',
@@ -1497,7 +1526,7 @@ describe("ngRepeat", () => {
     });
 
     it("should set the state before linking", async () => {
-      $compileProvider.directive("assertA", () => (scope) => {
+      compileRegistry.directive("assertA", () => (scope) => {
         // This linking function asserts that a is set.
         // If we only test this by asserting binding, it will work even if the value is set later.
         expect(scope.a).toBeDefined();
@@ -1516,7 +1545,7 @@ describe("ngRepeat", () => {
     });
 
     it("should work with svg elements when the svg container is transcluded", async () => {
-      $compileProvider.directive("svgContainer", () => ({
+      compileRegistry.directive("svgContainer", () => ({
         template: "<svg ng-transclude></svg>",
         replace: true,
         transclude: true,

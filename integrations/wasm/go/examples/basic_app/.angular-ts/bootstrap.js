@@ -1,5 +1,5 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
+import { WasmAbi } from "@angular-wave/angular.ts/services/wasm";
 import { GoWasmScopeAbi } from "../go-wasm-scope-abi.js";
 import "../wasm_exec.js";
 
@@ -7,7 +7,7 @@ const moduleName = "goWasmTodo";
 const requires = [];
 const manifest = {"registrations":[{"kind":"controller","name":"goTodoController","export":"__ng_controller_GoTodoController","scopeName":"goTodo:main","methods":["add","toggle","archive"],"fields":[{"name":"items","goName":"items","goType":"[]main.Todo"},{"name":"remainingCount","goName":"remainingCount()","goType":"int"},{"name":"newTodo","goName":"newTodo","goType":"string"},{"name":"titleSeen","goName":"titleSeen","goType":"string"}],"watches":[{"path":"newTodo","handler":"onNewTodoChanged","goType":"string"}]}]};
 
-const scopeAbi = new WasmScopeAbi();
+const scopeAbi = new WasmAbi.ScopeAbi();
 const goScopeAbi = new GoWasmScopeAbi(scopeAbi);
 
 globalThis.__angularTsGoWasmScopeAbi = goScopeAbi;

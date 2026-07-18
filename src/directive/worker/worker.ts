@@ -1,8 +1,9 @@
-import { _exceptionHandler, _log, _parse } from "../../injection-tokens.ts";
+import { _log, _parse } from "../../injection-tokens.ts";
 import {
   callBackAfterFirst,
   directiveNormalize,
   isDefined,
+  shouldHandleViewRetentionPause,
   wait,
 } from "../../shared/utils.ts";
 import {
@@ -17,15 +18,118 @@ import {
   setNormalizedAttr,
 } from "../../shared/dom.ts";
 
-ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler];
+interface ScopeWorkerQueueState {
+  _paused: boolean;
+  _flushing: boolean;
+  _pending: Array<() => void>;
+  _deregisterPause: () => void;
+  _deregisterResume: () => void;
+  _deregisterDestroy: () => void;
+}
+
+const workerDirectiveScopeStates = new WeakMap<
+  ng.Scope,
+  ScopeWorkerQueueState
+>();
+
+ngWorkerDirective.$inject = [_parse, _log];
+
+function getScopeWorkerQueueState(scope: ng.Scope): ScopeWorkerQueueState {
+  let state = workerDirectiveScopeStates.get(scope);
+
+  if (state) return state;
+
+  let nextState!: ScopeWorkerQueueState;
+
+  const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+    if (!shouldHandleViewRetentionPause(args, "schedulers")) {
+      return;
+    }
+
+    nextState._paused = true;
+  });
+
+  const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+    if (!shouldHandleViewRetentionPause(args, "schedulers")) {
+      return;
+    }
+
+    if (!nextState._paused) {
+      return;
+    }
+
+    nextState._paused = false;
+    flushScopeWorkerQueue(nextState);
+  });
+
+  const deregisterDestroy = scope.$on("$destroy", () => {
+    nextState._pending.length = 0;
+    nextState._paused = false;
+    nextState._flushing = false;
+    nextState._deregisterPause();
+    nextState._deregisterResume();
+    nextState._deregisterDestroy();
+    workerDirectiveScopeStates.delete(scope);
+  });
+
+  state = nextState = {
+    _paused: false,
+    _flushing: false,
+    _pending: [],
+    _deregisterPause: deregisterPause,
+    _deregisterResume: deregisterResume,
+    _deregisterDestroy: deregisterDestroy,
+  };
+
+  workerDirectiveScopeStates.set(scope, state);
+
+  return state;
+}
+
+function queueScopeWorkerOperation(
+  scope: ng.Scope,
+  operation: () => void,
+): void {
+  const state = getScopeWorkerQueueState(scope);
+
+  if (state._paused) {
+    state._pending.push(operation);
+    flushScopeWorkerQueue(state);
+
+    return;
+  }
+
+  operation();
+}
+
+function flushScopeWorkerQueue(state: ScopeWorkerQueueState): void {
+  if (state._flushing || state._paused || state._pending.length === 0) {
+    return;
+  }
+
+  state._flushing = true;
+
+  queueMicrotask(() => {
+    state._flushing = false;
+
+    if (state._paused) {
+      return;
+    }
+
+    const pending = state._pending.splice(0);
+
+    for (let i = 0, l = pending.length; i < l; i++) {
+      pending[i]();
+    }
+  });
+}
 
 /**
- * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
+ * Usage: <div ng-worker="workerName" data-params="{{ expression }}" on-result="callback($result)"></div>
  */
 export function ngWorkerDirective(
   $parse: ng.ParseService,
   $log: ng.LogService,
-  $exceptionHandler: ng.ExceptionHandlerService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -40,6 +144,8 @@ export function ngWorkerDirective(
 
         return;
       }
+
+      getScopeWorkerQueueState(scope);
 
       const eventName = attr("trigger") ?? getEventNameForElement(element);
 
@@ -93,70 +199,81 @@ export function ngWorkerDirective(
       }
 
       const worker = createWorkerConnection(workerName, {
-        logger: $log,
-        err: $exceptionHandler,
         onMessage: (result: unknown) => {
-          const onResult = attr("onResult");
+          queueScopeWorkerOperation(scope, () => {
+            const onResult = attr("onResult");
 
-          if (isDefined(onResult)) {
-            $parse(onResult)(scope, { $result: result });
-          } else {
-            handleSwap(String(result), attr("swap") ?? "innerHTML", element);
-          }
+            if (isDefined(onResult)) {
+              $parse(onResult)(scope, { $result: result });
+            } else {
+              handleSwap(String(result), attr("swap") ?? "innerHTML", element);
+            }
+          });
         },
         onError: (err: ErrorEvent) => {
-          $log.error(`[ng-worker:${workerName}]`, err);
+          queueScopeWorkerOperation(scope, () => {
+            $log.error(`[ng-worker:${workerName}]`, err);
 
-          const onError = attr("onError");
+            const onError = attr("onError");
 
-          if (isDefined(onError)) {
-            $parse(onError)(scope, { $error: err });
-          } else {
-            element.textContent = "Error";
-          }
+            if (isDefined(onError)) {
+              $parse(onError)(scope, { $error: err });
+            } else {
+              element.textContent = "Error";
+            }
+          });
         },
       });
 
-      element.addEventListener(eventName, () => {
-        void (async () => {
-          if (element.hasAttribute("disabled")) return;
+      const listener = () => {
+        queueScopeWorkerOperation(scope, () => {
+          void (async () => {
+            if (element.hasAttribute("disabled")) return;
 
-          if (hasNormalizedAttr(element, "delay")) {
-            await wait(parseInt(attr("delay") ?? "", 10) || 0);
-          }
+            if (hasNormalizedAttr(element, "delay")) {
+              await wait(parseInt(String(attr("delay")), 10) || 0);
+            }
 
-          if (throttled) return;
+            if (throttled) return;
 
-          if (hasNormalizedAttr(element, "throttle")) {
-            throttled = true;
-            setNormalizedAttr(element, "throttled", true);
-            setTimeout(
-              () => {
-                setNormalizedAttr(element, "throttled", false);
-                throttled = false;
-              },
-              parseInt(attr("throttle") ?? "", 10),
-            );
-          }
+            if (hasNormalizedAttr(element, "throttle")) {
+              throttled = true;
+              setNormalizedAttr(element, "throttled", true);
+              setTimeout(
+                () => {
+                  setNormalizedAttr(element, "throttled", false);
+                  throttled = false;
+                },
+                parseInt(String(attr("throttle")), 10) || 0,
+              );
+            }
 
-          let params: unknown;
+            let params: unknown;
 
-          try {
-            params = paramsFn?.(scope);
-          } catch (err) {
-            $log.error("ngWorker: failed to evaluate data-params", err);
-            params = undefined;
-          }
+            try {
+              params = paramsFn?.(scope);
+            } catch (err) {
+              $log.error("ngWorker: failed to evaluate data-params", err);
+              params = undefined;
+            }
 
-          worker.post(params);
-        })();
+            worker.postMessage(params);
+          })();
+        });
+      };
+
+      scope.$on("$destroy", () => {
+        element.removeEventListener(eventName, listener);
+
+        if (intervalId !== undefined) {
+          clearInterval(intervalId);
+          intervalId = undefined;
+        }
+
+        worker.terminate();
       });
 
-      if (intervalId) {
-        scope.$on("$destroy", () => {
-          clearInterval(intervalId);
-        });
-      }
+      element.addEventListener(eventName, listener);
 
       if (eventName === "load") {
         element.dispatchEvent(new Event("load"));

@@ -21,39 +21,34 @@ describe("ngRef", () => {
 
     beforeEach(() => {
       window.angular = new Angular();
-      window.angular
+      const myModule = window.angular
         .module("myModule", ["ng"])
         .decorator("$exceptionHandler", function () {
           return (exception, cause) => {
             throw new Error(exception.message);
           };
         });
-      injector = createInjector([
-        "myModule",
-        ($compileProvider) => {
-          $compileProvider.component("myComponent", {
-            template: "foo",
-            controller() {
-              myComponentController = this;
-            },
-          });
-
-          $compileProvider.directive("attributeDirective", () => ({
-            restrict: "A",
-            controller() {
-              attributeDirectiveController = this;
-            },
-          }));
-
-          $compileProvider.directive("elementDirective", () => ({
-            restrict: "E",
-            template: "my text",
-            controller() {
-              elementDirectiveController = this;
-            },
-          }));
-        },
-      ]);
+      myModule
+        .component("myComponent", {
+          template: "foo",
+          controller() {
+            myComponentController = this;
+          },
+        })
+        .directive("attributeDirective", () => ({
+          restrict: "A",
+          controller() {
+            attributeDirectiveController = this;
+          },
+        }))
+        .directive("elementDirective", () => ({
+          restrict: "E",
+          template: "my text",
+          controller() {
+            elementDirectiveController = this;
+          },
+        }));
+      injector = createInjector(["myModule"]);
 
       $compile = injector.get("$compile");
       $rootScope = injector.get("$rootScope");

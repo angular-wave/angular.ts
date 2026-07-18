@@ -63,15 +63,16 @@ export interface StreamService {
   ): Promise<T[]>;
 }
 
-export class StreamProvider {
-  $get = (): StreamService => ({
+/** @internal Creates the dependency-free `$stream` service. */
+export function createStreamService(): StreamService {
+  return {
     isReadableStream,
     consumeText,
     readText,
     readLines,
     consumeJsonLines,
     readJsonLines,
-  });
+  };
 }
 
 function isReadableStream(value: unknown): value is ReadableStream<Uint8Array> {

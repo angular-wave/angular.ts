@@ -3,6 +3,7 @@
 import { dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { compareUrlMatchers, UrlMatcher } from "./url-matcher.ts";
+import { RouterUrlRuntime } from "../router-url.ts";
 
 describe("UrlMatcher", () => {
   let router;
@@ -32,16 +33,13 @@ describe("UrlMatcher", () => {
     window.angular = new Angular();
     window.angular
       .module("defaultModule", [])
-      .config(
-        ($locationProvider) =>
-          ($locationProvider.html5ModeConf.enabled = false),
-      );
+      .config({ $location: { html5Mode: false } });
     $injector = window.angular.bootstrap(document.getElementById("app"), [
       "defaultModule",
     ]);
 
-    $injector.invoke((_$location_, _$stateRegistry_) => {
-      router = $injector.get("$$r");
+    $injector.invoke((_$location_, _$stateRegistry_, _$state_) => {
+      router = _$state_._routerState;
       $location = _$location_;
       $stateRegistry = _$stateRegistry_;
     });
@@ -67,6 +65,23 @@ describe("UrlMatcher", () => {
 
       expect(matcher instanceof UrlMatcher).toBe(true);
     });
+  });
+
+  it("formats hrefs for object and default HTML5 location modes", () => {
+    const matcher = router._compile("/docs");
+    const hashRuntime = new RouterUrlRuntime({
+      html5Mode: { enabled: false },
+    });
+    const booleanHashRuntime = new RouterUrlRuntime({ html5Mode: false });
+    const defaultRuntime = new RouterUrlRuntime({});
+
+    hashRuntime._baseHref = "/";
+    booleanHashRuntime._baseHref = "/";
+    defaultRuntime._baseHref = "/";
+
+    expect(hashRuntime._href(matcher, {}, {})).toBe("#!/docs");
+    expect(booleanHashRuntime._href(matcher, {}, {})).toBe("#!/docs");
+    expect(defaultRuntime._href(matcher, {}, {})).toBe("/docs");
   });
 
   it("should match static URLs", () => {
@@ -428,6 +443,30 @@ describe("UrlMatcher", () => {
       router._isCaseInsensitive = true;
       m = m._append(router._compile("foo/{param:bar}"));
       expect(m._exec("/FOO/BAR")).toEqual({ param: "BAR" });
+    });
+
+    it("should preserve case-insensitive custom param type patterns", () => {
+      router.config({
+        paramTypes: {
+          slug: {
+            pattern: /s-[a-z]+-[0-9]+/i,
+            encode(value: string) {
+              return `s-${value}`;
+            },
+            decode(value: string) {
+              return String(value).toLowerCase().replace(/^s-/, "");
+            },
+            is(value: unknown) {
+              return typeof value === "string" && value.includes("-");
+            },
+          },
+        },
+      });
+
+      const matcher = router._compile("/item/{slug:slug}");
+
+      expect(matcher._exec("/item/S-abc-12")).toEqual({ slug: "abc-12" });
+      expect(matcher._exec("/ITEM/S-abc-12")).toBeNull();
     });
 
     it("should generate/match params in the proper order", () => {
@@ -992,19 +1031,19 @@ describe("UrlMatcher", () => {
     });
 
     it("should allow injectable functions", () => {
-      const $stateParams = $injector.get("$stateParams");
+      const $state = $injector.get("$state");
 
       const matcher = router._compile("/users/{user:json}", {
         state: {
           params: {
-            user: ($stateParams) => $stateParams.user,
+            user: ($state) => $state.params.user,
           },
         },
       });
 
       const user = { name: "Bob" };
 
-      $stateParams.user = user;
+      $state.params.user = user;
       expect(matcher._exec("/users/").user).toBe(user);
     });
 

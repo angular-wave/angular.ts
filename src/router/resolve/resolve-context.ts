@@ -1,5 +1,6 @@
 import { stringify } from "../../shared/strings.ts";
 import {
+  assertDefined,
   isArray,
   isInstanceOf,
   isString,
@@ -15,6 +16,30 @@ import type { ResolvableData, ResolvableToken } from "./interface.ts";
 export interface ResolvedToken {
   token: ResolvableToken;
   value: ResolvableData;
+}
+
+/** @internal */
+export type ResolveInvocationLocals = Record<string, unknown>;
+
+/** @internal */
+export interface ResolveInvocationContext {
+  getTokens(): ResolvableToken[];
+  getResolvable(token: ResolvableToken): Pick<Resolvable, "data"> | undefined;
+}
+
+/** @internal */
+export function createResolveInvocationLocals(
+  context: ResolveInvocationContext,
+): ResolveInvocationLocals {
+  const locals: ResolveInvocationLocals = {};
+
+  context.getTokens().forEach((token) => {
+    if (isString(token)) {
+      locals[token] = assertDefined(context.getResolvable(token)).data;
+    }
+  });
+
+  return locals;
 }
 
 async function resolveToken(

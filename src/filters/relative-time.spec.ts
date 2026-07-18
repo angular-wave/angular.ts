@@ -43,7 +43,7 @@ describe("relativeTime filter", () => {
 
   it("should work when evaluating expression filters", () => {
     createInjector(["ng"]).invoke(
-      ($rootScope: ng.RootScopeService, $parse: ng.ParseService) => {
+      ($rootScope: ng.Scope, $parse: ng.ParseService) => {
         $rootScope.daysUntilRelease = 3;
 
         expect(

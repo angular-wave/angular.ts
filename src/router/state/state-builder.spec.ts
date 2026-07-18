@@ -2,7 +2,8 @@
 /// <reference types="jasmine" />
 import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
-import { getLocals } from "./state-registry.ts";
+import { createResolveInvocationLocals } from "../resolve/resolve-context.ts";
+import type { ResolvableToken } from "../resolve/interface.ts";
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 
@@ -29,6 +30,7 @@ describe("StateBuilder", function () {
   it("expect it to be configured by state registry", () => {
     expect($stateRegistry).toBeDefined();
     expect($stateRegistry._builder).toBeDefined();
+    expect($stateRegistry.root().name).toBe("");
   });
 
   it("should build a single default view from state-level view properties", function () {
@@ -286,7 +288,7 @@ describe("StateBuilder", function () {
     });
   });
 
-  describe("StateRegistryProvider", () => {
+  describe("StateRegistryRuntime", () => {
     it("queues child states until their parent is registered", () => {
       const events = [];
 
@@ -294,7 +296,7 @@ describe("StateBuilder", function () {
         events.push({ event, names: states.map((state) => state.name) });
       });
 
-      const child = $stateRegistry.register({
+      const child = $stateRegistry._register({
         name: "queued.child",
         template: "child",
       });
@@ -354,19 +356,30 @@ describe("StateBuilder", function () {
         $stateRegistry.get().some((state) => state.name === "listMe"),
       ).toBe(true);
     });
+
+    it("returns all declarations from getAll", () => {
+      $stateRegistry.register({ name: "listAll", template: "list" });
+
+      expect(
+        $stateRegistry.getAll().some((state) => state.name === "listAll"),
+      ).toBe(true);
+    });
   });
 
-  describe("getLocals", () => {
+  describe("createResolveInvocationLocals", () => {
     it("returns locals for string tokens only", () => {
       const symbolToken = Symbol("ignored");
       const ctx = {
         getTokens: () => ["user", symbolToken, "count"],
-        getResolvable: (token) => ({
+        getResolvable: (token: ResolvableToken) => ({
           data: token === "user" ? "Ada" : 2,
         }),
       };
 
-      expect(getLocals(ctx)).toEqual({ user: "Ada", count: 2 });
+      expect(createResolveInvocationLocals(ctx)).toEqual({
+        user: "Ada",
+        count: 2,
+      });
     });
   });
 });

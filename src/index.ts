@@ -2,11 +2,10 @@ import { Angular } from "./angular.ts";
 import type {
   AngularRuntimeConstructorInput,
   AngularRuntimeOptions,
-  BuiltinNgModuleRegistrar,
+  RuntimeModule,
 } from "./angular-runtime.ts";
 import type {
-  CustomAngularRuntimeOptions,
-  CustomNgModuleOptions,
+  AngularComposition,
   DirectiveRegistration,
   DirectiveRegistrations,
   FilterRegistration,
@@ -22,39 +21,23 @@ import type {
 import type {
   Machine,
   MachineConfig,
-  MachineEventMap,
-  MachineGuard,
-  MachineHooks,
-  MachineMode,
-  MachineModeHooks,
-  MachineNoEvents,
   MachineService,
+  MachineSendResult,
+  MachineSendStatus,
   MachineSnapshot,
-  MachineTransition,
-  MachineTransitionContext,
-  MachineTransitionDefinition,
-  MachineTransitionDescriptor,
-  MachineTransitionHook,
-  MachineTransitionMap,
-  MachineTransitionResult,
 } from "./services/machine/machine.ts";
 import type {
   Workflow,
   WorkflowCommand,
   WorkflowCommandContext,
-  WorkflowCommandMap,
   WorkflowCommandOptions,
-  WorkflowConcurrencyPolicy,
   WorkflowCommandResult,
-  WorkflowConfig,
-  WorkflowDiagnostic,
-  WorkflowHistoryEntry,
-  WorkflowMode,
-  WorkflowNoCommands,
+  WorkflowCommandStatus,
   WorkflowService,
   WorkflowSnapshot,
-  WorkflowSnapshotMigration,
-  WorkflowStatus,
+  WorkflowSupervisor,
+  WorkflowSupervisorConfig,
+  WorkflowSupervisorSnapshot,
 } from "./services/workflow/workflow.ts";
 
 /**
@@ -62,67 +45,40 @@ import type {
  */
 export const angular = new Angular();
 
-export {
-  AngularRuntime,
-  createAngularBare,
-  createAngularCustom,
-  coreProviders,
-  registerCustomNgModule,
-} from "./runtime/index.ts";
+export { AngularRuntime, createAngular } from "./runtime/index.ts";
 export { afterRender, queueAfterRender } from "./core/render/after-render.ts";
-export { defineMachine, MachineProvider } from "./services/machine/machine.ts";
-export {
-  defineCommand,
-  defineWorkflow,
-  WorkflowProvider,
-} from "./services/workflow/workflow.ts";
+export { defineMachine } from "./services/machine/machine.ts";
+export { defineCommand, defineWorkflow } from "./services/workflow/workflow.ts";
 
 export type {
   AfterRenderCallback,
   AfterRenderOptions,
   AngularRuntimeConstructorInput,
   AngularRuntimeOptions,
-  BuiltinNgModuleRegistrar,
-  CustomAngularRuntimeOptions,
-  CustomNgModuleOptions,
+  RuntimeModule,
+  AngularComposition,
   DirectiveRegistration,
   DirectiveRegistrations,
   FilterRegistration,
   FilterRegistrations,
   Machine,
   MachineConfig,
-  MachineEventMap,
-  MachineGuard,
-  MachineHooks,
-  MachineMode,
-  MachineModeHooks,
-  MachineNoEvents,
   MachineService,
+  MachineSendResult,
+  MachineSendStatus,
   MachineSnapshot,
-  MachineTransition,
-  MachineTransitionContext,
-  MachineTransitionDefinition,
-  MachineTransitionDescriptor,
-  MachineTransitionHook,
-  MachineTransitionMap,
-  MachineTransitionResult,
   ProviderRegistration,
   ServiceRegistration,
   ServiceRegistrations,
   Workflow,
   WorkflowCommand,
   WorkflowCommandContext,
-  WorkflowCommandMap,
   WorkflowCommandOptions,
-  WorkflowConcurrencyPolicy,
   WorkflowCommandResult,
-  WorkflowConfig,
-  WorkflowDiagnostic,
-  WorkflowHistoryEntry,
-  WorkflowMode,
-  WorkflowNoCommands,
+  WorkflowCommandStatus,
   WorkflowService,
   WorkflowSnapshot,
-  WorkflowSnapshotMigration,
-  WorkflowStatus,
+  WorkflowSupervisor,
+  WorkflowSupervisorConfig,
+  WorkflowSupervisorSnapshot,
 };

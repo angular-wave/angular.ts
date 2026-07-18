@@ -1,9 +1,5 @@
-import {
-  _injector,
-  _location,
-  _locationProvider,
-} from "../injection-tokens.ts";
 import { assign } from "../shared/utils.ts";
+import { ParamType } from "./params/param-type.ts";
 import { ParamFactory } from "./params/param-factory.ts";
 import {
   createDefaultParamTypes,
@@ -13,19 +9,61 @@ import { StateParams } from "./params/state-params.ts";
 import { RouteTable } from "./route-table.ts";
 import { RouterUrlRuntime } from "./router-url.ts";
 import { UrlMatcher, type UrlMatcherCompileConfig } from "./url/url-matcher.ts";
-import type { RawParams } from "./params/interface.ts";
-import type { StateDeclaration } from "./state/interface.ts";
+import type { ParamTypeDefinition, RawParams } from "./params/interface.ts";
+import type {
+  StateDeclaration,
+  StateRetentionPolicyDeclaration,
+  StateTransitionPolicyDeclaration,
+} from "./state/interface.ts";
 import type { Transition } from "./transition/transition.ts";
+import type { InternalTransitionOptions } from "./transition/interface.ts";
 import type { StateObject } from "./state/state-object.ts";
+import type { StateRuntime } from "./state/state-service.ts";
+import type { LocationConfig } from "../services/location/location.ts";
+
+export interface RouterScrollOptions {
+  behavior?: ScrollBehavior;
+  left?: number;
+  top?: number;
+  selector?: string;
+}
+
+export type RouterScrollConfig =
+  | boolean
+  | "top"
+  | "hash"
+  | "preserve"
+  | RouterScrollOptions;
+
+export interface RouterFocusOptions {
+  selector?: string;
+  preventScroll?: boolean;
+}
+
+export type RouterFocusConfig = boolean | string | RouterFocusOptions;
+
+export interface RouterConfig {
+  strict?: boolean;
+  caseInsensitive?: boolean;
+  defaultSquashPolicy?: boolean | string;
+  paramTypes?: Record<string, Partial<ParamTypeDefinition>>;
+  scroll?: RouterScrollConfig;
+  focus?: RouterFocusConfig;
+  viewTransitions?: boolean;
+  loading?: StateTransitionPolicyDeclaration["loading"];
+  retry?: StateTransitionPolicyDeclaration["retry"];
+  fallbackTo?: StateTransitionPolicyDeclaration["fallbackTo"];
+  error?: StateTransitionPolicyDeclaration["error"];
+  errorBoundary?: StateTransitionPolicyDeclaration["errorBoundary"];
+  retention?: StateRetentionPolicyDeclaration;
+}
 
 /**
  * Mutable router state/config shared across state, URL, and transition services.
  */
-export class RouterProvider {
-  /* @ignore */ static $inject = [_locationProvider];
-
+export class RouterRuntimeState {
   /** @internal */
-  _stateService: ng.StateService | undefined;
+  _stateService: StateRuntime | undefined;
   /** @internal */
   _routeTable: RouteTable;
   /** @internal */
@@ -42,6 +80,24 @@ export class RouterProvider {
   _paramFactory: ParamFactory;
   /** @internal */
   _params: StateParams;
+  /** @internal */
+  _scroll: RouterScrollConfig | undefined;
+  /** @internal */
+  _focus: RouterFocusConfig | undefined;
+  /** @internal */
+  _viewTransitions: boolean | undefined;
+  /** @internal */
+  _loading: StateTransitionPolicyDeclaration["loading"] | undefined;
+  /** @internal */
+  _retry: StateTransitionPolicyDeclaration["retry"] | undefined;
+  /** @internal */
+  _fallbackTo: StateTransitionPolicyDeclaration["fallbackTo"] | undefined;
+  /** @internal */
+  _error: StateTransitionPolicyDeclaration["error"] | undefined;
+  /** @internal */
+  _errorBoundary: StateTransitionPolicyDeclaration["errorBoundary"] | undefined;
+  /** @internal */
+  _retention: StateRetentionPolicyDeclaration | undefined;
   /** @internal */
   _lastStartedTransitionId: number;
   /** @internal */
@@ -62,16 +118,25 @@ export class RouterProvider {
   /**
    * Creates the shared mutable router globals container.
    */
-  constructor($locationProvider: ng.LocationProvider) {
+  constructor(locationConfig: LocationConfig) {
     this._stateService = undefined;
     this._routeTable = new RouteTable();
-    this._urlRuntime = new RouterUrlRuntime($locationProvider);
+    this._urlRuntime = new RouterUrlRuntime(locationConfig);
     this._isCaseInsensitive = false;
     this._isStrictMode = true;
     this._defaultSquashPolicy = false;
     this._paramTypes = createDefaultParamTypes();
     this._paramFactory = new ParamFactory(this);
     this._params = new StateParams();
+    this._scroll = undefined;
+    this._focus = undefined;
+    this._viewTransitions = undefined;
+    this._loading = undefined;
+    this._retry = undefined;
+    this._fallbackTo = undefined;
+    this._error = undefined;
+    this._errorBoundary = undefined;
+    this._retention = undefined;
     this._lastStartedTransitionId = -1;
     this._lastStartedTransition = undefined;
     this._lastSuccessfulTransition = undefined;
@@ -96,19 +161,75 @@ export class RouterProvider {
     return this._defaultSquashPolicy;
   }
 
-  $get = [
-    _location,
-    _injector,
-    /**
-     * Returns the singleton router internals instance.
-     */
-    ($location: ng.LocationService, $injector: ng.InjectorService) => {
-      this._urlRuntime._init($location);
-      this._paramFactory._injector = $injector;
+  config(config: RouterConfig): void {
+    if (config.strict !== undefined) {
+      this._isStrictMode = config.strict;
+    }
 
-      return this;
-    },
-  ];
+    if (config.caseInsensitive !== undefined) {
+      this._isCaseInsensitive = config.caseInsensitive;
+    }
+
+    if (config.defaultSquashPolicy !== undefined) {
+      this._defaultSquashPolicy = config.defaultSquashPolicy;
+    }
+
+    if (config.paramTypes !== undefined) {
+      for (const [name, definition] of Object.entries(config.paramTypes)) {
+        this._paramTypes[name] = new ParamType({
+          name,
+          ...definition,
+        });
+      }
+    }
+
+    if (config.scroll !== undefined) {
+      this._scroll = config.scroll;
+    }
+
+    if (config.focus !== undefined) {
+      this._focus = config.focus;
+    }
+
+    if (config.viewTransitions !== undefined) {
+      this._viewTransitions = config.viewTransitions;
+    }
+
+    if (config.loading !== undefined) {
+      this._loading = config.loading;
+    }
+
+    if (config.retry !== undefined) {
+      this._retry = config.retry;
+    }
+
+    if (config.fallbackTo !== undefined) {
+      this._fallbackTo = config.fallbackTo;
+    }
+
+    if (config.error !== undefined) {
+      this._error = config.error;
+    }
+
+    if (config.errorBoundary !== undefined) {
+      this._errorBoundary = config.errorBoundary;
+    }
+
+    if (config.retention !== undefined) {
+      this._retention = config.retention;
+    }
+  }
+
+  /** @internal */
+  _initRuntime(
+    $location: ng.LocationService,
+    $injector: ng.InjectorService,
+  ): this {
+    this._urlRuntime._init($location);
+    this._paramFactory._injector = $injector;
+
+    return this;
+  }
 
   /** @internal */
   _sync(evt?: ng.ScopeEvent): void {
@@ -136,7 +257,10 @@ export class RouterProvider {
     const currentHref = current ? $state.href(current, this._params) : null;
 
     if ($state.href(state, params) !== currentHref) {
-      void $state.transitionTo(state, params, { inherit: true, source: "url" });
+      void $state.transitionTo(state, params, {
+        inherit: true,
+        source: "url",
+      } as InternalTransitionOptions);
     }
   }
 

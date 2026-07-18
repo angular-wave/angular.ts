@@ -103,10 +103,10 @@ export class ConnectionManager {
     this._heartbeatTimer = undefined;
     this._connection = null;
 
-    this.connect();
+    this.reconnect();
   }
 
-  connect(): void {
+  reconnect(): void {
     if (this._closed) return;
 
     if (this._connection && isFunction(this._connection.close)) {
@@ -222,7 +222,7 @@ export class ConnectionManager {
       this._retryCount++;
       this._config.onReconnect?.(this._retryCount);
       setTimeout(() => {
-        this.connect();
+        this.reconnect();
       }, this._config.retryDelay);
     } else {
       this._log.warn("ConnectionManager: Max retries reached");
@@ -236,16 +236,22 @@ export class ConnectionManager {
     clearTimeout(this._heartbeatTimer);
     this._heartbeatTimer = setTimeout(() => {
       this._log.warn("ConnectionManager: heartbeat timeout, reconnecting...");
-      this._closeInternal();
-      this._retryCount++;
-      this._config.onReconnect?.(this._retryCount);
-      this.connect();
+      this._closeForReconnect();
+      this._scheduleReconnect();
     }, this._config.heartbeatTimeout);
   }
 
   /** @internal */
-  private _closeInternal(): void {
+  private _closeForReconnect(): void {
     clearTimeout(this._heartbeatTimer);
+
+    if (isInstanceOf(this._connection, WebSocket)) {
+      this._connection.onopen = null;
+      this._connection.onmessage = null;
+      this._connection.onerror = null;
+      this._connection.onclose = null;
+    }
+
     this._connection?.close();
   }
 }

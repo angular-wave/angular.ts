@@ -28,12 +28,10 @@ describe("view hooks", () => {
     window.angular = new Angular();
     app = window.angular
       .module("defaultModule", [])
-      .config(($stateProvider) => {
-        $stateProvider.state({ name: "foo", url: "/foo", component: "foo" });
-        $stateProvider.state({ name: "bar", url: "/bar", component: "bar" });
-        $stateProvider.state({ name: "baz", url: "/baz", component: "baz" });
-        $stateProvider.state({ name: "redirect", redirectTo: "baz" });
-      })
+      .router({ name: "foo", url: "/foo", component: "foo" })
+      .router({ name: "bar", url: "/bar", component: "bar" })
+      .router({ name: "baz", url: "/baz", component: "baz" })
+      .router({ name: "redirect", redirectTo: "baz" })
       .component(
         "foo",
         Object.assign({}, Object.assign(component, { controller: ctrl })),
@@ -72,7 +70,7 @@ describe("view hooks", () => {
     };
 
     it("can cancel a transition that would exit the view's state by returning false", async () => {
-      $state.defaultErrorHandler(function () {});
+      $state._defaultErrorHandler = function () {};
       ctrl.prototype.$canExit = function () {
         log += "canexit;";
 
@@ -80,6 +78,7 @@ describe("view hooks", () => {
       };
       await initial();
       $state.go("bar");
+      await waitForState("foo", "canexit;");
       expect(log).toBe("canexit;");
       expect($state.current.name).toBe("foo");
     });
@@ -132,7 +131,7 @@ describe("view hooks", () => {
       };
       await initial();
 
-      $state.defaultErrorHandler(function () {});
+      $state._defaultErrorHandler = function () {};
       $state.go("bar");
       await waitForState("foo", "canexit;");
       expect(log).toBe("canexit;");
@@ -140,7 +139,7 @@ describe("view hooks", () => {
     });
 
     it("can wait for a promise and then reject the transition", async () => {
-      $state.defaultErrorHandler(function () {});
+      $state._defaultErrorHandler = function () {};
       ctrl.prototype.$canExit = function () {
         log += "canexit;";
 

@@ -21,7 +21,7 @@ This requirement applies to:
 - renamed public types
 - changed service config
 - changed `NgModule` authoring methods
-- changed plugin APIs
+- changed module extension APIs
 - changed runtime service behavior
 - provider-to-config migrations
 
@@ -30,17 +30,13 @@ not affect generated types, docs, examples, or user-visible behavior.
 
 ## Required Documentation For Every Public Change
 
-1. Public type inventory
-
-   - Add or update the entry in `src/PUBLIC_API_SURFACE_INVENTORY.md`.
-   - Classify the symbol as authoring, runtime, config, callback, extension,
-     evidence, provider, internal, or legacy.
-   - Record the user need: author, inject, configure, implement, consume, or
-     none.
-   - Record the docs page and sample path.
+1. Public contract
+   - Export a named type through `src/namespace.ts` when users encounter it.
+   - Export the same contract through `src/docs.ts` for generated docs.
+   - Do not expose provider recipes or implementation-only protocol types.
+   - Add the relevant user guide and sample path in the owning module docs.
 
 2. Generated type surface
-
    - Regenerate declaration files when public TypeScript surface changes.
    - Regenerate integration surfaces when generated bindings track the public
      namespace.
@@ -48,14 +44,12 @@ not affect generated types, docs, examples, or user-visible behavior.
      generated parity by accident.
 
 3. Generated docs
-
    - Public symbols must have enough JSDoc or TypeDoc context to be useful in
      `docs/static/typedoc`.
    - Generated docs must be refreshed whenever exported public types change.
    - Hidden/internal symbols must not appear as recommended user-facing API.
 
 4. User guidance
-
    - Add or update the relevant page under `docs/content`.
    - Explain the stable user path, not the internal provider path.
    - Put config beside the runtime service it configures.
@@ -63,16 +57,18 @@ not affect generated types, docs, examples, or user-visible behavior.
      type.
 
 5. Executable or testable samples
-
    - Every new public API needs at least one sample in `docs/content` or
      `docs/static/examples`.
    - Snippets must be validated by `make docs-examples-check`.
    - Multi-step flows should live in `docs/static/examples` so they can be
      promoted to runnable checks.
    - Behavioral APIs need source tests in addition to docs samples.
+   - New modules must target 100% test coverage before they are considered
+     level-9 complete.
+   - Any temporary coverage gap for a new module must be documented in its
+     pull request with a reason, owner, and closing condition.
 
 6. Migration coverage
-
    - Every deprecated public path needs a replacement path or explicit removal
      rationale.
    - Provider-to-config migrations must show the old path and new path.
@@ -96,6 +92,10 @@ make check
 make doc
 ```
 
+For new modules, add coverage verification for the module and document the
+result in the pull request. The target is 100% coverage for the new module's
+owned files.
+
 For docs-only changes that include examples:
 
 ```bash
@@ -103,43 +103,26 @@ make docs-examples-check
 make doc
 ```
 
-## Future Documentation Tooling
+For a complete level-9 documentation refresh:
 
-The current repository already has `make generated-check`,
-`make docs-examples-check`, and `make doc`. The refactor should add stricter
-documentation tooling in small slices:
+```bash
+make docs-requirement
+```
 
-1. Add a docs requirement target
+This target runs generated surface checks, docs example checks, and TypeDoc
+generation. It is a maintainer convenience target for the documentation
+requirement, not a CI mandate.
 
-   Candidate target:
+## Documentation Tooling
 
-   ```bash
-   make docs-requirement
-   ```
-
-   It should give maintainers one command for generated surface checks, docs
-   example checks, and TypeDoc generation. It is a convenience target, not a
-   statement that CI must require it.
-
-2. Add a public-type documentation check
-
-   The check should report when a curated public type has no matching TypeDoc
-   page or no inventory entry.
-
-3. Add sample coverage metadata
-
-   Public inventory entries should include a docs sample path. Tooling should
-   report public user-facing types that lack at least one sample.
-
-4. Promote runnable examples
-
-   Complex examples under `docs/static/examples` should become Playwright or
-   TypeScript fixtures instead of passive snippets.
-
-5. Add migration-note checks
-
-   Deprecated provider paths and removed public types should require migration
-   notes before namespace changes land.
+- `make docs-requirement` refreshes generated surfaces, validates examples,
+  generates TypeDoc, and checks public type documentation.
+- `make public-type-docs-check` derives the current public surface from
+  `src/namespace.ts` and requires a generated TypeDoc page for every export.
+- `make docs-examples-check` validates API references used by documentation
+  examples.
+- Complex examples under `docs/static/examples` should become Playwright or
+  TypeScript fixtures instead of passive snippets.
 
 ## Level-9 Documentation Completeness
 

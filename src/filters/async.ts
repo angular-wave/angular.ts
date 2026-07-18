@@ -16,7 +16,7 @@ const asyncFilterStates = new WeakMap<object, AsyncFilterState>();
 asyncFilter.$inject = [_rootScope];
 
 /** Creates a filter that unwraps promise-like values once they settle. */
-export function asyncFilter($rootScope: ng.RootScopeService) {
+export function asyncFilter($rootScope: ng.Scope) {
   return function asyncFilterFn(input: unknown): unknown {
     if (!isPromiseLike(input)) {
       return input;
@@ -56,7 +56,7 @@ export function asyncFilter($rootScope: ng.RootScopeService) {
 }
 
 function settleAsyncValue(
-  $rootScope: ng.RootScopeService,
+  $rootScope: ng.Scope,
   promise: object,
   value: unknown,
 ): void {

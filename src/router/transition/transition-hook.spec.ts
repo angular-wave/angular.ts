@@ -3,6 +3,15 @@
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import { Rejection, RejectType } from "./reject-factory.ts";
 import { TransitionEventType } from "./transition-event-type.ts";
+import {
+  afterPaintTask,
+  applyRouterFocus,
+  applyRouterScroll,
+  resolveFocusTarget,
+  resolveScrollTarget,
+  scrollToHash,
+} from "./transition-hooks.ts";
+import "./security-policy.spec.ts";
 
 function createHook({
   callback = () => undefined,
@@ -45,6 +54,191 @@ function createHook({
 }
 
 describe("TransitionHook", () => {
+  let originalHash: string;
+  let originalScrollTo: typeof window.scrollTo;
+
+  beforeEach(() => {
+    originalHash = window.location.hash;
+    originalScrollTo = window.scrollTo;
+  });
+
+  afterEach(() => {
+    window.location.hash = originalHash;
+    window.scrollTo = originalScrollTo;
+    document.querySelectorAll("[data-router-helper-test]").forEach((node) => {
+      node.remove();
+    });
+  });
+
+  it("falls back to a timer when requestAnimationFrame is unavailable", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      window,
+      "requestAnimationFrame",
+    );
+
+    Object.defineProperty(window, "requestAnimationFrame", {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      await afterPaintTask();
+      expect(true).toBeTrue();
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(window, "requestAnimationFrame", descriptor);
+      }
+    }
+  });
+
+  it("resolves scroll and focus targets through the document", () => {
+    const target = document.createElement("button");
+    target.id = "router-helper-target";
+    target.setAttribute("data-router-helper-test", "");
+    document.body.appendChild(target);
+
+    expect(resolveScrollTarget("#router-helper-target")).toBe(target);
+    expect(resolveFocusTarget("#router-helper-target")).toBe(target);
+    expect(resolveFocusTarget({ selector: "#router-helper-target" })).toBe(
+      target,
+    );
+  });
+
+  it("handles missing DOM globals in router UX helpers", () => {
+    expect(resolveScrollTarget("#missing", null)).toBeNull();
+    expect(scrollToHash(null, document)).toBeFalse();
+    expect(scrollToHash(window, null)).toBeFalse();
+    expect(resolveFocusTarget("#missing", null)).toBeNull();
+  });
+
+  it("scrolls to hash targets when present", () => {
+    const target = document.createElement("section");
+    target.id = "router-hash-target";
+    target.setAttribute("data-router-helper-test", "");
+    target.scrollIntoView = jasmine.createSpy("scrollIntoView");
+    document.body.appendChild(target);
+
+    window.location.hash = "#";
+    expect(scrollToHash()).toBeFalse();
+
+    window.location.hash = "#missing-router-hash-target";
+    expect(scrollToHash()).toBeFalse();
+
+    window.location.hash = "#router-hash-target";
+    expect(scrollToHash()).toBeTrue();
+    expect(target.scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("applies router scroll policies", () => {
+    const target = document.createElement("section");
+    target.id = "router-scroll-target";
+    target.setAttribute("data-router-helper-test", "");
+    target.scrollIntoView = jasmine.createSpy("scrollIntoView");
+    document.body.appendChild(target);
+
+    const scrollTo = jasmine.createSpy("scrollTo");
+    window.scrollTo = scrollTo as typeof window.scrollTo;
+
+    applyRouterScroll({ _scroll: undefined } as any);
+    applyRouterScroll({ _scroll: "preserve" } as any);
+    expect(scrollTo).not.toHaveBeenCalled();
+
+    applyRouterScroll({
+      _scroll: {
+        selector: "#router-scroll-target",
+        behavior: "smooth",
+      },
+    } as any);
+    expect(target.scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+    });
+
+    applyRouterScroll({
+      _scroll: {
+        left: 4,
+        top: 8,
+        behavior: "auto",
+      },
+    } as any);
+    expect(scrollTo).toHaveBeenCalledWith({
+      behavior: "auto",
+      left: 4,
+      top: 8,
+    });
+
+    applyRouterScroll({
+      _scroll: {
+        behavior: "smooth",
+      },
+    } as any);
+    expect(scrollTo).toHaveBeenCalledWith({
+      behavior: "smooth",
+      left: 0,
+      top: 0,
+    });
+
+    applyRouterScroll({ _scroll: { behavior: "auto" } } as any, null);
+    expect(scrollTo).toHaveBeenCalledTimes(2);
+
+    applyRouterScroll({ _scroll: true } as any);
+    expect(scrollTo).toHaveBeenCalledWith({ left: 0, top: 0 });
+  });
+
+  it("applies hash router scroll policies", () => {
+    const target = document.createElement("section");
+    target.id = "router-hash-scroll-target";
+    target.setAttribute("data-router-helper-test", "");
+    target.scrollIntoView = jasmine.createSpy("scrollIntoView");
+    document.body.appendChild(target);
+
+    const scrollTo = jasmine.createSpy("scrollTo");
+    window.scrollTo = scrollTo as typeof window.scrollTo;
+
+    window.location.hash = "#router-hash-scroll-target";
+    applyRouterScroll({ _scroll: "hash" } as any);
+    expect(target.scrollIntoView).toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalled();
+
+    window.location.hash = "#missing-router-hash-scroll-target";
+    applyRouterScroll({ _scroll: "hash" } as any);
+    expect(scrollTo).toHaveBeenCalledWith({ left: 0, top: 0 });
+  });
+
+  it("applies router focus policies", () => {
+    const explicit = document.createElement("button");
+    explicit.id = "router-focus-explicit";
+    explicit.setAttribute("data-router-helper-test", "");
+    explicit.focus = jasmine.createSpy("explicitFocus");
+    document.body.appendChild(explicit);
+
+    const fallback = document.createElement("main");
+    fallback.id = "router-focus-fallback";
+    fallback.setAttribute("data-router-focus", "");
+    fallback.setAttribute("data-router-helper-test", "");
+    fallback.focus = jasmine.createSpy("fallbackFocus");
+    document.body.appendChild(fallback);
+
+    applyRouterFocus({ _focus: false } as any);
+    expect(explicit.focus).not.toHaveBeenCalled();
+
+    applyRouterFocus({ _focus: "#router-focus-explicit" } as any);
+    expect(explicit.focus).toHaveBeenCalledWith({ preventScroll: true });
+
+    applyRouterFocus({
+      _focus: {
+        selector: "#router-focus-explicit",
+        preventScroll: false,
+      },
+    } as any);
+    expect(explicit.focus).toHaveBeenCalledWith({ preventScroll: false });
+
+    applyRouterFocus({ _focus: true } as any);
+    expect(fallback.focus).toHaveBeenCalledWith({ preventScroll: true });
+
+    applyRouterFocus({ _focus: "#missing-router-focus-target" } as any);
+    expect(explicit.focus).toHaveBeenCalledTimes(2);
+  });
+
   it("chains hooks without an initial promise", async () => {
     const order = [];
 

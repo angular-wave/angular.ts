@@ -333,7 +333,7 @@ describe("ngShow / ngHide", () => {
 
 //   beforeEach(
 //     module(
-//       ($animateProvider, $provide) =>
+//       ($provide) =>
 //         function (_$rootElement_) {
 //           $rootElement = _$rootElement_;
 //         },

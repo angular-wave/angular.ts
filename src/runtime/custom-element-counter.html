@@ -13,10 +13,8 @@
       import { defineAngularElement } from "/src/runtime/web-component.ts";
 
       defineAngularElement("runtime-counter", {
-        ngModule: {
-          directives: {
-            ngClick: ngEventDirectives.ngClick,
-          },
+        directives: {
+          ngClick: ngEventDirectives.ngClick,
         },
         component: {
           shadow: true,

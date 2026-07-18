@@ -1,9 +1,13 @@
 /// <reference types="jasmine" />
 import * as publicApi from "./index.ts";
+import * as docsApi from "./docs.ts";
 import { angular } from "./index.ts";
+import { _security, _serviceWorker, _workflow } from "./injection-tokens.ts";
+import { PublicInjectionTokens } from "./interface.ts";
 import * as namespaceApi from "./namespace.ts";
 
 const exports = publicApi as Record<string, unknown>;
+const docsExports = docsApi as Record<string, unknown>;
 const namespaceExports = namespaceApi as Record<string, unknown>;
 
 describe("index", () => {
@@ -11,11 +15,9 @@ describe("index", () => {
     expect(angular).toBeDefined();
   });
 
-  it("exports custom runtime constructors", () => {
+  it("exports the composed runtime constructor", () => {
     expect(exports.AngularRuntime).toBeDefined();
-    expect(exports.createAngularBare).toBeDefined();
-    expect(exports.createAngularCustom).toBeDefined();
-    expect(exports.registerCustomNgModule).toBeDefined();
+    expect(exports.createAngular).toBeDefined();
   });
 
   it("keeps the namespace entrypoint aligned with core runtime exports", () => {
@@ -36,5 +38,15 @@ describe("index", () => {
     expect(exports.WasmScope).toBeUndefined();
     expect(exports.WasmScopeAbi).toBeUndefined();
     expect(exports.createRestCacheKey).toBeUndefined();
+  });
+
+  it("keeps documentation and token entrypoints executable", () => {
+    expect(docsExports.angular).toBe(angular);
+    expect(docsExports.Angular).toBeDefined();
+    expect(docsExports.NgModule).toBeDefined();
+    expect(docsExports.Http).toBeDefined();
+    expect(PublicInjectionTokens.$security).toBe(_security);
+    expect(PublicInjectionTokens.$serviceWorker).toBe(_serviceWorker);
+    expect(PublicInjectionTokens.$workflow).toBe(_workflow);
   });
 });

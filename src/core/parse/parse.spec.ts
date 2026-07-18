@@ -48,15 +48,11 @@ describe("parser", () => {
     $rootScope = injector.get("$rootScope");
   });
 
-  let filterProvider;
+  let filterRegistry;
 
   beforeEach(() => {
-    createInjector([
-      "ng",
-      function ($filterProvider) {
-        filterProvider = $filterProvider;
-      },
-    ]).invoke((_$rootScope_, _$parse_) => {
+    filterRegistry = window.angular._composition.filterRegistry;
+    createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
       $rootScope = _$rootScope_;
       $parse = _$parse_;
     });
@@ -65,12 +61,7 @@ describe("parser", () => {
   [true, false].forEach((cspEnabled) => {
     describe(`csp: ${cspEnabled}`, () => {
       beforeEach(() => {
-        createInjector([
-          "ng",
-          function ($filterProvider) {
-            filterProvider = $filterProvider;
-          },
-        ]).invoke((_$rootScope_, _$parse_) => {
+        createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
           scope = _$rootScope_;
           $parse = _$parse_;
         });
@@ -310,7 +301,7 @@ describe("parser", () => {
       });
 
       it("should parse filters", () => {
-        filterProvider.register(
+        filterRegistry.register(
           "substring",
           () => (input, start, end) => input.substring(start, end),
         );
@@ -1063,12 +1054,7 @@ describe("parser", () => {
 
   describe("assignable", () => {
     beforeEach(() => {
-      createInjector([
-        "ng",
-        function ($filterProvider) {
-          filterProvider = $filterProvider;
-        },
-      ]);
+      createInjector(["ng"]);
     });
 
     it("should expose assignment function", () => {
@@ -1244,12 +1230,7 @@ describe("parser", () => {
 
   describe("filters", () => {
     beforeEach(() => {
-      createInjector([
-        "ng",
-        function ($filterProvider) {
-          filterProvider = $filterProvider;
-        },
-      ]).invoke((_$rootScope_, _$parse_) => {
+      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
         scope = _$rootScope_;
         $parse = _$parse_;
       });
@@ -1259,7 +1240,7 @@ describe("parser", () => {
     it("should be invoked when the input/arguments change", async () => {
       let filterCalled = false;
 
-      filterProvider.register("foo", () => (input) => {
+      filterRegistry.register("foo", () => (input) => {
         filterCalled = true;
 
         return input;
@@ -1287,7 +1268,7 @@ describe("parser", () => {
     it("should not be invoked unless the input/arguments change within literals", async () => {
       const filterCalls = [];
 
-      filterProvider.register("foo", () => (input) => {
+      filterRegistry.register("foo", () => (input) => {
         filterCalls.push(input);
 
         return input;
@@ -1309,7 +1290,7 @@ describe("parser", () => {
     it("should be treated as constant when input are constant", async () => {
       let filterCalls = 0;
 
-      filterProvider.register("foo", () => (input) => {
+      filterRegistry.register("foo", () => (input) => {
         filterCalls++;
 
         return input;
@@ -1361,12 +1342,7 @@ describe("parser", () => {
 
   describe("with non-primitive input", () => {
     beforeEach(() => {
-      createInjector([
-        "ng",
-        function ($filterProvider) {
-          filterProvider = $filterProvider;
-        },
-      ]).invoke((_$rootScope_, _$parse_) => {
+      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
         scope = _$rootScope_;
         $parse = _$parse_;
       });
@@ -1377,7 +1353,7 @@ describe("parser", () => {
       it("should always be reevaluated", async () => {
         let filterCalls = 0;
 
-        filterProvider.register("foo", () => (input) => {
+        filterRegistry.register("foo", () => (input) => {
           filterCalls++;
 
           return input;
@@ -1397,7 +1373,7 @@ describe("parser", () => {
       });
 
       it("should always be reevaluated in literals", async () => {
-        filterProvider.register("foo", () => (input) => input.b > 0);
+        filterRegistry.register("foo", () => (input) => input.b > 0);
 
         scope.$watch("[(a | foo)]", () => {
           /* empty */
@@ -1430,7 +1406,7 @@ describe("parser", () => {
       it("should not be reevaluated", async () => {
         let filterCalls = 0;
 
-        filterProvider.register("foo", () => (input) => {
+        filterRegistry.register("foo", () => (input) => {
           filterCalls++;
           expect(input instanceof Date).toBe(true);
 
@@ -1453,7 +1429,7 @@ describe("parser", () => {
       it("should not be reevaluated in literals", async () => {
         let filterCalls = 0;
 
-        filterProvider.register("foo", () => (input) => {
+        filterRegistry.register("foo", () => (input) => {
           filterCalls++;
 
           return input;
@@ -1482,7 +1458,7 @@ describe("parser", () => {
       it("should be reevaluated when valueOf() changes", async () => {
         let filterCalls = 0;
 
-        filterProvider.register("foo", () => (input) => {
+        filterRegistry.register("foo", () => (input) => {
           filterCalls++;
 
           return input;
@@ -1509,7 +1485,7 @@ describe("parser", () => {
       it("should be reevaluated in literals when valueOf() changes", async () => {
         let filterCalls = 0;
 
-        filterProvider.register("foo", () => (input) => {
+        filterRegistry.register("foo", () => (input) => {
           filterCalls++;
 
           return input;
@@ -1537,7 +1513,7 @@ describe("parser", () => {
       it("should not be reevaluated when the instance changes but valueOf() does not", async () => {
         let filterCalls = 0;
 
-        filterProvider.register("foo", () => (input) => {
+        filterRegistry.register("foo", () => (input) => {
           filterCalls++;
 
           return input;
@@ -1565,7 +1541,7 @@ describe("parser", () => {
     it("should not be reevaluated when input is simplified via unary operators", async () => {
       let filterCalls = 0;
 
-      filterProvider.register("foo", () => (input) => {
+      filterRegistry.register("foo", () => (input) => {
         filterCalls++;
 
         return input;
@@ -1591,7 +1567,7 @@ describe("parser", () => {
     it("should not be reevaluated when input is simplified via non-plus/concat binary operators", async () => {
       let filterCalls = 0;
 
-      filterProvider.register("foo", () => (input) => {
+      filterRegistry.register("foo", () => (input) => {
         filterCalls++;
 
         return input;
@@ -1617,7 +1593,7 @@ describe("parser", () => {
     it("should be reevaluated when input is simplified via plus/concat", async () => {
       let filterCalls = 0;
 
-      filterProvider.register("foo", () => (input) => {
+      filterRegistry.register("foo", () => (input) => {
         filterCalls++;
 
         return input;
@@ -1643,12 +1619,7 @@ describe("parser", () => {
 
   describe("with primitive input", () => {
     beforeEach(() => {
-      createInjector([
-        "ng",
-        function ($filterProvider) {
-          filterProvider = $filterProvider;
-        },
-      ]).invoke((_$rootScope_, _$parse_) => {
+      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
         scope = _$rootScope_;
         $parse = _$parse_;
       });
@@ -1658,7 +1629,7 @@ describe("parser", () => {
     it("should not be reevaluated when passed literals", async () => {
       let filterCalls = 0;
 
-      filterProvider.register("foo", () => (input) => {
+      filterRegistry.register("foo", () => (input) => {
         filterCalls++;
 
         return input;
@@ -1684,7 +1655,7 @@ describe("parser", () => {
     it("should not be reevaluated in literals", async () => {
       let filterCalls = 0;
 
-      filterProvider.register("foo", () => (input) => {
+      filterRegistry.register("foo", () => (input) => {
         filterCalls++;
 
         return input;
@@ -1710,12 +1681,7 @@ describe("parser", () => {
 
   describe("literals", () => {
     beforeEach(() => {
-      createInjector([
-        "ng",
-        function ($filterProvider) {
-          filterProvider = $filterProvider;
-        },
-      ]).invoke((_$rootScope_, _$parse_) => {
+      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
         scope = _$rootScope_;
         $parse = _$parse_;
       });
@@ -1821,12 +1787,7 @@ describe("parser", () => {
 
   describe("with non-primative input", () => {
     beforeEach(() => {
-      createInjector([
-        "ng",
-        function ($filterProvider) {
-          filterProvider = $filterProvider;
-        },
-      ]).invoke((_$rootScope_, _$parse_) => {
+      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
         scope = _$rootScope_;
         $parse = _$parse_;
       });

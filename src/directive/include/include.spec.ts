@@ -60,6 +60,76 @@ describe("ngInclude", () => {
       expect(element.textContent).toEqual("hello\n");
     });
 
+    it("completes animated include enter and leave cleanup", async () => {
+      const animation = {
+        enter: jasmine.createSpy("enter").and.callFake(() => ({
+          done(callback) {
+            callback(true);
+          },
+        })),
+        leave: jasmine.createSpy("leave").and.callFake(() => ({
+          done(callback) {
+            callback(true);
+          },
+        })),
+      };
+      const root = document.createElement("div");
+      const localAngular = new Angular();
+
+      document.body.appendChild(root);
+      localAngular.module("animatedInclude", []).value("$animate", animation);
+      const localInjector = localAngular.bootstrap(root, ["animatedInclude"]);
+      const localScope = localInjector.get("$rootScope");
+      const cache = localInjector.get("$templateCache");
+
+      cache.set("animated-template", "<span>Animated</span>");
+      localScope.url = "animated-template";
+      localInjector.get("$compile")(
+        '<div ng-include="url" data-animate="true"></div>',
+      )(localScope);
+      await wait();
+
+      localScope.url = null;
+      await wait();
+
+      expect(animation.enter).toHaveBeenCalled();
+      expect(animation.leave).toHaveBeenCalled();
+      localAngular._composition.destroy();
+      root.remove();
+    });
+
+    it("disposes an interrupted animated include before rendering the next one", async () => {
+      const animation = {
+        enter: () => ({ done: (callback) => callback(true) }),
+        leave: () => ({ done: (callback) => callback(false) }),
+      };
+      const root = document.createElement("div");
+      const localAngular = new Angular();
+
+      document.body.appendChild(root);
+      localAngular.module("interruptedInclude", []).value("$animate", animation);
+      const localInjector = localAngular.bootstrap(root, ["interruptedInclude"]);
+      const localScope = localInjector.get("$rootScope");
+      const cache = localInjector.get("$templateCache");
+
+      cache.set("first-template", "<span>First</span>");
+      cache.set("second-template", "<span>Second</span>");
+      localScope.url = "first-template";
+      localInjector.get("$compile")(
+        '<div ng-include="url" data-animate="true"></div>',
+      )(localScope);
+      await wait();
+
+      localScope.url = null;
+      await wait();
+      localScope.url = "second-template";
+      await wait();
+
+      expect(root.textContent).not.toContain("First");
+      localAngular._composition.destroy();
+      root.remove();
+    });
+
     it("should trust and use trusted urls", async () => {
       const element = createElementFromHTML(
         '<div><div ng-include="fooUrl">test</div></div>',
@@ -416,12 +486,10 @@ describe("ngInclude", () => {
       let $animate;
 
       it("should call $anchorScroll if autoscroll attribute is present", async () => {
-        window.angular.module("myModule", [
-          function ($provide) {
-            autoScrollSpy = jasmine.createSpy("$anchorScroll");
-            $provide.value("$anchorScroll", autoScrollSpy);
-          },
-        ]);
+        autoScrollSpy = jasmine.createSpy("$anchorScroll");
+        window.angular
+          .module("myModule", [])
+          .value("$anchorScroll", autoScrollSpy);
         element = createElementFromHTML(
           '<div><ng-include src="tpl" autoscroll></ng-include></div>',
         );
@@ -436,12 +504,10 @@ describe("ngInclude", () => {
       });
 
       it("should call $anchorScroll if autoscroll evaluates to true", async () => {
-        window.angular.module("myModule", [
-          function ($provide) {
-            autoScrollSpy = jasmine.createSpy("$anchorScroll");
-            $provide.value("$anchorScroll", autoScrollSpy);
-          },
-        ]);
+        autoScrollSpy = jasmine.createSpy("$anchorScroll");
+        window.angular
+          .module("myModule", [])
+          .value("$anchorScroll", autoScrollSpy);
         element = createElementFromHTML(
           '<div><ng-include src="tpl" autoscroll="value"></ng-include></div>',
         );
@@ -457,12 +523,10 @@ describe("ngInclude", () => {
       });
 
       it("should not call $anchorScroll if autoscroll attribute is not present", async () => {
-        window.angular.module("myModule", [
-          function ($provide) {
-            autoScrollSpy = jasmine.createSpy("$anchorScroll");
-            $provide.value("$anchorScroll", autoScrollSpy);
-          },
-        ]);
+        autoScrollSpy = jasmine.createSpy("$anchorScroll");
+        window.angular
+          .module("myModule", [])
+          .value("$anchorScroll", autoScrollSpy);
 
         element = createElementFromHTML(
           '<div><ng-include src="tpl"></ng-include></div>',
@@ -477,12 +541,10 @@ describe("ngInclude", () => {
       });
 
       it("should not call $anchorScroll if autoscroll evaluates to false", async () => {
-        window.angular.module("myModule", [
-          function ($provide) {
-            autoScrollSpy = jasmine.createSpy("$anchorScroll");
-            $provide.value("$anchorScroll", autoScrollSpy);
-          },
-        ]);
+        autoScrollSpy = jasmine.createSpy("$anchorScroll");
+        window.angular
+          .module("myModule", [])
+          .value("$anchorScroll", autoScrollSpy);
 
         element = createElementFromHTML(
           '<div><ng-include src="tpl" autoscroll="value"></ng-include></div>',

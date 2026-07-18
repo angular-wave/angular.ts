@@ -1,6 +1,38 @@
 import { _parse } from "../../injection-tokens.ts";
 import { arrayFrom } from "../../shared/utils.ts";
-import { getNormalizedAttr } from "../../shared/dom.ts";
+import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
+
+const DEFAULT_THRESHOLD = 0.1;
+
+interface ViewportLocals {
+  $entry: IntersectionObserverEntry;
+  $entries: IntersectionObserverEntry[];
+}
+
+function parseThreshold(value: string | undefined): number | number[] {
+  if (!value) {
+    return DEFAULT_THRESHOLD;
+  }
+
+  const thresholds = value
+    .split(",")
+    .map((part) => Number(part.trim()))
+    .filter((part) => !Number.isNaN(part));
+
+  if (thresholds.length === 0) {
+    throw new Error(`Invalid ng-viewport threshold '${value}'`);
+  }
+
+  thresholds.forEach((threshold) => {
+    if (threshold < 0 || threshold > 1) {
+      throw new Error(
+        `Invalid ng-viewport threshold '${value}'. Threshold values must be between 0 and 1.`,
+      );
+    }
+  });
+
+  return thresholds.length === 1 ? thresholds[0] : thresholds;
+}
 
 ngViewportDirective.$inject = [_parse];
 
@@ -13,23 +45,48 @@ export function ngViewportDirective($parse: ng.ParseService): ng.Directive {
 
       const leaveExpr = getNormalizedAttr(element, "onLeave");
 
+      const once = hasNormalizedAttr(element, "viewportOnce");
+
+      const threshold = parseThreshold(
+        getNormalizedAttr(element, "viewportThreshold"),
+      );
+
+      const rootMargin = getNormalizedAttr(element, "viewportMargin") ?? "0px";
+
       const enterFn = enterExpr ? $parse(enterExpr) : undefined;
 
       const leaveFn = leaveExpr ? $parse(leaveExpr) : undefined;
 
+      let completed = false;
+
       const observer = new IntersectionObserver(
         (entries: IntersectionObserverEntry[]) => {
           entries.forEach((entry) => {
+            if (completed) {
+              return;
+            }
+
+            const locals: ViewportLocals = {
+              $entry: entry,
+              $entries: entries,
+            };
+
             if (entry.isIntersecting) {
-              enterFn?.(scope);
+              enterFn?.(scope, locals);
+
+              if (once) {
+                completed = true;
+                observer.disconnect();
+              }
             } else {
-              leaveFn?.(scope);
+              leaveFn?.(scope, locals);
             }
           });
         },
         {
           root: null, // viewport
-          threshold: 0.1, // consider "in view" if 10% visible
+          rootMargin,
+          threshold,
         },
       );
 

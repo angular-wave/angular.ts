@@ -127,6 +127,21 @@ describe("ngModel", () => {
     dealoc(form);
   });
 
+  it("removes a control name when its name attribute is removed", async () => {
+    const form = $compile(
+      '<form name="form"><input name="alias" ng-model="value" /></form>',
+    )($rootScope);
+    const input = form.querySelector("input");
+
+    expect($rootScope.form.alias).toBeDefined();
+
+    input.removeAttribute("name");
+    await wait();
+
+    expect($rootScope.form.alias).toBeUndefined();
+    dealoc(form);
+  });
+
   describe("NgModelController", () => {
     it("should init the properties", () => {
       expect(ctrl.$untouched).toBe(true);

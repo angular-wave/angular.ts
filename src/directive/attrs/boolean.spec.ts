@@ -9,16 +9,16 @@ describe("boolean attr directives", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    createInjector([
-      "ng",
-      ($provide) => {
-        $provide.value("$rootElement", document.body);
+    window.angular
+      .module("booleanAttrs", ["ng"])
+      .value("$rootElement", document.body);
+    createInjector(["booleanAttrs"]).invoke(
+      (_$compile_: any, _$rootScope_: any, _$rootElement_: any) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+        $rootElement = _$rootElement_;
       },
-    ]).invoke((_$compile_: any, _$rootScope_: any, _$rootElement_: any) => {
-      $compile = _$compile_;
-      $rootScope = _$rootScope_;
-      $rootElement = _$rootElement_;
-    });
+    );
   });
 
   afterEach(() => {

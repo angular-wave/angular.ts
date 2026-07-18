@@ -72,26 +72,19 @@ describe("ng-get", () => {
     animateSpy = createAnimateSpy();
     const angular = new Angular();
 
-    angular.module("default", []).config([
-      "$provide",
-      "$stateProvider",
-      "$locationProvider",
-      ($provide, $stateProvider) => {
-        $provide.value("$animate", animateSpy);
-
-        $stateProvider
-          .state({
-            name: "success",
-            url: "/success",
-            template: `success`,
-          })
-          .state({
-            name: "error",
-            url: "/error",
-            template: `error`,
-          });
-      },
-    ]);
+    angular
+      .module("default", [])
+      .value("$animate", animateSpy)
+      .router({
+        name: "success",
+        url: "/success",
+        template: `success`,
+      })
+      .router({
+        name: "error",
+        url: "/error",
+        template: `error`,
+      });
     angular
       .bootstrap(el, ["default"])
       .invoke((_$compile_, _$rootScope_, _$log_, _$stream_) => {
@@ -806,16 +799,32 @@ describe("ng-get", () => {
     });
   });
 
-  describe("data-success", () => {
+  describe("on-success", () => {
     it("should evaluate expression passing result", async () => {
       const scope = $rootScope.$new();
 
       el.innerHTML =
-        '<button ng-get="/mock/hello" data-success="res = $res">Load</button>';
+        '<button ng-get="/mock/hello" on-success="res = $res">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
       await waitUntil(() => scope.res === "Hello");
       expect(scope.res).toEqual("Hello");
+    });
+
+    it("should require explicit assignment for object responses", async () => {
+      const scope = $rootScope.$new();
+
+      scope.name = "Alice";
+      el.innerHTML =
+        '<button ng-get="/mock/jsonobject" target="person" on-success="response = $res">Load</button>';
+      $compile(el)(scope);
+      browserTrigger(el.querySelector("button"), "click");
+      await waitUntil(() => scope.response?.name === "Bob");
+
+      expect(scope.response).toEqual({ name: "Bob", age: 20 });
+      expect(scope.name).toBe("Alice");
+      expect(scope.age).toBeUndefined();
+      expect(scope.person).toBeUndefined();
     });
   });
 
@@ -849,12 +858,12 @@ describe("ng-get", () => {
     });
   });
 
-  describe("data-error", () => {
+  describe("on-error", () => {
     it("should evaluate expression passing result", async () => {
       const scope = $rootScope.$new();
 
       el.innerHTML =
-        '<button ng-get="/mock/422" data-error="res = $res">Load</button>';
+        '<button ng-get="/mock/422" on-error="res = $res">Load</button>';
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
       await waitUntil(() => scope.res === "Invalid data");

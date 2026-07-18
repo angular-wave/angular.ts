@@ -144,16 +144,16 @@ export interface NgModelOptions {
     the bound ngModel expression changes programmatically. The `$formatters` are not called when the
     value of the control is changed by user interaction.
  *
- * @property $validators A collection of validators that are applied whenever the model value changes. 
- * The key value within the object refers to the name of the validator while the function refers to the validation operation. 
+ * @property $validators A collection of validators that are applied whenever the model value changes.
+ * The key value within the object refers to the name of the validator while the function refers to the validation operation.
  * The validation operation is provided with the model value as an argument and must return a true or false value depending on the response of that validation.
  *
  * @property $asyncValidators A collection of validations that are expected to perform an asynchronous validation (e.g. a HTTP request).
  *  The validation function that is provided is expected to return a promise when it is run during the model validation process
  *
  * @property $viewChangeListeners Array of functions to execute whenever
- *     a change to {@link ngModel.NgModelController#$viewValue `$viewValue`} has caused a change
- *     to {@link ngModel.NgModelController#$modelValue `$modelValue`}.
+ *     a change to {@link NgModelController.$viewValue `$viewValue`} has caused a change
+ *     to {@link NgModelController.$modelValue `$modelValue`}.
  *     It is called with no arguments, and its return value is ignored.
  *     This can be used in place of additional $watches against the model value.
  *
@@ -861,7 +861,7 @@ export class NgModelController {
           div:nth-child(1) {
             padding-right: 30px;
           }
-
+   *
         </file>
    * </example>
    */
@@ -878,7 +878,7 @@ export class NgModelController {
    * Runs each of the registered validators (first synchronous validators and then
    * asynchronous validators).
    * If the validity changes to invalid, the model will be set to `undefined`,
-   * unless {@link ngModelOptions `ngModelOptions.allowInvalid`} is `true`.
+   * unless `ngModelOptions.allowInvalid` is `true`.
    * If the validity changes to valid, it will set the model to the last available valid
    * `$modelValue`, i.e. either the last parsed value or the last value set from the scope.
    */
@@ -1192,21 +1192,21 @@ export class NgModelController {
    * Update the view value.
    *
    * This method should be called when a control wants to change the view value; typically,
-   * this is done from within a DOM event handler. For example, the {@link ng.directive:input input}
-   * directive calls it when the value of the input changes and {@link ng.directive:select select}
+   * this is done from within a DOM event handler. For example, the `input`
+   * directive calls it when the value of the input changes and `select`
    * calls it when an option is selected.
    *
    * When `$setViewValue` is called, the new `value` will be staged for committing through the `$parsers`
-   * and `$validators` pipelines. If there are no special {@link ngModelOptions} specified then the staged
+   * and `$validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged
    * value is sent directly for processing through the `$parsers` pipeline. After this, the `$validators` and
    * `$asyncValidators` are called and the value is applied to `$modelValue`.
    * Finally, the value is set to the **expression** specified in the `ng-model` attribute and
    * all the registered change listeners, in the `$viewChangeListeners` list are called.
    *
-   * In case the {@link ng.directive:ngModelOptions ngModelOptions} directive is used with `updateOn`
+   * In case the `ngModelOptions` directive is used with `updateOn`
    * and the `default` trigger is not listed, all those actions will remain pending until one of the
    * `updateOn` events is triggered on the DOM element.
-   * All these actions will be debounced if the {@link ng.directive:ngModelOptions ngModelOptions}
+   * All these actions will be debounced if the `ngModelOptions`
    * directive is used with a custom debounce for this particular event.
    * Note that a `$digest` is only triggered once the `updateOn` events are fired, or if `debounce`
    * is specified, once the timer runs out.
@@ -1298,12 +1298,12 @@ export class NgModelController {
    * new `ModelOptions` object will inherit from the previous one overriding
    * or inheriting settings that are defined in the given parameter.
    *
-   * See {@link ngModelOptions} for information about what options can be specified
+   * See `ngModelOptions` for information about what options can be specified
    * and how model option inheritance works.
    *
    * <div class="alert alert-warning">
    * **Note:** this function only affects the options set on the `ngModelController`,
-   * and not the options on the {@link ngModelOptions} directive from which they might have been
+   * and not the options on the `ngModelOptions` directive from which they might have been
    * obtained initially.
    * </div>
    *
@@ -1323,16 +1323,16 @@ export class NgModelController {
 
   /**
    * Runs the model -> view pipeline on the current
-   * {@link ngModel.NgModelController#$modelValue $modelValue}.
+   * {@link NgModelController.$modelValue $modelValue}.
    *
    * The following actions are performed by this method:
    *
-   * - the `$modelValue` is run through the {@link ngModel.NgModelController#$formatters $formatters}
-   * and the result is set to the {@link ngModel.NgModelController#$viewValue $viewValue}
+   * - the `$modelValue` is run through the {@link NgModelController.$formatters $formatters}
+   * and the result is set to the {@link NgModelController.$viewValue $viewValue}
    * - the `ng-empty` or `ng-not-empty` class is set on the element
    * - if the `$viewValue` has changed:
-   *   - {@link ngModel.NgModelController#$render $render} is called on the control
-   *   - the {@link ngModel.NgModelController#$validators $validators} are run and
+   *   - {@link NgModelController.$render $render} is called on the control
+   *   - the {@link NgModelController.$validators $validators} are run and
    *   the validation status is set.
    *
    * This method is called by ngModel internally when the bound scope value changes.
@@ -1384,14 +1384,14 @@ export class NgModelController {
           controller: function($element, $scope) {
             let that = this;
             let ngModel;
-
+   *
             that.$postLink = function() {
               ngModel = $element.querySelectorAll('input').controller('ngModel');
-
+   *
               ngModel.$formatters.push(function(value) {
                 return (value && value.name) || value;
               });
-
+   *
               ngModel.$parsers.push(function(value) {
                 let match = value;
                 for (let i = 0; i < that.items.length; i++) {
@@ -1400,11 +1400,11 @@ export class NgModelController {
                     break;
                   }
                 }
-
+   *
                 return match;
               });
             };
-
+   *
             that.selectItem = function(item) {
               ngModel.$setViewValue(item);
               ngModel.$processModelValue();
@@ -1580,124 +1580,123 @@ export function ngModelDirective(): ng.Directive {
     // so that we can set the NgModelOptions in NgModelController
     // before anyone else uses it.
     priority: 1,
-    compile:
-      /** @param  element  */
-      (element: Element) => {
-        // Setup initial state of the control
-        element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);
+    /** Compiles an `ngModel` control and installs its pre-link behavior. */
+    compile: (element: Element) => {
+      // Setup initial state of the control
+      element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);
 
-        return {
-          pre: (
-            scope: ng.Scope,
-            preElement: HTMLElement,
-            ctrls: [
-              NgModelController,
-              ParentFormController | undefined,
-              { $options: ModelOptions } | undefined,
-            ],
-          ) => {
-            const [modelCtrl, parentFormCtrl, optionsCtrl] = ctrls;
+      return {
+        pre: (
+          scope: ng.Scope,
+          preElement: HTMLElement,
+          ctrls: [
+            NgModelController,
+            ParentFormController | undefined,
+            { $options: ModelOptions } | undefined,
+          ],
+        ) => {
+          const [modelCtrl, parentFormCtrl, optionsCtrl] = ctrls;
 
-            const formCtrl = parentFormCtrl ?? modelCtrl._parentForm;
+          const formCtrl = parentFormCtrl ?? modelCtrl._parentForm;
 
-            if (optionsCtrl) {
-              modelCtrl.$options = optionsCtrl.$options;
+          if (optionsCtrl) {
+            modelCtrl.$options = optionsCtrl.$options;
+          }
+          modelCtrl._initGetterSetters();
+
+          // notify others, especially parent forms
+          formCtrl.$addControl(modelCtrl);
+
+          const handleNameChange = (newValue?: string) => {
+            const nextName = newValue ?? "";
+
+            if (modelCtrl.$name !== nextName) {
+              modelCtrl._parentForm._renameControl(modelCtrl, nextName);
             }
-            modelCtrl._initGetterSetters();
+          };
 
-            // notify others, especially parent forms
-            formCtrl.$addControl(modelCtrl);
+          const deregisterNameObserver = observeModelAttr(
+            scope,
+            preElement,
+            "name",
+            handleNameChange,
+          );
 
-            const handleNameChange = (newValue?: string) => {
-              const nextName = newValue ?? "";
+          const deregisterWatch = (scope.$watch(
+            modelCtrl._modelExpression,
+            (val: unknown) => {
+              const modelValue: unknown = deProxy<unknown>(val);
 
-              if (modelCtrl.$name !== nextName) {
-                modelCtrl._parentForm._renameControl(modelCtrl, nextName);
-              }
-            };
-
-            const deregisterNameObserver = observeModelAttr(
-              scope,
-              preElement,
-              "name",
-              handleNameChange,
-            );
-
-            const deregisterWatch = (scope.$watch(
-              modelCtrl._modelExpression,
-              (val: unknown) => {
-                const modelValue: unknown = deProxy<unknown>(val);
-
-                if (
-                  modelValue === modelCtrl.$modelValue ||
-                  (Number.isNaN(modelValue) &&
-                    Number.isNaN(modelCtrl.$modelValue))
-                ) {
-                  return;
-                }
-
-                modelCtrl._setModelValue(modelValue);
-              },
-            ) ??
-              (() => {
-                /* empty */
-              })) as () => void;
-
-            scope.$on("$destroy", () => {
-              modelCtrl._destroyed = true;
-
-              if (modelCtrl._pendingDebounce) {
-                clearTimeout(modelCtrl._pendingDebounce);
-                modelCtrl._pendingDebounce = undefined;
+              if (
+                modelValue === modelCtrl.$modelValue ||
+                (Number.isNaN(modelValue) &&
+                  Number.isNaN(modelCtrl.$modelValue))
+              ) {
+                return;
               }
 
-              modelCtrl._removeAllEventListeners();
-              modelCtrl.$viewChangeListeners.length = 0;
-              modelCtrl._deregisterModelWatcher();
-              modelCtrl._deregisterModelWatcher = () => {
-                /* empty */
-              };
-              modelCtrl._element = undefined as never;
-              deregisterNameObserver();
-              modelCtrl._parentForm.$removeControl(modelCtrl);
-              modelCtrl._parentForm = nullFormCtrl;
-              deregisterWatch();
-            });
-          },
-          post: (
-            scope: ng.Scope,
-            elementPost: HTMLElement,
-            ctrls: [NgModelController],
-          ) => {
-            const [modelCtrl] = ctrls;
+              modelCtrl._setModelValue(modelValue);
+            },
+          ) ??
+            (() => {
+              /* empty */
+            })) as () => void;
 
-            const { change } = elementPost.dataset;
+          scope.$on("$destroy", () => {
+            modelCtrl._destroyed = true;
 
-            const changeFn = change ? modelCtrl._parse(change) : undefined;
-
-            modelCtrl._setUpdateOnEvents();
-
-            function setTouched() {
-              modelCtrl.$setTouched();
+            if (modelCtrl._pendingDebounce) {
+              clearTimeout(modelCtrl._pendingDebounce);
+              modelCtrl._pendingDebounce = undefined;
             }
 
-            const blurListener = () => {
-              if (modelCtrl.$touched) return;
-              setTouched();
+            modelCtrl._removeAllEventListeners();
+            modelCtrl.$viewChangeListeners.length = 0;
+            modelCtrl._deregisterModelWatcher();
+            modelCtrl._deregisterModelWatcher = () => {
+              /* empty */
             };
+            modelCtrl._element = undefined as never;
+            deregisterNameObserver();
+            modelCtrl._parentForm.$removeControl(modelCtrl);
+            modelCtrl._parentForm = nullFormCtrl;
+            deregisterWatch();
+          });
+        },
+        post: (
+          scope: ng.Scope,
+          elementPost: HTMLElement,
+          ctrls: [NgModelController],
+        ) => {
+          const [modelCtrl] = ctrls;
 
-            elementPost.addEventListener("blur", blurListener);
-            scope.$on("$destroy", () => {
-              elementPost.removeEventListener("blur", blurListener);
-            });
+          const { change } = elementPost.dataset;
 
-            modelCtrl.$viewChangeListeners.push(() => {
-              if (changeFn) {
-                callFunction(changeFn, undefined, scope);
-              }
-            });
-          },
-        };
-      },
+          const changeFn = change ? modelCtrl._parse(change) : undefined;
+
+          modelCtrl._setUpdateOnEvents();
+
+          function setTouched() {
+            modelCtrl.$setTouched();
+          }
+
+          const blurListener = () => {
+            if (modelCtrl.$touched) return;
+            setTouched();
+          };
+
+          elementPost.addEventListener("blur", blurListener);
+          scope.$on("$destroy", () => {
+            elementPost.removeEventListener("blur", blurListener);
+          });
+
+          modelCtrl.$viewChangeListeners.push(() => {
+            if (changeFn) {
+              callFunction(changeFn, undefined, scope);
+            }
+          });
+        },
+      };
+    },
   };
 }

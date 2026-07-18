@@ -8,7 +8,12 @@ import {
   deleteProperty,
   isString,
 } from "../../shared/utils.ts";
-import type { AnnotatedFactory, Constructor } from "../../interface.ts";
+import type {
+  AnnotatedFactory,
+  Constructor,
+  Injectable,
+  InjectionTokenMap,
+} from "../../interface.ts";
 import type { RuntimeFunction } from "../../shared/utils.ts";
 import { annotate, isClass } from "./di.ts";
 import type { ProviderCache } from "./interface.ts";
@@ -18,21 +23,26 @@ const $injectorError = createErrorFactory(_injector);
 
 export const providerSuffix = "Provider";
 
-type Dynamic = ReturnType<typeof JSON.parse>;
+type Callable<TResult = unknown> = (...args: never[]) => TResult;
 
-type Callable = (...args: Dynamic[]) => unknown;
+type AnnotatedInjectable<TResult = unknown> = [
+  ...string[],
+  Callable<TResult> | Constructor<TResult>,
+];
 
-type InjectableFn =
-  | Callable
-  | Constructor
-  | AnnotatedFactory<Callable>
-  | (string | Callable | Constructor)[];
+type InjectableFn<TResult = unknown> =
+  | Callable<TResult>
+  | Constructor<TResult>
+  | AnnotatedFactory<Callable<TResult>>
+  | AnnotatedInjectable<TResult>;
 
 const defaultLoadNewModules = (): void => {
   /* empty */
 };
 
-abstract class AbstractInjector {
+export type { InjectionTokenMap } from "../../interface.ts";
+
+abstract class AbstractInjector<TServices extends object = object> {
   /** @internal */
   _cache: Record<string, unknown>;
   strictDi: boolean;
@@ -57,6 +67,14 @@ abstract class AbstractInjector {
    * @param {string} serviceName
    * @returns {any}
    */
+  get<TKey extends Extract<keyof TServices, string>>(
+    serviceName: TKey,
+  ): TServices[TKey];
+
+  // T lets callers describe services registered under custom string tokens.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  get<T = unknown>(serviceName: string): T;
+
   get(serviceName: string): unknown {
     if (hasOwn(this._cache, serviceName)) {
       if (this._cache[serviceName] === true) {
@@ -131,6 +149,27 @@ abstract class AbstractInjector {
    * @param {string} [serviceName]
    * @returns {*}
    */
+  invoke<TResult>(
+    fn: Injectable<Callable<TResult>>,
+    self?: unknown,
+    locals?: object | string,
+    serviceName?: string,
+  ): TResult;
+
+  invoke<TInstance>(
+    fn: Constructor<TInstance> | AnnotatedInjectable<TInstance>,
+    self?: unknown,
+    locals?: object | string,
+    serviceName?: string,
+  ): TInstance;
+
+  invoke(
+    fn: InjectableFn | string,
+    self?: unknown,
+    locals?: object | string,
+    serviceName?: string,
+  ): unknown;
+
   invoke(
     fn: InjectableFn | string,
     self?: unknown,
@@ -167,6 +206,18 @@ abstract class AbstractInjector {
    * @param {*} [locals]
    * @param {string} [serviceName]
    */
+  instantiate<TInstance>(
+    type: Constructor<TInstance> | AnnotatedInjectable<TInstance>,
+    locals?: object,
+    serviceName?: string,
+  ): TInstance;
+
+  instantiate(
+    type: InjectableFn,
+    locals?: object,
+    serviceName?: string,
+  ): unknown;
+
   instantiate(
     type: InjectableFn,
     locals?: object,
@@ -233,7 +284,9 @@ export class ProviderInjector extends AbstractInjector {
 /**
  * Injector for factories and services
  */
-export class InjectorService extends AbstractInjector {
+export class InjectorService<
+  TCustomServices extends object = object,
+> extends AbstractInjector<InjectionTokenMap & TCustomServices> {
   loadNewModules: (
     mods: (string | Callable | AnnotatedFactory<Callable>)[],
   ) => void = defaultLoadNewModules;
@@ -258,9 +311,9 @@ export class InjectorService extends AbstractInjector {
    */
   /** @internal */
   _factory(serviceName: string): unknown {
-    const provider = this._providerInjector.get(
+    const provider = this._providerInjector.get<{ $get: InjectableFn }>(
       serviceName + providerSuffix,
-    ) as { $get: InjectableFn };
+    );
 
     return this.invoke(provider.$get, provider, undefined, serviceName);
   }

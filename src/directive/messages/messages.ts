@@ -331,7 +331,7 @@ export function ngMessagesIncludeDirective(
         "";
 
       void $templateRequest(src).then((html: string) => {
-        if ($scope._destroyed) return undefined;
+        if (isDestroyedScope($scope)) return undefined;
 
         if (isString(html) && !html.trim()) {
           // Empty template - nothing to compile
@@ -339,7 +339,7 @@ export function ngMessagesIncludeDirective(
           // Non-empty template - compile and link
           $compile(createNodelistFromHTML(html))(
             $scope,
-            insertCompiledMessageTemplate(element),
+            insertCompiledMessageTemplate(element, $scope),
           );
 
           ngMessagesCtrl.reRender();
@@ -351,11 +351,16 @@ export function ngMessagesIncludeDirective(
   };
 }
 
+function isDestroyedScope(scope: ng.Scope): boolean {
+  return scope._destroyed || scope.$root.$handler._destroyed;
+}
+
 function insertCompiledMessageTemplate(
   anchor: Element,
+  scope: ng.Scope,
 ): (contents?: Node | Element | Node[] | NodeList | null) => void {
   return (contents?: Node | Element | Node[] | NodeList | null) => {
-    if (!contents) {
+    if (!contents || isDestroyedScope(scope)) {
       return;
     }
 

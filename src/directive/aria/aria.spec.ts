@@ -4,15 +4,151 @@ import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.ts";
 import { dealoc, getController } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import {
+  applyAriaConfiguration,
+  createAriaRuntimeState,
+  createAriaService,
+  destroyAriaRuntimeState,
+} from "./aria.ts";
+
+describe("ARIA composition", () => {
+  const log = {
+    debug() {},
+    error() {},
+    info() {},
+    log() {},
+    warn() {},
+  };
+
+  it("shares live configuration without sharing injector diagnostics", () => {
+    const state = createAriaRuntimeState();
+    const first = createAriaService(state, log);
+    const second = createAriaService(state, log);
+
+    expect(first).not.toBe(second);
+    expect(first.config("ariaHidden")).toBeTrue();
+    expect(first._diagnostics()).not.toBe(second._diagnostics());
+
+    applyAriaConfiguration(state, {
+      ariaHidden: false,
+      ariaCurrentToken: "step",
+    });
+
+    expect(first.config("ariaHidden")).toBeFalse();
+    expect(second.config("ariaCurrentToken")).toBe("step");
+  });
+
+  it("rejects configuration and construction after teardown", () => {
+    const state = createAriaRuntimeState();
+
+    destroyAriaRuntimeState(state);
+    destroyAriaRuntimeState(state);
+
+    expect(() => applyAriaConfiguration(state, {})).toThrowError(
+      "ARIA runtime has already been disposed.",
+    );
+    expect(() => createAriaService(state, log)).toThrowError(
+      "ARIA runtime has already been disposed.",
+    );
+  });
+
+  it("watches an empty expression when a managed source attribute is absent", () => {
+    const service = createAriaService(createAriaRuntimeState(), log);
+    const watch = jasmine.createSpy("$watch");
+
+    service._watchExpr(
+      "ngDisabled",
+      "aria-disabled",
+      [],
+      false,
+    )({ $watch: watch }, document.createElement("div"));
+
+    expect(watch).toHaveBeenCalledWith("", jasmine.any(Function));
+  });
+});
 
 describe("$aria", () => {
   let scope;
 
   let $compile;
 
+  let $aria;
+
   let element;
 
   const errorLog = [];
+
+  it("activates synthetic buttons with standard keyboard keys", () => {
+    scope.someAction = jasmine.createSpy("someAction");
+    element = $compile('<div ng-click="someAction()"></div>')(scope);
+    const enter = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: "Enter",
+    });
+    const space = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: " ",
+    });
+
+    element.dispatchEvent(enter);
+    element.dispatchEvent(space);
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", { bubbles: true, key: "Escape" }),
+    );
+
+    expect(scope.someAction).toHaveBeenCalledTimes(2);
+    expect(enter.defaultPrevented).toBeTrue();
+    expect(space.defaultPrevented).toBeTrue();
+  });
+
+  it("does not prevent keyboard defaults from native descendants", () => {
+    scope.someAction = jasmine.createSpy("someAction");
+    element = $compile(
+      '<div ng-click="someAction()"><input type="text"></div>',
+    )(scope);
+    const event = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      key: "Enter",
+    });
+
+    element.querySelector("input").dispatchEvent(event);
+
+    expect(scope.someAction).toHaveBeenCalledTimes(1);
+    expect(event.defaultPrevented).toBeFalse();
+  });
+
+  function createConfiguredInjector(ariaConfig = {}, logger) {
+    const config = { $aria: ariaConfig };
+
+    if (logger) config.$log = { logger };
+
+    window.angular.module("test", ["ng"]).config(config);
+
+    return createInjector(["test"]);
+  }
+
+  function createWarningLogger(warnings) {
+    return () => ({
+      debug() {
+        /* empty */
+      },
+      error() {
+        /* empty */
+      },
+      info() {
+        /* empty */
+      },
+      log() {
+        /* empty */
+      },
+      warn(...args) {
+        warnings.push(args);
+      },
+    });
+  }
 
   beforeEach(() => {
     window.angular = new Angular();
@@ -26,6 +162,7 @@ describe("$aria", () => {
 
     scope = injector.get("$rootScope");
     $compile = injector.get("$compile");
+    $aria = injector.get("$aria");
   });
 
   afterEach(() => {
@@ -332,15 +469,7 @@ describe("$aria", () => {
 
   describe("aria-hidden when disabled", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            ariaHidden: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ ariaHidden: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -613,15 +742,7 @@ describe("$aria", () => {
 
   describe("aria-checked when disabled", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            ariaChecked: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ ariaChecked: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -704,15 +825,7 @@ describe("$aria", () => {
 
   describe("aria-disabled when disabled", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            ariaDisabled: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ ariaDisabled: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -784,15 +897,7 @@ describe("$aria", () => {
 
   describe("aria-invalid when disabled", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            ariaInvalid: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ ariaInvalid: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -860,15 +965,7 @@ describe("$aria", () => {
 
   describe("aria-readonly when disabled", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            ariaReadonly: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ ariaReadonly: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -924,15 +1021,7 @@ describe("$aria", () => {
 
   describe("aria-required when disabled", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            ariaRequired: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ ariaRequired: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -1049,15 +1138,7 @@ describe("$aria", () => {
 
   describe("aria-value when disabled", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            ariaValue: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ ariaValue: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -1149,15 +1230,7 @@ describe("$aria", () => {
 
   describe("actions when bindRoleForClick is set to false", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            bindRoleForClick: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ bindRoleForClick: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -1173,15 +1246,7 @@ describe("$aria", () => {
 
   describe("actions when bindKeydown is set to false", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            bindKeydown: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ bindKeydown: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -1211,15 +1276,7 @@ describe("$aria", () => {
 
   describe("tabindex when disabled", () => {
     beforeEach(() => {
-      window.angular.module("test", [
-        "ng",
-        ($ariaProvider) => {
-          $ariaProvider.config({
-            tabindex: false,
-          });
-        },
-      ]);
-      const injector = createInjector(["test"]);
+      const injector = createConfiguredInjector({ tabindex: false });
 
       scope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -1244,20 +1301,112 @@ describe("$aria", () => {
     });
   });
 
+  describe("diagnostics", () => {
+    let warnings;
+
+    beforeEach(() => {
+      warnings = [];
+      const injector = createConfiguredInjector(
+        { diagnostics: true },
+        createWarningLogger(warnings),
+      );
+
+      scope = injector.get("$rootScope");
+      $compile = injector.get("$compile");
+      $aria = injector.get("$aria");
+    });
+
+    it("stays quiet when diagnostics are disabled", () => {
+      const injector = createConfiguredInjector(
+        {},
+        createWarningLogger(warnings),
+      );
+
+      scope = injector.get("$rootScope");
+      $compile = injector.get("$compile");
+      $aria = injector.get("$aria");
+
+      element = $compile(
+        '<div ng-click="someAction()" tabindex="2" aria-hidden="true" aria-controls="missing"></div>',
+      )(scope);
+
+      expect($aria._diagnostics().length).toBe(0);
+      expect(warnings.length).toBe(0);
+    });
+
+    it("reports common authored mistakes on synthetic controls", () => {
+      element = $compile(
+        '<div ng-click="someAction()" tabindex="2" aria-hidden="true" aria-controls="missing"></div>',
+      )(scope);
+
+      const codes = $aria._diagnostics().map((diagnostic) => diagnostic.code);
+
+      expect(codes).toContain("aria-positive-tabindex");
+      expect(codes).toContain("aria-hidden-interactive");
+      expect(codes).toContain("aria-missing-accessible-name");
+      expect(codes).toContain("aria-missing-reference");
+      expect(warnings.length).toBe(4);
+    });
+
+    it("accepts valid referenced labels as accessible names", () => {
+      element = $compile(
+        '<div><span id="save-label">Save</span><div ng-click="someAction()" aria-labelledby="save-label"></div></div>',
+      )(scope);
+
+      expect($aria._diagnostics().length).toBe(0);
+      expect(warnings.length).toBe(0);
+    });
+
+    it("accepts direct aria-label values as accessible names", () => {
+      element = $compile(
+        '<div ng-click="someAction()" aria-label="Save"></div>',
+      )(scope);
+
+      expect($aria._diagnostics().length).toBe(0);
+      expect(warnings.length).toBe(0);
+    });
+
+    it("accepts self-referenced labels as accessible names", () => {
+      element = $compile(
+        '<div id="save-action" ng-click="someAction()" aria-labelledby="save-action">Save</div>',
+      )(scope);
+
+      expect($aria._diagnostics().length).toBe(0);
+      expect(warnings.length).toBe(0);
+    });
+
+    it("deduplicates repeated authored mistake diagnostics", () => {
+      element = $compile(
+        '<div><div ng-click="someAction()" tabindex="2" aria-hidden="true" aria-controls="missing"></div>' +
+          '<div ng-click="someAction()" tabindex="2" aria-hidden="true" aria-controls="missing"></div></div>',
+      )(scope);
+
+      expect($aria._diagnostics().length).toBe(4);
+      expect(warnings.length).toBe(4);
+    });
+
+    it("reports common authored mistakes on custom ng-model controls", () => {
+      element = $compile(
+        '<div role="checkbox" ng-model="value" tabindex="3" aria-labelledby="missing"></div>',
+      )(scope);
+
+      const codes = $aria._diagnostics().map((diagnostic) => diagnostic.code);
+
+      expect(codes).toContain("aria-positive-tabindex");
+      expect(codes).toContain("aria-missing-accessible-name");
+      expect(codes).toContain("aria-missing-reference");
+    });
+  });
+
   describe("ngModel", () => {
     it("should not break when manually compiling", async () => {
-      window.angular.module("test", [
-        "ng",
-        ($compileProvider) => {
-          $compileProvider.directive("foo", () => ({
-            priority: 10,
-            terminal: true,
-            link(scope, elem) {
-              $compile(elem, null, 10)(scope);
-            },
-          }));
+      window.angular.module("test", ["ng"]).directive("foo", () => ({
+        priority: 10,
+        terminal: true,
+        link(scope, elem) {
+          $compile(elem, null, 10)(scope);
         },
-      ]);
+      }));
       const injector = createInjector(["test"]);
 
       scope = injector.get("$rootScope");

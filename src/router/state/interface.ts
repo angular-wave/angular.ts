@@ -13,10 +13,392 @@ export type StateOrName = string | StateDeclaration | StateObject;
 
 export type StateStore = Record<string, StateObject | BuiltStateDeclaration>;
 
+/**
+ * Public route contract entry used by router helper types.
+ *
+ * This is an author-written TypeScript shape. It is intentionally separate
+ * from built router state records so generated docs and language bindings do
+ * not expose internal state/runtime implementation details.
+ */
+export type RouteContract = {
+  params?: Record<string, unknown>;
+  resolves?: Record<string, unknown>;
+};
+
+/**
+ * Public route-name to route-contract map used by `StateService`,
+ * generic `Transition`, `ParamsOf`, and `ResolvesOf`.
+ */
+export type RouteMap = Record<string, RouteContract>;
+
+type RouterResolvedRouteName<
+  TParentName extends string | undefined,
+  TName extends string,
+> = TParentName extends string
+  ? TName extends `${string}.${string}`
+    ? TName
+    : `${TParentName}.${TName}`
+  : TName;
+
+type RouterResolveReturn<TResolve> = TResolve extends (
+  ...args: never[]
+) => infer TResult
+  ? Awaited<TResult>
+  : TResolve extends readonly [...never[], infer TLast]
+    ? TLast extends (...args: never[]) => infer TResult
+      ? Awaited<TResult>
+      : unknown
+    : TResolve extends { resolveFn: (...args: never[]) => infer TResult }
+      ? Awaited<TResult>
+      : TResolve extends { data: infer TData }
+        ? TData
+        : unknown;
+
+type TrimLeft<TValue extends string> = TValue extends
+  | ` ${infer TRest}`
+  | `\n${infer TRest}`
+  | `\t${infer TRest}`
+  ? TrimLeft<TRest>
+  : TValue;
+
+type TrimRight<TValue extends string> = TValue extends
+  | `${infer TRest} `
+  | `${infer TRest}\n`
+  | `${infer TRest}\t`
+  ? TrimRight<TRest>
+  : TValue;
+
+type Trim<TValue extends string> = TrimLeft<TrimRight<TValue>>;
+
+type WidenLiteral<TValue> = TValue extends string
+  ? string
+  : TValue extends number
+    ? number
+    : TValue extends boolean
+      ? boolean
+      : TValue;
+
+type RouterParamTypeDefinitionValue<TDefinition> = TDefinition extends {
+  readonly decode: (...args: never[]) => infer TValue;
+}
+  ? TValue
+  : TDefinition extends {
+        readonly is: (
+          value: unknown,
+          ...args: never[]
+        ) => value is infer TValue;
+      }
+    ? TValue
+    : unknown;
+
+type RouterParamValueForType<
+  TType,
+  TParamTypes extends Record<string, unknown>,
+> = TType extends keyof TParamTypes
+  ? RouterParamTypeDefinitionValue<TParamTypes[TType]>
+  : TType extends string
+    ? Trim<TType> extends "int"
+      ? number
+      : Trim<TType> extends "bool"
+        ? boolean
+        : Trim<TType> extends "date"
+          ? Date
+          : Trim<TType> extends "json" | "any"
+            ? unknown
+            : Trim<TType> extends "string" | "path" | "query" | "hash"
+              ? string
+              : unknown
+    : unknown;
+
+type RouterParamArrayValue<TValue, TDeclaration> = TDeclaration extends {
+  readonly array: infer TArray;
+}
+  ? TArray extends true
+    ? TValue[]
+    : TArray extends "auto"
+      ? TValue | TValue[]
+      : TValue
+  : TValue;
+
+type RouterParamDeclarationValue<
+  TDeclaration,
+  TParamTypes extends Record<string, unknown>,
+> = TDeclaration extends {
+  readonly type: infer TType;
+}
+  ? RouterParamArrayValue<
+      RouterParamValueForType<TType, TParamTypes>,
+      TDeclaration
+    >
+  : TDeclaration extends { readonly value: infer TValue }
+    ? RouterParamArrayValue<WidenLiteral<TValue>, TDeclaration>
+    : WidenLiteral<TDeclaration>;
+
+type NormalizeUrlParamName<TName extends string> =
+  Trim<TName> extends `${infer TArrayName}[]` ? TArrayName : Trim<TName>;
+
+type UrlParamRecord<TName extends string, TValue> = {
+  [TKey in NormalizeUrlParamName<TName>]: TValue;
+};
+
+type RouterUrlBraceParam<
+  TBody extends string,
+  TDefaultType extends string,
+  TParamTypes extends Record<string, unknown>,
+> = TBody extends `${infer TName}:${infer TType}`
+  ? UrlParamRecord<TName, RouterParamValueForType<TType, TParamTypes>>
+  : UrlParamRecord<TBody, RouterParamValueForType<TDefaultType, TParamTypes>>;
+
+type RouterUrlBraceParams<
+  TUrl extends string,
+  TDefaultType extends string,
+  TParamTypes extends Record<string, unknown>,
+> = TUrl extends `${string}{${infer TBody}}${infer TRest}`
+  ? RouterUrlBraceParam<TBody, TDefaultType, TParamTypes> &
+      RouterUrlBraceParams<TRest, TDefaultType, TParamTypes>
+  : object;
+
+type ReadColonParamName<
+  TValue extends string,
+  TName extends string = "",
+> = TValue extends `${infer TChar}${infer TRest}`
+  ? TChar extends "/" | "?" | "&" | "#"
+    ? TName
+    : ReadColonParamName<TRest, `${TName}${TChar}`>
+  : TName;
+
+type RouterUrlColonParams<
+  TUrl extends string,
+  TParamTypes extends Record<string, unknown>,
+> = TUrl extends `${string}:${infer TRest}`
+  ? UrlParamRecord<
+      ReadColonParamName<TRest>,
+      RouterParamValueForType<"path", TParamTypes>
+    > &
+      (TRest extends `${ReadColonParamName<TRest>}${infer TNext}`
+        ? RouterUrlColonParams<TNext, TParamTypes>
+        : object)
+  : object;
+
+type RouterUrlPath<TUrl extends string> =
+  TUrl extends `${infer TPath}?${string}` ? TPath : TUrl;
+
+type RouterUrlPathWithoutBraceParams<TUrl extends string> =
+  TUrl extends `${infer TBefore}{${string}}${infer TAfter}`
+    ? RouterUrlPathWithoutBraceParams<`${TBefore}${TAfter}`>
+    : TUrl;
+
+type RouterUrlQuery<TUrl extends string> =
+  TUrl extends `${string}?${infer TQuery}` ? TQuery : "";
+
+type RouterUrlQuerySegmentParam<
+  TSegment extends string,
+  TParamTypes extends Record<string, unknown>,
+> = TSegment extends `{${infer TBody}}`
+  ? RouterUrlBraceParam<TBody, "query", TParamTypes>
+  : TSegment extends ""
+    ? object
+    : UrlParamRecord<TSegment, RouterParamValueForType<"query", TParamTypes>>;
+
+type RouterUrlQueryParams<
+  TQuery extends string,
+  TParamTypes extends Record<string, unknown>,
+> = TQuery extends `${infer TSegment}&${infer TRest}`
+  ? RouterUrlQuerySegmentParam<TSegment, TParamTypes> &
+      RouterUrlQueryParams<TRest, TParamTypes>
+  : RouterUrlQuerySegmentParam<TQuery, TParamTypes>;
+
+type Simplify<TValue> = { [TKey in keyof TValue]: TValue[TKey] };
+
+type MergeRouteParams<TUrlParams, TExplicitParams> = Simplify<
+  Omit<TUrlParams, keyof TExplicitParams> & TExplicitParams
+>;
+
+type RouterTreeUrlParams<
+  TTree,
+  TParamTypes extends Record<string, unknown>,
+> = TTree extends { readonly url: infer TUrl }
+  ? TUrl extends string
+    ? Simplify<
+        RouterUrlBraceParams<RouterUrlPath<TUrl>, "path", TParamTypes> &
+          RouterUrlColonParams<
+            RouterUrlPathWithoutBraceParams<RouterUrlPath<TUrl>>,
+            TParamTypes
+          > &
+          Partial<RouterUrlQueryParams<RouterUrlQuery<TUrl>, TParamTypes>>
+      >
+    : Record<string, never>
+  : Record<string, never>;
+
+type RouterTreeExplicitParams<
+  TTree,
+  TParamTypes extends Record<string, unknown>,
+> = TTree extends {
+  readonly params: infer TParams;
+}
+  ? TParams extends Record<string, unknown>
+    ? {
+        [TKey in Extract<keyof TParams, string>]: RouterParamDeclarationValue<
+          TParams[TKey],
+          TParamTypes
+        >;
+      }
+    : Record<string, never>
+  : Record<string, never>;
+
+type RouterTreeParams<
+  TTree,
+  TParamTypes extends Record<string, unknown>,
+> = TTree extends { readonly params: infer TParams }
+  ? TParams extends Record<string, unknown>
+    ? MergeRouteParams<
+        RouterTreeUrlParams<TTree, TParamTypes>,
+        RouterTreeExplicitParams<TTree, TParamTypes>
+      >
+    : RouterTreeUrlParams<TTree, TParamTypes>
+  : RouterTreeUrlParams<TTree, TParamTypes>;
+
+type RouterTreeResolves<TTree> = TTree extends {
+  readonly resolve: infer TResolve;
+}
+  ? TResolve extends readonly unknown[]
+    ? Record<string, never>
+    : TResolve extends Record<string, unknown>
+      ? {
+          [TKey in Extract<keyof TResolve, string>]: RouterResolveReturn<
+            TResolve[TKey]
+          >;
+        }
+      : Record<string, never>
+  : Record<string, never>;
+
+type RouterTreeRouteEntry<
+  TTree,
+  TParentName extends string | undefined,
+  TParamTypes extends Record<string, unknown>,
+> = TTree extends { readonly name: infer TName extends string }
+  ? {
+      [TResolvedName in RouterResolvedRouteName<TParentName, TName>]: {
+        params: RouterTreeParams<TTree, TParamTypes>;
+        resolves: RouterTreeResolves<TTree>;
+      };
+    }
+  : object;
+
+type UnionToIntersection<TUnion> = (
+  TUnion extends unknown ? (value: TUnion) => void : never
+) extends (value: infer TIntersection) => void
+  ? TIntersection
+  : never;
+
+type RouterTreeChildrenRouteMap<
+  TChildren,
+  TParentName extends string,
+  TParamTypes extends Record<string, unknown>,
+> = [TChildren] extends [never]
+  ? object
+  : TChildren extends readonly [infer TFirstChild, ...infer TRestChildren]
+    ? RouterTreeRouteMap<TFirstChild, TParentName, TParamTypes> &
+        RouterTreeChildrenRouteMap<TRestChildren, TParentName, TParamTypes>
+    : TChildren extends readonly (infer TChild)[]
+      ? UnionToIntersection<
+          RouterTreeRouteMap<TChild, TParentName, TParamTypes>
+        >
+      : object;
+
+type RouterTreeChildren<TTree> = TTree extends { readonly children?: unknown }
+  ? NonNullable<TTree["children"]>
+  : never;
+
+/** @inline */
+type RouterTreeRouteMap<
+  TTree,
+  TParentName extends string | undefined,
+  TParamTypes extends Record<string, unknown>,
+> = TTree extends { readonly name: infer TName extends string }
+  ? RouterTreeRouteEntry<TTree, TParentName, TParamTypes> &
+      RouterTreeChildrenRouteMap<
+        RouterTreeChildren<TTree>,
+        RouterResolvedRouteName<TParentName, TName>,
+        TParamTypes
+      >
+  : object;
+
+/**
+ * Derives a public route map from a literal `router(...)` tree.
+ *
+ * The helper keeps route typing tied to the same declaration object passed to
+ * [[NgModule.router]] without exposing built router state, transition, or view
+ * records. It infers dot-composed child route names, explicitly declared
+ * `params` keys, built-in URL param types, custom `$router.paramTypes` values,
+ * and object-style `resolve` return values.
+ *
+ */
+type RouterTreeShape = { name: string; children?: readonly unknown[] };
+
+type RouteMapFromTree<
+  TTree extends RouterTreeShape,
+  TParamTypes extends Record<string, unknown> = Record<never, never>,
+> =
+  RouterTreeRouteMap<TTree, undefined, TParamTypes> extends infer TRouteMap
+    ? { [TKey in Extract<keyof TRouteMap, string>]: TRouteMap[TKey] }
+    : never;
+
+type RouteMapFromForest<
+  TTrees extends readonly RouterTreeShape[],
+  TParamTypes extends Record<string, unknown>,
+> = TTrees extends readonly [
+  infer TFirst extends RouterTreeShape,
+  ...infer TRest extends readonly RouterTreeShape[],
+]
+  ? RouteMapFromTree<TFirst, TParamTypes> &
+      RouteMapFromForest<TRest, TParamTypes>
+  : TTrees extends readonly (infer TTree extends RouterTreeShape)[]
+    ? UnionToIntersection<RouteMapFromTree<TTree, TParamTypes>>
+    : object;
+
+/**
+ * Derives the public route map for a literal `router(...)` tree.
+ */
+export type RoutesOf<
+  TTree extends RouterTreeShape | readonly RouterTreeShape[],
+  TParamTypes extends Record<string, unknown> = Record<never, never>,
+> = TTree extends readonly RouterTreeShape[]
+  ? RouteMapFromForest<TTree, TParamTypes> extends infer TRouteMap
+    ? { [TKey in Extract<keyof TRouteMap, string>]: TRouteMap[TKey] }
+    : never
+  : TTree extends RouterTreeShape
+    ? RouteMapFromTree<TTree, TParamTypes>
+    : never;
+
+/**
+ * Params declared by one route in a public route map.
+ */
+export type ParamsOf<
+  TRouteMap extends RouteMap,
+  TRouteName extends Extract<keyof TRouteMap, string>,
+> = TRouteMap[TRouteName] extends { readonly params?: infer TParams }
+  ? TParams extends Record<string, unknown>
+    ? TParams
+    : Record<string, never>
+  : Record<string, never>;
+
+/**
+ * Resolve values declared by one route in a public route map.
+ */
+export type ResolvesOf<
+  TRouteMap extends RouteMap,
+  TRouteName extends Extract<keyof TRouteMap, string>,
+> = TRouteMap[TRouteName] extends { readonly resolves?: infer TResolves }
+  ? TResolves extends Record<string, unknown>
+    ? TResolves
+    : Record<string, never>
+  : Record<string, never>;
+
 export type StateTransitionResult = StateDeclaration | undefined;
 
 export interface TransitionPromise extends Promise<StateTransitionResult> {
-  transition: Transition;
+  readonly transition?: Transition;
 }
 
 export type LazyStateLoadResult =
@@ -120,7 +502,7 @@ export interface ViewDeclarationCommon {
    *
    * #### Example:
    * ```js
-   * $stateProvider.state('foo', {
+   * app.router('foo', {
    *   resolve: {
    *     foo: function(FooService) { return FooService.get(); },
    *     bar: function(BarService) { return BarService.get(); }
@@ -252,6 +634,177 @@ export type RedirectToResult =
   | { state?: string; params?: RawParams }
   | undefined;
 
+export interface StateNavigationPolicyDeclaration {
+  require?: string | string[];
+  permissions?: string | string[];
+  redirectTo?: string;
+  public?: boolean;
+  reason?: string;
+}
+
+export interface StateTransitionPolicyContext {
+  operation: "canExit" | "dirty";
+  transition: Transition;
+  from: StateDeclaration;
+  to: StateDeclaration;
+  state: StateDeclaration;
+}
+
+export interface StateTransitionErrorPolicyContext {
+  operation: "error";
+  transition?: Transition;
+  from: StateDeclaration;
+  to: StateDeclaration;
+  state: StateDeclaration;
+  error: unknown;
+}
+
+export interface StateTransitionLoadingPolicyContext {
+  operation: "loading";
+  transition: Transition;
+  from: StateDeclaration;
+  to: StateDeclaration;
+  state: StateDeclaration;
+}
+
+export interface StateTransitionRetryPolicyContext {
+  operation: "retry";
+  transition?: Transition;
+  from: StateDeclaration;
+  to: StateDeclaration;
+  state: StateDeclaration;
+  attempt: number;
+  error?: unknown;
+}
+
+export type StateCanExitPolicy = Injectable<
+  (context: StateTransitionPolicyContext) => boolean | RedirectToResult
+>;
+
+export type StateDirtyPolicy = Injectable<
+  (context: StateTransitionPolicyContext) => boolean
+>;
+
+export type StateRetryPolicy = Injectable<
+  (context: StateTransitionRetryPolicyContext) => boolean | number
+>;
+
+export type StateErrorBoundaryPolicy = Injectable<
+  (context: StateTransitionErrorPolicyContext) => RedirectToResult
+>;
+
+export type StateTransitionLoadingPolicy = Injectable<
+  (context: StateTransitionLoadingPolicyContext) => boolean | RedirectToResult
+>;
+
+export interface StateDirtyPolicyDeclaration {
+  when: StateDirtyPolicy;
+  prompt?: string;
+  redirectTo?: string;
+}
+
+export interface StateTransitionPolicyDeclaration {
+  canExit?: StateCanExitPolicy;
+  dirty?: StateDirtyPolicyDeclaration;
+  retry?: boolean | number | StateRetryPolicy;
+  fallbackTo?: StateTransitionFallbackPolicy;
+  loading?: boolean | string | StateTransitionLoadingPolicy;
+  errorBoundary?:
+    | string
+    | { state?: string; params?: RawParams }
+    | RedirectToResult
+    | StateErrorBoundaryPolicy;
+  error?:
+    | string
+    | { state?: string; params?: RawParams }
+    | RedirectToResult
+    | StateErrorBoundaryPolicy;
+}
+
+export type StateTransitionFallbackPolicy =
+  | string
+  | {
+      state?: string;
+      params?: RawParams;
+    };
+
+export type StateRetentionMode = "destroy" | "keep-alive";
+
+export type StateRetentionPauseMode = "none" | "background" | "schedulers";
+
+export type StateRetentionEvictionMode = "lru" | "oldest";
+
+export interface StateRetentionPolicyContext {
+  transition: Transition;
+  state: StateDeclaration;
+  params: RawParams;
+}
+
+export interface StateRetentionEvictionContext {
+  state: StateDeclaration;
+  key: string;
+  size: number;
+  max: number;
+}
+
+export type StateRetentionKeyPolicy = Injectable<
+  (context: StateRetentionPolicyContext) => string
+>;
+
+export type StateRetentionEvictionPolicy = Injectable<
+  (context: StateRetentionEvictionContext) => string | undefined
+>;
+
+export interface StateRetentionPolicyDeclaration {
+  /**
+   * Controls whether this route subtree is destroyed on exit or deactivated
+   * and retained for later reactivation.
+   */
+  mode?: StateRetentionMode;
+
+  /**
+   * Optional cache key override. By default, retained route instances are keyed
+   * by state identity and params.
+   */
+  key?: string | StateRetentionKeyPolicy;
+
+  /**
+   * Maximum number of retained route instances allowed for this policy.
+   */
+  max?: number;
+
+  /**
+   * Controls how inactive retained route trees pause work while deactivated.
+   */
+  pause?: StateRetentionPauseMode;
+
+  /**
+   * Eviction strategy used when the retained route cache exceeds `max`.
+   */
+  evict?: StateRetentionEvictionMode | StateRetentionEvictionPolicy;
+}
+
+export interface StatePolicyDeclaration {
+  navigation?: StateNavigationPolicyDeclaration;
+  transition?: StateTransitionPolicyDeclaration;
+  retention?: StateRetentionPolicyDeclaration;
+}
+
+/**
+ * Module-owned router state tree declaration.
+ *
+ * Use this with [[NgModule.router]] when a module owns a route subtree. Child
+ * state names are relative to their parent unless they contain a dot.
+ */
+export interface RouterModuleDeclaration extends StateDeclaration {
+  /**
+   * Child states owned by this module route tree.
+   *
+   * Each child is lowered to a normal [[StateDeclaration]] before registration.
+   */
+  children?: readonly RouterModuleDeclaration[];
+}
+
 /**
  * The StateDeclaration object is used to define a state or nested state.
  *
@@ -299,8 +852,8 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * Normally, a state's parent is implied from the state's [[name]], e.g., `"parentstate.childstate"`.
    *
    * Alternatively, you can explicitly set the parent state using this property.
-   * This allows shorter state names, e.g., `<a ng-sref="childstate">Child</a>`
-   * instead of `<a ng-sref="parentstate.childstate">Child</a>
+   * This allows shorter state names, e.g., `<a ng-state="'childstate'">Child</a>`
+   * instead of `<a ng-state="'parentstate.childstate'">Child</a>
    *
    * When using this property, the state's name should not have any dots in it.
    *
@@ -318,16 +871,6 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * ```
    */
   parent?: string | StateDeclaration;
-
-  /**
-   * Gets the internal State object API
-   *
-   * Gets the *internal API* for a registered state.
-   *
-   * Note: the internal [[StateObject]] API is subject to change without notice
-   * @internal
-   */
-  _state?: () => BuiltStateDeclaration;
 
   /**
    * Named view declarations for this state.
@@ -517,13 +1060,25 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * This is a spot for you to store inherited state metadata.
    * Child states' `data` object will prototypally inherit from their parent state.
    *
-   * This is a good spot to put metadata such as `requiresAuth`.
+   * Use this for application metadata. Use `policy.navigation` for framework
+   * navigation decisions such as authentication, permissions, or redirects.
    *
    * Note: because prototypal inheritance is used, changes to parent `data` objects reflect in the child `data` objects.
    * Care should be taken if you are using `hasOwnProperty` on the `data` object.
    * Properties from parent objects will return false for `hasOwnProperty`.
    */
   data?: unknown;
+
+  /**
+   * Declarative state policy metadata consumed by AngularTS framework services.
+   *
+   * `policy.navigation` is inherited through the state tree and evaluated by
+   * the router's security navigation hook before resolves, controllers, or
+   * views run. `policy.transition.canExit` is evaluated before exiting states
+   * are torn down. `policy.retention` declares keep-alive route subtree
+   * behavior and can override router-wide retention defaults.
+   */
+  policy?: StatePolicyDeclaration;
 
   /**
    * Synchronously or asynchronously redirects Transitions to a different state/params
@@ -603,7 +1158,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *
    * ### Example:
    * ```js
-   * $stateProvider.state({
+   * app.router({
    *   name: 'mystate',
    *   onEnter: (MyService, $transition$, $state$) => {
    *     return MyService.doSomething($state$.name, $transition$.params());
@@ -613,7 +1168,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *
    * #### Example:`
    * ```js
-   * $stateProvider.state({
+   * app.router({
    *   name: 'mystate',
    *   onEnter: [ 'MyService', '$transition$', '$state$', function (MyService, $transition$, $state$) {
    *     return MyService.doSomething($state$.name, $transition$.params());
@@ -630,7 +1185,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *
    * #### Example:
    * ```js
-   * $stateProvider.state({
+   * app.router({
    *   name: 'mystate',
    *   onRetain: (MyService, $transition$, $state$) => {
    *     return MyService.doSomething($state$.name, $transition$.params());
@@ -640,7 +1195,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *
    * #### Example:`
    * ```js
-   * $stateProvider.state({
+   * app.router({
    *   name: 'mystate',
    *   onRetain: [ 'MyService', '$transition$', '$state$', function (MyService, $transition$, $state$) {
    *     return MyService.doSomething($state$.name, $transition$.params());
@@ -657,7 +1212,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *
    * ### Example:
    * ```js
-   * $stateProvider.state({
+   * app.router({
    *   name: 'mystate',
    *   onExit: (MyService, $transition$, $state$) => {
    *     return MyService.doSomething($state$.name, $transition$.params());
@@ -667,7 +1222,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *
    * #### Example:`
    * ```js
-   * $stateProvider.state({
+   * app.router({
    *   name: 'mystate',
    *   onExit: [ 'MyService', '$transition$', '$state$', function (MyService, $transition$, $state$) {
    *     return MyService.doSomething($state$.name, $transition$.params());
@@ -688,10 +1243,15 @@ export interface StateDeclaration extends ViewDeclarationCommon {
   dynamic?: boolean;
 }
 
+/** Internal router augmentation added after a state declaration is registered. */
+export interface InternalStateDeclaration extends StateDeclaration {
+  _state: () => BuiltStateDeclaration;
+}
+
 /**
  * Represents a fully built StateObject after registration in the StateRegistry.
  */
-export type BuiltStateDeclaration = StateDeclaration & {
+export type BuiltStateDeclaration = InternalStateDeclaration & {
   /** Reference to the original StateDeclaration */
   self: StateDeclaration;
 
@@ -711,7 +1271,7 @@ export type BuiltStateDeclaration = StateDeclaration & {
   /** Full path from root down to this state */
   path: BuiltStateDeclaration[];
 
-  /** Fast lookup of included states for $state.includes() */
+  /** Fast lookup of ancestor states for `$state.matches()`. */
   includes: Record<string, boolean>;
 
   /** Closest ancestor state that has a URL (navigable) */

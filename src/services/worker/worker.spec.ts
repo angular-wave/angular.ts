@@ -2,7 +2,11 @@
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
-import { createWorkerConnection } from "./worker.ts";
+import {
+  createWorkerConnection,
+  createWorkerRuntimeState,
+  destroyWorkerRuntimeState,
+} from "./worker.ts";
 
 describe("$worker", () => {
   let RealWorker;
@@ -16,6 +20,7 @@ describe("$worker", () => {
       this.options = options;
       this.sent = [];
       this.terminated = false;
+      this.terminateCalls = 0;
       this.onmessage = undefined;
       this.onerror = undefined;
       workers.push(this);
@@ -27,6 +32,7 @@ describe("$worker", () => {
 
     terminate() {
       this.terminated = true;
+      this.terminateCalls++;
     }
   }
 
@@ -55,11 +61,9 @@ describe("$worker", () => {
   });
 
   it("creates a module worker and posts messages", () => {
-    const connection = createWorkerConnection("/workers/echo.js", {
-      logger: log,
-    });
+    const connection = createWorkerConnection("/workers/echo.js");
 
-    connection.post({ value: 1 });
+    connection.postMessage({ value: 1 });
 
     expect(workers.length).toBe(1);
     expect(workers[0].scriptPath).toBe("/workers/echo.js");
@@ -70,7 +74,6 @@ describe("$worker", () => {
   it("parses JSON string messages by default", () => {
     const received = [];
     const connection = createWorkerConnection("/workers/echo.js", {
-      logger: log,
       onMessage: (data, event) => received.push({ data, event }),
     });
     const event = { data: '{"ok":true}' };
@@ -85,7 +88,6 @@ describe("$worker", () => {
     const received = [];
 
     createWorkerConnection("/workers/echo.js", {
-      logger: log,
       onMessage: (data) => received.push(data),
     });
 
@@ -99,7 +101,6 @@ describe("$worker", () => {
     const payload = { value: 2 };
 
     createWorkerConnection("/workers/echo.js", {
-      logger: log,
       onMessage: (data) => received.push(data),
     });
 
@@ -112,7 +113,6 @@ describe("$worker", () => {
     const received = [];
 
     createWorkerConnection("/workers/echo.js", {
-      logger: log,
       transformMessage: () => {
         throw new Error("bad transform");
       },
@@ -126,8 +126,8 @@ describe("$worker", () => {
 
   it("handles worker errors and restarts when configured", () => {
     const errors = [];
+    spyOn(console, "info");
     const connection = createWorkerConnection("/workers/echo.js", {
-      logger: log,
       autoRestart: true,
       onError: (error) => errors.push(error),
     });
@@ -136,69 +136,121 @@ describe("$worker", () => {
     workers[0].onerror(error);
 
     expect(errors).toEqual([error]);
-    expect(log.info).toHaveBeenCalledWith("Worker: restarting...");
+    expect(console.info).toHaveBeenCalledWith("Worker: restarting...");
     expect(workers[0].terminated).toBeTrue();
     expect(workers.length).toBe(2);
 
-    connection.post("after restart");
+    connection.postMessage("after restart");
     expect(workers[1].sent).toEqual(["after restart"]);
   });
 
   it("does not restart after termination", () => {
+    spyOn(console, "warn");
     const connection = createWorkerConnection("/workers/echo.js", {
-      logger: log,
       autoRestart: true,
     });
 
     connection.terminate();
     connection.restart();
 
-    expect(log.warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       "Worker cannot restart after terminate",
     );
     expect(workers.length).toBe(1);
   });
 
+  it("terminates idempotently and releases native handlers", () => {
+    const connection = createWorkerConnection("/workers/echo.js");
+
+    const listener = () => undefined;
+    const unsubscribe = connection.onMessage(listener);
+
+    unsubscribe();
+    connection.terminate();
+    connection.terminate();
+
+    expect(workers[0].terminateCalls).toBe(1);
+    expect(workers[0].onmessage).toBeNull();
+    expect(workers[0].onerror).toBeNull();
+  });
+
+  it("tears down worker runtime state idempotently", () => {
+    const state = createWorkerRuntimeState();
+    const connection = { terminate: jasmine.createSpy("terminate") };
+    state.connections.add(connection);
+
+    destroyWorkerRuntimeState(state);
+    destroyWorkerRuntimeState(state);
+
+    expect(connection.terminate).toHaveBeenCalledTimes(1);
+  });
+
   it("warns but still attempts to post after termination", () => {
-    const connection = createWorkerConnection("/workers/echo.js", {
-      logger: log,
-    });
+    spyOn(console, "warn");
+    const connection = createWorkerConnection("/workers/echo.js");
 
     connection.terminate();
-    connection.post("late");
+    connection.postMessage("late");
 
-    expect(log.warn).toHaveBeenCalledWith("Worker already terminated");
+    expect(console.warn).toHaveBeenCalledWith("Worker already terminated");
     expect(workers[0].sent).toEqual(["late"]);
   });
 
   it("logs failed postMessage calls", () => {
-    const connection = createWorkerConnection("/workers/echo.js", {
-      logger: log,
-    });
+    spyOn(console, "log");
+    const connection = createWorkerConnection("/workers/echo.js");
     const error = new Error("post failed");
 
     workers[0].postMessage = () => {
       throw error;
     };
 
-    connection.post("bad");
+    connection.postMessage("bad");
 
-    expect(log.log).toHaveBeenCalledWith("Worker post failed", error);
+    expect(console.log).toHaveBeenCalledWith("Worker post failed", error);
   });
 
-  it("provides $worker through Angular dependency injection", () => {
+  it("provides $worker and terminates owned workers with the runtime", () => {
     const app = document.getElementById("app");
+    const angular = new Angular();
     let workerService;
 
     dealoc(app);
-    new Angular().bootstrap(app, []).invoke((_$worker_) => {
+    angular.bootstrap(app, []).invoke((_$worker_) => {
       workerService = _$worker_;
     });
 
-    const connection = workerService("/workers/di.js", { logger: log });
+    const connection = workerService("/workers/di.js");
 
     expect(workers[0].scriptPath).toBe("/workers/di.js");
-    expect(connection.config.logger).toBe(log);
+    expect(connection.postMessage).toEqual(jasmine.any(Function));
+
+    angular._composition.destroy();
+
+    expect(workers[0].terminateCalls).toBe(1);
+    expect(() => workerService("/workers/late.js")).toThrowError(
+      "Cannot create a Worker after runtime teardown",
+    );
+
+    dealoc(app);
+  });
+
+  it("releases explicitly terminated workers from runtime ownership", () => {
+    const app = document.getElementById("app");
+    const angular = new Angular();
+    let workerService;
+
+    dealoc(app);
+    angular.bootstrap(app, []).invoke((_$worker_) => {
+      workerService = _$worker_;
+    });
+
+    const connection = workerService("/workers/di.js");
+
+    connection.terminate();
+    angular._composition.destroy();
+
+    expect(workers[0].terminateCalls).toBe(1);
 
     dealoc(app);
   });

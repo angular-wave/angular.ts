@@ -1,7 +1,5 @@
 import { isNullOrUndefined } from "../shared/utils.ts";
 
-export type NumberFilterOptions = Intl.NumberFormatOptions;
-
 export type CurrencyFilterOptions = Omit<Intl.NumberFormatOptions, "style">;
 
 /** Creates a locale-aware number formatting filter backed by Intl.NumberFormat. */
@@ -9,7 +7,7 @@ export function numberFilter() {
   return function (
     input: number | string | null | undefined,
     locales?: Intl.LocalesArgument,
-    options?: NumberFilterOptions,
+    options?: Intl.NumberFormatOptions,
   ): string {
     const value = parseNumberInput(input);
 
@@ -43,7 +41,7 @@ export function percentFilter() {
   return function (
     input: number | string | null | undefined,
     locales?: Intl.LocalesArgument,
-    options?: NumberFilterOptions,
+    options?: Intl.NumberFormatOptions,
   ): string {
     const value = parseNumberInput(input);
 

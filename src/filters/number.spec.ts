@@ -89,7 +89,7 @@ describe("number filters", () => {
 
     it("should work when evaluating expression filters", () => {
       createInjector(["ng"]).invoke(
-        ($rootScope: ng.RootScopeService, $parse: ng.ParseService) => {
+        ($rootScope: ng.Scope, $parse: ng.ParseService) => {
           $rootScope.ratio = 0.25;
 
           expect($parse("ratio | percent")($rootScope)).toBe(

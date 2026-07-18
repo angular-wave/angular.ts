@@ -12,8 +12,7 @@ factory builder, `createHttpDirective()`, which is specialized for `ng-get`,
 - Choose the triggering DOM event from `trigger` or the host element default.
 - Collect form data for POST and PUT requests.
 - Build request config for encoding, streaming, and request cancellation.
-- Route successful and failed responses to expressions, states, scope merges,
-  target assignment, or DOM swaps.
+- Route successful and failed responses to expressions, states, or DOM swaps.
 - Consume streamed HTTP responses and compile/swap each text chunk.
 - Open SSE connections, dispatch lifecycle DOM events, and process realtime
   protocol messages.
@@ -34,8 +33,8 @@ factory builder, `createHttpDirective()`, which is specialized for `ng-get`,
   `../realtime/protocol.ts`.
 
 Public attributes consumed by the directives include `trigger`, `latch`,
-`interval`, `delay`, `throttle`, `loading`, `loadingClass`, `swap`, `target`,
-`success`, `error`, `stateSuccess`, `stateError`, `enctype`, `responseType`,
+`interval`, `delay`, `throttle`, `loading`, `loadingClass`, `swap`, `data-target`,
+`onSuccess`, `onError`, `stateSuccess`, `stateError`, `enctype`, `responseType`,
 `stream`, `responseStream`, `withCredentials`, `sseEvents`, and
 `onReconnect`.
 
@@ -77,9 +76,9 @@ event listener. The listener builds request config and handles request dispatch
 each time it runs.
 
 For normal HTTP responses, the handler evaluates success/error expressions,
-navigates success/error states, assigns object responses to a target expression
-or merges them into scope, consumes stream responses, or swaps string/HTML
-responses into the DOM.
+navigates success/error states, consumes stream responses, or swaps string/HTML
+responses into the DOM. Object responses are exposed to `on-success` as `$res`
+and never mutate scope implicitly.
 
 For `ng-sse`, the directive opens an `$sse` connection and wires open, message,
 custom event, error, reconnect, swapped, close, and cancellation behavior. The
@@ -102,7 +101,7 @@ mode.
 
 - `HttpDirectiveMethod`: method union for `get`, `delete`, `post`, and `put`.
 - `HttpDirectiveElement`: host element shape used for form-associated controls.
-- `RequestShortcutConfigWithHeaders`: `$http` config plus optional headers.
+- `HttpRequestOptionsWithHeaders`: `$http` options plus optional headers.
 - `destroyPromise`: request timeout promise resolved on scope destruction.
 - `destroyController`: abort controller passed to stream consumers.
 - `sourceRef`: mutable reference to the active SSE connection.
@@ -113,8 +112,7 @@ mode.
 
 - `$http`: sends GET, DELETE, POST, and PUT requests.
 - `$compile`: compiles swapped HTML and streamed fragments.
-- `$parse`: evaluates success/error expressions, reconnect expressions, and
-  target assignments.
+- `$parse`: evaluates on-success/on-error and reconnect expressions.
 - `$state`: performs `stateSuccess` and `stateError` navigation.
 - `$sse`: opens and manages SSE connections.
 - `$stream`: consumes readable stream response bodies as text chunks.
@@ -132,7 +130,8 @@ mode.
 - A missing URL logs a warning and skips request dispatch.
 - POST and PUT use JSON object data by default, but `enctype` switches to
   encoded key/value form data and sets `Content-Type`.
-- Object responses merge into scope unless a `target` expression is provided.
+- Object responses require an explicit `on-success` expression to update scope.
+- `data-target` is always a CSS selector for DOM swaps.
 - Missing DOM targets leave the original DOM unchanged and are reported by the
   swap handler.
 - `response-type="stream"`, `stream`, and `response-stream` all request stream
@@ -160,13 +159,13 @@ request after its delay finishes.
 : Response payload shape accepted by the shared handler: readable stream,
 string, or object.
 
-`RequestShortcutConfigWithHeaders`
+`HttpRequestOptionsWithHeaders`
 : `$http` request config extended with optional HTTP headers.
 
 `RealtimeProtocolMessage`
 : Structured realtime message consumed by `ng-sse` and the swap handler.
 
-`SwapModeType`
+`SwapMode`
 : Swap mode accepted by the realtime swap pipeline.
 
 ## Testing Notes

@@ -3,12 +3,45 @@
 import { Angular } from "../angular.ts";
 import { createElementFromHTML, dealoc } from "../shared/dom.ts";
 import { wait } from "../shared/test-utils.ts";
+import { AnimationRegistry } from "./animate.ts";
 import {
   addClass as addClassHelper,
   removeClass as removeClassHelper,
   setClass as setClassHelper,
   updateClass as updateClassHelper,
 } from "./class-mutation.ts";
+
+describe("AnimationRegistry", () => {
+  it("owns normalized custom animation declarations", () => {
+    const registry = new AnimationRegistry();
+    const preset = { enter: [{ opacity: 0 }, { opacity: 1 }] };
+
+    registry.register(".pulse", preset);
+
+    expect(registry.get("pulse")).toBe(preset);
+  });
+
+  it("validates declarations and rejects use after teardown", () => {
+    const registry = new AnimationRegistry();
+
+    expect(() => registry.register("", {})).toThrowError(
+      /Animation name must be a string/,
+    );
+
+    registry.destroy();
+    registry.destroy();
+
+    expect(() => registry.register("late", {})).toThrowError(
+      "Animation registry has already been disposed.",
+    );
+    expect(() => registry.get("pulse")).toThrowError(
+      "Animation registry has already been disposed.",
+    );
+    expect(() => registry.has("pulse")).toThrowError(
+      "Animation registry has already been disposed.",
+    );
+  });
+});
 
 describe("$animate", () => {
   let host;
@@ -70,6 +103,19 @@ describe("$animate", () => {
     await handle.finished;
   });
 
+  it("infers enter and move parents from the sibling", async () => {
+    const anchor = document.createElement("div");
+    const entered = document.createElement("div");
+    const moved = document.createElement("div");
+
+    host.append(anchor, moved);
+
+    await $animate.enter(entered, undefined, anchor, { duration: 0 }).finished;
+    await $animate.move(moved, undefined, entered, { duration: 0 }).finished;
+
+    expect(Array.from(host.children)).toEqual([anchor, entered, moved]);
+  });
+
   it("applies class changes directly", async () => {
     const child = createElementFromHTML('<div animate="fade"></div>');
 
@@ -80,6 +126,22 @@ describe("$animate", () => {
 
     await $animate.removeClass(child, "active", { duration: 1 }).finished;
     expect(child.classList.contains("active")).toBe(false);
+  });
+
+  it("applies combined class changes directly", async () => {
+    const child = createElementFromHTML(
+      '<div animate="fade" class="old keep"></div>',
+    );
+
+    host.append(child);
+
+    await $animate.setClass(child, "new extra", "old", { duration: 1 })
+      .finished;
+
+    expect(child.classList.contains("new")).toBe(true);
+    expect(child.classList.contains("extra")).toBe(true);
+    expect(child.classList.contains("old")).toBe(false);
+    expect(child.classList.contains("keep")).toBe(true);
   });
 
   it("runs inline keyframe animations with final styles", async () => {
@@ -97,6 +159,24 @@ describe("$animate", () => {
 
     expect(child.style.opacity).toBe("1");
     expect(child.style.color).toBe("red");
+  });
+
+  it("supports style-only animations without a named preset or to styles", async () => {
+    const child = createElementFromHTML('<div animate="false"></div>');
+
+    host.append(child);
+
+    await $animate.animate(
+      child,
+      { opacity: "0" },
+      undefined,
+      "running highlighted",
+      { duration: 1 },
+    ).finished;
+
+    expect(child.style.opacity).toBe("0");
+    expect(child.classList.contains("running")).toBe(true);
+    expect(child.classList.contains("highlighted")).toBe(true);
   });
 
   it("runs CSS custom property enter animations", async () => {
@@ -207,7 +287,7 @@ describe("$animate", () => {
     });
     host.append(child);
 
-    await $animate.leave(child).finished;
+    await $animate.leave(child, { duration: 1 }).finished;
 
     expect(started).toBe(true);
     expect(host.firstElementChild).toBeNull();
@@ -267,6 +347,41 @@ describe("$animate", () => {
     expect(child.getAttribute("data-animated")).toBe("true");
   });
 
+  it("resolves injectable animation presets once", async () => {
+    const registeredHost = document.createElement("div");
+    const angular = new Angular();
+    let factoryCalls = 0;
+
+    angular.module("cached-animations", []).animation("cached", () => {
+      factoryCalls += 1;
+
+      return { enter: [{ opacity: 0 }, { opacity: 1 }] };
+    });
+    document.body.append(registeredHost);
+    angular
+      .bootstrap(registeredHost, ["cached-animations"])
+      .invoke((_$animate_) => {
+        $animate = _$animate_;
+      });
+
+    await $animate.enter(
+      createElementFromHTML('<div animate="cached"></div>'),
+      registeredHost,
+      null,
+      { duration: 1 },
+    ).finished;
+    await $animate.enter(
+      createElementFromHTML('<div animate="cached"></div>'),
+      registeredHost,
+      null,
+      { duration: 1 },
+    ).finished;
+
+    expect(factoryCalls).toBe(1);
+    dealoc(registeredHost);
+    registeredHost.remove();
+  });
+
   it("ships built-in presets through angular-animate.css", async () => {
     const child = createElementFromHTML('<div animate="scale"></div>');
 
@@ -310,13 +425,110 @@ describe("$animate", () => {
     host.append(child);
     spyOn(child, "animate").and.callThrough();
 
-    await $animate.leave(child, { duration: 1 }).finished;
+    const handle = $animate.leave(child, { duration: 20 });
+    const animation = child.getAnimations()[0];
 
-    const keyframes = child.animate.calls.mostRecent().args[0];
+    expect(animation.animationName).toBe("ng-auto-height-leave");
+    expect(child.style.getPropertyValue("--ng-animate-auto-height")).toBe(
+      "40px",
+    );
+    expect(animation.effect.getTiming().duration).toBe(20);
 
-    expect(keyframes[0].height).toBe("40px");
-    expect(keyframes[1].height).toBe("0px");
+    await handle.finished;
+
+    expect(child.animate).not.toHaveBeenCalled();
+    expect(child.style.getPropertyValue("--ng-animate-auto-height")).toBe("");
     expect(child.style.height).toBe("40px");
+  });
+
+  it("measures auto-height entry and restores an existing custom property", async () => {
+    const child = createElementFromHTML(
+      '<div animate="expand" style="--ng-animate-auto-height: 12px">content</div>',
+    );
+
+    Object.defineProperty(child, "scrollHeight", { value: 48 });
+
+    const handle = $animate.enter(child, host, null);
+
+    expect(child.style.getPropertyValue("--ng-animate-auto-height")).toBe(
+      "48px",
+    );
+    await handle.finished;
+    expect(child.style.getPropertyValue("--ng-animate-auto-height")).toBe(
+      "12px",
+    );
+  });
+
+  it("falls back to scroll height when leave layout height is zero", async () => {
+    const child = createElementFromHTML(
+      '<div animate="collapse">content</div>',
+    );
+
+    Object.defineProperty(child, "offsetHeight", { value: 0 });
+    Object.defineProperty(child, "scrollHeight", { value: 36 });
+    host.append(child);
+
+    const handle = $animate.leave(child);
+
+    expect(child.style.getPropertyValue("--ng-animate-auto-height")).toBe(
+      "36px",
+    );
+    await handle.finished;
+  });
+
+  it("runs updates directly when view transitions are unavailable", async () => {
+    const original = Object.getOwnPropertyDescriptor(
+      document,
+      "startViewTransition",
+    );
+    let updated = false;
+
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: undefined,
+    });
+    await $animate.transition(async () => {
+      await Promise.resolve();
+      updated = true;
+    });
+
+    expect(updated).toBe(true);
+
+    if (original) {
+      Object.defineProperty(document, "startViewTransition", original);
+    } else {
+      Reflect.deleteProperty(document, "startViewTransition");
+    }
+  });
+
+  it("waits for native view transitions", async () => {
+    const original = Object.getOwnPropertyDescriptor(
+      document,
+      "startViewTransition",
+    );
+    const calls = [];
+
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value(update) {
+        calls.push("start");
+        update();
+
+        return {
+          finished: Promise.resolve().then(() => calls.push("finished")),
+        };
+      },
+    });
+
+    await $animate.transition(() => calls.push("update"));
+
+    expect(calls).toEqual(["start", "update", "finished"]);
+
+    if (original) {
+      Object.defineProperty(document, "startViewTransition", original);
+    } else {
+      Reflect.deleteProperty(document, "startViewTransition");
+    }
   });
 
   it("runs lifecycle callbacks and removes temporary classes", async () => {
@@ -390,7 +602,7 @@ describe("$animate", () => {
     expect(child.animate).not.toHaveBeenCalled();
   });
 
-  it("supports provider registration without class selectors", async () => {
+  it("supports module registration without class selectors", async () => {
     const registeredHost = document.createElement("div");
 
     const angular = new Angular();

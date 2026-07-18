@@ -4,118 +4,97 @@ import type { Angular as TAngular } from "./angular.ts";
 import type {
   Scope as TScope,
   ListenerFn as TListenerFn,
-  RootScopeProvider as TRootScopeProvider,
   ScopeEvent as TScopeEvent,
 } from "./core/scope/scope.ts";
-import type { NgModule as TNgModule } from "./core/di/ng-module/ng-module.ts";
+import type {
+  NgModule as TNgModule,
+  RouterModule as TRouterModule,
+} from "./core/di/ng-module/ng-module.ts";
 import type { InjectorService as TInjectorService } from "./core/di/internal-injector.ts";
+import type {
+  Model as TModel,
+  ModelChange as TModelChange,
+  ModelRestoreOptions as TModelRestoreOptions,
+  ModelSyncFailurePolicy as TModelSyncFailurePolicy,
+  ModelSyncOptions as TModelSyncOptions,
+  ModelSyncTarget as TModelSyncTarget,
+} from "./core/app-context/app-context.ts";
+
+import type { AnchorScrollService as TAnchorScrollService } from "./services/anchor-scroll/anchor-scroll.ts";
+import type { ControllerService as TControllerService } from "./core/controller/controller.ts";
+import type { ExceptionHandler as TExceptionHandler } from "./services/exception/exception.ts";
+import type { ParseService as TParseService } from "./core/parse/parse.ts";
+import type { TemplateRequestService as TTemplateRequestService } from "./services/template-request/template-request.ts";
+import type { TemplateCacheService as TTemplateCacheService } from "./services/template-cache/template-cache.ts";
+import type { SecurityPolicy as TSecurityPolicy } from "./services/security/security.ts";
+import type { StateRegistryService as TStateRegistryService } from "./router/state/state-registry.ts";
 
 import type {
-  AnchorScrollProvider as TAnchorScrollProvider,
-  AnchorScrollService as TAnchorScrollService,
-} from "./services/anchor-scroll/anchor-scroll.ts";
-import type {
-  ControllerProvider as TControllerProvider,
-  ControllerService as TControllerService,
-} from "./core/controller/controller.ts";
-import type {
-  ExceptionHandler as TExceptionHandler,
-  ExceptionHandlerProvider as TExceptionHandlerProvider,
-} from "./services/exception/exception.ts";
-import type {
-  ParseProvider as TParseProvider,
-  ParseService as TParseService,
-} from "./core/parse/parse.ts";
-import type {
-  TemplateRequestProvider as TTemplateRequestProvider,
-  TemplateRequestService as TTemplateRequestService,
-} from "./services/template-request/template-request.ts";
-
-import type {
-  HttpParamSerializerProvider as THttpParamSerializerProvider,
-  HttpProvider as THttpProvider,
   HttpMethod as THttpMethod,
   HttpParamSerializer as THttpParamSerializer,
-  HttpPromise as THttpPromise,
-  HttpProviderDefaults as THttpProviderDefaults,
+  HttpDefaults as THttpDefaults,
   HttpResponse as THttpResponse,
   HttpResponseStatus as THttpResponseStatus,
   HttpService as THttpService,
-  RequestConfig as TRequestConfig,
-  RequestShortcutConfig as TRequestShortcutConfig,
+  HttpRequestConfig as THttpRequestConfig,
+  HttpRequestOptions as THttpRequestOptions,
 } from "./services/http/http.ts";
+import type {
+  HtmlCanvasConfig as THtmlCanvasConfig,
+  HtmlCanvasRuntimeSupport as THtmlCanvasRuntimeSupport,
+  HtmlCanvasService as THtmlCanvasService,
+} from "./services/html-canvas/html-canvas.ts";
 import type {
   FilterFactory as TFilterFactory,
   FilterService as TFilterService,
   FilterFn as TFilterFn,
 } from "./filters/filter.ts";
 import type { EntryFilterItem as TEntryFilterItem } from "./filters/collection.ts";
-import type { DateFilterOptions as TDateFilterOptions } from "./filters/date.ts";
-import type {
-  CurrencyFilterOptions as TCurrencyFilterOptions,
-  NumberFilterOptions as TNumberFilterOptions,
-} from "./filters/number.ts";
-import type { RelativeTimeFilterOptions as TRelativeTimeFilterOptions } from "./filters/relative-time.ts";
-import type { FilterProvider as TFilterProvider } from "./core/filter/filter.ts";
+import type { CurrencyFilterOptions as TCurrencyFilterOptions } from "./filters/number.ts";
 import type {
   InterpolateService as TInterpolateService,
   InterpolationFunction as TInterpolationFunction,
-  InterpolateProvider as TInterpolateProvider,
+  InterpolateConfig as TInterpolateConfig,
 } from "./core/interpolate/interpolate.ts";
 import type {
   Machine as TMachine,
   MachineConfig as TMachineConfig,
-  MachineEventMap as TMachineEventMap,
-  MachineGuard as TMachineGuard,
-  MachineHooks as TMachineHooks,
-  MachineMode as TMachineMode,
-  MachineModeHooks as TMachineModeHooks,
-  MachineNoEvents as TMachineNoEvents,
-  MachineProvider as TMachineProvider,
   MachineService as TMachineService,
+  MachineSendResult as TMachineSendResult,
+  MachineSendStatus as TMachineSendStatus,
   MachineSnapshot as TMachineSnapshot,
-  MachineTransition as TMachineTransition,
-  MachineTransitionContext as TMachineTransitionContext,
-  MachineTransitionDefinition as TMachineTransitionDefinition,
-  MachineTransitionDescriptor as TMachineTransitionDescriptor,
-  MachineTransitionHook as TMachineTransitionHook,
-  MachineTransitionMap as TMachineTransitionMap,
-  MachineTransitionResult as TMachineTransitionResult,
 } from "./services/machine/machine.ts";
 import type {
   Workflow as TWorkflow,
   WorkflowCommand as TWorkflowCommand,
   WorkflowCommandContext as TWorkflowCommandContext,
-  WorkflowCommandMap as TWorkflowCommandMap,
   WorkflowCommandOptions as TWorkflowCommandOptions,
-  WorkflowConcurrencyPolicy as TWorkflowConcurrencyPolicy,
   WorkflowCommandResult as TWorkflowCommandResult,
-  WorkflowConfig as TWorkflowConfig,
-  WorkflowDiagnostic as TWorkflowDiagnostic,
-  WorkflowHistoryEntry as TWorkflowHistoryEntry,
-  WorkflowMode as TWorkflowMode,
-  WorkflowNoCommands as TWorkflowNoCommands,
-  WorkflowProvider as TWorkflowProvider,
+  WorkflowCommandStatus as TWorkflowCommandStatus,
+  WorkflowSendResult as TWorkflowSendResult,
   WorkflowService as TWorkflowService,
   WorkflowSnapshot as TWorkflowSnapshot,
-  WorkflowSnapshotMigration as TWorkflowSnapshotMigration,
-  WorkflowStatus as TWorkflowStatus,
+  WorkflowSupervisor as TWorkflowSupervisor,
+  WorkflowSupervisorConfig as TWorkflowSupervisorConfig,
+  WorkflowSupervisorSnapshot as TWorkflowSupervisorSnapshot,
 } from "./services/workflow/workflow.ts";
 import type {
-  SceProvider as TSceProvider,
-  SceDelegateProvider as TSceDelegateProvider,
   SceDelegateService as TSceDelegateService,
   SceService as TSceService,
 } from "./services/sce/sce.ts";
-import type { StateProvider as TStateProvider } from "./router/state/state-service.ts";
 import type {
-  LogProvider as TLogProvider,
+  LogBeaconConfig as TLogBeaconConfig,
+  LogBeaconSerializer as TLogBeaconSerializer,
+  LogEntry as TLogEntry,
+  LogLevel as TLogLevel,
   LogService as TLogService,
 } from "./services/log/log.ts";
 import type {
-  PubSubProvider as TPubSubProvider,
-  PubSub as TPubSub,
-} from "./services/pubsub/pubsub.ts";
+  EventDeliveryPolicy as TEventDeliveryPolicy,
+  EventDeliveryPolicyContext as TEventDeliveryPolicyContext,
+  EventBus as TEventBus,
+  EventBusConfig as TEventBusConfig,
+} from "./services/event-bus/event-bus.ts";
 import type {
   AnnotatedFactory as TAnnotatedFactory,
   ClassMap as TClassMap,
@@ -123,21 +102,17 @@ import type {
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
   DirectiveRestrict as TDirectiveRestrict,
+  InjectionTokenMap as TInjectionTokenMap,
   AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
   Component as TComponent,
   Controller as TController,
   ControllerConstructor as TControllerConstructor,
   Injectable as TInjectable,
+  ProviderDefinition as TProviderDefinition,
   Expression as TExpression,
-  PublicInjectionTokens,
-  InvocationDetail as TInvocationDetail,
-  AngularServiceProvider as TAngularServiceProvider,
-  Provider as TProvideService,
-  ServiceProvider as TServiceProvider,
 } from "./interface.ts";
 import type {
   SseConnection as TSseConnection,
-  SseProvider as TSseProvider,
   SseService as TSseService,
   SseConfig as TSseConfig,
 } from "./services/sse/sse.ts";
@@ -147,40 +122,33 @@ import type {
 } from "./shared/interface.ts";
 import type {
   CompileFn as TCompileFn,
-  CompileLifecycleProvider as TCompileLifecycleProvider,
-  CompileProvider as TCompileProvider,
-  PublicLinkFn as TPublicLinkFn,
+  LinkFn as TLinkFn,
   TranscludeFn as TTranscludeFn,
 } from "./core/compile/compile.ts";
 import type {
   RealtimeProtocolEventDetail as TRealtimeProtocolEventDetail,
   RealtimeProtocolMessage as TRealtimeProtocolMessage,
-  SwapModeType as TSwapModeType,
+  SwapMode as TSwapMode,
 } from "./directive/realtime/protocol.ts";
 import type {
   WorkerConnection as TWorkerConnection,
   WorkerConfig as TWorkerConfig,
 } from "./directive/worker/worker.ts";
 import type {
-  WasmAbiExports as TWasmAbiExports,
-  WasmInstantiationResult as TWasmInstantiationResult,
-  WasmOptions as TWasmOptions,
-  WasmScope as TWasmScope,
-  WasmScopeAbi as TWasmScopeAbi,
-  WasmScopeAbiImportObject as TWasmScopeAbiImportObject,
-  WasmScopeAbiImports as TWasmScopeAbiImports,
-  WasmScopeBindingOptions as TWasmScopeBindingOptions,
-  WasmScopeOptions as TWasmScopeOptions,
-  WasmScopeReference as TWasmScopeReference,
-  WasmScopeUpdate as TWasmScopeUpdate,
-  WasmScopeWatchOptions as TWasmScopeWatchOptions,
-  WasmProvider as TWasmProvider,
+  WasmBinding as TWasmBinding,
+  WasmBindingOptions as TWasmBindingOptions,
+  WasmCompileOptions as TWasmCompileOptions,
+  WasmError as TWasmError,
+  WasmErrorCode as TWasmErrorCode,
+  WasmErrorStage as TWasmErrorStage,
+  WasmLoadOptions as TWasmLoadOptions,
+  WasmResource as TWasmResource,
+  WasmResourceStatus as TWasmResourceStatus,
   WasmService as TWasmService,
+  WasmSource as TWasmSource,
+  WasmTarget as TWasmTarget,
 } from "./services/wasm/wasm.ts";
-import type {
-  Location as TLocationService,
-  LocationProvider as TLocationProvider,
-} from "./services/location/location.ts";
+import type { Location as TLocationService } from "./services/location/location.ts";
 import type {
   AnimationContext as TAnimationContext,
   AnimationHandle as TAnimationHandle,
@@ -189,9 +157,8 @@ import type {
   AnimationPreset as TAnimationPreset,
   AnimationPresetHandler as TAnimationPresetHandler,
   AnimationResult as TAnimationResult,
-  AnimateProvider as TAnimateProvider,
   AnimateService as TAnimateService,
-  NativeAnimationOptions as TNativeAnimationOptions,
+  AnimationOptions as TAnimationOptions,
 } from "./animations/animate.ts";
 import type {
   StorageBackend as TStorageBackend,
@@ -202,26 +169,28 @@ import type {
   ConnectionEvent as TConnectionEvent,
 } from "./services/connection/connection-manager.ts";
 import type {
-  StreamProvider as TStreamProvider,
-  StreamService as TStreamService,
-} from "./services/stream/readable-stream.ts";
+  ServiceWorkerConfig as TServiceWorkerConfig,
+  ServiceWorkerRegistrationState as TServiceWorkerRegistrationState,
+  ServiceWorkerService as TServiceWorkerService,
+  ServiceWorkerSupport as TServiceWorkerSupport,
+  ServiceWorkerUpdateState as TServiceWorkerUpdateState,
+} from "./services/service-worker/service-worker.ts";
+import type { StreamService as TStreamService } from "./services/stream/readable-stream.ts";
 import type {
   CookieService as TCookieService,
-  CookieProvider as TCookieProvider,
   CookieStoreOptions as TCookieStoreOptions,
   CookieOptions as TCookieOptions,
 } from "./services/cookie/cookie.ts";
-import type { TemplateCacheProvider as TTemplateCacheProvider } from "./services/template-cache/template-cache.ts";
 import type {
   CachedRestBackendOptions as TCachedRestBackendOptions,
-  RestDefinition as TRestDefinition,
   EntityClass as TEntityClass,
   RestBackend as TRestBackend,
+  RestCachePolicy as TRestCachePolicy,
+  RestCachePolicyContext as TRestCachePolicyContext,
   RestCacheStore as TRestCacheStore,
   RestCacheStrategy as TRestCacheStrategy,
   RestFactory as TRestFactory,
   RestOptions as TRestOptions,
-  RestProvider as TRestProvider,
   RestRequest as TRestRequest,
   RestResponse as TRestResponse,
   RestRevalidateEvent as TRestRevalidateEvent,
@@ -229,18 +198,20 @@ import type {
 } from "./services/rest/rest.ts";
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
 import type {
+  ParamsOf as TParamsOf,
+  ResolvesOf as TResolvesOf,
+  RouterModuleDeclaration as TRouterModuleDeclaration,
+  RoutesOf as TRoutesOf,
   StateDeclaration as TStateDeclaration,
-  StateResolveArray as TStateResolveArray,
-  StateResolveObject as TStateResolveObject,
+  RouteContract as TRouteContract,
+  RouteMap as TRouteMap,
+  StatePolicyDeclaration as TStatePolicyDeclaration,
 } from "./router/state/interface.ts";
-import type { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.ts";
-import type { RouterProvider as TRouterProvider } from "./router/router.ts";
-import type { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/router/template-factory.ts";
-import type { ViewService as TViewService } from "./router/view/view.ts";
+import type { StateService as TStateService } from "./router/state/state-service.ts";
+import type { RouterConfig as TRouterConfig } from "./router/router.ts";
 import type {
   WebSocketConnection as TWebSocketConnection,
   WebSocketConfig as TWebSocketConfig,
-  WebSocketProvider as TWebSocketProvider,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/websocket.ts";
 import type {
@@ -249,10 +220,10 @@ import type {
   ScopeElement as TScopeElement,
   ScopeElementConstructor as TScopeElementConstructor,
   WebComponentContext as TWebComponentContext,
+  WebComponentConfig as TWebComponentConfig,
   WebComponentInput as TWebComponentInput,
   WebComponentInputConfig as TWebComponentInputConfig,
   WebComponentInputs as TWebComponentInputs,
-  WebComponentProvider as TWebComponentProvider,
   WebComponentService as TWebComponentService,
 } from "./services/web-component/web-component.ts";
 import type {
@@ -261,29 +232,21 @@ import type {
   AngularElementOptions as TAngularElementOptions,
 } from "./runtime/web-component.ts";
 import type {
-  NativeWebTransport as TNativeWebTransport,
   WebTransportBufferInput as TWebTransportBufferInput,
-  WebTransportCertificateHash as TWebTransportCertificateHash,
   WebTransportConfig as TWebTransportConfig,
   WebTransportConnection as TWebTransportConnection,
   WebTransportDatagramEvent as TWebTransportDatagramEvent,
-  WebTransportOptions as TWebTransportOptions,
-  WebTransportProvider as TWebTransportProvider,
   WebTransportReconnectEvent as TWebTransportReconnectEvent,
   WebTransportRetryDelay as TWebTransportRetryDelay,
   WebTransportService as TWebTransportService,
 } from "./services/webtransport/webtransport.ts";
 import type { Transition as TTransition } from "./router/transition/transition.ts";
 import type { TransitionService as TTransitionService } from "./router/transition/interface.ts";
-import type { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
 import type {
-  AriaProvider as TAriaProvider,
+  AriaConfig as TAriaConfig,
   AriaService as TAriaService,
 } from "./directive/aria/aria.ts";
-import type {
-  WorkerProvider as TWorkerProvider,
-  WorkerService as TWorkerService,
-} from "./services/worker/worker.ts";
+import type { WorkerService as TWorkerService } from "./services/worker/worker.ts";
 
 declare global {
   interface Function {
@@ -318,98 +281,36 @@ declare global {
 
     export type NgModule = TNgModule;
 
-    export type PublicLinkFn = TPublicLinkFn;
+    export type RouterModule<TRouteMap extends RouteMap = RouteMap> =
+      TRouterModule<TRouteMap>;
 
-    export type PubSubProvider = TPubSubProvider;
+    export type LinkFn = TLinkFn;
 
     export type Scope = TScope;
 
-    export type ScopeService = TScope;
-
     export type TranscludeFn = TTranscludeFn;
 
-    // Providers
-    export type AnchorScrollProvider = TAnchorScrollProvider;
+    // Declarative config surfaces replace provider-era namespace aliases.
 
-    export type AngularProvider = TAngularServiceProvider;
+    export type AriaConfig = TAriaConfig;
 
-    export type AngularServiceProvider = TAngularServiceProvider;
-
-    export type AnimateProvider = TAnimateProvider;
-
-    export type AriaProvider = TAriaProvider;
-
-    export type CompileLifecycleProvider = TCompileLifecycleProvider;
-
-    export type CompileProvider = TCompileProvider;
-
-    export type ControllerProvider = TControllerProvider;
-
-    export type CookieProvider = TCookieProvider;
-
-    export type EventBusProvider = TPubSubProvider;
-
-    export type FilterProvider = TFilterProvider;
-
-    export type ExceptionHandlerProvider = TExceptionHandlerProvider;
-
-    export type HttpParamSerializerProvider = THttpParamSerializerProvider;
-
-    export type HttpProvider = THttpProvider;
-
-    export type InterpolateProvider = TInterpolateProvider;
-
-    export type LocationProvider = TLocationProvider;
-
-    export type LogProvider = TLogProvider;
-
-    export type MachineProvider = TMachineProvider;
-
-    export type ParseProvider = TParseProvider;
-
-    export type RestProvider = TRestProvider;
-
-    export type RootScopeProvider = TRootScopeProvider;
-
-    export type RouterProvider = TRouterProvider;
-
-    export type SceDelegateProvider = TSceDelegateProvider;
-
-    export type SceProvider = TSceProvider;
-
-    export type SseProvider = TSseProvider;
-
-    export type StateProvider = TStateProvider;
-
-    export type StateRegistryProvider = TStateRegistryProvider;
-
-    export type StreamProvider = TStreamProvider;
-
-    export type TemplateCacheProvider = TTemplateCacheProvider;
-
-    export type TemplateFactoryProvider = TTemplateFactoryProvider;
-
-    export type TemplateRequestProvider = TTemplateRequestProvider;
-
-    export type TransitionProvider = TTransitionProvider;
-
-    export type TransitionsProvider = TTransitionProvider;
-
-    export type TransitionService = TTransitionService;
-
-    export type ViewProvider = TViewService;
-
-    export type WasmProvider = TWasmProvider;
-
-    export type WebComponentProvider = TWebComponentProvider;
-
-    export type WebSocketProvider = TWebSocketProvider;
-
-    export type WebTransportProvider = TWebTransportProvider;
-
-    export type WorkerProvider = TWorkerProvider;
+    export type InterpolateConfig = TInterpolateConfig;
 
     // Services
+    export type AngularService = TAngular;
+
+    export type ScopeService = TScope;
+
+    export type RootScopeService = TScope;
+
+    export type ElementService = Element;
+
+    export type RootElementService = HTMLElement;
+
+    export type DocumentService = Document;
+
+    export type WindowService = Window;
+
     export type AnchorScrollService = TAnchorScrollService;
 
     export type AnimateService = TAnimateService;
@@ -424,17 +325,19 @@ declare global {
 
     export type CompileService = TCompileFn;
 
-    export type CompileLifecycleService = TCompileLifecycleProvider;
-
     export type ControllerService = TControllerService;
 
     export type CookieService = TCookieService;
 
-    export type ElementService = Element;
-
-    export type EventBusService = TPubSub;
+    export type EventBusService = TEventBus;
 
     export type ExceptionHandlerService = TExceptionHandler;
+
+    export type HtmlCanvasConfig = THtmlCanvasConfig;
+
+    export type HtmlCanvasRuntimeSupport = THtmlCanvasRuntimeSupport;
+
+    export type HtmlCanvasService = THtmlCanvasService;
 
     export type FilterFn = TFilterFn;
 
@@ -444,24 +347,35 @@ declare global {
 
     export type EntryFilterItem = TEntryFilterItem;
 
-    export type DateFilterOptions = TDateFilterOptions;
-
-    export type NumberFilterOptions = TNumberFilterOptions;
-
     export type CurrencyFilterOptions = TCurrencyFilterOptions;
-
-    export type RelativeTimeFilterOptions = TRelativeTimeFilterOptions;
 
     export type HttpParamSerializerService = THttpParamSerializer;
 
     export type HttpService = THttpService;
 
-    export type InjectorService = TInjectorService;
+    export type InjectorService<TCustomServices extends object = object> =
+      TInjectorService<TCustomServices>;
+
+    export type InjectionTokenMap = TInjectionTokenMap;
+    export type Model<
+      T extends Record<string, unknown> = Record<string, unknown>,
+    > = TModel<T>;
+    export type ModelChange = TModelChange;
+    export type ModelRestoreOptions = TModelRestoreOptions;
+    export type ModelSyncFailurePolicy = TModelSyncFailurePolicy;
+    export type ModelSyncOptions = TModelSyncOptions;
+    export type ModelSyncTarget<
+      T extends Record<string, unknown> = Record<string, unknown>,
+    > = TModelSyncTarget<T>;
 
     export type InterpolateService = TInterpolateService;
 
     export type LocationService = TLocationService;
 
+    export type LogBeaconConfig = TLogBeaconConfig;
+    export type LogBeaconSerializer = TLogBeaconSerializer;
+    export type LogEntry = TLogEntry;
+    export type LogLevel = TLogLevel;
     export type LogService = TLogService;
 
     export type MachineService = TMachineService;
@@ -470,17 +384,11 @@ declare global {
 
     export type ParseService = TParseService;
 
-    export type ProvideService = TProvideService;
+    export type EventBusConfig = TEventBusConfig;
 
-    export type PubSubService = TPubSub;
+    export type EventDeliveryPolicy = TEventDeliveryPolicy;
 
-    export type RootElementService = Element;
-
-    export type RootScopeService = TScope;
-
-    export type StateService = TStateProvider;
-
-    export type StateRegistryService = TStateRegistryProvider;
+    export type EventDeliveryPolicyContext = TEventDeliveryPolicyContext;
 
     export type SceService = TSceService;
 
@@ -492,6 +400,12 @@ declare global {
 
     export type SseConnection = TSseConnection;
 
+    export type SecurityPolicy = TSecurityPolicy;
+
+    export type StateRegistryService = TStateRegistryService;
+
+    export type ServiceWorkerService = TServiceWorkerService;
+
     export type RealtimeProtocolEventDetail<
       T = unknown,
       TSource = unknown,
@@ -499,34 +413,21 @@ declare global {
 
     export type RealtimeProtocolMessage = TRealtimeProtocolMessage;
 
-    export type SseProtocolEventDetail<T = unknown> =
-      TRealtimeProtocolEventDetail<T, TSseConnection>;
+    export type SwapMode = TSwapMode;
 
-    export type SseProtocolMessage = TRealtimeProtocolMessage;
-
-    export type SwapModeType = TSwapModeType;
-
-    export type TemplateCacheService = Map<string, string>;
-
-    export type TemplateFactoryService = TTemplateFactoryProvider;
+    export type TemplateCacheService = TTemplateCacheService;
 
     export type TemplateRequestService = TTemplateRequestService;
 
     export type TransitionsService = TTransitionService;
 
-    export type ViewService = TViewService;
-
     export type WorkerService = TWorkerService;
 
     // Support types
-    export type AngularService = Angular;
-
     export type AnnotatedFactory<T extends (...args: never[]) => unknown> =
       TAnnotatedFactory<T>;
 
-    export type AnimationOptions = TNativeAnimationOptions;
-
-    export type NativeAnimationOptions = TNativeAnimationOptions;
+    export type AnimationOptions = TAnimationOptions;
 
     export type AnimationPhase = TAnimationPhase;
 
@@ -550,8 +451,6 @@ declare global {
 
     export type CookieStoreOptions = TCookieStoreOptions;
 
-    export type DocumentService = Document;
-
     export type EntityClass<T> = TEntityClass<T>;
 
     export type ErrorHandlingConfig = TErrorHandlingConfig;
@@ -560,9 +459,7 @@ declare global {
 
     export type HttpMethod = THttpMethod;
 
-    export type HttpPromise<T> = THttpPromise<T>;
-
-    export type HttpProviderDefaults = THttpProviderDefaults;
+    export type HttpDefaults = THttpDefaults;
 
     export type HttpResponse<T> = THttpResponse<T>;
 
@@ -574,158 +471,96 @@ declare global {
         | (abstract new (...args: never[]) => unknown),
     > = TInjectable<T>;
 
-    export type InjectionTokens = typeof PublicInjectionTokens;
+    export type ProviderDefinition = TProviderDefinition;
 
     export type InterpolationFunction = TInterpolationFunction;
 
-    export type InvocationDetail = TInvocationDetail;
-
     export type ListenerFn = TListenerFn;
-
-    export type MachineEventMap = TMachineEventMap;
-
-    export type MachineNoEvents = TMachineNoEvents;
 
     export type Machine<
       TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-    > = TMachine<TData, TEvents>;
+      TEvents extends object = Record<string, unknown>,
+      TMode extends string = string,
+    > = TMachine<TData, TEvents, TMode>;
 
     export type MachineConfig<
       TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineConfig<TData, TEvents>;
-
-    export type MachineGuard<
-      TData extends object = Record<string, unknown>,
-      TPayload = unknown,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineGuard<TData, TPayload, TEvents>;
-
-    export type MachineHooks<
-      TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineHooks<TData, TEvents>;
-
-    export type MachineMode = TMachineMode;
-
-    export type MachineModeHooks<
-      TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineModeHooks<TData, TEvents>;
+      TEvents extends object = Record<string, unknown>,
+      TMode extends string = string,
+    > = TMachineConfig<TData, TEvents, TMode>;
 
     export type MachineSnapshot<
       TData extends object = Record<string, unknown>,
-    > = TMachineSnapshot<TData>;
+      TMode extends string = string,
+    > = TMachineSnapshot<TData, TMode>;
 
-    export type MachineTransition<
+    export type MachineSendResult<
       TData extends object = Record<string, unknown>,
-      TPayload = unknown,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineTransition<TData, TPayload, TEvents>;
+      TEvents extends object = Record<string, unknown>,
+      TMode extends string = string,
+    > = TMachineSendResult<TData, TEvents, TMode>;
 
-    export type MachineTransitionDefinition<
-      TData extends object = Record<string, unknown>,
-      TPayload = unknown,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineTransitionDefinition<TData, TPayload, TEvents>;
-
-    export type MachineTransitionDescriptor<
-      TData extends object = Record<string, unknown>,
-      TPayload = unknown,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineTransitionDescriptor<TData, TPayload, TEvents>;
-
-    export type MachineTransitionContext<
-      TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-      TPayload = unknown,
-    > = TMachineTransitionContext<TData, TEvents, TPayload>;
-
-    export type MachineTransitionHook<
-      TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineTransitionHook<TData, TEvents>;
-
-    export type MachineTransitionMap<
-      TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-    > = TMachineTransitionMap<TData, TEvents>;
-
-    export type MachineTransitionResult = TMachineTransitionResult;
+    export type MachineSendStatus = TMachineSendStatus;
 
     export type Workflow<
       TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-      TCommands extends object = WorkflowNoCommands,
+      TEvents extends object = Record<never, never>,
+      TCommands extends object = Record<never, never>,
     > = TWorkflow<TData, TEvents, TCommands>;
 
     export type WorkflowCommand<
-      TData extends object = Record<string, unknown>,
       TInput = unknown,
       TOutput = unknown,
-      TEvents extends object = MachineNoEvents,
-      TCommands extends object = WorkflowNoCommands,
-      TName extends string = string,
-    > = TWorkflowCommand<TData, TInput, TOutput, TEvents, TCommands, TName>;
+      TData extends object = Record<string, unknown>,
+      TEvents extends object = Record<never, never>,
+    > = TWorkflowCommand<TInput, TOutput, TData, TEvents>;
 
     export type WorkflowCommandContext<
-      TData extends object = Record<string, unknown>,
       TInput = unknown,
-      TEvents extends object = MachineNoEvents,
-      TCommands extends object = WorkflowNoCommands,
-      TName extends string = string,
-    > = TWorkflowCommandContext<TData, TInput, TEvents, TCommands, TName>;
-
-    export type WorkflowCommandMap<
       TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-    > = TWorkflowCommandMap<TData, TEvents>;
+      TEvents extends object = Record<never, never>,
+    > = TWorkflowCommandContext<TInput, TData, TEvents>;
 
     export type WorkflowCommandOptions = TWorkflowCommandOptions;
-
-    export type WorkflowConcurrencyPolicy = TWorkflowConcurrencyPolicy;
 
     export type WorkflowCommandResult<TOutput = unknown> =
       TWorkflowCommandResult<TOutput>;
 
-    export type WorkflowConfig<
+    export type WorkflowCommandStatus = TWorkflowCommandStatus;
+    export type WorkflowSendResult<
       TData extends object = Record<string, unknown>,
-      TEvents extends object = MachineNoEvents,
-      TCommands extends object = WorkflowNoCommands,
-    > = TWorkflowConfig<TData, TEvents, TCommands>;
-
-    export type WorkflowDiagnostic = TWorkflowDiagnostic;
-
-    export type WorkflowHistoryEntry = TWorkflowHistoryEntry;
-
-    export type WorkflowMode = TWorkflowMode;
-
-    export type WorkflowNoCommands = TWorkflowNoCommands;
-
-    export type WorkflowProvider = TWorkflowProvider;
+    > = TWorkflowSendResult<TData>;
 
     export type WorkflowSnapshot<
       TData extends object = Record<string, unknown>,
     > = TWorkflowSnapshot<TData>;
 
-    export type WorkflowSnapshotMigration<
-      TData extends object = Record<string, unknown>,
-    > = TWorkflowSnapshotMigration<TData>;
+    export type WorkflowSupervisor<
+      TWorkflows extends Record<string, unknown> = Record<string, unknown>,
+    > = TWorkflowSupervisor<TWorkflows>;
 
-    export type WorkflowStatus = TWorkflowStatus;
+    export type WorkflowSupervisorConfig<
+      TWorkflows extends Record<string, unknown> = Record<string, unknown>,
+    > = TWorkflowSupervisorConfig<TWorkflows>;
+
+    export type WorkflowSupervisorSnapshot<
+      TWorkflowSnapshots extends Record<string, WorkflowSnapshot<object>> =
+        Record<string, WorkflowSnapshot<object>>,
+    > = TWorkflowSupervisorSnapshot<TWorkflowSnapshots>;
 
     export type NgModelController = TNgModelController;
 
-    export type RequestConfig = TRequestConfig;
+    export type HttpRequestConfig = THttpRequestConfig;
 
-    export type RequestShortcutConfig = TRequestShortcutConfig;
-
-    export type RestDefinition<T> = TRestDefinition<T>;
+    export type HttpRequestOptions = THttpRequestOptions;
 
     export type RestFactory = TRestFactory;
 
     export type RestBackend = TRestBackend;
+
+    export type RestCachePolicy = TRestCachePolicy;
+
+    export type RestCachePolicyContext = TRestCachePolicyContext;
 
     export type RestCacheStore = TRestCacheStore;
 
@@ -745,13 +580,36 @@ declare global {
 
     export type ScopeEvent = TScopeEvent;
 
-    export type ServiceProvider = TServiceProvider;
+    export type RouterModuleDeclaration = TRouterModuleDeclaration;
+
+    export type RouterConfig = TRouterConfig;
+
+    export type RouteContract = TRouteContract;
+
+    export type RouteMap = TRouteMap;
+
+    export type RoutesOf<
+      TTree extends { name: string; children?: readonly unknown[] },
+      TParamTypes extends Record<string, unknown> = Record<never, never>,
+    > = TRoutesOf<TTree, TParamTypes>;
+
+    export type ParamsOf<
+      TRouteMap extends RouteMap,
+      TRouteName extends Extract<keyof TRouteMap, string>,
+    > = TParamsOf<TRouteMap, TRouteName>;
+
+    export type ResolvesOf<
+      TRouteMap extends RouteMap,
+      TRouteName extends Extract<keyof TRouteMap, string>,
+    > = TResolvesOf<TRouteMap, TRouteName>;
+
+    export type StateService<
+      TRouteMap extends RouteMap = Record<string, never>,
+    > = TStateService<TRouteMap>;
 
     export type StateDeclaration = TStateDeclaration;
 
-    export type StateResolveArray = TStateResolveArray;
-
-    export type StateResolveObject = TStateResolveObject;
+    export type StatePolicyDeclaration = TStatePolicyDeclaration;
 
     export type StorageBackend = TStorageBackend;
 
@@ -761,9 +619,28 @@ declare global {
 
     export type ConnectionEvent = TConnectionEvent;
 
+    export type ServiceWorkerConfig = TServiceWorkerConfig;
+
+    export type ServiceWorkerRegistrationState =
+      TServiceWorkerRegistrationState;
+
+    export type ServiceWorkerSupport = TServiceWorkerSupport;
+
+    export type ServiceWorkerUpdateState = TServiceWorkerUpdateState;
+
     export type StreamService = TStreamService;
 
-    export type Transition = TTransition;
+    export type Transition<
+      TRouteMap extends RouteMap = RouteMap,
+      TToRouteName extends Extract<keyof TRouteMap, string> = Extract<
+        keyof TRouteMap,
+        string
+      >,
+      TFromRouteName extends Extract<keyof TRouteMap, string> = Extract<
+        keyof TRouteMap,
+        string
+      >,
+    > = TTransition<TRouteMap, TToRouteName, TFromRouteName>;
 
     export type Validator = TValidator;
 
@@ -784,6 +661,8 @@ declare global {
       T extends object = Record<string, unknown>,
     > = TWebComponentContext<T>;
 
+    export type WebComponentConfig = TWebComponentConfig;
+
     export type WebComponentInput = TWebComponentInput;
 
     export type WebComponentInputConfig = TWebComponentInputConfig;
@@ -798,11 +677,7 @@ declare global {
 
     export type WebSocketService = TWebSocketService;
 
-    export type NativeWebTransport = TNativeWebTransport;
-
     export type WebTransportBufferInput = TWebTransportBufferInput;
-
-    export type WebTransportCertificateHash = TWebTransportCertificateHash;
 
     export type WebTransportConfig = TWebTransportConfig;
 
@@ -810,44 +685,41 @@ declare global {
 
     export type WebTransportDatagramEvent<T> = TWebTransportDatagramEvent<T>;
 
-    export type WebTransportOptions = TWebTransportOptions;
-
     export type WebTransportReconnectEvent = TWebTransportReconnectEvent;
 
     export type WebTransportRetryDelay = TWebTransportRetryDelay;
 
     export type WebTransportService = TWebTransportService;
 
-    export type WindowService = Window;
-
     export type WorkerConfig = TWorkerConfig;
 
     export type WorkerConnection = TWorkerConnection;
 
-    export type WasmAbiExports = TWasmAbiExports;
+    export type WasmBinding<TTarget extends TWasmTarget = TWasmTarget> =
+      TWasmBinding<TTarget>;
 
-    export type WasmInstantiationResult = TWasmInstantiationResult;
+    export type WasmBindingOptions = TWasmBindingOptions;
 
-    export type WasmOptions = TWasmOptions;
+    export type WasmCompileOptions = TWasmCompileOptions;
 
-    export type WasmScope = TWasmScope;
+    export type WasmError = TWasmError;
 
-    export type WasmScopeAbi = TWasmScopeAbi;
+    export type WasmErrorCode = TWasmErrorCode;
 
-    export type WasmScopeAbiImportObject = TWasmScopeAbiImportObject;
+    export type WasmErrorStage = TWasmErrorStage;
 
-    export type WasmScopeAbiImports = TWasmScopeAbiImports;
+    export type WasmLoadOptions = TWasmLoadOptions;
 
-    export type WasmScopeBindingOptions = TWasmScopeBindingOptions;
+    export type WasmResource<
+      TExports extends WebAssembly.Exports = WebAssembly.Exports,
+    > = TWasmResource<TExports>;
 
-    export type WasmScopeOptions = TWasmScopeOptions;
-
-    export type WasmScopeReference = TWasmScopeReference;
-
-    export type WasmScopeUpdate = TWasmScopeUpdate;
-
-    export type WasmScopeWatchOptions = TWasmScopeWatchOptions;
+    export type WasmResourceStatus = TWasmResourceStatus;
 
     export type WasmService = TWasmService;
+
+    export type WasmSource = TWasmSource;
+
+    export type WasmTarget = TWasmTarget;
   }
 }

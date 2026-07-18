@@ -12,22 +12,20 @@
           .component("hello", {
             template: "I m greeter",
           })
-          .config([
-            "$stateProvider",
-            "$locationProvider",
-            ($stateProvider, $locationProvider) => {
-              $locationProvider.html5ModeConf = {
+          .config({
+            $location: {
+              html5Mode: {
                 enabled: true,
                 requireBase: false,
                 rewriteLinks: false,
-              };
-              $stateProvider.state({
-                name: "home",
-                url: "/src/router/directives/component-example.html",
-                component: "hello",
-              });
+              },
             },
-          ]);
+          })
+          .router({
+            name: "home",
+            url: "/src/router/directives/component-example.html",
+            component: "hello",
+          });
       });
     </script>
   </head>

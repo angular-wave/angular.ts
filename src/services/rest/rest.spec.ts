@@ -1,11 +1,10 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import { _http } from "../../injection-tokens.ts";
 import {
   CachedRestBackend,
   createRestCacheKey,
+  createRestFactory,
   HttpRestBackend,
-  RestProvider,
   RestService,
 } from "./rest.ts";
 import { expandExpression, expandUriTemplate, pctEncode } from "./rfc.ts";
@@ -78,15 +77,6 @@ describe("$rest", () => {
         Error,
         "baseUrl required",
       );
-    });
-
-    it("builds URLs from RFC templates", () => {
-      const service = restService($http, "/users");
-
-      expect(service.buildUrl("/users/{id}{?q}", { id: 10, q: "a b" })).toBe(
-        "/users/10?q=a%20b",
-      );
-      expect(service.buildUrl("/users/{id}", null)).toBe("/users/");
     });
 
     it("lists entities, maps them, and forwards request options", async () => {
@@ -194,7 +184,7 @@ describe("$rest", () => {
       await expectAsync(service.create({ name: "Raw" })).toBeResolvedTo(raw);
     });
 
-    it("updates entities and swallows request failures as null", async () => {
+    it("updates entities and rejects request failures", async () => {
       $http.and.returnValues(
         Promise.resolve(httpResponse({ id: 3, name: "Updated" })),
         Promise.reject(new Error("write failed")),
@@ -203,11 +193,11 @@ describe("$rest", () => {
 
       const updated = await service.update(3, { name: "Updated" });
 
-      const failed = await service.update(4, { name: "Nope" });
-
       expect(updated instanceof UserEntity).toBeTrue();
       expect(updated.name).toBe("Updated");
-      expect(failed).toBeNull();
+      await expectAsync(
+        service.update(4, { name: "Nope" }),
+      ).toBeRejectedWithError("write failed");
     });
 
     it("returns null when update succeeds with a nullish body", async () => {
@@ -219,7 +209,7 @@ describe("$rest", () => {
       );
     });
 
-    it("deletes entities and converts failures to false", async () => {
+    it("deletes entities and rejects request failures", async () => {
       $http.and.returnValues(
         Promise.resolve(
           httpResponse(null, { status: 204, statusText: "No Content" }),
@@ -228,8 +218,10 @@ describe("$rest", () => {
       );
       const service = restService($http, "/users");
 
-      await expectAsync(service.delete(1)).toBeResolvedTo(true);
-      await expectAsync(service.delete(2)).toBeResolvedTo(false);
+      await expectAsync(service.delete(1)).toBeResolvedTo(undefined);
+      await expectAsync(service.delete(2)).toBeRejectedWithError(
+        "delete failed",
+      );
     });
 
     it("sends normalized REST request metadata to custom backends", async () => {
@@ -261,7 +253,7 @@ describe("$rest", () => {
       await expectAsync(service.update(4, { name: "Updated" })).toBeResolvedTo(
         jasmine.objectContaining({ id: 4, mapped: true }),
       );
-      await expectAsync(service.delete(5)).toBeResolvedTo(true);
+      await expectAsync(service.delete(5)).toBeResolvedTo(undefined);
 
       expect(backend.request.calls.allArgs()).toEqual([
         [
@@ -435,6 +427,124 @@ describe("$rest", () => {
           }),
         ),
       );
+    });
+
+    it("evaluates cache policy with normalized request context", async () => {
+      const cache = new TestRestCacheStore();
+
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.resolveTo(httpResponse({ id: 7 })),
+      };
+
+      const policy = jasmine
+        .createSpy("cachePolicy")
+        .and.resolveTo("network-first");
+
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        policy,
+      });
+
+      const restRequest = request({
+        params: { page: 1 },
+        options: { audit: true },
+      });
+
+      await backend.request(restRequest);
+
+      expect(policy).toHaveBeenCalledOnceWith({
+        operation: "rest.cache",
+        method: "GET",
+        url: "/users/7",
+        collectionUrl: "/users",
+        id: undefined,
+        params: { page: 1 },
+        options: { audit: true },
+        cacheKey: createRestCacheKey(restRequest),
+      });
+    });
+
+    it("uses cache policy decisions instead of the static default strategy", async () => {
+      const cache = new TestRestCacheStore();
+
+      const network = { request: jasmine.createSpy("network") };
+
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+        strategy: "network-first",
+        policy: () => Promise.resolve("cache-first"),
+      });
+
+      const restRequest = request();
+
+      await cache.set(createRestCacheKey(restRequest), httpResponse({ id: 7 }));
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 7 },
+          source: "cache",
+        }),
+      );
+      expect(network.request).not.toHaveBeenCalled();
+    });
+
+    it("accepts structured cache policy decisions", async () => {
+      const cache = new TestRestCacheStore();
+      const backend = new CachedRestBackend({
+        network: { request: jasmine.createSpy("network") },
+        cache,
+        policy: () => Promise.resolve({ type: "cache-first" }),
+      });
+      const restRequest = request();
+
+      await cache.set(createRestCacheKey(restRequest), httpResponse({ id: 7 }));
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({ source: "cache" }),
+      );
+    });
+
+    it("rejects unsupported cache policy decisions", async () => {
+      const backend = new CachedRestBackend({
+        network: { request: jasmine.createSpy("network") },
+        cache: new TestRestCacheStore(),
+        policy: () => Promise.resolve("unsupported"),
+      });
+
+      await expectAsync(backend.request(request())).toBeRejectedWithError(
+        "Unsupported REST cache strategy: unsupported",
+      );
+    });
+
+    it("defaults cached backends to network-first reads", async () => {
+      const cache = new TestRestCacheStore();
+
+      const network = {
+        request: jasmine
+          .createSpy("network")
+          .and.resolveTo(httpResponse({ id: 8 })),
+      };
+
+      const backend = new CachedRestBackend({
+        network,
+        cache,
+      });
+
+      const restRequest = request();
+
+      await cache.set(createRestCacheKey(restRequest), httpResponse({ id: 7 }));
+
+      await expectAsync(backend.request(restRequest)).toBeResolvedTo(
+        jasmine.objectContaining({
+          data: { id: 8 },
+          source: "network",
+        }),
+      );
+      expect(network.request).toHaveBeenCalledOnceWith(restRequest);
     });
 
     it("fetches and caches cache-first misses", async () => {
@@ -777,17 +887,10 @@ describe("$rest", () => {
     });
   });
 
-  describe("RestProvider", () => {
-    it("exposes the expected injection token and factory", async () => {
-      const provider = new RestProvider();
-
+  describe("createRestFactory", () => {
+    it("creates typed REST services", async () => {
       const $http = jasmine.createSpy("$http").and.resolveTo(httpResponse([]));
-
-      provider.rest("users", "/users{?page}", UserEntity, { cache: true });
-
-      expect(provider.$get[0]).toBe(_http);
-
-      const factory = provider.$get[1]($http);
+      const factory = createRestFactory($http);
 
       const service = factory("/admins", UserEntity, { timeout: 10 });
 
@@ -796,16 +899,12 @@ describe("$rest", () => {
       await expectAsync(service.list({ page: 1 })).toBeResolvedTo([]);
     });
 
-    it("supports provider and factory defaults when entityClass and options are omitted", async () => {
-      const provider = new RestProvider();
-
+    it("supports factory defaults when entityClass and options are omitted", async () => {
       const raw = { id: 5, title: "Post" };
 
       const $http = jasmine.createSpy("$http").and.resolveTo(httpResponse(raw));
 
-      provider.rest("posts", "/posts");
-
-      const factory = provider.$get[1]($http);
+      const factory = createRestFactory($http);
 
       const service = factory("/posts");
 
@@ -813,15 +912,13 @@ describe("$rest", () => {
     });
 
     it("uses an options backend instead of the default HTTP backend", async () => {
-      const provider = new RestProvider();
-
       const $http = jasmine.createSpy("$http");
 
       const backend = {
         request: jasmine.createSpy("backend").and.resolveTo(httpResponse([])),
       };
 
-      const factory = provider.$get[1]($http);
+      const factory = createRestFactory($http);
 
       const service = factory("/admins", UserEntity, {
         backend,
@@ -837,6 +934,25 @@ describe("$rest", () => {
         }),
       );
       expect($http).not.toHaveBeenCalled();
+    });
+
+    it("merges runtime defaults with resource options", async () => {
+      const backend = {
+        request: jasmine.createSpy("backend").and.resolveTo(httpResponse([])),
+      };
+      const factory = createRestFactory(jasmine.createSpy("$http"), {
+        backend,
+        withCredentials: true,
+        timeout: 100,
+      });
+
+      await factory("/admins", undefined, { timeout: 10 }).list();
+
+      expect(backend.request).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          options: { withCredentials: true, timeout: 10 },
+        }),
+      );
     });
   });
 });

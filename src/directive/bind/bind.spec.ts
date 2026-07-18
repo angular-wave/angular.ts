@@ -265,12 +265,8 @@ describe("ng-bind", () => {
       beforeEach(() => {
         dealoc(document.getElementById("app"));
         window.angular
-          .module("myModule", [
-            "ng",
-            ($sceProvider) => {
-              $sceProvider.enabled(false);
-            },
-          ])
+          .module("myModule", ["ng"])
+          .config({ $sce: { enabled: false } })
           .decorator("$exceptionHandler", function () {
             return (exception) => {
               throw new Error(exception.message);
@@ -316,12 +312,8 @@ describe("ng-bind", () => {
       beforeEach(() => {
         dealoc(document.getElementById("app"));
         window.angular
-          .module("myModule", [
-            "ng",
-            ($sceProvider) => {
-              $sceProvider.enabled(true);
-            },
-          ])
+          .module("myModule", ["ng"])
+          .config({ $sce: { enabled: true } })
           .decorator("$exceptionHandler", function () {
             return (exception) => {
               throw new Error(exception.message);
@@ -376,25 +368,20 @@ describe("ng-bind", () => {
         dealoc(document.getElementById("app"));
 
         window.angular
-          .module("myModule", [
-            "ng",
+          .module("myModule", ["ng"])
+          .decorator("$sce", ($delegate) => {
+            $delegate.trustAsHtml = function (html) {
+              return new MySafeHtml(html);
+            };
+            $delegate.getTrustedHtml = function (mySafeHtml) {
+              return mySafeHtml.val;
+            };
+            $delegate.valueOf = function (v) {
+              return v instanceof MySafeHtml ? v.val : v;
+            };
 
-            function ($provide) {
-              $provide.decorator("$sce", ($delegate) => {
-                $delegate.trustAsHtml = function (html) {
-                  return new MySafeHtml(html);
-                };
-                $delegate.getTrustedHtml = function (mySafeHtml) {
-                  return mySafeHtml.val;
-                };
-                $delegate.valueOf = function (v) {
-                  return v instanceof MySafeHtml ? v.val : v;
-                };
-
-                return $delegate;
-              });
-            },
-          ])
+            return $delegate;
+          })
           .decorator("$exceptionHandler", function () {
             return (exception) => {
               throw new Error(exception.message);

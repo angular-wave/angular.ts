@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Wasm package boundary smoke test</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@angular-wave/angular.ts": "/dist/angular-ts.esm.js",
+          "@angular-wave/angular.ts/services/wasm": "/dist/services/wasm/index.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import { angular } from "@angular-wave/angular.ts";
+      import { WasmAbi } from "@angular-wave/angular.ts/services/wasm";
+
+      try {
+        const writes = [];
+        const model = angular._appContext.createReactive({ count: 0 });
+        const stop = model.$sync({
+          write(snapshot, change) {
+            writes.push({ snapshot, change });
+          },
+        });
+        const memory = new WebAssembly.Memory({ initial: 1 });
+        let offset = 1024;
+        const exports = {
+          memory,
+          ng_abi_version: () => WasmAbi.version,
+          ng_abi_alloc(size) {
+            const ptr = offset;
+
+            offset += Math.max(size, 1);
+
+            return ptr;
+          },
+          ng_abi_free() {},
+        };
+        const abi = WasmAbi.create();
+
+        abi.attach(exports);
+
+        const scope = abi.createScope(model, { name: "package:model" });
+        const encode = (value) => {
+          const bytes = new TextEncoder().encode(value);
+          const ptr = exports.ng_abi_alloc(bytes.byteLength);
+
+          new Uint8Array(memory.buffer, ptr, bytes.byteLength).set(bytes);
+
+          return { ptr, len: bytes.byteLength };
+        };
+        const path = encode("count");
+        const value = encode("7");
+
+        abi.imports.angular_ts.scope_set(
+          scope.handle,
+          path.ptr,
+          path.len,
+          value.ptr,
+          value.len,
+        );
+
+        await new Promise((resolve) => setTimeout(resolve));
+
+        window.__wasmPackageResult = {
+          count: model.count,
+          reactiveWrite: writes.some((entry) =>
+            entry.change.keys.includes("count"),
+          ),
+        };
+
+        stop();
+        abi.dispose();
+        model.$destroy();
+      } catch (error) {
+        window.__wasmPackageError = error?.stack || String(error);
+      }
+    </script>
+  </head>
+  <body></body>
+</html>

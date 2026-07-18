@@ -37,17 +37,11 @@ export interface CookieStoreOptions {
 }
 
 /**
- * Service provider that creates a {@link CookieService $cookie} service.
+ * Declarative configuration accepted by `NgModule.config({ $cookie: ... })`.
  */
-export class CookieProvider {
+export interface CookieConfig {
   /** Default cookie attributes merged into each write and remove call. */
-  defaults: ng.CookieOptions;
-
-  constructor() {
-    this.defaults = {};
-  }
-
-  $get = () => new CookieService(this.defaults);
+  defaults?: CookieOptions;
 }
 
 /**

@@ -2,33 +2,71 @@
 
 This directory owns AngularTS reactive mode machines for declarative UI and
 application flows. The implementation in `machine.ts` is centered on a small
-stateful target object that can register with scope proxies when observed,
+runtime target object that can register with scope proxies when observed,
 without tying the machine lifetime to any one scope.
+
+The public machine API uses a declarative state-tree and event contract.
 
 ## Responsibilities
 
-- Create reactive machines from `$machine(config)` and `$machine(scope, config)`.
+- Create reactive machines from `$machine(config)`.
 - Expose mode transitions through `send()`, guarded `can()`, and `matches()`.
 - Keep `current` and `data` observable when a scope proxy wraps a machine.
 - Coalesce transition updates through the active scope's `$batch()` scheduler.
 - Preserve machine instances across destroyed observing scopes.
-- Snapshot and restore machine state without restoring transition functions or
-  hooks.
+- Snapshot and restore durable mode and data without restoring transition
+  functions or hooks.
 - Run mode-specific and global transition hooks in deterministic order.
 
 ## Public Surface
 
-- `MachineProvider`: registers `$machine` as an injectable service.
 - `defineMachine(config)`: preserves strict generic inference for TypeScript
   machine definitions.
 - `MachineService`: callable service type for creating machines.
 - `Machine`: runtime object exposed to controllers, scopes, and templates.
-- `MachineConfig`: configuration shape for initial mode, data, transitions,
-  and hooks.
+- `MachineConfig`: public state-tree configuration shape for initial mode,
+  reactive data, states, transitions, hooks, and transition policy.
+- `MachineSendResult`: structured transition result returned by `send()`.
 - `MachineSnapshot`: durable state shape returned by `snapshot()`.
 
-Public methods and values exposed to callers include `current`, `data`,
+Advanced direct-import surface:
+
+- Transition context, guard, update, hook, and policy types support reusable
+  package-level annotations. Inline definitions rely on contextual typing.
+- `MachineDataOf`, `MachineEventsOf`, `MachineEventNamesOf`, and
+  `MachineModesOf` derive types for adapters built around reusable definitions.
+
+Normal applications use `defineMachine(config)`, `app.machine(name, config)`,
+or inject `$machine`. Custom runtimes opt in through
+`orchestrationModule` from the `runtime/orchestration` package entry.
+
+Public methods and values exposed to callers include readonly `current`, `data`,
 `send()`, `can()`, `matches()`, `snapshot()`, and `restore()`.
+
+Pre-state-tree runtime compatibility has been removed from `$machine`.
+Workflow-owned `transitions` are adapted inside `$workflow` before reaching the
+machine runtime.
+
+## Type Ergonomics
+
+Machine definitions can be declared from a plain object without generic
+parameters. Event names are inferred from the `on` maps, state names are
+inferred from `states`, and payloads remain `unknown` until an explicit event
+map supplies their types.
+
+Strict event names and payloads are still available by passing an explicit event
+map to `defineMachine<Data, Events>(config)` or
+`MachineConfig<Data, Events, Modes>`.
+
+State names are part of the type contract. When a state-tree config is passed
+through `defineMachine(config)` or `$machine(config)`, the machine result carries
+the mode union into `current`, `matches(mode)`, `send()` results, and
+`snapshot().current`. Invalid static `to` targets are rejected when they do not
+match the state tree.
+
+`MachineDataOf`, `MachineEventsOf`, `MachineEventNamesOf`, and `MachineModesOf`
+derive surrounding types from an existing machine or definition so callers do
+not have to repeat generic arguments.
 
 ## Core Model
 
@@ -44,31 +82,82 @@ The main flow for `send()` is:
 2. Pick an active, non-destroyed scope binding when one exists.
 3. Evaluate the optional transition guard inside that scope's `$batch()`
    scheduler.
-4. Run the transition target when the guard passes.
-5. Apply the returned mode string, or keep the previous mode for `false` and
-   `undefined`.
+4. Run state-tree `before`/`update` when the guard passes.
+5. Apply the explicit state-tree `to` mode, any `context.to` update, or the
+   current mode when neither is set.
 6. Run exit, enter, and transition hooks when appropriate.
 7. Schedule all live scope bindings for `current`, `data`, and discovered data
    keys.
 
 Important invariants:
 
-- Missing transitions return `false` and do not run hooks.
-- Guarded transitions return `false` without running the target or hooks when the
-  guard returns `false`.
-- A handled transition returns `true`, including same-mode transitions.
+- Missing transitions return `{ ok: false, status: "missing-transition" }` and
+  do not run hooks.
+- Guarded transitions return `{ ok: false, status: "guard-denied" }` without
+  running the target or hooks when the guard returns `false`.
+- A handled transition returns `{ ok: true }`, including same-mode transitions.
+- `current` is read-only. Mode changes must go through `send()` or `restore()`.
 - The machine must remain usable after every observing scope is destroyed.
 - Restore mutates the existing data object where possible so proxies keep
   identity.
 - Snapshot and restore handle special keys such as `__proto__` as data, not as
   prototype mutation.
 
+## State Tree Execution Contract
+
+The upgraded declaration path uses `states` instead of `transitions`. A state
+entry owns an `on` table, and each event entry may define `to`, `guard`,
+`before`, `update`, `after`, and `denied`.
+
+State-tree transition ordering is:
+
+1. `guard`
+2. when the guard denies, transition-local `denied`
+3. when the guard allows, transition-local `before`
+4. transition-local `update`
+5. global exit hook for the previous mode when the mode changes
+6. mode assignment from explicit `to`, or the current mode when `to` is omitted
+7. global enter hook for the next mode when the mode changes
+8. transition-local `after`
+9. global transition hook
+
+`update()` return values are ignored. Mode routing comes only from `to`; omit
+`to` for same-mode data updates.
+
+If `before` or `update` throws, the mode remains unchanged and live bindings are
+still scheduled for any data mutations that already happened. If `after`,
+`enter`, `exit`, or the global transition hook throws, the assigned mode and
+data mutations remain visible and live bindings are scheduled.
+
+Guard contexts expose `data` and `machine.data` as readonly in TypeScript.
+Guards must be deterministic and side-effect-free because `can()` may evaluate
+them repeatedly. `can()` does not run `denied`. Put denial side effects in
+`denied`, successful transition mutations in `update`, `before`, or `after`,
+and external orchestration in workflow command logic.
+
+## Send Results
+
+`send(type, payload)` returns the structured runtime result for controllers,
+workflows, tests, and application orchestration. Use `can(type, payload)` for
+boolean template gating.
+
+Send statuses are:
+
+- `transitioned`: a handled transition changed mode.
+- `updated`: a handled transition stayed in the same mode.
+- `missing-transition`: the current mode has no matching event.
+- `guard-denied`: the transition guard returned `false`.
+- `invalid-event`: JavaScript callers passed a non-string event name.
+- `policy-denied`: the framework policy gate denied the transition.
+
 ## Lifecycle
 
 `$machine(config)` creates an unbound target. Assigning that target to a
-controller or scope property lets the scope proxy bind later through
-`SCOPE_PROXY_BIND`. `$machine(scope, config)` immediately returns a scope
-proxy around the machine when the supplied scope has a handler.
+controller, AppContext model, service, workflow, runtime adapter, or scope
+property lets the scope proxy bind later through `SCOPE_PROXY_BIND`.
+`$machine(scope, config)` immediately returns a scope proxy around the machine
+when the supplied scope has a handler, but that form is advanced runtime
+compatibility and is not part of the public TypeScript service contract.
 
 Bindings are kept in a map keyed by scope id. Destroyed bindings are removed
 when a transition, restore, or active-binding lookup sees them. The machine
@@ -78,8 +167,12 @@ any one scope.
 ## Lifecycle Contract
 
 - Machine construction is synchronous and does not touch browser APIs.
-- `$machine(config)` creates an unbound runtime object; `$machine(scope,
-  config)` creates a scope proxy immediately when a handler is available.
+- `$machine(config)` creates an unbound runtime object.
+- AppContext models, controllers, named machine services, workflows, and runtime
+  adapters should own that object and let scopes observe it by assignment.
+- `$machine(scope, config)` creates a scope proxy immediately when a handler is
+  available for advanced runtime compatibility, but ordinary examples should not
+  use it.
 - Scope observation is opt-in through assignment to a scope or controller
   property. A machine can be observed by several scopes over its lifetime.
 - Scope destruction never destroys the machine. Destroyed bindings are removed
@@ -92,12 +185,16 @@ any one scope.
 
 - `current` and `data` are reactive when a machine is observed through a scope
   proxy.
+- `current` is reactive but not writable. Direct assignment is not a supported
+  transition mechanism.
 - Transition and restore scheduling updates `current`, `data`, and discovered
   nested data keys for every live observing scope.
 - Unbound machines remain plain synchronous objects until assigned to a scope or
   controller property.
+- AppContext-owned models can hold machines without a DOM root. Destroying every
+  root scope removes DOM observers but does not destroy the app-owned machine.
 - Destroyed observing scopes stop receiving updates after opportunistic binding
-  cleanup. The machine's own state remains valid.
+  cleanup. The machine's own mode and data remain valid.
 - Transitions and hooks are not event streams. Callers that need durable
   evidence should use `$workflow`.
 
@@ -106,12 +203,64 @@ any one scope.
 - `$machine` has no retry, persistence, concurrency, or recovery policy.
 - The only policy-like behavior is transition legality: the current mode,
   transition table, and optional guard decide whether `send()` can run.
-- Guard policy is evaluated synchronously during `can()` and `send()`.
+- Guards and transition policy are evaluated synchronously during `can()` and
+  `send()`.
+- Machine transition policy uses the shared framework `Policy` contract shape.
+  It is an optional config-level gate, not a second machine-only policy system.
+- The default policy behavior is allow/no-op when no `policy` is configured or
+  a JavaScript caller returns a malformed decision.
+- Policy contexts include `operation: "machine.transition"`, `machineId`,
+  `type`, `from`, `to`, `payload`, readonly `data`, readonly `machine.data`,
+  `metadata`, and framework `target`/`meta` aliases.
+- Policy denial returns `policy-denied` from `send()` and `false` from `can()`.
+- Policy denial does not run `denied`, `before`, `update`, `after`, enter hooks,
+  exit hooks, or global transition hooks.
+- Policy decisions must be synchronous. Async policy belongs in `$workflow`,
+  services, or supervisors that project their result back through a machine
+  event.
 - Transition targets decide mode changes by returning a non-empty mode string or
   staying in the current mode with `false`, `undefined`, an empty string, or a
   non-string value.
 - Persistence timing, side effects, migrations, and external recovery remain
   application-, `$workflow`-, or supervisor-owned.
+
+## Policy Integration Slice (Machine Events)
+
+This section defines how machine transitions consume framework policy gates
+without changing the existing synchronous transition contract.
+
+Execution order:
+
+- `send(type, payload)`/`can(type, payload)` first evaluate existing transition
+  availability and machine guard logic.
+- Framework policy gate is evaluated at the transition boundary before target
+  execution.
+- Decision semantics:
+  - `allow`: continue normal guard/target execution.
+  - `deny`: transition is blocked (`send()` returns a denied result, `can()`
+    returns `false`).
+
+Context shape for machine gates:
+
+- `operation: "machine.transition"`
+- `machineId`: optional config id.
+- `type`: event name.
+- `from`: current mode.
+- `to`: candidate mode from state-tree `to`/`context.to`, or the current mode
+  when the event is a same-mode update.
+- `payload`: untyped machine payload.
+- `data`: readonly transition data.
+- `machine`: readonly machine view.
+- `metadata`/`meta`: optional config metadata.
+
+Compatibility requirements:
+
+- Default policy is no-op/allow to preserve existing behavior.
+- Existing `guard` behavior remains authoritative for transition semantics.
+- No transition side-effects are introduced by policy; only allow/deny control.
+- `can()` remains deterministic and boolean; `send()` remains deterministic and
+  returns structured transition evidence.
+- Static state-tree `to` gives policy a deterministic pre-execution context.
 
 ## Dependency Replacement Contract
 
@@ -123,18 +272,18 @@ any one scope.
   observed transitions, deterministic hooks, and snapshot/restore.
 - `$machine` intentionally does not replace async command orchestration,
   diagnostics, retries, persistence policy, or distributed state engines.
-- Applications can keep using plain functions and objects in transition targets;
+- Applications can keep using plain functions and objects in state-tree updates;
   hooks remain the escape hatch for app-owned side effects.
 
 ## Composition Contract
 
 - `$machine` is a primitive.
 - `$workflow` builds on `$machine` for legal mode transitions and reactive data.
-- Workflow supervisors may persist or recover machine state indirectly through
-  workflow snapshots.
+- Workflow supervisors may persist or recover machine mode/data indirectly
+  through workflow snapshots.
 - `$machine` must not depend on `$workflow`, storage, workers, service workers,
   router, HTTP, or realtime services.
-- Application-owned adapters compose through transition targets and hooks, but
+- Application-owned adapters compose through state-tree updates and hooks, but
   external resource ownership stays outside `$machine`.
 
 ## Failure Contract
@@ -165,7 +314,10 @@ any one scope.
 ## Scheduling And Ordering
 
 - `send()` runs synchronously.
-- `can()` may run a transition guard, but never runs the transition target.
+- `can()` may run a transition guard, but never runs state-tree `update` or
+  `denied`.
+- State-tree guard data is readonly at the type level; update contexts remain
+  mutable.
 - Transition work is wrapped in `$batch()` when an active live scope binding is
   available.
 - Nested `machine.send()` calls from hooks are included in the outer batch.
@@ -191,8 +343,9 @@ For same-mode transitions, only `hooks.transition` runs.
   transition contexts.
 - `MachineBinding`: stores the observing scope handler and the machine proxy
   associated with that scope.
-- `MachineTransitionMap`: maps modes to event handlers.
-- `MachineTransitionDescriptor`: optional guarded form for one event handler.
+- `MachineStateMap`: maps modes to state-tree nodes.
+- `MachineStateTransitionMap`: maps state-tree events to transition
+  descriptors.
 - `MachineHooks`: stores exit hooks, enter hooks, and a global transition hook.
 
 ## Integration Points
@@ -218,7 +371,12 @@ For same-mode transitions, only `hooks.transition` runs.
 
 ## Edge Cases
 
-- Non-string event names return `false`.
+- Non-string event names return `invalid-event` from `send()`.
+- Missing transitions return `missing-transition` from `send()`.
+- Denied guards return `guard-denied` from `send()`.
+- Denied guards may run a transition-local `denied` hook, but never run
+  `before`, `update`, `after`, exit hooks, enter hooks, or global transition
+  hooks.
 - Guard functions should be side-effect-free because `can()` may run during
   template evaluation.
 - Invalid config objects throw during creation.
@@ -244,19 +402,18 @@ transitions, and hooks so it can later bind to another scope.
 machine injectables.
 
 `MachineConfig`
-: Public definition for initial mode, reactive data, transition table, and
-optional hooks.
+: Public definition for initial mode, reactive data, state-tree transitions,
+optional hooks, and optional transition policy.
 
-`MachineTransition`
-: Function invoked by `send()`. It receives data, payload, and the active
-machine proxy.
+`MachineSendResult`
+: Structured `send()` result with transition status and policy denial details.
 
 `MachineHooks`
 : Optional side-effect hooks for mode entry, mode exit, and any handled
 transition.
 
 `MachineSnapshot`
-: Durable state object containing only `current` and cloned `data`.
+: Durable snapshot object containing only `current` and cloned `data`.
 
 `MachineBinding`
 : Internal record for one observing scope handler and its machine proxy.
@@ -270,7 +427,7 @@ transition.
   event and payload typing.
 - `machine.test.ts` is the browser-facing harness for examples and template
   integration.
-- Tic tac toe coverage acts as the real workflow-style fixture for game-state
+- Tic tac toe coverage acts as the real workflow-style fixture for game-flow
   behavior and persistence examples.
 
 ## Testing Notes

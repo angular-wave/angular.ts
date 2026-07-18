@@ -18,7 +18,7 @@ describe("ngIf", () => {
 
     let element;
 
-    let $compileProvider;
+    let compileRegistry;
 
     let $rootScope;
 
@@ -29,12 +29,10 @@ describe("ngIf", () => {
     beforeEach(function () {
       dealoc(document.getElementById("app"));
       angular = window.angular = new Angular();
+      compileRegistry = angular._composition.compileRegistry;
       window.angular.module("test", []);
       injector = window.angular.bootstrap(document.getElementById("app"), [
         "test",
-        function (_$compileProvider_) {
-          $compileProvider = _$compileProvider_;
-        },
       ]);
       injector.invoke((_$rootScope_, _$compile_) => {
         $rootScope = _$rootScope_;
@@ -57,6 +55,37 @@ describe("ngIf", () => {
 
       element = res($scope);
     }
+
+    it("removes untracked element nodes supplied by a manual transclusion", () => {
+      const directive = ngIfDirective(injector);
+      const template = document.createElement("div");
+      const container = document.createElement("div");
+      const anchor = document.createComment("ngIf");
+      const rendered = document.createElement("span");
+      const childScope = { $destroy: jasmine.createSpy("$destroy") };
+      let listener;
+      const manualScope = {
+        $watch(_expression, callback) {
+          listener = callback;
+        },
+      };
+
+      template.setAttribute("ng-if", "visible");
+      container.append(anchor);
+      const link = directive.compile(template);
+
+      link(manualScope, anchor, (callback) => {
+        callback(rendered, childScope);
+
+        return rendered;
+      });
+      listener(true);
+      expect(container.contains(rendered)).toBeTrue();
+
+      listener(false);
+      expect(container.contains(rendered)).toBeFalse();
+      expect(childScope.$destroy).toHaveBeenCalledOnceWith();
+    });
 
     it("should immediately remove the element and replace it with comment node if condition is falsy", async () => {
       makeIf("false", "undefined", "null", "NaN", "''", "0");
@@ -277,7 +306,7 @@ describe("ngIf", () => {
     });
 
     it("should work when combined with an ASYNC template that loads after the first digest", async () => {
-      $compileProvider.directive("test", () => ({
+      compileRegistry.directive("test", () => ({
         templateUrl: "/public/test.html",
       }));
 
@@ -300,7 +329,7 @@ describe("ngIf", () => {
       it("should allow access to directive controller from children when used in a replace template", async () => {
         let controller;
 
-        const { directive } = $compileProvider;
+        const { directive } = compileRegistry;
 
         directive("template", () => ({
           template: '<div ng-if="true"><span test></span></div>',
@@ -321,7 +350,7 @@ describe("ngIf", () => {
       });
 
       it("should use the correct transcluded scope", async () => {
-        $compileProvider.directive("iso", () => ({
+        compileRegistry.directive("iso", () => ({
           link(scope) {
             scope.val = "value in iso scope";
           },
@@ -383,7 +412,9 @@ describe("ngIf", () => {
         done: jasmine.createSpy("done"),
       })),
       leave: jasmine.createSpy("leave").and.callFake(() => ({
-        done: jasmine.createSpy("done"),
+        done: jasmine
+          .createSpy("done")
+          .and.callFake((callback) => callback(true)),
       })),
     };
 
@@ -410,6 +441,67 @@ describe("ngIf", () => {
     expect(animate.leave).toHaveBeenCalledTimes(1);
 
     localRootScope.$destroy();
+    root.remove();
+  });
+
+  it("removes non-element transclusion nodes without animation", () => {
+    const directive = ngIfDirective({
+      get: () => undefined,
+    } as unknown as ng.InjectorService);
+    const template = createElementFromHTML('<div ng-if="shown"></div>');
+    const marker = document.createElement("span");
+    const parent = document.createElement("div");
+    const text = document.createTextNode("transcluded");
+    const childScope = { $destroy: jasmine.createSpy("$destroy") };
+    let listener;
+
+    parent.appendChild(marker);
+    directive.compile(template)(
+      {
+        $watch(_expression, callback) {
+          listener = callback;
+        },
+      },
+      marker,
+      (attach) => attach([text], childScope),
+    );
+
+    listener(true);
+    expect(parent.textContent).toBe("transcluded");
+
+    listener(false);
+
+    expect(parent.textContent).toBe("");
+    expect(childScope.$destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains an animated block when leave is cancelled", async () => {
+    const root = document.createElement("div");
+    document.body.append(root);
+    const animate = {
+      enter: () => ({ done: () => undefined }),
+      leave: () => ({
+        done(callback) {
+          callback(false);
+        },
+      }),
+    };
+    const angular = new Angular();
+
+    angular.module("if-cancel-animation", []).value("$animate", animate);
+    const injector = angular.bootstrap(root, ["if-cancel-animation"]);
+    const scope = injector.get("$rootScope");
+    const element = injector.get("$compile")(
+      '<div ng-if="shown" data-animate="true">Content</div>',
+    )(scope);
+
+    scope.shown = true;
+    await wait();
+    scope.shown = false;
+    await wait();
+
+    expect(element).toBeDefined();
+    angular._composition.destroy();
     root.remove();
   });
 });

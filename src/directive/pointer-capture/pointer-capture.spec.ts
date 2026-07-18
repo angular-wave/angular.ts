@@ -13,7 +13,7 @@ function pointerEvent(type: string, pointerId: number): PointerEvent {
 describe("ngPointerCapture", () => {
   let $compile: ng.CompileService;
 
-  let $rootScope: ng.RootScopeService;
+  let $rootScope: ng.Scope;
 
   let element: Element;
 
@@ -34,12 +34,10 @@ describe("ngPointerCapture", () => {
 
     angular
       .bootstrap(app, ["myModule"])
-      .invoke(
-        (_$compile_: ng.CompileService, _$rootScope_: ng.RootScopeService) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-        },
-      );
+      .invoke((_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+      });
 
     await wait();
   });

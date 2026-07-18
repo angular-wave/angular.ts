@@ -11,6 +11,7 @@ import type { RawParams } from "../params/interface.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
 import type {
   BuiltStateDeclaration,
+  InternalStateDeclaration,
   RouterInjectable,
   StateDeclaration,
   ViewDeclaration,
@@ -23,12 +24,33 @@ interface StateParamOptions {
   matchingKeys?: RawParams | null;
 }
 
+const stateDeclarationSources = new WeakMap<
+  StateDeclaration,
+  StateDeclaration
+>();
+
+/** @internal */
+export function setStateDeclarationSource(
+  flattened: StateDeclaration,
+  source: StateDeclaration,
+): void {
+  stateDeclarationSources.set(flattened, source);
+}
+
+/** @internal */
+export function getStateDeclarationSource(
+  declaration: StateDeclaration,
+): StateDeclaration | undefined {
+  return stateDeclarationSources.get(declaration);
+}
+
 /**
  * Internal representation of a ng-router state.
  *
  * Instances of this class are created when a [[StateDeclaration]] is registered with the [[StateRegistry]].
  *
- * A registered [[StateDeclaration]] is augmented with a getter ([[StateDeclaration._state]]) which returns the corresponding [[StateObject]] object.
+ * A registered declaration is internally augmented with a getter that returns
+ * the corresponding [[StateObject]] object.
  *
  * This class prototypally inherits from the corresponding [[StateDeclaration]].
  * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
@@ -83,7 +105,8 @@ export class StateObject {
     assign(this, config);
     this.self = config;
     this.name = config.name;
-    config._state = () => this as unknown as BuiltStateDeclaration;
+    (config as InternalStateDeclaration)._state = () =>
+      this as unknown as BuiltStateDeclaration;
     const nameGlob = this.name ? Glob.fromString(this.name) : null;
 
     this._stateObjectCache = { nameGlob };
@@ -100,14 +123,19 @@ export class StateObject {
    *
    * Compares the identity of the state against the passed value, which is either an object
    * reference to the actual `State` instance, the original definition object passed to
-   * `$stateProvider.state()`, or the fully-qualified name.
+   * `app.router()`, or the fully-qualified name.
    *
    * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
-   *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
+   *        into `app.router()`, (c) the fully-qualified name of a state as a string.
    * @returns Returns `true` if `ref` matches the current `State` instance.
    */
   is(ref: StateObject | StateDeclaration | string): boolean {
-    return this === ref || this.self === ref || this._pathName() === ref;
+    return (
+      this === ref ||
+      this.self === ref ||
+      getStateDeclarationSource(this.self) === ref ||
+      this._pathName() === ref
+    );
   }
 
   /**

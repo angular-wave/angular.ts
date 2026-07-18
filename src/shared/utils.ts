@@ -4,9 +4,43 @@ import { NodeType } from "./node.ts";
 
 export type { ErrorHandlingConfig } from "./interface.ts";
 
-export const isProxySymbol = Symbol("isProxy");
+export const isProxySymbol = Symbol.for("@angular-wave/angular.ts/isProxy");
 
 export type RuntimeFunction = (...args: never[]) => unknown;
+
+export type ViewRetentionPauseMode = "none" | "background" | "schedulers";
+
+export interface ViewRetentionPauseEvent {
+  _pause?: ViewRetentionPauseMode;
+}
+
+export function shouldHandleViewRetentionPause(
+  args: readonly unknown[],
+  mode: ViewRetentionPauseMode = "schedulers",
+): boolean {
+  if (!args.length) {
+    return true;
+  }
+
+  const maybePayload =
+    args.find(
+      (arg) =>
+        isObject(arg) &&
+        typeof (arg as ViewRetentionPauseEvent)._pause !== "undefined",
+    ) ?? args[0];
+
+  if (!isObject(maybePayload)) {
+    return true;
+  }
+
+  const maybeMode = (maybePayload as ViewRetentionPauseEvent)._pause;
+
+  if (typeof maybeMode === "undefined") {
+    return true;
+  }
+
+  return maybeMode === mode;
+}
 
 export type RuntimeConstructor = abstract new (...args: never[]) => unknown;
 
@@ -1501,32 +1535,85 @@ export function startsWith(str: string, search: string): boolean {
   return str.startsWith(search);
 }
 
-/**
- * Loads and instantiates a WebAssembly module.
- * Tries streaming first, then falls back.
+/** @internal Standard-shaped options forwarded to WebAssembly compilation. */
+export interface WasmNativeCompileOptions {
+  builtins?: readonly string[];
+  importedStringConstants?: string;
+}
+
+/** @internal
+ * Loads and compiles a WebAssembly module.
+ * Tries streaming first, then falls back for response type failures.
  */
-export async function instantiateWasm(
-  src: string,
-  imports: WebAssembly.Imports = {},
-) {
-  const res = await fetch(src);
-
-  if (!res.ok) throw new Error("fetch failed");
-
-  try {
-    const { instance, module } = await WebAssembly.instantiateStreaming(
-      res.clone(),
-      imports,
-    );
-
-    return { instance, exports: instance.exports, module };
-  } catch {
-    /* empty */
+export async function compileWasm(
+  source: string | URL | Request | Response | BufferSource | WebAssembly.Module,
+  signal?: AbortSignal,
+  options?: WasmNativeCompileOptions,
+): Promise<WebAssembly.Module> {
+  if (source instanceof WebAssembly.Module) {
+    return source;
   }
 
-  const bytes = await res.arrayBuffer();
+  if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
+    const compile = WebAssembly.compile as (
+      bytes: BufferSource,
+      options?: WasmNativeCompileOptions,
+    ) => Promise<WebAssembly.Module>;
 
-  const { instance, module } = await WebAssembly.instantiate(bytes, imports);
+    return compile(source, options);
+  }
+
+  const response =
+    source instanceof Response
+      ? source.clone()
+      : await fetch(source instanceof Request ? source.clone() : source, {
+          signal,
+        });
+
+  if (!response.ok) {
+    const status = response.status
+      ? ` (${String(response.status)}${response.statusText ? ` ${response.statusText}` : ""})`
+      : "";
+
+    throw new Error(`WebAssembly fetch failed${status}`);
+  }
+
+  if (typeof WebAssembly.compileStreaming === "function") {
+    try {
+      const compileStreaming = WebAssembly.compileStreaming as (
+        source: Promise<Response> | Response,
+        options?: WasmNativeCompileOptions,
+      ) => Promise<WebAssembly.Module>;
+
+      return await compileStreaming(response.clone(), options);
+    } catch (error) {
+      // A TypeError commonly means the server supplied an invalid Wasm MIME
+      // type. Compilation, linking, and start-function failures must not be
+      // retried because instantiation can have observable side effects.
+      if (!(error instanceof TypeError)) {
+        throw error;
+      }
+    }
+  }
+
+  const bytes = await response.arrayBuffer();
+  const compile = WebAssembly.compile as (
+    bytes: BufferSource,
+    options?: WasmNativeCompileOptions,
+  ) => Promise<WebAssembly.Module>;
+
+  return compile(bytes, options);
+}
+
+/** @internal Loads, compiles, and instantiates a WebAssembly module. */
+export async function instantiateWasm(
+  source: string | URL | Request | Response | BufferSource | WebAssembly.Module,
+  imports: WebAssembly.Imports = {},
+  signal?: AbortSignal,
+  options?: WasmNativeCompileOptions,
+) {
+  const module = await compileWasm(source, signal, options);
+  const instance = await WebAssembly.instantiate(module, imports);
 
   return { instance, exports: instance.exports, module };
 }

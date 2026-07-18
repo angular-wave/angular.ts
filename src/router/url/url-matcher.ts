@@ -50,18 +50,26 @@ function quoteRegExp(str: string, param?: Param): string {
 
   if (!param) return result;
 
+  const paramPattern = getParamRoutePattern(param);
+
   switch (param.squash) {
     case false:
-      return `${result}(${param.type.pattern.source})${
-        param.isOptional ? "?" : ""
-      }`;
+      return `${result}(${paramPattern})${param.isOptional ? "?" : ""}`;
     case true:
       result = result.replace(/\/$/, "");
 
-      return `${result}(?:/(${param.type.pattern.source})|/)?`;
+      return `${result}(?:/(${paramPattern})|/)?`;
     default:
-      return `${result}(${param.squash}|${param.type.pattern.source})?`;
+      return `${result}(${param.squash}|${paramPattern})?`;
   }
+}
+
+function getParamRoutePattern(param: Param): string {
+  if (param.location === DefType._PATH && param.type.pattern.ignoreCase) {
+    return "[\\s\\S]*?";
+  }
+
+  return param.type.pattern.source;
 }
 
 function pushStaticSegmentWeights(weights: number[], segment: string): void {
@@ -376,7 +384,7 @@ function getParamType(
  *   path into the parameter 'path'.
  * * `'/files/*path'` - ditto.
  * * `'/calendar/{start:date}'` - Matches "/calendar/2014-11-12" (because the pattern defined
- *   in the built-in  `date` ParamType matches `2014-11-12`) and provides a Date object in $stateParams.start
+ *   in the built-in  `date` ParamType matches `2014-11-12`) and provides a Date object in `$state.params.start`
  *
  */
 export class UrlMatcher {
@@ -570,7 +578,7 @@ export class UrlMatcher {
         const param = matcherParams[j];
 
         if (param.location !== DefType._PATH) continue;
-        const value = param.value(match[pathMatchIndex++]);
+        const value = param.value(match[pathMatchIndex++], "url");
 
         if (!param.validates(value)) return null;
         values[param.id] = value;
@@ -584,7 +592,7 @@ export class UrlMatcher {
         const param = matcherParams[j];
 
         if (param.location !== DefType._SEARCH) continue;
-        const value = param.value(searchParams[param.id]);
+        const value = param.value(searchParams[param.id], "url");
 
         if (!param.validates(value)) return null;
         values[param.id] = value;

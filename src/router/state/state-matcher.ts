@@ -1,5 +1,5 @@
 import { isString, keys } from "../../shared/utils.ts";
-import type { StateObject } from "./state-object.ts";
+import { getStateDeclarationSource, type StateObject } from "./state-object.ts";
 import type { StateOrName, StateStore } from "./interface.ts";
 
 export class StateMatcher {
@@ -40,10 +40,27 @@ export class StateMatcher {
 
     if (
       state &&
-      (isStr || state === stateOrName || state.self === stateOrName)
+      (isStr ||
+        state === stateOrName ||
+        state.self === stateOrName ||
+        getStateDeclarationSource(state.self) === stateOrName)
     ) {
       return state;
-    } else if (isStr && matchGlob) {
+    } else if (!isStr) {
+      const stateNames = keys(this._states);
+
+      for (let index = 0; index < stateNames.length; index++) {
+        const candidate = this._states[stateNames[index]] as StateObject;
+
+        if (
+          candidate === stateOrName ||
+          candidate.self === stateOrName ||
+          getStateDeclarationSource(candidate.self) === stateOrName
+        ) {
+          return candidate;
+        }
+      }
+    } else if (matchGlob) {
       const stateNames = keys(this._states);
 
       let match: StateObject | undefined;

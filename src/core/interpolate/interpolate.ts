@@ -1,4 +1,4 @@
-import { _injector, _parse } from "../../injection-tokens.ts";
+import { _parse } from "../../injection-tokens.ts";
 import {
   callFunction,
   deProxy,
@@ -10,12 +10,14 @@ import {
 } from "../../shared/utils.ts";
 import type { ParseService } from "../parse/parse.ts";
 import { SCE_CONTEXTS, type SceContext } from "../../services/sce/context.ts";
-import {
-  getSecurityAdapter,
-  type SecurityAdapter,
-} from "../security/security-adapter.ts";
+
+type InterpolationSecurity = Pick<
+  ng.SceService,
+  "getTrusted" | "getTrustedMediaUrl" | "valueOf"
+>;
 
 export interface InterpolationFunction {
+  /** Expressions extracted from the interpolation text. */
   expressions: string[];
   /**
    * Evaluate the interpolation.
@@ -23,6 +25,7 @@ export interface InterpolationFunction {
    * @param cb - Optional callback when expressions change
    */
   (context: unknown, cb?: (val: unknown) => void): unknown;
+  /** Original interpolation text. */
   exp: string;
 }
 
@@ -43,8 +46,18 @@ export interface InterpolateService {
     trustedContext?: SceContext,
     allOrNothing?: boolean,
   ): InterpolationFunction | undefined;
+  /** Return the configured interpolation end delimiter. */
   endSymbol(): string;
+  /** Return the configured interpolation start delimiter. */
   startSymbol(): string;
+}
+
+/** Delimiter configuration accepted by `NgModule.config()`. */
+export interface InterpolateConfig {
+  /** Opening delimiter. Defaults to `{{`. */
+  startSymbol?: string;
+  /** Closing delimiter. Defaults to `}}`. */
+  endSymbol?: string;
 }
 
 const $interpolateError = createErrorFactory("$interpolate");
@@ -68,285 +81,305 @@ function interr(text: string, err: Error): never {
   );
 }
 
-export class InterpolateProvider {
+/** @internal */
+export interface InterpolateRuntimeState {
   startSymbol: string;
   endSymbol: string;
-  $get: [
-    string,
-    string,
-    ($injector: ng.InjectorService, $parse: ParseService) => InterpolateService,
-  ];
+  destroyed: boolean;
+}
 
-  constructor() {
-    this.startSymbol = "{{";
-    this.endSymbol = "}}";
+/** @internal */
+export function createInterpolateRuntimeState(): InterpolateRuntimeState {
+  return {
+    startSymbol: "{{",
+    endSymbol: "}}",
+    destroyed: false,
+  };
+}
 
-    this.$get = [
-      _injector,
-      _parse,
-      (
-        $injector: ng.InjectorService,
-        $parse: ParseService,
-      ): InterpolateService => {
-        const security: SecurityAdapter = getSecurityAdapter($injector);
+/** @internal */
+export function applyInterpolateConfiguration(
+  state: InterpolateRuntimeState,
+  config: InterpolateConfig,
+): void {
+  assertInterpolateRuntimeActive(state);
 
-        const interpolationStartSymbol = this.startSymbol;
+  if (config.startSymbol !== undefined) {
+    state.startSymbol = config.startSymbol;
+  }
 
-        const interpolationEndSymbol = this.endSymbol;
+  if (config.endSymbol !== undefined) {
+    state.endSymbol = config.endSymbol;
+  }
+}
 
-        const startSymbolLength = interpolationStartSymbol.length;
+/** @internal */
+export function destroyInterpolateRuntimeState(
+  state: InterpolateRuntimeState,
+): void {
+  if (state.destroyed) return;
 
-        const endSymbolLength = interpolationEndSymbol.length;
+  state.destroyed = true;
+  state.startSymbol = "{{";
+  state.endSymbol = "}}";
+}
 
-        const escapedStartRegexp = new RegExp(
-          interpolationStartSymbol.replace(/./g, escape),
-          "g",
-        );
+function assertInterpolateRuntimeActive(state: InterpolateRuntimeState): void {
+  if (state.destroyed) {
+    throw new Error("Interpolation runtime has already been disposed.");
+  }
+}
 
-        const escapedEndRegexp = new RegExp(
-          interpolationEndSymbol.replace(/./g, escape),
-          "g",
-        );
+/** @internal */
+export function createInterpolateService(
+  state: InterpolateRuntimeState,
+  $parse: ParseService,
+  security: InterpolationSecurity,
+): InterpolateService {
+  assertInterpolateRuntimeActive(state);
 
-        function escape(ch: string): string {
-          return `\\\\\\${ch}`;
-        }
+  const interpolationStartSymbol = state.startSymbol;
 
-        function unescapeText(text: string): string {
-          return text
-            .replace(escapedStartRegexp, interpolationStartSymbol)
-            .replace(escapedEndRegexp, interpolationEndSymbol);
-        }
+  const interpolationEndSymbol = state.endSymbol;
 
-        const $interpolate = (
-          text: string,
-          mustHaveExpression?: boolean,
-          trustedContext?: SceContext,
-          allOrNothing?: boolean,
-        ): InterpolationFunction | undefined => {
-          const contextAllowsConcatenation =
-            trustedContext === SCE_CONTEXTS._URL ||
-            trustedContext === SCE_CONTEXTS._MEDIA_URL;
+  const startSymbolLength = interpolationStartSymbol.length;
 
-          if (!text.length || !text.includes(interpolationStartSymbol)) {
-            if (mustHaveExpression) {
-              return undefined;
-            }
+  const endSymbolLength = interpolationEndSymbol.length;
 
-            let unescapedText = unescapeText(text);
+  const escapedStartRegexp = new RegExp(
+    interpolationStartSymbol.replace(/./g, escape),
+    "g",
+  );
 
-            if (contextAllowsConcatenation) {
-              unescapedText = security.getTrusted(
-                trustedContext,
-                unescapedText,
-              );
-            }
+  const escapedEndRegexp = new RegExp(
+    interpolationEndSymbol.replace(/./g, escape),
+    "g",
+  );
 
-            const constantInterp = (() =>
-              unescapedText) as unknown as InterpolationFunction;
+  function escape(ch: string): string {
+    return `\\\\\\${ch}`;
+  }
 
-            constantInterp.exp = text;
-            constantInterp.expressions = [];
+  function unescapeText(text: string): string {
+    return text
+      .replace(escapedStartRegexp, interpolationStartSymbol)
+      .replace(escapedEndRegexp, interpolationEndSymbol);
+  }
 
-            return constantInterp;
-          }
+  const $interpolate = (
+    text: string,
+    mustHaveExpression?: boolean,
+    trustedContext?: SceContext,
+    allOrNothing?: boolean,
+  ): InterpolationFunction | undefined => {
+    const contextAllowsConcatenation =
+      trustedContext === SCE_CONTEXTS._URL ||
+      trustedContext === SCE_CONTEXTS._MEDIA_URL;
 
-          allOrNothing = !!allOrNothing;
-          let startIndex: number;
+    if (!text.length || !text.includes(interpolationStartSymbol)) {
+      if (mustHaveExpression) {
+        return undefined;
+      }
 
-          let endIndex: number;
+      let unescapedText: unknown = unescapeText(text);
 
-          let index = 0;
+      if (contextAllowsConcatenation) {
+        unescapedText = security.getTrusted(trustedContext, unescapedText);
+      }
 
-          const expressions: string[] = [];
+      const constantInterp = (() =>
+        unescapedText) as unknown as InterpolationFunction;
 
-          const textLength = text.length;
+      constantInterp.exp = text;
+      constantInterp.expressions = [];
 
-          const concat: unknown[] = [];
+      return constantInterp;
+    }
 
-          const expressionPositions: number[] = [];
+    allOrNothing = !!allOrNothing;
+    let startIndex: number;
 
-          while (index < textLength) {
-            startIndex = text.indexOf(interpolationStartSymbol, index);
-            endIndex =
-              startIndex === -1
-                ? -1
-                : text.indexOf(
-                    interpolationEndSymbol,
-                    startIndex + startSymbolLength,
-                  );
+    let endIndex: number;
 
-            if (startIndex !== -1 && endIndex !== -1) {
-              if (index !== startIndex) {
-                concat.push(unescapeText(text.substring(index, startIndex)));
-              }
+    let index = 0;
 
-              const exp = text.substring(
-                startIndex + startSymbolLength,
-                endIndex,
-              );
+    const expressions: string[] = [];
 
-              expressions.push(exp);
-              index = endIndex + endSymbolLength;
-              expressionPositions.push(concat.length);
-              concat.push("");
-            } else {
-              if (index !== textLength) {
-                concat.push(unescapeText(text.substring(index)));
-              }
-              break;
-            }
-          }
+    const textLength = text.length;
 
-          const singleExpression =
-            concat.length === 1 && expressionPositions.length === 1;
+    const concat: unknown[] = [];
 
-          const interceptor =
-            contextAllowsConcatenation && singleExpression
-              ? undefined
-              : parseStringifyInterceptor;
+    const expressionPositions: number[] = [];
 
-          if (!mustHaveExpression || expressions.length > 0) {
-            if (singleExpression) {
-              const [expression] = expressions;
-
-              const parseFn = $parse(expression);
-
-              const watchProp = expression.trim();
-
-              const compute = interceptor
-                ? (context: unknown) => {
-                    const value = parseFn(context);
-
-                    return parseStringifyInterceptor(
-                      deProxy(isFunction(value) ? value() : value),
-                    );
-                  }
-                : (context: unknown) => parseFn(context);
-
-              const fn = ((context: unknown, cb?: (val: unknown) => void) => {
-                try {
-                  if (cb) {
-                    const watchable = getWatchableContext(context);
-
-                    if (watchable) {
-                      callFunction(
-                        watchable.$watch,
-                        watchable,
-                        watchProp,
-                        () => {
-                          cb(compute(context));
-                        },
-                      );
-                    }
-                  }
-
-                  return compute(context);
-                } catch (err) {
-                  return interr(text, err as Error);
-                }
-              }) as InterpolationFunction;
-
-              fn.exp = text;
-              fn.expressions = expressions;
-
-              return fn;
-            }
-
-            const parseFns = expressions.map((expression) =>
-              $parse(expression, interceptor),
+    while (index < textLength) {
+      startIndex = text.indexOf(interpolationStartSymbol, index);
+      endIndex =
+        startIndex === -1
+          ? -1
+          : text.indexOf(
+              interpolationEndSymbol,
+              startIndex + startSymbolLength,
             );
 
-            const compute = (values: unknown[]): unknown => {
-              for (let i = 0; i < expressions.length; i++) {
-                if (allOrNothing && isUndefined(values[i])) {
-                  return undefined;
-                }
-                concat[expressionPositions[i]] = values[i];
+      if (startIndex !== -1 && endIndex !== -1) {
+        if (index !== startIndex) {
+          concat.push(unescapeText(text.substring(index, startIndex)));
+        }
+
+        const exp = text.substring(startIndex + startSymbolLength, endIndex);
+
+        expressions.push(exp);
+        index = endIndex + endSymbolLength;
+        expressionPositions.push(concat.length);
+        concat.push("");
+      } else {
+        if (index !== textLength) {
+          concat.push(unescapeText(text.substring(index)));
+        }
+        break;
+      }
+    }
+
+    const singleExpression =
+      concat.length === 1 && expressionPositions.length === 1;
+
+    const interceptor =
+      contextAllowsConcatenation && singleExpression
+        ? undefined
+        : parseStringifyInterceptor;
+
+    if (!mustHaveExpression || expressions.length > 0) {
+      if (singleExpression) {
+        const [expression] = expressions;
+
+        const parseFn = $parse(expression);
+
+        const watchProp = expression.trim();
+
+        const compute = interceptor
+          ? (context: unknown) => {
+              const value = parseFn(context);
+
+              return parseStringifyInterceptor(
+                deProxy(isFunction(value) ? value() : value),
+              );
+            }
+          : (context: unknown) => parseFn(context);
+
+        const fn = ((context: unknown, cb?: (val: unknown) => void) => {
+          try {
+            if (cb) {
+              const watchable = getWatchableContext(context);
+
+              if (watchable) {
+                callFunction(watchable.$watch, watchable, watchProp, () => {
+                  cb(compute(context));
+                });
               }
+            }
 
-              if (contextAllowsConcatenation) {
-                return security.getTrusted(
-                  trustedContext,
-                  concat.join(""),
-                ) as unknown;
-              }
+            return compute(context);
+          } catch (err) {
+            return interr(text, err as Error);
+          }
+        }) as InterpolationFunction;
 
-              if (trustedContext && concat.length > 1) {
-                throwNoconcat(text);
-              }
+        fn.exp = text;
+        fn.expressions = expressions;
 
-              return concat.join("");
-            };
+        return fn;
+      }
 
-            const fn = ((context: unknown, cb?: (val: unknown) => void) => {
-              const values = new Array<unknown>(expressions.length);
+      const parseFns = expressions.map((expression) =>
+        $parse(expression, interceptor),
+      );
 
-              try {
-                for (let i = 0; i < expressions.length; i++) {
-                  if (cb) {
-                    const watchProp = expressions[i].trim();
+      const compute = (values: unknown[]): unknown => {
+        for (let i = 0; i < expressions.length; i++) {
+          if (allOrNothing && isUndefined(values[i])) {
+            return undefined;
+          }
+          concat[expressionPositions[i]] = values[i];
+        }
 
-                    const watchable = getWatchableContext(context);
+        if (contextAllowsConcatenation) {
+          return security.getTrusted(trustedContext, concat.join(""));
+        }
 
-                    if (watchable) {
-                      callFunction(
-                        watchable.$watch,
-                        watchable,
-                        watchProp,
-                        () => {
-                          const watchedValues = new Array<unknown>(
-                            expressions.length,
-                          );
+        if (trustedContext && concat.length > 1) {
+          throwNoconcat(text);
+        }
 
-                          for (let j = 0; j < expressions.length; j++) {
-                            watchedValues[j] = parseFns[j](context);
-                          }
+        return concat.join("");
+      };
 
-                          cb(compute(watchedValues));
-                        },
-                      );
-                    }
+      const fn = ((context: unknown, cb?: (val: unknown) => void) => {
+        const values = new Array<unknown>(expressions.length);
+
+        try {
+          for (let i = 0; i < expressions.length; i++) {
+            if (cb) {
+              const watchProp = expressions[i].trim();
+
+              const watchable = getWatchableContext(context);
+
+              if (watchable) {
+                callFunction(watchable.$watch, watchable, watchProp, () => {
+                  const watchedValues = new Array<unknown>(expressions.length);
+
+                  for (let j = 0; j < expressions.length; j++) {
+                    watchedValues[j] = parseFns[j](context);
                   }
 
-                  values[i] = parseFns[i](context);
-                }
-
-                return compute(values);
-              } catch (err) {
-                return interr(text, err as Error);
+                  cb(compute(watchedValues));
+                });
               }
-            }) as InterpolationFunction;
-
-            fn.exp = text;
-            fn.expressions = expressions;
-
-            return fn;
-          }
-
-          function parseStringifyInterceptor(value: unknown): unknown {
-            try {
-              value =
-                trustedContext && !contextAllowsConcatenation
-                  ? security.getTrusted(trustedContext, value)
-                  : security.valueOf(value);
-
-              return allOrNothing && !isDefined(value)
-                ? value
-                : stringify(value);
-            } catch (err) {
-              return interr(text, err as Error);
             }
+
+            values[i] = parseFns[i](context);
           }
 
-          return undefined;
-        };
+          return compute(values);
+        } catch (err) {
+          return interr(text, err as Error);
+        }
+      }) as InterpolationFunction;
 
-        $interpolate.startSymbol = () => interpolationStartSymbol;
-        $interpolate.endSymbol = () => interpolationEndSymbol;
+      fn.exp = text;
+      fn.expressions = expressions;
 
-        return $interpolate as InterpolateService;
-      },
-    ];
-  }
+      return fn;
+    }
+
+    function parseStringifyInterceptor(value: unknown): unknown {
+      try {
+        value =
+          trustedContext && !contextAllowsConcatenation
+            ? security.getTrusted(trustedContext, value)
+            : security.valueOf(value);
+
+        return allOrNothing && !isDefined(value) ? value : stringify(value);
+      } catch (err) {
+        return interr(text, err as Error);
+      }
+    }
+
+    return undefined;
+  };
+
+  $interpolate.startSymbol = () => interpolationStartSymbol;
+  $interpolate.endSymbol = () => interpolationEndSymbol;
+
+  return $interpolate as InterpolateService;
+}
+
+/** @internal */
+export function createInterpolateRegistration(
+  state: InterpolateRuntimeState,
+  security: InterpolationSecurity,
+): [string, ($parse: ParseService) => InterpolateService] {
+  return [
+    _parse,
+    ($parse) => createInterpolateService(state, $parse, security),
+  ];
 }

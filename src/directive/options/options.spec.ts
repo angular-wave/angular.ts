@@ -199,7 +199,7 @@ describe("ngOptions", () => {
     element.innerHTML = "test";
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    window.angular
+    const myModule = window.angular
       .module("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
@@ -207,65 +207,48 @@ describe("ngOptions", () => {
           errors.push(exception.message);
         };
       });
-    injector = createInjector([
-      "myModule",
-      ($compileProvider, $provide) => {
-        linkLog = [];
+    linkLog = [];
 
-        $compileProvider
-          .directive("customSelect", () => ({
-            restrict: "E",
-            replace: true,
-            scope: {
-              ngModel: "=",
-              options: "=",
-            },
-            templateUrl: "select_template.html",
-            link(scope) {
-              scope.selectable_options = scope.options;
-            },
-          }))
+    myModule
+      .directive("customSelect", () => ({
+        restrict: "E",
+        replace: true,
+        scope: {
+          ngModel: "=",
+          options: "=",
+        },
+        templateUrl: "select_template.html",
+        link(scope) {
+          scope.selectable_options = scope.options;
+        },
+      }))
 
-          .directive("oCompileContents", () => ({
-            link(scope, element) {
-              linkLog.push("linkCompileContents");
-              $compile(element.childNodes)(scope);
-            },
-          }))
+      .directive("oCompileContents", () => ({
+        link(scope, element) {
+          linkLog.push("linkCompileContents");
+          $compile(element.childNodes)(scope);
+        },
+      }))
 
-          .directive("observeChildList", () => ({
-            link(scope, element) {
-              const config = { childList: true };
+      .directive("observeChildList", () => ({
+        link(scope, element) {
+          const config = { childList: true };
 
-              childListMutationRecords = [];
-              childListMutationObserver = new window.MutationObserver(
-                (records) => {
-                  childListMutationRecords.push(...records);
-                },
-              );
-              childListMutationObserver.observe(element, config);
-            },
-          }));
+          childListMutationRecords = [];
+          childListMutationObserver = new window.MutationObserver((records) => {
+            childListMutationRecords.push(...records);
+          });
+          childListMutationObserver.observe(element, config);
+        },
+      }))
+      .directive("ngOptions", () => ({
+        restrict: "A",
+        link() {
+          linkLog.push("linkNgOptions");
+        },
+      }));
 
-        $provide.decorator("ngOptionsDirective", ($delegate) => {
-          const origPreLink = $delegate[0].link.pre;
-
-          const origPostLink = $delegate[0].link.post;
-
-          $delegate[0].compile = function () {
-            return {
-              pre: origPreLink,
-              post() {
-                linkLog.push("linkNgOptions");
-                origPostLink.apply(this, arguments);
-              },
-            };
-          };
-
-          return $delegate;
-        });
-      },
-    ]);
+    injector = createInjector(["myModule"]);
     $compile = injector.get("$compile");
     scope = injector.get("$rootScope").$new(); // create a child scope because the root scope can't be $destroy-ed
   });

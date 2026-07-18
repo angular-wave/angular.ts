@@ -29,16 +29,14 @@
     </section>
 
     <script type="module">
-      import { createAngularCustom } from "/src/runtime/index.ts";
+      import { createAngular } from "/src/runtime/index.ts";
       import { ngControllerDirective } from "/src/directive/controller/controller.ts";
       import { ngEventDirectives } from "/src/directive/events/events.ts";
 
-      const angular = createAngularCustom({
-        ngModule: {
-          directives: {
-            ngController: ngControllerDirective,
-            ngClick: ngEventDirectives.ngClick,
-          },
+      const angular = createAngular({
+        directives: {
+          ngController: ngControllerDirective,
+          ngClick: ngEventDirectives.ngClick,
         },
       });
 

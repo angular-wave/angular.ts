@@ -10,7 +10,9 @@ ngChannelDirective.$inject = [_eventBus];
  * merged into the current scope. Otherwise, string payloads replace the
  * element's HTML content directly.
  */
-export function ngChannelDirective($eventBus: ng.PubSubService): ng.Directive {
+export function ngChannelDirective(
+  $eventBus: ng.EventBusService,
+): ng.Directive {
   return {
     scope: false,
     link: (scope: ng.Scope, element: HTMLElement): void => {
@@ -22,17 +24,19 @@ export function ngChannelDirective($eventBus: ng.PubSubService): ng.Directive {
 
       const hasTemplateContent = element.childNodes.length > 0;
 
-      const unsubscribe = $eventBus.subscribe(channel, (value: unknown) => {
-        if (hasTemplateContent) {
-          if (isObject(value)) {
-            scope.$merge(value);
+      $eventBus.subscribe(
+        channel,
+        (value: unknown) => {
+          if (hasTemplateContent) {
+            if (isObject(value)) {
+              scope.$merge(value);
+            }
+          } else {
+            element.innerHTML = isString(value) ? value : JSON.stringify(value);
           }
-        } else {
-          element.innerHTML = isString(value) ? value : JSON.stringify(value);
-        }
-      });
-
-      scope.$on("$destroy", () => unsubscribe());
+        },
+        scope,
+      );
     },
   };
 }

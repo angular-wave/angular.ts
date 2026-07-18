@@ -4,6 +4,11 @@ import { assign, isInstanceOf } from "../../shared/utils.ts";
 /**
  * Transition rejection categories used throughout the router pipeline.
  */
+/**
+ * Internal router transition rejection category codes.
+ *
+ * @internal
+ */
 export const RejectType = {
   _SUPERSEDED: 2,
   _ABORTED: 3,
@@ -39,6 +44,11 @@ function detailToString(data: TransitionRejectionDetail): string {
 
 /**
  * Normalized representation of a transition failure, abort, ignore, or redirect.
+ */
+/**
+ * Internal transition rejection object used by router internals.
+ *
+ * @internal
  */
 export class Rejection extends Error {
   $id: number;

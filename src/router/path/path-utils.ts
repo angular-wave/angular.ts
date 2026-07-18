@@ -75,10 +75,6 @@ export function applyViewConfigs(
     keys(viewDecls).forEach((name) => {
       const templateFactory = $view._templateFactory;
 
-      if (!templateFactory) {
-        throw new Error("ViewService: No template factory registered");
-      }
-
       viewConfigs.push(
         createViewConfig(viewSubPath, viewDecls[name], templateFactory),
       );

@@ -1,10 +1,10 @@
-# ControllerProvider — Design Notes
+# Controller Service Design Notes
 
 ## Purpose
 
-`ControllerProvider` implements AngularTS’s `$controller` mechanism. It is responsible for:
+The runtime-owned controller registry and `$controller` service implement controller declaration and instantiation. Together they are responsible for:
 
-- registering controller definitions during configuration
+- registering controller definitions through `NgModule.controller(...)`
 - resolving controller expressions at runtime
 - instantiating controllers with DI support
 - supporting `ctrl as` syntax and explicit identifiers
@@ -188,7 +188,7 @@ in both normal and deferred modes when a scope is present.
 
 ## Summary
 
-`ControllerProvider` favors explicitness and predictability:
+The controller registry and service favor explicitness and predictability:
 
 - strict registration
 - centralized normalization

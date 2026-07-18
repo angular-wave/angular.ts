@@ -1,0 +1,26 @@
+[
+  {
+    "from": "module.value(\"$security\", { checkRequest, attachRequestAuth })",
+    "to": "module.config({ $security: { branches: [\"jwt\"], credentials: { jwt } } })",
+    "reason": "JWT request policy is a built-in cross-service policy branch.",
+    "status": "preferred"
+  },
+  {
+    "from": "$http defaults or interceptors that manually attach bearer tokens",
+    "to": "module.config({ $security: { branches: [\"jwt\"], credentials: { jwt } } })",
+    "reason": "The policy gate evaluates before request side effects and attaches credentials only after allow decisions.",
+    "status": "preferred"
+  },
+  {
+    "from": "$http calls that manually set Cookie headers",
+    "to": "module.config({ $security: { branches: [\"cookieSession\"], credentials: { cookieSession: true } } })",
+    "reason": "Cookie sessions should use browser-managed credentialed requests instead of user-authored Cookie headers.",
+    "status": "preferred"
+  },
+  {
+    "from": "router hooks that redirect protected routes ad hoc",
+    "to": "module.config({ $security: { navigation: { rules: [{ state, decision, target }] } } })",
+    "reason": "Navigation policy is evaluated before controller and view lifecycle work starts.",
+    "status": "preferred"
+  }
+]

@@ -1,8 +1,9 @@
-import type { StateDeclaration } from "../state/interface.ts";
+import type { StateDeclaration, StateOrName } from "../state/interface.ts";
 import type { Transition } from "./transition.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { TargetState } from "../state/target-state.ts";
+import type { RawParams } from "../params/interface.ts";
 
 /** Deregistration function returned by hook registrations */
 export type DeregisterFn = () => void;
@@ -11,7 +12,7 @@ export type DeregisterFn = () => void;
  * The TransitionOptions object can be used to change the behavior of a transition.
  *
  * It is passed as the third argument to [[StateService.go]], [[StateService.transitionTo]].
- * It can also be used with an `ngSref`.
+ * It can also be used with `ng-state`.
  */
 export interface TransitionOptions {
   /**
@@ -63,20 +64,34 @@ export interface TransitionOptions {
    * @default `false`
    */
   reload?: boolean | string | StateDeclaration | StateObject;
+}
 
-  /** @internal */
+/** @internal */
+export interface InternalTransitionOptions extends TransitionOptions {
   reloadState?: StateObject;
 
-  /** @internal
+  /**
    * If this transition is a redirect, this property should be the original Transition (which was redirected to this one)
    */
   redirectedFrom?: Transition;
 
-  /** @internal */
   current?: () => Transition | null;
 
-  /** @internal */
-  source?: "sref" | "url" | "redirect" | "unknown";
+  source?: "ng-state" | "url" | "redirect" | "unknown";
+
+  /**
+   * Internal marker for loading policy-resolved two-step transitions.
+   */
+  _loadingFor?: {
+    identifier: StateOrName;
+    params: RawParams;
+    options: InternalTransitionOptions;
+  };
+
+  /**
+   * Internal marker to skip loading-policy evaluation.
+   */
+  _skipLoadingPolicy?: boolean;
 }
 
 /**
@@ -168,8 +183,6 @@ export interface TreeChanges {
  * - [[HookRegistry.onError]]
  *
  * @param transition the current [[Transition]]
- * @param injector the injector service
- *
  * @returns a [[HookResult]] which may alter the transition
  *
  */
@@ -232,11 +245,12 @@ export type HookFn = TransitionHookFn | TransitionStateHookFn;
  *    - If the promise is rejected (or resolves to `false`), the transition will be cancelled
  *    - If the promise resolves to a [[TargetState]], the transition will be redirected
  *    - If the promise resolves to anything else, the transition will resume
- * - Anything else: the transition will resume
+ * - `true` or `undefined`: the transition resumes
  */
-export type HookResultValue = boolean | TargetState | undefined;
+// eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- Hook callbacks naturally continue by returning void.
+export type HookResultValue = boolean | TargetState | void;
 
-export type HookResult = unknown;
+export type HookResult = HookResultValue | PromiseLike<HookResultValue>;
 
 /**
  * These options may be provided when registering a Transition Hook (such as `onStart`)
@@ -422,19 +436,23 @@ export interface HookRegistry {
    * ```
    *
    *
-   * #### Require authentication
+   * #### Confirm destructive navigation
    *
-   * This example cancels a transition to a state which requires authentication, if the user is not currently authenticated.
-   *
-   * This example assumes authenticated states are marked using `data.requiresAuth`.
-   * This example assumes `MyAuthService` synchronously returns a boolean from `isAuthenticated()`.
+   * This example cancels a transition away from an editor state when the user
+   * declines to discard unsaved changes. Cross-cutting security should use
+   * route `policy.navigation`; transition hooks are the escape hatch for
+   * feature-specific lifecycle work.
    *
    * #### Example:
    * ```js
-   * $transitions.onBefore( { to: state => state.data?.requiresAuth }, function(trans) {
-   *   var myAuthService = trans.injector().get('MyAuthService');
-   *   // If isAuthenticated returns false, the transition is cancelled.
-   *   return myAuthService.isAuthenticated();
+   * $transitions.onBefore({ from: 'editor' }, function(trans) {
+   *   var editor = trans.injector().get('EditorSession');
+   *
+   *   if (!editor.hasUnsavedChanges()) {
+   *     return true;
+   *   }
+   *
+   *   return window.confirm('Discard unsaved changes?');
    * });
    * ```
    *
@@ -475,38 +493,19 @@ export interface HookRegistry {
    *
    * ### Example
    *
-   * #### Login during transition
+   * #### Load feature shell data during transition
    *
-   * This example intercepts any transition to a state which requires authentication, when the user is
-   * not currently authenticated.  It allows the user to authenticate asynchronously, then resumes the
-   * transition.  If the user did not authenticate successfully, it redirects to the "guest" state, which
-   * does not require authentication.
-   *
-   * This example assumes:
-   * - authenticated states are marked using `data.requiresAuth`.
-   * - `MyAuthService.isAuthenticated()` synchronously returns a boolean.
-   * - `MyAuthService.authenticate()` presents a login dialog, and returns a promise which is resolved
-   *   or rejected, whether or not the login attempt was successful.
+   * This example pauses transitions into a reporting branch while an
+   * application-level feature shell loads. Use state `resolve` for route data
+   * and `policy.navigation` for security; use transition hooks for advanced
+   * orchestration that intentionally spans multiple states.
    *
    * #### Example:
    * ```js
-   * $transitions.onStart( { to: state => state.data?.requiresAuth }, function(trans) {
-   *   var $state = trans.router.stateService;
-   *   var MyAuthService = trans.injector().get('MyAuthService');
+   * $transitions.onStart({ to: 'reports.**' }, function(trans) {
+   *   var reportsShell = trans.injector().get('ReportsShell');
    *
-   *   // If the user is not authenticated
-   *   if (!MyAuthService.isAuthenticated()) {
-   *
-   *     // Then return a promise for a successful login.
-   *     // The transition will wait for this promise to settle
-   *
-   *     return MyAuthService.authenticate().catch(function() {
-   *
-   *       // If the authenticate() method failed for whatever reason,
-   *       // redirect to a 'guest' state which doesn't require auth.
-   *       return $state.target("guest");
-   *     });
-   *   }
+   *   return reportsShell.ensureLoaded();
    * });
    * ```
    *
@@ -770,7 +769,7 @@ export interface HookRegistry {
    * To check the failure reason, inspect the return value of [[Transition.error]].
    *
    * Note: `onError` should be used for targeted error handling, or error recovery.
-   * For simple catch-all error reporting, use [[StateService.defaultErrorHandler]].
+   * For catch-all error reporting, configure `$router.error` or `$exceptionHandler`.
    *
    * ### Return value
    *
