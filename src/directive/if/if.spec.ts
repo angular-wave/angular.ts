@@ -34,12 +34,16 @@ describe("ngIf", () => {
       injector = window.angular.bootstrap(document.getElementById("app"), [
         "test",
       ]);
-      injector.invoke((_$rootScope_, _$compile_) => {
-        $rootScope = _$rootScope_;
-        $scope = $rootScope.$new();
-        $compile = _$compile_;
-        element = $compile("<div></div>")($scope);
-      });
+      injector.invoke([
+        "$rootScope",
+        "$compile",
+        (_$rootScope_, _$compile_) => {
+          $rootScope = _$rootScope_;
+          $scope = $rootScope.$new();
+          $compile = _$compile_;
+          element = $compile("<div></div>")($scope);
+        },
+      ]);
     });
 
     function makeIf() {
@@ -274,9 +278,12 @@ describe("ngIf", () => {
     it("should play nice with ngInclude on the same element", (done) => {
       element.innerHTML = `<div><div ng-if="value=='first'" ng-include="'/mock/hello'"></div></div>`;
 
-      window.angular.module("myModule", []).run(($rootScope) => {
-        $rootScope.value = "first";
-      });
+      window.angular.module("myModule", []).run([
+        "$rootScope",
+        ($rootScope) => {
+          $rootScope.value = "first";
+        },
+      ]);
       injector = angular.bootstrap(element, ["myModule"]);
 
       setTimeout(() => {

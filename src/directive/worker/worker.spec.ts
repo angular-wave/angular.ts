@@ -67,12 +67,14 @@ describe("ngWorker", () => {
         terminate: () => undefined,
       });
 
-    angular
-      .bootstrap(root, [module.name])
-      .invoke((_$compile_, _$rootScope_) => {
+    angular.bootstrap(root, [module.name]).invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_, _$rootScope_) => {
         compile = _$compile_;
         scope = _$rootScope_.$new();
-      });
+      },
+    ]);
   });
 
   afterEach(() => {

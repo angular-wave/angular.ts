@@ -28,11 +28,7 @@ import {
   hasNormalizedAttr,
   setCacheData,
 } from "./shared/dom.ts";
-import type {
-  AngularBootstrapConfig,
-  InvocationDetail,
-  PublicInjectionTokens,
-} from "./interface.ts";
+import type { InvocationDetail, PublicInjectionTokens } from "./interface.ts";
 import { createInjector, type ModuleLike } from "./core/di/injector.ts";
 import {
   NgModule,
@@ -421,13 +417,11 @@ export class AngularRuntime extends EventTarget {
    *     Each item in the array should be the name of a predefined module or a (DI annotated)
    *     function that will be invoked by the injector as a `config` block.
    *     See `angular.module()`.
-   * `config` controls bootstrap behavior such as `strictDi`.
    * @returns The created injector instance for this application.
    */
   bootstrap(
     element: string | HTMLElement | HTMLDocument,
     modules?: ModuleLike[],
-    config: AngularBootstrapConfig = { strictDi: false },
   ): ng.InjectorService {
     if (isInstanceOf(element, Element) || isInstanceOf(element, Document)) {
       rootScopeCleanupByElement.get(element)?.();
@@ -448,7 +442,6 @@ export class AngularRuntime extends EventTarget {
 
     const injector = createInjector(
       this._bootsrappedModules,
-      config.strictDi,
       (registry) => {
         registry.value(_rootElement, element);
       },
@@ -501,20 +494,6 @@ export class AngularRuntime extends EventTarget {
 
         compileFn(scope);
 
-        if (!hasOwn($injector, "strictDi")) {
-          try {
-            $injector.invoke(() => {
-              /* empty */
-            });
-          } catch (error) {
-            const errorStr = isInstanceOf(error, Error)
-              ? error.toString()
-              : String(error);
-
-            $injector.strictDi = !!/strict mode/.exec(errorStr);
-          }
-        }
-
         scope.$on("$destroy", () => {
           if (rootScopeCleanupByElement.get(rootElement)) {
             rootScopeCleanupByElement.delete(rootElement);
@@ -530,17 +509,16 @@ export class AngularRuntime extends EventTarget {
    * Create a standalone injector without bootstrapping the DOM.
    *
    * @param modules - Module names or config functions to load.
-   * @param strictDi - Require explicit dependency annotations.
    * @returns The created injector.
    */
-  injector(modules: ModuleLike[], strictDi?: boolean): ng.InjectorService {
+  injector(modules: ModuleLike[]): ng.InjectorService {
     if (this._injectorCreated) {
       this.$injector.loadNewModules(modules);
 
       return this.$injector;
     }
 
-    this.$injector = createInjector(modules, strictDi, undefined, (name) =>
+    this.$injector = createInjector(modules, undefined, (name) =>
       this.module(name),
     );
     this._injectorCreated = true;
@@ -584,10 +562,6 @@ export class AngularRuntime extends EventTarget {
     });
 
     appElements.forEach((app) => {
-      const strictDi =
-        app._element.hasAttribute("strict-di") ||
-        app._element.hasAttribute("data-strict-di");
-
       if (multimode) {
         const RuntimeCtor = this.constructor as new (
           options: AngularRuntimeConstructorInput,
@@ -596,13 +570,9 @@ export class AngularRuntime extends EventTarget {
         const submodule = new RuntimeCtor(true);
 
         this.subapps.push(submodule);
-        submodule.bootstrap(app._element, app._module ? [app._module] : [], {
-          strictDi,
-        });
+        submodule.bootstrap(app._element, app._module ? [app._module] : []);
       } else {
-        this.bootstrap(app._element, app._module ? [app._module] : [], {
-          strictDi,
-        });
+        this.bootstrap(app._element, app._module ? [app._module] : []);
       }
 
       multimode = true;

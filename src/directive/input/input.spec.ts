@@ -16,10 +16,14 @@ describe("input directive", () => {
 
     const angular = new Angular();
 
-    angular.bootstrap(app, []).invoke((_$compile_, _$rootScope_) => {
-      $compile = _$compile_;
-      $rootScope = _$rootScope_;
-    });
+    angular.bootstrap(app, []).invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_, _$rootScope_) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+      },
+    ]);
   });
 
   afterEach(() => {

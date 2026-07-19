@@ -3,9 +3,9 @@ import {
   assign,
   isInstanceOf,
   isObject,
-  isFunction,
   isString,
 } from "../../shared/utils.ts";
+import { isInjectable } from "../../core/di/injectable.ts";
 import { defaultTransOpts } from "../transition/transition-service.ts";
 import {
   createTransitionErrorPolicyInvocationLocals,
@@ -188,7 +188,7 @@ function buildErrorBoundaryTarget(
     return Promise.resolve(policy);
   }
 
-  if (!isFunction(policy)) {
+  if (!isInjectable(policy)) {
     return Promise.resolve(undefined);
   }
 
@@ -449,7 +449,7 @@ async function shouldRetryTransition(
   let decision: unknown = retryPolicy.policy;
 
   if (typeof decision !== "boolean" && typeof decision !== "number") {
-    if (isFunction(retryPolicy.policy)) {
+    if (isInjectable(retryPolicy.policy)) {
       const context = toRetryContext(
         transition,
         retryPolicy.state,

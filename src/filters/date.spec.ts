@@ -28,7 +28,10 @@ describe("date filter", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    createInjector(["ng"]).invoke(
+    createInjector(["ng"]).invoke([
+      "$compile",
+      "$filter",
+      "$rootScope",
       (
         _$compile_: ng.CompileService,
         _$filter_: ng.FilterService,
@@ -42,7 +45,7 @@ describe("date filter", () => {
         filter = _$filter_;
         $rootScope = _$rootScope_;
       },
-    );
+    ]);
   });
 
   it("should format dates with the runtime default format", () => {
@@ -139,7 +142,9 @@ describe("date filter", () => {
   });
 
   it("should work when evaluating expression filters", () => {
-    createInjector(["ng"]).invoke(
+    createInjector(["ng"]).invoke([
+      "$rootScope",
+      "$parse",
       ($rootScope: ng.Scope, $parse: ng.ParseService) => {
         $rootScope.createdAt = date;
         $rootScope.dateLocale = undefined;
@@ -161,7 +166,7 @@ describe("date filter", () => {
           }),
         );
       },
-    );
+    ]);
   });
 
   it("should format proxied dates", () => {

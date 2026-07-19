@@ -15,13 +15,16 @@ describe("scriptDirective", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular.module("myModule", ["ng"]);
-    createInjector(["myModule"]).invoke(
+    createInjector(["myModule"]).invoke([
+      "$rootScope",
+      "$compile",
+      "$templateCache",
       (_$rootScope_: any, _$compile_: any, _$templateCache_: any) => {
         $rootScope = _$rootScope_;
         $compile = _$compile_;
         $templateCache = _$templateCache_;
       },
-    );
+    ]);
   });
 
   it("should cache ng-template contents during compile", () => {

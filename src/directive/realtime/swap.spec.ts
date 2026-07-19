@@ -18,11 +18,16 @@ describe("createRealtimeSwapHandler", () => {
 
     const angular = new Angular();
 
-    angular.bootstrap(app, []).invoke((_$compile_, _$rootScope_, _$log_) => {
-      $compile = _$compile_;
-      $rootScope = _$rootScope_;
-      warnSpy = spyOn(_$log_, "warn");
-    });
+    angular.bootstrap(app, []).invoke([
+      "$compile",
+      "$rootScope",
+      "$log",
+      (_$compile_, _$rootScope_, _$log_) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+        warnSpy = spyOn(_$log_, "warn");
+      },
+    ]);
   });
 
   afterEach(() => {

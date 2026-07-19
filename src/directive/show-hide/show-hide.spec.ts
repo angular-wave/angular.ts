@@ -16,10 +16,14 @@ describe("ngShow / ngHide", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular.module("myModule", ["ng"]);
-    createInjector(["myModule"]).invoke(($rootScope, _$compile_) => {
-      $scope = $rootScope.$new();
-      $compile = _$compile_;
-    });
+    createInjector(["myModule"]).invoke([
+      "$rootScope",
+      "$compile",
+      ($rootScope, _$compile_) => {
+        $scope = $rootScope.$new();
+        $compile = _$compile_;
+      },
+    ]);
   });
 
   afterEach(() => {

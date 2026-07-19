@@ -12,6 +12,7 @@ import {
   isUndefined,
   createErrorFactory,
 } from "../shared/utils.ts";
+import type { Injectable } from "../interface.ts";
 
 const filterError = createErrorFactory("filter");
 
@@ -19,7 +20,7 @@ type Dynamic = ReturnType<typeof JSON.parse>;
 
 export type FilterFn = (...args: Dynamic[]) => unknown;
 
-export type FilterFactory = (...args: Dynamic[]) => FilterFn;
+export type FilterFactory = Injectable<(...args: Dynamic[]) => FilterFn>;
 
 export type FilterService = (name: string) => FilterFn;
 

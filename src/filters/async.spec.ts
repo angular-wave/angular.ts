@@ -12,7 +12,10 @@ describe("async filter", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    createInjector(["ng"]).invoke(
+    createInjector(["ng"]).invoke([
+      "$compile",
+      "$filter",
+      "$rootScope",
       (
         _$compile_: ng.CompileService,
         _$filter_: ng.FilterService,
@@ -22,7 +25,7 @@ describe("async filter", () => {
         filter = _$filter_;
         $rootScope = _$rootScope_;
       },
-    );
+    ]);
   });
 
   it("should pass through non-promise values", () => {

@@ -482,7 +482,7 @@ function getModelFactoryDependencies(
   initial: ModelFactory<ModelState>,
 ): string[] {
   if (!isFunction(initial)) {
-    return annotate(initial, false, `model ${name}`);
+    return annotate(initial, `model ${name}`);
   }
 
   const factory = initial as ModelFactory<ModelState> & {
@@ -492,7 +492,7 @@ function getModelFactoryDependencies(
   const previousInject = factory.$inject;
 
   try {
-    return annotate(factory, false, `model ${name}`);
+    return annotate(factory, `model ${name}`);
   } finally {
     if (hadOwnInject) {
       factory.$inject = previousInject;
@@ -1232,7 +1232,7 @@ export class NgModule {
    */
   filter(name: string, filterFn: ng.FilterFactory): this {
     validate(isString, name, "name");
-    validate(isFunction, filterFn, `filterFn`);
+    validate(isInjectable, filterFn, `filterFn`);
     this._invokeQueue.push([
       this._filterRegistry,
       "register",

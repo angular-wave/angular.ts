@@ -13,10 +13,14 @@ describe("ngScopeDirective", () => {
       "test",
     ]);
 
-    injector.invoke((_$compile_: any, _$rootScope_: any) => {
-      $compile = _$compile_;
-      $rootScope = _$rootScope_;
-    });
+    injector.invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_: any, _$rootScope_: any) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+      },
+    ]);
   });
 
   it("should set $scope.$scopename from the ng-scope attribute", async () => {

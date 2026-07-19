@@ -102,48 +102,21 @@ describe("angular", () => {
       dealoc(document);
     });
 
-    it("should bootstrap in strict mode when strict-di attribute is specified", () => {
-      const appElement = createElementFromHTML(
-        '<div ng-app="" strict-di></div>',
-      );
-
+    it("requires explicit dependency annotations", () => {
+      const appElement = createElementFromHTML('<div ng-app=""></div>');
       const root = createElementFromHTML("<div></div>");
 
       root.append(appElement);
 
       window.angular.init(root);
       expect(bootstrapSpy).toHaveBeenCalled();
-      expect(bootstrapSpy.calls.mostRecent().args[2].strictDi).toBe(true);
 
       const injector = angular.getInjector(appElement);
 
       function testFactory($rootScope) {}
       expect(() => {
         injector.instantiate(testFactory);
-      }).toThrowError(/strictdi/);
-
-      dealoc(appElement);
-    });
-
-    it("should bootstrap in strict mode when strict-di data attribute is specified", () => {
-      const appElement = createElementFromHTML(
-        '<div data-ng-app="" data-strict-di></div>',
-      );
-
-      const root = createElementFromHTML("<div></div>");
-
-      root.append(appElement);
-
-      window.angular.init(root);
-      expect(bootstrapSpy).toHaveBeenCalled();
-      expect(bootstrapSpy.calls.mostRecent().args[2].strictDi).toBe(true);
-
-      const injector = angular.getInjector(appElement);
-
-      function testFactory($rootScope) {}
-      expect(() => {
-        injector.instantiate(testFactory);
-      }).toThrowError(/strictdi/);
+      }).toThrowError(/annotation/);
 
       dealoc(appElement);
     });
@@ -614,7 +587,7 @@ describe("module loader", () => {
   it("should not throw error when `module.decorator` is declared before provider that it decorates", () => {
     angular
       .module("theModule", [])
-      .decorator("theProvider", ($delegate) => $delegate)
+      .decorator("theProvider", ["$delegate", ($delegate) => $delegate])
       .factory("theProvider", () => ({}));
 
     expect(() => {
@@ -628,24 +601,36 @@ describe("module loader", () => {
     angular
       .module("theModule", [])
       .factory("theProvider", () => ({ api: "provider" }))
-      .decorator("theProvider", ($delegate) => {
-        $delegate.api += "-first";
+      .decorator("theProvider", [
+        "$delegate",
+        ($delegate) => {
+          $delegate.api += "-first";
 
-        return $delegate;
-      })
-      .decorator("theProvider", ($delegate) => {
-        $delegate.api += "-second";
+          return $delegate;
+        },
+      ])
+      .decorator("theProvider", [
+        "$delegate",
+        ($delegate) => {
+          $delegate.api += "-second";
 
-        return $delegate;
-      })
-      .decorator("theProvider", ($delegate) => {
-        $delegate.api += "-third";
+          return $delegate;
+        },
+      ])
+      .decorator("theProvider", [
+        "$delegate",
+        ($delegate) => {
+          $delegate.api += "-third";
 
-        return $delegate;
-      })
-      .run((theProvider) => {
-        log = theProvider.api;
-      });
+          return $delegate;
+        },
+      ])
+      .run([
+        "theProvider",
+        (theProvider) => {
+          log = theProvider.api;
+        },
+      ]);
 
     createInjector(["theModule"]);
     expect(log).toBe("provider-first-second-third");
@@ -659,17 +644,23 @@ describe("module loader", () => {
       .factory("theProvider", () => ({
         api: "firstProvider",
       }))
-      .decorator("theProvider", ($delegate) => {
-        $delegate.api += "-decorator";
+      .decorator("theProvider", [
+        "$delegate",
+        ($delegate) => {
+          $delegate.api += "-decorator";
 
-        return $delegate;
-      })
+          return $delegate;
+        },
+      ])
       .factory("theProvider", () => ({
         api: "secondProvider",
       }))
-      .run((theProvider) => {
-        log = theProvider.api;
-      });
+      .run([
+        "theProvider",
+        (theProvider) => {
+          log = theProvider.api;
+        },
+      ]);
 
     createInjector(["theModule"]);
     expect(log).toBe("secondProvider-decorator");

@@ -261,8 +261,11 @@ const retainedRouterTree: RouterModuleDeclaration = {
   policy: {
     retention: {
       mode: "keep-alive",
-      key: (context: StateRetentionPolicyContext) =>
-        `${context.state.name}:${String(context.params.id ?? "index")}`,
+      key: [
+        "context",
+        (context: StateRetentionPolicyContext) =>
+          `${context.state.name}:${String(context.params.id ?? "index")}`,
+      ],
       max: 3,
       pause: "schedulers",
       evict: () => undefined,
@@ -486,15 +489,18 @@ const transitionPolicyDeclaration: StateDeclaration = {
   url: "/workflow",
   policy: {
     transition: {
-      canExit: (context: StateTransitionPolicyContext) => {
-        context.operation;
-        context.from;
-        context.to;
-        context.state;
-        context.transition;
+      canExit: [
+        "context",
+        (context: StateTransitionPolicyContext) => {
+          context.operation;
+          context.from;
+          context.to;
+          context.state;
+          context.transition;
 
-        return { state: "workflow.confirm", params: { step: "1" } };
-      },
+          return { state: "workflow.confirm", params: { step: "1" } };
+        },
+      ],
     },
   },
 };
@@ -504,10 +510,10 @@ const invalidTransitionPolicy: StateDeclaration = {
   policy: {
     transition: {
       // @ts-expect-error canExit must return boolean or redirect shape
-      canExit: (context: StateTransitionPolicyContext) => context,
+      canExit: ["context", (context: StateTransitionPolicyContext) => context],
       dirty: {
         // @ts-expect-error dirty.when must evaluate a boolean predicate
-        when: (context: StateTransitionPolicyContext) => context,
+        when: ["context", (context: StateTransitionPolicyContext) => context],
       },
     },
   },
@@ -519,13 +525,16 @@ const dirtyTransitionPolicyDeclaration: StateDeclaration = {
   policy: {
     transition: {
       dirty: {
-        when: (context: StateTransitionPolicyContext) => {
-          context.state;
-          context.operation;
-          context.transition;
+        when: [
+          "context",
+          (context: StateTransitionPolicyContext) => {
+            context.state;
+            context.operation;
+            context.transition;
 
-          return false;
-        },
+            return false;
+          },
+        ],
         prompt: "Discard changes?",
         redirectTo: "workflow",
       },
@@ -539,8 +548,11 @@ const invalidDirtyPolicy: StateDeclaration = {
   policy: {
     transition: {
       dirty: {
-        // @ts-expect-error dirty.when must return boolean
-        when: (context: StateTransitionPolicyContext) => context.operation,
+        when: [
+          "context",
+          // @ts-expect-error dirty.when must return boolean
+          (context: StateTransitionPolicyContext) => context.operation,
+        ],
       },
     },
   },
@@ -551,15 +563,18 @@ const retryTransitionPolicy: StateDeclaration = {
   url: "/workflow-retry",
   policy: {
     transition: {
-      retry: (context: StateTransitionRetryPolicyContext) => {
-        context.operation;
-        context.from;
-        context.to;
-        context.attempt;
-        context.state;
+      retry: [
+        "context",
+        (context: StateTransitionRetryPolicyContext) => {
+          context.operation;
+          context.from;
+          context.to;
+          context.attempt;
+          context.state;
 
-        return 2;
-      },
+          return 2;
+        },
+      ],
     },
   },
 };
@@ -569,11 +584,14 @@ const retryPolicyAsBool: StateDeclaration = {
   url: "/workflow-retry-boolean",
   policy: {
     transition: {
-      retry: (context: StateTransitionRetryPolicyContext) => {
-        context.state;
+      retry: [
+        "context",
+        (context: StateTransitionRetryPolicyContext) => {
+          context.state;
 
-        return false;
-      },
+          return false;
+        },
+      ],
     },
   },
 };
@@ -583,9 +601,12 @@ const invalidRetryPolicy: StateDeclaration = {
   url: "/invalid-retry",
   policy: {
     transition: {
-      // @ts-expect-error retry expects boolean/number/injectable policy
-      retry: (context: StateTransitionRetryPolicyContext) =>
-        context.attempt.toString(),
+      retry: [
+        "context",
+        // @ts-expect-error retry expects boolean/number/injectable policy
+        (context: StateTransitionRetryPolicyContext) =>
+          context.attempt.toString(),
+      ],
     },
   },
 };
@@ -637,16 +658,19 @@ const transitionErrorBoundaryPolicyWithPolicy: StateDeclaration = {
   url: "/with-error-boundary-policy",
   policy: {
     transition: {
-      errorBoundary: (context: StateTransitionErrorPolicyContext) => {
-        context.operation;
-        context.error;
-        context.state;
+      errorBoundary: [
+        "context",
+        (context: StateTransitionErrorPolicyContext) => {
+          context.operation;
+          context.error;
+          context.state;
 
-        return {
-          state: "error",
-          params: { message: "from policy" },
-        };
-      },
+          return {
+            state: "error",
+            params: { message: "from policy" },
+          };
+        },
+      ],
     },
   },
 };
@@ -666,12 +690,15 @@ const transitionLoadingPolicy: StateDeclaration = {
   url: "/with-loading-policy",
   policy: {
     transition: {
-      loading: (context: StateTransitionLoadingPolicyContext) => {
-        context.operation;
-        context.state;
+      loading: [
+        "context",
+        (context: StateTransitionLoadingPolicyContext) => {
+          context.operation;
+          context.state;
 
-        return true;
-      },
+          return true;
+        },
+      ],
     },
   },
 };
@@ -681,12 +708,15 @@ const invalidErrorBoundaryPolicy: StateDeclaration = {
   url: "/invalid-error-boundary",
   policy: {
     transition: {
-      // @ts-expect-error errorBoundary supports only route targets or boundary policy
-      errorBoundary: (context: StateTransitionErrorPolicyContext) => {
-        context.state;
+      errorBoundary: [
+        "context",
+        // @ts-expect-error errorBoundary supports only route targets or boundary policy
+        (context: StateTransitionErrorPolicyContext) => {
+          context.state;
 
-        return false;
-      },
+          return false;
+        },
+      ],
     },
   },
 };
@@ -696,12 +726,15 @@ const invalidErrorAliasPolicy: StateDeclaration = {
   url: "/invalid-error-alias",
   policy: {
     transition: {
-      // @ts-expect-error error supports only route targets or boundary policy
-      error: (context: StateTransitionErrorPolicyContext) => {
-        context.state;
+      error: [
+        "context",
+        // @ts-expect-error error supports only route targets or boundary policy
+        (context: StateTransitionErrorPolicyContext) => {
+          context.state;
 
-        return false;
-      },
+          return false;
+        },
+      ],
     },
   },
 };
@@ -711,12 +744,15 @@ const invalidLoadingPolicy: StateDeclaration = {
   url: "/invalid-loading",
   policy: {
     transition: {
-      // @ts-expect-error loading supports only boolean, string, or policy callable
-      loading: (context: StateTransitionLoadingPolicyContext) => {
-        context.from;
+      loading: [
+        "context",
+        // @ts-expect-error loading supports only boolean, string, or policy callable
+        (context: StateTransitionLoadingPolicyContext) => {
+          context.from;
 
-        return { invalid: true } as const;
-      },
+          return { invalid: true } as const;
+        },
+      ],
     },
   },
 };

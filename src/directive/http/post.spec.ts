@@ -41,13 +41,16 @@ describe("ng-post", () => {
         url: "/error",
         template: `error`,
       });
-    angular
-      .bootstrap(el, ["default"])
-      .invoke((_$compile_, _$rootScope_, _$log_) => {
+    angular.bootstrap(el, ["default"]).invoke([
+      "$compile",
+      "$rootScope",
+      "$log",
+      (_$compile_, _$rootScope_, _$log_) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
         $log = _$log_;
-      });
+      },
+    ]);
   });
 
   it("should replace innerHTML (default) on click", async () => {

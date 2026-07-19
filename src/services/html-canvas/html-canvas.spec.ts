@@ -77,10 +77,14 @@ describe("HTML-in-Canvas", () => {
     window.angular = new Angular();
     const injector = window.angular.bootstrap(app, []);
 
-    injector.invoke((_$compile_, _$rootScope_) => {
-      $compile = _$compile_;
-      $rootScope = _$rootScope_;
-    });
+    injector.invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_, _$rootScope_) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+      },
+    ]);
   });
 
   function bootstrapCustomHtmlCanvasRuntime(): void {
@@ -93,10 +97,14 @@ describe("HTML-in-Canvas", () => {
 
     const injector = window.angular.bootstrap(app, []);
 
-    injector.invoke((_$compile_, _$rootScope_) => {
-      $compile = _$compile_;
-      $rootScope = _$rootScope_;
-    });
+    injector.invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_, _$rootScope_) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+      },
+    ]);
   }
 
   it("reports native runtime support without enabling a fallback", () => {

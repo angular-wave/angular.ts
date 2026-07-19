@@ -32,6 +32,7 @@ describe("ngController", () => {
 
     $scope.protoGreet = bind(this, this.protoGreet);
   };
+  Greeter.$inject = ["$scope"];
 
   Greeter.prototype = {
     suffix: "!",
@@ -50,13 +51,19 @@ describe("ngController", () => {
       })
       .controller("Greeter", Greeter)
 
-      .controller("Child", ($scope) => {
-        $scope.name = "Adam";
-      })
+      .controller("Child", [
+        "$scope",
+        ($scope) => {
+          $scope.name = "Adam";
+        },
+      ])
 
-      .controller("Public", function ($scope) {
-        this.mark = "works";
-      });
+      .controller("Public", [
+        "$scope",
+        function ($scope) {
+          this.mark = "works";
+        },
+      ]);
 
     const Foo = function ($scope) {
       $scope.mark = "foo";
@@ -66,12 +73,14 @@ describe("ngController", () => {
       .module("controllerDirectiveTests")
       .controller("BoundFoo", ["$scope", Foo.bind(null)]);
 
-    injector = createInjector(["controllerDirectiveTests"]).invoke(
+    injector = createInjector(["controllerDirectiveTests"]).invoke([
+      "$rootScope",
+      "$compile",
       (_$rootScope_, _$compile_) => {
         $rootScope = _$rootScope_;
         $compile = _$compile_;
       },
-    );
+    ]);
   });
 
   afterEach(() => {
@@ -129,11 +138,13 @@ describe("ngController", () => {
     element = createElementFromHTML(
       '<div><div ng-controller="Greeter" ng-include="\'/mock/interpolation\'"></div></div>',
     );
-    window.angular
-      .module("myModule", [])
-      .controller("Greeter", function GreeterController($scope, $element) {
+    window.angular.module("myModule", []).controller("Greeter", [
+      "$scope",
+      "$element",
+      function GreeterController($scope, $element) {
         $scope.expr = "Vojta";
-      });
+      },
+    ]);
     injector = angular.bootstrap(element, ["myModule"]);
 
     $rootScope = injector.get("$rootScope");
@@ -172,11 +183,12 @@ describe("ngController", () => {
       '<div><div ng-controller="ExposeScope" ng-include="\'/mock/scopeinit\'"></div></div>',
     );
 
-    window.angular
-      .module("myModule", [])
-      .controller("ExposeScope", function ExposeScopeController($scope) {
+    window.angular.module("myModule", []).controller("ExposeScope", [
+      "$scope",
+      function ExposeScopeController($scope) {
         controllerScope = $scope;
-      });
+      },
+    ]);
 
     injector = angular.bootstrap(element, ["myModule"]);
 

@@ -39,9 +39,12 @@ describe("$websocket", () => {
 
     angular = new Angular();
 
-    angular.bootstrap(el, []).invoke((_$websocket_) => {
-      websocket = _$websocket_;
-    });
+    angular.bootstrap(el, []).invoke([
+      "$websocket",
+      (_$websocket_) => {
+        websocket = _$websocket_;
+      },
+    ]);
   });
 
   it("tears down runtime configuration idempotently", () => {
@@ -233,11 +236,12 @@ describe("$websocket", () => {
       },
     });
 
-    angular
-      .bootstrap(configuredEl, ["configuredWebSocketDefaults"])
-      .invoke((_$websocket_) => {
+    angular.bootstrap(configuredEl, ["configuredWebSocketDefaults"]).invoke([
+      "$websocket",
+      (_$websocket_) => {
         configuredWebSocket = _$websocket_;
-      });
+      },
+    ]);
 
     const connection = configuredWebSocket("ws://example.test/configured");
 

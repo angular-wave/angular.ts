@@ -38,11 +38,16 @@ describe("UrlMatcher", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$location_, _$stateRegistry_, _$state_) => {
-      router = _$state_._routerState;
-      $location = _$location_;
-      $stateRegistry = _$stateRegistry_;
-    });
+    $injector.invoke([
+      "$location",
+      "$stateRegistry",
+      "$state",
+      (_$location_, _$stateRegistry_, _$state_) => {
+        router = _$state_._routerState;
+        $location = _$location_;
+        $stateRegistry = _$stateRegistry_;
+      },
+    ]);
   });
 
   describe("provider", () => {
@@ -1036,7 +1041,7 @@ describe("UrlMatcher", () => {
       const matcher = router._compile("/users/{user:json}", {
         state: {
           params: {
-            user: ($state) => $state.params.user,
+            user: ["$state", ($state) => $state.params.user],
           },
         },
       });

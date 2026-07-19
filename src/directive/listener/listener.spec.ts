@@ -14,12 +14,14 @@ describe("ngListener", () => {
 
     angular.module("myModule", ["ng"]);
 
-    angular
-      .bootstrap(app, ["myModule"])
-      .invoke((_$compile_: any, _$rootScope_: any) => {
+    angular.bootstrap(app, ["myModule"]).invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_: any, _$rootScope_: any) => {
         $compile = _$compile_;
         $scope = _$rootScope_;
-      });
+      },
+    ]);
 
     await wait();
   });

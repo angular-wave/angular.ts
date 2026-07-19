@@ -19,10 +19,14 @@ describe("ngSwitch", () => {
       document.getElementById("app", ["test"]),
     );
 
-    injector.invoke(($rootScope, _$compile_) => {
-      $scope = $rootScope.$new();
-      $compile = _$compile_;
-    });
+    injector.invoke([
+      "$rootScope",
+      "$compile",
+      ($rootScope, _$compile_) => {
+        $scope = $rootScope.$new();
+        $compile = _$compile_;
+      },
+    ]);
   });
 
   afterEach(() => {

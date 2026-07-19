@@ -149,13 +149,14 @@ describe("AngularRuntime composition ownership", () => {
 
     runtimes.push(runtime);
 
-    runtime
-      .module("lazyCompositionProbe", ["ng"])
-      .decorator(_animate, ($delegate: ng.AnimateService) => {
+    runtime.module("lazyCompositionProbe", ["ng"]).decorator(_animate, [
+      "$delegate",
+      ($delegate: ng.AnimateService) => {
         constructions++;
 
         return $delegate;
-      });
+      },
+    ]);
 
     const injector = runtime.injector(["lazyCompositionProbe"]);
 

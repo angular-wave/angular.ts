@@ -42,10 +42,14 @@ describe("form", () => {
       "myModule",
     ]);
 
-    injector.invoke((_$compile_, $rootScope) => {
-      $compile = _$compile_;
-      scope = $rootScope.$new();
-    });
+    injector.invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_, $rootScope) => {
+        $compile = _$compile_;
+        scope = $rootScope.$new();
+      },
+    ]);
   });
 
   afterEach(() => {
@@ -1750,12 +1754,17 @@ describe("form", () => {
       myModule = window.angular.module("myModule", []);
 
       injector = window.angular.bootstrap(dummy, ["myModule"]);
-      injector.invoke((_$compile_, $rootScope, _$animate_) => {
-        $compile = _$compile_;
-        scope = $rootScope.$new();
-        $animate = _$animate_;
-        doc = $compile('<form name="myForm"></form>')(scope);
-      });
+      injector.invoke([
+        "$compile",
+        "$rootScope",
+        "$animate",
+        (_$compile_, $rootScope, _$animate_) => {
+          $compile = _$compile_;
+          scope = $rootScope.$new();
+          $animate = _$animate_;
+          doc = $compile('<form name="myForm"></form>')(scope);
+        },
+      ]);
       form = scope.myForm;
     });
 

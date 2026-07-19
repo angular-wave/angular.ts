@@ -1,8 +1,8 @@
 import { _injector } from "../../injection-tokens.ts";
 import type { FilterFactory, FilterService } from "../../filters/filter.ts";
-import { isFunction } from "../../shared/utils.ts";
 import { validate, validateIsString } from "../../shared/validate.ts";
 import type { ProviderRegistry } from "../di/interface.ts";
+import { isInjectable } from "../di/injectable.ts";
 
 const SUFFIX = "Filter";
 
@@ -26,7 +26,7 @@ export class FilterRegistry {
   register(name: string, factory: FilterFactory): this {
     this._assertActive();
     validateIsString(name, "name");
-    validate(isFunction, factory, "factory");
+    validate(isInjectable, factory, "factory");
     this._factories.set(name, factory);
     this._bind(name, factory);
 

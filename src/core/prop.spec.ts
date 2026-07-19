@@ -426,13 +426,16 @@ describe("ngProp*", () => {
 
   describe("iframe[src]", () => {
     beforeEach(() => {
-      createInjector(["myModule"]).invoke(
+      createInjector(["myModule"]).invoke([
+        "$compile",
+        "$rootScope",
+        "$sce",
         (_$compile_, _$rootScope_, _$sce_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
           $sce = _$sce_;
         },
-      );
+      ]);
     });
 
     it("should pass through src properties for the same domain", async () => {
@@ -485,13 +488,16 @@ describe("ngProp*", () => {
 
   describe("base[href]", () => {
     beforeEach(() => {
-      createInjector(["myModule"]).invoke(
+      createInjector(["myModule"]).invoke([
+        "$compile",
+        "$rootScope",
+        "$sce",
         (_$compile_, _$rootScope_, _$sce_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
           $sce = _$sce_;
         },
-      );
+      ]);
     });
 
     it("should be a RESOURCE_URL context", async () => {
@@ -509,13 +515,16 @@ describe("ngProp*", () => {
 
   describe("form[action]", () => {
     beforeEach(() => {
-      createInjector(["myModule"]).invoke(
+      createInjector(["myModule"]).invoke([
+        "$compile",
+        "$rootScope",
+        "$sce",
         (_$compile_, _$rootScope_, _$sce_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
           $sce = _$sce_;
         },
-      );
+      ]);
     });
 
     it("should pass through action property for the same domain", async () => {
@@ -572,13 +581,16 @@ describe("ngProp*", () => {
 
   describe("link[href]", () => {
     beforeEach(() => {
-      createInjector(["myModule"]).invoke(
+      createInjector(["myModule"]).invoke([
+        "$compile",
+        "$rootScope",
+        "$sce",
         (_$compile_, _$rootScope_, _$sce_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
           $sce = _$sce_;
         },
-      );
+      ]);
     });
 
     it("should reject invalid RESOURCE_URLs", async () => {
@@ -617,11 +629,16 @@ describe("ngProp*", () => {
           .config({ $sce: { enabled: false } });
         window.angular
           .bootstrap(document.getElementById("app"), ["propSceDisabled"])
-          .invoke((_$compile_, _$rootScope_, _$sce_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $sce = _$sce_;
-          });
+          .invoke([
+            "$compile",
+            "$rootScope",
+            "$sce",
+            (_$compile_, _$rootScope_, _$sce_) => {
+              $compile = _$compile_;
+              $rootScope = _$rootScope_;
+              $sce = _$sce_;
+            },
+          ]);
       });
 
       it("should set html", async () => {
@@ -656,11 +673,16 @@ describe("ngProp*", () => {
           .config({ $sce: { enabled: true } });
         window.angular
           .bootstrap(document.getElementById("app"), ["propSceEnabled"])
-          .invoke((_$compile_, _$rootScope_, _$sce_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $sce = _$sce_;
-          });
+          .invoke([
+            "$compile",
+            "$rootScope",
+            "$sce",
+            (_$compile_, _$rootScope_, _$sce_) => {
+              $compile = _$compile_;
+              $rootScope = _$rootScope_;
+              $sce = _$sce_;
+            },
+          ]);
       });
 
       it("should NOT set html for untrusted values", async () => {
@@ -726,9 +748,9 @@ describe("ngProp*", () => {
           this.val = val;
         }
 
-        window.angular
-          .module("customSceProp", ["myModule"])
-          .decorator("$sce", ($delegate) => {
+        window.angular.module("customSceProp", ["myModule"]).decorator("$sce", [
+          "$delegate",
+          ($delegate) => {
             $delegate.trustAsHtml = function (html) {
               return new MySafeHtml(html);
             };
@@ -740,15 +762,19 @@ describe("ngProp*", () => {
             };
 
             return $delegate;
-          });
+          },
+        ]);
 
-        createInjector(["customSceProp"]).invoke(
+        createInjector(["customSceProp"]).invoke([
+          "$compile",
+          "$rootScope",
+          "$sce",
           (_$compile_, _$rootScope_, _$sce_) => {
             $compile = _$compile_;
             $rootScope = _$rootScope_;
             $sce = _$sce_;
           },
-        );
+        ]);
 
         // Ref: https://github.com/angular/angular.js/issues/14526
         // Previous code used toString for change detection, which fails for custom objects

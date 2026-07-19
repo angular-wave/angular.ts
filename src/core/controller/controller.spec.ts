@@ -16,9 +16,12 @@ describe("$controller", () => {
     controllerRegistry = window.angular._composition.controllerRegistry;
     injector = createInjector(["ng"]);
 
-    injector.invoke((_$controller_) => {
-      $controller = _$controller_;
-    });
+    injector.invoke([
+      "$controller",
+      (_$controller_) => {
+        $controller = _$controller_;
+      },
+    ]);
   });
 
   describe("provider", () => {
@@ -66,6 +69,7 @@ describe("$controller", () => {
         function MyController(aDep) {
           this.theDep = aDep;
         }
+        MyController.$inject = ["aDep"];
 
         const controller = $controller(MyController);
 
@@ -139,7 +143,7 @@ describe("$controller", () => {
 
       let ctrl;
 
-      controllerRegistry.register("FooCtrl", FooCtrl);
+      controllerRegistry.register("FooCtrl", ["$scope", FooCtrl]);
       ctrl = $controller("FooCtrl", { $scope: scope });
 
       expect(scope.foo).toBe("bar");
@@ -176,7 +180,10 @@ describe("$controller", () => {
 
       let ctrl;
 
-      controllerRegistry.register({ FooCtrl, BarCtrl });
+      controllerRegistry.register({
+        FooCtrl: ["$scope", FooCtrl],
+        BarCtrl: ["$scope", BarCtrl],
+      });
 
       ctrl = $controller("FooCtrl", { $scope: scope });
       expect(scope.foo).toBe("foo");
@@ -261,6 +268,7 @@ describe("$controller", () => {
     const MyClass = function ($http) {
       this.$http = $http;
     };
+    MyClass.$inject = ["$http"];
 
     const ctrl = $controller(MyClass);
 
@@ -271,6 +279,7 @@ describe("$controller", () => {
     const MyClass = function ($scope) {
       this.$scope = $scope;
     };
+    MyClass.$inject = ["$scope"];
 
     const scope = {};
 
@@ -548,6 +557,7 @@ describe("$controller", () => {
         function MyController(aDep) {
           this.theDep = aDep;
         }
+        MyController.$inject = ["aDep"];
 
         const ctrl = $controller(MyController, { aDep: 2 });
 

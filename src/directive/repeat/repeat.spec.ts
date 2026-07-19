@@ -1432,13 +1432,18 @@ describe("ngRepeat", () => {
     it("should allow mixing ngRepeat and another element transclusion directive", async () => {
       compileRegistry.directive("elmTrans", () => ({
         transclude: "element",
-        controller($transclude, $scope, $element) {
-          $transclude((transcludedNodes) => {
-            $element.parentElement.appendChild(createElementFromHTML("[["));
-            $element.parentElement.appendChild(transcludedNodes);
-            $element.parentElement.appendChild(createElementFromHTML("]]"));
-          });
-        },
+        controller: [
+          "$transclude",
+          "$scope",
+          "$element",
+          function controller($transclude, $scope, $element) {
+            $transclude((transcludedNodes) => {
+              $element.parentElement.appendChild(createElementFromHTML("[["));
+              $element.parentElement.appendChild(transcludedNodes);
+              $element.parentElement.appendChild(createElementFromHTML("]]"));
+            });
+          },
+        ],
       }));
 
       $compile = injector.get("$compile");
@@ -1493,13 +1498,19 @@ describe("ngRepeat", () => {
           },
         }));
 
-      injector.invoke(async ($compile, $rootScope) => {
-        const element = $compile("<div><div template></div></div>")($rootScope);
+      injector.invoke([
+        "$compile",
+        "$rootScope",
+        async ($compile, $rootScope) => {
+          const element = $compile("<div><div template></div></div>")(
+            $rootScope,
+          );
 
-        await wait();
-        expect(controller.flag).toBe(true);
-        dealoc(element);
-      });
+          await wait();
+          expect(controller.flag).toBe(true);
+          dealoc(element);
+        },
+      ]);
       expect().toBe();
     });
 
@@ -1510,10 +1521,14 @@ describe("ngRepeat", () => {
         template: '<div ng-repeat="a in [1]"><div ng-transclude></div></div>',
         scope: {},
       }));
-      injector.invoke(async (_$compile_, _$rootScope_) => {
-        $compile = _$compile_;
-        $rootScope = _$rootScope_;
-      });
+      injector.invoke([
+        "$compile",
+        "$rootScope",
+        async (_$compile_, _$rootScope_) => {
+          $compile = _$compile_;
+          $rootScope = _$rootScope_;
+        },
+      ]);
 
       $rootScope.val = "transcluded content";
       const element = $compile('<iso><span ng-bind="val"></span></iso>')(
@@ -1532,10 +1547,14 @@ describe("ngRepeat", () => {
         expect(scope.a).toBeDefined();
       });
 
-      injector.invoke(async (_$compile_, _$rootScope_) => {
-        $compile = _$compile_;
-        $rootScope = _$rootScope_;
-      });
+      injector.invoke([
+        "$compile",
+        "$rootScope",
+        async (_$compile_, _$rootScope_) => {
+          $compile = _$compile_;
+          $rootScope = _$rootScope_;
+        },
+      ]);
       const element = $compile(
         '<div><span ng-repeat="a in [1]"><span assert-a></span></span></div>',
       )($rootScope);
@@ -1550,19 +1569,23 @@ describe("ngRepeat", () => {
         replace: true,
         transclude: true,
       }));
-      injector.invoke(async ($compile, $rootScope) => {
-        const element = $compile(
-          '<svg-container><circle ng-repeat="r in rows"></circle></svg-container>',
-        )($rootScope);
+      injector.invoke([
+        "$compile",
+        "$rootScope",
+        async ($compile, $rootScope) => {
+          const element = $compile(
+            '<svg-container><circle ng-repeat="r in rows"></circle></svg-container>',
+          )($rootScope);
 
-        $rootScope.rows = [1];
-        await wait();
+          $rootScope.rows = [1];
+          await wait();
 
-        const circle = element.querySelectorAll("circle");
+          const circle = element.querySelectorAll("circle");
 
-        expect(circle[0].toString()).toMatch(/SVG/);
-        dealoc(element);
-      });
+          expect(circle[0].toString()).toMatch(/SVG/);
+          dealoc(element);
+        },
+      ]);
       expect().toBe();
     });
   });

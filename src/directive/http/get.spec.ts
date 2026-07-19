@@ -85,14 +85,18 @@ describe("ng-get", () => {
         url: "/error",
         template: `error`,
       });
-    angular
-      .bootstrap(el, ["default"])
-      .invoke((_$compile_, _$rootScope_, _$log_, _$stream_) => {
+    angular.bootstrap(el, ["default"]).invoke([
+      "$compile",
+      "$rootScope",
+      "$log",
+      "$stream",
+      (_$compile_, _$rootScope_, _$log_, _$stream_) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
         $log = _$log_;
         $stream = _$stream_;
-      });
+      },
+    ]);
   });
 
   it("should use $animate.enter for animated element responses", async () => {

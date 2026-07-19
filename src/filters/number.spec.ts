@@ -88,7 +88,9 @@ describe("number filters", () => {
     });
 
     it("should work when evaluating expression filters", () => {
-      createInjector(["ng"]).invoke(
+      createInjector(["ng"]).invoke([
+        "$rootScope",
+        "$parse",
         ($rootScope: ng.Scope, $parse: ng.ParseService) => {
           $rootScope.ratio = 0.25;
 
@@ -96,7 +98,7 @@ describe("number filters", () => {
             new Intl.NumberFormat(undefined, { style: "percent" }).format(0.25),
           );
         },
-      );
+      ]);
     });
   });
 });

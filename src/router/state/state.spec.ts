@@ -210,13 +210,19 @@ describe("$state", () => {
           name: "about",
           url: "/about",
           resolve: {
-            stateInfo($transition$) {
-              return [$transition$.from().name, $transition$.to().name];
+            stateInfo: [
+              "$transition$",
+              function stateInfo($transition$) {
+                return [$transition$.from().name, $transition$.to().name];
+              },
+            ],
+          },
+          onEnter: [
+            "stateInfo",
+            function onEnter(stateInfo) {
+              log = stateInfo.join(" => ");
             },
-          },
-          onEnter(stateInfo) {
-            log = stateInfo.join(" => ");
-          },
+          ],
         })
         .router({ name: "about.person", url: "/:person" })
         .router({ name: "about.person.item", url: "/:id" })
@@ -226,7 +232,6 @@ describe("$state", () => {
           url: "/:item",
           templateUrl(params) {
             templateParams = params;
-
             return `/templates/${params.item}.html`;
           },
         })
@@ -235,38 +240,46 @@ describe("$state", () => {
           url: "/dynamicTemplate/:type",
           template(params) {
             template = `${params.type}Template`;
-
             return template;
           },
         })
         .router({
           name: "home.redirect",
           url: "redir",
-          onEnter($state) {
-            $state.transitionTo("about");
-          },
+          onEnter: [
+            "$state",
+            function onEnter($state) {
+              $state.transitionTo("about");
+            },
+          ],
         })
         .router({
           name: "resolveFail",
           url: "/resolve-fail",
           resolve: {
-            badness($q) {
-              return $q.reject("!");
-            },
+            badness: [
+              "$q",
+              function badness($q) {
+                return $q.reject("!");
+              },
+            ],
           },
-          onEnter(badness) {},
+          onEnter: ["badness", function onEnter(badness) {}],
         })
         .router({
           name: "resolveTimeout",
           url: "/resolve-timeout/:foo",
           resolve: {
-            value($timeout) {
-              return setTimeout(function () {
-                log += "Success!";
-              }, 1);
-            },
+            value: [
+              "$timeout",
+              function value($timeout) {
+                return setTimeout(function () {
+                  log += "Success!";
+                }, 1);
+              },
+            ],
           },
-          onEnter(value) {},
+          onEnter: ["value", function onEnter(value) {}],
           template: "-",
           controller: function () {
             log += "controller;";
@@ -314,7 +327,13 @@ describe("$state", () => {
         "defaultModule",
       ]);
 
-      $injector.invoke(
+      $injector.invoke([
+        "$rootScope",
+        "$state",
+        "$transitions",
+        "$location",
+        "$compile",
+        "$stateRegistry",
         (
           _$rootScope_,
           _$state_,
@@ -331,7 +350,7 @@ describe("$state", () => {
           $compile = _$compile_;
           $stateRegistry = _$stateRegistry_;
         },
-      );
+      ]);
     });
 
     afterEach(() => {
@@ -1292,14 +1311,17 @@ describe("$state", () => {
             return "cc resolve";
           },
         },
-        onExit(cc, $state$, $transition$) {
-          expect($transition$.to().name).toBe("A");
-          expect($transition$.from().name).toBe("design");
-
-          expect($state$).toBe(registry.get("design"));
-
-          expect(cc).toBe("cc resolve");
-        },
+        onExit: [
+          "cc",
+          "$state$",
+          "$transition$",
+          function onExit(cc, $state$, $transition$) {
+            expect($transition$.to().name).toBe("A");
+            expect($transition$.from().name).toBe("design");
+            expect($state$).toBe(registry.get("design"));
+            expect(cc).toBe("cc resolve");
+          },
+        ],
       });
 
       await $state.go("design");

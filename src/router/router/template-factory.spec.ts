@@ -26,11 +26,16 @@ describe("templateFactory", () => {
     $injector = window.angular.bootstrap(document.getElementById("app")!, [
       "defaultModule",
     ]);
-    $injector.invoke((_$state_: any, _$sce_: any, $rootScope: any) => {
-      templateFactory = _$state_._viewService._templateFactory;
-      $sce = _$sce_;
-      $scope = $rootScope;
-    });
+    $injector.invoke([
+      "$state",
+      "$sce",
+      "$rootScope",
+      (_$state_: any, _$sce_: any, $rootScope: any) => {
+        templateFactory = _$state_._viewService._templateFactory;
+        $sce = _$sce_;
+        $scope = $rootScope;
+      },
+    ]);
   });
 
   it("is owned by the state runtime", () => {
@@ -80,7 +85,12 @@ describe("templateFactory", () => {
       $injector = window.angular.bootstrap(document.getElementById("app")!, [
         "defaultModule",
       ]);
-      $injector.invoke(
+      $injector.invoke([
+        "$sce",
+        "$rootScope",
+        "$stateRegistry",
+        "$state",
+        "$compile",
         (
           _$sce_: any,
           $rootScope: any,
@@ -95,7 +105,7 @@ describe("templateFactory", () => {
           $stateService = _$state_;
           $compile = _$compile_;
         },
-      );
+      ]);
       el = $compile("<div><ng-view></ng-view></div>")($scope.$new());
     });
 

@@ -23,9 +23,12 @@ describe("$webTransport", () => {
 
     angular = new Angular();
 
-    angular.bootstrap(el, []).invoke((_$webTransport_) => {
-      webTransport = _$webTransport_;
-    });
+    angular.bootstrap(el, []).invoke([
+      "$webTransport",
+      (_$webTransport_) => {
+        webTransport = _$webTransport_;
+      },
+    ]);
   });
 
   afterEach(() => {
@@ -597,9 +600,12 @@ describe("$webTransport", () => {
 
       configuredAngular
         .bootstrap(configuredEl, ["configuredWebTransportDefaults"])
-        .invoke((_$webTransport_) => {
-          configuredWebTransport = _$webTransport_;
-        });
+        .invoke([
+          "$webTransport",
+          (_$webTransport_) => {
+            configuredWebTransport = _$webTransport_;
+          },
+        ]);
 
       const connection = configuredWebTransport(
         "https://localhost:4433/configured",
@@ -667,11 +673,16 @@ describe("ngWebTransport", () => {
 
     const angular = new Angular();
 
-    angular.bootstrap(el, []).invoke((_$animate_, _$compile_, _$rootScope_) => {
-      $animate = _$animate_;
-      $compile = _$compile_;
-      $scope = _$rootScope_;
-    });
+    angular.bootstrap(el, []).invoke([
+      "$animate",
+      "$compile",
+      "$rootScope",
+      (_$animate_, _$compile_, _$rootScope_) => {
+        $animate = _$animate_;
+        $compile = _$compile_;
+        $scope = _$rootScope_;
+      },
+    ]);
   });
 
   afterEach(() => {

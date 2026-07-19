@@ -28,11 +28,16 @@ describe("ng-bind", () => {
       });
     window.angular
       .bootstrap(document.getElementById("app"), ["myModule"])
-      .invoke((_$rootScope_, _$compile_, _$sce_) => {
-        $rootScope = _$rootScope_;
-        $compile = _$compile_;
-        $sce = _$sce_;
-      });
+      .invoke([
+        "$rootScope",
+        "$compile",
+        "$sce",
+        (_$rootScope_, _$compile_, _$sce_) => {
+          $rootScope = _$rootScope_;
+          $compile = _$compile_;
+          $sce = _$sce_;
+        },
+      ]);
   });
 
   describe("ngBind", () => {
@@ -274,11 +279,16 @@ describe("ng-bind", () => {
           });
         window.angular
           .bootstrap(document.getElementById("app"), ["myModule"])
-          .invoke((_$rootScope_, _$compile_, _$sce_) => {
-            $rootScope = _$rootScope_;
-            $compile = _$compile_;
-            $sce = _$sce_;
-          });
+          .invoke([
+            "$rootScope",
+            "$compile",
+            "$sce",
+            (_$rootScope_, _$compile_, _$sce_) => {
+              $rootScope = _$rootScope_;
+              $compile = _$compile_;
+              $sce = _$sce_;
+            },
+          ]);
       });
 
       afterEach(() => dealoc(element));
@@ -321,11 +331,16 @@ describe("ng-bind", () => {
           });
         window.angular
           .bootstrap(document.getElementById("app"), ["myModule"])
-          .invoke((_$rootScope_, _$compile_, _$sce_) => {
-            $rootScope = _$rootScope_;
-            $compile = _$compile_;
-            $sce = _$sce_;
-          });
+          .invoke([
+            "$rootScope",
+            "$compile",
+            "$sce",
+            (_$rootScope_, _$compile_, _$sce_) => {
+              $rootScope = _$rootScope_;
+              $compile = _$compile_;
+              $sce = _$sce_;
+            },
+          ]);
         scope = $rootScope.$new();
       });
 
@@ -369,19 +384,22 @@ describe("ng-bind", () => {
 
         window.angular
           .module("myModule", ["ng"])
-          .decorator("$sce", ($delegate) => {
-            $delegate.trustAsHtml = function (html) {
-              return new MySafeHtml(html);
-            };
-            $delegate.getTrustedHtml = function (mySafeHtml) {
-              return mySafeHtml.val;
-            };
-            $delegate.valueOf = function (v) {
-              return v instanceof MySafeHtml ? v.val : v;
-            };
+          .decorator("$sce", [
+            "$delegate",
+            ($delegate) => {
+              $delegate.trustAsHtml = function (html) {
+                return new MySafeHtml(html);
+              };
+              $delegate.getTrustedHtml = function (mySafeHtml) {
+                return mySafeHtml.val;
+              };
+              $delegate.valueOf = function (v) {
+                return v instanceof MySafeHtml ? v.val : v;
+              };
 
-            return $delegate;
-          })
+              return $delegate;
+            },
+          ])
           .decorator("$exceptionHandler", function () {
             return (exception) => {
               throw new Error(exception.message);
@@ -392,11 +410,16 @@ describe("ng-bind", () => {
           ["myModule"],
         );
 
-        injector.invoke((_$rootScope_, _$compile_, _$sce_) => {
-          $rootScope = _$rootScope_.$new();
-          $compile = _$compile_;
-          $sce = _$sce_;
-        });
+        injector.invoke([
+          "$rootScope",
+          "$compile",
+          "$sce",
+          (_$rootScope_, _$compile_, _$sce_) => {
+            $rootScope = _$rootScope_.$new();
+            $compile = _$compile_;
+            $sce = _$sce_;
+          },
+        ]);
 
         async () => {
           // Ref: https://github.com/angular/angular.js/issues/14526

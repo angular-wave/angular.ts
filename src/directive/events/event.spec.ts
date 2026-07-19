@@ -37,14 +37,18 @@ describe("event directives", () => {
           logs.push(exception.message);
         };
       });
-    injector = createInjector(["myModule"]).invoke(
+    injector = createInjector(["myModule"]).invoke([
+      "$rootScope",
+      "$compile",
+      "$parse",
+      "$exceptionHandler",
       (_$rootScope_, _$compile_, _$parse_, _$exceptionHandler_) => {
         $rootScope = _$rootScope_;
         $compile = _$compile_;
         $parse = _$parse_;
         $exceptionHandler = _$exceptionHandler_;
       },
-    );
+    ]);
   });
 
   afterEach(() => {
@@ -60,9 +64,12 @@ describe("event directives", () => {
         '<input type="submit" />' +
         "</form>";
 
-      window.angular.bootstrap(app, ["myModule"]).invoke((_$rootScope_) => {
-        $rootScope = _$rootScope_;
-      });
+      window.angular.bootstrap(app, ["myModule"]).invoke([
+        "$rootScope",
+        (_$rootScope_) => {
+          $rootScope = _$rootScope_;
+        },
+      ]);
       element = app.querySelector("form");
 
       // prevent submit within the test harness
@@ -81,9 +88,12 @@ describe("event directives", () => {
         '<form ng-submit="formSubmission($event)">' +
         '<input type="submit" />' +
         "</form>";
-      window.angular.bootstrap(app, ["myModule"]).invoke((_$rootScope_) => {
-        $rootScope = _$rootScope_;
-      });
+      window.angular.bootstrap(app, ["myModule"]).invoke([
+        "$rootScope",
+        (_$rootScope_) => {
+          $rootScope = _$rootScope_;
+        },
+      ]);
       element = app.querySelector("form");
       $rootScope.formSubmission = function (e) {
         if (e) {

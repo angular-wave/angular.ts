@@ -18,10 +18,14 @@ describe("ngWasm", () => {
     const installedWasmModule = wasmModule(window.angular);
     const injector = window.angular.bootstrap(app, [installedWasmModule.name]);
 
-    injector.invoke((_$compile_, _$rootScope_) => {
-      $compile = _$compile_;
-      $rootScope = _$rootScope_;
-    });
+    injector.invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_, _$rootScope_) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+      },
+    ]);
   });
 
   afterEach(() => {

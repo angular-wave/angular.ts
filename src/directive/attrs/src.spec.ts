@@ -14,10 +14,14 @@ describe("ngSrc", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular.module("myModule", ["ng"]);
-    createInjector(["myModule"]).invoke(($rootScope, _$compile_) => {
-      $scope = $rootScope.$new();
-      $compile = _$compile_;
-    });
+    createInjector(["myModule"]).invoke([
+      "$rootScope",
+      "$compile",
+      ($rootScope, _$compile_) => {
+        $scope = $rootScope.$new();
+        $compile = _$compile_;
+      },
+    ]);
   });
 
   describe("img[ng-src]", () => {
@@ -94,11 +98,16 @@ describe("ngSrc", () => {
             error = exception;
           };
         });
-      createInjector(["myModule"]).invoke(($rootScope, _$compile_, _$sce_) => {
-        $scope = $rootScope.$new();
-        $compile = _$compile_;
-        $sce = _$sce_;
-      });
+      createInjector(["myModule"]).invoke([
+        "$rootScope",
+        "$compile",
+        "$sce",
+        ($rootScope, _$compile_, _$sce_) => {
+          $scope = $rootScope.$new();
+          $compile = _$compile_;
+          $sce = _$sce_;
+        },
+      ]);
     });
 
     it("should pass through src attributes for the same domain", async () => {

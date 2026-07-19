@@ -32,15 +32,16 @@ describe("WasmScopeAbi", () => {
     el.removeAttribute("ng-bind");
     angular = new Angular();
     const installedWasmModule = wasmModule(angular);
-    angular
-      .bootstrap(el, [installedWasmModule.name])
-      .invoke(
-        (_$compile_: ng.CompileService, _$rootScope_: ng.Scope, _$wasm_) => {
-          compile = _$compile_;
-          rootScope = _$rootScope_;
-          wasmService = _$wasm_;
-        },
-      );
+    angular.bootstrap(el, [installedWasmModule.name]).invoke([
+      "$compile",
+      "$rootScope",
+      "$wasm",
+      (_$compile_: ng.CompileService, _$rootScope_: ng.Scope, _$wasm_) => {
+        compile = _$compile_;
+        rootScope = _$rootScope_;
+        wasmService = _$wasm_;
+      },
+    ]);
     guest = new GuestMemory();
     exports = guest.exports();
     abi = WasmAbi.create();
@@ -2696,12 +2697,14 @@ async function renderWasmDomUpdate(target: HTMLElement): Promise<void> {
   let compile: ng.CompileService;
   let rootScope: ng.Scope;
 
-  angular
-    .bootstrap(target, [])
-    .invoke((_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
+  angular.bootstrap(target, []).invoke([
+    "$compile",
+    "$rootScope",
+    (_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
       compile = _$compile_;
       rootScope = _$rootScope_;
-    });
+    },
+  ]);
 
   rootScope.todo = {
     message: "Updated by Wasm 0",

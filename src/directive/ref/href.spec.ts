@@ -22,10 +22,14 @@ describe("ngHref", () => {
           throw new Error(exception.message);
         };
       });
-    createInjector(["myModule"]).invoke((_$rootScope_, _$compile_) => {
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-    });
+    createInjector(["myModule"]).invoke([
+      "$rootScope",
+      "$compile",
+      (_$rootScope_, _$compile_) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      },
+    ]);
   });
 
   afterEach(() => {

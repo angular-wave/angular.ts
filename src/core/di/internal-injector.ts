@@ -45,18 +45,13 @@ export type { InjectionTokenMap } from "../../interface.ts";
 abstract class AbstractInjector<TServices extends object = object> {
   /** @internal */
   _cache: Record<string, unknown>;
-  strictDi: boolean;
   /** @internal */
   _path: string[];
   /** @internal */
   _modules: Record<string, NgModule>;
 
-  /**
-   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
-   */
-  constructor(strictDi: boolean) {
+  constructor() {
     this._cache = {};
-    this.strictDi = strictDi;
     this._path = [];
     this._modules = {};
   }
@@ -118,7 +113,7 @@ abstract class AbstractInjector<TServices extends object = object> {
   ): unknown[] {
     const args: unknown[] = [];
 
-    const $inject = annotate(fn, this.strictDi, serviceName);
+    const $inject = annotate(fn, serviceName);
 
     $inject.forEach((key) => {
       if (!isString(key)) {
@@ -257,10 +252,9 @@ abstract class AbstractInjector<TServices extends object = object> {
 export class ProviderInjector extends AbstractInjector {
   /**
    * @param {ProviderCache} cache
-   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
-  constructor(cache: ProviderCache, strictDi: boolean) {
-    super(strictDi);
+  constructor(cache: ProviderCache) {
+    super();
     this._cache = cache;
   }
 
@@ -296,10 +290,9 @@ export class InjectorService<
 
   /**
    * @param {ProviderInjector} providerInjector
-   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
-  constructor(providerInjector: ProviderInjector, strictDi: boolean) {
-    super(strictDi);
+  constructor(providerInjector: ProviderInjector) {
+    super();
 
     this._providerInjector = providerInjector;
     this._modules = providerInjector._modules;

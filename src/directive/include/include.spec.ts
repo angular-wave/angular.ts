@@ -250,11 +250,14 @@ describe("ngInclude", () => {
     it("should fire $includeContentRequested event on scope after making the xhr call", async () => {
       let called = false;
 
-      module.run(($rootScope) => {
-        $rootScope.$on("$includeContentRequested", (event) => {
-          called = true;
-        });
-      });
+      module.run([
+        "$rootScope",
+        ($rootScope) => {
+          $rootScope.$on("$includeContentRequested", (event) => {
+            called = true;
+          });
+        },
+      ]);
       element = createElementFromHTML(
         '<div><div><ng-include src="url"></ng-include></div></div>',
       );
@@ -269,11 +272,14 @@ describe("ngInclude", () => {
     it("should fire $includeContentLoaded event on child scope after linking the content", async () => {
       let called = false;
 
-      window.angular.module("myModule", []).run(($rootScope) => {
-        $rootScope.$on("$includeContentLoaded", () => {
-          called = true;
-        });
-      });
+      window.angular.module("myModule", []).run([
+        "$rootScope",
+        ($rootScope) => {
+          $rootScope.$on("$includeContentLoaded", () => {
+            called = true;
+          });
+        },
+      ]);
       element = createElementFromHTML(
         '<div><div><ng-include src="url"></ng-include></div></div>',
       );
@@ -290,11 +296,14 @@ describe("ngInclude", () => {
 
       const contentErrorSpy = jasmine.createSpy("content error");
 
-      module.run(($rootScope) => {
-        $rootScope.url = "/mock/401";
-        $rootScope.$on("$includeContentLoaded", contentLoadedSpy);
-        $rootScope.$on("$includeContentError", contentErrorSpy);
-      });
+      module.run([
+        "$rootScope",
+        ($rootScope) => {
+          $rootScope.url = "/mock/401";
+          $rootScope.$on("$includeContentLoaded", contentLoadedSpy);
+          $rootScope.$on("$includeContentError", contentErrorSpy);
+        },
+      ]);
 
       element = createElementFromHTML(
         '<div><div><ng-include src="url"></ng-include></div></div>',

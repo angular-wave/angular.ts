@@ -20,6 +20,7 @@
             );
           }
         }
+        Demo.$inject = ["adder"];
         window.angular
           .module("todo", [])
           .controller("DemoCtrl", Demo)

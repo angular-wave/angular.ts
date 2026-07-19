@@ -41,9 +41,12 @@ describe("SCE", () => {
             errorLog.push(exception.message);
           };
         });
-      createInjector(["myModule"]).invoke((_$sce_) => {
-        $sce = _$sce_;
-      });
+      createInjector(["myModule"]).invoke([
+        "$sce",
+        (_$sce_) => {
+          $sce = _$sce_;
+        },
+      ]);
     });
 
     it("should provide the getter for enabled", () => {
@@ -63,9 +66,12 @@ describe("SCE", () => {
           },
         },
       });
-      createInjector(["sceEnabled"]).invoke((_$sce_) => {
-        $sce = _$sce_;
-      });
+      createInjector(["sceEnabled"]).invoke([
+        "$sce",
+        (_$sce_) => {
+          $sce = _$sce_;
+        },
+      ]);
     });
 
     it("should wrap string values with TrustedValueHolder", () => {
@@ -100,9 +106,12 @@ describe("SCE", () => {
         .value("$sanitize", sanitize)
         .config({ $sce: { enabled: true } });
 
-      createInjector(["sceWithSanitizer"]).invoke((_$sce_) => {
-        expect(_$sce_.getTrustedHtml("<b>x</b>")).toBe("sanitized:<b>x</b>");
-      });
+      createInjector(["sceWithSanitizer"]).invoke([
+        "$sce",
+        (_$sce_) => {
+          expect(_$sce_.getTrustedHtml("<b>x</b>")).toBe("sanitized:<b>x</b>");
+        },
+      ]);
       expect(sanitize).toHaveBeenCalledOnceWith("<b>x</b>");
     });
 
@@ -226,9 +235,12 @@ describe("SCE", () => {
             return `valueOf:${value}`;
           },
         });
-      createInjector(["sceDelegateOverride"]).invoke((_$sce_) => {
-        $sce = _$sce_;
-      });
+      createInjector(["sceDelegateOverride"]).invoke([
+        "$sce",
+        (_$sce_) => {
+          $sce = _$sce_;
+        },
+      ]);
       expect($sce.valueOf("value")).toBe("valueOf:value");
     });
   });
@@ -242,10 +254,14 @@ describe("SCE", () => {
           handler: (err) => logs.push(err.message),
         },
       });
-      createInjector(["sceParseAs"]).invoke((_$sce_, _$rootScope_) => {
-        $sce = _$sce_;
-        $rootScope = _$rootScope_;
-      });
+      createInjector(["sceParseAs"]).invoke([
+        "$sce",
+        "$rootScope",
+        (_$sce_, _$rootScope_) => {
+          $sce = _$sce_;
+          $rootScope = _$rootScope_;
+        },
+      ]);
       logs = [];
     });
 
@@ -289,9 +305,12 @@ describe("SCE", () => {
           handler: (err) => logs.push(err.message),
         },
       });
-      createInjector(["sceResourcePolicies"]).invoke((_$sce_) => {
-        $sce = _$sce_;
-      });
+      createInjector(["sceResourcePolicies"]).invoke([
+        "$sce",
+        (_$sce_) => {
+          $sce = _$sce_;
+        },
+      ]);
     });
 
     it('should default to "self" which allows relative urls', () => {
@@ -344,9 +363,12 @@ describe("SCE", () => {
             handler: (err) => logs.push(err.message),
           },
         });
-        createInjector(["sceRegexMatcher"]).invoke((_$sce_) => {
-          $sce = _$sce_;
-        });
+        createInjector(["sceRegexMatcher"]).invoke([
+          "$sce",
+          (_$sce_) => {
+            $sce = _$sce_;
+          },
+        ]);
       });
 
       it("should support custom regex", () => {
@@ -397,9 +419,12 @@ describe("SCE", () => {
             handler: (err) => logs.push(err.message),
           },
         });
-        createInjector(["sceStringMatchers"]).invoke((_$sce_) => {
-          $sce = _$sce_;
-        });
+        createInjector(["sceStringMatchers"]).invoke([
+          "$sce",
+          (_$sce_) => {
+            $sce = _$sce_;
+          },
+        ]);
       });
 
       it("should support strings as matchers", () => {
@@ -481,9 +506,12 @@ describe("SCE", () => {
             handler: (err) => logs.push(err.message),
           },
         });
-        createInjector(["sceSelfMatcher"]).invoke((_$sce_) => {
-          $sce = _$sce_;
-        });
+        createInjector(["sceSelfMatcher"]).invoke([
+          "$sce",
+          (_$sce_) => {
+            $sce = _$sce_;
+          },
+        ]);
       });
 
       it('should support the special string "self" in trusted resource URL list', () => {
@@ -511,9 +539,12 @@ describe("SCE", () => {
               bannedResourceUrlList: [],
             },
           });
-          createInjector(["sceChangedBase"]).invoke((_$sce_) => {
-            $sce = _$sce_;
-          });
+          createInjector(["sceChangedBase"]).invoke([
+            "$sce",
+            (_$sce_) => {
+              $sce = _$sce_;
+            },
+          ]);
         });
 
         let baseElem;
@@ -627,9 +658,12 @@ describe("SCE", () => {
         window.angular
           .module("testSanitizeUri", ["ng"])
           .config({ $sce: { enabled: true } });
-        createInjector(["testSanitizeUri"]).invoke((_$sce_) => {
-          $sce = _$sce_;
-        });
+        createInjector(["testSanitizeUri"]).invoke([
+          "$sce",
+          (_$sce_) => {
+            $sce = _$sce_;
+          },
+        ]);
 
         expect($sce.getTrustedMediaUrl("javascript:foo")).toEqual(
           "unsafe:javascript:foo",

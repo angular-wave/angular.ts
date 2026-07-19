@@ -307,11 +307,7 @@ function viewsBuilder(
   return views;
 }
 
-function valueToResolvable(
-  token: string,
-  value: unknown,
-  strictDi: boolean | undefined,
-): Resolvable {
+function valueToResolvable(token: string, value: unknown): Resolvable {
   if (isArray(value)) {
     return new Resolvable(
       token,
@@ -321,7 +317,7 @@ function valueToResolvable(
   }
 
   if (isFunction(value)) {
-    return new Resolvable(token, value as ResolveFn, annotate(value, strictDi));
+    return new Resolvable(token, value as ResolveFn, annotate(value));
   }
 
   throw new Error(`Invalid resolve value: ${stringify({ token, val: value })}`);
@@ -376,11 +372,9 @@ function literalToResolvable(literal: ResolvableLiteral): Resolvable {
  *   { token: "myBazResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
  * @param {ng.StateObject & ng.StateDeclaration} state
- * @param {boolean | undefined} strictDi
  */
 function resolvablesBuilder(
   state: StateObject & StateDeclaration,
-  strictDi: boolean | undefined,
 ): Resolvable[] {
   const decl = state.resolve;
 
@@ -399,7 +393,7 @@ function resolvablesBuilder(
   const resolveKeys = keys(resolveObj);
 
   resolveKeys.forEach((token) => {
-    resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
+    resolvables.push(valueToResolvable(token, resolveObj[token]));
   });
 
   return resolvables;
@@ -572,7 +566,6 @@ export class StateBuilder {
       ) ?? undefined;
     state.resolvables = resolvablesBuilder(
       state as StateObject & StateDeclaration,
-      this._$injector?.strictDi,
     );
     this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
     this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);

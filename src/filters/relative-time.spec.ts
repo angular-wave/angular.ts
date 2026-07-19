@@ -42,7 +42,9 @@ describe("relativeTime filter", () => {
   });
 
   it("should work when evaluating expression filters", () => {
-    createInjector(["ng"]).invoke(
+    createInjector(["ng"]).invoke([
+      "$rootScope",
+      "$parse",
       ($rootScope: ng.Scope, $parse: ng.ParseService) => {
         $rootScope.daysUntilRelease = 3;
 
@@ -50,6 +52,6 @@ describe("relativeTime filter", () => {
           $parse("daysUntilRelease | relativeTime:'day'")($rootScope),
         ).toBe(new Intl.RelativeTimeFormat(undefined).format(3, "day"));
       },
-    );
+    ]);
   });
 });

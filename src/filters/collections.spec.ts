@@ -12,7 +12,10 @@ describe("collection filters", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    createInjector(["ng"]).invoke(
+    createInjector(["ng"]).invoke([
+      "$compile",
+      "$filter",
+      "$rootScope",
       (
         _$compile_: ng.CompileService,
         _$filter_: ng.FilterService,
@@ -22,7 +25,7 @@ describe("collection filters", () => {
         filter = _$filter_;
         $rootScope = _$rootScope_;
       },
-    );
+    ]);
   });
 
   describe("keys", () => {
@@ -157,7 +160,9 @@ describe("collection filters", () => {
     });
 
     it("should work when evaluating expression filters", () => {
-      createInjector(["ng"]).invoke(
+      createInjector(["ng"]).invoke([
+        "$rootScope",
+        "$parse",
         ($rootScope: ng.Scope, $parse: ng.ParseService) => {
           $rootScope.params = new URLSearchParams("?page=2");
 
@@ -165,7 +170,7 @@ describe("collection filters", () => {
             { key: "page", value: "2" },
           ]);
         },
-      );
+      ]);
     });
 
     it("should render object entries in ng-repeat", async () => {

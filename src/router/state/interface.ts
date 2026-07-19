@@ -940,8 +940,8 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * - Each key (string) is the name of the dependency.
    * - Each value (function) is an injectable function which returns the dependency, or a promise for the dependency.
    *
-   * This style is based on AngularTS injectable functions.
-   * If your code will be minified, the function should be ["annotated" in the AngularTS manner](https://docs.angularjs.org/guide/di#dependency-annotation).
+   * This style is based on AngularTS injectable functions. Dependency-bearing
+   * functions must use array annotation or a static `$inject` property.
    *
    * #### AngularTS Example:
    * ```js

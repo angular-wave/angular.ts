@@ -53,9 +53,12 @@ describe("filter", () => {
     window.angular
       .module("dependentFilter", [])
       .constant("suffix", "!")
-      .filter("my", function (suffix: string) {
-        return (value: string) => suffix + value;
-      });
+      .filter("my", [
+        "suffix",
+        function (suffix: string) {
+          return (value: string) => suffix + value;
+        },
+      ]);
 
     const injector = createInjector(["ng", "dependentFilter"]);
     const myFilter = injector.get("myFilter") as (value: string) => string;

@@ -19,6 +19,7 @@
             this.echo.postMessage("test");
           }
         }
+        Demo.$inject = ["echo"];
         window.angular
           .module("todo", [])
           .worker("echo", "/src/directive/worker/echo-worker.ts", {})

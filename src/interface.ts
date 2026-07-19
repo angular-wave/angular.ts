@@ -165,22 +165,6 @@ const publicInjectionTokenParity: PublicInjectionTokenParity = true;
 void publicInjectionTokenParity;
 
 /**
- * Configuration options for the AngularTS bootstrap process.
- *
- * @property strictDi - If `true`, disables automatic function annotation
- * for the application. This helps identify code that breaks under minification.
- * Defaults to `false`.
- */
-export interface AngularBootstrapConfig {
-  /**
-   * Disable automatic function annotation for the application.
-   * This helps find bugs that would break under minified code.
-   * Defaults to `false`.
-   */
-  strictDi: boolean;
-}
-
-/**
  * A JavaScript expression represented as a string, typically used in interpolation bindings.
  *
  * Example:
@@ -430,14 +414,14 @@ export interface Component {
    * contents of this component. Empty string by default.
    * If template is a function, then it is injected with the following locals:
    * $element - Current element
-   * Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
+   * Use the array form to define dependencies.
    */
   template?: string | Injectable<(...args: never[]) => string> | undefined;
   /**
    * Path or function that returns a path to an html template that should be used as the contents of this component.
    * If templateUrl is a function, then it is injected with the following locals:
    * $element - Current element
-   * Use the array form to define dependencies (necessary if strictDi is enabled and you require dependency injection)
+   * Use the array form to define dependencies.
    */
   templateUrl?: string | Injectable<(...args: never[]) => string> | undefined;
   /**

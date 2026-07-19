@@ -52,12 +52,10 @@ export type ModuleResolver = (name: string) => NgModule;
 /**
  *
  * @param {Array<String|Function>} modulesToLoad
- * @param {boolean} [strictDi]
  * @returns {InjectorService}
  */
 export function createInjector(
   modulesToLoad: ModuleLike[],
-  strictDi = false,
   configure?: (registry: ProviderRegistry) => void,
   resolveModule: ModuleResolver = (name) => window.angular.module(name),
 ): InjectorService {
@@ -69,10 +67,9 @@ export function createInjector(
 
   const providerInjector = (providerCache.$injector = new ProviderInjector(
     providerCache,
-    strictDi,
   ));
 
-  const protoInstanceInjector = new InjectorService(providerInjector, strictDi);
+  const protoInstanceInjector = new InjectorService(providerInjector);
 
   providerCache.$injectorProvider = {
     // $injectionProvider return instance injector
@@ -253,104 +250,107 @@ export function createInjector(
     backendOrConfig?: StorageLike & PersistentStoreConfig,
   ): ServiceProvider {
     return provider(name, {
-      $get: ($injector: InjectorService) => {
-        switch (type) {
-          case "session": {
-            const instance: unknown = $injector.instantiate(ctor);
+      $get: [
+        _injector,
+        ($injector: InjectorService) => {
+          switch (type) {
+            case "session": {
+              const instance: unknown = $injector.instantiate(ctor);
 
-            return createPersistentProxy(
-              instance as Record<PropertyKey, unknown>,
-              name,
-              sessionStorage,
-            ) as unknown;
-          }
-          case "local": {
-            const instance: unknown = $injector.instantiate(ctor);
-
-            return createPersistentProxy(
-              instance as Record<PropertyKey, unknown>,
-              name,
-              localStorage,
-            ) as unknown;
-          }
-          case "cookie": {
-            const instance: unknown = $injector.instantiate(ctor);
-
-            const $cookie = $injector.get(_cookie);
-
-            const serialize = backendOrConfig?.serialize ?? JSON.stringify;
-
-            const deserialize = backendOrConfig?.deserialize ?? JSON.parse;
-
-            const cookieOpts = backendOrConfig?.cookie ?? {};
-
-            return createPersistentProxy(
-              instance as Record<PropertyKey, unknown>,
-              name,
-              {
-                getItem(key: string) {
-                  const raw = $cookie.get(key);
-
-                  return isNullOrUndefined(raw) ? null : raw;
-                },
-
-                setItem(k: string, v: string) {
-                  $cookie.put(k, v, cookieOpts);
-                },
-
-                removeItem(k: string) {
-                  $cookie.remove(k, cookieOpts);
-                },
-              },
-              {
-                serialize,
-                deserialize,
-              },
-            ) as unknown;
-          }
-          case "custom": {
-            const instance: unknown = $injector.instantiate(ctor);
-
-            let backend: StorageLike = localStorage;
-
-            let serialize = JSON.stringify;
-
-            let deserialize = JSON.parse;
-
-            if (backendOrConfig) {
-              if (isFunction(Reflect.get(backendOrConfig, "getItem"))) {
-                // raw Storage object
-                backend = backendOrConfig;
-              } else if (isObject(backendOrConfig)) {
-                backend = backendOrConfig.backend ?? localStorage;
-                const {
-                  serialize: configSerialize,
-                  deserialize: configDeserialize,
-                } = backendOrConfig;
-
-                if (configSerialize) serialize = configSerialize;
-
-                if (configDeserialize) deserialize = configDeserialize;
-              }
-            } else {
-              // fallback default
-              backend = localStorage;
+              return createPersistentProxy(
+                instance as Record<PropertyKey, unknown>,
+                name,
+                sessionStorage,
+              ) as unknown;
             }
+            case "local": {
+              const instance: unknown = $injector.instantiate(ctor);
 
-            return createPersistentProxy(
-              instance as Record<PropertyKey, unknown>,
-              name,
-              backend,
-              {
-                serialize,
-                deserialize,
-              },
-            ) as unknown;
+              return createPersistentProxy(
+                instance as Record<PropertyKey, unknown>,
+                name,
+                localStorage,
+              ) as unknown;
+            }
+            case "cookie": {
+              const instance: unknown = $injector.instantiate(ctor);
+
+              const $cookie = $injector.get(_cookie);
+
+              const serialize = backendOrConfig?.serialize ?? JSON.stringify;
+
+              const deserialize = backendOrConfig?.deserialize ?? JSON.parse;
+
+              const cookieOpts = backendOrConfig?.cookie ?? {};
+
+              return createPersistentProxy(
+                instance as Record<PropertyKey, unknown>,
+                name,
+                {
+                  getItem(key: string) {
+                    const raw = $cookie.get(key);
+
+                    return isNullOrUndefined(raw) ? null : raw;
+                  },
+
+                  setItem(k: string, v: string) {
+                    $cookie.put(k, v, cookieOpts);
+                  },
+
+                  removeItem(k: string) {
+                    $cookie.remove(k, cookieOpts);
+                  },
+                },
+                {
+                  serialize,
+                  deserialize,
+                },
+              ) as unknown;
+            }
+            case "custom": {
+              const instance: unknown = $injector.instantiate(ctor);
+
+              let backend: StorageLike = localStorage;
+
+              let serialize = JSON.stringify;
+
+              let deserialize = JSON.parse;
+
+              if (backendOrConfig) {
+                if (isFunction(Reflect.get(backendOrConfig, "getItem"))) {
+                  // raw Storage object
+                  backend = backendOrConfig;
+                } else if (isObject(backendOrConfig)) {
+                  backend = backendOrConfig.backend ?? localStorage;
+                  const {
+                    serialize: configSerialize,
+                    deserialize: configDeserialize,
+                  } = backendOrConfig;
+
+                  if (configSerialize) serialize = configSerialize;
+
+                  if (configDeserialize) deserialize = configDeserialize;
+                }
+              } else {
+                // fallback default
+                backend = localStorage;
+              }
+
+              return createPersistentProxy(
+                instance as Record<PropertyKey, unknown>,
+                name,
+                backend,
+                {
+                  serialize,
+                  deserialize,
+                },
+              ) as unknown;
+            }
           }
-        }
 
-        return undefined;
-      },
+          return undefined;
+        },
+      ],
     });
   }
 

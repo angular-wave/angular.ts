@@ -39,7 +39,6 @@ import { routerRuntimeConfigKey } from "../../../router/composition/router-runti
 function createRuntimeInjector(angular, modules) {
   return createInjector(
     modules,
-    false,
     (registry) => {
       registry.value(_rootElement, document.createElement("div"));
     },
@@ -585,9 +584,12 @@ describe("NgModule", () => {
       debug: (...args) => {
         logCalls.push(["debug", ...args]);
       },
-      error: (...args) => {
-        logCalls.push(["error", ...args]);
-      },
+      error: [
+        "args",
+        (...args) => {
+          logCalls.push(["error", ...args]);
+        },
+      ],
       info: (...args) => {
         logCalls.push(["info", ...args]);
       },
@@ -1592,7 +1594,7 @@ describe("NgModule", () => {
     );
   });
 
-  it("rejects inferred root-scoped model dependencies without persisting annotations", () => {
+  it("rejects unannotated model dependencies", () => {
     const initialFactory = ($rootScope) => ({
       rootId: $rootScope.$id,
     });
@@ -1600,7 +1602,7 @@ describe("NgModule", () => {
     expect(() => {
       ngModule.model("badInferredScope", initialFactory);
     }).toThrowError(
-      "Model 'badInferredScope' factory cannot inject root-scoped dependency '$rootScope'.",
+      "[$injector:annotation] model badInferredScope requires explicit dependency annotation",
     );
     expect(initialFactory.$inject).toBeUndefined();
   });

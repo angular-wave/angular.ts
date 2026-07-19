@@ -26,13 +26,16 @@ describe("ngEl", () => {
         },
       );
 
-    angular
-      .bootstrap(el, ["default"])
-      .invoke((_$compile_: any, _$rootScope_: any, _$log_: any) => {
+    angular.bootstrap(el, ["default"]).invoke([
+      "$compile",
+      "$rootScope",
+      "$log",
+      (_$compile_: any, _$rootScope_: any, _$log_: any) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
         $log = _$log_;
-      });
+      },
+    ]);
   });
 
   it("should attach element to scope.$target by id when no expression is provided", async () => {

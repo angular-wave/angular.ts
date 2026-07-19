@@ -27,16 +27,18 @@ describe("ngInject", () => {
           name: "Fred",
         };
       });
-    angular
-      .bootstrap(el, ["default"])
-      .invoke(
-        (_$compile_: any, _$rootScope_: any, _$test_: any, _$log_: any) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $test = _$test_;
-          $log = _$log_;
-        },
-      );
+    angular.bootstrap(el, ["default"]).invoke([
+      "$compile",
+      "$rootScope",
+      "$test",
+      "$log",
+      (_$compile_: any, _$rootScope_: any, _$test_: any, _$log_: any) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+        $test = _$test_;
+        $log = _$log_;
+      },
+    ]);
   });
 
   it("should make $injectable available to scope", async () => {

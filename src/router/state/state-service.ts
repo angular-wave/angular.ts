@@ -4,12 +4,12 @@ import {
   isArray,
   isNullOrUndefined,
   isObject,
-  isFunction,
   isInstanceOf,
   createErrorFactory,
   isString,
   assertDefined,
 } from "../../shared/utils.ts";
+import { isInjectable } from "../../core/di/injectable.ts";
 import { PathNode } from "../path/path-node.ts";
 import {
   defaultTransOpts,
@@ -462,7 +462,7 @@ export class StateRuntime {
       );
     }
 
-    if (!isFunction(policy)) {
+    if (!isInjectable(policy)) {
       return undefined;
     }
 
@@ -619,7 +619,7 @@ export class StateRuntime {
     let decision: unknown = retryPolicy.policy;
 
     if (typeof decision !== "boolean" && typeof decision !== "number") {
-      if (isFunction(retryPolicy.policy)) {
+      if (isInjectable(retryPolicy.policy)) {
         const from =
           this._routerState._current ?? this._stateRegistry._root.self;
         const to =

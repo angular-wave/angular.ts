@@ -13,19 +13,16 @@ describe("channel", () => {
     const angular = new Angular();
 
     angular.module("myModule", ["ng"]);
-    angular
-      .bootstrap(root, ["myModule"])
-      .invoke(
-        (
-          _$compile_: any,
-          _$eventBus_: ng.EventBusService,
-          _$rootScope_: any,
-        ) => {
-          $compile = _$compile_;
-          $eventBus = _$eventBus_;
-          $scope = _$rootScope_;
-        },
-      );
+    angular.bootstrap(root, ["myModule"]).invoke([
+      "$compile",
+      "$eventBus",
+      "$rootScope",
+      (_$compile_: any, _$eventBus_: ng.EventBusService, _$rootScope_: any) => {
+        $compile = _$compile_;
+        $eventBus = _$eventBus_;
+        $scope = _$rootScope_;
+      },
+    ]);
 
     spyOn($eventBus, "subscribe").and.callThrough();
   });

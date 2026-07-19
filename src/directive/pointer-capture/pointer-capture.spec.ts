@@ -32,12 +32,14 @@ describe("ngPointerCapture", () => {
 
     angular.module("myModule", ["ng"]);
 
-    angular
-      .bootstrap(app, ["myModule"])
-      .invoke((_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
+    angular.bootstrap(app, ["myModule"]).invoke([
+      "$compile",
+      "$rootScope",
+      (_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
-      });
+      },
+    ]);
 
     await wait();
   });

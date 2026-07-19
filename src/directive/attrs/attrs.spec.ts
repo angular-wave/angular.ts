@@ -20,10 +20,14 @@ describe("ngSrcset", () => {
           throw new Error(exception.message);
         };
       });
-    createInjector(["myModule"]).invoke(($rootScope: any, _$compile_: any) => {
-      $scope = $rootScope.$new();
-      $compile = _$compile_;
-    });
+    createInjector(["myModule"]).invoke([
+      "$rootScope",
+      "$compile",
+      ($rootScope: any, _$compile_: any) => {
+        $scope = $rootScope.$new();
+        $compile = _$compile_;
+      },
+    ]);
   });
 
   afterEach(() => {

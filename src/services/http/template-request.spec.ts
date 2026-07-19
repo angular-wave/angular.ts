@@ -104,7 +104,10 @@ describe("$templateRequest", () => {
           },
         });
 
-        createInjector(["test"]).invoke(
+        createInjector(["test"]).invoke([
+          "$templateRequest",
+          "$http",
+          "$templateCache",
           ($templateRequest, $http, $templateCache) => {
             spyOn($http, "get").and.callThrough();
 
@@ -116,7 +119,7 @@ describe("$templateRequest", () => {
               headers: { Accept: "moo" },
             });
           },
-        );
+        ]);
       });
 
       it("should be allow you to override the cache", () => {
@@ -130,17 +133,21 @@ describe("$templateRequest", () => {
           },
         });
 
-        createInjector(["test"]).invoke(($templateRequest, $http) => {
-          spyOn($http, "get").and.callThrough();
+        createInjector(["test"]).invoke([
+          "$templateRequest",
+          "$http",
+          ($templateRequest, $http) => {
+            spyOn($http, "get").and.callThrough();
 
-          $templateRequest("/public/test.html");
+            $templateRequest("/public/test.html");
 
-          expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
-            cache: customCache,
-            transformResponse: [],
-            headers: { Accept: "text/html" },
-          });
-        });
+            expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
+              cache: customCache,
+              transformResponse: [],
+              headers: { Accept: "text/html" },
+            });
+          },
+        ]);
       });
     });
   });

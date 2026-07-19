@@ -11,7 +11,6 @@ export type { ErrorHandlingConfig, Validator } from "./shared/interface.ts";
 export type {
   AnnotatedDirectiveFactory,
   AnnotatedFactory,
-  AngularBootstrapConfig,
   ChangesObject,
   ClassMap,
   ClassValue,

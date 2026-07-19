@@ -5,8 +5,10 @@ import {
 } from "../../animations/lazy-animate.ts";
 import {
   _compile,
+  _element,
   _injector,
   _parse,
+  _scope,
   _templateRequest,
 } from "../../injection-tokens.ts";
 import {
@@ -275,17 +277,21 @@ export function ngMessagesDirective(
   return {
     require: "ngMessages",
     restrict: "AE",
-    controller: ($element: HTMLElement, $scope: ng.Scope) =>
-      new NgMessageCtrl(
-        $element,
-        $scope,
-        getNormalizedAttr($element, "ngMessages") ??
-          getNormalizedAttr($element, "for"),
-        getNormalizedAttr($element, "multiple"),
-        getNormalizedAttr($element, "ngMessagesMultiple"),
-        getAnimate,
-        $parse,
-      ),
+    controller: [
+      _element,
+      _scope,
+      ($element: HTMLElement, $scope: ng.Scope) =>
+        new NgMessageCtrl(
+          $element,
+          $scope,
+          getNormalizedAttr($element, "ngMessages") ??
+            getNormalizedAttr($element, "for"),
+          getNormalizedAttr($element, "multiple"),
+          getNormalizedAttr($element, "ngMessagesMultiple"),
+          getAnimate,
+          $parse,
+        ),
+    ],
   };
 }
 

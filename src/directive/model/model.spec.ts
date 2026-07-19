@@ -2077,10 +2077,14 @@ describe("data-change", () => {
     el.innerHTML =
       'Test<input type="text" ng-model="value" data-change="change()" />';
 
-    window.angular.bootstrap(el, []).invoke((_$rootScope_, _$compile_) => {
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-    });
+    window.angular.bootstrap(el, []).invoke([
+      "$rootScope",
+      "$compile",
+      (_$rootScope_, _$compile_) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      },
+    ]);
 
     $rootScope.change = jasmine.createSpy("change").and.callFake(() => {
       expect($rootScope.value).toBe("new value");
@@ -2096,10 +2100,14 @@ describe("data-change", () => {
     el.innerHTML =
       'Test<input type="text" ng-model="value" data-change="change()" />';
 
-    window.angular.bootstrap(el, []).invoke((_$rootScope_, _$compile_) => {
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-    });
+    window.angular.bootstrap(el, []).invoke([
+      "$rootScope",
+      "$compile",
+      (_$rootScope_, _$compile_) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      },
+    ]);
 
     $rootScope.change = jasmine.createSpy("change");
     $rootScope.value = true;
@@ -2111,10 +2119,14 @@ describe("data-change", () => {
     el.innerHTML =
       'Test<input type="checkbox" ng-model="value" data-change="changeFn()" />';
 
-    window.angular.bootstrap(el, []).invoke((_$rootScope_, _$compile_) => {
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-    });
+    window.angular.bootstrap(el, []).invoke([
+      "$rootScope",
+      "$compile",
+      (_$rootScope_, _$compile_) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      },
+    ]);
 
     $rootScope.changeFn = jasmine.createSpy("changeFn");
     expect($rootScope.changeFn).not.toHaveBeenCalled();
@@ -2128,10 +2140,14 @@ describe("data-change", () => {
     el.innerHTML =
       '<input type="text" ng-model="value" data-change="value=\'b\'" />';
 
-    window.angular.bootstrap(el, []).invoke((_$rootScope_, _$compile_) => {
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-    });
+    window.angular.bootstrap(el, []).invoke([
+      "$rootScope",
+      "$compile",
+      (_$rootScope_, _$compile_) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      },
+    ]);
 
     el.querySelector("input").value = "a";
     el.querySelector("input").dispatchEvent(new Event("input"));

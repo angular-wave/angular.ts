@@ -105,12 +105,16 @@ describe("select", () => {
     injector = window.angular.bootstrap(document.getElementById("app"), [
       "myModule",
     ]);
-    injector.invoke((_$rootScope_, _$compile_) => {
-      scope = _$rootScope_.$new(); // create a child scope because the root scope can't be $destroy-ed
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-      formElement = element = null;
-    });
+    injector.invoke([
+      "$rootScope",
+      "$compile",
+      (_$rootScope_, _$compile_) => {
+        scope = _$rootScope_.$new(); // create a child scope because the root scope can't be $destroy-ed
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+        formElement = element = null;
+      },
+    ]);
   });
 
   afterEach(() => {

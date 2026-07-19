@@ -22,18 +22,21 @@ describe("view", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$injector_) => {
-      $injector = _$injector_;
-      stateService = $injector.get("$state");
-      routerState = stateService._routerState;
-      states = {};
-      const matcher = new StateMatcher(states);
+    $injector.invoke([
+      "$injector",
+      (_$injector_) => {
+        $injector = _$injector_;
+        stateService = $injector.get("$state");
+        routerState = stateService._routerState;
+        states = {};
+        const matcher = new StateMatcher(states);
 
-      const stateBuilder = new StateBuilder(matcher, routerState);
+        const stateBuilder = new StateBuilder(matcher, routerState);
 
-      register = registerState(states, stateBuilder);
-      root = register({ name: "" });
-    });
+        register = registerState(states, stateBuilder);
+        root = register({ name: "" });
+      },
+    ]);
   });
 
   let register;

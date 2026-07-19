@@ -28,11 +28,13 @@ describe("filter registration", () => {
 
     window.angular.module("myModule", []).filter("myFilter", () => filter);
 
-    createInjector(["ng", "myModule"]).invoke(
+    createInjector(["ng", "myModule"]).invoke([
+      "$rootScope",
+      "$parse",
       ($rootScope: ng.Scope, $parse: ng.ParseService) => {
         $parse("10|myFilter")($rootScope);
       },
-    );
+    ]);
 
     expect(filter).toHaveBeenCalledWith(10);
   });

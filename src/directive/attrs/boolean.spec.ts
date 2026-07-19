@@ -12,13 +12,16 @@ describe("boolean attr directives", () => {
     window.angular
       .module("booleanAttrs", ["ng"])
       .value("$rootElement", document.body);
-    createInjector(["booleanAttrs"]).invoke(
+    createInjector(["booleanAttrs"]).invoke([
+      "$compile",
+      "$rootScope",
+      "$rootElement",
       (_$compile_: any, _$rootScope_: any, _$rootElement_: any) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
         $rootElement = _$rootElement_;
       },
-    );
+    ]);
   });
 
   afterEach(() => {

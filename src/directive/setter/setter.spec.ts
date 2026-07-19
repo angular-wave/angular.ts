@@ -11,16 +11,18 @@ describe("setter", () => {
     const angular = new Angular();
 
     angular.module("myModule", []);
-    angular
-      .bootstrap(document.getElementById("app")!, ["myModule"])
-      .invoke(
-        (_$compile_: any, _$rootScope_: any, _$parse_: any, _$log_: any) => {
-          $compile = _$compile_;
-          $rootScope = _$rootScope_;
-          $parse = _$parse_;
-          $log = _$log_;
-        },
-      );
+    angular.bootstrap(document.getElementById("app")!, ["myModule"]).invoke([
+      "$compile",
+      "$rootScope",
+      "$parse",
+      "$log",
+      (_$compile_: any, _$rootScope_: any, _$parse_: any, _$log_: any) => {
+        $compile = _$compile_;
+        $rootScope = _$rootScope_;
+        $parse = _$parse_;
+        $log = _$log_;
+      },
+    ]);
     observerSpy = jasmine.createSpyObj("MutationObserver", [
       "observe",
       "disconnect",

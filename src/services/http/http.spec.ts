@@ -974,19 +974,23 @@ describe("$http", function () {
       });
     const injector = createInjector(["ng", "specialSerializer"]);
 
-    await injector.invoke(async function ($http, $rootScope) {
-      await $http({
-        url: "/mock/hello",
-        params: {
-          a: 42,
-          b: 43,
-        },
-        paramSerializer: "mySpecialSerializer",
-      }).then(function (r) {
-        response = r;
-      });
-      await wait();
-    });
+    await injector.invoke([
+      "$http",
+      "$rootScope",
+      async function ($http, $rootScope) {
+        await $http({
+          url: "/mock/hello",
+          params: {
+            a: 42,
+            b: 43,
+          },
+          paramSerializer: "mySpecialSerializer",
+        }).then(function (r) {
+          response = r;
+        });
+        await wait();
+      },
+    ]);
     expect(
       response.config
         .paramSerializer(response.config.params)
@@ -997,11 +1001,14 @@ describe("$http", function () {
   it("makes default param serializer available through DI", async function () {
     const injector = createInjector(["ng"]);
 
-    injector.invoke(function ($httpParamSerializer) {
-      const result = $httpParamSerializer({ a: 42, b: 43 });
+    injector.invoke([
+      "$httpParamSerializer",
+      function ($httpParamSerializer) {
+        const result = $httpParamSerializer({ a: 42, b: 43 });
 
-      expect(result).toEqual("a=42&b=43");
-    });
+        expect(result).toEqual("a=42&b=43");
+      },
+    ]);
   });
 
   it("supports shorthand method for GET", async function () {

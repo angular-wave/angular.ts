@@ -117,10 +117,13 @@ describe("ngInit", () => {
       '<div><div ng-include="template" ' +
         "ng-init=\"template='template2.tpl'\"></div></div>",
     );
-    window.angular.module("myModule", []).run(($templateCache: any) => {
-      $templateCache.set("template1.tpl", "<span>1</span>");
-      $templateCache.set("template2.tpl", "<span>2</span>");
-    });
+    window.angular.module("myModule", []).run([
+      "$templateCache",
+      ($templateCache: any) => {
+        $templateCache.set("template1.tpl", "<span>1</span>");
+        $templateCache.set("template2.tpl", "<span>2</span>");
+      },
+    ]);
     injector = window.angular.bootstrap(element, ["myModule"]);
     $rootScope = injector.get("$rootScope");
     expect($rootScope.template).toEqual("template2.tpl");
@@ -134,10 +137,14 @@ describe("ngInit", () => {
     window.angular
       .module("test1", ["ng"])
       .controller("TestCtrl", (): undefined => undefined);
-    createInjector(["test1"]).invoke((_$rootScope_: any, _$compile_: any) => {
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-    });
+    createInjector(["test1"]).invoke([
+      "$rootScope",
+      "$compile",
+      (_$rootScope_: any, _$compile_: any) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      },
+    ]);
 
     element = $compile(
       '<div><div ng-controller="TestCtrl" ' + 'ng-init="test=123"></div></div>',

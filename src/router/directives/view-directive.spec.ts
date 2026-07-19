@@ -124,9 +124,12 @@ describe("ngView", () => {
     },
     kState = {
       name: "k",
-      controller: function ($scope) {
-        $scope.someProperty = "value";
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          $scope.someProperty = "value";
+        },
+      ],
       template: "{{someProperty}}",
     },
     lState = {
@@ -146,35 +149,46 @@ describe("ngView", () => {
     mState = {
       name: "m",
       template: "mState",
-      controller: function ($scope, $element) {
-        $scope.elementId = $element.getAttribute("id");
-      },
+      controller: [
+        "$scope",
+        "$element",
+        function ($scope, $element) {
+          $scope.elementId = $element.getAttribute("id");
+        },
+      ],
     },
     nState = {
       name: "n",
       template: "nState",
-      controller: function ($scope, $element) {
-        const data = getCacheData($element, "$ngViewAnim");
+      controller: [
+        "$scope",
+        "$element",
+        function ($scope, $element) {
+          const data = getCacheData($element, "$ngViewAnim");
 
-        $scope.$on("$destroy", () => {
-          log += "destroy;";
-        });
-        data.$animEnter.then(() => {
-          log += "animEnter;";
-        });
-        data.$animLeave.then(() => {
-          log += "animLeave;";
-        });
-      },
+          $scope.$on("$destroy", () => {
+            log += "destroy;";
+          });
+          data.$animEnter.then(() => {
+            log += "animEnter;";
+          });
+          data.$animLeave.then(() => {
+            log += "animLeave;";
+          });
+        },
+      ],
     },
     retainedState = {
       name: "retained",
       template:
         '<button class="retained-counter" ng-click="count = count + 1">{{count}}</button>',
-      controller: function ($scope) {
-        retainedCompileCount += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedCompileCount += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -186,13 +200,16 @@ describe("ngView", () => {
       name: "retainedLimitedA",
       template:
         '<button class="retained-limited-a" ng-click="count = count + 1">A:{{count}}</button>',
-      controller: function ($scope) {
-        retainedLimitedCompiles.a += 1;
-        $scope.count = 0;
-        $scope.$on("$destroy", () => {
-          retainedLimitedDestroys.a += 1;
-        });
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedLimitedCompiles.a += 1;
+          $scope.count = 0;
+          $scope.$on("$destroy", () => {
+            retainedLimitedDestroys.a += 1;
+          });
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -205,13 +222,16 @@ describe("ngView", () => {
       name: "retainedLimitedB",
       template:
         '<button class="retained-limited-b" ng-click="count = count + 1">B:{{count}}</button>',
-      controller: function ($scope) {
-        retainedLimitedCompiles.b += 1;
-        $scope.count = 0;
-        $scope.$on("$destroy", () => {
-          retainedLimitedDestroys.b += 1;
-        });
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedLimitedCompiles.b += 1;
+          $scope.count = 0;
+          $scope.$on("$destroy", () => {
+            retainedLimitedDestroys.b += 1;
+          });
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -227,10 +247,13 @@ describe("ngView", () => {
       },
       template:
         '<button class="retained-param" ng-click="count = count + 1">P:{{count}}</button>',
-      controller: function ($scope) {
-        retainedParamCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedParamCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -245,10 +268,13 @@ describe("ngView", () => {
       },
       template:
         '<button class="retained-custom-key" ng-click="count = count + 1">C:{{count}}</button>',
-      controller: function ($scope) {
-        retainedCustomKeyCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedCustomKeyCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -262,10 +288,13 @@ describe("ngView", () => {
       url: "/retained-query?term",
       template:
         '<button class="retained-query" ng-click="count = count + 1">Q:{{count}}</button>',
-      controller: function ($scope) {
-        retainedQueryCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedQueryCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -283,10 +312,13 @@ describe("ngView", () => {
       },
       template:
         '<button class="retained-dynamic" ng-click="count = count + 1">D:{{count}}</button>',
-      controller: function ($scope) {
-        retainedDynamicCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedDynamicCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -298,10 +330,13 @@ describe("ngView", () => {
       name: "retainedCanExit",
       template:
         '<button class="retained-can-exit" ng-click="count = count + 1">X:{{count}}</button>',
-      controller: function ($scope) {
-        retainedCanExitCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedCanExitCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -316,10 +351,13 @@ describe("ngView", () => {
       name: "retainedDirty",
       template:
         '<button class="retained-dirty" ng-click="count = count + 1">Y:{{count}}</button>',
-      controller: function ($scope) {
-        retainedDirtyCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedDirtyCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -337,10 +375,13 @@ describe("ngView", () => {
       name: "retainedSecurity",
       template:
         '<button class="retained-security" ng-click="count = count + 1">Z:{{count}}</button>',
-      controller: function ($scope) {
-        retainedSecurityCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedSecurityCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         navigation: {
           authenticated: true,
@@ -356,10 +397,13 @@ describe("ngView", () => {
       name: "retainedErrorBoundary",
       template:
         '<button class="retained-error-boundary" ng-click="count = count + 1">R:{{count}}</button>',
-      controller: function ($scope) {
-        retainedErrorCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedErrorCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -387,10 +431,13 @@ describe("ngView", () => {
       name: "retainedLoadingBoundary",
       template:
         '<button class="retained-loading-boundary" ng-click="count = count + 1">L:{{count}}</button>',
-      controller: function ($scope) {
-        retainedLoadingCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedLoadingCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -414,10 +461,13 @@ describe("ngView", () => {
       },
       template:
         '<button class="retained-injected-key" ng-click="count = count + 1">I:{{count}}</button>',
-      controller: function ($scope) {
-        retainedInjectedKeyCompiles += 1;
-        $scope.count = 0;
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedInjectedKeyCompiles += 1;
+          $scope.count = 0;
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -438,13 +488,16 @@ describe("ngView", () => {
       name: "retainedInjectedEvictA",
       template:
         '<button class="retained-injected-evict-a" ng-click="count = count + 1">EA:{{count}}</button>',
-      controller: function ($scope) {
-        retainedInjectedEvictCompiles.a += 1;
-        $scope.count = 0;
-        $scope.$on("$destroy", () => {
-          retainedInjectedEvictDestroys.a += 1;
-        });
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedInjectedEvictCompiles.a += 1;
+          $scope.count = 0;
+          $scope.$on("$destroy", () => {
+            retainedInjectedEvictDestroys.a += 1;
+          });
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -466,13 +519,16 @@ describe("ngView", () => {
       name: "retainedInjectedEvictB",
       template:
         '<button class="retained-injected-evict-b" ng-click="count = count + 1">EB:{{count}}</button>',
-      controller: function ($scope) {
-        retainedInjectedEvictCompiles.b += 1;
-        $scope.count = 0;
-        $scope.$on("$destroy", () => {
-          retainedInjectedEvictDestroys.b += 1;
-        });
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedInjectedEvictCompiles.b += 1;
+          $scope.count = 0;
+          $scope.$on("$destroy", () => {
+            retainedInjectedEvictDestroys.b += 1;
+          });
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -494,16 +550,19 @@ describe("ngView", () => {
       name: "retainedNested",
       template:
         '<section><button class="retained-nested-parent" ng-click="parentCount = parentCount + 1">NP:{{parentCount}}</button><ng-view name="inner"></ng-view></section>',
-      controller: function ($scope) {
-        retainedNestedCompiles.parent += 1;
-        $scope.parentCount = 0;
-        $scope.$on("$viewRetentionPause", () => {
-          retainedNestedLifecycle.parentPause += 1;
-        });
-        $scope.$on("$viewRetentionResume", () => {
-          retainedNestedLifecycle.parentResume += 1;
-        });
-      },
+      controller: [
+        "$scope",
+        function ($scope) {
+          retainedNestedCompiles.parent += 1;
+          $scope.parentCount = 0;
+          $scope.$on("$viewRetentionPause", () => {
+            retainedNestedLifecycle.parentPause += 1;
+          });
+          $scope.$on("$viewRetentionResume", () => {
+            retainedNestedLifecycle.parentResume += 1;
+          });
+        },
+      ],
       policy: {
         retention: {
           mode: "keep-alive",
@@ -518,16 +577,19 @@ describe("ngView", () => {
         inner: {
           template:
             '<button class="retained-nested-child" ng-click="childCount = childCount + 1">NC:{{childCount}}</button>',
-          controller: function ($scope) {
-            retainedNestedCompiles.child += 1;
-            $scope.childCount = 0;
-            $scope.$on("$viewRetentionPause", () => {
-              retainedNestedLifecycle.childPause += 1;
-            });
-            $scope.$on("$viewRetentionResume", () => {
-              retainedNestedLifecycle.childResume += 1;
-            });
-          },
+          controller: [
+            "$scope",
+            function ($scope) {
+              retainedNestedCompiles.child += 1;
+              $scope.childCount = 0;
+              $scope.$on("$viewRetentionPause", () => {
+                retainedNestedLifecycle.childPause += 1;
+              });
+              $scope.$on("$viewRetentionResume", () => {
+                retainedNestedLifecycle.childResume += 1;
+              });
+            },
+          ],
         },
       },
     };
@@ -551,59 +613,65 @@ describe("ngView", () => {
       inner: {
         template:
           '<div class="retention-nested-cleanup-child"><button id="nested-cleanup-worker" ng-worker="/workers/echo.js"></button></div>',
-        controller: function ($scope, $element, $eventBus, $wasm) {
-          retainedNestedCleanup.scopeCreated += 1;
-          retainedNestedCleanupScope = $scope;
-          retainedNestedCleanup.wasmScope = $wasm.load({
-            source: "/integrations/wasm/c/examples/todo/main.wasm",
-          });
-          void retainedNestedCleanup.wasmScope
-            .bind($scope, { name: "retainedNestedCleanup" })
-            .catch(() => undefined);
+        controller: [
+          "$scope",
+          "$element",
+          "$eventBus",
+          "$wasm",
+          function ($scope, $element, $eventBus, $wasm) {
+            retainedNestedCleanup.scopeCreated += 1;
+            retainedNestedCleanupScope = $scope;
+            retainedNestedCleanup.wasmScope = $wasm.load({
+              source: "/integrations/wasm/c/examples/todo/main.wasm",
+            });
+            void retainedNestedCleanup.wasmScope
+              .bind($scope, { name: "retainedNestedCleanup" })
+              .catch(() => undefined);
 
-          const observedElement = $element.matches?.(
-            ".retention-nested-cleanup-child",
-          )
-            ? $element
-            : ($element.querySelector?.(".retention-nested-cleanup-child") ??
-              $element);
+            const observedElement = $element.matches?.(
+              ".retention-nested-cleanup-child",
+            )
+              ? $element
+              : ($element.querySelector?.(".retention-nested-cleanup-child") ??
+                $element);
 
-          const observer = new MutationObserver(() => {
-            retainedNestedCleanup.attrObserverEvents += 1;
-          });
+            const observer = new MutationObserver(() => {
+              retainedNestedCleanup.attrObserverEvents += 1;
+            });
 
-          observer.observe(observedElement, { attributes: true });
+            observer.observe(observedElement, { attributes: true });
 
-          $scope.$watch("probeValue", () => {
-            retainedNestedCleanup.watchRuns += 1;
-          });
+            $scope.$watch("probeValue", () => {
+              retainedNestedCleanup.watchRuns += 1;
+            });
 
-          $scope.probeValue = 1;
+            $scope.probeValue = 1;
 
-          const unsubscribe = $eventBus.subscribe(
-            "retention.nested.cleanup",
-            () => {
-              retainedNestedCleanup.eventBusDeliveries += 1;
-            },
-            $scope,
-          );
+            const unsubscribe = $eventBus.subscribe(
+              "retention.nested.cleanup",
+              () => {
+                retainedNestedCleanup.eventBusDeliveries += 1;
+              },
+              $scope,
+            );
 
-          const canvasAdapter = createCanvasWorkAdapter($scope);
+            const canvasAdapter = createCanvasWorkAdapter($scope);
 
-          $scope.$broadcast("$viewRetentionPause");
+            $scope.$broadcast("$viewRetentionPause");
 
-          canvasAdapter.schedule(() => {
-            retainedNestedCleanup.canvasRuns += 1;
-          });
+            canvasAdapter.schedule(() => {
+              retainedNestedCleanup.canvasRuns += 1;
+            });
 
-          $scope.$on("$destroy", () => {
-            retainedNestedCleanup.scopeDestroyEvents += 1;
-            retainedNestedCleanup.wasmScope.dispose();
-            observer.disconnect();
-            retainedNestedCleanup.attrObserverDisconnects += 1;
-            unsubscribe();
-          });
-        },
+            $scope.$on("$destroy", () => {
+              retainedNestedCleanup.scopeDestroyEvents += 1;
+              retainedNestedCleanup.wasmScope.dispose();
+              observer.disconnect();
+              retainedNestedCleanup.attrObserverDisconnects += 1;
+              unsubscribe();
+            });
+          },
+        ],
       },
     },
   };
@@ -612,56 +680,62 @@ describe("ngView", () => {
     name: "retainedEvictionCleanupA",
     template:
       '<div class="retention-eviction-probe"><button id="probe-worker" ng-worker="/workers/echo.js"></button></div>',
-    controller: function ($scope, $element, $eventBus, $wasm) {
-      retainedEvictionCleanup.scopeCreated += 1;
-      retainedEvictionCleanupScope = $scope;
-      retainedEvictionCleanup.wasmScope = $wasm.load({
-        source: "/integrations/wasm/c/examples/todo/main.wasm",
-      });
-      void retainedEvictionCleanup.wasmScope
-        .bind($scope, { name: "retentionEvictionProbe" })
-        .catch(() => undefined);
+    controller: [
+      "$scope",
+      "$element",
+      "$eventBus",
+      "$wasm",
+      function ($scope, $element, $eventBus, $wasm) {
+        retainedEvictionCleanup.scopeCreated += 1;
+        retainedEvictionCleanupScope = $scope;
+        retainedEvictionCleanup.wasmScope = $wasm.load({
+          source: "/integrations/wasm/c/examples/todo/main.wasm",
+        });
+        void retainedEvictionCleanup.wasmScope
+          .bind($scope, { name: "retentionEvictionProbe" })
+          .catch(() => undefined);
 
-      const observedElement = $element.matches?.(".retention-eviction-probe")
-        ? $element
-        : ($element.querySelector?.(".retention-eviction-probe") ?? $element);
+        const observedElement = $element.matches?.(".retention-eviction-probe")
+          ? $element
+          : ($element.querySelector?.(".retention-eviction-probe") ?? $element);
 
-      const observer = new MutationObserver(() => {
-        retainedEvictionCleanup.attrObserverEvents += 1;
-      });
+        const observer = new MutationObserver(() => {
+          retainedEvictionCleanup.attrObserverEvents += 1;
+        });
 
-      observer.observe(observedElement, { attributes: true });
+        observer.observe(observedElement, { attributes: true });
 
-      $scope.$watch("probeValue", () => {
-        retainedEvictionCleanup.watchRuns += 1;
-      });
+        $scope.$watch("probeValue", () => {
+          retainedEvictionCleanup.watchRuns += 1;
+        });
 
-      $scope.probeValue = 1;
+        $scope.probeValue = 1;
 
-      const unsubscribe = $eventBus.subscribe(
-        "retention.eviction.cleanup",
-        () => {
-          retainedEvictionCleanup.eventBusDeliveries += 1;
-        },
-        $scope,
-      );
+        const unsubscribe = $eventBus.subscribe(
+          "retention.eviction.cleanup",
+          () => {
+            retainedEvictionCleanup.eventBusDeliveries += 1;
+          },
+          $scope,
+        );
 
-      const canvasAdapter = createCanvasWorkAdapter($scope);
+        const canvasAdapter = createCanvasWorkAdapter($scope);
 
-      $scope.$broadcast("$viewRetentionPause");
+        $scope.$broadcast("$viewRetentionPause");
 
-      canvasAdapter.schedule(() => {
-        retainedEvictionCleanup.canvasRuns += 1;
-      });
+        canvasAdapter.schedule(() => {
+          retainedEvictionCleanup.canvasRuns += 1;
+        });
 
-      $scope.$on("$destroy", () => {
-        retainedEvictionCleanup.scopeDestroyEvents += 1;
-        retainedEvictionCleanup.wasmScope.dispose();
-        observer.disconnect();
-        retainedEvictionCleanup.attrObserverDisconnects += 1;
-        unsubscribe();
-      });
-    },
+        $scope.$on("$destroy", () => {
+          retainedEvictionCleanup.scopeDestroyEvents += 1;
+          retainedEvictionCleanup.wasmScope.dispose();
+          observer.disconnect();
+          retainedEvictionCleanup.attrObserverDisconnects += 1;
+          unsubscribe();
+        });
+      },
+    ],
     policy: {
       retention: {
         mode: "keep-alive",
@@ -808,10 +882,13 @@ describe("ngView", () => {
         name: "retainedLazy",
         template:
           '<button class="retained-lazy" ng-click="count = count + 1">G:{{count}}</button>',
-        controller: function ($scope) {
-          retainedLazyCompiles += 1;
-          $scope.count = 0;
-        },
+        controller: [
+          "$scope",
+          function ($scope) {
+            retainedLazyCompiles += 1;
+            $scope.count = 0;
+          },
+        ],
         policy: {
           retention: {
             mode: "keep-alive",
@@ -825,13 +902,19 @@ describe("ngView", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$state_, $rootScope, _$compile_, _$anchorScroll_) => {
-      scope = $rootScope.$new();
-      $compile = _$compile_;
-      $state = _$state_;
-      stateRuntime = $state;
-      $anchorScroll = _$anchorScroll_;
-    });
+    $injector.invoke([
+      "$state",
+      "$rootScope",
+      "$compile",
+      "$anchorScroll",
+      (_$state_, $rootScope, _$compile_, _$anchorScroll_) => {
+        scope = $rootScope.$new();
+        $compile = _$compile_;
+        $state = _$state_;
+        stateRuntime = $state;
+        $anchorScroll = _$anchorScroll_;
+      },
+    ]);
     $view = $state._viewService;
 
     const $animate = $injector.get("$animate");
@@ -2138,6 +2221,7 @@ describe("ngView", () => {
     function controller($scope) {
       _scope = $scope;
     }
+    controller.$inject = ["$scope"];
     let _state;
 
     beforeEach(() => {
@@ -2346,13 +2430,19 @@ describe("ngView transclusion", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
-      $rootScope = _$rootScope_;
-      scope = $rootScope.$new();
-      $compile = _$compile_;
-      $state = _$state_;
-      elem = document.getElementById("app");
-    });
+    $injector.invoke([
+      "$state",
+      "$rootScope",
+      "$compile",
+      "$anchorScroll",
+      (_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
+        $rootScope = _$rootScope_;
+        scope = $rootScope.$new();
+        $compile = _$compile_;
+        $state = _$state_;
+        elem = document.getElementById("app");
+      },
+    ]);
   });
 
   it("should not link the initial view and leave its scope undestroyed when a subview is activated", async () => {
@@ -2398,10 +2488,13 @@ describe("ngView controllers or onEnter handlers", () => {
         name: "A.fwd",
         url: "/fwd",
         template: '<div class="fwd" ng-view>',
-        controller: function ($state) {
-          if (count++ < 20 && $state.current.name == "A.fwd")
-            $state.go(".nest");
-        },
+        controller: [
+          "$state",
+          function ($state) {
+            if (count++ < 20 && $state.current.name == "A.fwd")
+              $state.go(".nest");
+          },
+        ],
       },
       {
         name: "A.fwd.nest",
@@ -2414,13 +2507,19 @@ describe("ngView controllers or onEnter handlers", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
-      $rootScope = _$rootScope_;
-      scope = $rootScope.$new();
-      $compile = _$compile_;
-      $state = _$state_;
-      elem = document.getElementById("app");
-    });
+    $injector.invoke([
+      "$state",
+      "$rootScope",
+      "$compile",
+      "$anchorScroll",
+      (_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
+        $rootScope = _$rootScope_;
+        scope = $rootScope.$new();
+        $compile = _$compile_;
+        $state = _$state_;
+        elem = document.getElementById("app");
+      },
+    ]);
   });
 
   it("should not go into an infinite loop when controller uses $state.go", async () => {
@@ -2471,9 +2570,12 @@ describe("angular 1.5+ style .component()", () => {
           restrict: "E",
           scope: { data: "=" },
           templateUrl: "/comp_tpl.html",
-          controller: function ($scope) {
-            this.data = $scope.data;
-          },
+          controller: [
+            "$scope",
+            function ($scope) {
+              this.data = $scope.data;
+            },
+          ],
           controllerAs: "$ctrl",
         };
       })
@@ -2518,12 +2620,15 @@ describe("angular 1.5+ style .component()", () => {
         template: "eventCmp",
       })
       .component("parentCallbackComponent", {
-        controller: function ($rootScope) {
-          this.handleEvent = function (foo, bar) {
-            $rootScope.log.push(foo);
-            $rootScope.log.push(bar);
-          };
-        },
+        controller: [
+          "$rootScope",
+          function ($rootScope) {
+            this.handleEvent = function (foo, bar) {
+              $rootScope.log.push(foo);
+              $rootScope.log.push(bar);
+            };
+          },
+        ],
         template: `
         <h1>parentCmp</h1>
         <ng-view on-event="$ctrl.handleEvent(foo, bar)"></ng-view>
@@ -2550,19 +2655,25 @@ describe("angular 1.5+ style .component()", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$rootScope_, _$compile_, _$state_, _$templateCache_) => {
-      svcs = {
-        $compile: _$compile_,
-        $state: _$state_,
-      };
-      stateRuntime = _$state_;
-      $rootScope = _$rootScope_;
-      scope = $rootScope.$new();
-      log = "";
-      el.innerHTML = "<div><ng-view></ng-view></div>";
-      svcs.$compile(el)(scope);
-      $templateCache = _$templateCache_;
-    });
+    $injector.invoke([
+      "$rootScope",
+      "$compile",
+      "$state",
+      "$templateCache",
+      (_$rootScope_, _$compile_, _$state_, _$templateCache_) => {
+        svcs = {
+          $compile: _$compile_,
+          $state: _$state_,
+        };
+        stateRuntime = _$state_;
+        $rootScope = _$rootScope_;
+        scope = $rootScope.$new();
+        log = "";
+        el.innerHTML = "<div><ng-view></ng-view></div>";
+        svcs.$compile(el)(scope);
+        $templateCache = _$templateCache_;
+      },
+    ]);
   });
 
   async function waitForText(text) {
@@ -2932,10 +3043,13 @@ describe("angular 1.5+ style .component()", () => {
         name: "parent",
         template:
           '<ng-view oneway="data1w" twoway="data2w" attr="attrval"></ng-view>',
-        controller: function ($scope) {
-          $scope.data1w = "1w";
-          $scope.data2w = "2w";
-        },
+        controller: [
+          "$scope",
+          function ($scope) {
+            $scope.data1w = "1w";
+            $scope.data2w = "2w";
+          },
+        ],
       });
 
       stateRuntime.state({
@@ -2961,10 +3075,13 @@ describe("angular 1.5+ style .component()", () => {
           twoway: () => "asfasfd",
           attr: () => "asfasfd",
         },
-        controller: function ($scope) {
-          $scope.data1w = "1w";
-          $scope.data2w = "2w";
-        },
+        controller: [
+          "$scope",
+          function ($scope) {
+            $scope.data1w = "1w";
+            $scope.data2w = "2w";
+          },
+        ],
       });
 
       stateRuntime.state({
@@ -2990,10 +3107,13 @@ describe("angular 1.5+ style .component()", () => {
           twoway: () => "asfasfd",
           attr: () => "asfasfd",
         },
-        controller: function ($scope) {
-          $scope.data1w = "1w";
-          $scope.data2w = "2w";
-        },
+        controller: [
+          "$scope",
+          function ($scope) {
+            $scope.data1w = "1w";
+            $scope.data2w = "2w";
+          },
+        ],
       });
 
       stateRuntime.state({
@@ -3046,14 +3166,17 @@ describe("angular 1.5+ style .component()", () => {
 
       log = [];
 
+      const onEvent = (foo, bar) => {
+        log.push(foo);
+        log.push(bar);
+      };
+      onEvent.$inject = ["foo", "bar"];
+
       stateRuntime.state({
         name: "resolve",
         component: "childEventComponent",
         resolve: {
-          onEvent: () => (foo, bar) => {
-            log.push(foo);
-            log.push(bar);
-          },
+          onEvent: () => onEvent,
         },
       });
 

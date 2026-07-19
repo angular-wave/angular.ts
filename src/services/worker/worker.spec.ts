@@ -729,9 +729,12 @@ describe("$worker", () => {
     let workerService;
 
     dealoc(app);
-    angular.bootstrap(app, []).invoke((_$worker_) => {
-      workerService = _$worker_;
-    });
+    angular.bootstrap(app, []).invoke([
+      "$worker",
+      (_$worker_) => {
+        workerService = _$worker_;
+      },
+    ]);
 
     const connection = workerService("/workers/di.js");
 
@@ -760,9 +763,12 @@ describe("$worker", () => {
     let workerService;
 
     dealoc(app);
-    angular.bootstrap(app, [module.name]).invoke((_$worker_) => {
-      workerService = _$worker_;
-    });
+    angular.bootstrap(app, [module.name]).invoke([
+      "$worker",
+      (_$worker_) => {
+        workerService = _$worker_;
+      },
+    ]);
 
     expect(() => workerService("/workers/denied.js")).toThrowError(
       "Worker transport cannot attach Authorization credentials",
@@ -782,9 +788,12 @@ describe("$worker", () => {
     let workerService;
 
     dealoc(app);
-    angular.bootstrap(app, [module.name]).invoke((_$worker_) => {
-      workerService = _$worker_;
-    });
+    angular.bootstrap(app, [module.name]).invoke([
+      "$worker",
+      (_$worker_) => {
+        workerService = _$worker_;
+      },
+    ]);
 
     expect(() => workerService("/workers/denied.js")).toThrowError(
       "Worker creation denied by security policy",
@@ -801,9 +810,12 @@ describe("$worker", () => {
     let workerService;
 
     dealoc(app);
-    angular.bootstrap(app, []).invoke((_$worker_) => {
-      workerService = _$worker_;
-    });
+    angular.bootstrap(app, []).invoke([
+      "$worker",
+      (_$worker_) => {
+        workerService = _$worker_;
+      },
+    ]);
 
     const connection = workerService("/workers/di.js");
 

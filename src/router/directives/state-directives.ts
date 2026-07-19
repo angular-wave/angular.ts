@@ -1,8 +1,10 @@
 import {
   _aria,
+  _element,
   _interpolate,
   _parse,
   _rootScope,
+  _scope,
   _state,
   _stateRegistry,
   _transitions,
@@ -670,210 +672,218 @@ export function StateRefActiveDirective(
 
   return {
     restrict: "A",
-    controller(
-      this: StateRefActiveController,
-      $scope: ng.Scope,
-      $element: HTMLElement,
-    ): undefined {
-      let states: ActiveClassState[] = [];
+    controller: [
+      _scope,
+      _element,
+      function (
+        this: StateRefActiveController,
+        $scope: ng.Scope,
+        $element: HTMLElement,
+      ): undefined {
+        let states: ActiveClassState[] = [];
 
-      let activeDefinition: unknown;
+        let activeDefinition: unknown;
 
-      const activeEqRead = getFirstNormalizedAttr($element, [
-        "ngStateActiveExact",
-      ]);
+        const activeEqRead = getFirstNormalizedAttr($element, [
+          "ngStateActiveExact",
+        ]);
 
-      const activeEqExpr = activeEqRead ?? "";
+        const activeEqExpr = activeEqRead ?? "";
 
-      const activeEqClass = stringify(
-        assertDefined($interpolate(activeEqExpr, false))($scope) ?? "",
-      );
-
-      const activeRead = getFirstNormalizedAttr($element, ["ngStateActive"]);
-
-      const activeExpr = activeRead;
-
-      try {
-        activeDefinition = activeExpr ? $parse(activeExpr)($scope) : undefined;
-      } catch {
-        // Do nothing. The active directive value is not a valid expression.
-        // Fall back to using $interpolate below
-      }
-      activeDefinition =
-        activeDefinition ??
-        stringify(
-          assertDefined($interpolate(activeExpr ?? "", false))($scope) ?? "",
+        const activeEqClass = stringify(
+          assertDefined($interpolate(activeEqExpr, false))($scope) ?? "",
         );
-      setStatesFromDefinitionObject(activeDefinition);
-      // Allow state-ref directives to communicate with active-state directives.
-      this._addStateInfo = function (newState, newParams) {
-        // An explicit state map shadows the state inferred from a linked child.
-        if (isObject(activeDefinition) && states.length > 0) {
-          return undefined;
+
+        const activeRead = getFirstNormalizedAttr($element, ["ngStateActive"]);
+
+        const activeExpr = activeRead;
+
+        try {
+          activeDefinition = activeExpr
+            ? $parse(activeExpr)($scope)
+            : undefined;
+        } catch {
+          // Do nothing. The active directive value is not a valid expression.
+          // Fall back to using $interpolate below
         }
-        const deregister = addState(
-          newState,
-          newParams,
-          String(activeDefinition),
-        );
-
-        update();
-
-        return deregister;
-      };
-      /**
-       * Updates active classes after a transition settles.
-       */
-      function updateAfterTransition(trans: ng.Transition): void {
-        void trans.promise
-          .then(() => {
-            update();
-
-            return undefined;
-          })
-          .catch(() => undefined);
-      }
-      $scope.$on("$destroy", setupEventListeners());
-
-      if (routerState._transition) {
-        updateAfterTransition(routerState._transition);
-      }
-      function setupEventListeners() {
-        const deregisterStatesChangedListener =
-          $stateRegistry.onStatesChanged(handleStatesChanged);
-
-        const deregisterOnStartListener = $transitions.onStart(
-          {},
-          updateAfterTransition,
-        );
-
-        const deregisterStateChangeSuccessListener = $scope.$on(
-          "$stateChangeSuccess",
-          update,
-        );
-
-        return function cleanUp() {
-          deregisterStatesChangedListener();
-          deregisterOnStartListener();
-          deregisterStateChangeSuccessListener();
-        };
-      }
-      function handleStatesChanged() {
+        activeDefinition =
+          activeDefinition ??
+          stringify(
+            assertDefined($interpolate(activeExpr ?? "", false))($scope) ?? "",
+          );
         setStatesFromDefinitionObject(activeDefinition);
-      }
-      /** Updates the tracked state list from the directive definition object. */
-      function setStatesFromDefinitionObject(statesDefinition: unknown): void {
-        if (isObject(statesDefinition)) {
-          states = [];
-          const definition = statesDefinition as Record<string, unknown>;
+        // Allow state-ref directives to communicate with active-state directives.
+        this._addStateInfo = function (newState, newParams) {
+          // An explicit state map shadows the state inferred from a linked child.
+          if (isObject(activeDefinition) && states.length > 0) {
+            return undefined;
+          }
+          const deregister = addState(
+            newState,
+            newParams,
+            String(activeDefinition),
+          );
 
-          keys(definition).forEach((activeClass) => {
-            const stateOrName = definition[activeClass];
+          update();
 
-            if (isString(stateOrName)) {
-              addStateForClass(stateOrName, activeClass);
-            } else if (isArray(stateOrName)) {
-              stateOrName.forEach((stateName) => {
-                addStateForClass(stateName as string, activeClass);
-              });
+          return deregister;
+        };
+        /**
+         * Updates active classes after a transition settles.
+         */
+        function updateAfterTransition(trans: ng.Transition): void {
+          void trans.promise
+            .then(() => {
+              update();
+
+              return undefined;
+            })
+            .catch(() => undefined);
+        }
+        $scope.$on("$destroy", setupEventListeners());
+
+        if (routerState._transition) {
+          updateAfterTransition(routerState._transition);
+        }
+        function setupEventListeners() {
+          const deregisterStatesChangedListener =
+            $stateRegistry.onStatesChanged(handleStatesChanged);
+
+          const deregisterOnStartListener = $transitions.onStart(
+            {},
+            updateAfterTransition,
+          );
+
+          const deregisterStateChangeSuccessListener = $scope.$on(
+            "$stateChangeSuccess",
+            update,
+          );
+
+          return function cleanUp() {
+            deregisterStatesChangedListener();
+            deregisterOnStartListener();
+            deregisterStateChangeSuccessListener();
+          };
+        }
+        function handleStatesChanged() {
+          setStatesFromDefinitionObject(activeDefinition);
+        }
+        /** Updates the tracked state list from the directive definition object. */
+        function setStatesFromDefinitionObject(
+          statesDefinition: unknown,
+        ): void {
+          if (isObject(statesDefinition)) {
+            states = [];
+            const definition = statesDefinition as Record<string, unknown>;
+
+            keys(definition).forEach((activeClass) => {
+              const stateOrName = definition[activeClass];
+
+              if (isString(stateOrName)) {
+                addStateForClass(stateOrName, activeClass);
+              } else if (isArray(stateOrName)) {
+                stateOrName.forEach((stateName) => {
+                  addStateForClass(stateName as string, activeClass);
+                });
+              }
+            });
+          }
+        }
+        function addStateForClass(
+          stateOrNameParam: string,
+          activeClassParam: string,
+        ): void {
+          const ref = parseStateRef(stateOrNameParam);
+
+          addState(
+            ref._state,
+            ref._paramExpr && $parse(ref._paramExpr)($scope),
+            activeClassParam,
+          );
+        }
+        function addState(
+          stateName: StateOrName | null,
+          stateParams: unknown,
+          activeClass: string,
+        ): () => void {
+          const state = stateName
+            ? $state.get(stateName, stateContext($element))
+            : undefined;
+
+          const foundState = state;
+
+          const stateInfo = {
+            _state: {
+              name:
+                foundState?.name ??
+                (isObject(stateName) && "name" in stateName
+                  ? String((stateName as { name?: unknown }).name)
+                  : String(stateName)),
+            },
+            _params: stateParams,
+            _activeClass: activeClass,
+          };
+
+          states.push(stateInfo);
+
+          return function removeState() {
+            removeFrom(states, stateInfo);
+          };
+        }
+        // Update route state
+        function update() {
+          const allClasses = getClasses(states);
+
+          appendSplitClasses(allClasses, activeEqClass);
+
+          const fuzzyStates: ActiveClassState[] = [];
+
+          const exactlyMatchesAny = states.some((state) =>
+            $state.matches(state._state.name, state._params as RawParams, {
+              exact: true,
+            }),
+          );
+
+          states.forEach((state) => {
+            if ($state.matches(state._state.name, state._params as RawParams)) {
+              fuzzyStates.push(state);
             }
           });
-        }
-      }
-      function addStateForClass(
-        stateOrNameParam: string,
-        activeClassParam: string,
-      ): void {
-        const ref = parseStateRef(stateOrNameParam);
 
-        addState(
-          ref._state,
-          ref._paramExpr && $parse(ref._paramExpr)($scope),
-          activeClassParam,
-        );
-      }
-      function addState(
-        stateName: StateOrName | null,
-        stateParams: unknown,
-        activeClass: string,
-      ): () => void {
-        const state = stateName
-          ? $state.get(stateName, stateContext($element))
-          : undefined;
+          const fuzzyClasses = getClasses(fuzzyStates);
 
-        const foundState = state;
+          const exactClasses: string[] = [];
 
-        const stateInfo = {
-          _state: {
-            name:
-              foundState?.name ??
-              (isObject(stateName) && "name" in stateName
-                ? String((stateName as { name?: unknown }).name)
-                : String(stateName)),
-          },
-          _params: stateParams,
-          _activeClass: activeClass,
-        };
-
-        states.push(stateInfo);
-
-        return function removeState() {
-          removeFrom(states, stateInfo);
-        };
-      }
-      // Update route state
-      function update() {
-        const allClasses = getClasses(states);
-
-        appendSplitClasses(allClasses, activeEqClass);
-
-        const fuzzyStates: ActiveClassState[] = [];
-
-        const exactlyMatchesAny = states.some((state) =>
-          $state.matches(state._state.name, state._params as RawParams, {
-            exact: true,
-          }),
-        );
-
-        states.forEach((state) => {
-          if ($state.matches(state._state.name, state._params as RawParams)) {
-            fuzzyStates.push(state);
+          if (exactlyMatchesAny) {
+            appendSplitClasses(exactClasses, activeEqClass);
           }
-        });
 
-        const fuzzyClasses = getClasses(fuzzyStates);
+          const addClasses = uniqueStrings(fuzzyClasses);
 
-        const exactClasses: string[] = [];
+          appendUniqueClasses(addClasses, exactClasses);
 
-        if (exactlyMatchesAny) {
-          appendSplitClasses(exactClasses, activeEqClass);
+          const removeClasses: string[] = [];
+
+          const uniqueClasses = uniqueStrings(allClasses);
+
+          uniqueClasses.forEach((cls) => {
+            if (!addClasses.includes(cls)) {
+              removeClasses.push(cls);
+            }
+          });
+
+          addClasses.forEach((className) => {
+            $element.classList.add(className);
+          });
+
+          removeClasses.forEach((className) => {
+            $element.classList.remove(className);
+          });
         }
+        update();
 
-        const addClasses = uniqueStrings(fuzzyClasses);
-
-        appendUniqueClasses(addClasses, exactClasses);
-
-        const removeClasses: string[] = [];
-
-        const uniqueClasses = uniqueStrings(allClasses);
-
-        uniqueClasses.forEach((cls) => {
-          if (!addClasses.includes(cls)) {
-            removeClasses.push(cls);
-          }
-        });
-
-        addClasses.forEach((className) => {
-          $element.classList.add(className);
-        });
-
-        removeClasses.forEach((className) => {
-          $element.classList.remove(className);
-        });
-      }
-      update();
-
-      return undefined;
-    },
+        return undefined;
+      },
+    ],
   };
 }

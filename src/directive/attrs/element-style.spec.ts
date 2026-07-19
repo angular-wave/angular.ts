@@ -14,12 +14,14 @@ describe("style", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular.module("myModule", ["ng"]);
-    createInjector(["myModule"]).invoke(
+    createInjector(["myModule"]).invoke([
+      "$rootScope",
+      "$compile",
       (_$rootScope_: any, _$compile_: any) => {
         $rootScope = _$rootScope_;
         $compile = _$compile_;
       },
-    );
+    ]);
   });
 
   afterEach(() => {

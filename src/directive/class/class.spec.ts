@@ -444,16 +444,20 @@ describe("ngClass", () => {
       "test",
     ]);
 
-    injector.invoke(async ($rootScope, $compile) => {
-      $rootScope.testObj = {};
-      element = $compile('<div ng-class="{x: (testObj | foo)}">')($rootScope);
+    injector.invoke([
+      "$rootScope",
+      "$compile",
+      async ($rootScope, $compile) => {
+        $rootScope.testObj = {};
+        element = $compile('<div ng-class="{x: (testObj | foo)}">')($rootScope);
 
-      expect(element).not.toHaveClass("x");
+        expect(element).not.toHaveClass("x");
 
-      $rootScope.testObj.a = true;
-      await wait();
-      expect(element).toHaveClass("x");
-    });
+        $rootScope.testObj.a = true;
+        await wait();
+        expect(element).toHaveClass("x");
+      },
+    ]);
   });
 
   describe("large objects", () => {

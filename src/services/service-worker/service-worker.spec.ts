@@ -945,11 +945,12 @@ describe("$serviceWorker", () => {
     const angular = new Angular();
     let service: ng.ServiceWorkerService | undefined;
 
-    angular
-      .bootstrap(el, [])
-      .invoke(($serviceWorker: ng.ServiceWorkerService) => {
+    angular.bootstrap(el, []).invoke([
+      "$serviceWorker",
+      ($serviceWorker: ng.ServiceWorkerService) => {
         service = $serviceWorker;
-      });
+      },
+    ]);
 
     expect(service).toBeDefined();
     expect(service!.supported).toBe(Boolean(window.navigator.serviceWorker));

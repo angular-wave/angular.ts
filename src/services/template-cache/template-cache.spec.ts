@@ -21,13 +21,16 @@ describe("$templateCache", () => {
         cache: configuredCache,
       },
     });
-    angular
-      .bootstrap(el, ["default"])
-      .invoke((_$templateCache_: any, _$compile_: any, _$rootScope_: any) => {
+    angular.bootstrap(el, ["default"]).invoke([
+      "$templateCache",
+      "$compile",
+      "$rootScope",
+      (_$templateCache_: any, _$compile_: any, _$rootScope_: any) => {
         templateCache = _$templateCache_;
         $compile = _$compile_;
         $scope = _$rootScope_;
-      });
+      },
+    ]);
   });
 
   afterEach(() => {
@@ -74,13 +77,16 @@ describe("$templateCache", () => {
         cache: configuredCache,
       },
     });
-    window.angular
-      .bootstrap(el, ["customStorage"])
-      .invoke((_$templateCache_: any, _$compile_: any, _$rootScope_: any) => {
+    window.angular.bootstrap(el, ["customStorage"]).invoke([
+      "$templateCache",
+      "$compile",
+      "$rootScope",
+      (_$templateCache_: any, _$compile_: any, _$rootScope_: any) => {
         templateCache = _$templateCache_;
         $compile = _$compile_;
         $scope = _$rootScope_;
-      });
+      },
+    ]);
 
     expect(templateCache instanceof LocalStorageMap).toBeTrue();
     el.innerHTML = `

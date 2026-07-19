@@ -62,12 +62,15 @@ describe("ngViewport", () => {
     const angular = new Angular();
 
     angular.module("default", []);
-    angular
-      .bootstrap(el, ["default"])
-      .invoke((_$compile_: any, _$rootScope_: any, _$log_: any) => {
+    angular.bootstrap(el, ["default"]).invoke([
+      "$compile",
+      "$rootScope",
+      "$log",
+      (_$compile_: any, _$rootScope_: any, _$log_: any) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
-      });
+      },
+    ]);
   });
 
   it("should detect element being scrolled into view", async () => {

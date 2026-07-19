@@ -96,13 +96,13 @@ export class StateRegistryRuntime implements StateRegistryService {
   _initRuntime($injector: ng.InjectorService): this {
     this._$injector = $injector;
     this._builder._$injector = $injector;
-    this._annotateDeferredResolvables($injector.strictDi);
+    this._annotateDeferredResolvables();
 
     return this;
   }
 
   /** @internal */
-  _annotateDeferredResolvables(strictDi: boolean | undefined): void {
+  _annotateDeferredResolvables(): void {
     const states = this._getAllBuilt();
 
     states.forEach((state) => {
@@ -110,7 +110,7 @@ export class StateRegistryRuntime implements StateRegistryService {
 
       resolvables.forEach((resolvable) => {
         if (resolvable.deps === "deferred") {
-          resolvable.deps = annotate(resolvable.resolveFn, strictDi);
+          resolvable.deps = annotate(resolvable.resolveFn);
         }
       });
     });

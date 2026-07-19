@@ -8,10 +8,14 @@ describe("ngBindHtml", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    createInjector(["ng"]).invoke((_$rootScope_: any, _$compile_: any) => {
-      $rootScope = _$rootScope_;
-      $compile = _$compile_;
-    });
+    createInjector(["ng"]).invoke([
+      "$rootScope",
+      "$compile",
+      (_$rootScope_: any, _$compile_: any) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      },
+    ]);
   });
 
   it("should set html", async () => {

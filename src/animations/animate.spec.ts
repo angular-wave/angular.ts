@@ -58,9 +58,12 @@ describe("$animate", () => {
 
     const angular = new Angular();
 
-    angular.bootstrap(host, []).invoke((_$animate_) => {
-      $animate = _$animate_;
-    });
+    angular.bootstrap(host, []).invoke([
+      "$animate",
+      (_$animate_) => {
+        $animate = _$animate_;
+      },
+    ]);
   });
 
   afterEach(() => {
@@ -358,11 +361,12 @@ describe("$animate", () => {
       return { enter: [{ opacity: 0 }, { opacity: 1 }] };
     });
     document.body.append(registeredHost);
-    angular
-      .bootstrap(registeredHost, ["cached-animations"])
-      .invoke((_$animate_) => {
+    angular.bootstrap(registeredHost, ["cached-animations"]).invoke([
+      "$animate",
+      (_$animate_) => {
         $animate = _$animate_;
-      });
+      },
+    ]);
 
     await $animate.enter(
       createElementFromHTML('<div animate="cached"></div>'),
@@ -615,9 +619,12 @@ describe("$animate", () => {
 
     document.body.append(registeredHost);
 
-    angular.bootstrap(registeredHost, ["animations"]).invoke((_$animate_) => {
-      $animate = _$animate_;
-    });
+    angular.bootstrap(registeredHost, ["animations"]).invoke([
+      "$animate",
+      (_$animate_) => {
+        $animate = _$animate_;
+      },
+    ]);
 
     const child = createElementFromHTML('<div animate="registered"></div>');
 

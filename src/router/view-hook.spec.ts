@@ -43,10 +43,15 @@ describe("view hooks", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$state_, $compile, $rootScope) => {
-      $state = _$state_;
-      $compile("<div><ng-view></ng-view></div>")($rootScope.$new());
-    });
+    $injector.invoke([
+      "$state",
+      "$compile",
+      "$rootScope",
+      (_$state_, $compile, $rootScope) => {
+        $state = _$state_;
+        $compile("<div><ng-view></ng-view></div>")($rootScope.$new());
+      },
+    ]);
   });
 
   async function waitForState(name: string, expectedLog?: string) {

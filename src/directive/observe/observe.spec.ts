@@ -17,11 +17,15 @@ describe("observe", () => {
     window.angular.module("myModule", ["ng"]);
     window.angular
       .bootstrap(document.getElementById("app")!, ["myModule"])
-      .invoke((_$compile_: any, _$rootScope_: any) => {
-        $compile = _$compile_;
-        $rootScope = _$rootScope_;
-        $scope = $rootScope.$new();
-      });
+      .invoke([
+        "$compile",
+        "$rootScope",
+        (_$compile_: any, _$rootScope_: any) => {
+          $compile = _$compile_;
+          $rootScope = _$rootScope_;
+          $scope = $rootScope.$new();
+        },
+      ]);
 
     observerInstances = [];
     observerCallbacks = [];

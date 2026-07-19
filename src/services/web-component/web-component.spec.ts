@@ -46,10 +46,13 @@ describe("$webComponent", () => {
       template: "<p>{{title}}/{{shared}}/{{count}}/{{active}}/{{local}}</p>",
     });
 
-    angular.bootstrap(app, [moduleName]).invoke((_$rootScope_) => {
-      rootScope = _$rootScope_;
-      rootScope.shared = "root";
-    });
+    angular.bootstrap(app, [moduleName]).invoke([
+      "$rootScope",
+      (_$rootScope_) => {
+        rootScope = _$rootScope_;
+        rootScope.shared = "root";
+      },
+    ]);
 
     const element = document.createElement(tagName);
 
@@ -88,31 +91,39 @@ describe("$webComponent", () => {
 
     app.appendChild(host);
 
-    angular.bootstrap(app, []).invoke(($webComponent, $rootScope) => {
-      const scope = $webComponent.createElementScope(host, {
-        title: "manual",
-      });
+    angular.bootstrap(app, []).invoke([
+      "$webComponent",
+      "$rootScope",
+      ($webComponent, $rootScope) => {
+        const scope = $webComponent.createElementScope(host, {
+          title: "manual",
+        });
 
-      expect(scope.title).toBe("manual");
-      expect(scope.$parent.$id).toBe($rootScope.$id);
-      expect(getScope(host)).toBe(scope);
-    });
+        expect(scope.title).toBe("manual");
+        expect(scope.$parent.$id).toBe($rootScope.$id);
+        expect(getScope(host)).toBe(scope);
+      },
+    ]);
   });
 
   it("creates detached isolate element scopes with the root as parent", () => {
     const angular = new Angular();
 
-    angular.bootstrap(app, []).invoke(($webComponent, $rootScope) => {
-      const host = document.createElement("section");
-      const scope = $webComponent.createElementScope(
-        host,
-        { title: "isolated" },
-        { isolate: true },
-      );
+    angular.bootstrap(app, []).invoke([
+      "$webComponent",
+      "$rootScope",
+      ($webComponent, $rootScope) => {
+        const host = document.createElement("section");
+        const scope = $webComponent.createElementScope(
+          host,
+          { title: "isolated" },
+          { isolate: true },
+        );
 
-      expect(scope.title).toBe("isolated");
-      expect(scope.$parent.$id).toBe($rootScope.$id);
-    });
+        expect(scope.title).toBe("isolated");
+        expect(scope.$parent.$id).toBe($rootScope.$id);
+      },
+    ]);
   });
 
   it("applies typed app-wide defaults to app components", async () => {
@@ -152,13 +163,16 @@ describe("$webComponent", () => {
     let rootScope;
     let compile;
 
-    angular
-      .bootstrap(app, [])
-      .invoke((_$injector_, _$rootScope_, _$compile_) => {
+    angular.bootstrap(app, []).invoke([
+      "$injector",
+      "$rootScope",
+      "$compile",
+      (_$injector_, _$rootScope_, _$compile_) => {
         injector = _$injector_;
         rootScope = _$rootScope_;
         compile = _$compile_;
-      });
+      },
+    ]);
 
     const state = createWebComponentRuntimeState();
     const service = createWebComponentService(
@@ -215,13 +229,16 @@ describe("$webComponent", () => {
     let rootScope;
     let compile;
 
-    angular
-      .bootstrap(app, [])
-      .invoke((_$injector_, _$rootScope_, _$compile_) => {
+    angular.bootstrap(app, []).invoke([
+      "$injector",
+      "$rootScope",
+      "$compile",
+      (_$injector_, _$rootScope_, _$compile_) => {
         injector = _$injector_;
         rootScope = _$rootScope_;
         compile = _$compile_;
-      });
+      },
+    ]);
 
     const state = createWebComponentRuntimeState();
     const service = createWebComponentService(

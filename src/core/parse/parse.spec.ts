@@ -52,19 +52,27 @@ describe("parser", () => {
 
   beforeEach(() => {
     filterRegistry = window.angular._composition.filterRegistry;
-    createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
-      $rootScope = _$rootScope_;
-      $parse = _$parse_;
-    });
+    createInjector(["ng"]).invoke([
+      "$rootScope",
+      "$parse",
+      (_$rootScope_, _$parse_) => {
+        $rootScope = _$rootScope_;
+        $parse = _$parse_;
+      },
+    ]);
   });
 
   [true, false].forEach((cspEnabled) => {
     describe(`csp: ${cspEnabled}`, () => {
       beforeEach(() => {
-        createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
-          scope = _$rootScope_;
-          $parse = _$parse_;
-        });
+        createInjector(["ng"]).invoke([
+          "$rootScope",
+          "$parse",
+          (_$rootScope_, _$parse_) => {
+            scope = _$rootScope_;
+            $parse = _$parse_;
+          },
+        ]);
       });
 
       it("should parse expressions", () => {
@@ -1151,9 +1159,12 @@ describe("parser", () => {
 
   describe("watched $parse expressions", () => {
     beforeEach(() => {
-      createInjector(["ng"]).invoke((_$rootScope_) => {
-        scope = _$rootScope_;
-      });
+      createInjector(["ng"]).invoke([
+        "$rootScope",
+        (_$rootScope_) => {
+          scope = _$rootScope_;
+        },
+      ]);
     });
 
     it("should respect short-circuiting AND if it could have side effects", async () => {
@@ -1230,10 +1241,14 @@ describe("parser", () => {
 
   describe("filters", () => {
     beforeEach(() => {
-      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
-        scope = _$rootScope_;
-        $parse = _$parse_;
-      });
+      createInjector(["ng"]).invoke([
+        "$rootScope",
+        "$parse",
+        (_$rootScope_, _$parse_) => {
+          scope = _$rootScope_;
+          $parse = _$parse_;
+        },
+      ]);
       logs = [];
     });
 
@@ -1342,10 +1357,14 @@ describe("parser", () => {
 
   describe("with non-primitive input", () => {
     beforeEach(() => {
-      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
-        scope = _$rootScope_;
-        $parse = _$parse_;
-      });
+      createInjector(["ng"]).invoke([
+        "$rootScope",
+        "$parse",
+        (_$rootScope_, _$parse_) => {
+          scope = _$rootScope_;
+          $parse = _$parse_;
+        },
+      ]);
       logs = [];
     });
 
@@ -1619,10 +1638,14 @@ describe("parser", () => {
 
   describe("with primitive input", () => {
     beforeEach(() => {
-      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
-        scope = _$rootScope_;
-        $parse = _$parse_;
-      });
+      createInjector(["ng"]).invoke([
+        "$rootScope",
+        "$parse",
+        (_$rootScope_, _$parse_) => {
+          scope = _$rootScope_;
+          $parse = _$parse_;
+        },
+      ]);
       logs = [];
     });
 
@@ -1681,10 +1704,14 @@ describe("parser", () => {
 
   describe("literals", () => {
     beforeEach(() => {
-      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
-        scope = _$rootScope_;
-        $parse = _$parse_;
-      });
+      createInjector(["ng"]).invoke([
+        "$rootScope",
+        "$parse",
+        (_$rootScope_, _$parse_) => {
+          scope = _$rootScope_;
+          $parse = _$parse_;
+        },
+      ]);
       logs = [];
     });
 
@@ -1787,10 +1814,14 @@ describe("parser", () => {
 
   describe("with non-primative input", () => {
     beforeEach(() => {
-      createInjector(["ng"]).invoke((_$rootScope_, _$parse_) => {
-        scope = _$rootScope_;
-        $parse = _$parse_;
-      });
+      createInjector(["ng"]).invoke([
+        "$rootScope",
+        "$parse",
+        (_$rootScope_, _$parse_) => {
+          scope = _$rootScope_;
+          $parse = _$parse_;
+        },
+      ]);
       logs = [];
     });
 

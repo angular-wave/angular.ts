@@ -7,6 +7,7 @@ import {
   isString,
   keys,
 } from "../../shared/utils.ts";
+import { isInjectable } from "../../core/di/injectable.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { TargetState } from "../state/target-state.ts";
@@ -525,7 +526,7 @@ function applyLoadingPolicy(
   effective: { policy?: false | string | StateTransitionLoadingPolicy },
   policy: boolean | string | StateTransitionLoadingPolicy,
 ): void {
-  if (isString(policy) || isFunction(policy)) {
+  if (isString(policy) || isInjectable(policy)) {
     effective.policy = policy;
 
     return;

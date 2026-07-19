@@ -785,44 +785,58 @@ describe("transition canExit policy", () => {
   });
 
   it("blocks transition when canExit returns false", async () => {
-    $state = bootstrapCanExitStates((context) => {
-      context.operation;
+    $state = bootstrapCanExitStates([
+      "context",
+      (context) => {
+        context.operation;
 
-      return false;
-    });
+        return false;
+      },
+    ]);
 
     await goAndAssert("edit", "edit");
     await goAndAssert("home", "edit");
   });
 
   it("allows transition when canExit resolves true", async () => {
-    $state = bootstrapCanExitStates((context) => {
-      context.operation;
+    $state = bootstrapCanExitStates([
+      "context",
+      (context) => {
+        context.operation;
 
-      return context.to.name === "home" ? true : false;
-    });
+        return context.to.name === "home" ? true : false;
+      },
+    ]);
 
     await goAndAssert("edit", "edit");
     await goAndAssert("home", "home");
   });
 
   it("redirects transition before leaving state", async () => {
-    $state = bootstrapCanExitStates((context) => {
-      context.operation;
+    $state = bootstrapCanExitStates([
+      "context",
+      (context) => {
+        context.operation;
 
-      return context.to.name === "home" ? $state.target("confirm") : undefined;
-    });
+        return context.to.name === "home"
+          ? $state.target("confirm")
+          : undefined;
+      },
+    ]);
 
     await goAndAssert("edit", "edit");
     await goAndAssert("home", "confirm");
   });
 
   it("rejects invalid canExit policy results", async () => {
-    $state = bootstrapCanExitStates((context) => {
-      context.operation;
+    $state = bootstrapCanExitStates([
+      "context",
+      (context) => {
+        context.operation;
 
-      return context.to.name === "home" ? 123 : true;
-    });
+        return context.to.name === "home" ? 123 : true;
+      },
+    ]);
 
     await $state.go("edit");
 
@@ -931,7 +945,7 @@ describe("transition dirty policy", () => {
 
   it("redirects transition from dirty state instead of blocking when configured", async () => {
     $state = bootstrapDirtyStates({
-      when: (context) => context.to.name === "saved",
+      when: ["context", (context) => context.to.name === "saved"],
       redirectTo: "home",
     });
 
@@ -1236,7 +1250,11 @@ describe("transition loading policy", () => {
   });
 
   it("uses callable loading policies with route context", async () => {
-    const result = bootstrapLoadingPolicyStates(
+    const result = bootstrapLoadingPolicyStates([
+      "context",
+      "state",
+      "from",
+      "to",
       function (context, state, from, to) {
         expect(context.operation).toBe("loading");
         expect(context.state).toBe(state);
@@ -1246,7 +1264,7 @@ describe("transition loading policy", () => {
 
         return "loading";
       },
-    );
+    ]);
 
     $state = result.$state;
     $transitions = result.$transitions;
@@ -1264,9 +1282,12 @@ describe("transition loading policy", () => {
   });
 
   it("uses callable loading policies returning target states", async () => {
-    const result = bootstrapLoadingPolicyStates(function ($state) {
-      return $state.target("loading");
-    });
+    const result = bootstrapLoadingPolicyStates([
+      "$state",
+      function ($state) {
+        return $state.target("loading");
+      },
+    ]);
 
     $state = result.$state;
     $transitions = result.$transitions;
@@ -1559,16 +1580,22 @@ describe("transition retry policy", () => {
   });
 
   it("retries failed transitions when retry policy callback allows", async () => {
-    $state = bootstrapRetryResolveState(function (context, state, from, to) {
-      expect(context.operation).toBe("retry");
-      expect(context.attempt).toBe(1);
-      expect(context.state).toBe(state);
-      expect(context.from).toBe(from);
-      expect(context.to).toBe(to);
-      expect(context.error).toEqual(jasmine.any(Error));
+    $state = bootstrapRetryResolveState([
+      "context",
+      "state",
+      "from",
+      "to",
+      function (context, state, from, to) {
+        expect(context.operation).toBe("retry");
+        expect(context.attempt).toBe(1);
+        expect(context.state).toBe(state);
+        expect(context.from).toBe(from);
+        expect(context.to).toBe(to);
+        expect(context.error).toEqual(jasmine.any(Error));
 
-      return true;
-    });
+        return true;
+      },
+    ]);
 
     await goAndAssert("retryResolve", "retryResolve");
 
@@ -2330,15 +2357,18 @@ describe("transition error boundary policy", () => {
         template: "<ng-view></ng-view>",
         policy: {
           transition: {
-            errorBoundary: (context) => {
-              if (context.error) {
-                return {
-                  state: "error",
-                };
-              }
+            errorBoundary: [
+              "context",
+              (context) => {
+                if (context.error) {
+                  return {
+                    state: "error",
+                  };
+                }
 
-              return "error";
-            },
+                return "error";
+              },
+            ],
           },
         },
       });
@@ -2560,32 +2590,41 @@ describe("transition error boundary policy", () => {
   });
 
   it("inherits parent error boundary when child has no policy", async () => {
-    $state = bootstrapErrorBoundaryStates((context) => {
-      context.error;
+    $state = bootstrapErrorBoundaryStates([
+      "context",
+      (context) => {
+        context.error;
 
-      return undefined;
-    });
+        return undefined;
+      },
+    ]);
 
     await goAndAssert("parent.failingChild", "error");
   });
 
   it("lets a child error boundary override an inherited parent boundary", async () => {
-    $state = bootstrapErrorBoundaryStates((context) => {
-      context.error;
+    $state = bootstrapErrorBoundaryStates([
+      "context",
+      (context) => {
+        context.error;
 
-      return undefined;
-    });
+        return undefined;
+      },
+    ]);
 
     await goAndAssert("parent.failingChildOverride", "errorChildOverride");
   });
 
   it("uses injectable policy to redirect with context error", async () => {
-    $state = bootstrapErrorBoundaryStates((context) => {
-      expect(context.operation).toBe("error");
-      expect(context.error).toEqual(jasmine.any(Error));
+    $state = bootstrapErrorBoundaryStates([
+      "context",
+      (context) => {
+        expect(context.operation).toBe("error");
+        expect(context.error).toEqual(jasmine.any(Error));
 
-      return "error";
-    });
+        return "error";
+      },
+    ]);
 
     await goAndAssert("fail", "error");
   });
@@ -2609,9 +2648,12 @@ describe("transition error boundary policy", () => {
   });
 
   it("uses injectable policy to redirect with a target state", async () => {
-    $state = bootstrapErrorBoundaryStates(function ($state) {
-      return $state.target("error");
-    });
+    $state = bootstrapErrorBoundaryStates([
+      "$state",
+      function ($state) {
+        return $state.target("error");
+      },
+    ]);
 
     await goAndAssert("fail", "error");
   });
@@ -2672,27 +2714,33 @@ describe("transition error boundary policy", () => {
   });
 
   it("uses callable error boundary when lazy route loading fails", async () => {
-    $state = bootstrapLazyErrorBoundaryState((context) => {
-      expect(context.operation).toBe("error");
-      expect(context.transition).toBeUndefined();
-      expect(context.error).toEqual(jasmine.any(Error));
+    $state = bootstrapLazyErrorBoundaryState([
+      "context",
+      (context) => {
+        expect(context.operation).toBe("error");
+        expect(context.transition).toBeUndefined();
+        expect(context.error).toEqual(jasmine.any(Error));
 
-      return "error";
-    });
+        return "error";
+      },
+    ]);
 
     await goAndAssert("workspace.lazy", "error");
   });
 
   it("evaluates lazy error boundaries from the current route", async () => {
-    $state = bootstrapLazyErrorBoundaryState((context) => {
-      expect(context.from.name).toBe("base");
-      expect(context.to.name).toBe("base");
+    $state = bootstrapLazyErrorBoundaryState([
+      "context",
+      (context) => {
+        expect(context.from.name).toBe("base");
+        expect(context.to.name).toBe("base");
 
-      return {
-        state: "error",
-        params: {},
-      };
-    });
+        return {
+          state: "error",
+          params: {},
+        };
+      },
+    ]);
 
     await goAndAssert("base", "base");
     await goAndAssert("workspace.lazy", "error");
@@ -2731,9 +2779,12 @@ describe("transition error boundary policy", () => {
   });
 
   it("uses callable target and object results for lazy error boundaries", async () => {
-    $state = bootstrapLazyErrorBoundaryState(function ($state) {
-      return $state.target("error");
-    });
+    $state = bootstrapLazyErrorBoundaryState([
+      "$state",
+      function ($state) {
+        return $state.target("error");
+      },
+    ]);
 
     await goAndAssert("workspace.lazy", "error");
 

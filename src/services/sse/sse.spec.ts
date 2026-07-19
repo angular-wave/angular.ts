@@ -17,11 +17,16 @@ describe("$sse", () => {
 
     angular = new Angular();
 
-    angular.bootstrap(el, []).invoke((_$sse_, _$compile_, _$rootScope_) => {
-      sse = _$sse_;
-      $compile = _$compile_;
-      $scope = _$rootScope_;
-    });
+    angular.bootstrap(el, []).invoke([
+      "$sse",
+      "$compile",
+      "$rootScope",
+      (_$sse_, _$compile_, _$rootScope_) => {
+        sse = _$sse_;
+        $compile = _$compile_;
+        $scope = _$rootScope_;
+      },
+    ]);
   });
 
   afterEach(() => {
@@ -384,9 +389,12 @@ describe("$sse", () => {
 
       configuredAngular
         .bootstrap(configuredEl, ["configuredSseDefaults"])
-        .invoke((_$sse_) => {
-          configuredSse = _$sse_;
-        });
+        .invoke([
+          "$sse",
+          (_$sse_) => {
+            configuredSse = _$sse_;
+          },
+        ]);
 
       const source = configuredSse("/configured/events", {
         onMessage: (message) => received.push(message),
