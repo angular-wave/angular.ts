@@ -1,3 +1,5 @@
+import { scanAngularTsFilterPipes } from "./filters";
+
 export interface AttributeContext {
   rangeStart: number;
   prefix: string;
@@ -18,6 +20,11 @@ export interface FilterCompletionContext {
 }
 
 export interface TagCompletionContext {
+  rangeStart: number;
+  prefix: string;
+}
+
+export interface ExpressionIdentifierCompletionContext {
   rangeStart: number;
   prefix: string;
 }
@@ -106,7 +113,7 @@ export function getFilterCompletionContext(
   if (interpolationEnd > interpolationStart) return undefined;
 
   const expression = textBeforeCursor.slice(interpolationStart + 2);
-  const pipeIndex = expression.lastIndexOf("|");
+  const pipeIndex = findLastTopLevelPipe(expression);
   if (pipeIndex < 0) return undefined;
 
   const afterPipe = expression.slice(pipeIndex + 1);
@@ -117,6 +124,51 @@ export function getFilterCompletionContext(
   return {
     rangeStart: textBeforeCursor.length - prefix.length,
     prefix,
+  };
+}
+
+export function getExpressionIdentifierCompletionContext(
+  textBeforeCursor: string,
+): ExpressionIdentifierCompletionContext | undefined {
+  const expression = expressionBeforeCursor(textBeforeCursor);
+  if (!expression) return undefined;
+
+  const pipeIndex = findLastTopLevelPipe(expression.text);
+  if (pipeIndex >= 0 && pipeIndex > expression.text.lastIndexOf(",")) {
+    return undefined;
+  }
+
+  const match = /(?:^|[^.$\w])([$A-Za-z_][$\w]*)?$/.exec(expression.text);
+  if (!match) return undefined;
+
+  const prefix = match[1] ?? "";
+  return {
+    rangeStart: textBeforeCursor.length - prefix.length,
+    prefix,
+  };
+}
+
+function expressionBeforeCursor(
+  textBeforeCursor: string,
+): { text: string; start: number } | undefined {
+  const interpolationStart = textBeforeCursor.lastIndexOf("{{");
+  const interpolationEnd = textBeforeCursor.lastIndexOf("}}");
+  if (interpolationStart >= 0 && interpolationEnd < interpolationStart) {
+    return {
+      text: textBeforeCursor.slice(interpolationStart + 2),
+      start: interpolationStart + 2,
+    };
+  }
+
+  const attrMatch =
+    /(?:^|[\s<])(?:data-)?ng[-A-Z][\w:.-]*\s*=\s*(["'`])([^"'`]*)$/.exec(
+      textBeforeCursor,
+    );
+  if (!attrMatch) return undefined;
+
+  return {
+    text: attrMatch[2],
+    start: textBeforeCursor.length - attrMatch[2].length,
   };
 }
 
@@ -133,17 +185,62 @@ export function filterNameAt(
   const expressionEnd = interpolationEnd >= 0 ? interpolationEnd : text.length;
   const expression = text.slice(interpolationStart + 2, expressionEnd);
   const expressionOffset = interpolationStart + 2;
-  const filterRe = /\|\s*([A-Za-z_$][\w$]*)/g;
-  let match: RegExpExecArray | null;
 
-  while ((match = filterRe.exec(expression))) {
-    const name = match[1];
-    const start = expressionOffset + match.index + match[0].lastIndexOf(name);
-    const end = start + name.length;
-    if (offset >= start && offset <= end) return { name, start, end };
+  for (const filter of scanAngularTsFilterPipes(expression, expressionOffset)) {
+    if (offset >= filter.start && offset <= filter.end) {
+      return filter;
+    }
   }
 
   return undefined;
+}
+
+function findLastTopLevelPipe(expression: string): number {
+  let quote: string | undefined;
+  let escaped = false;
+  let depth = 0;
+  let lastPipe = -1;
+
+  for (let index = 0; index < expression.length; index++) {
+    const char = expression[index];
+
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"' || char === "`") {
+      quote = char;
+      continue;
+    }
+
+    if (char === "(" || char === "[" || char === "{") {
+      depth++;
+      continue;
+    }
+
+    if (char === ")" || char === "]" || char === "}") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+
+    if (
+      char === "|" &&
+      depth === 0 &&
+      expression[index + 1] !== "|" &&
+      expression[index - 1] !== "|"
+    ) {
+      lastPipe = index;
+    }
+  }
+
+  return lastPipe;
 }
 
 export function getOpenTagContextAt(

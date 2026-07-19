@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="AngularTS">
+  <rect width="256" height="256" rx="48" fill="#111827"/>
+  <path d="M128 28 218 70 204 184 128 228 52 184 38 70Z" fill="#2563eb"/>
+  <path d="M128 44 200 78 188 174 128 210 68 174 56 78Z" fill="#f8fafc"/>
+  <path d="M128 64 177 181H153L143 156H113L103 181H79L128 64ZM121 134H135L128 113Z" fill="#111827"/>
+  <path d="M145 80H185V101H166V181H145Z" fill="#dc2626"/>
+</svg>

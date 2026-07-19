@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { AngularTsWorkspaceIndex } from "./analyzer/workspaceIndex";
 import { createAngularTsComponent } from "./commands/createComponent";
+import { registerCodeActionsProvider } from "./providers/codeActionsProvider";
 import { AngularTsDiagnosticsProvider } from "./providers/diagnosticsProvider";
 import { registerDirectiveProviders } from "./providers/directiveProviders";
 import { findAngularTsUsages } from "./providers/usageSearch";
@@ -10,6 +11,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(index);
 
   context.subscriptions.push(...registerDirectiveProviders(context, index));
+  context.subscriptions.push(registerCodeActionsProvider(index));
   context.subscriptions.push(new AngularTsDiagnosticsProvider(index));
   registerCommands(context, index);
 

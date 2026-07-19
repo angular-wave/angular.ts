@@ -55,7 +55,7 @@ The extension should support these authoring surfaces:
       `snippets/*` for snippets.
 - [x] Use VS Code's built-in HTML support for base HTML parsing/completion
       rather than replacing it.
-- [ ] Use the TypeScript compiler API or `tsserver` protocol for project-aware
+- [x] Use the TypeScript compiler API or `tsserver` protocol for project-aware
       symbols, definitions, types, and signature help.
 - [x] Add a small AngularTS metadata index that maps normalized directive,
       component, filter, controller, and service names to source locations,
@@ -70,7 +70,7 @@ The extension should support these authoring surfaces:
 
 ## Phase 0 - Reference Audit
 
-- [ ] Review existing AngularJS VS Code extensions for:
+- [x] Review existing AngularJS VS Code extensions for:
       built-in `ng-*` completions,
       custom directive/component indexing,
       hover docs,
@@ -79,7 +79,7 @@ The extension should support these authoring surfaces:
       controller/template navigation,
       usage search commands,
       and snippets.
-- [ ] Review HTMX VS Code extensions for:
+- [x] Review HTMX VS Code extensions for:
       HTML attribute completion style,
       compact attribute documentation,
       request-related diagnostics,
@@ -87,7 +87,7 @@ The extension should support these authoring surfaces:
       and low-friction HTML integration.
 - [x] Record source links, feature notes, and decisions in
       `tools/vscode/references.md`.
-- [ ] Decide which AngularJS behaviors are accepted as AngularTS-compatible and
+- [x] Decide which AngularJS behaviors are accepted as AngularTS-compatible and
       which require AngularTS-specific syntax or names.
 - [x] Create a small fixture project under `tools/vscode/test-fixtures/basic-app`
       that contains standard directives, custom directives, components, filters,
@@ -104,7 +104,7 @@ The extension should support these authoring surfaces:
       `AngularTS: Show Index`.
 - [x] Add a local command:
       `AngularTS: Rebuild Index`.
-- [ ] Add CI-friendly tests using `@vscode/test-electron` or a stable LSP test
+- [x] Add CI-friendly tests using `@vscode/test-electron` or a stable LSP test
       harness.
 - [x] Document local development commands in `tools/vscode/README.md`.
 
@@ -113,7 +113,7 @@ The extension should support these authoring surfaces:
 - [x] Generate a built-in directive catalog from AngularTS source and public
       TypeScript definitions (`src/ng.ts`, `src/namespace.ts`, and imported
       source files).
-- [ ] Include all core AngularTS directives:
+- [x] Include all core AngularTS directives:
       `ng-app`,
       `ng-bind`,
       `ng-bind-html`,
@@ -151,7 +151,7 @@ The extension should support these authoring surfaces:
 - [x] Include normalized aliases:
       `ng-*`,
       and `data-ng-*`.
-- [ ] Store for each directive:
+- [x] Store for each directive:
       name,
       aliases,
       allowed locations,
@@ -161,7 +161,7 @@ The extension should support these authoring surfaces:
       required companion attributes,
       conflicting attributes,
       and definition source.
-- [ ] Add snapshot tests for the generated catalog.
+- [x] Add snapshot tests for the generated catalog.
 - [x] Make the catalog usable without opening a TypeScript project.
 
 ## Phase 3 - Standard Directive Documentation MVP
@@ -172,7 +172,7 @@ The extension should support these authoring surfaces:
 - [x] Provide hover docs for built-in directives.
 - [x] Provide go to definition from a built-in directive usage to the AngularTS
       source or `.d.ts` declaration.
-- [ ] Add docs for expression-sensitive directives first:
+- [x] Add docs for expression-sensitive directives first:
       `ng-model`,
       `ng-repeat`,
       `ng-if`,
@@ -185,8 +185,8 @@ The extension should support these authoring surfaces:
       `ng-controller`,
       event directives,
       and HTTP/SSE directives.
-- [ ] Add completion and hover tests for `.html` files.
-- [ ] Add completion and hover tests for inline template strings.
+- [x] Add completion and hover tests for `.html` files.
+- [x] Add completion and hover tests for inline template strings.
 
 Acceptance criteria:
 
@@ -194,7 +194,7 @@ Acceptance criteria:
 - [x] Hovering a standard directive shows AngularTS-specific documentation.
 - [x] `Go to Definition` on a standard directive opens the source or type
       declaration.
-- [ ] Inline template literals receive the same standard directive docs.
+- [x] Inline template literals receive the same standard directive docs.
 
 ## Phase 4 - AngularTS Project Index
 
@@ -210,7 +210,7 @@ Acceptance criteria:
       `.constant(...)`,
       `.config(...)`,
       and `.run(...)`.
-- [ ] Detect object-map registrations where AngularTS accepts them.
+- [x] Detect object-map registrations where AngularTS accepts them.
 - [x] Detect `$inject` arrays and inline DI array notation.
 - [x] Normalize directive and component names between camelCase registration
       names and kebab-case HTML usage.
@@ -232,9 +232,9 @@ Acceptance criteria:
       `controllerAs`,
       `template`,
       and `templateUrl`.
-- [ ] Extract filter callable signatures when TypeScript type information is
+- [x] Extract filter callable signatures when TypeScript type information is
       available.
-- [ ] Extract JSDoc/TSDoc for custom directives, components, controllers,
+- [x] Extract JSDoc/TSDoc for custom directives, components, controllers,
       services, and filters.
 - [x] Track source ranges for all symbols so navigation is precise.
 - [x] Re-index incrementally on file changes.
@@ -242,10 +242,12 @@ Acceptance criteria:
 ## Phase 5 - Custom Directives And Components
 
 - [x] Complete custom directive tags when `restrict` includes `E`.
-- [ ] Complete custom directive attributes when `restrict` includes `A` or is
+- [x] Complete custom directive attributes when `restrict` includes `A` or is
       omitted.
 - [x] Complete custom component tags.
 - [x] Complete component and directive binding attributes.
+- [x] Complete quoted literal route names inside `ng-state`.
+- [x] Complete declared route parameter keys inside `ng-state-params`.
 - [x] Show binding mode in completion docs:
       `@`,
       `<`,
@@ -264,7 +266,7 @@ Acceptance criteria:
 
 - [x] A `.component("userCard", { bindings: { user: "<" } })` registration
       completes `<user-card>` and `user`.
-- [ ] Hovering `<user-card>` shows component documentation and controller
+- [x] Hovering `<user-card>` shows component documentation and controller
       details.
 - [x] `Go to Definition` from `<user-card>` opens the component registration.
 - [x] `Find AngularTS Usage` finds tag and attribute usage in HTML and inline
@@ -273,11 +275,11 @@ Acceptance criteria:
 ## Phase 6 - Custom Filters
 
 - [x] Complete built-in and custom filters inside AngularTS expressions.
-- [ ] Show filter signatures and docs in completion details.
+- [x] Show filter signatures and docs in completion details.
 - [x] Provide hover docs on filter names.
 - [x] Provide go to definition from filter usage to `.filter(...)`.
 - [x] Diagnose unknown filters.
-- [ ] Support chained filters and filter arguments.
+- [x] Support chained filters and filter arguments.
 
 Acceptance criteria:
 
@@ -287,9 +289,9 @@ Acceptance criteria:
 
 ## Phase 7 - HTML And Inline Template Syntax
 
-- [ ] Register language support for `.html` files through VS Code's standard
+- [x] Register language support for `.html` files through VS Code's standard
       HTML language.
-- [ ] Add embedded AngularTS expression regions for:
+- [x] Add embedded AngularTS expression regions for:
       interpolation,
       directive attribute values,
       event attributes,
@@ -297,61 +299,87 @@ Acceptance criteria:
       options expressions,
       class/style object expressions,
       and filter expressions.
-- [ ] Detect inline templates in:
+- [x] Detect inline templates in:
       `template: "..."`,
       `template: \`...\``,
       component metadata,
       directive metadata,
       route/state declarations,
       and generated AngularTS runtime/web-component options.
-- [ ] Provide HTML syntax highlighting inside inline templates.
-- [ ] Avoid processing templates inside `ng-non-bindable`.
-- [ ] Add grammar tests or snapshot tests for embedded regions.
+- [x] Provide HTML syntax highlighting inside inline templates.
+- [x] Avoid processing templates inside `ng-non-bindable`.
+- [x] Add grammar tests or snapshot tests for embedded regions.
 
 ## Phase 8 - Data Binding Intelligence
 
-- [ ] Use TypeScript project information to infer controller aliases and scope
-      symbols.
-- [ ] Support completion for identifiers in interpolation and directive
+- [x] Use TypeScript project information to infer controller aliases and scope
+      symbols for source-backed expressions.
+- [x] Infer `ng-controller="Controller as alias"` locals and feed them into
+      source-backed expression analysis.
+- [x] Add a reusable TypeScript-backed AngularTS expression analyzer for
+      locals, property hovers, definitions, completions, and signature help.
+- [x] Support completion for identifiers in interpolation and directive
       expressions.
-- [ ] Provide hover type hints for expression identifiers and property access.
-- [ ] Provide go to definition from expression identifiers to TypeScript
-      declarations.
-- [ ] Provide signature help for function calls in AngularTS expressions.
-- [ ] Infer component binding types from controller/component definitions where
-      possible.
-- [ ] Infer `ng-repeat` local variables and item types.
-- [ ] Infer `$event` types for event directives when possible.
-- [ ] Fall back gracefully when a project is plain JavaScript.
+- [x] Provide source-backed hover type hints for expression identifiers and
+      property access.
+- [x] Provide source-backed go to definition from expression identifiers to
+      TypeScript declarations.
+- [x] Provide signature help for function calls in AngularTS expressions.
+- [x] Infer component binding types from controller/component definitions where
+      possible for inline component templates.
+- [x] Infer inline component template controller locals from `controller`,
+      `controllerAs`, and the default `$ctrl` alias.
+- [x] Infer `ng-repeat` local variables and item types when the collection type
+      is visible to source-backed expression analysis.
+- [x] Infer `$event` types for event directives when possible.
+- [x] Fall back gracefully when a project is plain JavaScript.
 
 Acceptance criteria:
 
-- [ ] In `<button ng-click="save(user)">`, `save` offers signature help.
-- [ ] In `{{ user.name }}`, `user.name` hover shows the TypeScript type when
+- [x] In `<button ng-click="save(user)">`, `save` offers signature help when
+      TypeScript declarations are available to the expression analyzer.
+- [x] In `{{ user.name }}`, `user.name` hover shows the TypeScript type when
       available.
-- [ ] `Go to Definition` from `user.name` reaches the controller or component
-      source when available.
+- [x] `Go to Definition` from source-backed `$ctrl.user.name` reaches the
+      controller or component source when controller/component scope inference
+      is available.
 
 ## Phase 9 - Diagnostics
 
 - [x] Diagnose unknown built-in/custom directives.
 - [x] Diagnose invalid directive locations based on `restrict`.
-- [ ] Diagnose missing required expression values.
-- [ ] Diagnose malformed AngularTS expressions in HTML.
-- [ ] Diagnose malformed interpolation expressions.
-- [ ] Diagnose unknown filters.
+- [x] Diagnose missing required expression values.
+- [x] Diagnose malformed AngularTS expressions in HTML.
+- [x] Diagnose malformed interpolation expressions.
+- [x] Diagnose unknown filters.
 - [x] Diagnose unresolved controller names.
 - [x] Diagnose unresolved services in DI arrays.
 - [x] Diagnose unresolved services in `$inject` assignments.
 - [x] Diagnose DI array length/name mismatches.
 - [x] Diagnose missing `templateUrl` files.
 - [x] Diagnose component/directive binding typos.
-- [ ] Provide quick fixes where safe:
-      create missing template file,
-      add missing binding,
-      convert camelCase to kebab-case,
-      and add missing DI token.
-- [ ] Add workspace settings to control diagnostic severity.
+- [x] Diagnose quoted literal `ng-state` route names and `ng-state-params`
+      keys in HTML templates, inline templates, and referenced `templateUrl`
+      files.
+- [x] Diagnose literal `ng-state-params` value expressions when route params
+      declare URL/object value types such as `int`, `bool`, and `date`.
+- [x] Diagnose dynamic `ng-state` expressions when TypeScript proves the
+      expression is a string-literal route-name union.
+- [x] Diagnose route `resolve` keys against routed component bindings so
+      required component inputs are supplied and extra resolves are surfaced.
+- [x] Diagnose route `resolve` value types against typed routed component
+      controller binding properties when the component exposes a controller
+      property type.
+- [x] Diagnose source-backed duplicate routes and dotted child routes whose
+      parent route or lazy boundary is missing.
+- [x] Recognize `lazyState("name.**", ...)` boundaries during route-tree
+      diagnostics without exposing them as navigable `ng-state` completions.
+- [x] Provide quick fixes where safe:
+      - [x] create missing template file;
+      - [x] add missing binding;
+      - [x] convert camelCase to kebab-case;
+      - [x] add missing DI token.
+- [x] Add workspace settings to control diagnostic severity.
 
 ## Phase 10 - Navigation Utilities
 
@@ -360,14 +388,14 @@ Acceptance criteria:
 - [x] Navigate from `ng-controller="Name"` to the controller registration.
 - [x] Navigate from service names in DI arrays to service/factory/provider
       registrations.
-- [ ] Navigate from route/state `component` names to component registrations.
+- [x] Navigate from route/state `component` names to component registrations.
 - [x] Add CodeLens or commands for:
       find directive usage,
       find component usage,
       find filter usage,
       find controller usage,
       and find service injection sites.
-- [ ] Ensure usage search covers `.html`, `.ts`, `.js`, and inline templates.
+- [x] Ensure usage search covers `.html`, `.ts`, `.js`, and inline templates.
 
 ## Phase 11 - Snippets
 
@@ -417,16 +445,16 @@ Acceptance criteria:
 
 ## Phase 13 - Packaging And Release
 
-- [ ] Add a root-level script or Make target to build the VS Code extension.
-- [ ] Add extension README with:
+- [x] Add a root-level script or Make target to build the VS Code extension.
+- [x] Add extension README with:
       feature list,
       screenshots or GIF placeholders,
       settings,
       commands,
       limitations,
       and AngularTS version compatibility.
-- [ ] Add `CHANGELOG.md`.
-- [ ] Add marketplace metadata:
+- [x] Add `CHANGELOG.md`.
+- [x] Add marketplace metadata:
       display name,
       icon,
       categories,
@@ -434,9 +462,9 @@ Acceptance criteria:
       repository,
       license,
       and extension kind.
-- [ ] Package with `vsce`.
+- [x] Package with `vsce`.
 - [ ] Smoke-test the `.vsix` in a clean VS Code profile.
-- [ ] Add release checklist for publishing and version bumps.
+- [x] Add release checklist for publishing and version bumps.
 
 ## Testing Matrix
 
@@ -445,14 +473,17 @@ Acceptance criteria:
 - [x] Unit-test directive/component/filter name normalization.
 - [x] Unit-test expression region extraction.
 - [x] Unit-test diagnostics.
-- [ ] LSP-test completion, hover, definition, signature help, and references.
-- [ ] VS Code integration-test snippets and commands.
-- [ ] Fixture-test TypeScript projects.
-- [ ] Fixture-test JavaScript projects.
-- [ ] Fixture-test no-`tsconfig` projects.
-- [ ] Fixture-test multi-root workspaces.
-- [ ] Fixture-test inline templates.
-- [ ] Fixture-test external `.html` templates.
+- [x] LSP-test completion, hover, definition, signature help, and references.
+- [x] Unit-test route-name and route-param completion context extraction.
+- [x] Extension-host smoke-test route-name and route-param completions through
+      the packaged VS Code provider in a clean profile.
+- [x] Manifest-test VS Code snippet and command contributions.
+- [x] Fixture-test TypeScript projects.
+- [x] Fixture-test JavaScript projects.
+- [x] Fixture-test no-`tsconfig` projects.
+- [x] Fixture-test multi-root workspaces.
+- [x] Fixture-test inline templates.
+- [x] Fixture-test external `.html` templates.
 
 ## MVP Order
 
@@ -465,19 +496,19 @@ Acceptance criteria:
 - [x] Add `templateUrl`, controller, and service navigation.
 - [x] Add expression diagnostics.
 - [x] Add DI diagnostics.
-- [ ] Add snippets and component generation.
+- [x] Add snippets and component generation.
 
 ## Open Decisions
 
-- [ ] Decide whether the language engine should be a full LSP server or VS Code
+- [x] Decide whether the language engine should be a full LSP server or VS Code
       extension-host providers until cross-editor support is needed.
-- [ ] Decide whether built-in docs are generated from TSDoc, handwritten
+- [x] Decide whether built-in docs are generated from TSDoc, handwritten
       curated Markdown, or a hybrid catalog.
-- [ ] Decide whether AngularJS compatibility mode is enabled by default or only
+- [x] Decide whether AngularJS compatibility mode is enabled by default or only
       by explicit setting.
-- [ ] Decide whether diagnostics should be workspace-wide by default or limited
+- [x] Decide whether diagnostics should be workspace-wide by default or limited
       to open files for initial performance.
-- [ ] Decide how much expression parsing should reuse AngularTS parser internals
+- [x] Decide how much expression parsing should reuse AngularTS parser internals
       versus a lightweight editor-only parser.
-- [ ] Decide whether generated component files should follow a fixed AngularTS
+- [x] Decide whether generated component files should follow a fixed AngularTS
       convention or read project-local templates from settings.

@@ -4,17 +4,29 @@ import type { AngularTsCatalogEntry, BindingInfo, SourceLocation } from "../cata
 import { AngularTsWorkspaceIndex } from "../analyzer/workspaceIndex";
 import { camelToKebab, normalizeLookupName } from "../catalog/names";
 import {
+  angularTsExpressionAtOffset,
+  type AngularTsExpressionRegion,
+} from "../templates/embeddedRegions";
+import {
   attributeNameAt,
   filterNameAt,
   getFilterCompletionContext,
   getAttributeCompletionContext,
+  getExpressionIdentifierCompletionContext,
   getTagCompletionContext,
   getOpenTagContextAt,
   isSupportedTemplateDocument,
 } from "../templates/context";
 import { findAngularTsReferenceAt } from "../templates/references";
+import { scopeSymbolsAtOffset } from "../templates/scopeSymbols";
+import { TypeScriptExpressionService } from "../templates/typescriptExpressions";
 import { findBindingForAttribute, findBindingOwnersForTag } from "../templates/bindings";
 import { bindingToMarkdown, completionDetail, entryToMarkdown } from "./markdown";
+import {
+  routeCompletionContextAtOffset,
+  routeNameCompletionEntries,
+  routeParamCompletionNames,
+} from "../templates/routes";
 
 const PROVIDER_SELECTOR: vscode.DocumentSelector = [
   { language: "html" },
@@ -48,7 +60,14 @@ export function registerDirectiveProviders(
     new AngularTsDefinitionProvider(context, index),
   );
 
-  return [completionProvider, hoverProvider, definitionProvider];
+  const signatureProvider = vscode.languages.registerSignatureHelpProvider(
+    PROVIDER_SELECTOR,
+    new AngularTsSignatureHelpProvider(index),
+    "(",
+    ",",
+  );
+
+  return [completionProvider, hoverProvider, definitionProvider, signatureProvider];
 }
 
 class AngularTsCompletionProvider implements vscode.CompletionItemProvider {
@@ -65,6 +84,31 @@ class AngularTsCompletionProvider implements vscode.CompletionItemProvider {
     const textBeforeCursor = document
       .lineAt(position.line)
       .text.slice(0, position.character);
+    const routeContext = routeCompletionContextAtOffset(
+      document.getText(),
+      document.offsetAt(position),
+      this.index.getEntries(),
+    );
+    if (routeContext) {
+      const range = new vscode.Range(
+        document.positionAt(routeContext.start),
+        document.positionAt(routeContext.end),
+      );
+
+      if (routeContext.kind === "route-name") {
+        return routeNameCompletionEntries(
+          this.index.getEntries(),
+          routeContext.prefix,
+        ).map((entry) => routeNameCompletionItem(entry, range));
+      }
+
+      return routeParamCompletionNames(
+        routeContext.route,
+        routeContext.existingParams,
+        routeContext.prefix,
+      ).map((name) => routeParamCompletionItem(name, range));
+    }
+
     const filterContext = getFilterCompletionContext(textBeforeCursor);
     if (filterContext) {
       const range = new vscode.Range(
@@ -76,6 +120,24 @@ class AngularTsCompletionProvider implements vscode.CompletionItemProvider {
       return this.index.getFilterEntries().map((entry) =>
         filterCompletionItem(entry, range),
       );
+    }
+
+    const expressionContext = getExpressionIdentifierCompletionContext(textBeforeCursor);
+    if (expressionContext) {
+      const range = new vscode.Range(
+        position.line,
+        expressionContext.rangeStart,
+        position.line,
+        position.character,
+      );
+      return this.index
+        .getEntries()
+        .filter((entry) =>
+          ["controller", "service", "factory", "provider", "constant"].includes(
+            entry.kind,
+          ),
+        )
+        .map((entry) => expressionCompletionItem(entry, range));
     }
 
     const tagContext = getTagCompletionContext(textBeforeCursor);
@@ -141,7 +203,12 @@ class AngularTsHoverProvider implements vscode.HoverProvider {
     }
 
     const found = targetAtPosition(document, position, this.index);
-    if (!found) return undefined;
+    if (!found) {
+      return (
+        referenceHoverAtPosition(document, position, this.index) ??
+        semanticHoverAtPosition(document, position, this.index)
+      );
+    }
 
     return new vscode.Hover(found.markdown, found.range);
   }
@@ -180,6 +247,13 @@ class AngularTsDefinitionProvider implements vscode.DefinitionProvider {
       }
     }
 
+    const semanticDefinition = semanticDefinitionAtPosition(
+      document,
+      position,
+      this.index,
+    );
+    if (semanticDefinition) return semanticDefinition;
+
     const found = targetAtPosition(document, position, this.index);
     if (!found?.source?.file) return undefined;
 
@@ -188,6 +262,43 @@ class AngularTsDefinitionProvider implements vscode.DefinitionProvider {
     const targetPosition = new vscode.Position(source.line ?? 0, source.character ?? 0);
 
     return new vscode.Location(uri, targetPosition);
+  }
+}
+
+class AngularTsSignatureHelpProvider implements vscode.SignatureHelpProvider {
+  constructor(private readonly index: AngularTsWorkspaceIndex) {}
+
+  provideSignatureHelp(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+  ): vscode.ProviderResult<vscode.SignatureHelp> {
+    if (!isEnabled() || !isSupportedTemplateDocument(document.languageId)) {
+      return undefined;
+    }
+
+    const text = document.getText();
+    const offset = document.offsetAt(position);
+    const expression = angularTsExpressionAtOffset(text, offset, this.index.getEntries());
+    if (!expression) return undefined;
+
+    const declarations = document.languageId === "html" ? "" : text;
+    const service = new TypeScriptExpressionService(expression.expression, {
+      declarations,
+      locals: scopeSymbolsAtOffset(text, offset),
+    });
+    const help = service.signatureHelp(offset - expression.start);
+    if (!help) return undefined;
+
+    const signature = new vscode.SignatureInformation(help.signature);
+    signature.parameters = signatureParameters(help.signature).map(
+      (parameter) => new vscode.ParameterInformation(parameter),
+    );
+
+    const result = new vscode.SignatureHelp();
+    result.signatures = [signature];
+    result.activeSignature = 0;
+    result.activeParameter = help.activeParameter;
+    return result;
   }
 }
 
@@ -252,6 +363,51 @@ function filterCompletionItem(
   item.detail = completionDetail(entry);
   item.documentation = entryToMarkdown(entry);
   item.sortText = `0_filter_${entry.name}`;
+  return item;
+}
+
+function expressionCompletionItem(
+  entry: AngularTsCatalogEntry,
+  range: vscode.Range,
+): vscode.CompletionItem {
+  const item = new vscode.CompletionItem(
+    entry.name,
+    entry.kind === "controller"
+      ? vscode.CompletionItemKind.Class
+      : vscode.CompletionItemKind.Variable,
+  );
+  item.range = range;
+  item.detail = completionDetail(entry);
+  item.documentation = entryToMarkdown(entry);
+  item.sortText = `0_expression_${entry.name}`;
+  return item;
+}
+
+function routeNameCompletionItem(
+  entry: AngularTsCatalogEntry,
+  range: vscode.Range,
+): vscode.CompletionItem {
+  const item = new vscode.CompletionItem(
+    entry.name,
+    vscode.CompletionItemKind.Reference,
+  );
+  item.range = range;
+  item.detail = "AngularTS route";
+  item.documentation = entryToMarkdown(entry);
+  item.sortText = `0_route_${entry.name}`;
+  item.insertText = entry.name;
+  return item;
+}
+
+function routeParamCompletionItem(
+  name: string,
+  range: vscode.Range,
+): vscode.CompletionItem {
+  const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Field);
+  item.range = range;
+  item.detail = "AngularTS route parameter";
+  item.sortText = `0_route_param_${name}`;
+  item.insertText = new vscode.SnippetString(`${name}: $1`);
   return item;
 }
 
@@ -367,6 +523,110 @@ function templateUrlAtPosition(
   return undefined;
 }
 
+function referenceHoverAtPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  index: AngularTsWorkspaceIndex,
+): vscode.Hover | undefined {
+  const reference = findAngularTsReferenceAt(
+    document.getText(),
+    document.offsetAt(position),
+    document.languageId,
+  );
+  if (!reference) return undefined;
+
+  const entry = index.findByKinds(reference.name, reference.targetKinds);
+  if (!entry) return undefined;
+
+  return new vscode.Hover(
+    entryToMarkdown(entry),
+    new vscode.Range(
+      document.positionAt(reference.start),
+      document.positionAt(reference.end),
+    ),
+  );
+}
+
+function semanticHoverAtPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  index: AngularTsWorkspaceIndex,
+): vscode.Hover | undefined {
+  const semantic = semanticExpressionAtPosition(document, position, index);
+  if (!semantic) return undefined;
+
+  const info = semantic.service.quickInfo(semantic.offset);
+  if (!info) return undefined;
+
+  const markdown = new vscode.MarkdownString();
+  markdown.appendCodeblock(info.display, "typescript");
+  if (info.documentation) markdown.appendMarkdown(info.documentation);
+
+  return new vscode.Hover(
+    markdown,
+    new vscode.Range(
+      document.positionAt(semantic.region.start + info.start),
+      document.positionAt(semantic.region.start + info.end),
+    ),
+  );
+}
+
+function semanticDefinitionAtPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  index: AngularTsWorkspaceIndex,
+): vscode.Location | undefined {
+  const semantic = semanticExpressionAtPosition(document, position, index);
+  if (!semantic) return undefined;
+
+  const definition = semantic.service
+    .definitions(semantic.offset)
+    .find((candidate) => candidate.end <= semantic.declarationsLength);
+  if (!definition) return undefined;
+
+  return new vscode.Location(
+    document.uri,
+    new vscode.Range(
+      document.positionAt(definition.start),
+      document.positionAt(definition.end),
+    ),
+  );
+}
+
+function semanticExpressionAtPosition(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  index: AngularTsWorkspaceIndex,
+):
+  | {
+      service: TypeScriptExpressionService;
+      region: AngularTsExpressionRegion;
+      offset: number;
+      declarationsLength: number;
+    }
+  | undefined {
+  if (document.languageId === "html") return undefined;
+
+  const text = document.getText();
+  const absoluteOffset = document.offsetAt(position);
+  const region = angularTsExpressionAtOffset(
+    text,
+    absoluteOffset,
+    index.getEntries(),
+  );
+  if (!region) return undefined;
+
+  return {
+    service: new TypeScriptExpressionService(region.expression, {
+      declarations: text,
+      locals: scopeSymbolsAtOffset(text, absoluteOffset),
+    }),
+    region,
+    offset: absoluteOffset - region.start,
+    declarationsLength: text.length,
+  };
+}
+
 function resolveSourceUri(
   context: vscode.ExtensionContext,
   sourceFile: string,
@@ -375,6 +635,18 @@ function resolveSourceUri(
 
   const repoRoot = path.resolve(context.extensionPath, "..", "..");
   return vscode.Uri.file(path.resolve(repoRoot, sourceFile));
+}
+
+function signatureParameters(signature: string): string[] {
+  const open = signature.indexOf("(");
+  const close = signature.lastIndexOf(")");
+  if (open < 0 || close <= open) return [];
+
+  return signature
+    .slice(open + 1, close)
+    .split(",")
+    .map((parameter) => parameter.trim())
+    .filter(Boolean);
 }
 
 function isEnabled(): boolean {

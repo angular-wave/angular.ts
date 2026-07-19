@@ -1,9 +1,10 @@
 import type { AngularTsSymbolKind } from "../catalog/types";
 import { normalizeLookupName } from "../catalog/names";
 import { scanHtmlElements } from "./htmlScanner";
+import { expressionIdentifierAt } from "./expressionSymbols";
 
 export interface AngularTsReference {
-  kind: "controller" | "service";
+  kind: "controller" | "service" | "component" | "expression";
   name: string;
   start: number;
   end: number;
@@ -15,7 +16,12 @@ export function findAngularTsReferenceAt(
   offset: number,
   languageId: string,
 ): AngularTsReference | undefined {
-  if (languageId === "html") return findHtmlControllerReferenceAt(text, offset);
+  if (languageId === "html") {
+    return (
+      findHtmlControllerReferenceAt(text, offset) ??
+      findHtmlExpressionReferenceAt(text, offset)
+    );
+  }
   if (
     ["typescript", "javascript", "typescriptreact", "javascriptreact"].includes(
       languageId,
@@ -24,6 +30,77 @@ export function findAngularTsReferenceAt(
     return findSourceReferenceAt(text, offset);
   }
   return undefined;
+}
+
+function findHtmlExpressionReferenceAt(
+  text: string,
+  offset: number,
+): AngularTsReference | undefined {
+  const interpolation = interpolationExpressionAt(text, offset);
+  if (interpolation) {
+    return expressionReferenceAt(
+      interpolation.expression,
+      offset,
+      interpolation.expressionStart,
+    );
+  }
+
+  for (const element of scanHtmlElements(text)) {
+    for (const attr of element.attributes) {
+      if (
+        !isAngularTsExpressionAttribute(attr.name) ||
+        attr.value === undefined ||
+        attr.valueStart === undefined ||
+        attr.valueEnd === undefined ||
+        offset < attr.valueStart ||
+        offset > attr.valueEnd
+      ) {
+        continue;
+      }
+
+      return expressionReferenceAt(attr.value, offset, attr.valueStart);
+    }
+  }
+
+  return undefined;
+}
+
+function interpolationExpressionAt(
+  text: string,
+  offset: number,
+): { expression: string; expressionStart: number } | undefined {
+  const interpolationStart = text.lastIndexOf("{{", offset);
+  if (interpolationStart < 0) return undefined;
+
+  const interpolationEnd = text.indexOf("}}", interpolationStart + 2);
+  if (interpolationEnd < 0 || offset > interpolationEnd) return undefined;
+
+  const expressionStart = interpolationStart + 2;
+  return {
+    expression: text.slice(expressionStart, interpolationEnd),
+    expressionStart,
+  };
+}
+
+function expressionReferenceAt(
+  expression: string,
+  offset: number,
+  expressionStart: number,
+): AngularTsReference | undefined {
+  const identifier = expressionIdentifierAt(expression, offset, expressionStart);
+  if (!identifier) return undefined;
+
+  return {
+    kind: "expression",
+    name: identifier.name,
+    start: identifier.start,
+    end: identifier.start + identifier.name.length,
+    targetKinds: ["controller", "service", "factory", "provider", "constant"],
+  };
+}
+
+function isAngularTsExpressionAttribute(name: string): boolean {
+  return /^ng[-A-Z]/.test(name) || /^data-ng[-A-Z]/.test(name);
 }
 
 function findHtmlControllerReferenceAt(
@@ -87,6 +164,16 @@ function findSourceReferenceAt(
     };
   }
 
+  if (isComponentPropertyValue(text, literal.start)) {
+    return {
+      kind: "component",
+      name: literal.value,
+      start: literal.valueStart,
+      end: literal.valueEnd,
+      targetKinds: ["component"],
+    };
+  }
+
   if (
     isDependencyInjectionToken(text, literal.start, literal.end) ||
     isInjectAssignmentToken(text, literal.start, literal.end)
@@ -125,6 +212,11 @@ function parseControllerValue(
 function isControllerPropertyValue(text: string, literalStart: number): boolean {
   const before = text.slice(Math.max(0, literalStart - 80), literalStart);
   return /\bcontroller\s*:\s*$/.test(before);
+}
+
+function isComponentPropertyValue(text: string, literalStart: number): boolean {
+  const before = text.slice(Math.max(0, literalStart - 80), literalStart);
+  return /\bcomponent\s*:\s*$/.test(before);
 }
 
 function isDependencyInjectionToken(

@@ -1,6 +1,7 @@
 import type { AngularTsCatalogEntry } from "../catalog/types";
 import { normalizeLookupName } from "../catalog/names";
 import { scanHtmlElements } from "./htmlScanner";
+import { scanAngularTsFilterPipes } from "./filters";
 
 export interface AngularTsUsage {
   kind: "element" | "attribute" | "binding" | "filter" | "controller" | "service";
@@ -93,6 +94,13 @@ function collectSourceUsages(
   const targetNames = lookupNames(target);
 
   if (target.kind === "filter") usages.push(...collectFilterUsages(text, target));
+  if (
+    target.kind === "directive" ||
+    target.kind === "component" ||
+    target.kind === "controller"
+  ) {
+    usages.push(...collectHtmlUsages(text, target));
+  }
 
   const stringRe = /(['"`])([^'"`]*)\1/g;
   let match: RegExpExecArray | null;
@@ -140,15 +148,11 @@ function collectFilterUsages(
   while ((interpolation = interpolationRe.exec(text))) {
     const expression = interpolation[1];
     const expressionStart = interpolation.index + 2;
-    const filterRe = /\|\s*([A-Za-z_$][\w$]*)/g;
-    let filter: RegExpExecArray | null;
-
-    while ((filter = filterRe.exec(expression))) {
-      const name = filter[1];
+    for (const filter of scanAngularTsFilterPipes(expression, expressionStart)) {
+      const name = filter.name;
       if (!targetNames.has(normalizeLookupName(name))) continue;
 
-      const start = expressionStart + filter.index + filter[0].lastIndexOf(name);
-      usages.push({ kind: "filter", start, end: start + name.length });
+      usages.push({ kind: "filter", start: filter.start, end: filter.end });
     }
   }
 

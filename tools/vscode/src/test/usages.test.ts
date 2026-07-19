@@ -80,6 +80,43 @@ test("collects component binding usages in HTML", () => {
   assert.deepEqual(usages.map((usage) => usage.kind), ["element", "binding"]);
 });
 
+test("collects component and binding usages in TypeScript inline templates", () => {
+  const component: AngularTsCatalogEntry = {
+    kind: "component",
+    name: "userCard",
+    normalizedName: "userCard",
+    htmlName: "user-card",
+    aliases: ["user-card"],
+    description: "Fixture component",
+    bindings: [{ name: "user", mode: "<", optional: false }],
+  };
+  const usages = collectAngularTsUsages(
+    `angular.module("demo").component("shell", { template: \`<user-card user="$ctrl.user"></user-card>\` });`,
+    "typescript",
+    component,
+  );
+
+  assert.deepEqual(usages.map((usage) => usage.kind), ["element", "binding"]);
+});
+
+test("collects directive usages in JavaScript inline templates", () => {
+  const directive: AngularTsCatalogEntry = {
+    kind: "directive",
+    name: "activeWhen",
+    normalizedName: "activeWhen",
+    htmlName: "active-when",
+    aliases: ["active-when", "data-active-when"],
+    description: "Fixture directive",
+  };
+  const usages = collectAngularTsUsages(
+    `const template = '<section data-active-when="ready"></section>';`,
+    "javascript",
+    directive,
+  );
+
+  assert.deepEqual(usages.map((usage) => usage.kind), ["attribute"]);
+});
+
 test("collects filter usages in interpolation", () => {
   const filter: AngularTsCatalogEntry = {
     kind: "filter",
@@ -95,6 +132,40 @@ test("collects filter usages in interpolation", () => {
   );
 
   assert.deepEqual(usages.map((usage) => usage.kind), ["filter"]);
+});
+
+test("collects chained filter usages with arguments", () => {
+  const filter: AngularTsCatalogEntry = {
+    kind: "filter",
+    name: "activeOnly",
+    normalizedName: "activeOnly",
+    aliases: [],
+    description: "Fixture filter",
+  };
+  const usages = collectAngularTsUsages(
+    `<p>{{ users | activeOnly:true | orderBy:"name" }}</p>`,
+    "html",
+    filter,
+  );
+
+  assert.deepEqual(usages.map((usage) => usage.kind), ["filter"]);
+});
+
+test("does not collect filter usages from logical-or or string pipes", () => {
+  const filter: AngularTsCatalogEntry = {
+    kind: "filter",
+    name: "activeOnly",
+    normalizedName: "activeOnly",
+    aliases: [],
+    description: "Fixture filter",
+  };
+  const usages = collectAngularTsUsages(
+    `<p>{{ activeOnly || "value | activeOnly" }}</p>`,
+    "html",
+    filter,
+  );
+
+  assert.deepEqual(usages, []);
 });
 
 test("collects controller usages in HTML and source metadata", () => {

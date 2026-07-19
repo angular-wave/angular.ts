@@ -1,0 +1,75 @@
+{
+  "scopeName": "angular-ts.inline-template",
+  "injectionSelector": "L:source.ts, L:source.js, L:source.tsx, L:source.jsx",
+  "patterns": [
+    {
+      "name": "meta.embedded.block.angular-ts.html",
+      "begin": "(\\btemplate\\s*:\\s*)(`)",
+      "beginCaptures": {
+        "1": {
+          "name": "support.type.property-name.angular-ts"
+        },
+        "2": {
+          "name": "punctuation.definition.string.begin.ts"
+        }
+      },
+      "end": "(`)",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.end.ts"
+        }
+      },
+      "patterns": [
+        {
+          "include": "text.html.basic"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.line.angular-ts.html",
+      "begin": "(\\btemplate\\s*:\\s*)(\")",
+      "beginCaptures": {
+        "1": {
+          "name": "support.type.property-name.angular-ts"
+        },
+        "2": {
+          "name": "punctuation.definition.string.begin.ts"
+        }
+      },
+      "end": "(\")",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.end.ts"
+        }
+      },
+      "patterns": [
+        {
+          "include": "text.html.basic"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.line.angular-ts.html",
+      "begin": "(\\btemplate\\s*:\\s*)(')",
+      "beginCaptures": {
+        "1": {
+          "name": "support.type.property-name.angular-ts"
+        },
+        "2": {
+          "name": "punctuation.definition.string.begin.ts"
+        }
+      },
+      "end": "(')",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.end.ts"
+        }
+      },
+      "patterns": [
+        {
+          "include": "text.html.basic"
+        }
+      ]
+    }
+  ]
+}

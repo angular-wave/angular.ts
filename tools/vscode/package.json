@@ -4,11 +4,24 @@
   "description": "VS Code language support for AngularTS templates, directives, components, filters, and dependency injection.",
   "version": "0.0.1",
   "publisher": "angular-wave",
+  "icon": "media/icon.png",
   "license": "MIT",
   "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angular-wave/angular.ts.git",
+    "directory": "tools/vscode"
+  },
+  "homepage": "https://github.com/angular-wave/angular.ts/tree/master/tools/vscode#readme",
+  "bugs": {
+    "url": "https://github.com/angular-wave/angular.ts/issues"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
+  "extensionKind": [
+    "workspace"
+  ],
   "categories": [
     "Programming Languages",
     "Snippets",
@@ -74,6 +87,17 @@
           "default": true,
           "description": "Enable AngularTS template and dependency-injection diagnostics."
         },
+        "angularTs.diagnosticsSeverity": {
+          "type": "string",
+          "enum": [
+            "hint",
+            "information",
+            "warning",
+            "error"
+          ],
+          "default": "warning",
+          "description": "Severity used for AngularTS diagnostics."
+        },
         "angularTs.projectConfig": {
           "type": [
             "string",
@@ -113,6 +137,22 @@
         "path": "./snippets/angular-ts-html.code-snippets"
       }
     ],
+    "grammars": [
+      {
+        "scopeName": "angular-ts.inline-template",
+        "path": "./syntaxes/angular-ts-inline-template.tmLanguage.json",
+        "injectTo": [
+          "source.ts",
+          "source.js",
+          "source.tsx",
+          "source.jsx"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.angular-ts.html": "html",
+          "meta.embedded.line.angular-ts.html": "html"
+        }
+      }
+    ],
     "menus": {
       "explorer/context": [
         {
@@ -132,11 +172,14 @@
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -w -p tsconfig.json",
     "test": "npm run build && node --test out/test/*.test.js",
+    "test:lsp": "npm run test",
+    "test:smoke": "npm run build && node scripts/run-extension-smoke.mjs",
     "package": "vsce package"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^3.0.0",
     "@vscode/vsce": "^3.2.2",
     "typescript": "^5.8.0"
   }

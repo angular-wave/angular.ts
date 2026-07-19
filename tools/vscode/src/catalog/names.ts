@@ -23,6 +23,13 @@ export function directiveHtmlName(name: string): string {
   return camelToKebab(directiveNormalize(name));
 }
 
+export function directiveAttributeHtmlName(name: string): string {
+  const prefix = /^(data|x)[\:\-_]/i.exec(name)?.[1].toLowerCase();
+  const htmlName = directiveHtmlName(name);
+
+  return prefix ? `${prefix}-${htmlName}` : htmlName;
+}
+
 export function componentHtmlName(name: string): string {
   return camelToKebab(name);
 }

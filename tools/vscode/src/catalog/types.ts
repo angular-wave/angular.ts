@@ -6,7 +6,8 @@ export type AngularTsSymbolKind =
   | "service"
   | "factory"
   | "provider"
-  | "constant";
+  | "constant"
+  | "route";
 
 export type AngularTsExpressionKind =
   | "none"
@@ -35,6 +36,28 @@ export interface BindingInfo {
   source?: SourceLocation;
 }
 
+export interface RouteParamInfo {
+  name: string;
+  optional: boolean;
+  valueType?: "string" | "number" | "boolean" | "Date";
+  source?: SourceLocation;
+}
+
+export interface RouteComponentInfo {
+  name: string;
+  source?: SourceLocation;
+  sourceOffset?: number;
+}
+
+export interface RouteResolveInfo {
+  name: string;
+  value?: string;
+  valueStart?: number;
+  valueEnd?: number;
+  source?: SourceLocation;
+  sourceOffset?: number;
+}
+
 export interface AngularTsCatalogEntry {
   kind: AngularTsSymbolKind;
   name: string;
@@ -47,7 +70,21 @@ export interface AngularTsCatalogEntry {
   expressionKind?: AngularTsExpressionKind;
   valueRequired?: boolean;
   example?: string;
+  examples?: string[];
+  signature?: string;
+  requiredCompanionAttributes?: string[];
+  conflictingAttributes?: string[];
   bindings?: BindingInfo[];
+  routeComponent?: RouteComponentInfo;
+  routeLazyBoundary?: boolean;
+  routeParams?: RouteParamInfo[];
+  routeResolves?: RouteResolveInfo[];
+  controller?: string;
+  controllerAs?: string;
+  template?: string;
+  templateUrl?: string;
+  require?: string[];
+  eventType?: string;
   source?: SourceLocation;
   detail?: string;
 }

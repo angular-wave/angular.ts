@@ -54,11 +54,15 @@ export class AngularTsWorkspaceIndex implements vscode.Disposable {
     kinds: readonly AngularTsCatalogEntry["kind"][],
   ): AngularTsCatalogEntry | undefined {
     const lookup = normalizeLookupName(name);
-    return this.getEntries().find(
-      (entry) =>
-        kinds.includes(entry.kind) &&
-        normalizeLookupName(entry.name) === lookup,
-    );
+    return this.getEntries().find((entry) => {
+      if (!kinds.includes(entry.kind)) return false;
+      if (normalizeLookupName(entry.name) === lookup) return true;
+      if (normalizeLookupName(entry.normalizedName) === lookup) return true;
+      if (entry.htmlName && normalizeLookupName(entry.htmlName) === lookup) {
+        return true;
+      }
+      return entry.aliases.some((alias) => normalizeLookupName(alias) === lookup);
+    });
   }
 
   getDirectiveLikeEntries(): AngularTsCatalogEntry[] {

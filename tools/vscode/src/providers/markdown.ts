@@ -19,6 +19,30 @@ export function entryToMarkdown(entry: AngularTsCatalogEntry): vscode.MarkdownSt
     markdown.appendMarkdown(`\n\nExpression: \`${entry.expressionKind}\``);
   }
 
+  if (entry.signature) {
+    markdown.appendMarkdown(`\n\nSignature: \`${entry.signature}\``);
+  }
+
+  if (entry.eventType) {
+    markdown.appendMarkdown(`\n\nEvent: \`$event: ${entry.eventType}\``);
+  }
+
+  if (entry.requiredCompanionAttributes?.length) {
+    markdown.appendMarkdown(
+      `\n\nRequires: ${entry.requiredCompanionAttributes
+        .map((attribute) => `\`${attribute}\``)
+        .join(", ")}`,
+    );
+  }
+
+  if (entry.conflictingAttributes?.length) {
+    markdown.appendMarkdown(
+      `\n\nConflicts with: ${entry.conflictingAttributes
+        .map((attribute) => `\`${attribute}\``)
+        .join(", ")}`,
+    );
+  }
+
   if (entry.bindings?.length) {
     markdown.appendMarkdown("\n\nBindings:\n");
     for (const binding of entry.bindings) {
@@ -26,8 +50,17 @@ export function entryToMarkdown(entry: AngularTsCatalogEntry): vscode.MarkdownSt
     }
   }
 
-  if (entry.example) {
-    markdown.appendCodeblock(entry.example, "html");
+  const details = metadataDetails(entry);
+  if (details.length) {
+    markdown.appendMarkdown("\n\nDetails:\n");
+    for (const detail of details) markdown.appendMarkdown(`\n- ${detail}`);
+  }
+
+  const examples = entry.examples?.length ? entry.examples : entry.example ? [entry.example] : [];
+  if (examples.length) {
+    for (const example of examples) {
+      markdown.appendCodeblock(example, "html");
+    }
   }
 
   if (entry.source?.file) {
@@ -38,7 +71,9 @@ export function entryToMarkdown(entry: AngularTsCatalogEntry): vscode.MarkdownSt
 }
 
 export function completionDetail(entry: AngularTsCatalogEntry): string {
-  if (entry.kind === "filter") return "AngularTS filter";
+  if (entry.kind === "filter") {
+    return entry.signature ? `AngularTS filter: ${entry.signature}` : "AngularTS filter";
+  }
   if (entry.kind === "directive") return "AngularTS directive";
   return `AngularTS ${entry.kind}`;
 }
@@ -59,4 +94,23 @@ export function bindingToMarkdown(
 
 function formatBinding(binding: BindingInfo): string {
   return `${binding.name}: ${binding.mode}${binding.optional ? "?" : ""}`;
+}
+
+function metadataDetails(entry: AngularTsCatalogEntry): string[] {
+  const details: string[] = [];
+
+  if (entry.controller) details.push(`Controller: \`${entry.controller}\``);
+  if (entry.controllerAs) details.push(`Controller alias: \`${entry.controllerAs}\``);
+  if (entry.templateUrl) details.push(`Template URL: \`${entry.templateUrl}\``);
+  if (entry.template) details.push("Inline template");
+  if (entry.eventType) details.push(`Event object: \`$event: ${entry.eventType}\``);
+  if (entry.require?.length) {
+    details.push(
+      `Requires controllers: ${entry.require
+        .map((value) => `\`${value}\``)
+        .join(", ")}`,
+    );
+  }
+
+  return details;
 }

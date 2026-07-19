@@ -15,7 +15,14 @@ test("built-in filter catalog is generated from ngBuiltInFilters", () => {
   const currency = builtInFilters.find((entry) => entry.name === "currency");
   assert.equal(currency?.kind, "filter");
   assert.equal(currency?.source?.file, "src/ng.ts");
-  assert.match(currency?.description ?? "", /Built-in filters/);
+  assert.match(currency?.description ?? "", /currency/);
+  assert.equal(currency?.signature, "input | currency:locales:options");
+
+  const orderBy = builtInFilters.find((entry) => entry.name === "orderBy");
+  assert.equal(
+    orderBy?.signature,
+    "input | orderBy:sortPredicate:reverseOrder:compareFn",
+  );
 });
 
 test("filter catalog returns empty list when source shape is absent", () => {

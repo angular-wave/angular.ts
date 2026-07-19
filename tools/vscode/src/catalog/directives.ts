@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AngularTsCatalogEntry } from "./types";
+import type { AngularTsCatalogEntry, AngularTsExpressionKind } from "./types";
 import { directiveAliases, directiveHtmlName, directiveNormalize } from "./names";
 
 const DIRECTIVE_GROUP_RE =
@@ -14,6 +14,16 @@ const BOOLEAN_ATTR_RE = /export const BOOLEAN_ATTR\s*=\s*\[([\s\S]*?)\];/;
 const DIRECTIVE_RESTRICT_RE =
   /export type DirectiveRestrict\s*=\s*([^;]+);/;
 
+interface DirectiveMetadata {
+  expressionKind: AngularTsExpressionKind;
+  valueRequired: boolean;
+  example: string;
+  requiredCompanionAttributes: string[];
+  conflictingAttributes: string[];
+  eventType?: string;
+  detail?: string;
+}
+
 export interface BuiltInCatalogSource {
   repoRoot: string;
   namespaceSource: string;
@@ -23,6 +33,8 @@ export interface BuiltInCatalogSource {
   constantsSource: string;
   domSource: string;
   interfaceSource: string;
+  runtimeSource: string;
+  refSource: string;
 }
 
 export const builtInDirectives = loadBuiltInDirectives();
@@ -76,6 +88,55 @@ export function createBuiltInDirectiveCatalog(
     });
   }
 
+  addDirective(entries, {
+    name: "ngApp",
+    description:
+      "AngularTS bootstrap directive discovered by the auto runtime before module compilation.",
+    sourceFile: "src/angular-runtime.ts",
+    sourceText: source.runtimeSource,
+    sourceOffset: source.runtimeSource.indexOf("ng-app"),
+    restrict: "A",
+  });
+
+  addDirective(entries, {
+    name: "ngRefRead",
+    description:
+      "Companion attribute for ng-ref that selects whether the assigned value is the element or a named controller.",
+    sourceFile: "src/directive/ref/ref.ts",
+    sourceText: source.refSource,
+    sourceOffset: source.refSource.indexOf("ngRefRead"),
+    restrict: "A",
+  });
+
+  addDirective(entries, {
+    name: "ngHtmlCanvasSource",
+    description:
+      "Companion attribute for ng-html-canvas that declares a native HTML-in-Canvas source subtree.",
+    sourceFile: "src/directive/html-canvas/html-canvas.ts",
+    sourceText: source.ngSource,
+    restrict: "A",
+  });
+
+  addDirective(entries, {
+    name: "ngStateParams",
+    description:
+      "Companion attribute for ng-state that supplies route parameters.",
+    sourceFile: "src/router/directives/state-directives.ts",
+    sourceText: source.ngSource,
+    sourceOffset: source.ngSource.indexOf("ngStateParams"),
+    restrict: "A",
+  });
+
+  addDirective(entries, {
+    name: "ngStateOpts",
+    description:
+      "Companion attribute for ng-state that supplies transition options.",
+    sourceFile: "src/router/directives/state-directives.ts",
+    sourceText: source.ngSource,
+    sourceOffset: source.ngSource.indexOf("ngStateOpts"),
+    restrict: "A",
+  });
+
   return Array.from(entries.values()).sort((left, right) =>
     (left.htmlName ?? left.name).localeCompare(right.htmlName ?? right.name),
   );
@@ -91,6 +152,8 @@ function readBuiltInCatalogSource(repoRoot: string): BuiltInCatalogSource {
     constantsSource: readSource(repoRoot, "src/shared/constants.ts"),
     domSource: readSource(repoRoot, "src/shared/dom.ts"),
     interfaceSource: readSource(repoRoot, "src/interface.ts"),
+    runtimeSource: readSource(repoRoot, "src/angular-runtime.ts"),
+    refSource: readSource(repoRoot, "src/directive/ref/ref.ts"),
   };
 }
 
@@ -166,6 +229,7 @@ function addDirective(
   if (entries.has(normalizedName)) return;
 
   const htmlName = directiveHtmlName(input.name);
+  const metadata = directiveMetadata(normalizedName, htmlName);
   const sourceLocation =
     input.sourceOffset === undefined
       ? undefined
@@ -180,12 +244,294 @@ function addDirective(
     description: input.description,
     restrict: input.restrict,
     allowedLocations: restrictToAllowedLocations(input.restrict),
+    expressionKind: metadata.expressionKind,
+    valueRequired: metadata.valueRequired,
+    example: metadata.example,
+    examples: [metadata.example],
+    requiredCompanionAttributes: metadata.requiredCompanionAttributes,
+    conflictingAttributes: metadata.conflictingAttributes,
+    eventType: metadata.eventType,
     source: {
       file: input.sourceFile,
       line: sourceLocation?.line,
       character: sourceLocation?.character,
     },
+    detail: metadata.detail,
   });
+}
+
+function directiveMetadata(
+  normalizedName: string,
+  htmlName: string,
+): DirectiveMetadata {
+  const expressionKind = directiveExpressionKind(normalizedName, htmlName);
+  const valueRequired = expressionKind !== "none";
+  const requiredCompanionAttributes = companionAttributes(normalizedName);
+  const conflictingAttributes = conflictingAttributesFor(normalizedName);
+  const eventType = eventTypeForDirective(normalizedName);
+
+  return {
+    expressionKind,
+    valueRequired,
+    example: directiveExample(normalizedName, htmlName, expressionKind),
+    requiredCompanionAttributes,
+    conflictingAttributes,
+    eventType,
+    detail: directiveDetail(expressionKind, requiredCompanionAttributes, eventType),
+  };
+}
+
+function directiveExpressionKind(
+  normalizedName: string,
+  htmlName: string,
+): AngularTsExpressionKind {
+  if (normalizedName === "ngModel") return "model";
+  if (normalizedName === "ngRepeat") return "repeat";
+  if (normalizedName === "ngOptions") return "options";
+  if (
+    normalizedName === "ngController" ||
+    normalizedName === "ngApp" ||
+    normalizedName === "ngView" ||
+    normalizedName === "ngState"
+  ) {
+    return "controller";
+  }
+  if (
+    normalizedName === "ngInclude" ||
+    normalizedName === "ngMessagesInclude"
+  ) {
+    return "template-url";
+  }
+  if (
+    normalizedName === "ngInit" ||
+    normalizedName === "ngSubmit" ||
+    htmlName.startsWith("ng-on-") ||
+    isEventDirective(normalizedName)
+  ) {
+    return "statement";
+  }
+  if (
+    normalizedName === "ngModelOptions" ||
+    normalizedName === "ngStateParams" ||
+    normalizedName === "ngStateOpts" ||
+    normalizedName === "ngStyle" ||
+    normalizedName === "ngClass"
+  ) {
+    return "json";
+  }
+  if (
+    normalizedName === "ngCloak" ||
+    normalizedName === "ngNonBindable" ||
+    normalizedName === "ngSwitchDefault" ||
+    normalizedName === "required" ||
+    normalizedName === "multiple"
+  ) {
+    return "none";
+  }
+  if (
+    normalizedName === "ngBindTemplate" ||
+    normalizedName === "ngHtmlCanvas" ||
+    normalizedName === "ngHtmlCanvasSource" ||
+    normalizedName === "ngHtmlCanvasInvalidate" ||
+    normalizedName === "ngRefRead"
+  ) {
+    return "string";
+  }
+
+  return "expression";
+}
+
+function isEventDirective(normalizedName: string): boolean {
+  return /^ng[A-Z].+/.test(normalizedName) && [
+    "ngAbort",
+    "ngAuxclick",
+    "ngBlur",
+    "ngCancel",
+    "ngCanplay",
+    "ngCanplaythrough",
+    "ngChange",
+    "ngClick",
+    "ngClose",
+    "ngContextmenu",
+    "ngCopy",
+    "ngCuechange",
+    "ngCut",
+    "ngDblclick",
+    "ngDrag",
+    "ngDragend",
+    "ngDragenter",
+    "ngDragleave",
+    "ngDragover",
+    "ngDragstart",
+    "ngDrop",
+    "ngDurationchange",
+    "ngEmptied",
+    "ngEnded",
+    "ngError",
+    "ngFocus",
+    "ngInput",
+    "ngInvalid",
+    "ngKeydown",
+    "ngKeypress",
+    "ngKeyup",
+    "ngLoad",
+    "ngLoadeddata",
+    "ngLoadedmetadata",
+    "ngLoadstart",
+    "ngMousedown",
+    "ngMouseenter",
+    "ngMouseleave",
+    "ngMousemove",
+    "ngMouseout",
+    "ngMouseover",
+    "ngMouseup",
+    "ngPaste",
+    "ngPause",
+    "ngPlay",
+    "ngPlaying",
+    "ngProgress",
+    "ngRatechange",
+    "ngReset",
+    "ngResize",
+    "ngScroll",
+    "ngScrollend",
+    "ngSecuritypolicyviolation",
+    "ngSeeked",
+    "ngSeeking",
+    "ngSelect",
+    "ngSlotchange",
+    "ngStalled",
+    "ngSubmit",
+    "ngSuspend",
+    "ngTimeupdate",
+    "ngToggle",
+    "ngVolumechange",
+    "ngWaiting",
+    "ngWheel",
+  ].includes(normalizedName);
+}
+
+function eventTypeForDirective(normalizedName: string): string | undefined {
+  if (!isEventDirective(normalizedName)) return undefined;
+
+  switch (normalizedName) {
+    case "ngBlur":
+    case "ngFocus":
+      return "FocusEvent";
+    case "ngCopy":
+    case "ngCut":
+    case "ngPaste":
+      return "ClipboardEvent";
+    case "ngClick":
+    case "ngDblclick":
+    case "ngMousedown":
+    case "ngMouseenter":
+    case "ngMouseleave":
+    case "ngMousemove":
+    case "ngMouseout":
+    case "ngMouseover":
+    case "ngMouseup":
+      return "MouseEvent";
+    case "ngKeydown":
+    case "ngKeypress":
+    case "ngKeyup":
+      return "KeyboardEvent";
+    case "ngInput":
+      return "InputEvent";
+    case "ngSubmit":
+      return "SubmitEvent";
+    case "ngTouchstart":
+    case "ngTouchend":
+    case "ngTouchmove":
+      return "TouchEvent";
+    default:
+      return "Event";
+  }
+}
+
+function companionAttributes(normalizedName: string): string[] {
+  switch (normalizedName) {
+    case "ngMessage":
+    case "ngMessageExp":
+    case "ngMessageDefault":
+      return ["ng-messages"];
+    case "ngSwitchWhen":
+    case "ngSwitchDefault":
+      return ["ng-switch"];
+    case "ngHtmlCanvasSource":
+    case "ngHtmlCanvasInvalidate":
+      return ["ng-html-canvas"];
+    case "ngRefRead":
+      return ["ng-ref"];
+    default:
+      return [];
+  }
+}
+
+function conflictingAttributesFor(normalizedName: string): string[] {
+  switch (normalizedName) {
+    case "ngShow":
+      return ["ng-hide"];
+    case "ngHide":
+      return ["ng-show"];
+    case "ngSwitchWhen":
+      return ["ng-switch-default"];
+    case "ngSwitchDefault":
+      return ["ng-switch-when"];
+    default:
+      return [];
+  }
+}
+
+function directiveExample(
+  normalizedName: string,
+  htmlName: string,
+  expressionKind: AngularTsExpressionKind,
+): string {
+  switch (normalizedName) {
+    case "ngModel":
+      return '<input ng-model="user.name">';
+    case "ngRepeat":
+      return '<li ng-repeat="item in items">{{ item.name }}</li>';
+    case "ngOptions":
+      return '<select ng-model="selected" ng-options="item.id as item.name for item in items"></select>';
+    case "ngController":
+      return '<section ng-controller="UserController as $ctrl"></section>';
+    case "ngInclude":
+      return '<section ng-include="templateUrl"></section>';
+    case "ngClick":
+      return '<button ng-click="save(user)">Save</button>';
+    case "ngState":
+      return '<a ng-state="app.user" data-state-active data-state-exact>User</a>';
+    case "ngView":
+      return "<ng-view></ng-view>";
+    default:
+      break;
+  }
+
+  if (expressionKind === "none") return `<div ${htmlName}></div>`;
+  if (expressionKind === "statement") return `<button ${htmlName}="run()">Run</button>`;
+  if (expressionKind === "model") return `<input ${htmlName}="value">`;
+  if (expressionKind === "template-url") return `<div ${htmlName}="templateUrl"></div>`;
+  if (expressionKind === "controller") return `<div ${htmlName}="Name"></div>`;
+  if (expressionKind === "json") return `<div ${htmlName}="{ active: isActive }"></div>`;
+  if (expressionKind === "string") return `<div ${htmlName}="value"></div>`;
+  return `<div ${htmlName}="expression"></div>`;
+}
+
+function directiveDetail(
+  expressionKind: AngularTsExpressionKind,
+  requiredCompanionAttributes: string[],
+  eventType?: string,
+): string {
+  const parts = [`Expression kind: ${expressionKind}.`];
+  if (requiredCompanionAttributes.length > 0) {
+    parts.push(`Requires: ${requiredCompanionAttributes.join(", ")}.`);
+  }
+  if (eventType) {
+    parts.push(`Provides $event: ${eventType}.`);
+  }
+  return parts.join(" ");
 }
 
 function aliasesForDirective(name: string, htmlName: string): string[] {

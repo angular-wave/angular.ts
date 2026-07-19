@@ -1,6 +1,9 @@
 import type { AngularTsCatalogEntry } from "../catalog/types";
-import { normalizeLookupName } from "../catalog/names";
+import { directiveAttributeHtmlName, normalizeLookupName } from "../catalog/names";
 import { scanHtmlElements } from "./htmlScanner";
+import { scanAngularTsFilterPipes } from "./filters";
+import { findExpressionSyntaxIssue } from "./expressionDiagnostics";
+import { collectRouteDiagnosticsForElement, routeMap } from "./routes";
 
 export interface TemplateDiagnostic {
   code: string;
@@ -16,6 +19,7 @@ export function collectAngularTsHtmlDiagnostics(
 ): TemplateDiagnostic[] {
   const diagnostics: TemplateDiagnostic[] = [];
   const elements = scanHtmlElements(text);
+  const ignoredRanges = collectNonBindableRanges(text, elements);
   const filters = new Set(
     entries
       .filter((entry) => entry.kind === "filter")
@@ -26,10 +30,14 @@ export function collectAngularTsHtmlDiagnostics(
       .filter((entry) => entry.kind === "controller")
       .map((entry) => normalizeLookupName(entry.name)),
   );
+  const routes = routeMap(entries);
 
-  diagnostics.push(...collectFilterDiagnostics(text, filters));
+  diagnostics.push(...collectFilterDiagnostics(text, filters, ignoredRanges));
+  diagnostics.push(...collectInterpolationSyntaxDiagnostics(text, ignoredRanges));
 
   for (const element of elements) {
+    if (isOffsetInRanges(element.start, ignoredRanges)) continue;
+
     const elementEntry = findEntry(entries, element.tagName);
     const component = elementEntry?.kind === "component" ? elementEntry : undefined;
     if (
@@ -69,6 +77,19 @@ export function collectAngularTsHtmlDiagnostics(
         continue;
       }
 
+      if (known?.kind === "directive") {
+        const htmlName = directiveAttributeHtmlName(attr.name);
+        if (/[A-Z]/.test(attr.name) && htmlName !== attr.name) {
+          diagnostics.push({
+            code: "camelCaseDirectiveAttribute",
+            message: `Use '${htmlName}' instead of camelCase AngularTS directive '${attr.name}'.`,
+            start: attr.start,
+            end: attr.end,
+            severity: "warning",
+          });
+        }
+      }
+
       if (isAngularTsDirectiveAttribute(attr.name) && !known) {
         diagnostics.push({
           code: "unknownDirective",
@@ -78,6 +99,38 @@ export function collectAngularTsHtmlDiagnostics(
           severity: "warning",
         });
         continue;
+      }
+
+      if (
+        known?.kind === "directive" &&
+        known.valueRequired === true &&
+        (!attr.value || attr.value.trim() === "")
+      ) {
+        diagnostics.push({
+          code: "missingDirectiveValue",
+          message: `AngularTS directive '${attr.name}' requires an expression value.`,
+          start: attr.start,
+          end: attr.end,
+          severity: "warning",
+        });
+      }
+
+      if (
+        known?.kind === "directive" &&
+        known.valueRequired === true &&
+        attr.value &&
+        attr.valueStart !== undefined
+      ) {
+        const issue = findExpressionSyntaxIssue(attr.value);
+        if (issue) {
+          diagnostics.push({
+            code: "malformedDirectiveExpression",
+            message: `Malformed AngularTS expression in '${attr.name}': ${issue.message}`,
+            start: attr.valueStart + issue.start,
+            end: attr.valueStart + issue.end,
+            severity: "warning",
+          });
+        }
       }
 
       if (
@@ -114,6 +167,54 @@ export function collectAngularTsHtmlDiagnostics(
         });
       }
     }
+
+    diagnostics.push(...collectRouteDiagnosticsForElement(element, routes));
+  }
+
+  return diagnostics;
+}
+
+function collectInterpolationSyntaxDiagnostics(
+  text: string,
+  ignoredRanges: Array<{ start: number; end: number }> = [],
+): TemplateDiagnostic[] {
+  const diagnostics: TemplateDiagnostic[] = [];
+  let searchStart = 0;
+
+  while (searchStart < text.length) {
+    const interpolationStart = text.indexOf("{{", searchStart);
+    if (interpolationStart < 0) break;
+    if (isOffsetInRanges(interpolationStart, ignoredRanges)) {
+      searchStart = interpolationStart + 2;
+      continue;
+    }
+
+    const interpolationEnd = text.indexOf("}}", interpolationStart + 2);
+    if (interpolationEnd < 0) {
+      diagnostics.push({
+        code: "malformedInterpolationExpression",
+        message: "Malformed AngularTS interpolation: missing closing '}}'.",
+        start: interpolationStart,
+        end: Math.min(text.length, interpolationStart + 2),
+        severity: "warning",
+      });
+      break;
+    }
+
+    const expressionStart = interpolationStart + 2;
+    const expression = text.slice(expressionStart, interpolationEnd);
+    const issue = findExpressionSyntaxIssue(expression);
+    if (issue) {
+      diagnostics.push({
+        code: "malformedInterpolationExpression",
+        message: `Malformed AngularTS interpolation: ${issue.message}`,
+        start: expressionStart + issue.start,
+        end: expressionStart + issue.end,
+        severity: "warning",
+      });
+    }
+
+    searchStart = interpolationEnd + 2;
   }
 
   return diagnostics;
@@ -137,6 +238,7 @@ function parseControllerLiteral(
 function collectFilterDiagnostics(
   text: string,
   filters: Set<string>,
+  ignoredRanges: Array<{ start: number; end: number }> = [],
 ): TemplateDiagnostic[] {
   if (!filters.size) return [];
 
@@ -145,21 +247,19 @@ function collectFilterDiagnostics(
   let interpolation: RegExpExecArray | null;
 
   while ((interpolation = interpolationRe.exec(text))) {
+    if (isOffsetInRanges(interpolation.index, ignoredRanges)) continue;
+
     const expression = interpolation[1];
     const expressionStart = interpolation.index + 2;
-    const filterRe = /\|\s*([A-Za-z_$][\w$]*)/g;
-    let filterMatch: RegExpExecArray | null;
-
-    while ((filterMatch = filterRe.exec(expression))) {
-      const filterName = filterMatch[1];
+    for (const filter of scanAngularTsFilterPipes(expression, expressionStart)) {
+      const filterName = filter.name;
       if (filters.has(normalizeLookupName(filterName))) continue;
 
-      const start = expressionStart + filterMatch.index + filterMatch[0].lastIndexOf(filterName);
       diagnostics.push({
         code: "unknownFilter",
         message: `Unknown AngularTS filter '${filterName}'.`,
-        start,
-        end: start + filterName.length,
+        start: filter.start,
+        end: filter.end,
         severity: "warning",
       });
     }
@@ -194,4 +294,56 @@ function elementTextTagNameOffset(text: string, elementStart: number): number {
   const slice = text.slice(elementStart);
   const match = /^<\s*/.exec(slice);
   return match?.[0].length ?? 1;
+}
+
+function collectNonBindableRanges(
+  text: string,
+  elements: ReturnType<typeof scanHtmlElements>,
+): Array<{ start: number; end: number }> {
+  return elements
+    .filter((element) =>
+      element.attributes.some(
+        (attribute) => normalizeLookupName(attribute.name) === "ngNonBindable",
+      ),
+    )
+    .map((element) => ({
+      start: element.start,
+      end: findElementCloseEnd(text, element) ?? element.end,
+    }));
+}
+
+function findElementCloseEnd(
+  text: string,
+  element: ReturnType<typeof scanHtmlElements>[number],
+): number | undefined {
+  const tagPattern = new RegExp(`<\\s*(/?)\\s*${escapeRegExp(element.tagName)}\\b[^>]*>`, "gi");
+  tagPattern.lastIndex = element.start;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tagPattern.exec(text))) {
+    const isClosing = Boolean(match[1]);
+    const isSelfClosing = /\/\s*>$/.test(match[0]);
+
+    if (isClosing) {
+      depth--;
+    } else if (!isSelfClosing) {
+      depth++;
+    }
+
+    if (depth === 0) return match.index + match[0].length;
+  }
+
+  return undefined;
+}
+
+function isOffsetInRanges(
+  offset: number,
+  ranges: Array<{ start: number; end: number }>,
+): boolean {
+  return ranges.some((range) => range.start <= offset && offset < range.end);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

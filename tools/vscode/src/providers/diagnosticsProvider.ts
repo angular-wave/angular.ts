@@ -2,6 +2,11 @@ import * as vscode from "vscode";
 import { AngularTsWorkspaceIndex } from "../analyzer/workspaceIndex";
 import { collectAngularTsHtmlDiagnostics } from "../templates/diagnostics";
 import { collectAngularTsSourceDiagnostics } from "../templates/sourceDiagnostics";
+import {
+  effectiveDiagnosticSeverity,
+  normalizeDiagnosticSeveritySetting,
+  type DiagnosticSeveritySetting,
+} from "./diagnosticSeverity";
 
 export class AngularTsDiagnosticsProvider implements vscode.Disposable {
   private readonly collection =
@@ -48,6 +53,7 @@ export class AngularTsDiagnosticsProvider implements vscode.Disposable {
             document.uri.fsPath,
           );
 
+    const severityOverride = diagnosticSeverityOverride();
     const diagnostics = rawDiagnostics.map((diagnostic) => {
       const vscodeDiagnostic = new vscode.Diagnostic(
         new vscode.Range(
@@ -55,9 +61,7 @@ export class AngularTsDiagnosticsProvider implements vscode.Disposable {
           document.positionAt(diagnostic.end),
         ),
         diagnostic.message,
-        diagnostic.severity === "error"
-          ? vscode.DiagnosticSeverity.Error
-          : vscode.DiagnosticSeverity.Warning,
+        toVscodeSeverity(effectiveDiagnosticSeverity(diagnostic, severityOverride)),
       );
       vscodeDiagnostic.code = diagnostic.code;
       vscodeDiagnostic.source = "AngularTS";
@@ -71,6 +75,28 @@ export class AngularTsDiagnosticsProvider implements vscode.Disposable {
 function isEnabled(): boolean {
   const config = vscode.workspace.getConfiguration("angularTs");
   return config.get<boolean>("enable", true) && config.get<boolean>("diagnostics", true);
+}
+
+function diagnosticSeverityOverride(): DiagnosticSeveritySetting | undefined {
+  const config = vscode.workspace.getConfiguration("angularTs");
+  return normalizeDiagnosticSeveritySetting(
+    config.get<unknown>("diagnosticsSeverity"),
+  );
+}
+
+function toVscodeSeverity(
+  severity: DiagnosticSeveritySetting,
+): vscode.DiagnosticSeverity {
+  switch (severity) {
+    case "error":
+      return vscode.DiagnosticSeverity.Error;
+    case "warning":
+      return vscode.DiagnosticSeverity.Warning;
+    case "information":
+      return vscode.DiagnosticSeverity.Information;
+    case "hint":
+      return vscode.DiagnosticSeverity.Hint;
+  }
 }
 
 function isSupportedDocument(languageId: string): boolean {
