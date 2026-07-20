@@ -1,7 +1,27 @@
 import { defineConfig } from "vite";
 import istanbul from "vite-plugin-istanbul";
+import { fileURLToPath } from "node:url";
+
 const coverageEnabled = process.env.PW_COVERAGE === "1";
 const port = Number(process.env.PORT || 4000);
+const sourcePackageAliases = [
+  {
+    find: /^@angular-wave\/angular\.ts\/services\/wasm$/,
+    replacement: fileURLToPath(
+      new URL("../src/services/wasm/index.ts", import.meta.url),
+    ),
+  },
+  {
+    find: /^@angular-wave\/angular\.ts\/runtime\/wasm$/,
+    replacement: fileURLToPath(
+      new URL("../src/runtime/wasm.ts", import.meta.url),
+    ),
+  },
+  {
+    find: /^@angular-wave\/angular\.ts$/,
+    replacement: fileURLToPath(new URL("../src/index.ts", import.meta.url)),
+  },
+];
 const wasmWorkerIsolation = {
   name: "wasm-worker-isolation",
   configureServer(server) {
@@ -16,6 +36,9 @@ const wasmWorkerIsolation = {
   },
 };
 export default defineConfig({
+  resolve: {
+    alias: sourcePackageAliases,
+  },
   plugins: [
     ...(coverageEnabled
       ? [
