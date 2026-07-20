@@ -180,7 +180,7 @@
     "@types/node": "^24.0.0",
     "@types/vscode": "^1.90.0",
     "@vscode/test-electron": "^3.0.0",
-    "@vscode/vsce": "^3.2.2",
+    "@vscode/vsce": "^3.9.2",
     "typescript": "^5.8.0"
   }
 }
