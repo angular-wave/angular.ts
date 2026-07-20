@@ -9,5 +9,8 @@
     "skipLibCheck": false,
     "target": "ES2023"
   },
-  "files": ["test/namespace-js-consumer.js"]
+  "files": [
+    "test/namespace-js-consumer.js",
+    "test/public-policy-types-consumer.ts"
+  ]
 }

@@ -20,6 +20,7 @@ export default defineConfig([
     ignores: [
       "integrations/**",
       "**/*.{js,mjs,cjs}",
+      "**/*.d.ts",
       "**/*.spec.ts",
       "**/*.test.ts",
     ],

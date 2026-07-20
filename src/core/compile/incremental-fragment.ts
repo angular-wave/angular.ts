@@ -105,6 +105,11 @@ const compiledFragmentStatesByRoot = new WeakMap<
   RootCompiledFragmentState
 >();
 
+const compiledFragmentScopeDestroyDeregisters = new WeakMap<
+  CompiledFragmentRecord,
+  () => void
+>();
+
 export function createPublicLinkCompiledFragmentRecord(
   root: AppRootRecord,
   parentScope: ng.Scope,
@@ -128,7 +133,10 @@ export function createPublicLinkCompiledFragmentRecord(
     dispose: disposeCompiledFragmentRecordSelf,
   };
 
-  return registerCompiledFragmentRecord(record as CompiledFragmentRecord);
+  return registerCompiledFragmentRecord(
+    record as CompiledFragmentRecord,
+    false,
+  );
 }
 
 export function createPublicLinkSingleNodeCompiledFragmentRecord(
@@ -154,7 +162,10 @@ export function createPublicLinkSingleNodeCompiledFragmentRecord(
     dispose: disposeCompiledFragmentRecordSelf,
   };
 
-  return registerCompiledFragmentRecord(record as CompiledFragmentRecord);
+  return registerCompiledFragmentRecord(
+    record as CompiledFragmentRecord,
+    false,
+  );
 }
 
 export function createCompiledFragmentRecord(
@@ -349,6 +360,7 @@ export function addCompiledFragmentChild(
 
   ensureFragmentArray(parent, "childFragments").push(child);
   compiledFragmentParents.set(child, parent);
+  disposeCompiledFragmentScopeLifecycle(child);
 }
 
 export function addCompiledFragmentDisposer(
@@ -510,6 +522,7 @@ export function disposeCompiledFragmentRecord(
   record.diagnostics.disposedAtGeneration = root?.generation;
   detachCompiledFragmentParent(record);
   unregisterRootCompiledFragment(record, root);
+  disposeCompiledFragmentScopeLifecycle(record);
   disposeCompiledFragmentRetentionDomAdapter(record);
 
   disposeCompiledFragmentChildren(record, errors, releaseOwnedNodes);
@@ -745,10 +758,46 @@ function createPublicLinkDiagnostics(
 
 function registerCompiledFragmentRecord(
   record: CompiledFragmentRecord,
+  retentionAware = true,
 ): CompiledFragmentRecord {
-  registerRootCompiledFragment(record);
+  const root = assertDefined(record.root);
 
-  return registerCompiledFragmentRetentionDomAdapter(record);
+  if (record.parentScope === root.rootScope) {
+    registerRootCompiledFragment(record);
+  } else {
+    registerCompiledFragmentScopeLifecycle(record);
+  }
+
+  return retentionAware
+    ? registerCompiledFragmentRetentionDomAdapter(record)
+    : record;
+}
+
+function registerCompiledFragmentScopeLifecycle(
+  record: CompiledFragmentRecord,
+): void {
+  const parentScope = record.parentScope;
+  const root = record.root;
+
+  if (!parentScope || !root || parentScope === root.rootScope) return;
+
+  const deregister = parentScope.$on("$destroy", () => {
+    compiledFragmentScopeDestroyDeregisters.delete(record);
+    disposeCompiledFragmentRecord(record, false);
+  });
+
+  compiledFragmentScopeDestroyDeregisters.set(record, deregister);
+}
+
+function disposeCompiledFragmentScopeLifecycle(
+  record: CompiledFragmentRecord,
+): void {
+  const deregister = compiledFragmentScopeDestroyDeregisters.get(record);
+
+  if (!deregister) return;
+
+  compiledFragmentScopeDestroyDeregisters.delete(record);
+  deregister();
 }
 
 function registerRootCompiledFragment(record: CompiledFragmentRecord): void {
@@ -778,7 +827,9 @@ function unregisterRootCompiledFragment(
 ): void {
   if (!root) return;
 
-  const state = assertDefined(compiledFragmentStatesByRoot.get(root));
+  const state = compiledFragmentStatesByRoot.get(root);
+
+  if (!state) return;
 
   state.records.delete(record);
 

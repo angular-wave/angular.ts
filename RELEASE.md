@@ -1,86 +1,116 @@
-# AngularTS Release instructions
+# AngularTS releases
 
-## Compare the list of commits between stable and unstable
+AngularTS releases are created from immutable Git tags. A tag is the only
+release trigger; npm publishing is not performed from a developer machine.
 
-There is a script - compare-master-to-stable.js - that helps with this.
-We just want to make sure that good commits (low risk fixes + docs fixes) got cherry-picked into stable branch and nothing interesting got merged only into stable branch.
+## One-time repository setup
 
-## Pick a release name (for this version)
+Configure `@angular-wave/angular.ts` on npm with a GitHub Actions trusted
+publisher:
 
-A super-heroic power (adverb-verb phrase).
+- organization: `angular-wave`
+- repository: `angular.ts`
+- workflow filename: `release.yml`
+- allowed action: `npm publish`
 
-## Generate release notes
-
-Example Commit: https://github.com/angular/angular.js/commit/7ab5098c14ee4f195dbfe2681e402fe2dfeacd78
-
-1. Run
-
-```bash
-node_modules/.bin/changez -o changes.md -v <new version> <base branch>
-```
-
-2. Review the generated file and manually fix typos, group and reorder stuff if needed.
-3. Move the content into CHANGELOG.md add release code-names to headers.
-4. Push the changes to your private github repo and review.
-5. cherry-pick the release notes commit to the appropriate branches.
-
-## Pick a commit to release (for this version)
-
-Usually this will be the commit containing the release notes, but it may also be in the past.
-
-## Run "release" script
+The same configuration can be created without the npm settings UI. npm's
+`trust` command requires npm 11.15 or newer and an interactive account session
+authenticated with 2FA. A granular token that bypasses 2FA cannot modify trust
+settings. Use a temporary npm configuration so an existing automation token in
+`~/.npmrc` does not override the interactive session:
 
 ```bash
-scripts/release/release.sh --git-push-dryrun=false --commit-sha=8822a4f --version-number=1.7.6 --version-name=gravity-manipulation
+trust_npmrc="$(mktemp)"
+trap 'unlink "$trust_npmrc"' EXIT
+
+NPM_CONFIG_USERCONFIG="$trust_npmrc" \
+  npx --yes --package npm@11.18.0 npm login --auth-type=web
+
+NPM_CONFIG_USERCONFIG="$trust_npmrc" \
+  npx --yes --package npm@11.18.0 npm trust github \
+  @angular-wave/angular.ts \
+  --repo angular-wave/angular.ts \
+  --file release.yml \
+  --allow-publish
+
+NPM_CONFIG_USERCONFIG="$trust_npmrc" \
+  npx --yes --package npm@11.18.0 npm trust list \
+  @angular-wave/angular.ts
 ```
 
-1. The SHA is of the commit to release (could be in the past).
+The workflow uses npm's OIDC trusted publishing and does not require an
+`NPM_TOKEN` repository secret. After one successful trusted publication,
+disable token-based package publishing in the npm package settings.
 
-2. The version number and code-name that should be released, not the next version number (e.g. to release 1.2.12 you enter 1.2.12 as release version and the code-name that was picked for 1.2.12, cauliflower-eradication).
+Protect tags matching `v*` in the GitHub repository rules so only maintainers
+can create release tags and published release tags cannot be moved or deleted.
+Enable immutable GitHub Releases for the repository when available.
 
-3. You will need to have write access to all the AngularTS github dist repositories and publish rights for the AngularTS packages on npm.
+## Prepare a release commit
 
-## Update GitHub milestones
+1. Choose a version that has not been published to npm.
+2. Update `package.json` and `package-lock.json` without creating a tag:
 
-1. Create the next milestone if it doesn't exist yet-giving ita due date.
-2. Move all open issues and PRs for the current milestone to the next milestone<br>
-   You can do this by filtering the current milestone, selecting via checklist, and moving to the next milestone within the GH issues page.
+   ```bash
+   npm version 0.31.0 --no-git-tag-version
+   ```
 
-3. Close the current milestone click the milestones tab and close from there.
-4. Create a new holding milestone for the release after next-but don't give it a due date otherwise that will mess up the dashboard.
+3. Replace the `Unreleased` heading in `CHANGELOG.md` with the exact version
+   and release date, then write a concise description of user-visible changes:
 
-## Push build artifacts to CDN
+   ```markdown
+   ## [0.31.0] - 2026-07-19
 
-Google CDNs are fed with data from google3 every day at 11:15am PT it takes only few minutes for the import to propagate).
-If we want to make our files available, we need submit our CLs before this time on the day of the release.
+   - Added a user-visible capability.
+   - Removed an obsolete configuration surface.
+   ```
 
-## Don't update the package.json (branchVersion) until the CDN has updated
+   Add a new `## [Unreleased]` section above it for subsequent work. Do not
+   copy pull-request or commit inventories into the changelog.
 
-This is the version used to compute what version to link to in the CDN. If you update this too early then the CDN lookup fails and you end up with 'null, for the version, which breaks the docs.
+4. Run the local release preparation gate:
 
-## Verify angularjs.org download modal has latest version (updates via CI job)
+   ```bash
+   make prepare-release
+   ```
 
-The versions in the modal are updated (based on the versions available on CDN) as part of the CI deploy stage.
-(You may need to explicitly trigger the CI job. e.g. re-running the last `deploy` job.)
+5. Review and commit the version, changelog, generated declarations, distribution files,
+   generated documentation, migration guidance, and release-facing changes.
+6. Merge the release commit to `master` and require its CI run to pass.
 
-## Announce the release (via official Google accounts)
+## Publish from a tag
 
-Double check that angularjs.org is up to date with the new release version before sharing.
+Create an annotated tag whose name exactly matches the package version with a
+`v` prefix, then push only that tag:
 
-1. Collect a list of contributors
+```bash
+git tag -a v0.31.0 -m "AngularTS 0.31.0"
+git push origin v0.31.0
+```
 
-use: `git log --format='%aN' v1.2.12..v1.2.13 | sort -u`
+The `Release` workflow then:
 
-2. Write a blog post (for minor releases, not patch releases) and publish it with the "release" tag
-3. Post on twitter as yourself (tweet from your heart; there is no template for this), retweet as @AngularTS
+1. Runs the complete CI workflow against the tagged commit.
+2. Rejects tags that do not exactly match `package.json` or versions that
+   already exist on npm.
+3. Rebuilds declarations, distribution files, and documentation and verifies
+   that the generated files were committed.
+4. Packs one npm tarball and validates its name, version, and warnings.
+5. Extracts the tagged version from `CHANGELOG.md` and creates a draft GitHub
+   Release with those curated notes and the tarball asset.
+6. Publishes that exact tarball to npm using OIDC and provenance.
+7. Publishes the GitHub Release only after npm accepts the package.
 
-## Party!
+Stable versions are published under npm's `latest` tag. SemVer prereleases,
+such as `0.31.0-beta.1`, are published under `next` and marked as prereleases
+on GitHub.
 
-## Major Release Tasks
+## Failure handling
 
-1. Update angularjs.org to use the latest branch.
-2. Write up a migration document.
-3. Create a new git branch for the version that has been released (e.g. 1.8.x).
-4. Check that the build and release scripts still work.
-5. Update the dist-tag of the old branch, see https://github.com/angular/angular.js/pull/12722.
-6. Write a blog post.
+Never move or reuse a release tag. If validation fails before npm publication,
+fix the release on a new commit, choose a new version when necessary, and push
+a new tag.
+
+If npm publication succeeds but finalizing the GitHub Release fails, publish
+the existing draft release manually. The npm version is immutable and must not
+be republished.

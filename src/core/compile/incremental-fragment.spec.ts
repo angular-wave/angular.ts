@@ -1133,6 +1133,57 @@ describe("$compile incremental fragment ownership", () => {
     expect(secondRecord?.linked).toBeTrue();
   });
 
+  it("disposes a cloned public fragment with its owning child scope", () => {
+    const childScope = $rootScope.$new();
+    const link = $compile("<span>{{name}}</span>");
+    let clone: Element | undefined;
+
+    link(childScope, (linked: Parameters<CloneAttachFn>[0]) => {
+      clone = linked as Element;
+    });
+
+    const record = getCompiledFragmentRecord(clone as Element);
+    const renderedContent = clone?.textContent;
+
+    expect(record).toBeDefined();
+    expect(record?.disposed).toBeFalse();
+
+    childScope.$destroy();
+
+    expect(record?.disposed).toBeTrue();
+    expect(record?.parentScope).toBeNull();
+    expect(getCompiledFragmentRecord(clone as Element)).toBeUndefined();
+    expect(clone?.textContent).toBe(renderedContent);
+  });
+
+  it("leaves parent-owned fragments available for explicit DOM disposal", () => {
+    const childScope = $rootScope.$new();
+    const parent = createCompiledFragmentRecord({
+      id: "parent-owned-public-fragment",
+      root: $appRoot,
+      parentScope: $rootScope,
+      nodes: [document.createComment("parent")],
+      linked: true,
+    });
+    const link = $compile("<span></span>");
+    let clone: Element | undefined;
+
+    link(childScope, (linked: Parameters<CloneAttachFn>[0]) => {
+      clone = linked as Element;
+    });
+
+    const child = getCompiledFragmentRecord(clone as Element)!;
+
+    addCompiledFragmentChild(parent, child);
+    childScope.$destroy();
+
+    expect(child.disposed).toBeFalse();
+
+    child.dispose();
+
+    expect(child.disposed).toBeTrue();
+  });
+
   it("removes node ownership when a compile fragment record is disposed", () => {
     const element = $compile("<article></article>")($rootScope) as Element;
     const record = getCompiledFragmentRecord(element);

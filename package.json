@@ -27,6 +27,38 @@
       "types": "./@types/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
     },
+    "./runtime/event-bus": {
+      "types": "./@types/runtime/event-bus.d.ts",
+      "import": "./dist/runtime/event-bus.js"
+    },
+    "./runtime/html-canvas": {
+      "types": "./@types/runtime/html-canvas.d.ts",
+      "import": "./dist/runtime/html-canvas.js"
+    },
+    "./runtime/orchestration": {
+      "types": "./@types/runtime/orchestration.d.ts",
+      "import": "./dist/runtime/orchestration.js"
+    },
+    "./runtime/workflow-worker": {
+      "types": "./@types/runtime/workflow-worker.d.ts",
+      "import": "./dist/runtime/workflow-worker.js"
+    },
+    "./runtime/realtime": {
+      "types": "./@types/runtime/realtime.d.ts",
+      "import": "./dist/runtime/realtime.js"
+    },
+    "./runtime/router": {
+      "types": "./@types/runtime/router.d.ts",
+      "import": "./dist/runtime/router.js"
+    },
+    "./runtime/service-worker": {
+      "types": "./@types/runtime/service-worker.d.ts",
+      "import": "./dist/runtime/service-worker.js"
+    },
+    "./runtime/wasm": {
+      "types": "./@types/runtime/wasm.d.ts",
+      "import": "./dist/runtime/wasm.js"
+    },
     "./runtime/web-component": {
       "types": "./@types/runtime/web-component.d.ts",
       "import": "./dist/runtime/web-component.js"
@@ -36,9 +68,10 @@
       "import": "./dist/services/*.js"
     },
     "./services/wasm": {
-      "types": "./@types/services/wasm/wasm.d.ts",
-      "import": "./dist/services/wasm/wasm.js"
-    }
+      "types": "./@types/services/wasm/index.d.ts",
+      "import": "./dist/services/wasm/index.js"
+    },
+    "./services/wasm/wasm": null
   },
   "files": [
     "@types",
@@ -50,13 +83,17 @@
     "type": "git",
     "url": "https://github.com/angular-wave/angular.ts.git"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "keywords": [
     "AngularJS",
     "AngularTS"
   ],
   "scripts": {
     "prepare": "husky",
-    "prepack": "rm -rf .build dist @types && make build types"
+    "prepack": "rm -rf .build dist @types && make release-build types"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",

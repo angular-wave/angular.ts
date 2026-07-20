@@ -1,0 +1,194 @@
+name: Release
+
+run-name: Release ${{ github.ref_name }}
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify release commit
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  publish:
+    name: Publish npm package and GitHub Release
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
+
+      - name: Install trusted-publishing npm version
+        run: npm install --global npm@11.18.0
+
+      - name: Validate release tag
+        id: release
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from "node:fs";
+
+          const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+          const tag = process.env.GITHUB_REF_NAME;
+          const version = packageJson.version;
+          const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+
+          if (!semver.test(version)) {
+            throw new Error(`package.json contains an invalid release version: ${version}`);
+          }
+
+          if (tag !== `v${version}`) {
+            throw new Error(`Release tag ${tag} must exactly match package version v${version}`);
+          }
+
+          const prerelease = version.includes("-");
+          const values = {
+            name: packageJson.name,
+            npm_tag: prerelease ? "next" : "latest",
+            prerelease: String(prerelease),
+            tag,
+            version,
+          };
+
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(""),
+          );
+          NODE
+
+      - name: Reject an existing npm version
+        env:
+          PACKAGE_NAME: ${{ steps.release.outputs.name }}
+          PACKAGE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          npm view "$PACKAGE_NAME" versions --json > "$RUNNER_TEMP/published-versions.json"
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+
+          const versions = JSON.parse(
+            readFileSync(`${process.env.RUNNER_TEMP}/published-versions.json`, "utf8"),
+          );
+
+          if (versions.includes(process.env.PACKAGE_VERSION)) {
+            throw new Error(
+              `${process.env.PACKAGE_NAME}@${process.env.PACKAGE_VERSION} is already published`,
+            );
+          }
+          NODE
+
+      - name: Extract curated release notes
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          node utils/extract-release-notes.mjs "$RELEASE_VERSION" \
+            > "$RUNNER_TEMP/release-notes.md"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build release artifacts
+        run: |
+          make release-build types
+          make docs-requirement
+          make version-check
+
+      - name: Verify committed generated artifacts
+        run: |
+          git diff --exit-code -- \
+            @types \
+            dist \
+            docs/static/typedoc \
+            docs/layouts/partials/hooks/head-end.html \
+            docs/layouts/shortcodes/version.html
+
+      - name: Pack exact release artifact
+        id: package
+        env:
+          PACKAGE_NAME: ${{ steps.release.outputs.name }}
+          PACKAGE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          mkdir -p release
+          npm pack --ignore-scripts --pack-destination release --json > "$RUNNER_TEMP/npm-pack.json"
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from "node:fs";
+
+          const [pack] = JSON.parse(
+            readFileSync(`${process.env.RUNNER_TEMP}/npm-pack.json`, "utf8"),
+          );
+
+          if (pack.name !== process.env.PACKAGE_NAME) {
+            throw new Error(`Packed ${pack.name}; expected ${process.env.PACKAGE_NAME}`);
+          }
+
+          if (pack.version !== process.env.PACKAGE_VERSION) {
+            throw new Error(`Packed ${pack.version}; expected ${process.env.PACKAGE_VERSION}`);
+          }
+
+          if (pack.warnings?.length) {
+            throw new Error(`npm pack warnings: ${pack.warnings.join("; ")}`);
+          }
+
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `tarball=release/${pack.filename}\n`,
+          );
+          NODE
+
+      - name: Create draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_NOTES: ${{ runner.temp }}/release-notes.md
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          TARBALL: ${{ steps.package.outputs.tarball }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            "$TARBALL#npm package tarball" \
+            --draft \
+            --notes-file "$RELEASE_NOTES" \
+            --verify-tag
+
+      - name: Publish exact tarball to npm
+        env:
+          NPM_TAG: ${{ steps.release.outputs.npm_tag }}
+          TARBALL: ${{ steps.package.outputs.tarball }}
+        run: npm publish "./$TARBALL" --access public --tag "$NPM_TAG" --provenance
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if [[ "$PRERELEASE" == "true" ]]; then
+            gh release edit "$RELEASE_TAG" \
+              --draft=false \
+              --prerelease \
+              --latest=false
+          else
+            gh release edit "$RELEASE_TAG" \
+              --draft=false \
+              --prerelease=false \
+              --latest
+          fi

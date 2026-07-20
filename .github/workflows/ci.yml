@@ -4,6 +4,7 @@ permissions:
   contents: read
 
 on:
+  workflow_call:
   push:
     branches:
       - master
@@ -183,5 +184,115 @@ jobs:
         with:
           name: kotlin-playwright-report
           path: integrations/kotlin/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  scala:
+    needs: package
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: ["17", "21"]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          package-manager-cache: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+
+      - name: Restore node_modules and Playwright cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
+
+      - name: Cache sbt and Scala artifacts
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.cache/coursier
+            integrations/scala/target
+            integrations/scala/project/target
+            integrations/scala/examples/basic_app/target
+          key: scala-${{ runner.os }}-jdk${{ matrix.java-version }}-${{ hashFiles('integrations/scala/build.sbt', 'integrations/scala/project/*.sbt', 'integrations/scala/project/build.properties', 'package-lock.json') }}
+          restore-keys: |
+            scala-${{ runner.os }}-jdk${{ matrix.java-version }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Scala.js integration check
+        run: make -C integrations/scala check
+
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: scala-playwright-report-jdk${{ matrix.java-version }}
+          path: integrations/scala/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  csharp-wasm:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          package-manager-cache: false
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore node_modules and Playwright cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
+
+      - name: Cache NuGet and .NET workloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.nuget/packages
+            ~/.dotnet
+          key: csharp-wasm-${{ runner.os }}-${{ hashFiles('integrations/wasm/csharp/**/*.csproj', 'package-lock.json') }}
+          restore-keys: |
+            csharp-wasm-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Install .NET WebAssembly workload
+        run: dotnet workload install wasm-tools
+
+      - name: Run C# Wasm integration check
+        run: make -C integrations/wasm/csharp ci-check
+
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: csharp-wasm-playwright-report
+          path: integrations/wasm/csharp/playwright-report/
           if-no-files-found: ignore
           retention-days: 3

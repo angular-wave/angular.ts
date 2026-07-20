@@ -114,7 +114,11 @@ Fragment ownership follows these rules:
   when their root is destroyed.
 - Nodes created from markup or transclusion clones are owned and removed when
   their fragment is explicitly disposed by a view or DOM integration.
+- Standalone public-link fragments retire their bookkeeping when their owning
+  child scope is destroyed while preserving the last rendered DOM snapshot.
 - Nested public links attach to the nearest owning parent fragment.
+- Parent-owned fragments remain available for explicit disposal after scope
+  destruction so retained views and leave animations can finish safely.
 - Root destruction disposes every live fragment in reverse creation order while
   preserving the last rendered DOM snapshot.
 - Fragment disposal recursively releases child fragments, async work,

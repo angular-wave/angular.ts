@@ -18,52 +18,9 @@
  *   DirectiveRestrict: ng.DirectiveRestrict,
  *   DirectiveFactory: ng.DirectiveFactory,
  *   NgModule: ng.NgModule,
- *   PublicLinkFn: ng.PublicLinkFn,
- *   PubSubProvider: ng.PubSubProvider,
+ *   LinkFn: ng.LinkFn,
  *   Scope: ng.Scope,
- *   ScopeService: ng.ScopeService,
  *   TranscludeFn: ng.TranscludeFn,
- *   AnchorScrollProvider: ng.AnchorScrollProvider,
- *   AngularProvider: ng.AngularProvider,
- *   AngularServiceProvider: ng.AngularServiceProvider,
- *   AnimateProvider: ng.AnimateProvider,
- *   AriaProvider: ng.AriaProvider,
- *   CompileLifecycleProvider: ng.CompileLifecycleProvider,
- *   CompileProvider: ng.CompileProvider,
- *   ControllerProvider: ng.ControllerProvider,
- *   CookieProvider: ng.CookieProvider,
- *   EventBusProvider: ng.EventBusProvider,
- *   FilterProvider: ng.FilterProvider,
- *   ExceptionHandlerProvider: ng.ExceptionHandlerProvider,
- *   HttpParamSerializerProvider: ng.HttpParamSerializerProvider,
- *   HttpProvider: ng.HttpProvider,
- *   InterpolateProvider: ng.InterpolateProvider,
- *   LocationProvider: ng.LocationProvider,
- *   LogProvider: ng.LogProvider,
- *   MachineProvider: ng.MachineProvider,
- *   WorkflowProvider: ng.WorkflowProvider,
- *   ParseProvider: ng.ParseProvider,
- *   RestProvider: ng.RestProvider,
- *   RootScopeProvider: ng.RootScopeProvider,
- *   RouterProvider: ng.RouterProvider,
- *   SceDelegateProvider: ng.SceDelegateProvider,
- *   SceProvider: ng.SceProvider,
- *   SseProvider: ng.SseProvider,
- *   StateProvider: ng.StateProvider,
- *   StateRegistryProvider: ng.StateRegistryProvider,
- *   StreamProvider: ng.StreamProvider,
- *   TemplateCacheProvider: ng.TemplateCacheProvider,
- *   TemplateFactoryProvider: ng.TemplateFactoryProvider,
- *   TemplateRequestProvider: ng.TemplateRequestProvider,
- *   TransitionProvider: ng.TransitionProvider,
- *   TransitionsProvider: ng.TransitionsProvider,
- *   TransitionService: ng.TransitionService,
- *   ViewProvider: ng.ViewProvider,
- *   WasmProvider: ng.WasmProvider,
- *   WebComponentProvider: ng.WebComponentProvider,
- *   WebSocketProvider: ng.WebSocketProvider,
- *   WebTransportProvider: ng.WebTransportProvider,
- *   WorkerProvider: ng.WorkerProvider,
  *   AnchorScrollService: ng.AnchorScrollService,
  *   AnimateService: ng.AnimateService,
  *   AnimationHandle: ng.AnimationHandle,
@@ -71,20 +28,15 @@
  *   AnimationLifecycleCallback: ng.AnimationLifecycleCallback,
  *   AriaService: ng.AriaService,
  *   CompileService: ng.CompileService,
- *   CompileLifecycleService: ng.CompileLifecycleService,
  *   ControllerService: ng.ControllerService,
  *   CookieService: ng.CookieService,
- *   ElementService: ng.ElementService,
  *   EventBusService: ng.EventBusService,
  *   ExceptionHandlerService: ng.ExceptionHandlerService,
  *   FilterFn: ng.FilterFn,
  *   FilterFactory: ng.FilterFactory,
  *   FilterService: ng.FilterService,
  *   EntryFilterItem: ng.EntryFilterItem,
- *   DateFilterOptions: ng.DateFilterOptions,
- *   NumberFilterOptions: ng.NumberFilterOptions,
  *   CurrencyFilterOptions: ng.CurrencyFilterOptions,
- *   RelativeTimeFilterOptions: ng.RelativeTimeFilterOptions,
  *   HttpParamSerializerService: ng.HttpParamSerializerService,
  *   HttpService: ng.HttpService,
  *   InjectorService: ng.InjectorService,
@@ -94,12 +46,6 @@
  *   MachineService: ng.MachineService,
  *   WorkflowService: ng.WorkflowService,
  *   ParseService: ng.ParseService,
- *   ProvideService: ng.ProvideService,
- *   PubSubService: ng.PubSubService,
- *   RootElementService: ng.RootElementService,
- *   RootScopeService: ng.RootScopeService,
- *   StateService: ng.StateService,
- *   StateRegistryService: ng.StateRegistryService,
  *   SceService: ng.SceService,
  *   SceDelegateService: ng.SceDelegateService,
  *   SseService: ng.SseService,
@@ -107,19 +53,13 @@
  *   SseConnection: ng.SseConnection,
  *   RealtimeProtocolEventDetail: ng.RealtimeProtocolEventDetail<unknown, unknown>,
  *   RealtimeProtocolMessage: ng.RealtimeProtocolMessage,
- *   SseProtocolEventDetail: ng.SseProtocolEventDetail<unknown>,
- *   SseProtocolMessage: ng.SseProtocolMessage,
- *   SwapModeType: ng.SwapModeType,
+ *   SwapMode: ng.SwapMode,
  *   TemplateCacheService: ng.TemplateCacheService,
- *   TemplateFactoryService: ng.TemplateFactoryService,
  *   TemplateRequestService: ng.TemplateRequestService,
  *   TransitionsService: ng.TransitionsService,
- *   ViewService: ng.ViewService,
  *   WorkerService: ng.WorkerService,
- *   AngularService: ng.AngularService,
  *   AnnotatedFactory: ng.AnnotatedFactory<(...args: never[]) => unknown>,
  *   AnimationOptions: ng.AnimationOptions,
- *   NativeAnimationOptions: ng.NativeAnimationOptions,
  *   AnimationPhase: ng.AnimationPhase,
  *   AnimationPreset: ng.AnimationPreset,
  *   AnimationPresetHandler: ng.AnimationPresetHandler,
@@ -130,52 +70,32 @@
  *   ControllerConstructor: ng.ControllerConstructor,
  *   CookieOptions: ng.CookieOptions,
  *   CookieStoreOptions: ng.CookieStoreOptions,
- *   DocumentService: ng.DocumentService,
  *   EntityClass: ng.EntityClass<unknown>,
  *   ErrorHandlingConfig: ng.ErrorHandlingConfig,
  *   Expression: ng.Expression,
  *   HttpMethod: ng.HttpMethod,
- *   HttpPromise: ng.HttpPromise<unknown>,
- *   HttpProviderDefaults: ng.HttpProviderDefaults,
+ *   HttpDefaults: ng.HttpDefaults,
  *   HttpResponse: ng.HttpResponse<unknown>,
  *   HttpResponseStatus: ng.HttpResponseStatus,
  *   Injectable: ng.Injectable<(...args: never[]) => unknown>,
- *   InjectionTokens: ng.InjectionTokens,
  *   InterpolationFunction: ng.InterpolationFunction,
- *   InvocationDetail: ng.InvocationDetail,
  *   ListenerFn: ng.ListenerFn,
- *   Machine: ng.Machine<{ roomId: string }>,
- *   MachineConfig: ng.MachineConfig<{ roomId: string }>,
- *   MachineEventMap: ng.MachineEventMap,
- *   MachineHooks: ng.MachineHooks<{ roomId: string }>,
- *   MachineMode: ng.MachineMode,
- *   MachineModeHooks: ng.MachineModeHooks<{ roomId: string }>,
- *   MachineNoEvents: ng.MachineNoEvents,
- *   MachineSnapshot: ng.MachineSnapshot<{ roomId: string }>,
- *   MachineTransition: ng.MachineTransition<{ roomId: string }, { roomId: string }>,
- *   MachineTransitionContext: ng.MachineTransitionContext<{ roomId: string }>,
- *   MachineTransitionHook: ng.MachineTransitionHook<{ roomId: string }>,
- *   MachineTransitionMap: ng.MachineTransitionMap<{ roomId: string }>,
- *   MachineTransitionResult: ng.MachineTransitionResult,
- *   Workflow: ng.Workflow<{ output: string }>,
- *   WorkflowCommand: ng.WorkflowCommand<{ output: string }, string, { file: string }>,
- *   WorkflowCommandContext: ng.WorkflowCommandContext<{ output: string }, string>,
- *   WorkflowCommandMap: ng.WorkflowCommandMap<{ output: string }>,
- *   WorkflowCommandOptions: ng.WorkflowCommandOptions,
- *   WorkflowConcurrencyPolicy: ng.WorkflowConcurrencyPolicy,
- *   WorkflowCommandResult: ng.WorkflowCommandResult<{ file: string }>,
- *   WorkflowConfig: ng.WorkflowConfig<{ output: string }>,
- *   WorkflowDiagnostic: ng.WorkflowDiagnostic,
- *   WorkflowHistoryEntry: ng.WorkflowHistoryEntry,
- *   WorkflowMode: ng.WorkflowMode,
- *   WorkflowNoCommands: ng.WorkflowNoCommands,
- *   WorkflowSnapshot: ng.WorkflowSnapshot<{ output: string }>,
- *   WorkflowSnapshotMigration: ng.WorkflowSnapshotMigration<{ output: string }>,
- *   WorkflowStatus: ng.WorkflowStatus,
+ *   Machine: ng.Machine,
+ *   MachineSendResult: ng.MachineSendResult,
+ *   MachineSendStatus: ng.MachineSendStatus,
+ *   MachineSnapshot: ng.MachineSnapshot,
+ *   Workflow: ng.Workflow,
+ *   WorkflowCommand: ng.WorkflowCommand,
+ *   WorkflowCommandContext: ng.WorkflowCommandContext,
+ *   WorkflowCommandDefinition: ng.WorkflowCommandDefinition,
+ *   WorkflowResult: ng.WorkflowResult<{ file: string }>,
+ *   WorkflowSnapshot: ng.WorkflowSnapshot,
+ *   WorkflowSupervisor: ng.WorkflowSupervisor,
+ *   WorkflowSupervisorConfig: ng.WorkflowSupervisorConfig,
+ *   WorkflowSupervisorSnapshot: ng.WorkflowSupervisorSnapshot,
  *   NgModelController: ng.NgModelController,
- *   RequestConfig: ng.RequestConfig,
- *   RequestShortcutConfig: ng.RequestShortcutConfig,
- *   RestDefinition: ng.RestDefinition<unknown>,
+ *   HttpRequestConfig: ng.HttpRequestConfig,
+ *   HttpRequestOptions: ng.HttpRequestOptions,
  *   RestFactory: ng.RestFactory,
  *   RestBackend: ng.RestBackend,
  *   RestCacheStore: ng.RestCacheStore,
@@ -187,16 +107,22 @@
  *   CachedRestBackendOptions: ng.CachedRestBackendOptions,
  *   RestService: ng.RestService<unknown, unknown>,
  *   ScopeEvent: ng.ScopeEvent,
- *   ServiceProvider: ng.ServiceProvider,
+ *   RouterModuleDeclaration: ng.RouterModuleDeclaration,
  *   StateDeclaration: ng.StateDeclaration,
- *   StateResolveArray: ng.StateResolveArray,
- *   StateResolveObject: ng.StateResolveObject,
+ *   StatePolicyDeclaration: ng.StatePolicyDeclaration,
+ *   RouteContract: ng.RouteContract,
+ *   RouteMap: ng.RouteMap,
+ *   RoutesOf: ng.RoutesOf<{ name: "admin" }>,
+ *   ParamsOf: ng.ParamsOf<{ admin: { params: { id: string } } }, "admin">,
+ *   ResolvesOf: ng.ResolvesOf<{ admin: { resolves: { user: { id: string } } } }, "admin">,
+ *   RouterModule: ng.RouterModule<{ admin: {} }>,
+ *   StateService: ng.StateService<{ admin: {} }>,
  *   StorageBackend: ng.StorageBackend,
  *   StorageType: ng.StorageType,
  *   ConnectionConfig: ng.ConnectionConfig,
  *   ConnectionEvent: ng.ConnectionEvent,
  *   StreamService: ng.StreamService,
- *   Transition: ng.Transition,
+ *   Transition: ng.Transition<{ admin: {} }, { to: "admin", from: "admin" }>,
  *   Validator: ng.Validator,
  *   ElementScopeOptions: ng.ElementScopeOptions,
  *   AppComponentOptions: ng.AppComponentOptions,
@@ -210,32 +136,31 @@
  *   WebSocketConfig: ng.WebSocketConfig,
  *   WebSocketConnection: ng.WebSocketConnection,
  *   WebSocketService: ng.WebSocketService,
- *   NativeWebTransport: ng.NativeWebTransport,
  *   WebTransportBufferInput: ng.WebTransportBufferInput,
- *   WebTransportCertificateHash: ng.WebTransportCertificateHash,
  *   WebTransportConfig: ng.WebTransportConfig,
  *   WebTransportConnection: ng.WebTransportConnection,
  *   WebTransportDatagramEvent: ng.WebTransportDatagramEvent<unknown>,
- *   WebTransportOptions: ng.WebTransportOptions,
  *   WebTransportReconnectEvent: ng.WebTransportReconnectEvent,
  *   WebTransportRetryDelay: ng.WebTransportRetryDelay,
  *   WebTransportService: ng.WebTransportService,
- *   WindowService: ng.WindowService,
  *   WorkerConfig: ng.WorkerConfig,
- *   WorkerConnection: ng.WorkerConnection,
- *   WasmAbiExports: ng.WasmAbiExports,
- *   WasmInstantiationResult: ng.WasmInstantiationResult,
- *   WasmOptions: ng.WasmOptions,
- *   WasmScope: ng.WasmScope,
- *   WasmScopeAbi: ng.WasmScopeAbi,
- *   WasmScopeAbiImportObject: ng.WasmScopeAbiImportObject,
- *   WasmScopeAbiImports: ng.WasmScopeAbiImports,
- *   WasmScopeBindingOptions: ng.WasmScopeBindingOptions,
- *   WasmScopeOptions: ng.WasmScopeOptions,
- *   WasmScopeReference: ng.WasmScopeReference,
- *   WasmScopeUpdate: ng.WasmScopeUpdate,
- *   WasmScopeWatchOptions: ng.WasmScopeWatchOptions,
+ *   WorkerError: ng.WorkerError,
+ *   WorkerErrorCode: ng.WorkerErrorCode,
+ *   WorkerHandle: ng.WorkerHandle,
+ *   WorkerModelMessage: ng.WorkerModelMessage,
+ *   WorkerRequest: ng.WorkerRequest,
+ *   WorkerRequestOptions: ng.WorkerRequestOptions,
+ *   WorkerResponse: ng.WorkerResponse,
+ *   WasmBinding: ng.WasmBinding,
+ *   WasmBindingOptions: ng.WasmBindingOptions,
+ *   WasmError: ng.WasmError,
+ *   WasmErrorCode: ng.WasmErrorCode,
+ *   WasmLoadOptions: ng.WasmLoadOptions,
+ *   WasmResource: ng.WasmResource,
+ *   WasmResourceStatus: ng.WasmResourceStatus,
  *   WasmService: ng.WasmService,
+ *   WasmSource: ng.WasmSource,
+ *   WasmTarget: ng.WasmTarget,
  * }} AngularTsNamespaceTypes
  */
 
@@ -254,7 +179,7 @@ export const tileClasses = Object.freeze({
 export const tileClassValue = ["tile", tileClasses];
 
 /**
- * @param {ng.ScopeService} $scope
+ * @param {ng.Scope} $scope
  */
 export function batchScopeUpdate($scope) {
   return $scope.$batch(() => {
@@ -265,55 +190,66 @@ export function batchScopeUpdate($scope) {
 }
 
 /**
+ * @typedef {{ data: { roomId: string }, events: { join: { roomId: string } }, state: "setup" | "waiting" }} SessionMachineContract
+ */
+
+/**
  * @param {ng.MachineService} $machine
- * @returns {ng.Machine<{ roomId: string }, ng.MachineEventMap>}
+ * @returns {ng.Machine<SessionMachineContract>}
  */
 export function createSessionMachine($machine) {
-  const machine = $machine({
+  /** @type {ng.MachineConfig<SessionMachineContract>} */
+  const config = {
     initial: "setup",
     data: {
       roomId: "",
     },
-    transitions: {
+    states: {
       setup: {
-        /**
-         * @param {{ roomId: string }} data
-         * @param {unknown} payload
-         * @returns {ng.MachineTransitionResult}
-         */
-        join(data, payload) {
-          if (
-            typeof payload === "object" &&
-            payload !== null &&
-            "roomId" in payload &&
-            typeof payload.roomId === "string"
-          ) {
-            data.roomId = payload.roomId;
-          }
+        on: {
+          join: {
+            to: "waiting",
+            /**
+             * @param {{ data: { roomId: string }, payload: unknown }} context
+             */
+            update(context) {
+              const payload = context.payload;
 
-          return "waiting";
+              if (
+                typeof payload === "object" &&
+                payload !== null &&
+                "roomId" in payload &&
+                typeof payload.roomId === "string"
+              ) {
+                context.data.roomId = payload.roomId;
+              }
+            },
+          },
         },
       },
+      waiting: {},
     },
     hooks: {
       enter: {
         /**
-         * @param {ng.MachineTransitionContext<{ roomId: string }>} context
+         * @param {{ data: { roomId: string }, to?: string }} context
          */
         waiting(context) {
-          context.data.roomId = context.to;
+          context.data.roomId = context.to || "waiting";
         },
       },
       /**
-       * @param {ng.MachineTransitionContext<{ roomId: string }>} context
+       * @param {{ machine: ng.Machine<SessionMachineContract>, from: "setup" | "waiting", to?: "setup" | "waiting" }} context
        */
       transition(context) {
-        context.machine.matches(context.to);
+        context.machine.matches(context.to || context.from);
       },
     },
-  });
+  };
+  /** @type {ng.Machine<SessionMachineContract>} */
+  const machine = $machine(config);
 
-  /** @type {ng.MachineSnapshot<{ roomId: string }>} */
+  /** @type {ng.MachineSnapshot<SessionMachineContract>} */
   const snapshot = machine.snapshot();
 
   machine.restore(snapshot);
@@ -326,32 +262,36 @@ export function createSessionMachine($machine) {
  * @returns {ng.NgModule}
  */
 export function registerSessionMachine(module) {
-  /** @type {ng.MachineConfig<{ roomId: string }, ng.MachineEventMap>} */
+  /** @type {any} */
   const config = {
     initial: "setup",
     data: {
       roomId: "",
     },
-    transitions: {
+    states: {
       setup: {
-        /**
-         * @param {{ roomId: string }} data
-         * @param {unknown} payload
-         * @returns {ng.MachineTransitionResult}
-         */
-        join(data, payload) {
-          if (
-            typeof payload === "object" &&
-            payload !== null &&
-            "roomId" in payload &&
-            typeof payload.roomId === "string"
-          ) {
-            data.roomId = payload.roomId;
-          }
+        on: {
+          join: {
+            to: "waiting",
+            /**
+             * @param {{ data: { roomId: string }, payload: unknown }} context
+             */
+            update(context) {
+              const payload = context.payload;
 
-          return "waiting";
+              if (
+                typeof payload === "object" &&
+                payload !== null &&
+                "roomId" in payload &&
+                typeof payload.roomId === "string"
+              ) {
+                context.data.roomId = payload.roomId;
+              }
+            },
+          },
         },
       },
+      waiting: {},
     },
   };
 
@@ -360,46 +300,47 @@ export function registerSessionMachine(module) {
 
 /**
  * @param {ng.WorkflowService} $workflow
- * @returns {Promise<ng.WorkflowCommandResult>}
+ * @returns {Promise<unknown>}
  */
 export function createDocsWorkflow($workflow) {
-  /** @type {ng.Workflow<{ output: string }, ng.MachineEventMap, { build: ng.WorkflowCommand<{ output: string }, string, { file: string }, ng.MachineNoEvents> }>} */
-  const workflow = $workflow({
+  /** @type {any} */
+  const config = {
     id: "docs-build",
     initial: "idle",
     data: {
       output: "",
     },
-    transitions: {
-      idle: {
-        start() {
-          return "running";
-        },
-      },
-    },
     commands: {
-      /**
-       * @param {ng.WorkflowCommandContext<{ output: string }, string>} context
-       * @returns {ng.WorkflowCommandResult<{ file: string }>}
-       */
-      build(context) {
-        context.data.output = context.input;
-        return {
-          ok: true,
-          output: {
-            file: context.data.output,
+      build: {
+        from: "idle",
+        pending: "running",
+        /**
+         * @param {{ input: string }} context
+         * @returns {{ file: string }}
+         */
+        execute(context) {
+          return {
+            file: context.input,
+          };
+        },
+        success: {
+          to: "complete",
+          /** @param {{ data: { output: string }, output: { file: string } }} context */
+          update(context) {
+            context.data.output = context.output.file;
           },
-        };
+        },
+        failure: "failed",
       },
     },
-  });
+  };
+  /** @type {ng.Workflow<any>} */
+  const workflow = $workflow(/** @type {any} */ (config));
 
-  /** @type {ng.WorkflowSnapshot<{ output: string }>} */
+  /** @type {ng.WorkflowSnapshot<any>} */
   const snapshot = workflow.snapshot();
 
   workflow.restore(snapshot);
-  void workflow.retry("build");
-  void workflow.repeat("build");
 
   return workflow.run("build", "index.html");
 }
@@ -409,60 +350,17 @@ export function createDocsWorkflow($workflow) {
  * @returns {ng.NgModule}
  */
 export function registerDocsWorkflow(module) {
-  /** @type {ng.WorkflowConfig<{ output: string }, ng.MachineEventMap>} */
+  /** @type {any} */
   const config = {
     id: "docs-build",
     initial: "idle",
     data: {
       output: "",
     },
-    transitions: {},
+    states: {
+      idle: {},
+    },
   };
 
   return module.workflow("docsWorkflow", config);
-}
-
-/**
- * @param {ng.HttpProvider} $httpProvider
- */
-export function configureHttp($httpProvider) {
-  $httpProvider.defaults.withCredentials = true;
-  $httpProvider.interceptors.push(() => ({}));
-  $httpProvider.xsrfTrustedOrigins.push("https://api.example.com");
-}
-
-/**
- * @param {ng.AnimateProvider} $animateProvider
- */
-export function configureAnimate($animateProvider) {
-  $animateProvider.register("fade", {
-    enter: [{ opacity: 1 }],
-    leave: [{ opacity: 0 }],
-  });
-}
-
-/**
- * @param {ng.AriaProvider} $ariaProvider
- */
-export function configureAria($ariaProvider) {
-  $ariaProvider.config({ tabindex: false });
-}
-
-/**
- * @param {ng.HttpParamSerializerProvider} $httpParamSerializerProvider
- */
-export function configureHttpParamSerializer($httpParamSerializerProvider) {
-  $httpParamSerializerProvider.$get =
-    () =>
-    (params = {}) =>
-      new URLSearchParams(
-        /** @type {Record<string, string>} */ (params),
-      ).toString();
-}
-
-/**
- * @param {ng.SceProvider} $sceProvider
- */
-export function configureSce($sceProvider) {
-  return $sceProvider.enabled(false);
 }

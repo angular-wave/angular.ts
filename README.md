@@ -18,7 +18,8 @@ AngularTS builds on AngularJS' decade of production hardening and adds:
 - a built-in state router with nested views, resolves, transitions and URL matching
 - built-in animations
 - declarative HTTP directives inspired by HTMX
-- injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets, streams and WASM modules
+- injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets, and streams
+- opt-in WebAssembly loading and reactive scope bridging for JavaScript and WASM language targets
 - first class support for Google Closure compiler and its J2CL and ClojureScript compilation targets
 - first class support for JS targets: Scala, Kotlin, Gleam
 - first class support for WASM targets: Rust, Golang, Zig, C, C++
@@ -36,61 +37,38 @@ AngularTS is a good fit if you:
 
 ## Getting Started
 
-#### Install
+### Install
 
 ```bash
-$ npm i @angular-wave/angular.ts
+npm install @angular-wave/angular.ts
 ```
 
 The published package includes generated TypeScript declarations under `@types/`.
 
-or
+Or load the default browser runtime directly:
 
 ```html
-<script src="
-    https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts/dist/angular-ts.umd.min.js
-"></script>
+<script src="https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts/dist/angular-ts.umd.min.js"></script>
 ```
 
-Initialize your app
+AngularTS starts with HTML:
 
 ```html
 <div ng-app ng-init="x='world'">Hello {{ x }}</div>
 ```
 
-## Custom Runtime
-
-The default package includes the full framework: compiler, router, animation
-system, HTTP services, storage, workers, streams and other browser integrations.
-That is useful for exploration, but a production build should include only the
-features actually used by your application.
-
-Custom runtimes start from the runtime entry point and import the emitted files they
-need. For example, a counter app only needs interpolation, scope, compile, the
-controller directive, and the `ng-click` event directive:
+For a structured application, register a module and controller while keeping
+state and behavior directly available to the template:
 
 ```html
 <section ng-app="counterApp" ng-controller="CounterController as counter">
-  <button ng-click="counter.decrease()">-</button>
+  <button type="button" ng-click="counter.decrease()">-</button>
   <strong>{{ counter.count }}</strong>
-  <button ng-click="counter.increase()">+</button>
+  <button type="button" ng-click="counter.increase()">+</button>
 </section>
 ```
 
 ```js
-import { createAngularCustom } from "@angular-wave/angular.ts/runtime";
-import { ngControllerDirective } from "@angular-wave/angular.ts/directive/controller/controller";
-import { ngEventDirectives } from "@angular-wave/angular.ts/directive/events/events";
-
-const angular = createAngularCustom({
-  ngModule: {
-    directives: {
-      ngController: ngControllerDirective,
-      ngClick: ngEventDirectives.ngClick,
-    },
-  },
-});
-
 class CounterController {
   count = 0;
 
@@ -103,58 +81,18 @@ class CounterController {
   }
 }
 
-angular.module("counterApp", []).controller("CounterController", CounterController);
-
-angular.init(document);
+angular
+  .module("counterApp", [])
+  .controller("CounterController", CounterController);
 ```
 
-The minimal event-directive runtime example above currently comes in around
-**32KB** gzip.
+## Custom Builds
 
-The same counter can also ship as a standalone Web Component microapp. The host
-page only needs to load the element definition and place the custom element:
-
-```html
-<runtime-counter></runtime-counter>
-```
-
-```js
-import { ngEventDirectives } from "@angular-wave/angular.ts/directive/events/events";
-import { defineAngularElement } from "@angular-wave/angular.ts/runtime/web-component";
-
-defineAngularElement("runtime-counter", {
-  ngModule: {
-    directives: {
-      ngClick: ngEventDirectives.ngClick,
-    },
-  },
-  component: {
-    shadow: true,
-    scope: {
-      count: 0,
-    },
-    template: `
-      <span>
-        <button type="button" ng-click="decrease()">-</button>
-        <strong>{{ count }}</strong>
-        <button type="button" ng-click="increase()">+</button>
-      </span>
-    `,
-    connected({ scope }) {
-      scope.increase = () => {
-        scope.count += 1;
-      };
-      scope.decrease = () => {
-        scope.count -= 1;
-      };
-    },
-  },
-});
-```
-
-The element owns its isolated AngularTS runtime, so it can be embedded in a
-server-rendered page, another framework, or a larger AngularTS app without a
-host-page bootstrap.
+The default browser runtime includes the compiler, router, animations, HTTP,
+storage, workers, streams, and common browser integrations. Applications can
+instead compose a smaller runtime from explicit framework modules. See
+[Angular runtime composition](https://angular-wave.github.io/angular.ts/docs/concepts/angular-runtime/)
+for the custom-build API and examples.
 
 For a complete starting point, see
 [angular-seed](https://github.com/angular-wave/angular-seed).
@@ -163,5 +101,5 @@ For a complete starting point, see
 
 Documentation is available at https://angular-wave.github.io/angular.ts/.
 
-IMPORTANT: AngularTS is not backwards-compatible with AngularJS. For teams still working with AngularJS, it presents a frictionless and future-proof path to migration,
-which is supported by additional guidance for your LLM of choice.
+IMPORTANT: AngularTS is not backwards-compatible with AngularJS. For teams still working with AngularJS, 
+it presents a frictionless and future-proof path to migration, which is supported by additional guidance for your LLM of choice.

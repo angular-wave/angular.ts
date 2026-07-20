@@ -1,4 +1,4 @@
-.PHONY: build build-ts check test test-integrations test-types test-namespace-js types generated-check public-namespace-api update-public-namespace-api docs-examples-check coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix underscore-property-key-check wasm-parity hugo
+.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check internal-composition-check internal-composition-report types generated-check public-namespace-api update-public-namespace-api docs-examples-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -25,23 +25,31 @@ ensure-docs-deps:
 		cd docs && npm ci; \
 	fi
 
+ensure-vscode-deps:
+	@if [ ! -d ./tools/vscode/node_modules ]; then \
+		echo "Installing VS Code extension dependencies..."; \
+		cd tools/vscode && npm ci; \
+	fi
+
 build: ensure-deps
 	@node integrations/closure/scripts/validate-externs.mjs
+	@./node_modules/.bin/tsc --project tsconfig.build.json
+
+build-ts: build
+
+release-build: build
 	@if [ -d "$(BUILD_DIR)" ]; then \
 		echo "Removing $(BUILD_DIR)..."; \
 		rm -r "$(BUILD_DIR)"; \
 	fi
-	@./node_modules/.bin/tsc --project tsconfig.build.json
 	@./node_modules/.bin/rollup -c
+	@node utils/check-default-bundle-boundaries.mjs
 	@mkdir -p "$(BUILD_DIR)/externs"
 	@cp "$(CLOSURE_EXTERNS)" "$(DIST_CLOSURE_EXTERNS)"
 	@node -e 'const fs=require("fs"); const pkg=JSON.parse(fs.readFileSync("package.json","utf8")); const file="$(DIST_CLOSURE_EXTERNS)"; fs.writeFileSync(file, fs.readFileSync(file,"utf8").replaceAll("[VI]{version}[/VI]", pkg.version));'
 
-build-ts: ensure-deps
-	@./node_modules/.bin/tsc --project tsconfig.build.json
-
 size:
-	@$(MAKE) build >/dev/null
+	@$(MAKE) release-build >/dev/null
 	@echo "Minified build output:  $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
 	@echo "Expected gzip:          $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
 	@git checkout -q $(BUILD_DIR)
@@ -64,8 +72,14 @@ size-html:
 version:
 	@node utils/version.cjs	
 
+version-check:
+	@node utils/version.cjs --check
+
 format:
 	@npx prettier ./src --write --cache --log-level=silent
+
+format-check:
+	@npx prettier ./src --check --cache --log-level=silent
 	
 lint:
 	@$(MAKE) lint-check
@@ -76,12 +90,29 @@ lint-check: ensure-deps
 lint-fix: ensure-deps
 	@npx eslint ./src --fix
 
+vscode-build: ensure-vscode-deps
+	@cd tools/vscode && npm run build
+
+vscode-test: ensure-vscode-deps
+	@cd tools/vscode && npm test
+
+vscode-smoke: ensure-vscode-deps
+	@cd tools/vscode && npm run test:smoke
+
 underscore-property-key-check:
 	@node ./utils/check-underscore-property-keys.mjs
 
+internal-composition-check:
+	@node ./utils/check-internal-composition.mjs
+
+internal-composition-report:
+	@node ./utils/check-internal-composition.mjs --json
+
 check: ensure-deps
 	@$(MAKE) lint-check
+	@$(MAKE) release-notes-test
 	@$(MAKE) underscore-property-key-check
+	@$(MAKE) internal-composition-check
 	@$(MAKE) generated-check
 	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
@@ -97,10 +128,27 @@ test-types: ensure-deps
 test-namespace-js: types
 	@echo "Typechecking JavaScript namespace consumer"
 	./node_modules/.bin/tsc --project tsconfig.namespace-js.json
+	@$(MAKE) namespace-surface-check
+
+namespace-surface-check:
+	@node ./utils/check-namespace-surface.mjs
 
 docs-examples-check: ensure-deps
 	@echo "Checking docs example API references"
 	@node ./utils/check-docs-examples.mjs
+
+public-type-docs-check:
+	@node ./utils/check-public-type-docs.mjs
+
+docs-requirement: generated-check docs-examples-check doc public-type-docs-check
+	@echo "Documentation requirement artifacts refreshed."
+
+release-notes-test:
+	@node --test utils/extract-release-notes.test.mjs
+
+release-notes-check: release-notes-test
+	@node utils/extract-release-notes.mjs \
+		"$$(node -p 'require("./package.json").version')" >/dev/null
 
 include utils/benchmarks/benchmarks.mk
 
@@ -134,7 +182,16 @@ serve: ensure-deps
 	(cd utils/server && go run .) & \
 	wait
 
-prepare-release: build test check types doc format gzip version size-html
+prepare-release: release-notes-check
+	@$(MAKE) format-check
+	@$(MAKE) check
+	@$(MAKE) test
+	@$(MAKE) docs-requirement
+	@$(MAKE) release-build
+	@$(MAKE) types
+	@$(MAKE) version
+	@$(MAKE) gzip
+	@$(MAKE) size-html
 
 PLAYWRIGHT_TEST := npx playwright test
 
@@ -147,14 +204,28 @@ test-integrations: ensure-deps
 	@echo $(INFO) "Playwright integration tests"
 	@$(MAKE) -f integrations/closure/Makefile closure-test
 	@$(MAKE) -C integrations/kotlin check
+	@$(MAKE) scala-check
 	@$(MAKE) wasm-parity
 
 wasm-parity: ensure-deps
 	@$(MAKE) -C integrations/wasm/rust parity
 
+scala-check: ensure-deps
+	@$(MAKE) -C integrations/scala check
+
 test-ui: ensure-deps
 	@echo $(INFO) "Playwright test JS with ui"
 	@$(PLAYWRIGHT_TEST) --ui
+
+test-wasm-browsers: ensure-deps
+	@$(PLAYWRIGHT_TEST) --config playwright.wasm.config.ts
+
+wasm-contracts-check:
+	@node --test integrations/wasm/tool/generate-contract.test.mjs
+	@node integrations/wasm/tool/generate-contract.mjs \
+		integrations/wasm/contracts/player.json \
+		--out integrations/wasm/contracts/generated \
+		--check
 
 coverage: ensure-deps
 	@echo $(INFO) "Playwright coverage"

@@ -10,6 +10,7 @@ tsconfig.tsbuildinfo
 /coverage/
 /playwright/.cache/
 .idea
+.metals
 .vscode
 angular.ts.iml
 /@types/

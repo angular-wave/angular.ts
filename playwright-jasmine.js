@@ -90,25 +90,39 @@ export async function runJasminePage(page, url, options = {}) {
   });
   await page.goto(url);
   try {
+    const completedPredicate = () =>
+      typeof window.jsApiReporter?.status === "function" &&
+      window.jsApiReporter.status() === "done";
+
     try {
-      await page.waitForFunction(
-        () =>
-          typeof window.jsApiReporter?.status === "function" &&
-          window.jsApiReporter.status() === "done",
-        { timeout },
-      );
+      await page.waitForFunction(completedPredicate, { timeout });
     } catch (error) {
-      const diagnostics = await collectJasmineDiagnostics(page);
-      diagnostics.pageErrors = pageErrors;
-      diagnostics.consoleErrors = consoleErrors;
-      throw new Error(formatJasmineFailureReport(url, diagnostics), {
-        cause: error,
+      const message =
+        error instanceof Error ? error.message : String(error);
+      const isRafError =
+        message.includes("requestAnimationFrame") &&
+        message.includes("is not a function");
+
+      if (!isRafError) {
+        throw error;
+      }
+
+      await page.waitForFunction(completedPredicate, {
+        timeout,
+        polling: 50,
       });
     }
     const diagnostics = await collectJasmineDiagnostics(page);
     diagnostics.pageErrors = pageErrors;
     diagnostics.consoleErrors = consoleErrors;
     return diagnostics;
+  } catch (error) {
+    const diagnostics = await collectJasmineDiagnostics(page);
+    diagnostics.pageErrors = pageErrors;
+    diagnostics.consoleErrors = consoleErrors;
+    throw new Error(formatJasmineFailureReport(url, diagnostics), {
+      cause: error,
+    });
   } finally {
     await savePageCoverage(page, url);
   }
@@ -131,17 +145,34 @@ export async function withPageCoverage(page, label, action) {
 async function collectJasmineDiagnostics(page) {
   return page.evaluate(() => {
     const reporter = window.jsApiReporter;
+    const readPagedResults = (methodName, count) => {
+      if (!reporter || typeof reporter[methodName] !== "function") {
+        return [];
+      }
+
+      const pageSize = Math.max(1, count);
+      const results = reporter[methodName](0, pageSize);
+
+      return Array.isArray(results) ? results : [];
+    };
     const overallText =
       document.querySelector(".jasmine-overall-result")?.textContent?.trim() ||
       "";
     const status =
       typeof reporter?.status === "function" ? reporter.status() : null;
-    const specs =
-      typeof reporter?.specResults === "function" ? reporter.specResults() : [];
-    const suites =
-      typeof reporter?.suiteResults === "function"
-        ? reporter.suiteResults()
-        : [];
+    const allSpecs =
+      typeof reporter?.specs === "function" ? reporter.specs() : reporter?.specs;
+    const allSuites =
+      typeof reporter?.suites === "function"
+        ? reporter.suites()
+        : reporter?.suites;
+    const specCount = Array.isArray(allSpecs) ? allSpecs.length : 0;
+    const suiteCount =
+      allSuites && typeof allSuites === "object"
+        ? Object.keys(allSuites).length
+        : 0;
+    const specs = readPagedResults("specResults", specCount);
+    const suites = readPagedResults("suiteResults", suiteCount);
     const runDetails =
       reporter && typeof reporter.runDetails === "object"
         ? reporter.runDetails

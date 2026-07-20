@@ -15,8 +15,17 @@
   "include": [
     "src/auto.ts",
     "src/namespace.ts",
+    "src/runtime/event-bus.ts",
+    "src/runtime/html-canvas.ts",
     "src/runtime/index.ts",
-    "src/runtime/web-component.ts"
+    "src/runtime/orchestration.ts",
+    "src/runtime/workflow-worker.ts",
+    "src/runtime/realtime.ts",
+    "src/runtime/router.ts",
+    "src/runtime/service-worker.ts",
+    "src/runtime/wasm.ts",
+    "src/runtime/web-component.ts",
+    "src/services/wasm/index.ts"
   ],
   "exclude": ["**/*.test.ts", "**/*.spec.ts"]
 }
