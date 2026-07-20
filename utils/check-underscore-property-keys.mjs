@@ -12,8 +12,11 @@ const sourceRoots = [
 const SKIP_DIRS = new Set([
   "node_modules",
   "dist",
+  "bin",
+  "obj",
   "build",
   ".build",
+  "_framework",
   "vendor",
   ".cache",
   "coverage",

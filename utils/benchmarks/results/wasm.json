@@ -1,0 +1,180 @@
+{
+  "savedAt": "2026-07-16T01:24:22.800Z",
+  "result": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+    "iterations": 500,
+    "samples": 7,
+    "results": [
+      {
+        "kind": "wasm",
+        "name": "resource load from bytes",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 18.599999994039536,
+        "medianMs": 22.700000002980232,
+        "meanMs": 23.199999999787128,
+        "opsPerSecond": 21551.724138128782
+      },
+      {
+        "kind": "wasm",
+        "name": "resource load from cached response",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 7.399999998509884,
+        "medianMs": 8,
+        "meanMs": 8.614285714924335,
+        "opsPerSecond": 58043.11774030724
+      },
+      {
+        "kind": "wasm",
+        "name": "resource load from compiled module",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 6.700000002980232,
+        "medianMs": 7.0999999940395355,
+        "meanMs": 9.914285714072841,
+        "opsPerSecond": 50432.27665814337
+      },
+      {
+        "kind": "wasm",
+        "name": "concurrent cold compilation deduplication",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 107.39999999850988,
+        "medianMs": 120.10000000149012,
+        "meanMs": 131.31428571364708,
+        "opsPerSecond": 3807.658833787012
+      },
+      {
+        "kind": "wasm",
+        "name": "resource load with diagnostics",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 9.200000002980232,
+        "medianMs": 10.599999994039536,
+        "meanMs": 13.928571428571429,
+        "opsPerSecond": 35897.4358974359
+      },
+      {
+        "kind": "wasm",
+        "name": "reactive target binding",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 2.5,
+        "medianMs": 3.600000001490116,
+        "meanMs": 6.75714285671711,
+        "opsPerSecond": 73995.77167485253
+      },
+      {
+        "kind": "wasm",
+        "name": "scope_get small JSON",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 0.7000000029802322,
+        "medianMs": 1,
+        "meanMs": 1.1857142863529069,
+        "opsPerSecond": 421686.7467608329
+      },
+      {
+        "kind": "wasm",
+        "name": "scope_get 64 KiB JSON",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 51.100000001490116,
+        "medianMs": 52.600000001490116,
+        "meanMs": 55.285714285714285,
+        "opsPerSecond": 9043.927648578812
+      },
+      {
+        "kind": "wasm",
+        "name": "scope_set small JSON",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 0.5999999940395355,
+        "medianMs": 0.7000000029802322,
+        "meanMs": 0.7571428567171097,
+        "opsPerSecond": 660377.3588619014
+      },
+      {
+        "kind": "wasm",
+        "name": "scope_set 64 KiB JSON",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 22.399999998509884,
+        "medianMs": 22.799999997019768,
+        "meanMs": 22.785714285714285,
+        "opsPerSecond": 21943.5736677116
+      },
+      {
+        "kind": "wasm",
+        "name": "scope_apply two-field transaction",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 4.699999995529652,
+        "medianMs": 5.100000001490116,
+        "meanMs": 5.957142857568605,
+        "opsPerSecond": 83932.85371102783
+      },
+      {
+        "kind": "wasm",
+        "name": "scope_set_binary 64 KiB",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 12.600000001490116,
+        "medianMs": 14.199999995529652,
+        "meanMs": 15.728571428784303,
+        "opsPerSecond": 31789.282470051137
+      },
+      {
+        "kind": "wasm",
+        "name": "scope_get_binary 64 KiB",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 30.100000001490116,
+        "medianMs": 34.899999998509884,
+        "meanMs": 38.442857143070015,
+        "opsPerSecond": 13006.317354071422
+      },
+      {
+        "kind": "wasm",
+        "name": "scope_set 1 MiB JSON",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 525.2000000029802,
+        "medianMs": 534.3999999985099,
+        "meanMs": 532.6857142852886,
+        "opsPerSecond": 938.6397768726661
+      },
+      {
+        "kind": "wasm",
+        "name": "watched scope update",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 2,
+        "medianMs": 2.100000001490116,
+        "meanMs": 2.4285714285714284,
+        "opsPerSecond": 205882.35294117648
+      },
+      {
+        "kind": "wasm",
+        "name": "watched scope update to 16 callbacks",
+        "iterations": 500,
+        "samples": 7,
+        "minMs": 5.200000002980232,
+        "medianMs": 8.700000002980232,
+        "meanMs": 8.128571428358555,
+        "opsPerSecond": 61511.423551698754
+      },
+      {
+        "kind": "wasm",
+        "name": "65-entry module cache eviction cycle",
+        "iterations": 5,
+        "samples": 7,
+        "minMs": 38.29999999701977,
+        "medianMs": 40.600000001490116,
+        "meanMs": 41.42857142857143,
+        "opsPerSecond": 120.68965517241378
+      }
+    ]
+  }
+}

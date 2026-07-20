@@ -1,0 +1,70 @@
+{
+  "savedAt": "2026-07-19T11:52:09.554Z",
+  "result": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+    "iterations": 1000,
+    "samples": 7,
+    "results": [
+      {
+        "kind": "router",
+        "name": "first router navigation",
+        "iterations": 50,
+        "samples": 7,
+        "minMs": 9.5,
+        "medianMs": 11.900000035762787,
+        "meanMs": 13.357142865657806,
+        "opsPerSecond": 3743.315505635091
+      },
+      {
+        "kind": "router",
+        "name": "first view activation",
+        "iterations": 50,
+        "samples": 7,
+        "minMs": 15.499999970197678,
+        "medianMs": 20.099999964237213,
+        "meanMs": 18.885714249951498,
+        "opsPerSecond": 2647.5037871616855
+      },
+      {
+        "kind": "router",
+        "name": "register 100-route tree",
+        "iterations": 50,
+        "samples": 7,
+        "minMs": 31.500000029802322,
+        "medianMs": 38.199999928474426,
+        "meanMs": 38.55714285373688,
+        "opsPerSecond": 1296.7765840345223
+      },
+      {
+        "kind": "router",
+        "name": "href generation",
+        "iterations": 1000,
+        "samples": 7,
+        "minMs": 0.5999999940395355,
+        "medianMs": 0.800000011920929,
+        "meanMs": 0.8285714302744184,
+        "opsPerSecond": 1206896.5492435643
+      },
+      {
+        "kind": "router",
+        "name": "transition startup",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 4,
+        "medianMs": 4.300000011920929,
+        "meanMs": 4.971428568874087,
+        "opsPerSecond": 20114.942539071355
+      },
+      {
+        "kind": "router",
+        "name": "retained route cycle",
+        "iterations": 50,
+        "samples": 7,
+        "minMs": 4,
+        "medianMs": 4.200000017881393,
+        "meanMs": 4.485714286565781,
+        "opsPerSecond": 11146.496813170756
+      }
+    ]
+  }
+}

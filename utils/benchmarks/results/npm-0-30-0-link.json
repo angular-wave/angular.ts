@@ -1,79 +1,79 @@
 {
-  "savedAt": "2026-07-19T12:38:20.539Z",
+  "savedAt": "2026-07-19T13:36:38.350Z",
   "result": {
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-    "iterations": 5000,
+    "iterations": 20000,
     "samples": 7,
     "results": [
       {
         "name": "static tree",
         "template": "<section><header><h1>Title</h1></header><p>Copy</p><footer>End</footer></section>",
-        "iterations": 5000,
+        "iterations": 20000,
         "samples": 7,
-        "minMs": 28.400000005960464,
-        "medianMs": 41.599999994039536,
-        "meanMs": 38.32857142601694,
-        "opsPerSecond": 130450.98770902962
+        "minMs": 105.90000000596046,
+        "medianMs": 137,
+        "meanMs": 137.45714285543986,
+        "opsPerSecond": 145499.89607330546
       },
       {
         "name": "static attributed tree",
         "template": "<section data-id=\"guide\" aria-label=\"Guide\"><header class=\"mast\"><h1 title=\"Title\">Title</h1></header><p data-copy=\"intro\">Copy</p><footer role=\"contentinfo\">End</footer></section>",
-        "iterations": 5000,
+        "iterations": 20000,
         "samples": 7,
-        "minMs": 30.399999976158142,
-        "medianMs": 39.80000001192093,
-        "meanMs": 37.97142856887409,
-        "opsPerSecond": 131677.9533572407
+        "minMs": 116.5,
+        "medianMs": 150.19999998807907,
+        "meanMs": 158.29999999489104,
+        "opsPerSecond": 126342.38787520834
       },
       {
         "name": "multi-root fragment",
         "template": "<header data-slot=\"title\"><h1>{{title}}</h1></header><main data-slot=\"body\"><p>{{description}}</p></main><footer data-slot=\"actions\"><button ng-click=\"save()\">Save</button></footer>",
-        "iterations": 5000,
+        "iterations": 20000,
         "samples": 7,
-        "minMs": 25.80000001192093,
-        "medianMs": 37.099999994039536,
-        "meanMs": 45.671428569725585,
-        "opsPerSecond": 109477.63528716007
+        "minMs": 115.40000000596046,
+        "medianMs": 143.09999999403954,
+        "meanMs": 150.59999999829702,
+        "opsPerSecond": 132802.12483549907
       },
       {
         "name": "stream chunk fragment",
         "template": "<article class=\"chunk\"><h3>{{item.title}}</h3><p>{{item.body}}</p><button ng-click=\"select(item)\">Open</button></article>",
-        "iterations": 5000,
+        "iterations": 20000,
         "samples": 7,
-        "minMs": 66.2000000178814,
-        "medianMs": 70.7999999821186,
-        "meanMs": 73.6142857159887,
-        "opsPerSecond": 67921.5990669325
+        "minMs": 225,
+        "medianMs": 288.30000001192093,
+        "meanMs": 297.64285714285717,
+        "opsPerSecond": 67194.62443004559
       },
       {
         "name": "workflow ui fragment",
         "template": "<section class=\"workflow\"><progress max=\"3\" value=\"{{step}}\"></progress><p>{{current}}: {{message}}</p><button ng-click=\"retry()\">Retry</button></section>",
-        "iterations": 5000,
+        "iterations": 20000,
         "samples": 7,
-        "minMs": 78.60000002384186,
-        "medianMs": 83.90000000596046,
-        "meanMs": 84.31428571258273,
-        "opsPerSecond": 59301.93154982536
+        "minMs": 286.59999999403954,
+        "medianMs": 404,
+        "meanMs": 404.628571420908,
+        "opsPerSecond": 49428.04688696919
       },
       {
         "name": "text interpolation",
         "template": "<article><h2>{{title}}</h2><p>{{description}}</p><span>{{count}}</span></article>",
-        "iterations": 5000,
+        "iterations": 20000,
         "samples": 7,
-        "minMs": 54.19999998807907,
-        "medianMs": 55.5,
-        "meanMs": 56.828571430274415,
-        "opsPerSecond": 87983.91151068665
+        "minMs": 194.5,
+        "medianMs": 303,
+        "meanMs": 290.14285713859965,
+        "opsPerSecond": 68931.56080849549
       },
       {
         "name": "bindings and events",
         "template": "<button ng-click=\"save(item)\">{{label}}</button>",
-        "iterations": 5000,
+        "iterations": 20000,
         "samples": 7,
-        "minMs": 31.19999998807907,
-        "medianMs": 41.19999998807907,
-        "meanMs": 40.95714285543987,
-        "opsPerSecond": 122078.8280483268
+        "minMs": 155.19999998807907,
+        "medianMs": 234.59999999403954,
+        "meanMs": 253.21428572280067,
+        "opsPerSecond": 78984.48518775297
       }
     ]
   }

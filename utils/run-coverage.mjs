@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import {
   access,
   mkdir,
@@ -16,10 +16,13 @@ const rootDir = fileURLToPath(new URL("../", import.meta.url));
 const tempDir = path.join(rootDir, ".coverage", "tmp");
 const reportDir = path.join(rootDir, "coverage");
 const baselinePath = path.join(rootDir, "utils", "coverage-baseline.json");
-const shouldCheckCoverage = process.argv.includes("--check");
+const shouldCheckExistingReport = process.argv.includes("--check-existing");
+const shouldCheckCoverage =
+  process.argv.includes("--check") || shouldCheckExistingReport;
 const shouldUpdateBaseline = process.argv.includes("--update-baseline");
 const coverageTestArgs = ["playwright", "test", "src"];
 const coverageMetrics = ["branches", "functions", "lines", "statements"];
+const gitOutputMaxBuffer = 128 * 1024 * 1024;
 const nycSourceArgs = [
   "--include",
   "src/**/*.js",
@@ -30,6 +33,18 @@ const nycSourceArgs = [
   "--extension",
   ".ts",
 ];
+
+if (shouldCheckExistingReport) {
+  console.log("[coverage] checking existing report");
+  let existingReportExitCode = await validateReport();
+
+  existingReportExitCode = Math.max(
+    existingReportExitCode,
+    await checkTouchedFilesCoverage(),
+    await checkBaseline(),
+  );
+  process.exit(existingReportExitCode);
+}
 
 console.log("[coverage] preparing output directories");
 await rm(tempDir, { recursive: true, force: true });
@@ -167,7 +182,7 @@ async function validateReport() {
 
 async function checkTouchedFilesCoverage() {
   const touchedFiles = getTouchedSourceFiles();
-  const touchedLines = getTouchedSourceLines();
+  const touchedLines = await getTouchedSourceLines();
   const coverage = await readLcov();
   const failures = [];
 
@@ -232,51 +247,60 @@ async function checkTouchedFilesCoverage() {
 }
 
 function getTouchedSourceFiles() {
-  try {
-    const output = execSync("git diff --name-only HEAD -- src", {
-      cwd: rootDir,
-      encoding: "utf-8",
-    });
-    const changed = output
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .filter((file) => file.endsWith(".js") || file.endsWith(".ts"))
-      .filter((file) => {
-        const sourceFile = path.join(rootDir, file);
-        return sourceFile.startsWith(path.join(rootDir, "src"));
-      })
-      .map((file) => path.join(rootDir, file));
+  const changed = gitLines([
+    "diff",
+    "--name-only",
+    "--diff-filter=ACMRTUXB",
+    "HEAD",
+    "--",
+    "src",
+  ]);
+  const untracked = getUntrackedSourceFiles();
 
-    return changed;
-  } catch (error) {
-    console.error(
-      `[coverage] failed to discover touched source files for strict check: ${String(
-        error,
-      )}`,
-    );
-
-    return [];
-  }
+  return [...new Set([...changed, ...untracked])]
+    .filter((file) => file.endsWith(".js") || file.endsWith(".ts"))
+    .map((file) => path.join(rootDir, file));
 }
 
-function getTouchedSourceLines() {
-  try {
-    const output = execSync("git diff --unified=0 HEAD -- src", {
-      cwd: rootDir,
-      encoding: "utf-8",
-    });
+async function getTouchedSourceLines() {
+  const output = execGit(["diff", "--unified=0", "HEAD", "--", "src"]);
+  const touched = parseTouchedSourceLines(output);
 
-    return parseTouchedSourceLines(output);
-  } catch (error) {
-    console.error(
-      `[coverage] failed to discover touched source lines for strict check: ${String(
-        error,
-      )}`,
+  for (const file of getUntrackedSourceFiles()) {
+    if (!file.endsWith(".js") && !file.endsWith(".ts")) {
+      continue;
+    }
+
+    const absoluteFile = path.join(rootDir, file);
+    const source = await readFile(absoluteFile, "utf-8");
+    const lineCount = source.split(/\r?\n/).length;
+
+    touched.set(
+      absoluteFile,
+      new Set(Array.from({ length: lineCount }, (_, index) => index + 1)),
     );
-
-    return new Map();
   }
+
+  return touched;
+}
+
+function getUntrackedSourceFiles() {
+  return gitLines(["ls-files", "--others", "--exclude-standard", "--", "src"]);
+}
+
+function gitLines(args) {
+  return execGit(args)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+function execGit(args) {
+  return execFileSync("git", args, {
+    cwd: rootDir,
+    encoding: "utf-8",
+    maxBuffer: gitOutputMaxBuffer,
+  });
 }
 
 function parseTouchedSourceLines(diff) {
@@ -412,7 +436,7 @@ function isTypeOnlyNode(node) {
       return true;
     }
 
-    if (ts.isExportDeclaration(current) && current.isTypeOnly === true) {
+    if (ts.isExportDeclaration(current)) {
       return true;
     }
   }

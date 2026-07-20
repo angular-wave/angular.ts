@@ -25,7 +25,7 @@ function printResult(config, previousResult) {
   for (const group of config.groups) {
     const rows = result.results
       .filter(group.filter)
-      .map((entry) => createResultRow(entry));
+      .map((entry) => createResultRow(entry, result.iterations));
 
     if (!rows.length) {
       continue;
@@ -53,7 +53,9 @@ function printResult(config, previousResult) {
   for (const group of config.groups) {
     const rows = result.results
       .filter(group.filter)
-      .map((entry) => createChangeRow(entry, previousResult))
+      .map((entry) =>
+        createChangeRow(entry, result.iterations, previousResult),
+      )
       .filter(Boolean);
 
     if (!rows.length) {
@@ -71,16 +73,16 @@ function printResult(config, previousResult) {
   console.log(`Updated benchmark result: ${resultPath(config.id)}`);
 }
 
-function createResultRow(entry) {
+function createResultRow(entry, iterations) {
   return {
     case: entry.name,
     "ops/sec": formatInteger(entry.opsPerSecond),
-    "median ms": entry.medianMs.toFixed(2),
+    "median us/op": formatMicrosecondsPerOperation(entry.medianMs, iterations),
     "min ms": entry.minMs.toFixed(2),
   };
 }
 
-function createChangeRow(entry, previousResult) {
+function createChangeRow(entry, iterations, previousResult) {
   const previous = findPreviousEntry(entry, previousResult);
 
   if (!previous) {
@@ -88,7 +90,10 @@ function createChangeRow(entry, previousResult) {
       case: entry.name,
       "ops/sec": formatInteger(entry.opsPerSecond),
       change: "new",
-      "median ms": entry.medianMs.toFixed(2),
+      "median us/op": formatMicrosecondsPerOperation(
+        entry.medianMs,
+        iterations,
+      ),
     };
   }
 
@@ -97,8 +102,11 @@ function createChangeRow(entry, previousResult) {
     "ops/sec": formatInteger(entry.opsPerSecond),
     change: formatPercentChange(entry.opsPerSecond, previous.opsPerSecond),
     "prev ops/sec": formatInteger(previous.opsPerSecond),
-    "median ms": entry.medianMs.toFixed(2),
-    "prev median ms": previous.medianMs.toFixed(2),
+    "median us/op": formatMicrosecondsPerOperation(entry.medianMs, iterations),
+    "prev median us/op": formatMicrosecondsPerOperation(
+      previous.medianMs,
+      previousResult.iterations,
+    ),
   };
 }
 
@@ -127,6 +135,14 @@ function formatInteger(value) {
   }
 
   return Math.round(value).toLocaleString();
+}
+
+function formatMicrosecondsPerOperation(milliseconds, iterations) {
+  if (!Number.isFinite(milliseconds) || !iterations) {
+    return "n/a";
+  }
+
+  return ((milliseconds * 1_000) / iterations).toFixed(2);
 }
 
 async function readPreviousResult(id) {

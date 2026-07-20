@@ -46,6 +46,7 @@ try {
   await page.goto(url.toString());
   await page.waitForFunction(
     () => window.__parseBenchmarkResults || window.__parseBenchmarkError,
+    undefined,
     { timeout: 120_000 },
   );
 

@@ -1,9 +1,8 @@
 import { Angular } from "../../src/angular.ts";
 import type {
   CloneAttachFn,
-  PublicLinkFn,
+  LinkFn,
 } from "../../src/core/compile/compile.ts";
-import { createInjector } from "../../src/core/di/injector.ts";
 import type { Scope } from "../../src/core/scope/scope.ts";
 import { compileLinkBenchmarkCases } from "./compile-link-benchmark-cases.ts";
 
@@ -30,11 +29,12 @@ type BenchmarkOptions = {
   samples?: number;
 };
 
-type CompileService = (template: string | Node | NodeList) => PublicLinkFn;
+type CompileService = (template: string | Node | NodeList) => LinkFn;
 
 type RuntimeServices = {
   $compile: CompileService;
   $rootScope: Scope;
+  destroy(): void;
 };
 
 type BenchmarkScope = Scope & Record<string, unknown>;
@@ -70,26 +70,37 @@ function positiveInteger(value: string | null, fallback: number): number {
 }
 
 function createRuntimeServices(): RuntimeServices {
-  window.angular = new Angular();
+  const angular = new Angular();
+  const root = document.getElementById("benchmark-root")!;
 
-  const injector = createInjector(["ng"]);
+  root.innerHTML = "";
+  window.angular = angular;
+
+  const injector = angular.bootstrap(root, ["ng"]);
 
   return {
     $compile: injector.get("$compile") as CompileService,
     $rootScope: injector.get("$rootScope") as Scope,
+    destroy() {
+      angular._composition.destroy();
+      root.replaceChildren();
+      delete (window as unknown as { angular?: unknown }).angular;
+    },
   };
 }
 
-function measure(
+async function measure(
   name: string,
   template: string,
   iterations: number,
   samples: number,
   action: () => unknown,
-): BenchmarkSummary {
+): Promise<BenchmarkSummary> {
   for (let i = 0; i < WARMUP_ITERATIONS; i++) {
     sink = action();
   }
+
+  await Promise.resolve();
 
   const sampleTimes: number[] = [];
 
@@ -101,6 +112,7 @@ function measure(
     }
 
     sampleTimes.push(performance.now() - startedAt);
+    await Promise.resolve();
   }
 
   sampleTimes.sort((left, right) => left - right);
@@ -122,7 +134,7 @@ function measure(
 }
 
 function linkWithNewScope(
-  linkFn: PublicLinkFn,
+  linkFn: LinkFn,
   $rootScope: Scope,
   createScopeData?: () => Record<string, unknown>,
 ): unknown {
@@ -152,28 +164,41 @@ export async function runLinkBenchmark(
 
   const samples = options.samples ?? DEFAULT_SAMPLES;
 
-  const { $compile, $rootScope } = createRuntimeServices();
+  const runtime = createRuntimeServices();
 
-  const results = compileLinkBenchmarkCases
-    .filter((benchmark) => benchmark.includeInLink !== false)
-    .map((benchmark) => {
-      const linkFn = $compile(benchmark.template);
+  try {
+    const results: BenchmarkSummary[] = [];
 
-      return measure(
-        benchmark.name,
-        benchmark.template,
-        iterations,
-        samples,
-        () => linkWithNewScope(linkFn, $rootScope, benchmark.createScopeData),
+    for (const benchmark of compileLinkBenchmarkCases.filter(
+      (candidate) => candidate.includeInLink !== false,
+    )) {
+      const linkFn = runtime.$compile(benchmark.template);
+
+      results.push(
+        await measure(
+          benchmark.name,
+          benchmark.template,
+          iterations,
+          samples,
+          () =>
+            linkWithNewScope(
+              linkFn,
+              runtime.$rootScope,
+              benchmark.createScopeData,
+            ),
+        ),
       );
-    });
+    }
 
-  return {
-    userAgent: navigator.userAgent,
-    iterations,
-    samples,
-    results,
-  };
+    return {
+      userAgent: navigator.userAgent,
+      iterations,
+      samples,
+      results,
+    };
+  } finally {
+    runtime.destroy();
+  }
 }
 
 try {

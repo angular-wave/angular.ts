@@ -17,6 +17,39 @@ export const compileLinkBenchmarkCases: CompileLinkBenchmarkCase[] = [
       '<section data-id="guide" aria-label="Guide"><header class="mast"><h1 title="Title">Title</h1></header><p data-copy="intro">Copy</p><footer role="contentinfo">End</footer></section>',
   },
   {
+    name: "multi-root fragment",
+    template:
+      '<header data-slot="title"><h1>{{title}}</h1></header><main data-slot="body"><p>{{description}}</p></main><footer data-slot="actions"><button ng-click="save()">Save</button></footer>',
+    createScopeData: () => ({
+      title: "AngularTS",
+      description: "Fragment ownership",
+      save() {},
+    }),
+  },
+  {
+    name: "stream chunk fragment",
+    template:
+      '<article class="chunk"><h3>{{item.title}}</h3><p>{{item.body}}</p><button ng-click="select(item)">Open</button></article>',
+    createScopeData: () => ({
+      item: {
+        title: "Chunk",
+        body: "Streamed HTML update",
+      },
+      select() {},
+    }),
+  },
+  {
+    name: "workflow ui fragment",
+    template:
+      '<section class="workflow"><progress max="3" value="{{step}}"></progress><p>{{current}}: {{message}}</p><button ng-click="retry()">Retry</button></section>',
+    createScopeData: () => ({
+      current: "recovering",
+      message: "Waiting for approval",
+      retry() {},
+      step: 2,
+    }),
+  },
+  {
     name: "text interpolation",
     template:
       "<article><h2>{{title}}</h2><p>{{description}}</p><span>{{count}}</span></article>",

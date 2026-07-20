@@ -1,0 +1,241 @@
+{
+  "savedAt": "2026-07-19T11:53:03.099Z",
+  "result": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+    "iterations": 100000,
+    "samples": 7,
+    "results": [
+      {
+        "kind": "lexer",
+        "name": "user.profile.name",
+        "expression": "user.profile.name",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 9.299999982118607,
+        "medianMs": 9.699999988079071,
+        "meanMs": 9.757142854588372,
+        "opsPerSecond": 10248901.906050727
+      },
+      {
+        "kind": "lexer",
+        "name": "items.length && user.active",
+        "expression": "items.length && user.active",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 13.699999988079071,
+        "medianMs": 13.800000011920929,
+        "meanMs": 14.042857140302658,
+        "opsPerSecond": 7121057.98705325
+      },
+      {
+        "kind": "lexer",
+        "name": "value ?? fallback",
+        "expression": "value ?? fallback",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 7.9000000059604645,
+        "medianMs": 8.400000005960464,
+        "meanMs": 8.48571428656578,
+        "opsPerSecond": 11784511.783329275
+      },
+      {
+        "kind": "lexer",
+        "name": "items | filter:query",
+        "expression": "items | filter:query",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 10.400000005960464,
+        "medianMs": 10.5,
+        "meanMs": 10.685714287417275,
+        "opsPerSecond": 9358288.76856204
+      },
+      {
+        "kind": "lexer",
+        "name": "{id: item.id, name: item.name, active: item.active}",
+        "expression": "{id: item.id, name: item.name, active: item.active}",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 31.399999976158142,
+        "medianMs": 31.80000001192093,
+        "meanMs": 31.728571427719935,
+        "opsPerSecond": 3151733.453483952
+      },
+      {
+        "kind": "lexer",
+        "name": "sum(price, tax) >= total ? label : fallback",
+        "expression": "sum(price, tax) >= total ? label : fallback",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 20,
+        "medianMs": 20.200000017881393,
+        "meanMs": 20.65714285629136,
+        "opsPerSecond": 4840940.525787374
+      },
+      {
+        "kind": "compile",
+        "name": "user.profile.name",
+        "expression": "user.profile.name",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 3.300000011920929,
+        "medianMs": 6.199999988079071,
+        "meanMs": 5.828571430274418,
+        "opsPerSecond": 857843.1370042578
+      },
+      {
+        "kind": "compile",
+        "name": "items.length && user.active",
+        "expression": "items.length && user.active",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 3.300000011920929,
+        "medianMs": 5.199999988079071,
+        "meanMs": 5.885714288268771,
+        "opsPerSecond": 849514.5627380945
+      },
+      {
+        "kind": "compile",
+        "name": "value ?? fallback",
+        "expression": "value ?? fallback",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 2.5,
+        "medianMs": 2.7000000178813934,
+        "meanMs": 2.7142857142857144,
+        "opsPerSecond": 1842105.2631578948
+      },
+      {
+        "kind": "compile",
+        "name": "items | filter:query",
+        "expression": "items | filter:query",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 3.7000000178813934,
+        "medianMs": 4.199999988079071,
+        "meanMs": 4.200000000851495,
+        "opsPerSecond": 1190476.1902348371
+      },
+      {
+        "kind": "compile",
+        "name": "{id: item.id, name: item.name, active: item.active}",
+        "expression": "{id: item.id, name: item.name, active: item.active}",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 7.5,
+        "medianMs": 7.700000017881393,
+        "meanMs": 8.142857142857142,
+        "opsPerSecond": 614035.0877192983
+      },
+      {
+        "kind": "compile",
+        "name": "sum(price, tax) >= total ? label : fallback",
+        "expression": "sum(price, tax) >= total ? label : fallback",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 8.700000017881393,
+        "medianMs": 9.100000023841858,
+        "meanMs": 9.142857142857142,
+        "opsPerSecond": 546875.0000000001
+      },
+      {
+        "kind": "compile",
+        "name": "items[index].details.title",
+        "expression": "items[index].details.title",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 5.5,
+        "medianMs": 5.5999999940395355,
+        "meanMs": 5.628571425165449,
+        "opsPerSecond": 888324.8736339929
+      },
+      {
+        "kind": "evaluate",
+        "name": "path: user.profile.name",
+        "expression": "user.profile.name",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 2.800000011920929,
+        "medianMs": 2.9000000059604645,
+        "meanMs": 3.0285714268684387,
+        "opsPerSecond": 33018867.943095073
+      },
+      {
+        "kind": "evaluate",
+        "name": "path: items.length",
+        "expression": "items.length",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 2.5,
+        "medianMs": 2.5,
+        "meanMs": 2.6714285697255815,
+        "opsPerSecond": 37433155.1040769
+      },
+      {
+        "kind": "evaluate",
+        "name": "logical: a && b",
+        "expression": "user.active && items.length",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 4.799999982118607,
+        "medianMs": 4.899999976158142,
+        "meanMs": 5.057142857994352,
+        "opsPerSecond": 19774011.296105586
+      },
+      {
+        "kind": "evaluate",
+        "name": "nullish: value ?? fallback",
+        "expression": "value ?? fallback",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 2.9000000059604645,
+        "medianMs": 3,
+        "meanMs": 3.1428571471146176,
+        "opsPerSecond": 31818181.775079284
+      },
+      {
+        "kind": "evaluate",
+        "name": "call: sum(price, tax)",
+        "expression": "sum(price, tax)",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 4.9000000059604645,
+        "medianMs": 5,
+        "meanMs": 5.128571429422924,
+        "opsPerSecond": 19498607.239102487
+      },
+      {
+        "kind": "evaluate",
+        "name": "filter: uppercase",
+        "expression": "label | uppercase",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 4.799999982118607,
+        "medianMs": 4.9000000059604645,
+        "meanMs": 4.957142859697342,
+        "opsPerSecond": 20172910.652428824
+      },
+      {
+        "kind": "evaluate",
+        "name": "object literal",
+        "expression": "{id: item.id, name: item.name, active: item.active}",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 7.5,
+        "medianMs": 7.800000011920929,
+        "meanMs": 7.771428572280066,
+        "opsPerSecond": 12867647.057413654
+      },
+      {
+        "kind": "evaluate",
+        "name": "locals: item.name",
+        "expression": "item.name",
+        "iterations": 100000,
+        "samples": 7,
+        "minMs": 2.2999999821186066,
+        "medianMs": 2.4000000059604645,
+        "meanMs": 2.542857140302658,
+        "opsPerSecond": 39325842.73613489
+      }
+    ]
+  }
+}

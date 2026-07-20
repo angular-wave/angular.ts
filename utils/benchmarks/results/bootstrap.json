@@ -1,0 +1,193 @@
+{
+  "savedAt": "2026-07-14T13:24:31.666Z",
+  "result": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+    "iterations": 100,
+    "samples": 7,
+    "heapInstances": 25,
+    "results": [
+      {
+        "kind": "bootstrap",
+        "name": "core runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 2.7999999821186066,
+        "medianMs": 4.800000011920929,
+        "meanMs": 5.1571428584201,
+        "opsPerSecond": 19390.58171264916
+      },
+      {
+        "kind": "bootstrap",
+        "name": "event-bus runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 2.4000000208616257,
+        "medianMs": 3.500000014901161,
+        "meanMs": 4.414285725780895,
+        "opsPerSecond": 22653.72162385565
+      },
+      {
+        "kind": "bootstrap",
+        "name": "router runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 4.799999967217445,
+        "medianMs": 5.499999955296516,
+        "meanMs": 6.371428574834551,
+        "opsPerSecond": 15695.067256183866
+      },
+      {
+        "kind": "bootstrap",
+        "name": "orchestration runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 2.3999999910593033,
+        "medianMs": 3.000000014901161,
+        "meanMs": 3.7285714277199338,
+        "opsPerSecond": 26819.923377772382
+      },
+      {
+        "kind": "bootstrap",
+        "name": "realtime runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 2.3999999910593033,
+        "medianMs": 4.200000017881393,
+        "meanMs": 5.457142857568605,
+        "opsPerSecond": 18324.60732841331
+      },
+      {
+        "kind": "bootstrap",
+        "name": "wasm runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 1.9999999850988388,
+        "medianMs": 2.2999999970197678,
+        "meanMs": 2.228571431977408,
+        "opsPerSecond": 44871.794803216224
+      },
+      {
+        "kind": "bootstrap",
+        "name": "service-worker runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 2.0999999940395355,
+        "medianMs": 3.199999988079071,
+        "meanMs": 4.828571419630732,
+        "opsPerSecond": 20710.059209944866
+      },
+      {
+        "kind": "bootstrap",
+        "name": "web-component runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 2.1000000089406967,
+        "medianMs": 2.3999999910593033,
+        "meanMs": 3.500000008514949,
+        "opsPerSecond": 28571.42850191878
+      },
+      {
+        "kind": "bootstrap",
+        "name": "html-canvas runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 1.9999999850988388,
+        "medianMs": 2.4000000059604645,
+        "meanMs": 3.414285721523421,
+        "opsPerSecond": 29288.70286678321
+      },
+      {
+        "kind": "bootstrap",
+        "name": "full runtime bootstrap",
+        "iterations": 100,
+        "samples": 7,
+        "minMs": 9.099999994039536,
+        "medianMs": 12.900000035762787,
+        "meanMs": 12.085714274219104,
+        "opsPerSecond": 8274.231686356934
+      }
+    ],
+    "heap": [
+      {
+        "kind": "heap",
+        "name": "core runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 463692,
+        "bytesPerRuntime": 18547.68,
+        "releasedBytes": 25064
+      },
+      {
+        "kind": "heap",
+        "name": "event-bus runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 521304,
+        "bytesPerRuntime": 20852.16,
+        "releasedBytes": 25892
+      },
+      {
+        "kind": "heap",
+        "name": "router runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 797800,
+        "bytesPerRuntime": 31912,
+        "releasedBytes": 33612
+      },
+      {
+        "kind": "heap",
+        "name": "orchestration runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 521604,
+        "bytesPerRuntime": 20864.16,
+        "releasedBytes": 24984
+      },
+      {
+        "kind": "heap",
+        "name": "realtime runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 557068,
+        "bytesPerRuntime": 22282.72,
+        "releasedBytes": 31156
+      },
+      {
+        "kind": "heap",
+        "name": "wasm runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 527584,
+        "bytesPerRuntime": 21103.36,
+        "releasedBytes": 27656
+      },
+      {
+        "kind": "heap",
+        "name": "service-worker runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 533696,
+        "bytesPerRuntime": 21347.84,
+        "releasedBytes": 27584
+      },
+      {
+        "kind": "heap",
+        "name": "web-component runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 529296,
+        "bytesPerRuntime": 21171.84,
+        "releasedBytes": 27584
+      },
+      {
+        "kind": "heap",
+        "name": "html-canvas runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 535380,
+        "bytesPerRuntime": 21415.2,
+        "releasedBytes": 32060
+      },
+      {
+        "kind": "heap",
+        "name": "full runtime retained heap",
+        "instances": 25,
+        "retainedBytes": 1573276,
+        "bytesPerRuntime": 62931.04,
+        "releasedBytes": 355964
+      }
+    ]
+  }
+}

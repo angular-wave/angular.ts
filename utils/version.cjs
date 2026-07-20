@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
+const checkOnly = process.argv.includes("--check");
+
 // Path to package.json
 const packageJsonPath = path.resolve(__dirname, "../package.json");
 
@@ -29,16 +31,35 @@ try {
   const version = packageJson.version || "unknown";
 
   // Generate all files
+  let stale = false;
+
   filesToGenerate.forEach(({ outputPath, getContent }) => {
     const content = getContent(version);
+
+    if (checkOnly) {
+      const current = fs.existsSync(outputPath)
+        ? fs.readFileSync(outputPath, "utf-8")
+        : undefined;
+
+      if (current !== content) {
+        stale = true;
+        console.error(`Stale generated version file: ${outputPath}`);
+      }
+
+      return;
+    }
 
     // Ensure the directory exists
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
     fs.writeFileSync(outputPath, content, "utf-8");
-    console.log(`✅ Generated: ${outputPath}`);
+    console.log(`Generated: ${outputPath}`);
   });
+
+  if (stale) {
+    process.exit(1);
+  }
 } catch (error) {
-  console.error("❌ Error generating files:", error);
+  console.error("Error generating version files:", error);
   process.exit(1);
 }

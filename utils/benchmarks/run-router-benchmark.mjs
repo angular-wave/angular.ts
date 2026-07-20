@@ -1,40 +1,59 @@
-import { chromium } from "playwright";
-import { createServer } from "vite";
+import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { chromium } from "playwright";
 import { printAndSaveBenchmarkResult } from "./benchmark-report.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "../..");
 
-const DEFAULT_PORT = 4178;
-const DEFAULT_ITERATIONS = 5_000;
+const DEFAULT_ITERATIONS = 1_000;
 const DEFAULT_SAMPLES = 7;
 
 const options = parseArgs(process.argv.slice(2));
 
-let server;
 let browser;
+let outDir;
 
 try {
-  server = await createServer({
+  outDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), "angular-ts-router-benchmark-"),
+  );
+
+  browser = await chromium.launch({
+    args: [
+      "--allow-file-access-from-files",
+      "--disable-gpu",
+      "--disable-setuid-sandbox",
+      "--no-sandbox",
+      "--no-zygote",
+      "--single-process",
+    ],
+    chromiumSandbox: false,
+    headless: !options.headful,
+  });
+
+  const { build } = await import("vite");
+
+  await build({
+    base: "./",
     configFile: path.join(rootDir, "utils/vite.config.js"),
-    server: {
-      port: options.port,
-      strictPort: false,
+    logLevel: "warn",
+    build: {
+      emptyOutDir: true,
+      outDir,
+      rollupOptions: {
+        input: path.join(rootDir, "utils/benchmarks/router-benchmark.html"),
+      },
     },
   });
-  await server.listen();
 
-  const baseUrl = server.resolvedUrls?.local?.[0];
-
-  if (!baseUrl) {
-    throw new Error("Vite did not report a local server URL.");
-  }
-
-  browser = await chromium.launch({ headless: !options.headful });
   const page = await browser.newPage();
-  const url = new URL("utils/benchmarks/compile-benchmark.html", baseUrl);
+  const url = pathToFileURL(
+    await resolveBuiltHtmlFile(outDir, "router-benchmark.html"),
+  );
+
   url.searchParams.set("iterations", String(options.iterations));
   url.searchParams.set("samples", String(options.samples));
 
@@ -47,13 +66,13 @@ try {
 
   await page.goto(url.toString());
   await page.waitForFunction(
-    () => window.__compileBenchmarkResults || window.__compileBenchmarkError,
+    () => window.__routerBenchmarkResults || window.__routerBenchmarkError,
     undefined,
     { timeout: 120_000 },
   );
 
   const error = await page.evaluate(
-    () => window.__compileBenchmarkError || null,
+    () => window.__routerBenchmarkError || null,
   );
 
   if (error) {
@@ -62,18 +81,18 @@ try {
 
   if (pageErrors.length) {
     throw new Error(
-      `Compile benchmark produced ${pageErrors.length} page error(s):\n${pageErrors[0]}`,
+      `Router benchmark produced ${pageErrors.length} page error(s):\n${pageErrors[0]}`,
     );
   }
 
-  const result = await page.evaluate(() => window.__compileBenchmarkResults);
+  const result = await page.evaluate(() => window.__routerBenchmarkResults);
 
   await printAndSaveBenchmarkResult({
-    id: "compile",
-    title: "AngularTS compile benchmark",
+    id: "router",
+    title: "AngularTS router benchmark",
     result,
     iterationsLabel: (benchmarkResult) =>
-      `Iterations: ${benchmarkResult.iterations.toLocaleString()} compile`,
+      `Iterations: ${benchmarkResult.iterations.toLocaleString()} router`,
     groups: [
       {
         filter: () => true,
@@ -82,14 +101,35 @@ try {
   });
 } finally {
   await browser?.close();
-  await server?.close();
+
+  if (outDir) {
+    await fs.rm(outDir, { force: true, recursive: true });
+  }
+}
+
+async function resolveBuiltHtmlFile(directory, htmlFile) {
+  const candidates = [
+    path.join(directory, htmlFile),
+    path.join(directory, "utils", "benchmarks", htmlFile),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+
+      return candidate;
+    } catch (error) {
+      if (!error || error.code !== "ENOENT") throw error;
+    }
+  }
+
+  throw new Error(`Built benchmark HTML not found: ${htmlFile}`);
 }
 
 function parseArgs(args) {
   const parsed = {
     iterations: DEFAULT_ITERATIONS,
     samples: DEFAULT_SAMPLES,
-    port: Number(process.env.PORT || DEFAULT_PORT),
     headful: false,
   };
 
@@ -102,9 +142,6 @@ function parseArgs(args) {
         break;
       case "--samples":
         parsed.samples = readPositiveInteger(args[++i], "--samples");
-        break;
-      case "--port":
-        parsed.port = readPositiveInteger(args[++i], "--port");
         break;
       case "--headful":
         parsed.headful = true;
@@ -132,12 +169,11 @@ function readPositiveInteger(value, flag) {
 }
 
 function printHelp() {
-  console.log(`Usage: node utils/benchmarks/run-compile-benchmark.mjs [options]
+  console.log(`Usage: node utils/benchmarks/run-router-benchmark.mjs [options]
 
 Options:
-  --iterations <n>  Compile iterations per sample.
+  --iterations <n>  Router iterations per sample.
   --samples <n>     Number of timing samples per case.
-  --port <n>        Vite server port.
   --headful         Run Chromium with a visible window.
 `);
 }

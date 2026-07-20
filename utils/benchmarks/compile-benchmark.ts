@@ -1,6 +1,4 @@
 import { Angular } from "../../src/angular.ts";
-import { createInjector } from "../../src/core/di/injector.ts";
-import type { Scope } from "../../src/core/scope/scope.ts";
 import { compileLinkBenchmarkCases } from "./compile-link-benchmark-cases.ts";
 
 type BenchmarkSummary = {
@@ -27,6 +25,11 @@ type BenchmarkOptions = {
 };
 
 type CompileService = (template: string | Node | NodeList) => Function;
+
+type CompileRuntime = {
+  $compile: CompileService;
+  destroy(): void;
+};
 
 declare global {
   interface Window {
@@ -58,12 +61,23 @@ function positiveInteger(value: string | null, fallback: number): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function createCompileService(): CompileService {
-  window.angular = new Angular();
+function createCompileRuntime(): CompileRuntime {
+  const angular = new Angular();
+  const root = document.getElementById("benchmark-root")!;
 
-  const injector = createInjector(["ng"]);
+  root.innerHTML = "";
+  window.angular = angular;
 
-  return injector.get("$compile") as CompileService;
+  const injector = angular.bootstrap(root, ["ng"]);
+
+  return {
+    $compile: injector.get("$compile") as CompileService,
+    destroy() {
+      angular._composition.destroy();
+      root.replaceChildren();
+      delete (window as unknown as { angular?: unknown }).angular;
+    },
+  };
 }
 
 function measure(
@@ -114,20 +128,24 @@ export async function runCompileBenchmark(
 
   const samples = options.samples ?? DEFAULT_SAMPLES;
 
-  const $compile = createCompileService();
+  const runtime = createCompileRuntime();
 
-  const results = compileLinkBenchmarkCases.map((benchmark) =>
-    measure(benchmark.name, benchmark.template, iterations, samples, () =>
-      $compile(benchmark.template),
-    ),
-  );
+  try {
+    const results = compileLinkBenchmarkCases.map((benchmark) =>
+      measure(benchmark.name, benchmark.template, iterations, samples, () =>
+        runtime.$compile(benchmark.template),
+      ),
+    );
 
-  return {
-    userAgent: navigator.userAgent,
-    iterations,
-    samples,
-    results,
-  };
+    return {
+      userAgent: navigator.userAgent,
+      iterations,
+      samples,
+      results,
+    };
+  } finally {
+    runtime.destroy();
+  }
 }
 
 try {

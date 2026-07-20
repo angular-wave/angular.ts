@@ -45,9 +45,13 @@ try {
     console.error(error.stack || error.message);
   });
 
-  await page.goto(url.toString());
+  await page.goto(url.toString(), {
+    timeout: 120_000,
+    waitUntil: "domcontentloaded",
+  });
   await page.waitForFunction(
     () => window.__linkBenchmarkResults || window.__linkBenchmarkError,
+    undefined,
     { timeout: 120_000 },
   );
 

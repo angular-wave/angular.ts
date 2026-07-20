@@ -1,0 +1,75 @@
+{
+  "savedAt": "2026-07-19T11:52:46.690Z",
+  "result": {
+    "minifier": "terser",
+    "propertyMangle": "underscore-prefixed",
+    "results": [
+      {
+        "name": "core",
+        "format": "esm",
+        "minifiedBytes": 145427,
+        "gzipBytes": 48584
+      },
+      {
+        "name": "event-bus",
+        "format": "esm",
+        "minifiedBytes": 148814,
+        "gzipBytes": 49759
+      },
+      {
+        "name": "router",
+        "format": "esm",
+        "minifiedBytes": 246426,
+        "gzipBytes": 82290
+      },
+      {
+        "name": "orchestration",
+        "format": "esm",
+        "minifiedBytes": 162518,
+        "gzipBytes": 53975
+      },
+      {
+        "name": "realtime",
+        "format": "esm",
+        "minifiedBytes": 155732,
+        "gzipBytes": 51870
+      },
+      {
+        "name": "wasm",
+        "format": "esm",
+        "minifiedBytes": 168110,
+        "gzipBytes": 55516
+      },
+      {
+        "name": "service-worker",
+        "format": "esm",
+        "minifiedBytes": 153892,
+        "gzipBytes": 51504
+      },
+      {
+        "name": "web-component",
+        "format": "esm",
+        "minifiedBytes": 151688,
+        "gzipBytes": 50660
+      },
+      {
+        "name": "html-canvas",
+        "format": "esm",
+        "minifiedBytes": 152240,
+        "gzipBytes": 50627
+      },
+      {
+        "name": "workflow-worker",
+        "format": "esm",
+        "minifiedBytes": 149379,
+        "gzipBytes": 49767
+      },
+      {
+        "name": "full",
+        "format": "esm",
+        "minifiedBytes": 407085,
+        "gzipBytes": 134463
+      }
+    ]
+  }
+}

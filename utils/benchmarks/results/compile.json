@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-05-16T20:12:34.518Z",
+  "savedAt": "2026-07-19T12:38:16.599Z",
   "result": {
     "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
     "iterations": 5000,
@@ -10,60 +10,90 @@
         "template": "<section><header><h1>Title</h1></header><p>Copy</p><footer>End</footer></section>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 23.199999999254942,
-        "medianMs": 33.19999999925494,
-        "meanMs": 31.514285713966405,
-        "opsPerSecond": 158658.20489734647
+        "minMs": 23.69999998807907,
+        "medianMs": 36.599999994039536,
+        "meanMs": 38.299999999148504,
+        "opsPerSecond": 130548.30287496505
       },
       {
         "name": "static attributed tree",
         "template": "<section data-id=\"guide\" aria-label=\"Guide\"><header class=\"mast\"><h1 title=\"Title\">Title</h1></header><p data-copy=\"intro\">Copy</p><footer role=\"contentinfo\">End</footer></section>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 31.100000001490116,
-        "medianMs": 37.899999998509884,
-        "meanMs": 40.2714285712157,
-        "opsPerSecond": 124157.5026611742
+        "minMs": 34,
+        "medianMs": 50.60000002384186,
+        "meanMs": 54.285714285714285,
+        "opsPerSecond": 92105.26315789473
+      },
+      {
+        "name": "multi-root fragment",
+        "template": "<header data-slot=\"title\"><h1>{{title}}</h1></header><main data-slot=\"body\"><p>{{description}}</p></main><footer data-slot=\"actions\"><button ng-click=\"save()\">Save</button></footer>",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 18.399999976158142,
+        "medianMs": 19.69999998807907,
+        "meanMs": 20.34285714370864,
+        "opsPerSecond": 245786.51684364464
+      },
+      {
+        "name": "stream chunk fragment",
+        "template": "<article class=\"chunk\"><h3>{{item.title}}</h3><p>{{item.body}}</p><button ng-click=\"select(item)\">Open</button></article>",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 58.80000001192093,
+        "medianMs": 63.19999998807907,
+        "meanMs": 63.87142857057707,
+        "opsPerSecond": 78282.2634767761
+      },
+      {
+        "name": "workflow ui fragment",
+        "template": "<section class=\"workflow\"><progress max=\"3\" value=\"{{step}}\"></progress><p>{{current}}: {{message}}</p><button ng-click=\"retry()\">Retry</button></section>",
+        "iterations": 5000,
+        "samples": 7,
+        "minMs": 71.89999997615814,
+        "medianMs": 76.2000000178814,
+        "meanMs": 76.95714285969734,
+        "opsPerSecond": 64971.22702587381
       },
       {
         "name": "text interpolation",
         "template": "<article><h2>{{title}}</h2><p>{{description}}</p><span>{{count}}</span></article>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 30.599999997764826,
-        "medianMs": 31.200000002980232,
-        "meanMs": 33.800000000212876,
-        "opsPerSecond": 147928.99408190858
+        "minMs": 29.5,
+        "medianMs": 34.19999998807907,
+        "meanMs": 34.37142857057707,
+        "opsPerSecond": 145469.6591889737
       },
       {
         "name": "bindings and events",
         "template": "<button ng-click=\"save(item)\">{{label}}</button>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 20,
-        "medianMs": 20.400000002235174,
-        "meanMs": 21.5,
-        "opsPerSecond": 232558.13953488375
+        "minMs": 35.29999998211861,
+        "medianMs": 36.80000001192093,
+        "meanMs": 38.142857142857146,
+        "opsPerSecond": 131086.14232209738
       },
       {
         "name": "repeat list",
         "template": "<ul><li ng-repeat=\"item in items\"><span>{{item.name}}</span><button ng-click=\"select(item)\">Select</button></li></ul>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 35.900000002235174,
-        "medianMs": 36.5,
-        "meanMs": 38.800000000212876,
-        "opsPerSecond": 128865.97938073629
+        "minMs": 38,
+        "medianMs": 41.69999998807907,
+        "meanMs": 44.5,
+        "opsPerSecond": 112359.55056179776
       },
       {
         "name": "nested template",
         "template": "<section ng-if=\"ready\"><header ng-bind=\"title\"></header><div ng-repeat=\"group in groups\"><h3>{{group.name}}</h3><p ng-repeat=\"item in group.items\">{{item.label}}</p></div></section>",
         "iterations": 5000,
         "samples": 7,
-        "minMs": 14.800000000745058,
-        "medianMs": 17.199999999254942,
-        "meanMs": 22.257142857249296,
-        "opsPerSecond": 224646.98331086407
+        "minMs": 21.19999998807907,
+        "medianMs": 23.099999994039536,
+        "meanMs": 24.242857141154154,
+        "opsPerSecond": 206246.31704454124
       }
     ]
   }
