@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./aria.js"></script>
+  </head>
+  <body ng-app="ariaConfigDemo">
+    <section ng-controller="AriaConfigCtrl as vm">
+      <button type="button" ng-click="vm.disabled = !vm.disabled">
+        Toggle disabled
+      </button>
+      <div role="button" ng-disabled="vm.disabled" tabindex="0">
+        aria-disabled is not managed by this app config
+      </div>
+      <p>Disabled: {{ vm.disabled }}</p>
+    </section>
+  </body>
+</html>

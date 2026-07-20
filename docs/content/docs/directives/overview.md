@@ -20,7 +20,7 @@ Exact custom directive contracts live in TypeDoc:
 - [`DirectiveFactoryFn`](../../../typedoc/types/DirectiveFactoryFn.html)
 - [`Component`](../../../typedoc/interfaces/Component.html)
 - [`CompileFn`](../../../typedoc/types/CompileFn.html)
-- [`PublicLinkFn`](../../../typedoc/types/PublicLinkFn.html)
+- [`LinkFn`](../../../typedoc/types/LinkFn.html)
 - [`TranscludeFn`](../../../typedoc/types/TranscludeFn.html)
 
 ## How Directives Are Matched

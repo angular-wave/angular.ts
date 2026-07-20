@@ -20,7 +20,10 @@ Reads `transitionDuration`, `animationDuration`, and related computed style prop
 
 #### [JS driver]({{< relref "/docs/animations/js-animations" >}})
 
-Invokes factory functions registered via `$animateProvider.register()`. Each factory returns an object with lifecycle hooks (`enter`, `leave`, `move`, `addClass`, `removeClass`, `setClass`, `animate`) that receive a `done` callback. Suitable for Web Animations API, GSAP, or any imperative animation library.
+Invokes factory functions registered via `module.animation()`. Each factory
+returns an object with lifecycle hooks (`enter`, `leave`, `move`, `addClass`,
+`removeClass`, `setClass`, `animate`) that receive a `done` callback. Suitable
+for Web Animations API, GSAP, or any imperative animation library.
 ## CSS class hooks
 
 The CSS driver applies a pair of classes for every animation event. The first class (the preparation class) is added immediately; the second class (the active class) is added one `requestAnimationFrame` later so the browser can compute a transition between the two states. Both classes are removed when the animation completes.
@@ -112,45 +115,22 @@ handle.done((completed) => {
 });
 ```
 
-## Filtering animations
-
-Two provider-level hooks let you restrict which elements can be animated. Both are configured during the config phase via `$animateProvider`.
-
-**`$animateProvider.classNameFilter(regex)`** — only animate elements whose class list matches the given regular expression:
-
-```typescript
-  // Only animate elements that have an 'animate-' prefixed class
-  $animateProvider.classNameFilter(/\banimate-/);
-}]);
-```
-
-**`$animateProvider.customFilter(fn)`** — supply an arbitrary predicate that receives `(node, event, options)` and returns `true` to allow the animation:
-
-```typescript
-  $animateProvider.customFilter(function (node, event) {
-    // Skip all animations when in reduced-motion mode
-    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  });
-}]);
-```
-
-> **Tip:** Keep both filter functions as lean as possible. They are called for every DOM operation performed by animation-aware directives.
 ## Registering JavaScript animations
 
-To register a JavaScript animation, call `$animateProvider.register()` during the config phase or use the module-level `.animation()` shorthand. The name must be a CSS class selector starting with `.`:
+To register a JavaScript animation, call the module-level `.animation()` method.
+The name must be a CSS class selector starting with `.`:
 
 ```typescript
-  $animateProvider.register('.fade-animation', ['$q', function ($q) {
-    return {
-      enter(element, done) {
-        // run enter animation, call done() when finished
-        done();
-      },
-      leave(element, done) {
-        done();
-      },
-    };
-  }]);
+angular.module("app", []).animation('.fade-animation', ['$q', function ($q) {
+  return {
+    enter(element, done) {
+      // run enter animation, call done() when finished
+      done();
+    },
+    leave(element, done) {
+      done();
+    },
+  };
 }]);
 ```
 

@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./compile.js"></script>
+  </head>
+  <body ng-app="compileConfigDemo">
+    <section ng-controller="CompileConfigCtrl as vm">
+      <h1>Compile config demo</h1>
+      <user-card name="Alice"></user-card>
+      <p>Strict bindings enabled: {{ vm.strictEnabled }}</p>
+      <p>Configured title value: {{ vm.boundValue }}</p>
+      <p>Bound media value:</p>
+      <div id="secure-title" ng-prop-title="vm.boundValue"></div>
+    </section>
+  </body>
+</html>

@@ -10,7 +10,6 @@ navigation updates the service.
 Exact signatures live in TypeDoc:
 
 - [`Location`](../../../typedoc/classes/Location.html)
-- [`LocationProvider`](../../../typedoc/classes/LocationProvider.html)
 - [`Html5Mode`](../../../typedoc/interfaces/Html5Mode.html)
 
 ## Read The Current URL
@@ -55,4 +54,32 @@ $rootScope.$on("$locationChangeSuccess", (_event, newUrl) => {
 });
 ```
 
-For provider configuration, see [$locationProvider]({{< relref "/docs/provider/locationProvider" >}}).
+## Configure
+
+Use `module.config({ $location: ... })` for application-wide URL policy.
+
+```js
+angular.module("app", []).config({
+  $location: {
+    html5Mode: {
+      enabled: true,
+      requireBase: false,
+      rewriteLinks: true,
+    },
+    hashPrefix: "!",
+  },
+});
+```
+
+`html5Mode` may also be a boolean when only the `enabled` flag should change:
+
+```js
+angular.module("app", []).config({
+  $location: {
+    html5Mode: false,
+  },
+});
+```
+
+Executable sample:
+[`location.html`](/examples/config/location.html)

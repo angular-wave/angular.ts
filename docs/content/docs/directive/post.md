@@ -9,11 +9,11 @@ description: >
 The `ng-post` directive allows you to send data via `$http` service to a remote
 URL and insert, replace, or manipulate the server's response into the DOM. The
 directive assumes a response will be HTML content. If the server endpoint
-returns a JSON-response, the directive will treat it as an object to be merged
-into the current scope. In such a case, the swap strategy will be ignored and
-the content will be interpolated into current scope. Unlike its sister `ng-get`
-directive, `ng-post` assumes it is attached to a `form`, `input`, `textarea`, or
-`select` element, which act as the source of data for request payload:
+returns JSON, the response is available to `on-success` as `$res` and requires
+explicit assignment. The swap strategy is ignored for JSON. Unlike its sister
+`ng-get` directive, `ng-post` assumes it is attached to a `form`, `input`,
+`textarea`, or `select` element, which act as the source of data for the request
+payload:
 
 #### Example
 
@@ -34,8 +34,8 @@ With `form` elements, the directive can be registered anywhere inside a form:
 </form>
 ```
 
-In case of error, the directive displays the error in place of success result or
-will merge it into the current scope if response contains JSON. The behavior can
+In case of error, the directive displays a string error in place of the success
+result. JSON errors are available to `on-error` as `$res`. The behavior can
 be combined with other directivs to create complex form-handling strategies.
 Below is a form that dissappears in case of success or adds error state in case
 of validation errors.
@@ -46,7 +46,7 @@ of validation errors.
 <form
   ng-post="/register"
   ng-if="$ctrl.success === false"
-  success="$ctrl.success = true"
+  on-success="$ctrl.success = true"
 >
   <h2>Register form</h2>
 
@@ -72,7 +72,7 @@ below showcases an input acting as a search form:
 <input
   name="seach"
   ng-post="/search"
-  target="#output"
+  data-target="#output"
   trigger="keyup"
   placeholder="Search..."
 />
@@ -182,13 +182,13 @@ attributes provided below.
 
 - **Type:**
   [selectors](https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector#selectors)
-- **Description:** Specifies a DOM element where the response should be rendered
-  or name of scope property for response binding
+- **Description:** Specifies the DOM element where a string response should be
+  rendered.
 - **Example:**
 
   ```html
-  <div ng-post="/example" target=".test">Post</div>
-  <div ng-post="/json" target="person">{{ person.name }}</div>
+  <div ng-post="/example" data-target=".test">Post</div>
+  <div ng-post="/json" on-success="person = $res">{{ person.name }}</div>
   ```
 
 ---
@@ -257,7 +257,7 @@ attributes provided below.
 
 ---
 
-#### `data-success`
+#### `on-success`
 
 - **Type:** [Expression](../../../typedoc/types/Expression.html)
 - **Description:** Evaluates expression when request succeeds. Response data is
@@ -265,12 +265,12 @@ attributes provided below.
 - **Example:**
 
   ```html
-  <div ng-post="/example" success="message = $res">Get {{ message }}</div>
+  <div ng-post="/example" on-success="message = $res">Get {{ message }}</div>
   ```
 
 ---
 
-#### `data-error`
+#### `on-error`
 
 - **Type:** [Expression](../../../typedoc/types/Expression.html)
 - **Description:** Evaluates expression when request fails. Response data is
@@ -278,14 +278,14 @@ attributes provided below.
 - **Example:**
 
   ```html
-  <div ng-post="/example" error="errormessage = $res">
+  <div ng-post="/example" on-error="errormessage = $res">
     Get {{ errormessage }}
   </div>
   ```
 
 ---
 
-#### `data-success-state`
+#### `data-state-success`
 
 - **Type:** `string`
 - **Description:** Name of the state to nagitate to when request succeeds
@@ -293,12 +293,12 @@ attributes provided below.
 
   ```html
   <ng-view></ng-view>
-  <div ng-post="/example" success-state="account">Get</div>
+  <div ng-post="/example" data-state-success="account">Get</div>
   ```
 
 ---
 
-#### `data-success-error`
+#### `data-state-error`
 
 - **Type:** `string`
 - **Description:** Name of the state to nagitate to when request fails
@@ -306,7 +306,7 @@ attributes provided below.
 
   ```html
   <ng-view></ng-view>
-  <div ng-post="/example" error-state="login">Get</div>
+  <div ng-post="/example" data-state-error="login">Get</div>
   ```
 
 ---

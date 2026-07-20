@@ -12,7 +12,7 @@ This guide focuses on workflows. Exact call signatures and exported interfaces
 live in TypeDoc:
 
 - [`HttpService`](../../../typedoc/interfaces/HttpService.html)
-- [`RequestConfig`](../../../typedoc/interfaces/RequestConfig.html)
+- [`HttpRequestConfig`](../../../typedoc/interfaces/HttpRequestConfig.html)
 - [`HttpResponse`](../../../typedoc/interfaces/HttpResponse.html)
 - [`HttpInterceptor`](../../../typedoc/interfaces/HttpInterceptor.html)
 
@@ -77,9 +77,17 @@ $http.post('/api/users/42/avatar', formData, {
 Set application-wide defaults during module configuration:
 
 ```ts
-angular.module('app', []).config(($httpProvider) => {
-  $httpProvider.defaults.headers.common.Authorization = 'Bearer token';
-  $httpProvider.defaults.withCredentials = true;
+angular.module('app', []).config({
+  $http: {
+    defaults: {
+      headers: {
+        common: {
+          Authorization: 'Bearer token',
+        },
+      },
+      withCredentials: true,
+    },
+  },
 });
 ```
 
@@ -97,21 +105,25 @@ Interceptors centralize cross-cutting request and response behavior such as auth
 headers, retries, logging, and redirects.
 
 ```ts
-angular.module('app', []).config(($httpProvider) => {
-  $httpProvider.interceptors.push(() => ({
-    request(config) {
-      config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
-      return config;
-    },
+angular.module('app', []).config({
+  $http: {
+    interceptors: [
+      () => ({
+        request(config) {
+          config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
+          return config;
+        },
 
-    responseError(rejection) {
-      if (rejection.status === 401) {
-        window.location.href = '/login';
-      }
+        responseError(rejection) {
+          if (rejection.status === 401) {
+            window.location.href = '/login';
+          }
 
-      return Promise.reject(rejection);
-    },
-  }));
+          return Promise.reject(rejection);
+        },
+      }),
+    ],
+  },
 });
 ```
 
@@ -140,8 +152,10 @@ header. Cross-origin APIs must be listed as trusted origins before AngularTS
 sends the token to them.
 
 ```ts
-angular.module('app', []).config(($httpProvider) => {
-  $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
+angular.module('app', []).config({
+  $http: {
+    xsrfTrustedOrigins: ['https://api.example.com'],
+  },
 });
 ```
 

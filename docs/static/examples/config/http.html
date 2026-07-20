@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./http.js"></script>
+  </head>
+  <body ng-app="httpConfigDemo">
+    <section ng-controller="HttpConfigCtrl as vm">
+      <p>Credentials: {{ vm.withCredentials }}</p>
+      <p>XSRF cookie: {{ vm.xsrfCookieName }}</p>
+      <p>Common header: {{ vm.appHeader }}</p>
+    </section>
+  </body>
+</html>

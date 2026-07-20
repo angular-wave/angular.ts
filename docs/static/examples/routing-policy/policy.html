@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="module" src="/src/auto.ts"></script>
+    <script type="module" src="./policy.js"></script>
+  </head>
+  <body>
+    <main id="routing-policy-app">
+      <h1>Route policy demo</h1>
+
+      <nav>
+        <button type="button" data-route="admin.users">Admin users</button>
+        <button type="button" data-route="admin.help">Public help</button>
+        <button type="button" id="sign-in">Sign in</button>
+        <button type="button" data-route="admin.roles">Admin roles</button>
+        <button type="button" id="grant-roles">Grant roles</button>
+      </nav>
+
+      <p data-testid="current-state">
+        Current state: <b id="current-state">none</b>
+      </p>
+      <p data-testid="last-result">
+        Last result: <b id="last-result">ready</b>
+      </p>
+    </main>
+  </body>
+</html>

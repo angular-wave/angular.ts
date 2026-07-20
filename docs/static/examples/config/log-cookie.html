@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./log-cookie.js"></script>
+  </head>
+  <body ng-app="configDemo">
+    <section ng-controller="ConfigCtrl as vm">
+      <button ng-click="vm.save()">Save preference</button>
+      <p>{{ vm.message }}</p>
+    </section>
+  </body>
+</html>

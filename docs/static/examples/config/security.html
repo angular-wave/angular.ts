@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./security.js"></script>
+  </head>
+  <body ng-app="securityConfigDemo">
+    <section ng-controller="SecurityConfigCtrl as vm">
+      <p>Fallback: {{ vm.fallback }}</p>
+      <p>Credential order: {{ vm.credentialOrder }}</p>
+      <p>Allow insecure transport: {{ vm.allowInsecureTransport }}</p>
+      <p>Security service available: {{ vm.check ? 'yes' : 'no' }}</p>
+    </section>
+  </body>
+</html>

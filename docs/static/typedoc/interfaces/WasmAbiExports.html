@@ -104,7 +104,12 @@
             href="#memory"
             >memory</a
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">Memory</span
+          <span class="tsd-signature-type">Pick</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">WebAssembly.Memory</span
+          ><span class="tsd-signature-symbol">,</span>
+          <span class="tsd-signature-type">&quot;buffer&quot;</span
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
             href="#ng_abi_alloc-1"
@@ -133,6 +138,13 @@
           <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
+            href="#ng_abi_version-1"
+            >ng_abi_version</a
+          ><span class="tsd-signature-symbol">()</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
             href="#ng_scope_on_bind-1"
             >ng_scope_on_bind</a
           ><span class="tsd-signature-symbol">?</span
@@ -158,20 +170,8 @@
           <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
-            href="#ng_scope_on_unbind-1"
-            >ng_scope_on_unbind</a
-          ><span class="tsd-signature-symbol">?</span
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">scopeHandle</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">)</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">void</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-call-signature"
-            href="#ng_scope_on_update-1"
-            >ng_scope_on_update</a
+            href="#ng_scope_on_transaction-1"
+            >ng_scope_on_transaction</a
           ><span class="tsd-signature-symbol">?</span
           ><span class="tsd-signature-symbol">(</span><br />        <span
             class="tsd-kind-parameter"
@@ -180,27 +180,29 @@
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">,</span><br />        <span
             class="tsd-kind-parameter"
-            >pathPtr</span
+            >transactionPtr</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">,</span><br />        <span
             class="tsd-kind-parameter"
-            >pathLen</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >valuePtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >valueLen</span
+            >transactionLen</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">,</span><br />    <span
             class="tsd-signature-symbol"
             >)</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
+            href="#ng_scope_on_unbind-1"
+            >ng_scope_on_unbind</a
+          ><span class="tsd-signature-symbol">?</span
+          ><span class="tsd-signature-symbol">(</span
+          ><span class="tsd-kind-parameter">scopeHandle</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">)</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br /><span
@@ -259,6 +261,15 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>ng_<wbr />abi_<wbr />free</span></a
                     >
+                    <a href="#ng_abi_version" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>ng_<wbr />abi_<wbr />version</span></a
+                    >
                     <a href="#ng_scope_on_bind" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -268,6 +279,17 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>ng_<wbr />scope_<wbr />on_<wbr />bind?</span></a
                     >
+                    <a href="#ng_scope_on_transaction" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span
+                        >ng_<wbr />scope_<wbr />on_<wbr />transaction?</span
+                      ></a
+                    >
                     <a href="#ng_scope_on_unbind" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -276,15 +298,6 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>ng_<wbr />scope_<wbr />on_<wbr />unbind?</span></a
-                    >
-                    <a href="#ng_scope_on_update" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>ng_<wbr />scope_<wbr />on_<wbr />update?</span></a
                     >
                   </div>
                 </section>
@@ -320,7 +333,12 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">memory</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">Memory</span>
+                <span class="tsd-signature-type">Pick</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">WebAssembly.Memory</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">&quot;buffer&quot;</span
+                ><span class="tsd-signature-symbol">&gt;</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
@@ -468,6 +486,49 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="ng_abi_version">
+                <span>ng_<wbr />abi_<wbr />version</span
+                ><a
+                  href="#ng_abi_version"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div
+                    class="tsd-signature tsd-anchor-link"
+                    id="ng_abi_version-1"
+                  >
+                    <span class="tsd-kind-call-signature">ng_abi_version</span
+                    ><span class="tsd-signature-symbol">()</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><a
+                      href="#ng_abi_version-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Returns the AngularTS reactive ABI version implemented
+                        by this guest.
+                      </p>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">number</span>
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="ng_scope_on_bind">
                 <code class="tsd-tag">Optional</code
                 ><span>ng_<wbr />scope_<wbr />on_<wbr />bind</span
@@ -548,6 +609,97 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="ng_scope_on_transaction">
+                <code class="tsd-tag">Optional</code
+                ><span>ng_<wbr />scope_<wbr />on_<wbr />transaction</span
+                ><a
+                  href="#ng_scope_on_transaction"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div
+                    class="tsd-signature tsd-anchor-link"
+                    id="ng_scope_on_transaction-1"
+                  >
+                    <span class="tsd-kind-call-signature"
+                      >ng_scope_on_transaction</span
+                    ><span class="tsd-signature-symbol">?</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >scopeHandle</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >transactionPtr</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >transactionLen</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">void</span
+                    ><a
+                      href="#ng_scope_on_transaction-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Optional callback invoked with one watched scope
+                        transaction.
+                      </p>
+                    </div>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">scopeHandle</span
+                            >:
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter"
+                              >transactionPtr</span
+                            >:
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter"
+                              >transactionLen</span
+                            >:
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">void</span>
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="ng_scope_on_unbind">
                 <code class="tsd-tag">Optional</code
                 ><span>ng_<wbr />scope_<wbr />on_<wbr />unbind</span
@@ -597,115 +749,6 @@
                           <span
                             ><span class="tsd-kind-parameter">scopeHandle</span
                             >:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">void</span>
-                    </h4>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="ng_scope_on_update">
-                <code class="tsd-tag">Optional</code
-                ><span>ng_<wbr />scope_<wbr />on_<wbr />update</span
-                ><a
-                  href="#ng_scope_on_update"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div
-                    class="tsd-signature tsd-anchor-link"
-                    id="ng_scope_on_update-1"
-                  >
-                    <span class="tsd-kind-call-signature"
-                      >ng_scope_on_update</span
-                    ><span class="tsd-signature-symbol">?</span
-                    ><span class="tsd-signature-symbol">(</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >scopeHandle</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >pathPtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >pathLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >valuePtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >valueLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">void</span
-                    ><a
-                      href="#ng_scope_on_update-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>
-                        Optional callback invoked when a watched scope path
-                        changes.
-                      </p>
-                    </div>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">scopeHandle</span
-                            >:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">pathPtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">pathLen</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">valuePtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">valueLen</span>:
                             <span class="tsd-signature-type">number</span></span
                           >
                         </li>
@@ -924,6 +967,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>ng_<wbr />abi_<wbr />free</span></a
+                  ><a href="#ng_abi_version"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>ng_<wbr />abi_<wbr />version</span></a
                   ><a href="#ng_scope_on_bind"
                     ><svg
                       class="tsd-kind-icon"
@@ -932,6 +983,16 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>ng_<wbr />scope_<wbr />on_<wbr />bind</span></a
+                  ><a href="#ng_scope_on_transaction"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span
+                      >ng_<wbr />scope_<wbr />on_<wbr />transaction</span
+                    ></a
                   ><a href="#ng_scope_on_unbind"
                     ><svg
                       class="tsd-kind-icon"
@@ -940,14 +1001,6 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>ng_<wbr />scope_<wbr />on_<wbr />unbind</span></a
-                  ><a href="#ng_scope_on_update"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>ng_<wbr />scope_<wbr />on_<wbr />update</span></a
                   >
                 </div>
               </details>

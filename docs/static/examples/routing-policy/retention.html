@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="module" src="/src/auto.ts"></script>
+    <script type="module" src="./retention.js"></script>
+  </head>
+  <body>
+    <main id="routing-retention-app">
+      <h1>Route retention demo</h1>
+
+      <nav>
+        <button type="button" data-route="retention.tabA">Tab A</button>
+        <button type="button" data-route="retention.tabB">Tab B</button>
+        <button type="button" data-route="retention.tabC">Tab C</button>
+        <button type="button" data-route="plain">Plain route</button>
+      </nav>
+
+      <p>Current state: <b id="current-state">none</b></p>
+      <p>Last action: <b id="last-action">ready</b></p>
+      <p>Compiles: <b id="compile-counts">A:0 B:0 C:0</b></p>
+
+      <ng-view></ng-view>
+    </main>
+  </body>
+</html>

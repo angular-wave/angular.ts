@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="module" src="/src/auto.ts"></script>
+    <script type="module" src="./state-links.js"></script>
+    <style>
+      [data-state-current='true'] {
+        font-weight: 700;
+      }
+
+      nav {
+        display: flex;
+        gap: 1rem;
+      }
+
+      nav [ng-state] {
+        color: #0645ad;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+
+      nav [ng-state]:focus-visible {
+        outline: 2px solid #111827;
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="routing-state-links-app" ng-controller="StateLinksCtrl">
+      <h1>Router state link demo</h1>
+
+      <nav>
+        <a
+          id="orders-link"
+          ng-state="'orders'"
+          data-state-active
+          data-state-exact
+          >Orders</a
+        >
+        <a
+          id="order-detail-link"
+          ng-state="'orders.detail'"
+          ng-state-params="{ id: order.id }"
+          data-state-active
+          data-state-exact
+          >Order {{order.id}}</a
+        >
+        <div
+          id="order-panel-link"
+          ng-state="'orders.detail'"
+          ng-state-params="{ id: order.id }"
+          data-state-active
+          data-state-exact
+        >
+          Panel {{order.id}}
+        </div>
+      </nav>
+
+      <p>Current state: <b id="current-state">{{currentState}}</b></p>
+      <p>Current order: <b id="current-order">{{currentOrder}}</b></p>
+
+      <ng-view></ng-view>
+    </main>
+  </body>
+</html>

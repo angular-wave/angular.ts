@@ -129,10 +129,7 @@
             href="#transport"
             >transport</a
           ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="NativeWebTransport.html"
-            class="tsd-signature-type tsd-kind-interface"
-            >NativeWebTransport</a
+          <span class="tsd-signature-type">WebTransport</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
             href="#close-1"
@@ -140,15 +137,7 @@
           ><span class="tsd-signature-symbol">(</span
           ><span class="tsd-kind-parameter">closeInfo</span
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-symbol">{</span>
-          <span class="tsd-kind-property">closeCode</span
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">;</span>
-          <span class="tsd-kind-property">reason</span
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">string</span>
-          <span class="tsd-signature-symbol">}</span
+          <span class="tsd-signature-type">WebTransportCloseInfo</span
           ><span class="tsd-signature-symbol">)</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">void</span
@@ -159,35 +148,10 @@
           ><span class="tsd-signature-symbol">()</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">Promise</span
-          ><span class="tsd-signature-symbol">&lt;</span><br />        <span
-            class="tsd-signature-symbol"
-            >{</span
-          ><br />            <span class="tsd-kind-property">readable</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">ReadableStream</span
           ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">Uint8Array</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">ArrayBufferLike</span
+          ><span class="tsd-signature-type"
+            >WebTransportBidirectionalStream</span
           ><span class="tsd-signature-symbol">&gt;</span
-          ><span class="tsd-signature-symbol">&gt;</span
-          ><span class="tsd-signature-symbol">;</span><br />            <span
-            class="tsd-kind-property"
-            >writable</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">WritableStream</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">Uint8Array</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">ArrayBufferLike</span
-          ><span class="tsd-signature-symbol">&gt;</span
-          ><span class="tsd-signature-symbol">&gt;</span
-          ><span class="tsd-signature-symbol">;</span><br />        <span
-            class="tsd-signature-symbol"
-            >}</span
-          ><span class="tsd-signature-symbol">,</span><br />    <span
-            class="tsd-signature-symbol"
-            >&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
             href="#senddatagram-1"
@@ -421,11 +385,7 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">transport</span
                 ><span class="tsd-signature-symbol">:</span>
-                <a
-                  href="NativeWebTransport.html"
-                  class="tsd-signature-type tsd-kind-interface"
-                  >NativeWebTransport</a
-                >
+                <span class="tsd-signature-type">WebTransport</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
@@ -465,15 +425,7 @@
                     ><span class="tsd-signature-symbol">(</span
                     ><span class="tsd-kind-parameter">closeInfo</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-symbol">{</span>
-                    <span class="tsd-kind-property">closeCode</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">;</span>
-                    <span class="tsd-kind-property">reason</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">string</span>
-                    <span class="tsd-signature-symbol">}</span
+                    <span class="tsd-signature-type">WebTransportCloseInfo</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">void</span
@@ -496,15 +448,9 @@
                           <span
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">closeInfo</span>:
-                            <span class="tsd-signature-symbol">{</span>
-                            <span class="tsd-kind-property">closeCode</span
-                            ><span class="tsd-signature-symbol">?:</span>
-                            <span class="tsd-signature-type">number</span
-                            ><span class="tsd-signature-symbol">;</span>
-                            <span class="tsd-kind-property">reason</span
-                            ><span class="tsd-signature-symbol">?:</span>
-                            <span class="tsd-signature-type">string</span>
-                            <span class="tsd-signature-symbol">}</span></span
+                            <span class="tsd-signature-type"
+                              >WebTransportCloseInfo</span
+                            ></span
                           >
                         </li>
                       </ul>
@@ -539,34 +485,9 @@
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">Promise</span
                     ><span class="tsd-signature-symbol">&lt;</span
-                    ><br />    <span class="tsd-signature-symbol">{</span
-                    ><br />        <span class="tsd-kind-property"
-                      >readable</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">ReadableStream</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">Uint8Array</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">ArrayBufferLike</span
+                    ><span class="tsd-signature-type"
+                      >WebTransportBidirectionalStream</span
                     ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">;</span
-                    ><br />        <span class="tsd-kind-property"
-                      >writable</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">WritableStream</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">Uint8Array</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">ArrayBufferLike</span
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">;</span><br />    <span
-                      class="tsd-signature-symbol"
-                      >}</span
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >&gt;</span
                     ><a
                       href="#createbidirectionalstream-1"
                       aria-label="Permalink"
@@ -582,34 +503,9 @@
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">Promise</span
                       ><span class="tsd-signature-symbol">&lt;</span
-                      ><br />    <span class="tsd-signature-symbol">{</span
-                      ><br />        <span class="tsd-kind-property"
-                        >readable</span
-                      ><span class="tsd-signature-symbol">:</span>
-                      <span class="tsd-signature-type">ReadableStream</span
-                      ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">Uint8Array</span
-                      ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">ArrayBufferLike</span
-                      ><span class="tsd-signature-symbol">&gt;</span
-                      ><span class="tsd-signature-symbol">&gt;</span
-                      ><span class="tsd-signature-symbol">;</span
-                      ><br />        <span class="tsd-kind-property"
-                        >writable</span
-                      ><span class="tsd-signature-symbol">:</span>
-                      <span class="tsd-signature-type">WritableStream</span
-                      ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">Uint8Array</span
-                      ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">ArrayBufferLike</span
-                      ><span class="tsd-signature-symbol">&gt;</span
-                      ><span class="tsd-signature-symbol">&gt;</span
-                      ><span class="tsd-signature-symbol">;</span
-                      ><br />    <span class="tsd-signature-symbol">}</span
-                      ><span class="tsd-signature-symbol">,</span><br /><span
-                        class="tsd-signature-symbol"
-                        >&gt;</span
-                      >
+                      ><span class="tsd-signature-type"
+                        >WebTransportBidirectionalStream</span
+                      ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>
                 </li>

@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./rest.js"></script>
+  </head>
+  <body ng-app="restConfigDemo">
+    <section ng-controller="RestConfigCtrl as vm">
+      <p>HTTP withCredentials: {{ vm.httpCredentials }}</p>
+      <p>REST resource initialized: {{ vm.resourceType }}</p>
+    </section>
+  </body>
+</html>

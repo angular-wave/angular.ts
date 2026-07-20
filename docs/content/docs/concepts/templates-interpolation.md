@@ -135,12 +135,16 @@ fn($scope, (newValue) => {
 ```
 ### Customizing the delimiters
 
-The default delimiters are `{{` and `}}`. Configure them via `$interpolateProvider` in a config block:
+The default delimiters are `{{` and `}}`. Configure them with
+`module.config({ $interpolate: ... })`:
 
 ```typescript
-  $interpolateProvider.startSymbol = '{[';
-  $interpolateProvider.endSymbol = ']}';
-}]);
+angular.module("app", []).config({
+  $interpolate: {
+    startSymbol: "{[",
+    endSymbol: "]}",
+  },
+});
 ```
 
 After this change, templates use `{[ expression ]}` instead. This is useful when you are embedding AngularTS in a server-side template engine that already uses `{{` (such as Jinja2 or Handlebars).

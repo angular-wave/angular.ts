@@ -9,8 +9,8 @@ behavioral model and common examples. For exact method signatures, parameters,
 return types, and interfaces, use the generated TypeDoc reference:
 
 - [`HttpService`](../../../typedoc/interfaces/HttpService.html)
-- [`RequestConfig`](../../../typedoc/interfaces/RequestConfig.html)
-- [`RequestShortcutConfig`](../../../typedoc/interfaces/RequestShortcutConfig.html)
+- [`HttpRequestConfig`](../../../typedoc/interfaces/HttpRequestConfig.html)
+- [`HttpRequestOptions`](../../../typedoc/interfaces/HttpRequestOptions.html)
 - [`HttpResponse`](../../../typedoc/interfaces/HttpResponse.html)
 - [`HttpInterceptor`](../../../typedoc/interfaces/HttpInterceptor.html)
 
@@ -78,40 +78,55 @@ $http.get<User>('/api/users/99').catch((error) => {
 
 ## Defaults
 
-Configure defaults before bootstrap with `$httpProvider.defaults`, or mutate
-runtime defaults through `$http.defaults`.
+Configure defaults before bootstrap with `module.config({ $http: ... })`, or
+mutate runtime defaults through `$http.defaults`.
 
 ```ts
-angular.module('app', []).config(($httpProvider) => {
-  $httpProvider.defaults.headers.common.Authorization = 'Bearer token';
-  $httpProvider.defaults.withCredentials = true;
+angular.module("app", []).config({
+  $http: {
+    defaults: {
+      headers: {
+        common: {
+          Authorization: "Bearer token",
+        },
+      },
+      withCredentials: true,
+    },
+  },
 });
 ```
 
 Default response transforms strip AngularJS JSON protection prefixes and parse
 JSON responses automatically.
 
+Executable sample:
+[`http.html`](/examples/config/http.html)
+
 ## Interceptors
 
-Interceptors are registered with `$httpProvider.interceptors`. Request hooks run
-in registration order; response hooks run in reverse order.
+Interceptors are registered with `module.config({ $http: ... })`. Request hooks
+run in registration order; response hooks run in reverse order.
 
 ```ts
-angular.module('app', []).config(($httpProvider) => {
-  $httpProvider.interceptors.push(() => ({
-    request(config) {
-      config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
-      return config;
-    },
+angular.module("app", []).config({
+  $http: {
+    interceptors: [
+      () => ({
+        request(config) {
+          config.headers.Authorization = `Bearer ${localStorage.getItem("token")}`;
+          return config;
+        },
 
-    responseError(rejection) {
-      if (rejection.status === 401) {
-        window.location.href = '/login';
-      }
+        responseError(rejection) {
+          if (rejection.status === 401) {
+            window.location.href = "/login";
+          }
 
-      return Promise.reject(rejection);
-    },
-  }));
+          return Promise.reject(rejection);
+        },
+      }),
+    ],
+  },
 });
 ```
 
@@ -121,8 +136,10 @@ angular.module('app', []).config(($httpProvider) => {
 header for trusted origins. Add cross-origin APIs explicitly:
 
 ```ts
-angular.module('app', []).config(($httpProvider) => {
-  $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
+angular.module("app", []).config({
+  $http: {
+    xsrfTrustedOrigins: ["https://api.example.com"],
+  },
 });
 ```
 

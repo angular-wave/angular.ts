@@ -4,15 +4,33 @@ description: >
   Strict Contextual Escaping service
 ---
 
-# `$sceProvider` and `$sce` Documentation
+# `$sce` Documentation
 
-## `$sceProvider`
+## Configuration
 
-The `$sceProvider` provider allows developers to configure the [`$sce`](#sce)
-service.
+Use module config to configure the [`$sce`](#sce) service and its resource URL
+delegate before the application runs.
 
 - Enable/disable Strict Contextual Escaping (SCE) in a module
 - Override the default implementation with a custom delegate
+
+```js
+angular.module("app", []).config({
+  $sce: {
+    enabled: true,
+  },
+});
+
+angular.module("app").config({
+  $sceDelegate: {
+    trustedResourceUrlList: ["self", "https://cdn.example.com/templates/**"],
+    bannedResourceUrlList: ["https://cdn.example.com/templates/private/**"],
+  },
+});
+```
+
+Executable sample:
+[`sce.html`](/examples/config/sce.html)
 
 Read more about [Strict Contextual Escaping (SCE)](#strict-contextual-escaping).
 
@@ -123,7 +141,7 @@ $sce.getTrustedResourceUrl(url);
 
 To allow templates from other domains, use:
 
-- `$sceDelegateProvider.trustedResourceUrlList`
+- `module.config({ $sceDelegate: { trustedResourceUrlList: [...] } })`
 - Or `$sce.trustAsResourceUrl(url)`
 
 > **Note:** Browser CORS and Same-Origin policies still apply.
@@ -186,9 +204,11 @@ Trusted and banned resource URL lists accept:
 You can disable SCE globally — though this is strongly discouraged.
 
 ```js
-angular.module('myAppWithSceDisabled', []).config(function ($sceProvider) {
-  // Completely disable SCE. For demonstration purposes only!
-  // Do not use in new projects or libraries.
-  $sceProvider.enabled(false);
+angular.module("myAppWithSceDisabled", []).config({
+  $sce: {
+    // Completely disable SCE. For demonstration purposes only!
+    // Do not use in new projects or libraries.
+    enabled: false,
+  },
 });
 ```

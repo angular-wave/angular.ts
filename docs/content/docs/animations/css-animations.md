@@ -256,7 +256,9 @@ Adding `will-change: transform` hints to the browser that the element will be an
 
 #### Limit simultaneous animations
 
-Use `$animateProvider.classNameFilter()` or `$animateProvider.customFilter()` to restrict animations to specific elements. Animating large numbers of DOM nodes simultaneously causes frame drops on low-powered devices.
+Use targeted animation class names and avoid attaching animation hooks to broad
+selectors. Animating large numbers of DOM nodes simultaneously causes frame
+drops on low-powered devices.
 
 ```css
 .my-element.ng-enter {

@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./location.js"></script>
+  </head>
+  <body ng-app="locationConfigDemo">
+    <section ng-controller="LocationCtrl as vm">
+      <button ng-click="vm.openSettings()">Open settings</button>
+      <p>{{ vm.currentUrl }}</p>
+    </section>
+  </body>
+</html>

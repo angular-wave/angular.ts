@@ -4,7 +4,7 @@ linkTitle: "HTTP Directives"
 weight: 280
 description: "Make HTTP requests and stream SSE from HTML using ng-get, ng-post, ng-put, ng-delete, and ng-sse — no JavaScript required for common data-fetching patterns."
 ---
-AngularTS ships a family of declarative HTTP directives inspired by HTMX. Rather than wiring up `$http` calls in a controller, you attach `ng-get`, `ng-post`, `ng-put`, `ng-delete`, or `ng-sse` directly to HTML elements. The directives handle the request lifecycle, DOM insertion, loading states, error handling, and scope merging — all configured through HTML attributes.
+AngularTS ships a family of declarative HTTP directives inspired by HTMX. Rather than wiring up `$http` calls in a controller, you attach `ng-get`, `ng-post`, `ng-put`, `ng-delete`, or `ng-sse` directly to HTML elements. The directives handle the request lifecycle, DOM insertion, loading states, error handling, and explicit response assignment — all configured through HTML attributes.
 ## How they differ from `$http`
 
 When you use `$http` directly you write controller code: define the request, subscribe to the promise, update scope properties, handle errors, and trigger a digest. The HTTP directives do all of this declaratively:
@@ -22,11 +22,12 @@ When you use `$http` directly you write controller code: define the request, sub
 ```
 
 ```html
-<button ng-get="/api/user/1">Load user</button>
-<p>{{ name }}</p>
+<button ng-get="/api/user/1" on-success="user = $res">Load user</button>
+<p>{{ user.name }}</p>
 ```
 
-When the server returns JSON, the directive merges it into `scope` automatically. When it returns HTML, the result is compiled and injected into the DOM using the configured swap strategy.
+JSON is available to `on-success` as `$res`; it never mutates scope implicitly.
+HTML responses are compiled and inserted using the configured swap strategy.
 
 ***
 ## ng-get
@@ -34,16 +35,17 @@ When the server returns JSON, the directive merges it into `scope` automatically
 `ng-get` fires a GET request when the configured event occurs (default: `click` for buttons, `change` for inputs, `submit` for forms).
 
 ```html
-<button ng-get="/api/weather?city=London">
+<button ng-get="/api/weather?city=London"
+        on-success="weather = $res">
   Get weather
 </button>
-{{ temperature }}°C — {{ description }}
+{{ weather.temperature }}°C — {{ weather.description }}
 ```
 
 ```html
 <button ng-get="/partials/user-card.html"
-        swap="outerHTML"
-        target="#user-area">
+        data-swap="outerHTML"
+        data-target="#user-area">
   Show profile
 </button>
 <div id="user-area"></div>
@@ -53,7 +55,9 @@ When the server returns JSON, the directive merges it into `scope` automatically
 Use `trigger="load"` to fire the request immediately when the element is linked (no user interaction required):
 
 ```html
-<div ng-get="/api/dashboard/stats" trigger="load">
+<div ng-get="/api/dashboard/stats"
+     trigger="load"
+     on-success="stats = $res">
   <span ng-bind="stats.users"></span> users
 </div>
 ```
@@ -62,6 +66,7 @@ Use `trigger="load"` to fire the request immediately when the element is linked 
 ```html
 <div ng-get="/api/live-count"
      trigger="load"
+     on-success="status = $res"
      interval="5000">
   {{ count }} online
 </div>
@@ -82,8 +87,8 @@ Use `trigger="load"` to fire the request immediately when the element is linked 
 
 ```html
 <button ng-post="/api/cart/add"
-        success="cartMessage = $res.message"
-        error="cartError = $res.error">
+        on-success="cartMessage = $res.message"
+        on-error="cartError = $res.error">
   Add to cart
 </button>
 ```
@@ -97,8 +102,8 @@ When the form element has an `enctype` attribute, the request body is URL-encode
 
 ```html
       name="profileForm"
-      success="profileSaved = true"
-      state-success="dashboard">
+      on-success="profileSaved = true"
+      data-state-success="dashboard">
   <input name="name" ng-model="user.name" required />
   <input name="email" type="email" ng-model="user.email" required />
   <button type="submit">Save changes</button>
@@ -114,8 +119,8 @@ When the form element has an `enctype` attribute, the request body is URL-encode
 <li>
   <span>{{ item.name }}</span>
   <button ng-delete="/api/items/{{ item.id }}"
-          swap="delete"
-          target="#item-{{ item.id }}">
+          data-swap="delete"
+          data-target="#item-{{ item.id }}">
     Delete
   </button>
 </li>
@@ -124,7 +129,7 @@ When the form element has an `enctype` attribute, the request body is URL-encode
 ***
 ## ng-sse
 
-`ng-sse` opens a persistent Server-Sent Events connection using the `$sse` service. Incoming messages are handled the same way as HTTP responses: JSON payloads are merged into scope, HTML strings are injected using the configured swap strategy.
+`ng-sse` opens a persistent Server-Sent Events connection using the `$sse` service. Incoming JSON is available to `on-success` as `$res`; HTML strings are inserted using the configured swap strategy.
 
 ```html
 <div ng-sse="/api/events/notifications"
@@ -134,9 +139,10 @@ When the form element has an `enctype` attribute, the request body is URL-encode
 
 ```html
 <div ng-sse="/api/events/market"
-     trigger="load">
-  <p>{{ price | currency }}</p>
-  <p>{{ change }}%</p>
+     trigger="load"
+     on-success="market = $res">
+  <p>{{ market.price | currency }}</p>
+  <p>{{ market.change }}%</p>
 </div>
 ```
 
@@ -174,15 +180,15 @@ Controls how the response HTML is inserted. Possible values:
 * `beforeend` — inserts inside the element, after its last child
 * `afterend` — inserts immediately after the element
 * `delete` — removes the target element entirely
-* `none` — performs no DOM insertion (useful when only scope merging is needed)
-#### `target`
+* `none` — performs no DOM insertion
+#### `data-target`
 
 - **Type:** `CSS selector`
 
 A `querySelector` selector for the element that receives the response. When omitted, the directive element itself is the target.
 
 ```html
-<button ng-get="/api/user" target="#profile-card">Load</button>
+<button ng-get="/api/user" data-target="#profile-card">Load</button>
 <div id="profile-card"></div>
 ```
 #### `trigger`
@@ -245,16 +251,16 @@ A CSS class toggled on the element while the request is in flight.
 ```html
 <button ng-get="/api/data" loading-class="is-loading">Load</button>
 ```
-#### `success`
+#### `on-success`
 
 - **Type:** `expression`
 
 Expression evaluated when the response has a 2xx status code. The response data is available as `$res`.
 
 ```html
-<button ng-get="/api/items" success="items = $res">Fetch</button>
+<button ng-get="/api/items" on-success="items = $res">Fetch</button>
 ```
-#### `error`
+#### `on-error`
 
 - **Type:** `expression`
 
@@ -262,17 +268,17 @@ Expression evaluated when the response has a 4xx or 5xx status code. The respons
 
 ```html
 <button ng-post="/api/login"
-        success="redirect('/dashboard')"
-        error="loginError = $res.message">
+        on-success="redirect('/dashboard')"
+        on-error="loginError = $res.message">
   Log in
 </button>
 ```
-#### `state-success`
+#### `data-state-success`
 
 - **Type:** `string`
 
 Router state name to navigate to on success (calls `$state.go`).
-#### `state-error`
+#### `data-state-error`
 
 - **Type:** `string`
 
@@ -316,8 +322,8 @@ Sets the `Content-Type` request header and URL-encodes form data. Use `"applicat
 <button ng-get="/api/posts?page={{ nextPage }}"
         ng-viewport
         on-enter="loadMore()"
-        swap="beforeend"
-        target="#post-list">
+        data-swap="beforeend"
+        data-target="#post-list">
   Load more
 </button>
 ```
@@ -327,16 +333,17 @@ Sets the `Content-Type` request header and URL-encodes form data. Use `"applicat
   <span ng-bind="notifications.unread"></span>
 </div>
 
-<!-- SSE merges JSON payloads into scope automatically -->
-<div ng-sse="/api/events/notifications" trigger="load">
+<div ng-sse="/api/events/notifications"
+     trigger="load"
+     on-success="notifications = $res">
 </div>
 ```
 ### Form submission with redirect on success
 
 ```html
       ng-post="/api/auth/login"
-      state-success="app.dashboard"
-      error="authError = $res.message">
+      data-state-success="app.dashboard"
+      on-error="authError = $res.message">
   <input type="email" name="email" ng-model="credentials.email" required />
   <input type="password" name="password" ng-model="credentials.password" required />
   <p ng-if="authError" ng-bind="authError"></p>

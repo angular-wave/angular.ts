@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="module" src="/src/auto.ts"></script>
+    <script type="module" src="./retry-fallback.js"></script>
+  </head>
+  <body>
+    <main id="routing-retry-fallback-app">
+      <ng-view></ng-view>
+
+      <p data-testid="current-state-line">
+        Current state: <strong id="current-state">none</strong>
+      </p>
+      <p data-testid="last-action-line">
+        Last action: <strong id="last-action">ready</strong>
+      </p>
+    </main>
+  </body>
+</html>

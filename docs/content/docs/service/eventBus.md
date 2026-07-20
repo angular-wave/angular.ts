@@ -1,15 +1,15 @@
 ---
 title: $eventBus
 description: >
-  Pubsub messaging service
+  Application-wide event bus service
 ---
 
 ### Description
 
 A messaging service, backed by an instance of
-[PubSub](../../../typedoc/classes/PubSub.html). This implementation is based on
+[EventBus](../../../typedoc/classes/EventBus.html). This implementation is based on
 the original
-[Google Closure PubSub](https://google.github.io/closure-library/api/goog.pubsub.PubSub.html)
+[Google Closure EventBus](https://google.github.io/closure-library/api/goog.pubsub.PubSub.html)
 but uses
 [`queueMicrotask`](https://developer.mozilla.org/en-US/docs/Web/API/Window/queueMicrotask)
 instead of
@@ -53,6 +53,6 @@ destroyed
 ---
 
 For detailed method description, see
-[PubSub](../../../typedoc/classes/PubSub.html)
+[EventBus](../../../typedoc/classes/EventBus.html)
 
 ---

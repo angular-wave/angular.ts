@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./ng-click-non-native.js"></script>
+    <style>
+      .interactive-card {
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 12px;
+        width: fit-content;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body ng-app="ariaClickNonNativeDemo">
+    <section ng-controller="AriaClickNonNativeCtrl as vm">
+      <h2>Non-native ng-click accessibility</h2>
+      <p>Count: {{ vm.count }}</p>
+      <div class="interactive-card" ng-click="vm.count = vm.count + 1">
+        Click or press Enter/Space
+      </div>
+      <p>
+        AngularTS applies framework defaults (`role="button"` and
+        `tabindex="0"`), so this non-button element is keyboard accessible without
+        manual ARIA wiring.
+      </p>
+    </section>
+  </body>
+</html>

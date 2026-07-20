@@ -91,8 +91,8 @@
         <section class="tsd-panel tsd-comment">
           <div class="tsd-comment tsd-typography">
             <p>
-              Interceptor hooks registered through
-              <code>$httpProvider.interceptors</code>.
+              Interceptor hooks registered through app-level
+              <code>$http</code> configuration.
             </p>
             <p>
               Request hooks run in registration order. Response hooks run in
@@ -109,51 +109,57 @@
             href="#request-1"
             >request</a
           ><span class="tsd-signature-symbol">?</span
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">config</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >config</span
           ><span class="tsd-signature-symbol">:</span>
           <a
-            href="RequestConfig.html"
+            href="HttpRequestConfig.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestConfig</a
-          ><span class="tsd-signature-symbol">)</span
+            >HttpRequestConfig</a
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
           ><span class="tsd-signature-symbol">:</span>
           <a
-            href="RequestConfig.html"
+            href="HttpRequestConfig.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestConfig</a
+            >HttpRequestConfig</a
           >
           <span class="tsd-signature-symbol">|</span>
           <span class="tsd-signature-type">Promise</span
           ><span class="tsd-signature-symbol">&lt;</span
           ><a
-            href="RequestConfig.html"
+            href="HttpRequestConfig.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestConfig</a
+            >HttpRequestConfig</a
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
             href="#requesterror-1"
             >requestError</a
           ><span class="tsd-signature-symbol">?</span
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">rejection</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >rejection</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">unknown</span
-          ><span class="tsd-signature-symbol">)</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
           ><span class="tsd-signature-symbol">:</span>
           <a
-            href="RequestConfig.html"
+            href="HttpRequestConfig.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestConfig</a
+            >HttpRequestConfig</a
           >
           <span class="tsd-signature-symbol">|</span>
           <span class="tsd-signature-type">Promise</span
           ><span class="tsd-signature-symbol">&lt;</span
           ><a
-            href="RequestConfig.html"
+            href="HttpRequestConfig.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestConfig</a
+            >HttpRequestConfig</a
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
@@ -348,27 +354,30 @@
                   <div class="tsd-signature tsd-anchor-link" id="request-1">
                     <span class="tsd-kind-call-signature">request</span
                     ><span class="tsd-signature-symbol">?</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">config</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >config</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a
-                      href="RequestConfig.html"
+                      href="HttpRequestConfig.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestConfig</a
-                    ><span class="tsd-signature-symbol">)</span
+                      >HttpRequestConfig</a
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a
-                      href="RequestConfig.html"
+                      href="HttpRequestConfig.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestConfig</a
+                      >HttpRequestConfig</a
                     >
                     <span class="tsd-signature-symbol">|</span>
                     <span class="tsd-signature-type">Promise</span
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
-                      href="RequestConfig.html"
+                      href="HttpRequestConfig.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestConfig</a
+                      >HttpRequestConfig</a
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#request-1"
@@ -391,9 +400,9 @@
                           <span
                             ><span class="tsd-kind-parameter">config</span>:
                             <a
-                              href="RequestConfig.html"
+                              href="HttpRequestConfig.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >RequestConfig</a
+                              >HttpRequestConfig</a
                             ></span
                           >
                         </li>
@@ -402,17 +411,17 @@
                     <h4 class="tsd-returns-title">
                       Returns
                       <a
-                        href="RequestConfig.html"
+                        href="HttpRequestConfig.html"
                         class="tsd-signature-type tsd-kind-interface"
-                        >RequestConfig</a
+                        >HttpRequestConfig</a
                       >
                       <span class="tsd-signature-symbol">|</span>
                       <span class="tsd-signature-type">Promise</span
                       ><span class="tsd-signature-symbol">&lt;</span
                       ><a
-                        href="RequestConfig.html"
+                        href="HttpRequestConfig.html"
                         class="tsd-signature-type tsd-kind-interface"
-                        >RequestConfig</a
+                        >HttpRequestConfig</a
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>
@@ -439,24 +448,27 @@
                   >
                     <span class="tsd-kind-call-signature">requestError</span
                     ><span class="tsd-signature-symbol">?</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">rejection</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >rejection</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">unknown</span
-                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a
-                      href="RequestConfig.html"
+                      href="HttpRequestConfig.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestConfig</a
+                      >HttpRequestConfig</a
                     >
                     <span class="tsd-signature-symbol">|</span>
                     <span class="tsd-signature-type">Promise</span
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
-                      href="RequestConfig.html"
+                      href="HttpRequestConfig.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestConfig</a
+                      >HttpRequestConfig</a
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#requesterror-1"
@@ -488,17 +500,17 @@
                     <h4 class="tsd-returns-title">
                       Returns
                       <a
-                        href="RequestConfig.html"
+                        href="HttpRequestConfig.html"
                         class="tsd-signature-type tsd-kind-interface"
-                        >RequestConfig</a
+                        >HttpRequestConfig</a
                       >
                       <span class="tsd-signature-symbol">|</span>
                       <span class="tsd-signature-type">Promise</span
                       ><span class="tsd-signature-symbol">&lt;</span
                       ><a
-                        href="RequestConfig.html"
+                        href="HttpRequestConfig.html"
                         class="tsd-signature-type tsd-kind-interface"
-                        >RequestConfig</a
+                        >HttpRequestConfig</a
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>

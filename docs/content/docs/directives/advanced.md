@@ -130,18 +130,45 @@ Injects a named service directly into the scope, making it accessible in the tem
 ## Lazy loading and performance
 ### `ng-viewport`
 
-Uses the browser's Intersection Observer API to defer content rendering until the element enters the viewport. Ideal for below-the-fold content.
+Uses the browser's Intersection Observer API to run expressions when an element
+enters or leaves the viewport. Ideal for below-the-fold loading, lazy request
+triggers, analytics markers, and canvas/chart initialization.
 
 ```html
-  <!-- loadComments() is called once when this enters the viewport -->
+<div
+  ng-viewport
+  on-enter="loadComments($entry)"
+  on-leave="visible = false"
+  data-viewport-threshold="0.5"
+  data-viewport-margin="200px 0px"
+>
   <div ng-repeat="comment in comments">{{ comment.text }}</div>
 </div>
 ```
+
+Use `data-viewport-once` when the enter expression should run only once:
+
+```html
+<div ng-viewport data-viewport-once on-enter="loadOnce($entry)"></div>
+```
+
 #### `ng-viewport`
 
-- **Type:** `expression`
+- **Type:** marker attribute
 
-Expression to evaluate when the element enters the viewport. Called once and not repeated.
+Supported attributes:
+
+| Attribute                  | Description                                                       |
+| -------------------------- | ----------------------------------------------------------------- |
+| `on-enter`                 | Expression evaluated when the element intersects the viewport.    |
+| `on-leave`                 | Expression evaluated when the element stops intersecting.         |
+| `data-viewport-threshold`  | Intersection threshold, such as `0.5` or `0, 0.5, 1`.             |
+| `data-viewport-margin`     | Root margin passed to IntersectionObserver, such as `200px 0px`.  |
+| `data-viewport-once`       | Disconnects the observer after the first enter callback.          |
+
+`on-enter` and `on-leave` receive `$entry` and `$entries` locals from the
+Intersection Observer callback.
+
 ### `ng-cloak`
 
 Prevents the browser from briefly displaying uncompiled template syntax (`{{ }}`) before AngularTS bootstraps. Add to the root element or any element with interpolation.
@@ -160,8 +187,11 @@ Prevents the browser from briefly displaying uncompiled template syntax (`{{ }}`
 Runs a JavaScript file in a Web Worker and binds the result back to scope. The worker communicates via `postMessage`.
 
 ```html
-     data-params="{ items: largeList }"
-     data-on-result="sortedItems = $result">
+<div
+  ng-worker="/workers/sort.js"
+  data-params="{ items: largeList }"
+  on-result="sortedItems = $result"
+>
   <div ng-repeat="item in sortedItems">{{ item.name }}</div>
 </div>
 ```
@@ -171,16 +201,29 @@ Runs a JavaScript file in a Web Worker and binds the result back to scope. The w
 - **Required:** yes
 
 Path to the Web Worker JavaScript file.
+
+Use an empty `ng-worker` with `data-handle="name"` to reuse a worker registered
+through `app.worker(name, script)`. Shared handles are application-owned rather
+than terminated with the directive scope.
 #### `data-params`
 
 - **Type:** `expression`
 
 Data to pass to the worker as the message payload.
-#### `data-on-result`
+#### `on-result`
 
 - **Type:** `expression`
 
 Expression evaluated when the worker posts a result. `$result` contains the worker's response.
+
+Worker results are not inserted as HTML when this expression is absent.
+
+#### `data-request`
+
+- **Type:** `boolean data attribute`
+
+Use the standard correlated request protocol instead of consuming every stream
+message. This is the preferred mode for shared workers.
 #### `interval`
 
 - **Type:** `number`
@@ -201,11 +244,14 @@ The worker file uses standard `onmessage` / `postMessage`:
 ```
 ### `ng-wasm`
 
-Loads a WebAssembly module and makes its exports available on scope.
+Loads a WebAssembly module and makes its `WasmResource` available on scope.
 
 ```html
-  <p>Result: {{ math.add(3, 4) }}</p>
-</div>
+<div ng-wasm src="/wasm/math.wasm" as="math"></div>
+<p>
+  Result:
+  {{ math.status === 'ready' ? math.exports.add(3, 4) : 'Loading...' }}
+</p>
 ```
 #### `ng-wasm`
 
@@ -217,7 +263,9 @@ Path to the `.wasm` file to load.
 
 - **Type:** `string`
 
-Scope property name to assign the WASM exports object to. Defaults to `wasm`.
+Scope property name to assign the `WasmResource` to. Defaults to `wasm`.
+The reserved object keys `__proto__`, `constructor`, and `prototype` are
+rejected.
 ## Transclusion
 ### `ng-transclude`
 
@@ -258,18 +306,20 @@ AngularTS automatically manages ARIA attributes for accessibility. These directi
 | `ng-show` / `ng-hide` | `aria-hidden`          |
 | `ng-model`            | `aria-value*`, role    |
 
-The `$aria` service and `$ariaProvider` let you configure which ARIA attributes are automatically managed:
+The `$aria` service and module config let you configure which ARIA attributes
+are automatically managed:
 
 ```javascript
-  $ariaProvider.config({
+angular.module('app', []).config({
+  $aria: {
     ariaDisabled: true,
     ariaChecked: true,
     ariaReadonly: true,
     ariaRequired: true,
     ariaHidden: true,
     ariaValue: true,
-    tabindex: true
-  });
+    tabindex: true,
+  },
 });
 ```
 ## Event directives

@@ -549,10 +549,7 @@
                       class="tsd-kind-parameter"
                       >$injector</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../interfaces/InjectorService.html"
-                      class="tsd-signature-type tsd-kind-interface"
-                      >InjectorService</a
+                    <span class="tsd-signature-type">InjectorService</span
                     ><span class="tsd-signature-symbol">,</span><br />    <span
                       class="tsd-kind-parameter"
                       >$interpolate</span
@@ -628,10 +625,8 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">$injector</span>:
-                            <a
-                              href="../interfaces/InjectorService.html"
-                              class="tsd-signature-type tsd-kind-interface"
-                              >InjectorService</a
+                            <span class="tsd-signature-type"
+                              >InjectorService</span
                             ></span
                           >
                         </li>
@@ -688,7 +683,11 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$asyncValidators</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">AsyncModelValidators</span>
+                <a
+                  href="../types/AsyncModelValidators.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >AsyncModelValidators</a
+                >
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
@@ -826,7 +825,11 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$name</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">ControlName</span>
+                <a
+                  href="../types/ControlName.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ControlName</a
+                >
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>The name attribute of the control.</p>
@@ -846,7 +849,11 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$options</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">ModelOptions</span>
+                <a
+                  href="../interfaces/ModelOptions.html"
+                  class="tsd-signature-type tsd-kind-interface"
+                  >ModelOptions</a
+                >
               </div>
             </section>
             <section class="tsd-panel tsd-member">
@@ -944,7 +951,11 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$target</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">FormControlTarget</span>
+                <a
+                  href="../interfaces/FormControlTarget.html"
+                  class="tsd-signature-type tsd-kind-interface"
+                  >FormControlTarget</a
+                >
               </div>
             </section>
             <section class="tsd-panel tsd-member">
@@ -1037,7 +1048,11 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">$validators</span
                 ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">ModelValidators</span>
+                <a
+                  href="../types/ModelValidators.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ModelValidators</a
+                >
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
@@ -1095,12 +1110,15 @@
               <div class="tsd-comment tsd-typography">
                 <p>
                   Array of functions to execute whenever a change to
-                  ngModel.NgModelController#$viewValue
-                  <code>$viewValue</code> has caused a change to
-                  ngModel.NgModelController#$modelValue
-                  <code>$modelValue</code>. It is called with no arguments, and
-                  its return value is ignored. This can be used in place of
-                  additional $watches against the model value.
+                  <a href="#viewvalue" class="tsd-kind-property"
+                    ><code>$viewValue</code></a
+                  >
+                  has caused a change to
+                  <a href="#modelvalue" class="tsd-kind-property"
+                    ><code>$modelValue</code></a
+                  >. It is called with no arguments, and its return value is
+                  ignored. This can be used in place of additional $watches
+                  against the model value.
                 </p>
               </div>
             </section>
@@ -1341,7 +1359,10 @@
                     ><span class="tsd-signature-symbol">(</span
                     ><span class="tsd-kind-parameter">options</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">ModelOptionsConfig</span
+                    <a
+                      href="../types/ModelOptionsConfig.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >ModelOptionsConfig</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">void</span
@@ -1367,14 +1388,15 @@
                         defined in the given parameter.
                       </p>
                       <p>
-                        See ngModelOptions for information about what options
-                        can be specified and how model option inheritance works.
+                        See <code>ngModelOptions</code> for information about
+                        what options can be specified and how model option
+                        inheritance works.
                       </p>
                       <div class="alert alert-warning">
                         **Note:** this function only affects the options set on
                         the `ngModelController`, and not the options on the
-                        ngModelOptions directive from which they might have been
-                        obtained initially.
+                        `ngModelOptions` directive from which they might have
+                        been obtained initially.
                       </div>
                       <div class="alert alert-danger">
                         **Note:** it is not possible to override the
@@ -1387,8 +1409,10 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">options</span>:
-                            <span class="tsd-signature-type"
-                              >ModelOptionsConfig</span
+                            <a
+                              href="../types/ModelOptionsConfig.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >ModelOptionsConfig</a
                             ></span
                           >
                           <div class="tsd-comment tsd-typography">
@@ -1441,15 +1465,21 @@
                     <div class="tsd-comment tsd-typography">
                       <p>
                         Runs the model -&gt; view pipeline on the current
-                        ngModel.NgModelController#$modelValue $modelValue.
+                        <a href="#modelvalue" class="tsd-kind-property"
+                          >$modelValue</a
+                        >.
                       </p>
                       <p>The following actions are performed by this method:</p>
                       <ul>
                         <li>
                           the <code>$modelValue</code> is run through the
-                          ngModel.NgModelController#$formatters $formatters and
-                          the result is set to the
-                          ngModel.NgModelController#$viewValue $viewValue
+                          <a href="#formatters" class="tsd-kind-property"
+                            >$formatters</a
+                          >
+                          and the result is set to the
+                          <a href="#viewvalue" class="tsd-kind-property"
+                            >$viewValue</a
+                          >
                         </li>
                         <li>
                           the <code>ng-empty</code> or
@@ -1459,13 +1489,17 @@
                           if the <code>$viewValue</code> has changed:
                           <ul>
                             <li>
-                              ngModel.NgModelController#$render $render is
-                              called on the control
+                              <a href="#render" class="tsd-kind-method"
+                                >$render</a
+                              >
+                              is called on the control
                             </li>
                             <li>
-                              the ngModel.NgModelController#$validators
-                              $validators are run and the validation status is
-                              set.
+                              the
+                              <a href="#validators" class="tsd-kind-property"
+                                >$validators</a
+                              >
+                              are run and the validation status is set.
                             </li>
                           </ul>
                         </li>
@@ -1993,7 +2027,10 @@
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-kind-parameter">state</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">PublicValidationState</span
+                    <a
+                      href="../types/PublicValidationState.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >PublicValidationState</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">void</span
@@ -2026,8 +2063,10 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">state</span>:
-                            <span class="tsd-signature-type"
-                              >PublicValidationState</span
+                            <a
+                              href="../types/PublicValidationState.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >PublicValidationState</a
                             ></span
                           >
                         </li>
@@ -2084,19 +2123,19 @@
                         This method should be called when a control wants to
                         change the view value; typically, this is done from
                         within a DOM event handler. For example, the
-                        ng.directive:input input directive calls it when the
-                        value of the input changes and ng.directive:select
-                        select calls it when an option is selected.
+                        <code>input</code> directive calls it when the value of
+                        the input changes and <code>select</code> calls it when
+                        an option is selected.
                       </p>
                       <p>
                         When <code>$setViewValue</code> is called, the new
                         <code>value</code> will be staged for committing through
                         the <code>$parsers</code> and
                         <code>$validators</code> pipelines. If there are no
-                        special ngModelOptions specified then the staged value
-                        is sent directly for processing through the
-                        <code>$parsers</code> pipeline. After this, the
-                        <code>$validators</code> and
+                        special <code>ngModelOptions</code> settings specified
+                        then the staged value is sent directly for processing
+                        through the <code>$parsers</code> pipeline. After this,
+                        the <code>$validators</code> and
                         <code>$asyncValidators</code> are called and the value
                         is applied to <code>$modelValue</code>. Finally, the
                         value is set to the
@@ -2106,16 +2145,16 @@
                         <code>$viewChangeListeners</code> list are called.
                       </p>
                       <p>
-                        In case the ng.directive:ngModelOptions ngModelOptions
-                        directive is used with <code>updateOn</code> and the
+                        In case the <code>ngModelOptions</code> directive is
+                        used with <code>updateOn</code> and the
                         <code>default</code> trigger is not listed, all those
                         actions will remain pending until one of the
                         <code>updateOn</code> events is triggered on the DOM
                         element. All these actions will be debounced if the
-                        ng.directive:ngModelOptions ngModelOptions directive is
-                        used with a custom debounce for this particular event.
-                        Note that a <code>$digest</code> is only triggered once
-                        the <code>updateOn</code> events are fired, or if
+                        <code>ngModelOptions</code> directive is used with a
+                        custom debounce for this particular event. Note that a
+                        <code>$digest</code> is only triggered once the
+                        <code>updateOn</code> events are fired, or if
                         <code>debounce</code> is specified, once the timer runs
                         out.
                       </p>
@@ -2221,7 +2260,6 @@
                         synchronous validators and then asynchronous
                         validators). If the validity changes to invalid, the
                         model will be set to <code>undefined</code>, unless
-                        ngModelOptions
                         <code>ngModelOptions.allowInvalid</code> is
                         <code>true</code>. If the validity changes to valid, it
                         will set the model to the last available valid

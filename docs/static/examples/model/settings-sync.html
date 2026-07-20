@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./settings-sync.js"></script>
+  </head>
+  <body ng-app="settingsSyncDemo" ng-controller="SettingsCtrl as settings">
+    <label>
+      Theme
+      <select
+        ng-model="settings.model.theme"
+        aria-label="Theme"
+        data-testid="theme"
+      >
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </label>
+
+    <label>
+      Compact
+      <input
+        type="checkbox"
+        ng-model="settings.model.compact"
+        aria-label="Compact"
+        data-testid="compact"
+      />
+    </label>
+
+    <button ng-click="settings.reset()">Reset</button>
+
+    <p data-testid="summary">
+      {{ settings.model.theme }} /
+      {{ settings.model.compact ? 'compact' : 'comfortable' }}
+    </p>
+    <p data-testid="sync-count">{{ settings.sync.writes }}</p>
+  </body>
+</html>

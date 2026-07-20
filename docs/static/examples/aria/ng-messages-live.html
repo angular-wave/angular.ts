@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./ng-messages-live.js"></script>
+    <style>
+      .field {
+        margin-bottom: 12px;
+      }
+      .error-box {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border: 1px solid #fecaca;
+        background: #fff1f2;
+        border-radius: 4px;
+        max-width: 360px;
+      }
+    </style>
+  </head>
+  <body ng-app="ariaMessagesDemo">
+    <section ng-controller="AriaMessagesCtrl as vm">
+      <form name="contactForm" novalidate>
+        <div class="field">
+          <label>Email</label>
+          <input
+            name="email"
+            type="email"
+            ng-model="vm.user.email"
+            required
+            aria-describedby="email-hint"
+          />
+          <p id="email-hint">Use an address we can message.</p>
+          <div
+            class="error-box"
+            ng-messages="contactForm.email.$error"
+            ng-show="contactForm.email.$dirty || contactForm.$submitted"
+          >
+            <p ng-message="required">Email is required.</p>
+            <p ng-message="email">Please provide a valid email.</p>
+          </div>
+        </div>
+
+        <button type="submit">Submit</button>
+      </form>
+    </section>
+  </body>
+</html>

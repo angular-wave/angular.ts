@@ -74,14 +74,13 @@ Runs during the config phase, before any services are instantiated. Only provide
 
 Runs after the injector has been created. Services are available. Use this for one-time initialization logic.
 
-#### .state(definition) / .state(name, definition)
+#### .router(definition)
 
-Registers a router state through `$stateProvider` during the config phase. This
-is equivalent to using `.config(['$stateProvider', ...])`, but keeps route
-declarations in the same fluent module chain as components and services.
+Registers a router tree or forest in the module declaration queue. This keeps
+route declarations in the same fluent module chain as components and services.
 The method records only a provider-token invocation; it does not import router
 implementation code into custom runtimes unless that runtime actually includes
-the router provider and loads a module that calls `.state()`.
+the router provider and loads a module that calls `.router()`.
 ## A complete module example
 
 The following example creates a module, registers a constant, a service, a controller, and a config block, then composes that module with a second utility module.
@@ -130,14 +129,17 @@ app.controller('UserListController', [
   },
 ]);
 
-app.state('users', {
+app.router({
+  name: 'users',
   url: '/users',
   template: '<user-list></user-list>',
 });
 
-app.config(['$locationProvider', function ($locationProvider) {
-  $locationProvider.html5Mode(true);
-}]);
+app.config({
+  $location: {
+    html5Mode: true,
+  },
+});
 
 app.run(['logger', function (logger) {
   logger.info('Application started');
@@ -180,11 +182,19 @@ The `ng` module is registered automatically when the `Angular` class is instanti
 Beyond the standard registration methods, `NgModule` supports several higher-level conveniences:
 
 ```typescript
-// Register an injectable reactive mode machine
+// Register an injectable reactive model
+app.model('user', () => ({
+  name: 'John',
+  authenticated: false,
+}));
+
+// Register an injectable reactive state machine
 app.machine('sessionMachine', {
   initial: 'setup',
   data: {},
-  transitions: {},
+  states: {
+    setup: {},
+  },
 });
 
 // Register machine/workflow config from DI-backed factories
@@ -196,14 +206,18 @@ function machineConfig(settings) {
   return {
     initial: settings.sessionMode,
     data: { roomId: '' },
-    transitions: {
+    states: {
       setup: {
-        join(data, message) {
-          data.roomId = message.roomId;
-
-          return 'waiting';
+        on: {
+          join: {
+            to: 'waiting',
+            update({ data, payload }) {
+              data.roomId = payload.roomId;
+            },
+          },
         },
       },
+      waiting: {},
     },
   };
 }
@@ -217,14 +231,18 @@ function workflowConfig(settings) {
     id: 'onboarding',
     initial: 'idle',
     data: { sessionMode: settings.sessionMode },
-    transitions: {
+    states: {
       idle: {
-        start(data) {
-          data.sessionMode = 'running';
-
-          return 'running';
+        on: {
+          start: {
+            to: 'running',
+            update({ data }) {
+              data.sessionMode = 'running';
+            },
+          },
         },
       },
+      running: {},
     },
   };
 }
@@ -233,7 +251,7 @@ workflowConfig.$inject = ['settings'];
 
 app.workflow('onboardingWorkflow', workflowConfig);
 
-app.wasm('mathLib', '/wasm/math.wasm', {});
+app.wasm('mathLib', { source: '/wasm/math.wasm' });
 
 // Register a Web Worker connection
 app.worker('backgroundWorker', '/workers/bg.js');
@@ -251,4 +269,4 @@ app.sse('notifications', '/events/stream');
 app.websocket('chat', 'wss://chat.example.com/ws');
 ```
 
-These methods all push entries onto the module's internal invoke queue. They are resolved by the injector during bootstrap exactly like any other `$provide` registration.
+These methods create typed provider-registration commands. The injector applies them through its private registry during bootstrap; the registry is not injectable application state.

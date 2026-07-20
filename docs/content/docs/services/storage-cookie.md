@@ -11,7 +11,6 @@ Exact cookie API signatures live in TypeDoc:
 
 - [`CookieService`](../../../typedoc/classes/CookieService.html)
 - [`CookieOptions`](../../../typedoc/interfaces/CookieOptions.html)
-- [`CookieProvider`](../../../typedoc/classes/CookieProvider.html)
 
 ## Read Cookies
 
@@ -66,21 +65,24 @@ $cookie.remove("session_token", {
 
 A cookie can only be removed when the `path` and `domain` used for removal match the values used when it was created. If a cookie was created with `path: "/"`, pass the same path when removing it.
 
-## Provider Defaults
+## Cookie Defaults
 
 Set defaults once when every cookie should share the same attributes.
 
 ```typescript
-angular.module("demo", []).config(($cookieProvider: ng.CookieProvider) => {
-  $cookieProvider.defaults = {
-    path: "/",
-    secure: true,
-    samesite: "Lax",
-  };
+angular.module("demo", []).config({
+  $cookie: {
+    defaults: {
+      path: "/",
+      secure: true,
+      samesite: "Lax",
+    },
+  },
 });
 ```
 
-Per-call options are merged on top of provider defaults, so individual writes can still override a field.
+Per-call options are merged on top of configured defaults, so individual writes
+can still override a field.
 
 ## Local And Session Storage
 
@@ -180,4 +182,4 @@ class AuthService {
 ## Related
 
 - [$http service]({{< relref "/docs/services/http" >}})
-- [PubSub messaging]({{< relref "/docs/services/pubsub" >}})
+- [EventBus messaging]({{< relref "/docs/services/event-bus" >}})

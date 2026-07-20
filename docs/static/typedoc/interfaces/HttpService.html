@@ -93,19 +93,15 @@
             <p>Runtime surface of the <code>$http</code> service.</p>
             <p>
               Call the service directly with a full
-              <a href="RequestConfig.html" class="tsd-kind-interface"
-                >RequestConfig</a
+              <a href="HttpRequestConfig.html" class="tsd-kind-interface"
+                >HttpRequestConfig</a
               >, or use a shorthand method for common HTTP verbs. All methods
-              return an
-              <a href="../types/HttpPromise.html" class="tsd-kind-type-alias"
-                >HttpPromise</a
+              return an <code>Promise&lt;HttpResponse&lt;T&gt;&gt;</code> that
+              resolves for successful 2xx responses and rejects with
+              <a href="../classes/HttpError.html" class="tsd-kind-class"
+                >HttpError</a
               >
-              that resolves with
-              <a href="HttpResponse.html" class="tsd-kind-interface"
-                >HttpResponse</a
-              >
-              for successful 2xx responses and rejects with HttpError for
-              errors.
+              for errors.
             </p>
           </div>
         </section>
@@ -118,18 +114,18 @@
             >defaults</a
           ><span class="tsd-signature-symbol">:</span>
           <a
-            href="HttpProviderDefaults.html"
+            href="HttpDefaults.html"
             class="tsd-signature-type tsd-kind-interface"
-            >HttpProviderDefaults</a
+            >HttpDefaults</a
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#pendingrequests"
             >pendingRequests</a
           ><span class="tsd-signature-symbol">:</span>
           <a
-            href="RequestConfig.html"
+            href="HttpRequestConfig.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestConfig</a
+            >HttpRequestConfig</a
           ><span class="tsd-signature-symbol">[]</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
@@ -139,26 +135,33 @@
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#deletet"
             >T</a
           ><span class="tsd-signature-symbol">&gt;</span
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">url</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >url</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">config</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >config</span
           ><span class="tsd-signature-symbol">?:</span>
           <a
-            href="RequestShortcutConfig.html"
+            href="HttpRequestOptions.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestShortcutConfig</a
-          ><span class="tsd-signature-symbol">)</span
+            >HttpRequestOptions</a
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
           ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../types/HttpPromise.html"
-            class="tsd-signature-type tsd-kind-type-alias"
-            >HttpPromise</a
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            href="HttpResponse.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >HttpResponse</a
           ><span class="tsd-signature-symbol">&lt;</span
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#deletet"
             >T</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
@@ -176,18 +179,21 @@
           <span class="tsd-kind-parameter">config</span
           ><span class="tsd-signature-symbol">?:</span>
           <a
-            href="RequestShortcutConfig.html"
+            href="HttpRequestOptions.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestShortcutConfig</a
+            >HttpRequestOptions</a
           ><span class="tsd-signature-symbol">)</span
           ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../types/HttpPromise.html"
-            class="tsd-signature-type tsd-kind-type-alias"
-            >HttpPromise</a
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            href="HttpResponse.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >HttpResponse</a
           ><span class="tsd-signature-symbol">&lt;</span
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#gett"
             >T</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
@@ -205,18 +211,21 @@
           <span class="tsd-kind-parameter">config</span
           ><span class="tsd-signature-symbol">?:</span>
           <a
-            href="RequestShortcutConfig.html"
+            href="HttpRequestOptions.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestShortcutConfig</a
+            >HttpRequestOptions</a
           ><span class="tsd-signature-symbol">)</span
           ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../types/HttpPromise.html"
-            class="tsd-signature-type tsd-kind-type-alias"
-            >HttpPromise</a
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            href="HttpResponse.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >HttpResponse</a
           ><span class="tsd-signature-symbol">&lt;</span
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#headt"
             >T</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
@@ -241,20 +250,23 @@
             >config</span
           ><span class="tsd-signature-symbol">?:</span>
           <a
-            href="RequestShortcutConfig.html"
+            href="HttpRequestOptions.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestShortcutConfig</a
+            >HttpRequestOptions</a
           ><span class="tsd-signature-symbol">,</span><br />    <span
             class="tsd-signature-symbol"
             >)</span
           ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../types/HttpPromise.html"
-            class="tsd-signature-type tsd-kind-type-alias"
-            >HttpPromise</a
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            href="HttpResponse.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >HttpResponse</a
           ><span class="tsd-signature-symbol">&lt;</span
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#patcht"
             >T</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
@@ -279,20 +291,23 @@
             >config</span
           ><span class="tsd-signature-symbol">?:</span>
           <a
-            href="RequestShortcutConfig.html"
+            href="HttpRequestOptions.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestShortcutConfig</a
+            >HttpRequestOptions</a
           ><span class="tsd-signature-symbol">,</span><br />    <span
             class="tsd-signature-symbol"
             >)</span
           ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../types/HttpPromise.html"
-            class="tsd-signature-type tsd-kind-type-alias"
-            >HttpPromise</a
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            href="HttpResponse.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >HttpResponse</a
           ><span class="tsd-signature-symbol">&lt;</span
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#postt"
             >T</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
@@ -317,20 +332,23 @@
             >config</span
           ><span class="tsd-signature-symbol">?:</span>
           <a
-            href="RequestShortcutConfig.html"
+            href="HttpRequestOptions.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestShortcutConfig</a
+            >HttpRequestOptions</a
           ><span class="tsd-signature-symbol">,</span><br />    <span
             class="tsd-signature-symbol"
             >)</span
           ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../types/HttpPromise.html"
-            class="tsd-signature-type tsd-kind-type-alias"
-            >HttpPromise</a
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            href="HttpResponse.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >HttpResponse</a
           ><span class="tsd-signature-symbol">&lt;</span
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#putt"
             >T</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <span
             class="tsd-signature-symbol"
@@ -344,20 +362,23 @@
           ><span class="tsd-kind-parameter">config</span
           ><span class="tsd-signature-symbol">:</span>
           <a
-            href="RequestConfig.html"
+            href="HttpRequestConfig.html"
             class="tsd-signature-type tsd-kind-interface"
-            >RequestConfig</a
+            >HttpRequestConfig</a
           ><span class="tsd-signature-symbol">)</span
           ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../types/HttpPromise.html"
-            class="tsd-signature-type tsd-kind-type-alias"
-            >HttpPromise</a
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            href="HttpResponse.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >HttpResponse</a
           ><span class="tsd-signature-symbol">&lt;</span
           ><a
             class="tsd-signature-type tsd-kind-type-parameter"
             href="#httpservicet"
             >T</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br /><span
             class="tsd-signature-symbol"
@@ -379,20 +400,23 @@
                 ><span class="tsd-kind-parameter">config</span
                 ><span class="tsd-signature-symbol">:</span>
                 <a
-                  href="RequestConfig.html"
+                  href="HttpRequestConfig.html"
                   class="tsd-signature-type tsd-kind-interface"
-                  >RequestConfig</a
+                  >HttpRequestConfig</a
                 ><span class="tsd-signature-symbol">)</span
                 ><span class="tsd-signature-symbol">:</span>
-                <a
-                  href="../types/HttpPromise.html"
-                  class="tsd-signature-type tsd-kind-type-alias"
-                  >HttpPromise</a
+                <span class="tsd-signature-type">Promise</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  href="HttpResponse.html"
+                  class="tsd-signature-type tsd-kind-interface"
+                  >HttpResponse</a
                 ><span class="tsd-signature-symbol">&lt;</span
                 ><a
                   class="tsd-signature-type tsd-kind-type-parameter"
                   href="#httpservicet"
                   >T</a
+                ><span class="tsd-signature-symbol">&gt;</span
                 ><span class="tsd-signature-symbol">&gt;</span
                 ><a
                   href="#httpservice"
@@ -423,25 +447,27 @@
                       <span
                         ><span class="tsd-kind-parameter">config</span>:
                         <a
-                          href="RequestConfig.html"
+                          href="HttpRequestConfig.html"
                           class="tsd-signature-type tsd-kind-interface"
-                          >RequestConfig</a
+                          >HttpRequestConfig</a
                         ></span
                       >
                     </li>
                   </ul>
                 </div>
                 <h4 class="tsd-returns-title">
-                  Returns
-                  <a
-                    href="../types/HttpPromise.html"
-                    class="tsd-signature-type tsd-kind-type-alias"
-                    >HttpPromise</a
+                  Returns <span class="tsd-signature-type">Promise</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><a
+                    href="HttpResponse.html"
+                    class="tsd-signature-type tsd-kind-interface"
+                    >HttpResponse</a
                   ><span class="tsd-signature-symbol">&lt;</span
                   ><a
                     class="tsd-signature-type tsd-kind-type-parameter"
                     href="#httpservicet"
                     >T</a
+                  ><span class="tsd-signature-symbol">&gt;</span
                   ><span class="tsd-signature-symbol">&gt;</span>
                 </h4>
               </div>
@@ -579,15 +605,15 @@
                 <span class="tsd-kind-property">defaults</span
                 ><span class="tsd-signature-symbol">:</span>
                 <a
-                  href="HttpProviderDefaults.html"
+                  href="HttpDefaults.html"
                   class="tsd-signature-type tsd-kind-interface"
-                  >HttpProviderDefaults</a
+                  >HttpDefaults</a
                 >
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Runtime defaults shared with
-                  <code>$httpProvider.defaults</code>.
+                  Live runtime defaults initialized from app-level
+                  <code>$http</code> configuration.
                 </p>
               </div>
             </section>
@@ -606,9 +632,9 @@
                 <span class="tsd-kind-property">pendingRequests</span
                 ><span class="tsd-signature-symbol">:</span>
                 <a
-                  href="RequestConfig.html"
+                  href="HttpRequestConfig.html"
                   class="tsd-signature-type tsd-kind-interface"
-                  >RequestConfig</a
+                  >HttpRequestConfig</a
                 ><span class="tsd-signature-symbol">[]</span>
               </div>
               <div class="tsd-comment tsd-typography">
@@ -660,20 +686,23 @@
                     <span class="tsd-kind-parameter">config</span
                     ><span class="tsd-signature-symbol">?:</span>
                     <a
-                      href="RequestShortcutConfig.html"
+                      href="HttpRequestOptions.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestShortcutConfig</a
+                      >HttpRequestOptions</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../types/HttpPromise.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >HttpPromise</a
+                    <span class="tsd-signature-type">Promise</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      href="HttpResponse.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >HttpResponse</a
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
                       class="tsd-signature-type tsd-kind-type-parameter"
                       href="#deletet"
                       >T</a
+                    ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#delete-1"
@@ -713,25 +742,27 @@
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">config</span>:
                             <a
-                              href="RequestShortcutConfig.html"
+                              href="HttpRequestOptions.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >RequestShortcutConfig</a
+                              >HttpRequestOptions</a
                             ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../types/HttpPromise.html"
-                        class="tsd-signature-type tsd-kind-type-alias"
-                        >HttpPromise</a
+                      Returns <span class="tsd-signature-type">Promise</span
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        href="HttpResponse.html"
+                        class="tsd-signature-type tsd-kind-interface"
+                        >HttpResponse</a
                       ><span class="tsd-signature-symbol">&lt;</span
                       ><a
                         class="tsd-signature-type tsd-kind-type-parameter"
                         href="#deletet"
                         >T</a
+                      ><span class="tsd-signature-symbol">&gt;</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>
@@ -764,20 +795,23 @@
                     <span class="tsd-kind-parameter">config</span
                     ><span class="tsd-signature-symbol">?:</span>
                     <a
-                      href="RequestShortcutConfig.html"
+                      href="HttpRequestOptions.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestShortcutConfig</a
+                      >HttpRequestOptions</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../types/HttpPromise.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >HttpPromise</a
+                    <span class="tsd-signature-type">Promise</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      href="HttpResponse.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >HttpResponse</a
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
                       class="tsd-signature-type tsd-kind-type-parameter"
                       href="#gett"
                       >T</a
+                    ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#get-1"
@@ -817,25 +851,27 @@
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">config</span>:
                             <a
-                              href="RequestShortcutConfig.html"
+                              href="HttpRequestOptions.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >RequestShortcutConfig</a
+                              >HttpRequestOptions</a
                             ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../types/HttpPromise.html"
-                        class="tsd-signature-type tsd-kind-type-alias"
-                        >HttpPromise</a
+                      Returns <span class="tsd-signature-type">Promise</span
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        href="HttpResponse.html"
+                        class="tsd-signature-type tsd-kind-interface"
+                        >HttpResponse</a
                       ><span class="tsd-signature-symbol">&lt;</span
                       ><a
                         class="tsd-signature-type tsd-kind-type-parameter"
                         href="#gett"
                         >T</a
+                      ><span class="tsd-signature-symbol">&gt;</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>
@@ -868,20 +904,23 @@
                     <span class="tsd-kind-parameter">config</span
                     ><span class="tsd-signature-symbol">?:</span>
                     <a
-                      href="RequestShortcutConfig.html"
+                      href="HttpRequestOptions.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestShortcutConfig</a
+                      >HttpRequestOptions</a
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../types/HttpPromise.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >HttpPromise</a
+                    <span class="tsd-signature-type">Promise</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      href="HttpResponse.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >HttpResponse</a
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
                       class="tsd-signature-type tsd-kind-type-parameter"
                       href="#headt"
                       >T</a
+                    ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#head-1"
@@ -921,25 +960,27 @@
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">config</span>:
                             <a
-                              href="RequestShortcutConfig.html"
+                              href="HttpRequestOptions.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >RequestShortcutConfig</a
+                              >HttpRequestOptions</a
                             ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../types/HttpPromise.html"
-                        class="tsd-signature-type tsd-kind-type-alias"
-                        >HttpPromise</a
+                      Returns <span class="tsd-signature-type">Promise</span
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        href="HttpResponse.html"
+                        class="tsd-signature-type tsd-kind-interface"
+                        >HttpResponse</a
                       ><span class="tsd-signature-symbol">&lt;</span
                       ><a
                         class="tsd-signature-type tsd-kind-type-parameter"
                         href="#headt"
                         >T</a
+                      ><span class="tsd-signature-symbol">&gt;</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>
@@ -979,22 +1020,25 @@
                       >config</span
                     ><span class="tsd-signature-symbol">?:</span>
                     <a
-                      href="RequestShortcutConfig.html"
+                      href="HttpRequestOptions.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestShortcutConfig</a
+                      >HttpRequestOptions</a
                     ><span class="tsd-signature-symbol">,</span><br /><span
                       class="tsd-signature-symbol"
                       >)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../types/HttpPromise.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >HttpPromise</a
+                    <span class="tsd-signature-type">Promise</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      href="HttpResponse.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >HttpResponse</a
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
                       class="tsd-signature-type tsd-kind-type-parameter"
                       href="#patcht"
                       >T</a
+                    ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#patch-1"
@@ -1044,25 +1088,27 @@
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">config</span>:
                             <a
-                              href="RequestShortcutConfig.html"
+                              href="HttpRequestOptions.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >RequestShortcutConfig</a
+                              >HttpRequestOptions</a
                             ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../types/HttpPromise.html"
-                        class="tsd-signature-type tsd-kind-type-alias"
-                        >HttpPromise</a
+                      Returns <span class="tsd-signature-type">Promise</span
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        href="HttpResponse.html"
+                        class="tsd-signature-type tsd-kind-interface"
+                        >HttpResponse</a
                       ><span class="tsd-signature-symbol">&lt;</span
                       ><a
                         class="tsd-signature-type tsd-kind-type-parameter"
                         href="#patcht"
                         >T</a
+                      ><span class="tsd-signature-symbol">&gt;</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>
@@ -1102,22 +1148,25 @@
                       >config</span
                     ><span class="tsd-signature-symbol">?:</span>
                     <a
-                      href="RequestShortcutConfig.html"
+                      href="HttpRequestOptions.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestShortcutConfig</a
+                      >HttpRequestOptions</a
                     ><span class="tsd-signature-symbol">,</span><br /><span
                       class="tsd-signature-symbol"
                       >)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../types/HttpPromise.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >HttpPromise</a
+                    <span class="tsd-signature-type">Promise</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      href="HttpResponse.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >HttpResponse</a
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
                       class="tsd-signature-type tsd-kind-type-parameter"
                       href="#postt"
                       >T</a
+                    ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#post-1"
@@ -1167,25 +1216,27 @@
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">config</span>:
                             <a
-                              href="RequestShortcutConfig.html"
+                              href="HttpRequestOptions.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >RequestShortcutConfig</a
+                              >HttpRequestOptions</a
                             ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../types/HttpPromise.html"
-                        class="tsd-signature-type tsd-kind-type-alias"
-                        >HttpPromise</a
+                      Returns <span class="tsd-signature-type">Promise</span
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        href="HttpResponse.html"
+                        class="tsd-signature-type tsd-kind-interface"
+                        >HttpResponse</a
                       ><span class="tsd-signature-symbol">&lt;</span
                       ><a
                         class="tsd-signature-type tsd-kind-type-parameter"
                         href="#postt"
                         >T</a
+                      ><span class="tsd-signature-symbol">&gt;</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>
@@ -1225,22 +1276,25 @@
                       >config</span
                     ><span class="tsd-signature-symbol">?:</span>
                     <a
-                      href="RequestShortcutConfig.html"
+                      href="HttpRequestOptions.html"
                       class="tsd-signature-type tsd-kind-interface"
-                      >RequestShortcutConfig</a
+                      >HttpRequestOptions</a
                     ><span class="tsd-signature-symbol">,</span><br /><span
                       class="tsd-signature-symbol"
                       >)</span
                     ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../types/HttpPromise.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >HttpPromise</a
+                    <span class="tsd-signature-type">Promise</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      href="HttpResponse.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >HttpResponse</a
                     ><span class="tsd-signature-symbol">&lt;</span
                     ><a
                       class="tsd-signature-type tsd-kind-type-parameter"
                       href="#putt"
                       >T</a
+                    ><span class="tsd-signature-symbol">&gt;</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#put-1"
@@ -1290,25 +1344,27 @@
                             ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">config</span>:
                             <a
-                              href="RequestShortcutConfig.html"
+                              href="HttpRequestOptions.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >RequestShortcutConfig</a
+                              >HttpRequestOptions</a
                             ></span
                           >
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../types/HttpPromise.html"
-                        class="tsd-signature-type tsd-kind-type-alias"
-                        >HttpPromise</a
+                      Returns <span class="tsd-signature-type">Promise</span
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        href="HttpResponse.html"
+                        class="tsd-signature-type tsd-kind-interface"
+                        >HttpResponse</a
                       ><span class="tsd-signature-symbol">&lt;</span
                       ><a
                         class="tsd-signature-type tsd-kind-type-parameter"
                         href="#putt"
                         >T</a
+                      ><span class="tsd-signature-symbol">&gt;</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>

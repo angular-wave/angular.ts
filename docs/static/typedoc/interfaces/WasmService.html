@@ -90,10 +90,7 @@
         </div>
         <section class="tsd-panel tsd-comment">
           <div class="tsd-comment tsd-typography">
-            <p>
-              Callable <code>$wasm</code> service plus helpers for the scope
-              ABI.
-            </p>
+            <p>High-level WebAssembly host service.</p>
           </div>
         </section>
         <div class="tsd-signature">
@@ -101,177 +98,46 @@
           <span class="tsd-kind-interface">WasmService</span>
           <span class="tsd-signature-symbol">{</span><br />    <a
             class="tsd-kind-call-signature"
-            href="#createscopeabi-1"
-            >createScopeAbi</a
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">exports</span
-          ><span class="tsd-signature-symbol">?:</span>
-          <a
-            href="WasmAbiExports.html"
-            class="tsd-signature-type tsd-kind-interface"
-            >WasmAbiExports</a
-          ><span class="tsd-signature-symbol">)</span
-          ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../classes/WasmScopeAbi.html"
-            class="tsd-signature-type tsd-kind-class"
-            >WasmScopeAbi</a
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-call-signature"
-            href="#scope-1"
-            >scope</a
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">scope</span
-          ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../classes/Scope.html"
-            class="tsd-signature-type tsd-kind-class"
-            >Scope</a
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">options</span
-          ><span class="tsd-signature-symbol">?:</span>
-          <a
-            href="WasmScopeOptions.html"
-            class="tsd-signature-type tsd-kind-interface"
-            >WasmScopeOptions</a
-          ><span class="tsd-signature-symbol">)</span
-          ><span class="tsd-signature-symbol">:</span>
-          <a
-            href="../classes/WasmScope.html"
-            class="tsd-signature-type tsd-kind-class"
-            >WasmScope</a
-          ><span class="tsd-signature-symbol">;</span><br />    <span
-            class="tsd-signature-symbol"
-            >(</span
-          ><br />        <span class="tsd-kind-parameter">src</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
+            href="#load-1"
+            >load</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#loadtexports"
+            >TExports</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <span class="tsd-signature-type">Exports</span>
+          <span class="tsd-signature-symbol">=</span>
+          <span class="tsd-signature-type">Exports</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
             class="tsd-kind-parameter"
-            >imports</span
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">Imports</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >opts</span
-          ><span class="tsd-signature-symbol">?:</span>
+            >options</span
+          ><span class="tsd-signature-symbol">:</span>
           <a
-            href="WasmOptions.html"
+            href="WasmLoadOptions.html"
             class="tsd-signature-type tsd-kind-interface"
-            >WasmOptions</a
+            >WasmLoadOptions</a
           ><span class="tsd-signature-symbol">,</span><br />    <span
             class="tsd-signature-symbol"
             >)</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">Promise</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">Exports</span>
-          <span class="tsd-signature-symbol">|</span>
           <a
-            href="WasmInstantiationResult.html"
+            href="WasmResource.html"
             class="tsd-signature-type tsd-kind-interface"
-            >WasmInstantiationResult</a
+            >WasmResource</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#loadtexports"
+            >TExports</a
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br /><span
             class="tsd-signature-symbol"
             >}</span
           >
         </div>
-        <section class="tsd-panel">
-          <ul class="tsd-signatures">
-            <li class="">
-              <div class="tsd-signature tsd-anchor-link" id="wasmservice">
-                <span class="tsd-kind-call-signature">WasmService</span
-                ><span class="tsd-signature-symbol">(</span><br />    <span
-                  class="tsd-kind-parameter"
-                  >src</span
-                ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">string</span
-                ><span class="tsd-signature-symbol">,</span><br />    <span
-                  class="tsd-kind-parameter"
-                  >imports</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">Imports</span
-                ><span class="tsd-signature-symbol">,</span><br />    <span
-                  class="tsd-kind-parameter"
-                  >opts</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <a
-                  href="WasmOptions.html"
-                  class="tsd-signature-type tsd-kind-interface"
-                  >WasmOptions</a
-                ><span class="tsd-signature-symbol">,</span><br /><span
-                  class="tsd-signature-symbol"
-                  >)</span
-                ><span class="tsd-signature-symbol">:</span>
-                <span class="tsd-signature-type">Promise</span
-                ><span class="tsd-signature-symbol">&lt;</span
-                ><span class="tsd-signature-type">Exports</span>
-                <span class="tsd-signature-symbol">|</span>
-                <a
-                  href="WasmInstantiationResult.html"
-                  class="tsd-signature-type tsd-kind-interface"
-                  >WasmInstantiationResult</a
-                ><span class="tsd-signature-symbol">&gt;</span
-                ><a
-                  href="#wasmservice"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </div>
-              <div class="tsd-description">
-                <div class="tsd-comment tsd-typography">
-                  <p>
-                    Loads a WebAssembly module and returns either exports or the
-                    raw result.
-                  </p>
-                </div>
-                <div class="tsd-parameters">
-                  <h4 class="tsd-parameters-title">Parameters</h4>
-                  <ul class="tsd-parameter-list">
-                    <li>
-                      <span
-                        ><span class="tsd-kind-parameter">src</span>:
-                        <span class="tsd-signature-type">string</span></span
-                      >
-                    </li>
-                    <li>
-                      <span
-                        ><code class="tsd-tag">Optional</code
-                        ><span class="tsd-kind-parameter">imports</span>:
-                        <span class="tsd-signature-type">Imports</span></span
-                      >
-                    </li>
-                    <li>
-                      <span
-                        ><code class="tsd-tag">Optional</code
-                        ><span class="tsd-kind-parameter">opts</span>:
-                        <a
-                          href="WasmOptions.html"
-                          class="tsd-signature-type tsd-kind-interface"
-                          >WasmOptions</a
-                        ></span
-                      >
-                    </li>
-                  </ul>
-                </div>
-                <h4 class="tsd-returns-title">
-                  Returns <span class="tsd-signature-type">Promise</span
-                  ><span class="tsd-signature-symbol">&lt;</span
-                  ><span class="tsd-signature-type">Exports</span>
-                  <span class="tsd-signature-symbol">|</span>
-                  <a
-                    href="WasmInstantiationResult.html"
-                    class="tsd-signature-type tsd-kind-interface"
-                    >WasmInstantiationResult</a
-                  ><span class="tsd-signature-symbol">&gt;</span>
-                </h4>
-              </div>
-            </li>
-          </ul>
-        </section>
         <section class="tsd-panel-group tsd-index-group">
           <section class="tsd-panel tsd-index-panel">
             <details class="tsd-index-content tsd-accordion" open>
@@ -291,23 +157,14 @@
                 <section class="tsd-index-section">
                   <h3 class="tsd-index-heading">Methods</h3>
                   <div class="tsd-index-list">
-                    <a href="#createscopeabi" class="tsd-index-link"
+                    <a href="#load" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
                         viewBox="0 0 24 24"
                         aria-label="Method"
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>create<wbr />Scope<wbr />Abi</span></a
-                    >
-                    <a href="#scope" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>scope</span></a
+                      ><span>load</span></a
                     >
                   </div>
                 </section>
@@ -330,38 +187,52 @@
           </summary>
           <section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="createscopeabi">
-                <span>create<wbr />Scope<wbr />Abi</span
-                ><a
-                  href="#createscopeabi"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
+              <h3 class="tsd-anchor-link" id="load">
+                <span>load</span
+                ><a href="#load" aria-label="Permalink" class="tsd-anchor-icon"
                   ><svg viewBox="0 0 24 24" aria-hidden="true">
                     <use href="../assets/icons.svg#icon-anchor"></use></svg
                 ></a>
               </h3>
               <ul class="tsd-signatures">
                 <li class="">
-                  <div
-                    class="tsd-signature tsd-anchor-link"
-                    id="createscopeabi-1"
-                  >
-                    <span class="tsd-kind-call-signature">createScopeAbi</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">exports</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <a
-                      href="WasmAbiExports.html"
-                      class="tsd-signature-type tsd-kind-interface"
-                      >WasmAbiExports</a
-                    ><span class="tsd-signature-symbol">)</span
+                  <div class="tsd-signature tsd-anchor-link" id="load-1">
+                    <span class="tsd-kind-call-signature">load</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#loadtexports"
+                      >TExports</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">Exports</span>
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">Exports</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >options</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a
-                      href="../classes/WasmScopeAbi.html"
-                      class="tsd-signature-type tsd-kind-class"
-                      >WasmScopeAbi</a
+                      href="WasmLoadOptions.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >WasmLoadOptions</a
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="WasmResource.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >WasmResource</a
+                    ><span class="tsd-signature-symbol">&lt;</span
                     ><a
-                      href="#createscopeabi-1"
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#loadtexports"
+                      >TExports</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><a
+                      href="#load-1"
                       aria-label="Permalink"
                       class="tsd-anchor-icon"
                       ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -370,106 +241,35 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>
-                        Creates a language-neutral host ABI for AngularTS scope
-                        handles.
-                      </p>
+                      <p>Loads one module and returns its owned resource.</p>
                     </div>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
                         <li>
-                          <span
-                            ><code class="tsd-tag">Optional</code
-                            ><span class="tsd-kind-parameter">exports</span>:
-                            <a
-                              href="WasmAbiExports.html"
-                              class="tsd-signature-type tsd-kind-interface"
-                              >WasmAbiExports</a
+                          <span id="loadtexports"
+                            ><span class="tsd-kind-type-parameter"
+                              >TExports</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">Exports</span> =
+                            <span class="tsd-signature-type"
+                              >Exports</span
                             ></span
                           >
                         </li>
                       </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../classes/WasmScopeAbi.html"
-                        class="tsd-signature-type tsd-kind-class"
-                        >WasmScopeAbi</a
-                      >
-                    </h4>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="scope">
-                <span>scope</span
-                ><a href="#scope" aria-label="Permalink" class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div class="tsd-signature tsd-anchor-link" id="scope-1">
-                    <span class="tsd-kind-call-signature">scope</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">scope</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../classes/Scope.html"
-                      class="tsd-signature-type tsd-kind-class"
-                      >Scope</a
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">options</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <a
-                      href="WasmScopeOptions.html"
-                      class="tsd-signature-type tsd-kind-interface"
-                      >WasmScopeOptions</a
-                    ><span class="tsd-signature-symbol">)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../classes/WasmScope.html"
-                      class="tsd-signature-type tsd-kind-class"
-                      >WasmScope</a
-                    ><a
-                      href="#scope-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>
-                        Wraps an AngularTS scope for direct Wasm client access.
-                      </p>
-                    </div>
+                    </section>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
                       <ul class="tsd-parameter-list">
                         <li>
                           <span
-                            ><span class="tsd-kind-parameter">scope</span>:
-                            <a
-                              href="../classes/Scope.html"
-                              class="tsd-signature-type tsd-kind-class"
-                              >Scope</a
-                            ></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">options</span>:
                             <a
-                              href="WasmScopeOptions.html"
+                              href="WasmLoadOptions.html"
                               class="tsd-signature-type tsd-kind-interface"
-                              >WasmScopeOptions</a
+                              >WasmLoadOptions</a
                             ></span
                           >
                         </li>
@@ -478,10 +278,15 @@
                     <h4 class="tsd-returns-title">
                       Returns
                       <a
-                        href="../classes/WasmScope.html"
-                        class="tsd-signature-type tsd-kind-class"
-                        >WasmScope</a
-                      >
+                        href="WasmResource.html"
+                        class="tsd-signature-type tsd-kind-interface"
+                        >WasmResource</a
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#loadtexports"
+                        >TExports</a
+                      ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>
                 </li>
@@ -650,22 +455,14 @@
                   >Methods
                 </summary>
                 <div>
-                  <a href="#createscopeabi"
+                  <a href="#load"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"
                       aria-label="Method"
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>create<wbr />Scope<wbr />Abi</span></a
-                  ><a href="#scope"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>scope</span></a
+                    ><span>load</span></a
                   >
                 </div>
               </details>

@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./realtime.js"></script>
+  </head>
+  <body ng-app="realtimeConfigDemo">
+    <section ng-controller="RealtimeConfigCtrl as vm">
+      <p>SSE reconnect delay: {{ vm.sseRetryDelay }}ms</p>
+      <p>WebSocket protocols: {{ vm.websocketProtocols }}</p>
+      <p>WebTransport reconnect: {{ vm.webTransportReconnect }}</p>
+      <p>Cleanup owner: {{ vm.cleanupOwner }}</p>
+      <p>Native escape hatch: {{ vm.nativeEscapeHatch }}</p>
+      <code>{{ vm.cleanupExample }}</code>
+    </section>
+  </body>
+</html>

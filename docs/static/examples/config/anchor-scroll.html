@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./anchor-scroll.js"></script>
+  </head>
+  <body ng-app="anchorScrollConfigDemo">
+    <section ng-controller="AnchorScrollCtrl as vm">
+      <button ng-click="vm.openDetails()">Open details</button>
+      <div style="height: 120vh"></div>
+      <h2 id="details">Details</h2>
+      <p>{{ vm.currentHash }}</p>
+    </section>
+  </body>
+</html>

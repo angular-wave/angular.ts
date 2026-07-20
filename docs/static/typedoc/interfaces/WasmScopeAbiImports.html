@@ -131,6 +131,47 @@
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
+            href="#error_clear-1"
+            >error_clear</a
+          ><span class="tsd-signature-symbol">()</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
+            href="#error_code-1"
+            >error_code</a
+          ><span class="tsd-signature-symbol">()</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            href="../types/WasmAbiErrorCode.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >WasmAbiErrorCode</a
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
+            href="#scope_apply-1"
+            >scope_apply</a
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >scopeHandle</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >transactionPtr</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >transactionLen</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
             href="#scope_delete-1"
             >scope_delete</a
           ><span class="tsd-signature-symbol">(</span
@@ -146,35 +187,6 @@
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">)</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-call-signature"
-            href="#scope_delete_named-1"
-            >scope_delete_named</a
-          ><span class="tsd-signature-symbol">(</span><br />        <span
-            class="tsd-kind-parameter"
-            >namePtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >nameLen</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >pathPtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >pathLen</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />    <span
-            class="tsd-signature-symbol"
-            >)</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
@@ -198,16 +210,11 @@
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
-            href="#scope_get_named-1"
-            >scope_get_named</a
+            href="#scope_get_binary-1"
+            >scope_get_binary</a
           ><span class="tsd-signature-symbol">(</span><br />        <span
             class="tsd-kind-parameter"
-            >namePtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >nameLen</span
+            >scopeHandle</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">,</span><br />        <span
@@ -276,16 +283,11 @@
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
-            href="#scope_set_named-1"
-            >scope_set_named</a
+            href="#scope_set_binary-1"
+            >scope_set_binary</a
           ><span class="tsd-signature-symbol">(</span><br />        <span
             class="tsd-kind-parameter"
-            >namePtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >nameLen</span
+            >scopeHandle</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">,</span><br />        <span
@@ -308,6 +310,16 @@
             >valueLen</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >optionsPtr</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">number</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >optionsLen</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">,</span><br />    <span
             class="tsd-signature-symbol"
             >)</span
@@ -326,40 +338,10 @@
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
-            href="#scope_sync_named-1"
-            >scope_sync_named</a
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">namePtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">nameLen</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">)</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-call-signature"
             href="#scope_unbind-1"
             >scope_unbind</a
           ><span class="tsd-signature-symbol">(</span
           ><span class="tsd-kind-parameter">scopeHandle</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">)</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-call-signature"
-            href="#scope_unbind_named-1"
-            >scope_unbind_named</a
-          ><span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">namePtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-kind-parameter">nameLen</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">)</span
@@ -393,35 +375,6 @@
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">)</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-call-signature"
-            href="#scope_watch_named-1"
-            >scope_watch_named</a
-          ><span class="tsd-signature-symbol">(</span><br />        <span
-            class="tsd-kind-parameter"
-            >namePtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >nameLen</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >pathPtr</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />        <span
-            class="tsd-kind-parameter"
-            >pathLen</span
-          ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">number</span
-          ><span class="tsd-signature-symbol">,</span><br />    <span
-            class="tsd-signature-symbol"
-            >)</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">;</span><br /><span
@@ -475,6 +428,33 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>buffer_<wbr />ptr</span></a
                     >
+                    <a href="#error_clear" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>error_<wbr />clear</span></a
+                    >
+                    <a href="#error_code" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>error_<wbr />code</span></a
+                    >
+                    <a href="#scope_apply" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>scope_<wbr />apply</span></a
+                    >
                     <a href="#scope_delete" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -483,15 +463,6 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>scope_<wbr />delete</span></a
-                    >
-                    <a href="#scope_delete_named" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>scope_<wbr />delete_<wbr />named</span></a
                     >
                     <a href="#scope_get" class="tsd-index-link"
                       ><svg
@@ -502,14 +473,14 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>scope_<wbr />get</span></a
                     >
-                    <a href="#scope_get_named" class="tsd-index-link"
+                    <a href="#scope_get_binary" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
                         viewBox="0 0 24 24"
                         aria-label="Method"
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>scope_<wbr />get_<wbr />named</span></a
+                      ><span>scope_<wbr />get_<wbr />binary</span></a
                     >
                     <a href="#scope_resolve" class="tsd-index-link"
                       ><svg
@@ -529,14 +500,14 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>scope_<wbr />set</span></a
                     >
-                    <a href="#scope_set_named" class="tsd-index-link"
+                    <a href="#scope_set_binary" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
                         viewBox="0 0 24 24"
                         aria-label="Method"
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>scope_<wbr />set_<wbr />named</span></a
+                      ><span>scope_<wbr />set_<wbr />binary</span></a
                     >
                     <a href="#scope_sync" class="tsd-index-link"
                       ><svg
@@ -547,15 +518,6 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>scope_<wbr />sync</span></a
                     >
-                    <a href="#scope_sync_named" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>scope_<wbr />sync_<wbr />named</span></a
-                    >
                     <a href="#scope_unbind" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -564,15 +526,6 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>scope_<wbr />unbind</span></a
-                    >
-                    <a href="#scope_unbind_named" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>scope_<wbr />unbind_<wbr />named</span></a
                     >
                     <a href="#scope_unwatch" class="tsd-index-link"
                       ><svg
@@ -591,15 +544,6 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>scope_<wbr />watch</span></a
-                    >
-                    <a href="#scope_watch_named" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>scope_<wbr />watch_<wbr />named</span></a
                     >
                   </div>
                 </section>
@@ -789,6 +733,175 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="error_clear">
+                <span>error_<wbr />clear</span
+                ><a
+                  href="#error_clear"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="error_clear-1">
+                    <span class="tsd-kind-call-signature">error_clear</span
+                    ><span class="tsd-signature-symbol">()</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">void</span
+                    ><a
+                      href="#error_clear-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>Clears the last guest-call failure.</p>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">void</span>
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="error_code">
+                <span>error_<wbr />code</span
+                ><a
+                  href="#error_code"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="error_code-1">
+                    <span class="tsd-kind-call-signature">error_code</span
+                    ><span class="tsd-signature-symbol">()</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../types/WasmAbiErrorCode.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >WasmAbiErrorCode</a
+                    ><a
+                      href="#error_code-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Returns the last machine-readable guest-call failure.
+                      </p>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a
+                        href="../types/WasmAbiErrorCode.html"
+                        class="tsd-signature-type tsd-kind-type-alias"
+                        >WasmAbiErrorCode</a
+                      >
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="scope_apply">
+                <span>scope_<wbr />apply</span
+                ><a
+                  href="#scope_apply"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="scope_apply-1">
+                    <span class="tsd-kind-call-signature">scope_apply</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >scopeHandle</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >transactionPtr</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >transactionLen</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><a
+                      href="#scope_apply-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Applies an atomic JSON transaction. Returns
+                        <code>1</code> on success.
+                      </p>
+                    </div>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">scopeHandle</span
+                            >:
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter"
+                              >transactionPtr</span
+                            >:
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter"
+                              >transactionLen</span
+                            >:
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">number</span>
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="scope_delete">
                 <span>scope_<wbr />delete</span
                 ><a
@@ -842,98 +955,6 @@
                           <span
                             ><span class="tsd-kind-parameter">scopeHandle</span
                             >:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">pathPtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">pathLen</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">number</span>
-                    </h4>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="scope_delete_named">
-                <span>scope_<wbr />delete_<wbr />named</span
-                ><a
-                  href="#scope_delete_named"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div
-                    class="tsd-signature tsd-anchor-link"
-                    id="scope_delete_named-1"
-                  >
-                    <span class="tsd-kind-call-signature"
-                      >scope_delete_named</span
-                    ><span class="tsd-signature-symbol">(</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >namePtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >nameLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >pathPtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >pathLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><a
-                      href="#scope_delete_named-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>Name-based variant of <code>scope_delete</code>.</p>
-                    </div>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">namePtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">nameLen</span>:
                             <span class="tsd-signature-type">number</span></span
                           >
                         </li>
@@ -1035,10 +1056,10 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="scope_get_named">
-                <span>scope_<wbr />get_<wbr />named</span
+              <h3 class="tsd-anchor-link" id="scope_get_binary">
+                <span>scope_<wbr />get_<wbr />binary</span
                 ><a
-                  href="#scope_get_named"
+                  href="#scope_get_binary"
                   aria-label="Permalink"
                   class="tsd-anchor-icon"
                   ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1049,36 +1070,26 @@
                 <li class="">
                   <div
                     class="tsd-signature tsd-anchor-link"
-                    id="scope_get_named-1"
+                    id="scope_get_binary-1"
                   >
-                    <span class="tsd-kind-call-signature">scope_get_named</span
-                    ><span class="tsd-signature-symbol">(</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >namePtr</span
+                    <span class="tsd-kind-call-signature">scope_get_binary</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">scopeHandle</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >nameLen</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-kind-parameter">pathPtr</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >pathPtr</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-kind-parameter">pathLen</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >pathLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >)</span
+                    ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">number</span
                     ><a
-                      href="#scope_get_named-1"
+                      href="#scope_get_binary-1"
                       aria-label="Permalink"
                       class="tsd-anchor-icon"
                       ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1087,20 +1098,18 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Name-based variant of <code>scope_get</code>.</p>
+                      <p>
+                        Returns a host-owned result buffer containing raw bytes
+                        for a scope path.
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
                       <ul class="tsd-parameter-list">
                         <li>
                           <span
-                            ><span class="tsd-kind-parameter">namePtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">nameLen</span>:
+                            ><span class="tsd-kind-parameter">scopeHandle</span
+                            >:
                             <span class="tsd-signature-type">number</span></span
                           >
                         </li>
@@ -1294,10 +1303,10 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="scope_set_named">
-                <span>scope_<wbr />set_<wbr />named</span
+              <h3 class="tsd-anchor-link" id="scope_set_binary">
+                <span>scope_<wbr />set_<wbr />binary</span
                 ><a
-                  href="#scope_set_named"
+                  href="#scope_set_binary"
                   aria-label="Permalink"
                   class="tsd-anchor-icon"
                   ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1308,17 +1317,12 @@
                 <li class="">
                   <div
                     class="tsd-signature tsd-anchor-link"
-                    id="scope_set_named-1"
+                    id="scope_set_binary-1"
                   >
-                    <span class="tsd-kind-call-signature">scope_set_named</span
+                    <span class="tsd-kind-call-signature">scope_set_binary</span
                     ><span class="tsd-signature-symbol">(</span><br />    <span
                       class="tsd-kind-parameter"
-                      >namePtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >nameLen</span
+                      >scopeHandle</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">number</span
                     ><span class="tsd-signature-symbol">,</span><br />    <span
@@ -1341,13 +1345,23 @@
                       >valueLen</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >optionsPtr</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >optionsLen</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">number</span
                     ><span class="tsd-signature-symbol">,</span><br /><span
                       class="tsd-signature-symbol"
                       >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">number</span
                     ><a
-                      href="#scope_set_named-1"
+                      href="#scope_set_binary-1"
                       aria-label="Permalink"
                       class="tsd-anchor-icon"
                       ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1356,20 +1370,18 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Name-based variant of <code>scope_set</code>.</p>
+                      <p>
+                        Writes raw bytes and JSON-encoded write options into a
+                        scope path.
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
                       <ul class="tsd-parameter-list">
                         <li>
                           <span
-                            ><span class="tsd-kind-parameter">namePtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">nameLen</span>:
+                            ><span class="tsd-kind-parameter">scopeHandle</span
+                            >:
                             <span class="tsd-signature-type">number</span></span
                           >
                         </li>
@@ -1394,6 +1406,18 @@
                         <li>
                           <span
                             ><span class="tsd-kind-parameter">valueLen</span>:
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">optionsPtr</span>:
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">optionsLen</span>:
                             <span class="tsd-signature-type">number</span></span
                           >
                         </li>
@@ -1463,71 +1487,6 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="scope_sync_named">
-                <span>scope_<wbr />sync_<wbr />named</span
-                ><a
-                  href="#scope_sync_named"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div
-                    class="tsd-signature tsd-anchor-link"
-                    id="scope_sync_named-1"
-                  >
-                    <span class="tsd-kind-call-signature">scope_sync_named</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">namePtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">nameLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><a
-                      href="#scope_sync_named-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>Name-based variant of <code>scope_sync</code>.</p>
-                    </div>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">namePtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">nameLen</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">number</span>
-                    </h4>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="scope_unbind">
                 <span>scope_<wbr />unbind</span
                 ><a
@@ -1574,72 +1533,6 @@
                           <span
                             ><span class="tsd-kind-parameter">scopeHandle</span
                             >:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">number</span>
-                    </h4>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="scope_unbind_named">
-                <span>scope_<wbr />unbind_<wbr />named</span
-                ><a
-                  href="#scope_unbind_named"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div
-                    class="tsd-signature tsd-anchor-link"
-                    id="scope_unbind_named-1"
-                  >
-                    <span class="tsd-kind-call-signature"
-                      >scope_unbind_named</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">namePtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">nameLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><a
-                      href="#scope_unbind_named-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>Name-based variant of <code>scope_unbind</code>.</p>
-                    </div>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">namePtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">nameLen</span>:
                             <span class="tsd-signature-type">number</span></span
                           >
                         </li>
@@ -1760,98 +1653,6 @@
                           <span
                             ><span class="tsd-kind-parameter">scopeHandle</span
                             >:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">pathPtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">pathLen</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">number</span>
-                    </h4>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="scope_watch_named">
-                <span>scope_<wbr />watch_<wbr />named</span
-                ><a
-                  href="#scope_watch_named"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div
-                    class="tsd-signature tsd-anchor-link"
-                    id="scope_watch_named-1"
-                  >
-                    <span class="tsd-kind-call-signature"
-                      >scope_watch_named</span
-                    ><span class="tsd-signature-symbol">(</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >namePtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >nameLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >pathPtr</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >pathLen</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">number</span
-                    ><a
-                      href="#scope_watch_named-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>Name-based variant of <code>scope_watch</code>.</p>
-                    </div>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">namePtr</span>:
-                            <span class="tsd-signature-type">number</span></span
-                          >
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">nameLen</span>:
                             <span class="tsd-signature-type">number</span></span
                           >
                         </li>
@@ -2063,6 +1864,30 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>buffer_<wbr />ptr</span></a
+                  ><a href="#error_clear"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>error_<wbr />clear</span></a
+                  ><a href="#error_code"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>error_<wbr />code</span></a
+                  ><a href="#scope_apply"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>scope_<wbr />apply</span></a
                   ><a href="#scope_delete"
                     ><svg
                       class="tsd-kind-icon"
@@ -2071,14 +1896,6 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>scope_<wbr />delete</span></a
-                  ><a href="#scope_delete_named"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>scope_<wbr />delete_<wbr />named</span></a
                   ><a href="#scope_get"
                     ><svg
                       class="tsd-kind-icon"
@@ -2087,14 +1904,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>scope_<wbr />get</span></a
-                  ><a href="#scope_get_named"
+                  ><a href="#scope_get_binary"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"
                       aria-label="Method"
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>scope_<wbr />get_<wbr />named</span></a
+                    ><span>scope_<wbr />get_<wbr />binary</span></a
                   ><a href="#scope_resolve"
                     ><svg
                       class="tsd-kind-icon"
@@ -2111,14 +1928,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>scope_<wbr />set</span></a
-                  ><a href="#scope_set_named"
+                  ><a href="#scope_set_binary"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"
                       aria-label="Method"
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>scope_<wbr />set_<wbr />named</span></a
+                    ><span>scope_<wbr />set_<wbr />binary</span></a
                   ><a href="#scope_sync"
                     ><svg
                       class="tsd-kind-icon"
@@ -2127,14 +1944,6 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>scope_<wbr />sync</span></a
-                  ><a href="#scope_sync_named"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>scope_<wbr />sync_<wbr />named</span></a
                   ><a href="#scope_unbind"
                     ><svg
                       class="tsd-kind-icon"
@@ -2143,14 +1952,6 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>scope_<wbr />unbind</span></a
-                  ><a href="#scope_unbind_named"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>scope_<wbr />unbind_<wbr />named</span></a
                   ><a href="#scope_unwatch"
                     ><svg
                       class="tsd-kind-icon"
@@ -2167,14 +1968,6 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>scope_<wbr />watch</span></a
-                  ><a href="#scope_watch_named"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>scope_<wbr />watch_<wbr />named</span></a
                   >
                 </div>
               </details>

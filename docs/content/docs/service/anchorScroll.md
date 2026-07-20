@@ -1,45 +1,56 @@
 ---
-title: $anchorScroll
-description: >
-  Anchor scroll service
+title: "$anchorScroll"
+description: "Scroll to document anchors and coordinate hash-driven scrolling."
 ---
 
-### Description 
+`$anchorScroll` scrolls to the element identified by a hash or, when omitted,
+to the current value of
+[$location.getHash()](../../../typedoc/classes/Location.html#gethash),
+according to the rules specified in the
+[HTML spec](https://html.spec.whatwg.org/multipage/browsing-the-web.html#scrolling-to-a-fragment).
 
-`$anchorScroll` service scrolls to the element hash or (if omitter) to the current value of [$location.getHash()](../../../typedoc/classes/Location.html#gethash), according to the rules speciffied in the [HTML spec](https://html.spec.whatwg.org/multipage/browsing-the-web.html#scrolling-to-a-fragment).
+It also watches the URL hash and automatically scrolls to any matched anchor
+whenever it is changed by [$location](../../../docs/service/location/).
 
-It also watches the URL hash and automatically scrolls to any matched anchor whenever it is changed by [$location](../../../docs/service/location/). This can be disabled by a setting on [$anchorScrollProvider](../../../docs/provider/anchorscrollprovider/#anchorscrollproviderautoscrollingenabled).
+Exact signatures live in TypeDoc:
 
-Additionally, you can use the `yOffset` property to specify a vertical scroll-offset (either fixed or dynamic).
+- [`AnchorScrollService`](../../../typedoc/interfaces/AnchorScrollService.html)
 
-#### Example
+## Configure
 
-{{< showhtml src="examples/anchorscroll/anchor-scroll.html" >}}
+Use `module.config({ $anchorScroll: ... })` for application-wide scroll policy.
 
-{{< showjs src="examples/anchorscroll/anchor-scroll.js" >}}
+```js
+angular.module("app", []).config({
+  $anchorScroll: {
+    autoScrolling: false,
+  },
+});
+```
 
----
+Executable sample:
+[`anchor-scroll.html`](/examples/config/anchor-scroll.html)
 
-#### Demo
+## Manual Scrolling
 
-{{< showraw src="examples/anchorscroll/anchor-scroll.html" >}}
+```js
+$location.hash("details");
+$anchorScroll("details");
+```
 
-<script>
-{{< showraw src="examples/anchorscroll/anchor-scroll.js" >}}
-</script>
----
+When automatic scrolling is disabled, call `$anchorScroll(...)` directly after
+coordinating routing, animation, or focus.
 
-The example below illustrates the use of a vertical scroll-offset (specified as a fixed value).
+## Vertical Offset
+
+Use the `yOffset` property to specify a fixed or dynamic vertical scroll offset.
+This is useful when the application has sticky headers.
 
 #### Example
 
 {{< showhtml src="examples/anchorscroll/anchor-scroll2.html" >}}
 
 {{< showjs src="examples/anchorscroll/anchor-scroll2.js" >}}
-
----
-
-#### Demo
 
 {{< showraw src="examples/anchorscroll/anchor-scroll2.html" >}}
 

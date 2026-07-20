@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./user-model.js"></script>
+  </head>
+  <body ng-app="modelDemo">
+    <section ng-controller="ProfileCtrl as profile">
+      <label>
+        Name
+        <input
+          ng-model="profile.user.name"
+          aria-label="Name"
+          data-testid="profile-name"
+        />
+      </label>
+      <button ng-click="profile.signIn()">Sign in</button>
+      <button ng-click="profile.reset()">Reset</button>
+    </section>
+
+    <section ng-controller="HeaderCtrl as header">
+      <strong data-testid="header-name">{{ header.user.name }}</strong>
+      <span data-testid="header-status">
+        {{ header.user.authenticated ? 'signed in' : 'guest' }}
+      </span>
+      <span data-testid="cart-count">{{ header.cart.items.length }}</span>
+    </section>
+  </body>
+</html>

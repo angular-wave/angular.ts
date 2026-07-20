@@ -6,7 +6,21 @@ description: >
 
 `$templateCache` is a
 [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map)
-object created by `$templateCacheProvider`.
+object used by template loading and component rendering.
+
+Configure the cache before bootstrap with
+`module.config({ $templateCache: ... })`.
+
+```js
+angular.module("demo", []).config({
+  $templateCache: {
+    cache: new Map([["templateId.html", "This is the content of the template"]]),
+  },
+});
+```
+
+Executable sample:
+[`template-cache.html`](/examples/config/template-cache.html)
 
 The first time a template is used, it is loaded in the template cache for quick
 retrieval. You can load templates directly into the cache in a script tag by

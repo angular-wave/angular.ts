@@ -9,7 +9,6 @@ page for the usage model and examples. Exact class members, method signatures,
 return types, and configuration interfaces live in TypeDoc:
 
 - [`RestService`](../../../typedoc/classes/RestService.html)
-- [`RestDefinition`](../../../typedoc/interfaces/RestDefinition.html)
 - [`EntityClass`](../../../typedoc/interfaces/EntityClass.html)
 - [`RestBackend`](../../../typedoc/interfaces/RestBackend.html)
 - [`RestCacheStore`](../../../typedoc/interfaces/RestCacheStore.html)
@@ -31,8 +30,12 @@ const all = await posts.list();
 const one = await posts.get(42);
 const created = await posts.create({ title: 'Hello' } as Post);
 const updated = await posts.update(42, { title: 'Updated' });
-const deleted = await posts.delete(42);
+await posts.delete(42);
 ```
+
+`get()`, `create()`, and `update()` return `null` when the backend returns no
+entity. `delete()` resolves with no value. All backend failures reject instead
+of being converted into fallback values.
 
 ## Entity Mapping
 
@@ -152,14 +155,19 @@ const angularRepos = await repos.list({
 The `org` value expands into the path. Remaining params are forwarded to
 `$http` as query parameters.
 
-## Provider Registration
+## Shared Defaults
 
-Register definitions during configuration with `$restProvider.rest()` when a
-resource should be available from shared setup code.
+Configure shared request defaults before bootstrap when a group of resources
+should use the same backend behavior.
 
 ```ts
-angular.module('app', []).config(($restProvider) => {
-  $restProvider.rest('posts', '/api/posts', Post);
+angular.module('app', []).config({
+  $rest: {
+    defaults: {
+      withCredentials: true,
+      timeout: 5000,
+    },
+  },
 });
 ```
 

@@ -9,31 +9,29 @@ description: >
 The `ng-get` directive allows you to fetch content via `$http` service from a
 remote URL and insert, replace, or manipulate it into the DOM. For DOM
 manipulation to work, the response must be HTML content. If the server endpoint
-returns a JSON-response, the directive will treat it as an object to be merged
-into the current scope and the swap strategy will be ignored.
+returns JSON, the response is available to `on-success` as `$res`. JSON never
+mutates the current scope implicitly, and the swap strategy is ignored.
 
 #### Example
 
 ```html
 <section>
-  <div ng-get="/json">Get</div>
-  <!-- Enpoint returns {name: 'Bob'}-->
-  {{ name }}
-  <!-- 'Bob' will be merged into current scope. -->
+  <div ng-get="/json" on-success="person = $res">Get</div>
+  <!-- Endpoint returns {name: 'Bob'} -->
+  {{ person.name }}
 </section>
 ```
 
-In case of error, the directive displays the error in place of success result or
-will merge it into the current scope if response contains JSON.
+String error responses use the configured DOM swap. JSON errors are available
+to `on-error` as `$res` and require explicit assignment.
 
 #### Example
 
 ```html
 <section>
-  <div ng-post="/json">Get</div>
-  <!-- Enpoint returns 404 with {error: 'Not found'}-->
-  {{ error }}
-  <!-- 'Not found' will be merged into current scope. Nothing to swap -->
+  <div ng-get="/json" on-error="requestError = $res">Get</div>
+  <!-- Endpoint returns 404 with {error: 'Not found'} -->
+  {{ requestError.error }}
 </section>
 ```
 
@@ -109,13 +107,13 @@ attributes provided below.
 
 - **Type:**
   [selectors](https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector#selectors)
-- **Description:** Specifies a DOM element where the response should be rendered
-  or name of scope property for response binding
+- **Description:** Specifies the DOM element where a string response should be
+  rendered.
 - **Example:**
 
   ```html
-  <div ng-get="/example" target=".test">Get</div>
-  <div ng-get="/json" target="person">{{ person.name }}</div>
+  <div ng-get="/example" data-target=".test">Get</div>
+  <div ng-get="/json" on-success="person = $res">{{ person.name }}</div>
   ```
 
 ---
@@ -184,7 +182,7 @@ attributes provided below.
 
 ---
 
-#### `data-success`
+#### `on-success`
 
 - **Type:** [Expression](../../../typedoc/types/Expression.html)
 - **Description:** Evaluates expression when request succeeds. Response data is
@@ -192,12 +190,12 @@ attributes provided below.
 - **Example:**
 
   ```html
-  <div ng-get="/example" success="message = $res">Get {{ message }}</div>
+  <div ng-get="/example" on-success="message = $res">Get {{ message }}</div>
   ```
 
 ---
 
-#### `data-error`
+#### `on-error`
 
 - **Type:** [Expression](../../../typedoc/types/Expression.html)
 - **Description:** Evaluates expression when request fails. Response data is
@@ -205,14 +203,14 @@ attributes provided below.
 - **Example:**
 
   ```html
-  <div ng-get="/example" error="errormessage = $res">
+  <div ng-get="/example" on-error="errormessage = $res">
     Get {{ errormessage }}
   </div>
   ```
 
 ---
 
-#### `data-success-state`
+#### `data-state-success`
 
 - **Type:** `string`
 - **Description:** Name of the state to nagitate to when request succeeds
@@ -220,12 +218,12 @@ attributes provided below.
 
   ```html
   <ng-view></ng-view>
-  <div ng-get="/example" success-state="account">Get</div>
+  <div ng-get="/example" data-state-success="account">Get</div>
   ```
 
 ---
 
-#### `data-success-error`
+#### `data-state-error`
 
 - **Type:** `string`
 - **Description:** Name of the state to nagitate to when request fails
@@ -233,7 +231,7 @@ attributes provided below.
 
   ```html
   <ng-view></ng-view>
-  <div ng-get="/example" error-state="login">Get</div>
+  <div ng-get="/example" data-state-error="login">Get</div>
   ```
 
 ---

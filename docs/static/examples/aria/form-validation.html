@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./form-validation.js"></script>
+    <style>
+      .field {
+        margin-bottom: 12px;
+      }
+      .error {
+        color: #b91c1c;
+      }
+      input.ng-invalid.ng-touched {
+        border-color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body ng-app="ariaFormValidationDemo">
+    <section ng-controller="AriaFormValidationCtrl as vm">
+      <form name="signupForm" novalidate>
+        <div class="field">
+          <label>Email</label>
+          <input
+            name="email"
+            type="email"
+            ng-model="vm.user.email"
+            required
+            aria-describedby="email-help"
+          />
+          <p id="email-help">Enter a valid email to continue.</p>
+        </div>
+
+        <div class="field">
+          <label>Password</label>
+          <input
+            name="password"
+            type="password"
+            ng-model="vm.user.password"
+            required
+            minlength="8"
+          />
+        </div>
+
+        <div class="field">
+          <button type="button" ng-disabled="signupForm.$invalid">Create account</button>
+        </div>
+      </form>
+
+      <p class="error">
+        Form invalid: {{ signupForm.$invalid }}
+        <br />
+        Email invalid: {{ signupForm.email.$invalid }}
+        <br />
+        Password invalid: {{ signupForm.password.$invalid }}
+      </p>
+      <p>
+        Notice how `aria-required` and `aria-invalid` are injected by `$aria` when
+        form inputs are in their default states.
+      </p>
+    </section>
+  </body>
+</html>

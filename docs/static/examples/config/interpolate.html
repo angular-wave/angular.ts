@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" ng-app="interpolateConfigDemo">
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Interpolate Config Example</title>
+    <script src="/angular.js"></script>
+    <script src="./interpolate.js"></script>
+  </head>
+  <body ng-controller="InterpolateConfigCtrl as vm">
+    <input ng-model="vm.name" aria-label="Name" />
+    <p>[[vm.name]]</p>
+  </body>
+</html>

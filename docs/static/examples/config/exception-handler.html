@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./exception-handler.js"></script>
+  </head>
+  <body ng-app="exceptionConfigDemo">
+    <section ng-controller="ExceptionCtrl as vm">
+      <button ng-click="vm.report()">Report handled error</button>
+      <p>{{ vm.message }}</p>
+    </section>
+  </body>
+</html>

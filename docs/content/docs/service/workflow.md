@@ -1,497 +1,372 @@
 ---
-title: $workflow
-description: 'Inspectable command workflows built on reactive mode machines'
+title: Workflow
+description: Declarative asynchronous operation lifecycles with reactive state, cancellation, diagnostics, snapshots, and recovery.
 ---
 
-# `$workflow`
+# Workflow
 
-`$workflow` adds command boundaries, diagnostics, history, snapshots, restore,
-retry, and repeat on top of `$machine`.
+`$workflow` runs asynchronous operations through declarative lifecycles. A
+definition states where a command may run and what state and data changes occur
+while it is pending, after success, and after failure. Application code only
+requests the operation.
 
-Use `$machine` when you only need legal modes and transitions. Use `$workflow`
-when external work needs to be run, inspected, repaired, repeated, or handed to
-another process as JSON.
+Use `$machine` for synchronous event-driven state. Use `$workflow` when an
+operation can wait, fail, time out, be cancelled, or require recovery.
 
-## Create a Workflow
-
-Inject `$workflow` and assign the workflow to a controller or scope property:
-
-```js
-app.controller('DocsCtrl', function ($workflow) {
-  this.build = $workflow({
-    id: 'docs-build',
-    initial: 'idle',
-    data: {
-      status: 'idle',
-      output: '',
-    },
-    transitions: {
-      idle: {
-        start(data) {
-          data.status = 'running';
-          return 'running';
-        },
-      },
-      running: {
-        complete(data, output) {
-          data.status = 'complete';
-          data.output = output;
-          return 'complete';
-        },
-        fail(data, reason) {
-          data.status = reason;
-          return 'failed';
-        },
-      },
-    },
-    commands: {
-      build({ workflow, data, input }) {
-        workflow.send('start');
-        data.output = String(input);
-        workflow.send('complete', data.output);
-
-        return {
-          ok: true,
-          output: {
-            file: data.output,
-          },
-        };
-      },
-    },
-  });
-});
-```
-
-`workflow.current` is the current mode. `workflow.data` is reactive data for
-templates. `workflow.run(name, input)` is the explicit boundary for work that
-can succeed, fail, or be retried.
-
-Commands may be synchronous or async. `run()`, `retry()`, and `repeat()` always
-return a promise that resolves to a normalized `WorkflowCommandResult`.
-
-## Register a Named Workflow
-
-Use `module.workflow(name, config)` when a workflow should be injectable by
-name:
+## Create A Workflow
 
 ```js
-app.workflow('docsWorkflow', {
-  id: 'docs',
-  initial: 'idle',
+app.workflow('checkout', {
+  initial: 'ready',
+
   data: {
-    runs: 0,
+    receipt: null,
+    failure: '',
   },
-  transitions: {
-    idle: {
-      start(data) {
-        data.runs += 1;
-        return 'running';
+
+  commands: {
+    submit: {
+      from: 'ready',
+      pending: 'processing',
+
+      execute: ({ input, signal }) =>
+        checkoutApi.submit(input, { signal }),
+
+      success: {
+        to: 'completed',
+        update({ data, output }) {
+          data.receipt = output;
+          data.failure = '';
+        },
       },
-    },
-  },
-});
 
-app.controller('DocsCtrl', function (docsWorkflow) {
-  this.workflow = docsWorkflow;
-});
-```
-
-You can make workflow registration resumable and environment-driven by passing a
-config factory:
-
-```js
-function docsWorkflowConfig(buildConfig) {
-  return {
-    id: buildConfig.workflowId,
-    initial: buildConfig.initialMode,
-    data: {
-      runs: 0,
-      status: buildConfig.initialMode,
-    },
-    transitions: {
-      idle: {
-        start(data) {
-          data.runs += 1;
-          data.status = 'running';
-
-          return 'running';
+      failure: {
+        to: 'failed',
+        update({ data, diagnostic }) {
+          data.failure = diagnostic.message;
         },
       },
     },
-    commands: {},
+  },
+});
+```
+
+Inject the named workflow and request the command:
+
+```js
+app.controller('CheckoutCtrl', function (checkout) {
+  this.checkout = checkout;
+
+  this.submit = async (order) => {
+    const result = await checkout.run('submit', order);
+
+    if (!result.ok) {
+      console.error(result.diagnostics);
+    }
   };
-}
-
-docsWorkflowConfig.$inject = ['buildConfig'];
-
-app.workflow('docsWorkflow', docsWorkflowConfig);
+});
 ```
 
-Named workflows are DI singletons for an injector. Observing scopes can be
-destroyed without destroying the workflow instance.
+Templates observe workflow state and data directly:
 
-## Command Diagnostics
+```html
+<button
+  ng-click="$ctrl.submit($ctrl.order)"
+  ng-disabled="!$ctrl.checkout.can('submit')"
+>
+  Submit
+</button>
 
-Commands return a `WorkflowCommandResult`, or they can throw. Thrown values are
-converted to structured diagnostics and partial data mutations are preserved:
+<p ng-if="$ctrl.checkout.state === 'processing'">Processing</p>
+<p ng-if="$ctrl.checkout.state === 'failed'">
+  {{ $ctrl.checkout.data.failure }}
+</p>
+```
+
+## Command Lifecycle
+
+Every command declares:
+
+- `from`: state or states from which the command may run.
+- `pending`: state entered before execution starts.
+- `execute`: optional synchronous or asynchronous operation.
+- `success`: state entered when execution returns.
+- `failure`: state entered when execution throws or rejects.
+
+`pending`, `success`, and `failure` accept either a state name or an object with
+`to` and `update`:
 
 ```js
-const result = await workflow.run('publish', 'index.html');
+success: {
+  to: 'completed',
+  update({ data, input, output, command }) {
+    data.receipt = output;
+  },
+}
+```
 
-if (!result.ok) {
-  for (const diagnostic of result.diagnostics) {
-    console.warn(diagnostic.code, diagnostic.message);
+Lifecycle updates are the writable boundary for workflow data. The data passed
+to `execute` is readonly, including nested plain objects, arrays, maps, and
+sets. This prevents a failed command from leaving untracked imperative changes.
+
+## Immediate Commands
+
+An operation that only changes workflow state can omit `execute`:
+
+```js
+commands: {
+  reset: {
+    from: ['completed', 'failed'],
+    pending: 'resetting',
+    success: {
+      to: 'ready',
+      update({ data }) {
+        data.receipt = null;
+        data.failure = '';
+      },
+    },
+    failure: 'failed',
+  },
+}
+```
+
+```js
+await checkout.run('reset');
+```
+
+External approvals, WebSocket messages, user actions, and repair requests enter
+a workflow as commands. Workflows do not expose a separate event or `send()`
+API.
+
+## Results
+
+`run()` always resolves to a `WorkflowResult`:
+
+```js
+const result = await checkout.run('submit', order);
+
+if (result.ok) {
+  console.log(result.output);
+} else if (result.status === 'timeout') {
+  console.warn('The operation timed out.');
+} else {
+  console.warn(result.diagnostics);
+}
+```
+
+Successful results have status `completed`. Failed results use `failed`,
+`cancelled`, `timeout`, or `rejected`.
+
+`rejected` means execution did not fail unexpectedly. The command was unknown,
+was not allowed from the current state, violated its concurrency declaration,
+or called `reject()` with a controlled diagnostic.
+
+## Controlled Rejection
+
+Use `reject()` for an expected business decision:
+
+```js
+execute({ input, reject }) {
+  if (!input.acceptedTerms) {
+    return reject({
+      code: 'checkout.termsRequired',
+      message: 'Terms must be accepted.',
+      recoverable: true,
+    });
   }
+
+  return checkoutApi.submit(input);
 }
 ```
 
-Diagnostics are safe to serialize:
+The framework records the diagnostic and applies the declared failure
+lifecycle.
+
+## Cancellation And Timeout
+
+Commands receive an `AbortSignal` and may register cleanup callbacks:
 
 ```js
-const diagnosticsJson = JSON.stringify(workflow.diagnostics);
+execute({ input, signal, cleanup }) {
+  const request = checkoutApi.submit(input, { signal });
+
+  cleanup(() => request.releaseResources());
+
+  return request;
+}
+```
+
+Cancel one command or every running command:
+
+```js
+checkout.cancel('submit');
+checkout.cancel();
+```
+
+Declare timeout duration and outcome with the command:
+
+```js
+submit: {
+  from: 'ready',
+  pending: 'processing',
+  commandTimeout: 5000,
+  execute: submitOrder,
+  success: 'completed',
+  failure: 'failed',
+  cancelled: 'cancelled',
+  timeout: 'timed-out',
+}
+```
+
+When `cancelled` or `timeout` is omitted, the command uses its `failure`
+lifecycle.
+
+## Concurrency And Retry
+
+Concurrency belongs to the declaration:
+
+```js
+submit: {
+  from: ['ready', 'processing'],
+  pending: 'processing',
+  concurrency: 'reject',
+  retry: 2,
+  execute: submitOrder,
+  success: 'completed',
+  failure: 'failed',
+}
+```
+
+- `reject` is the default and rejects another run of the same command.
+- `queue` executes runs of the same command in request order.
+- `parallel` allows overlapping execution when the declared source states also
+  permit it.
+- `retry` is the number of automatic retries after unexpected execution
+  failure.
+
+Callers cannot override these properties through `run()`. Operational behavior
+therefore remains part of the workflow definition.
+
+## Diagnostics And History
+
+`workflow.diagnostics` contains normalized, serializable evidence from failed
+operations. `workflow.history` records command start, completion, and final
+failure.
+
+```js
+workflow.diagnostics;
+workflow.history;
+```
+
+Use `diagnosticLimit` and `historyLimit` to bound retained entries:
+
+```js
+app.workflow('checkout', {
+  initial: 'ready',
+  data: {},
+  diagnosticLimit: 100,
+  historyLimit: 500,
+  commands: checkoutCommands,
+});
 ```
 
 ## Snapshot And Restore
 
-Snapshots are the JSON handoff format:
+Snapshots contain the workflow id, state, data, diagnostics, and history:
 
 ```js
-const snapshot = workflow.snapshot();
+const snapshot = checkout.snapshot();
 
-localStorage.setItem('docsWorkflow', JSON.stringify(snapshot));
-
-const restored = JSON.parse(localStorage.getItem('docsWorkflow'));
-
-workflow.restore(restored);
+localStorage.setItem('checkout', JSON.stringify(snapshot));
+checkout.restore(JSON.parse(localStorage.getItem('checkout')));
 ```
 
-A snapshot contains:
+Use `migrateSnapshot` when persisted data predates the current snapshot shape:
 
 ```js
-{
-  version: 1,
-  id: 'docs-build',
-  current: 'failed',
-  data: {},
-  diagnostics: [],
-  history: []
-}
-```
-
-`restore(snapshot)` requires version `1` and a matching workflow `id`. Restored
-diagnostics and history entries are normalized into the same JSON-safe shape
-that live commands produce. Restored history IDs are normalized to unique
-positive integers. Command inputs and outputs in `workflow.history` and
-snapshots are stored as JSON-safe projections. Live workflows still retry or
-repeat with the original input value; after `restore(snapshot)`, retry and
-repeat use the serialized input from the snapshot.
-
-Use `migrateSnapshot(snapshot)` to restore older persisted shapes:
-
-```js
-const workflow = $workflow({
-  id: 'docs-build',
-  initial: 'idle',
-  data: {
-    title: '',
-  },
-  transitions: {},
-  migrateSnapshot(snapshot) {
+migrateSnapshot(snapshot) {
+  if (snapshot.version === 0) {
     return {
       version: 1,
-      id: 'docs-build',
-      current: snapshot.state,
-      data: {
-        title: snapshot.title,
-      },
+      id: 'checkout',
+      state: snapshot.stage,
+      data: snapshot.data,
       diagnostics: [],
       history: [],
     };
+  }
+
+  return snapshot;
+}
+```
+
+## Supervisor
+
+A workflow supervisor owns persistence and recovery for a named group:
+
+```js
+app.workflowSupervisor('checkoutProcesses', {
+  workflows: {
+    checkout: checkoutDefinition,
+    fulfillment: fulfillmentDefinition,
   },
-});
-```
-
-## Retry, Repeat, And Repair
-
-`retry(commandName?)` reruns the latest failed command with its original input:
-
-```js
-const retryResult = await workflow.retry('publish');
-```
-
-`repeat(commandName?)` reruns the latest completed command with its original
-input:
-
-```js
-const repeatResult = await workflow.repeat('publish');
-```
-
-Repair is intentionally configured as a normal command instead of a magic
-built-in policy:
-
-```js
-app.controller('DocsCtrl', function ($workflow) {
-  this.workflow = $workflow({
-    id: 'repairable-docs',
-    initial: 'idle',
-    data: {
-      title: '',
-    },
-    transitions: {
-      idle: {
-        validate(data) {
-          return data.title ? 'complete' : 'failed';
-        },
-      },
-      failed: {
-        complete() {
-          return 'complete';
-        },
-      },
-    },
-    commands: {
-      validate({ workflow }) {
-        workflow.send('validate');
-
-        return workflow.matches('complete')
-          ? { ok: true }
-          : {
-              ok: false,
-              diagnostics: [
-                {
-                  code: 'docs.missingTitle',
-                  message: 'Missing title.',
-                  recoverable: true,
-                },
-              ],
-            };
-      },
-      repair({ workflow, data, input }) {
-        data.title = String(input);
-        workflow.send('complete');
-
-        return {
-          ok: true,
-        };
-      },
-    },
-  });
+  persistence: 'indexeddb',
+  autoPersist: true,
+  autoRecover: true,
 });
 ```
 
 ```js
-await workflow.run('validate');
-await workflow.run('repair', 'Guide');
+app.controller('AdminCtrl', function (checkoutProcesses) {
+  this.checkout = checkoutProcesses.workflow('checkout');
+});
 ```
 
-Diagnostics and history are append-only in v1. Repair, retry, and repeat add
-evidence; they do not erase the commands that made recovery or replay necessary.
-
-## Production Policies
-
-Concurrent command calls are allowed by default. Set `concurrency` to reject or
-queue overlapping runs for the same command:
+Supervisors can also use a persistence adapter:
 
 ```js
-const workflow = $workflow({
-  id: 'publish',
-  concurrency: 'queue',
-  initial: 'idle',
-  data: {},
-  transitions: {},
-  commands: {
-    publish() {
-      return { ok: true };
-    },
+const persistence = {
+  async load(id) {
+    return database.load(id);
   },
-});
-```
-
-Per-run options can override the workflow default:
-
-```js
-await workflow.run('publish', payload, { concurrency: 'reject' });
-```
-
-Use `commandTimeout` or per-run `timeout` to fail commands that exceed a time
-budget. Timeout and cancellation resolve the command result with diagnostics;
-commands receive an `AbortSignal` so async work can stop early:
-
-```js
-const workflow = $workflow({
-  id: 'publish',
-  commandTimeout: 5000,
-  initial: 'idle',
-  data: {},
-  transitions: {},
-  commands: {
-    async publish({ cleanup, signal }) {
-      const controller = new AbortController();
-
-      cleanup(() => controller.abort());
-      signal.addEventListener('abort', () => controller.abort(), {
-        once: true,
-      });
-
-      await fetch('/publish', { signal: controller.signal });
-
-      return { ok: true };
-    },
+  async save(id, snapshot) {
+    await database.save(id, snapshot);
   },
-});
-
-workflow.cancel('publish');
+};
 ```
 
-`cleanup(callback)` runs after the command resolves, fails, times out, or is
-cancelled. Use it for timers, event listeners, observers, and request
-controllers created by the command.
+`autoPersist` saves after every settled command. `autoRecover` restores the
+latest snapshot and reruns the latest recoverable failed command for each
+workflow.
 
-`restore(snapshot)` is a hard recovery boundary. It cancels running commands,
-prevents queued commands from starting, and ignores late writes from cancelled
-command continuations. Command code should still observe `signal.aborted` so it
-can release external resources promptly.
+## Worker Runtime
 
-Diagnostics and history are bounded to 1000 entries by default. Use
-`diagnosticLimit` and `historyLimit` to choose different bounds:
+The optional workflow worker runtime transports `run`, `snapshot`, and
+`restore`. It does not define another orchestration protocol:
 
 ```js
-const workflow = $workflow({
-  id: 'bounded',
-  diagnosticLimit: 100,
-  historyLimit: 100,
-  initial: 'idle',
-  data: {},
-  transitions: {},
+const host = createWorkflowWorkerHost({
+  workflows: { checkout },
 });
+
+const client = createWorkflowWorkerClient(workerConnection);
+const result = await client.run('checkout', 'submit', order);
 ```
 
 ## Runtime API
 
 ```js
-workflow.current;
+workflow.id;
+workflow.state;
 workflow.data;
 workflow.diagnostics;
 workflow.history;
-workflow.matches('idle');
-workflow.can('start');
-workflow.send('start');
-workflow.run('publish', payload, { timeout: 5000 });
-workflow.retry('publish', { concurrency: 'reject' });
-workflow.repeat('publish');
-workflow.cancel('publish');
+workflow.can('submit');
+workflow.run('submit', order);
+workflow.cancel('submit');
 workflow.snapshot();
 workflow.restore(snapshot);
 ```
 
-TypeScript callers can specify the expected command output type at the command
-boundary:
-
-```ts
-const result = await workflow.run<{ file: string }>('publish', payload);
-
-if (result.ok) {
-  result.output?.file;
-}
-```
-
-Workflow definitions are strict by default in TypeScript. If no event or command
-map is provided, `send()`, `run()`, `retry()`, and `repeat()` have no valid
-names. Use `defineWorkflow<Data, Events, Commands>()` and `defineCommand()` for
-checked event names, command names, inputs, and outputs:
-
-```ts
-import { defineCommand, defineWorkflow } from '@angular-wave/angular.ts';
-
-type DocsData = {
-  output: string;
-};
-
-type DocsEvents = {
-  complete: { output: string };
-};
-
-type DocsCommands = {
-  publish: ng.WorkflowCommand<DocsData, string, { file: string }, DocsEvents>;
-};
-
-const config = defineWorkflow<DocsData, DocsEvents, DocsCommands>({
-  id: 'docs',
-  initial: 'idle',
-  data: {
-    output: '',
-  } satisfies DocsData,
-  transitions: {
-    idle: {
-      complete(data, payload) {
-        data.output = payload.output;
-        return 'complete';
-      },
-    },
-  },
-  commands: {
-    publish: defineCommand<DocsData, string, { file: string }, DocsEvents>(
-      ({ workflow, input }) => {
-        workflow.send('complete', { output: input });
-
-        return {
-          ok: true,
-          output: {
-            file: input,
-          },
-        };
-      },
-    ),
-  },
-});
-
-const workflow = $workflow(config);
-const result = await workflow.run('publish', 'index.html');
-```
-
-When a command map is provided, `commands` is required and every declared
-command key must be present and callable. This keeps `workflow.run('name')`
-aligned with the runtime command table.
-
-When a command calls another command, pass the full command map to
-`defineCommand()` so `context.workflow.run()` is checked too:
-
-```ts
-type DocsCommands = {
-  build: ng.WorkflowCommand<
-    DocsData,
-    string,
-    { file: string },
-    DocsEvents,
-    DocsCommands
-  >;
-  publish: ng.WorkflowCommand<
-    DocsData,
-    { file: string },
-    { url: string },
-    DocsEvents,
-    DocsCommands
-  >;
-};
-
-const build = defineCommand<
-  DocsData,
-  string,
-  { file: string },
-  DocsEvents,
-  DocsCommands
->(({ workflow, input }) => {
-  workflow.run('publish', { file: input });
-
-  return {
-    ok: true,
-    output: {
-      file: input,
-    },
-  };
-});
-```
-
-Use `ng.WorkflowCommandMap` only when you intentionally need dynamic command
-names. Dynamic command inputs are typed as `unknown`; narrow the value inside
-the command before using it.
+The runtime intentionally has no `send()`, manual lifecycle transition, or
+per-run orchestration options.

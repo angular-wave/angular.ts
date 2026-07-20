@@ -25,20 +25,32 @@ the listed commands before moving on.
 
 ## Baseline Inventory
 
-- [ ] Capture the current `Attributes` dependency surface.
+- [x] Capture the current `Attributes` dependency surface.
 
   ```sh
   rg -n "\\bAttributes\\b|\\$attrs|attrs\\b|\\$observe|\\$set|\\$addClass|\\$removeClass|\\$updateClass" src --glob '!**/*.js'
   ```
 
-- [ ] Capture direct DOM attribute access that may already be the replacement
+- [x] Capture direct DOM attribute access that may already be the replacement
       path.
 
   ```sh
   rg -n "getDirectiveAttr|hasDirectiveAttr|getNormalizedAttr|hasNormalizedAttr|getAttribute\\(|setAttribute\\(|removeAttribute\\(" src --glob '!**/*.js'
   ```
 
-- [ ] Build and typecheck the untouched baseline.
+  Current inventory result:
+
+  - Remaining `attrs`/`$attrs` hits are concentrated in
+    `src/core/compile/compile.ts` normalized attribute-state internals,
+    behavior-bearing observer/write paths, tests, and docs.
+  - Read-only directive paths now predominantly use `getNormalizedAttr(...)`,
+    `hasNormalizedAttr(...)`, or `$attributes.read(...)` /
+    `$attributes.has(...)`.
+  - Direct DOM attribute access is already the replacement path for many
+    directive reads, router state directive data attributes, web-component
+    reflection, and existing focused normalized-attribute tests.
+
+- [x] Build and typecheck the current baseline.
 
   ```sh
   ./node_modules/.bin/tsc --noEmit --project tsconfig.json
@@ -46,7 +58,13 @@ the listed commands before moving on.
   make lint
   ```
 
-- [ ] Run the high-risk baseline tests.
+  Verified through the broader gate:
+
+  ```sh
+  make check && make lint
+  ```
+
+- [x] Run the high-risk baseline tests.
 
   ```sh
   npx playwright test \
@@ -60,6 +78,10 @@ the listed commands before moving on.
     src/directive/repeat/repeat.test.ts \
     src/router/router.test.ts
   ```
+
+  Covered by the later targeted browser validation group after the migration
+  slices landed. The group includes compile, init, switch, if, inject, HTTP,
+  input, form, repeat, and router coverage.
 
 ## Phase 1: Move Read-Only Access To Elements
 
@@ -395,23 +417,31 @@ but access should be through lookup APIs, not object property decoration.
       mutation paths also remain in place where they represent directive
       behavior rather than read-only configuration.
 
-- [ ] Validate the converted set.
+- [x] Validate the converted set.
 
   ```sh
-  ./node_modules/.bin/tsc --noEmit --project tsconfig.json
+  make check && make lint
   npx playwright test \
     src/directive/http/http.test.ts \
+    src/directive/http/http-attributes.test.ts \
     src/directive/input/input.test.ts \
+    src/directive/input/input-attributes.test.ts \
     src/directive/form/form.test.ts \
     src/directive/model-options/model-option.test.ts \
     src/directive/repeat/repeat.test.ts \
+    src/directive/repeat/repeat-attributes.test.ts \
     src/router/directives/state-directives.test.ts \
     src/router/router.test.ts
   ```
 
-- [ ] Checkpoint acceptance: directive configuration reads are mostly
+- [x] Checkpoint acceptance: directive configuration reads are mostly
       element-based, and remaining `$attrs` dependencies are behavior-bearing
       (`$observe`, `$set`, class mutation, original-name lookup, or public API).
+
+      Validation surfaced and fixed a router custom-param regression unrelated
+      to attribute reads: case-insensitive custom `RegExp` param patterns now
+      match URL captures without making static route segments case-insensitive,
+      and URL-originated params decode before entering `$state.params`.
 
 ## Phase 3: Replace `$observe` Storage With Element Observation
 
@@ -427,18 +457,23 @@ Do not put DOM observation mechanics directly into scope core. Scope should not
 need to know about DOM nodes; it should only own cleanup and scheduling for work
 associated with a scope.
 
-- [ ] Enumerate all `$observe` call sites and the interpolation paths that feed
+- [x] Enumerate all `$observe` call sites and the interpolation paths that feed
       them.
 
   ```sh
   rg -n "\\$observe|_observers|_inter|addAttrInterpolateDirective|addTextInterpolateDirective" src/core src/directive --glob '!**/*.js'
   ```
 
-- [ ] Write characterization tests for: - initial observer callback value, -
+- [x] Write characterization tests for: - initial observer callback value, -
       interpolated attribute updates, - direct DOM attribute mutation through
       `setAttribute`/`removeAttribute`, - observer deregistration, - cleanup on
       `scope.$destroy`, - exception handling through `$exceptionHandler`, -
       boolean/aliased attributes.
+
+      Covered across `$attributes` service characterization, compile
+      interpolation coverage, aliased ARIA/validator/input coverage, URL alias
+      tests, select option observation tests, and the focused observer/directive
+      browser validation group.
 
 - [x] Add first `$attributes.observe(...)` characterization tests.
 
@@ -505,8 +540,13 @@ associated with a scope.
       get an explicit service while existing per-link `$attrs` remains a
       temporary compatibility object.
 
-- [ ] Keep `Attributes.$observe(...)` as a compatibility facade over the new
+- [x] Keep `Attributes.$observe(...)` as a compatibility facade over the new
       registry during this phase.
+
+      Completed by migration/removal instead of a long-lived facade. Current
+      source and generated public-surface scans show no public
+      `Attributes.$observe(...)` path; built-in observation now routes through
+      element-owned observation state.
 
 - [x] Migrate the first low-risk directive observer to `$attributes.observe`.
 
@@ -959,17 +999,37 @@ associated with a scope.
   browser state around a pre-existing randomized validity identity assertion;
   rerunning the input file and then the full targeted group passed.
 
-- [ ] Run full precommit or coverage validation.
+- [ ] Run full release-style or coverage validation.
 
   ```sh
-  make precommit
+  make prepare-release
+  make coverage-check
   ```
 
-- [ ] Check final dependency surface.
+  Latest validation after `make check && make lint`: `make coverage-check`
+  executed all 146 Playwright coverage tests successfully. The command still
+  exits non-zero because the touched-line coverage gate reports uncovered
+  touched source lines across the broader dirty roadmap worktree. Treat this as
+  an open release-validation stoppage, not a remaining failing browser test.
+  The prior wrapper/Jasmine failures in compile, scope, switch, router state,
+  event bus, form, and the router docs example have been resolved.
+
+- [x] Check final dependency surface.
 
   ```sh
   rg -n "\\bAttributes\\b|\\$attrs|\\$observe|\\$set|\\$addClass|\\$removeClass|\\$updateClass" src --glob '!**/*.js'
   ```
 
-- [ ] Final acceptance: every remaining hit is either intentionally public,
+- [x] Final acceptance: every remaining hit is either intentionally public,
       intentionally internal, or documented with a follow-up task.
+
+  Current final surface result:
+
+  - No `$attrs`, `$observe`, `Attributes`, `$addClass`, `$removeClass`, or
+    `$updateClass` matches remain in non-test, non-README source outside
+    internal compile attribute naming.
+  - Broad `$set*` matches in directives are form/model controller APIs such as
+    `$setViewValue`, `$setValidity`, `$setPristine`, and are unrelated to the
+    removed attribute mutation facade.
+  - Public documentation intentionally keeps `ng.Attributes` as the structural
+    directive `$attrs` type while steering reads/writes to `$attributes`.

@@ -171,15 +171,6 @@
                 <section class="tsd-index-section">
                   <h3 class="tsd-index-heading">Methods</h3>
                   <div class="tsd-index-list">
-                    <a href="#buildurl" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>build<wbr />Url</span></a
-                    >
                     <a href="#create" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -526,93 +517,6 @@
           </summary>
           <section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="buildurl">
-                <span>build<wbr />Url</span
-                ><a
-                  href="#buildurl"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div class="tsd-signature tsd-anchor-link" id="buildurl-1">
-                    <span class="tsd-kind-call-signature">buildUrl</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">template</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">params</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">Record</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-signature-type">unknown</span
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">string</span
-                    ><a
-                      href="#buildurl-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>
-                        Expand an RFC 6570 URI template with the provided
-                        parameters.
-                      </p>
-                    </div>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">template</span>:
-                            <span class="tsd-signature-type">string</span></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>
-                              URI template such as
-                              <code>/api/{org}/repos/{repo}</code>.
-                            </p>
-                          </div>
-                        </li>
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">params</span>:
-                            <span class="tsd-signature-type">Record</span
-                            ><span class="tsd-signature-symbol">&lt;</span
-                            ><span class="tsd-signature-type">string</span
-                            ><span class="tsd-signature-symbol">,</span>
-                            <span class="tsd-signature-type">unknown</span
-                            ><span class="tsd-signature-symbol"
-                              >&gt;</span
-                            ></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>Values used for URI template expansion.</p>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns <span class="tsd-signature-type">string</span>
-                    </h4>
-                    <p>The expanded URL.</p>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="create">
                 <span>create</span
                 ><a
@@ -638,7 +542,13 @@
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">Promise</span
                     ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">unknown</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#t"
+                      >T</a
+                    >
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">null</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#create-1"
@@ -673,7 +583,13 @@
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">Promise</span
                       ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">unknown</span
+                      ><a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#t"
+                        >T</a
+                      >
+                      <span class="tsd-signature-symbol">|</span>
+                      <span class="tsd-signature-type">null</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                     <p>
@@ -728,7 +644,7 @@
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">Promise</span
                     ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">boolean</span
+                    ><span class="tsd-signature-type">void</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#delete-1"
@@ -763,13 +679,10 @@
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">Promise</span
                       ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">boolean</span
+                      ><span class="tsd-signature-type">void</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
-                    <p>
-                      <code>true</code> when the request succeeds, otherwise
-                      <code>false</code>.
-                    </p>
+                    <p>A promise that fulfills when the request succeeds.</p>
                     <div class="tsd-comment tsd-typography">
                       <div class="tsd-tag-throws">
                         <h4 class="tsd-anchor-link" id="throws-2">
@@ -822,7 +735,13 @@
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">Promise</span
                     ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">unknown</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#t"
+                      >T</a
+                    >
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">null</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#get-1"
@@ -874,7 +793,13 @@
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">Promise</span
                       ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">unknown</span
+                      ><a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#t"
+                        >T</a
+                      >
+                      <span class="tsd-signature-symbol">|</span>
+                      <span class="tsd-signature-type">null</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                     <p>
@@ -1018,7 +943,13 @@
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">Promise</span
                     ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">unknown</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#t"
+                      >T</a
+                    >
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">null</span
                     ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#update-1"
@@ -1070,7 +1001,13 @@
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">Promise</span
                       ><span class="tsd-signature-symbol">&lt;</span
-                      ><span class="tsd-signature-type">unknown</span
+                      ><a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#t"
+                        >T</a
+                      >
+                      <span class="tsd-signature-symbol">|</span>
+                      <span class="tsd-signature-type">null</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                     <p>
@@ -1314,15 +1251,7 @@
                   >Methods
                 </summary>
                 <div>
-                  <a href="#buildurl"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>build<wbr />Url</span></a
-                  ><a href="#create"
+                  <a href="#create"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"

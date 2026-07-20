@@ -23,8 +23,9 @@ Exact service and connection signatures live in TypeDoc:
 - [`WebTransportService`](../../../typedoc/types/WebTransportService.html)
 - [`WebTransportConfig`](../../../typedoc/interfaces/WebTransportConfig.html)
 - [`WebTransportConnection`](../../../typedoc/interfaces/WebTransportConnection.html)
-- [`WorkerConfig`](../../../typedoc/interfaces/WorkerConfig.html)
-- [`WorkerConnection`](../../../typedoc/interfaces/WorkerConnection.html)
+- [`WorkerConfig`](../../../typedoc/types/WorkerConfig.html)
+- [`WorkerHandle`](../../../typedoc/interfaces/WorkerHandle.html)
+- [`WorkerError`](../../../typedoc/classes/WorkerError.html)
 
 ## Server-Sent Events
 
@@ -72,7 +73,8 @@ class ChatController {
   private socket: ng.WebSocketConnection;
 
   constructor($websocket: ng.WebSocketService, $scope: ng.Scope) {
-    this.socket = $websocket("wss://api.example.com/chat", ["v1"], {
+    this.socket = $websocket("wss://api.example.com/chat", {
+      protocols: ["v1"],
       retryDelay: 2000,
       maxRetries: 20,
       onMessage: (message: ChatMessage) => {
@@ -155,16 +157,16 @@ evaluates lifecycle expressions. `data-mode="datagram"` is the default;
   data-transform="json"
   data-as="session"
   data-reconnect="true"
-  data-on-message="events.push($message)"
-  data-on-reconnect="reconnects = $attempt"
-  data-on-error="error = $error"
+  on-message="events.push($message)"
+  on-reconnect="reconnects = $attempt"
+  on-error="error = $error"
 ></div>
 ```
 
 `data-transform` accepts `bytes`, `text`, or `json`. Message expressions receive
 `$connection`, `$data`, `$message`, `$event`, and `$text` for text/json modes.
 Reconnect is opt-in with `data-reconnect="true"`; tune it with
-`data-retry-delay` and `data-max-retries`. `data-on-reconnect` runs after the
+`data-retry-delay` and `data-max-retries`. `on-reconnect` runs after the
 replacement session is ready and receives `$attempt`, `$connection`, `$error`,
 and `$url`.
 
@@ -176,8 +178,8 @@ Use `ng-worker` when a view action should run CPU-heavy JavaScript outside the m
 <button
   ng-worker="./workers/compress.js"
   data-params="vm.fileBuffer"
-  data-on-result="vm.compressed = $result"
-  data-on-error="vm.error = $error"
+  on-result="vm.compressed = $result"
+  on-error="vm.error = $error"
   trigger="click"
 >
   Compress
@@ -186,11 +188,41 @@ Use `ng-worker` when a view action should run CPU-heavy JavaScript outside the m
 <span
   ng-worker="./workers/sensor-reader.js"
   interval="5000"
-  data-on-result="vm.sensorData = $result"
+  on-result="vm.sensorData = $result"
 ></span>
 ```
 
-The directive evaluates `data-params`, posts the result to the worker, and exposes worker responses as `$result` in `data-on-result`. When no result expression is provided, it swaps the result into the element using the configured swap strategy.
+The directive evaluates `data-params`, posts the result to the worker, and
+exposes worker responses as `$result` in `on-result`. Worker output is never
+interpreted as HTML. Bind it into scope or a model and let normal directives
+render the result.
+
+Register expensive or shared workers once and reference their injectable
+handle. `data-request` enables correlated request-response delivery:
+
+```js
+app.worker("compressWorker", "./workers/compress.js", {
+  restart: true,
+  maxRestarts: 3,
+});
+```
+
+```html
+<button
+  ng-worker
+  data-handle="compressWorker"
+  data-request
+  data-params="vm.fileBuffer"
+  on-result="vm.compressed = $result"
+  on-error="vm.error = $error"
+>
+  Compress
+</button>
+```
+
+The directive subscribes to a shared handle but does not terminate it when the
+element scope is destroyed. Workers created directly from an `ng-worker` script
+path remain element-owned and are terminated with that scope.
 
 A worker module receives values through `self.onmessage` and returns results through `self.postMessage`.
 
@@ -216,7 +248,9 @@ self.onmessage = function ({ data: { limit } }) {
 
 ## WebAssembly
 
-`ng-wasm` loads a `.wasm` file and exposes its exports on the scope under a configurable name.
+`ng-wasm` loads a `.wasm` file and exposes its `WasmResource` on the scope under
+a configurable name. Await `resource.ready` before reading
+`resource.exports`.
 
 ```html
 <div
@@ -227,10 +261,13 @@ self.onmessage = function ({ data: { limit } }) {
 ```
 
 ```typescript
-const result = $scope.imageProcessor.grayscale(pixelBuffer, width, height);
+const resource = $scope.imageProcessor;
+await resource.ready;
+const result = resource.exports.grayscale(pixelBuffer, width, height);
 ```
 
-WebAssembly loading is asynchronous. Guard calls until the export object exists or trigger work after the directive has linked.
+WebAssembly loading is asynchronous. Use the resource status in templates and
+await `ready` before calling exports from application code.
 
 ## Choosing A Transport
 
@@ -245,4 +282,4 @@ WebAssembly loading is asynchronous. Guard calls until the export object exists 
 ## Related
 
 - [$http service]({{< relref "/docs/services/http" >}})
-- [PubSub messaging]({{< relref "/docs/services/pubsub" >}})
+- [EventBus messaging]({{< relref "/docs/services/event-bus" >}})

@@ -2,14 +2,19 @@
 title: "JavaScript-based animations with the AngularTS JS driver"
 linkTitle: "JS Animations"
 weight: 20
-description: "Register JavaScript animation handlers with $animateProvider, implement enter/leave/move hooks with done callbacks, and use the Web Animations API."
+description: "Register JavaScript animation handlers with module.animation(), implement enter/leave/move hooks with done callbacks, and use the Web Animations API."
 ---
 The JavaScript animation driver lets you write fully imperative animations in code. Instead of defining CSS classes, you register a factory function against a CSS class selector. When an element carrying that class goes through a structural or class-based animation event, the driver looks up and invokes the matching handler. This makes the JS driver the right choice when you need precise timing control, want to integrate an animation library such as the Web Animations API, or need to coordinate multiple elements that CSS transitions cannot express.
 ## How the JS driver works
 
-At startup, `AnimateJsDriverProvider` registers itself with `$$animationProvider._drivers`. During each animation request, the animation queue calls drivers in reverse registration order — the JS driver is checked before the CSS driver. The driver calls `$$animateJs(element, event, classes, options)` which inspects the element's class list against all factories registered via `$animateProvider.register()`. If a matching factory is found, it retrieves the singleton handler object from the injector and packages the appropriate lifecycle hook as a runnable operation.
+During each animation request, `$animate` checks registered JavaScript
+animation factories before falling back to CSS/custom-property animation
+handling. It inspects the element's class list against factories registered
+through `module.animation()`. If a matching factory is found, it retrieves the
+singleton handler object from the injector and packages the appropriate
+lifecycle hook as a runnable operation.
 
-The internal `$$animateJs` service (`AnimateJsFn`) handles two phases for most events:
+JavaScript animation handlers can define two phases for most events:
 
 * **`before*`** — e.g., `beforeAddClass`, `beforeRemoveClass`. Runs synchronously before the DOM change.
 * **`after*`** (or the event name itself for `enter`, `move`) — runs after the DOM change.
@@ -19,45 +24,49 @@ For `leave`, the hooks are `leave` (before removal) and `afterLeave` (after remo
 > **Note:** The JS driver and CSS driver are not mutually exclusive per element, but the animation queue calls `invokeFirstDriver()` which returns on the first driver that produces a handler. If a JS animation is registered for an element, the CSS driver is skipped for that animation event.
 ## Registering a JS animation
 
-Use `$animateProvider.register()` during the config phase to associate a factory with a CSS class selector. The selector must begin with `.`. The factory is an injectable function that returns an object containing lifecycle hook methods.
+Use `module.animation()` to associate a factory with a CSS class selector. The
+selector must begin with `.`. The factory is an injectable function that returns
+an object containing lifecycle hook methods.
 
 ```javascript
-  $animateProvider.register('.fade', function () {
-    return {
-      enter: function (element, done) {
-        // animate element in, then call done()
-        element.style.opacity = '0';
-        requestAnimationFrame(function () {
-          element.style.transition = 'opacity 0.3s ease';
-          element.style.opacity = '1';
-          element.addEventListener('transitionend', function onEnd() {
-            element.removeEventListener('transitionend', onEnd);
-            done();
-          });
-        });
-      },
-
-      leave: function (element, done) {
+angular.module('app', []).animation('.fade', function () {
+  return {
+    enter: function (element, done) {
+      // animate element in, then call done()
+      element.style.opacity = '0';
+      requestAnimationFrame(function () {
         element.style.transition = 'opacity 0.3s ease';
-        element.style.opacity = '0';
+        element.style.opacity = '1';
         element.addEventListener('transitionend', function onEnd() {
           element.removeEventListener('transitionend', onEnd);
           done();
         });
-      },
-    };
-  });
-}]);
-```
+      });
+    },
 
-Or use the module-level `.animation()` shorthand, which calls `$animateProvider.register()` internally:
-
-```javascript
-  return {
-    enter: function (element, done) { /* ... */ done(); },
-    leave: function (element, done) { /* ... */ done(); },
+    leave: function (element, done) {
+      element.style.transition = 'opacity 0.3s ease';
+      element.style.opacity = '0';
+      element.addEventListener('transitionend', function onEnd() {
+        element.removeEventListener('transitionend', onEnd);
+        done();
+      });
+    },
   };
 });
+```
+
+The same method can be chained with other module declarations:
+
+```javascript
+angular.module('app', [])
+  .animation('.slide', function () {
+    return {
+      enter: function (element, done) { /* ... */ done(); },
+      leave: function (element, done) { /* ... */ done(); },
+    };
+  });
+```
 ```
 ## Animation lifecycle hooks
 
@@ -251,21 +260,6 @@ When you need to animate related elements in sequence — for example, a leaving
   };
 }]);
 ```
-## The `$$animateJs` service
-
-`$$animateJs` is the internal function that the JS driver uses to look up and package JS animation handlers. It is available as an injectable service if you need to call it directly — for example, when writing a custom driver or testing animation behavior.
-
-Its signature is:
-
-```typescript
-  element: HTMLElement,
-  event: string,
-  classes?: string | null,
-  options?: AnimationOptions,
-): Animator | undefined
-```
-
-It returns an `Animator` object (`{ _willAnimate: true, start(), end() }`) if at least one registered handler matches the element's class list, or `undefined` if no handler is found. The returned `Animator.start()` runs the before-phase and after-phase operations, and calls `runner.complete(status)` when both are done.
 ## Injecting services into animation factories
 
 Animation factory functions participate in dependency injection. List dependencies in the array notation or use `$inject`:

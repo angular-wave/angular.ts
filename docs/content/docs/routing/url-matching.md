@@ -1,20 +1,34 @@
 ---
-title: "URL matching and configuration in AngularTS router"
-linkTitle: "URL Matching"
+title: 'URL matching and configuration in AngularTS router'
+linkTitle: 'URL Matching'
 weight: 370
-description: "Configure URL parameters, typed path and query params, hash vs HTML5 mode, base href, and custom parameter types in the AngularTS state-based router."
+description:
+  'Configure URL parameters, typed path and query params, hash vs HTML5 mode,
+  base href, and custom parameter types in the AngularTS state-based router.'
 ---
-The AngularTS router matches the browser's URL against registered state declarations and activates the best matching state. URL matching is an optional layer on top of the state machine—states can be navigated to programmatically without any URL involvement—but most applications use URLs to make deep-linking and browser history work correctly.
+
+The AngularTS router matches the browser's URL against registered state
+declarations and activates the best matching state. URL matching is an optional
+layer on top of the state machine—states can be navigated to programmatically
+without any URL involvement—but most applications use URLs to make deep-linking
+and browser history work correctly.
+
 ## How URL matching works
 
-When the browser URL changes (or on initial load), the `UrlService` calls `sync()`. It iterates all registered URL rules in priority order and finds the best match using a weighted scoring system. The winning rule's handler is called, which calls `$state.go()` with the matched state and extracted parameter values.
+When the browser URL changes (or on initial load), the router syncs registered
+URL rules in priority order and finds the best match using a weighted scoring
+system. The winning rule's handler calls `$state.go()` with the matched state
+and extracted parameter values.
 
-URL rules are created automatically for every state that has a `url` property. You can also register custom URL rules directly on `$urlService._rules`.
+URL rules are created automatically for every state that has a `url` property.
+Rules with the same sort order are ranked by weight so the most specific match
+wins.
 
-`UrlService.match(url)` accepts a `UrlParts` object (`{ path, search, hash }`) and returns a `MatchResult` with the matching rule, the match data, and the match weight. Rules with the same sort order are ranked by weight so the most specific match wins.
 ## URL parameters
 
-Parameters are declared in the state's `url` string. The router uses a `UrlMatcher` compiled from this pattern to test URLs and extract values.
+Parameters are declared in the state's `url` string. The router uses a
+`UrlMatcher` compiled from this pattern to test URLs and extract values.
+
 ### Path parameters
 
 Use a colon prefix for named path segments:
@@ -48,9 +62,11 @@ Custom regexp:
   component: 'Article'
 });
 ```
+
 ### Query parameters
 
-Append a `?` followed by parameter names. Multiple query params are separated by `&`:
+Append a `?` followed by parameter names. Multiple query params are separated by
+`&`:
 
 ```javascript
   name: 'search',
@@ -78,9 +94,13 @@ Mixed path and query params:
   component: 'Mailbox'
 });
 ```
+
 ### Optional parameters
 
-Give a parameter a default value in the `params` block and set `squash: true` to make it optional. When the URL is visited without the parameter, the default value is used. When navigating with the default value, the parameter is omitted from the URL:
+Give a parameter a default value in the `params` block and set `squash: true` to
+make it optional. When the URL is visited without the parameter, the default
+value is used. When navigating with the default value, the parameter is omitted
+from the URL:
 
 ```javascript
   name: 'userList',
@@ -97,16 +117,20 @@ Give a parameter a default value in the `params` block and set `squash: true` to
 // /users/    → { page: '1' }  (squashed)
 // /users/3   → { page: '3' }
 ```
+
 ## Built-in parameter types
 
-The `UrlConfigProvider` ships the following built-in parameter types. Specify the type inline in the URL pattern or in the `params` block:
+The router ships the following built-in parameter types. Specify the type inline
+in the URL pattern or in the `params` block:
 
 ### string
 
-Default for path parameters. Encodes and decodes as a plain string. Slashes within the value are encoded as `~2F` in AngularTS's patched path type to avoid ambiguity in Angular 1's `$location`.
+Default for path parameters. Encodes and decodes as a plain string. Slashes
+within the value are encoded as `~2F` in AngularTS's patched path type to avoid
+ambiguity in Angular 1's `$location`.
 
 ```javascript
-url: '/items/:name'
+url: '/items/:name';
 // { name: 'foo bar' } → /items/foo%20bar
 ```
 
@@ -115,228 +139,266 @@ url: '/items/:name'
 Parses URL segments as integers using `parseInt`. The `pattern` is `/\d+/`.
 
 ```javascript
-url: '/users/{id:int}'
+url: '/users/{id:int}';
 // /users/42 → { id: 42 }  (number, not string)
 ```
 
 ### bool
 
-Represents boolean values. Encodes `true` as `"1"` and `false` as `"0"`. The pattern matches `1` or `0`.
+Represents boolean values. Encodes `true` as `"1"` and `false` as `"0"`. The
+pattern matches `1` or `0`.
 
 ```javascript
-url: '/settings/{darkMode:bool}'
+url: '/settings/{darkMode:bool}';
 // /settings/1 → { darkMode: true }
 ```
 
 ### json
 
-Encodes arbitrary objects as a JSON string in the URL (URL-encoded). Useful for complex filter objects.
+Encodes arbitrary objects as a JSON string in the URL (URL-encoded). Useful for
+complex filter objects.
 
 ```javascript
-url: '/search?{filters:json}'
+url: '/search?{filters:json}';
 // { filters: { status: 'active', role: 'admin' } }
 // → /search?filters=%7B%22status%22%3A%22active%22%7D
 ```
 
 ### date
 
-Encodes `Date` objects as `YYYY-MM-DD` strings. Parses the string back to a `Date` on the way in.
+Encodes `Date` objects as `YYYY-MM-DD` strings. Parses the string back to a
+`Date` on the way in.
 
 ```javascript
-url: '/events?{startDate:date}&{endDate:date}'
+url: '/events?{startDate:date}&{endDate:date}';
 // { startDate: new Date('2024-01-15') }
 // → /events?startDate=2024-01-15
 ```
 
 ### hash
 
-The internal parameter type used for the `#` (hash/anchor) portion of the URL. Has `inherit: false` so the hash is not carried forward to child state transitions.
-## URL configuration with UrlConfigProvider
+The internal parameter type used for the `#` (hash/anchor) portion of the URL.
+Has `inherit: false` so the hash is not carried forward to child state
+transitions.
 
-`UrlConfigProvider` (injected as `$urlConfigProvider` in config blocks, or accessed via `$url._config` at runtime) controls global URL matching behavior.
+## URL configuration with `$router`
+
+`$router` config controls global URL matching behavior.
+
 ### Case sensitivity
 
 URL matching is case-sensitive by default. Allow case-insensitive matching:
 
 ```javascript
-  .config(function ($urlConfigProvider) {
-    $urlConfigProvider.caseInsensitive(true);
-  });
+angular.module('app').config({
+  $router: {
+    caseInsensitive: true,
+  },
+});
 ```
+
 ### Strict mode (trailing slashes)
 
-By default, `/users/` and `/users` are distinct. Disable strict mode to treat trailing slashes as equivalent:
+By default, `/users/` and `/users` are distinct. Disable strict mode to treat
+trailing slashes as equivalent:
 
 ```javascript
-  .config(function ($urlConfigProvider) {
-    $urlConfigProvider.strictMode(false); // /users/ matches /users
-  });
+angular.module('app').config({
+  $router: {
+    strict: false, // /users/ matches /users
+  },
+});
 ```
+
 ### Default squash policy
 
-Control the global default for how parameters with default values appear in URLs:
+Control the global default for how parameters with default values appear in
+URLs:
 
 ```javascript
-  .config(function ($urlConfigProvider) {
+angular.module('app').config({
+  $router: {
     // 'false' (default): include the default value in the URL
     // 'true': omit default value from URL
     // '~': replace default value with '~' in the URL
-    $urlConfigProvider.defaultSquashPolicy(true);
-  });
+    defaultSquash: true,
+  },
+});
 ```
+
 ### Custom parameter types
 
-Register a custom `ParamType` before using it in state URL patterns. The type must implement `encode`, `decode`, `is`, `equals`, and optionally `pattern`:
+Register a custom `ParamType` before using it in state URL patterns. The type
+must implement `encode`, `decode`, `is`, `equals`, and optionally `pattern`:
 
 ```javascript
-  .config(function ($urlConfigProvider) {
-
-    // Encodes an array of integers as a dash-separated string
-    $urlConfigProvider.type('intarray', {
-      encode: function (array) {
-        return array.join('-');
+angular.module('app', []).config({
+  $router: {
+    paramTypes: {
+      // Encodes an array of integers as a dash-separated string
+      intarray: {
+        encode: function (array) {
+          return array.join('-');
+        },
+        decode: function (str) {
+          return str.split('-').map(function (x) {
+            return parseInt(x, 10);
+          });
+        },
+        is: function (val) {
+          return (
+            Array.isArray(val) &&
+            val.every(function (x) {
+              return typeof x === 'number' && !isNaN(x);
+            })
+          );
+        },
+        equals: function (a, b) {
+          return (
+            a.length === b.length &&
+            a.every(function (x, i) {
+              return x === b[i];
+            })
+          );
+        },
+        pattern: /[0-9]+(?:-[0-9]+)*/,
       },
-      decode: function (str) {
-        return str.split('-').map(function (x) { return parseInt(x, 10); });
-      },
-      is: function (val) {
-        return Array.isArray(val) && val.every(function (x) {
-          return typeof x === 'number' && !isNaN(x);
-        });
-      },
-      equals: function (a, b) {
-        return a.length === b.length &&
-          a.every(function (x, i) { return x === b[i]; });
-      },
-      pattern: /[0-9]+(?:-[0-9]+)*/
-    });
-
-  });
+    },
+  },
+});
 ```
 
 Use the custom type in a state URL:
 
 ```javascript
+angular.module('app').router({
   name: 'report',
   url: '/reports/{ids:intarray}',
-  component: 'Report'
+  component: 'Report',
 });
 
 // $state.go('report', { ids: [10, 20, 30] }) → /reports/10-20-30
 // /reports/10-20-30 → { ids: [10, 20, 30] }
 ```
 
-> **Note:** Register custom types **before** any state that uses them. `UrlConfigProvider.type()` returns the provider itself for chaining.
+Executable sample: [`param-types.html`](/examples/routing/param-types.html)
+
+> **Note:** Register custom types in `$router.paramTypes` **before** any state
+> that uses them.
+
 ## Hash mode vs HTML5 mode
 
-AngularTS inherits Angular 1's `$location` modes. Configure the mode on `$locationProvider`:
+AngularTS inherits Angular 1's `$location` modes. Configure the mode with
+`module.config({ $location: ... })`:
 
 ### Hash mode (default)
 
-URLs use a hash fragment: `http://example.com/app/#/contacts/42`. No server configuration is needed; the hash segment is never sent to the server.
+URLs use a hash fragment: `http://example.com/app/#/contacts/42`. No server
+configuration is needed; the hash segment is never sent to the server.
 
 ```javascript
-angular.module('app')
-  .config(function ($locationProvider) {
-    $locationProvider.html5Mode(false);
-    $locationProvider.hashPrefix('!'); // optional: use #!/ instead of #/
-  });
+angular.module('app').config({
+  $location: {
+    html5Mode: false,
+    hashPrefix: '!', // optional: use #!/ instead of #/
+  },
+});
 ```
 
-The `UrlService.href()` method prepends `#` (plus the hash prefix) when generating hrefs in hash mode.
+Generated hrefs are prefixed with `#` (plus the hash prefix) in hash mode.
 
 ### HTML5 mode (pushState)
 
-URLs use real paths: `http://example.com/contacts/42`. The server must return the app's `index.html` for all routes.
+URLs use real paths: `http://example.com/contacts/42`. The server must return
+the app's `index.html` for all routes.
 
 ```javascript
-angular.module('app')
-  .config(function ($locationProvider) {
-    $locationProvider.html5Mode({
+angular.module('app').config({
+  $location: {
+    html5Mode: {
       enabled: true,
-      requireBase: true  // <base href="..."> must be present in <head>
-    });
-  });
+      requireBase: true, // <base href="..."> must be present in <head>
+    },
+  },
+});
 ```
 
-In HTML5 mode, `UrlService.href()` prepends the base path (stripped of its last segment) rather than a hash.
+In HTML5 mode, generated hrefs use the base path rather than a hash.
+
 ## Base href
 
-In HTML5 mode, the base href is read from the `<base>` tag in the document `<head>`:
+In HTML5 mode, the base href is read from the `<base>` tag in the document
+`<head>`:
 
 ```html
   <base href="/myapp/">
 </head>
 ```
 
-`UrlService.baseHref()` returns the current base href. If no `<base>` tag is present it falls back to `window.location.pathname`. The base href is used when constructing absolute URLs via `$state.href(..., { absolute: true })` and when pushing new history entries.
+If no `<base>` tag is present, the runtime falls back to
+`window.location.pathname`. The base href is used when constructing absolute
+URLs via `$state.href(..., { absolute: true })` and when pushing new history
+entries.
 
-```javascript
-var base = $url.baseHref(); // "/myapp/"
-```
 ## Reading the current URL
 
-`UrlService` provides three methods to read URL components:
+Use `$location` to read URL components:
 
 ```javascript
-
-$url.getPath();   // "/contacts/42"
-$url.getSearch(); // { tab: 'notes' }
-$url.getHash();   // "section1"
-
-// All three at once
-var parts = $url.parts();
-// { path: '/contacts/42', search: { tab: 'notes' }, hash: 'section1' }
-
-// The full normalized URL (strips base, adds hash prefix in hash mode)
-$url.url(); // "/contacts/42?tab=notes#section1"
+$location.path(); // "/contacts/42"
+$location.search(); // { tab: 'notes' }
+$location.hash(); // "section1"
+$location.url(); // "/contacts/42?tab=notes#section1"
 ```
+
 ## Updating the URL
 
-`UrlService.url(newUrl)` replaces the current URL. The router then calls `sync()` to find and activate the matching state:
+Use `$location.url(newUrl)` to replace the current URL. The router then syncs
+the matching state:
 
 ```javascript
-$url.url('/contacts/99?tab=history');
+$location.url('/contacts/99?tab=history');
 ```
 
-`UrlService.push()` is the internal method used by the built-in `onSuccess` hook to update the browser address bar after a successful state transition:
-
-```javascript
-$url.push(state.navigable.url, $state.params, { replace: false });
-```
 ## URL rule priority and matching weight
 
-When multiple rules could match the same URL, the router scores each match and picks the winner:
+When multiple rules could match the same URL, the router scores each match and
+picks the winner:
 
-1. Rules are sorted by a primary sort order (rules created from state declarations all share the same group).
-2. Within a group, the match with the highest **weight** wins. Weight is computed by counting matched segments, typed parameters, and specificity of regexps.
-3. A state URL like `/users/{id:int}` outweighs `/users/:id` for the path `/users/42` because the typed parameter provides a stricter match.
+1. Rules are sorted by a primary sort order (rules created from state
+   declarations all share the same group).
+2. Within a group, the match with the highest **weight** wins. Weight is
+   computed by counting matched segments, typed parameters, and specificity of
+   regexps.
+3. A state URL like `/users/{id:int}` outweighs `/users/:id` for the path
+   `/users/42` because the typed parameter provides a stricter match.
 
-Exact path matches score higher than prefix matches. Query parameters do not affect path scoring but must all be present if declared without defaults.
+Exact path matches score higher than prefix matches. Query parameters do not
+affect path scoring but must all be present if declared without defaults.
+
 ## Listening for URL changes
 
-`UrlService.onChange(callback)` registers a low-level listener that fires on every `$locationChangeSuccess` event. The listener receives the Angular scope event:
+Listen for `$locationChangeSuccess` when code needs URL-level notifications:
 
 ```javascript
-  console.log('URL changed to:', $url.url());
+const deregister = $rootScope.$on('$locationChangeSuccess', () => {
+  console.log('URL changed to:', $location.url());
 });
 
 // Stop listening
 deregister();
 ```
 
-`UrlService.listen(false)` stops the router from responding to URL changes entirely. Call `listen(true)` to resume. This is useful when loading states asynchronously and you want to defer URL-driven navigation until the states are registered:
+When loading states asynchronously, register them before enabling navigation
+links or calling `$state.go()` for URL-driven destinations:
 
 ```javascript
-  .run(function ($url, $stateRegistry) {
-    $url.listen(false);
-
+angular.module('app').run(function ($stateRegistry, $state) {
     fetch('/api/states')
       .then(r => r.json())
       .then(function (states) {
         states.forEach(s => $stateRegistry.register(s));
-        $url.listen(true);
-        $url.sync(); // activate the state matching the current URL
+        $state.go('home');
       });
-  });
+});
 ```

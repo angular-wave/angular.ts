@@ -86,22 +86,63 @@
           <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
             <li><a href="" aria-current="page">Transition</a></li>
           </ul>
-          <h1>Class Transition</h1>
+          <h1>Class Transition&lt;TRouteMap, TRoutes&gt;</h1>
         </div>
         <section class="tsd-panel tsd-comment">
           <div class="tsd-comment tsd-typography">
             <p>Represents a transition between two states.</p>
             <p>
-              When navigating to a state, we are transitioning
-              <strong>from</strong> the current state <strong>to</strong> the
-              new state.
-            </p>
-            <p>
-              This object contains all contextual information about the to/from
-              states, parameters, resolves. It has information about all states
-              being entered and exited as a result of the transition.
+              A transition contains the source and destination states,
+              parameters, resolves, and the states entered or exited during
+              navigation.
             </p>
           </div>
+        </section>
+        <section class="tsd-panel">
+          <h4>Type Parameters</h4>
+          <ul class="tsd-type-parameter-list">
+            <li>
+              <span id="troutemap"
+                ><span class="tsd-kind-type-parameter">TRouteMap</span>
+                <span class="tsd-signature-keyword">extends</span>
+                <a
+                  href="../types/RouteMap.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >RouteMap</a
+                >
+                =
+                <a
+                  href="../types/RouteMap.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >RouteMap</a
+                ></span
+              >
+            </li>
+            <li>
+              <span id="troutes"
+                ><span class="tsd-kind-type-parameter">TRoutes</span>
+                <span class="tsd-signature-keyword">extends</span>
+                <a
+                  href="../interfaces/TransitionRouteContract.html"
+                  class="tsd-signature-type tsd-kind-interface"
+                  >TransitionRouteContract</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#troutemap"
+                  >TRouteMap</a
+                ><span class="tsd-signature-symbol">&gt;</span> =
+                <span class="tsd-signature-type"
+                  >DefaultTransitionRouteContract</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#troutemap"
+                  >TRouteMap</a
+                ><span class="tsd-signature-symbol">&gt;</span></span
+              >
+            </li>
+          </ul>
         </section>
         <section class="tsd-panel-group tsd-index-group">
           <section class="tsd-panel tsd-index-panel">
@@ -207,15 +248,6 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>entering</span></a
-                    >
-                    <a href="#error" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>error</span></a
                     >
                     <a href="#exiting" class="tsd-index-link"
                       ><svg
@@ -615,63 +647,6 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="error">
-                <span>error</span
-                ><a href="#error" aria-label="Permalink" class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div class="tsd-signature tsd-anchor-link" id="error-1">
-                    <span class="tsd-kind-call-signature">error</span
-                    ><span class="tsd-signature-symbol">()</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="Rejection.html"
-                      class="tsd-signature-type tsd-kind-class"
-                      >Rejection</a
-                    >
-                    <span class="tsd-signature-symbol">|</span>
-                    <span class="tsd-signature-type">undefined</span
-                    ><a
-                      href="#error-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>The Transition error reason.</p>
-                      <p>
-                        If the transition is invalid (and could not be run),
-                        returns the reason the transition is invalid. If the
-                        transition was valid and ran, but was not successful,
-                        returns the reason the transition failed.
-                      </p>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="Rejection.html"
-                        class="tsd-signature-type tsd-kind-class"
-                        >Rejection</a
-                      >
-                      <span class="tsd-signature-symbol">|</span>
-                      <span class="tsd-signature-type">undefined</span>
-                    </h4>
-                    <p>
-                      a transition rejection explaining why the transition is
-                      invalid, or the reason the transition failed.
-                    </p>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="exiting">
                 <span>exiting</span
                 ><a
@@ -831,13 +806,27 @@
                     ><span class="tsd-signature-symbol">(</span
                     ><span class="tsd-kind-parameter">pathname</span
                     ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">string</span
+                    <span class="tsd-signature-type">&quot;to&quot;</span
                     ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a
-                      href="../types/RawParams.html"
+                      href="../types/ParamsOf.html"
                       class="tsd-signature-type tsd-kind-type-alias"
-                      >RawParams</a
+                      >ParamsOf</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#troutemap"
+                      >TRouteMap</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#troutes"
+                      >TRoutes</a
+                    ><span class="tsd-signature-symbol">[</span
+                    ><span class="tsd-signature-type">&quot;to&quot;</span
+                    ><span class="tsd-signature-symbol">]</span
+                    ><span class="tsd-signature-symbol">&gt;</span
                     ><a
                       href="#params-1"
                       aria-label="Permalink"
@@ -852,11 +841,139 @@
                       <ul class="tsd-parameter-list">
                         <li>
                           <span
+                            ><code class="tsd-tag">Optional</code
                             ><span class="tsd-kind-parameter">pathname</span>:
-                            <span class="tsd-signature-type">string</span
-                            ><span class="tsd-signature-symbol">
-                              = &quot;to&quot;</span
+                            <span class="tsd-signature-type"
+                              >&quot;to&quot;</span
                             ></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a
+                        href="../types/ParamsOf.html"
+                        class="tsd-signature-type tsd-kind-type-alias"
+                        >ParamsOf</a
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#troutemap"
+                        >TRouteMap</a
+                      ><span class="tsd-signature-symbol">,</span>
+                      <a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#troutes"
+                        >TRoutes</a
+                      ><span class="tsd-signature-symbol">[</span
+                      ><span class="tsd-signature-type">&quot;to&quot;</span
+                      ><span class="tsd-signature-symbol">]</span
+                      ><span class="tsd-signature-symbol">&gt;</span>
+                    </h4>
+                  </div>
+                </li>
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="params-2">
+                    <span class="tsd-kind-call-signature">params</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">pathname</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">&quot;from&quot;</span
+                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../types/ParamsOf.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >ParamsOf</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#troutemap"
+                      >TRouteMap</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#troutes"
+                      >TRoutes</a
+                    ><span class="tsd-signature-symbol">[</span
+                    ><span class="tsd-signature-type">&quot;from&quot;</span
+                    ><span class="tsd-signature-symbol">]</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><a
+                      href="#params-2"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">pathname</span>:
+                            <span class="tsd-signature-type"
+                              >&quot;from&quot;</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a
+                        href="../types/ParamsOf.html"
+                        class="tsd-signature-type tsd-kind-type-alias"
+                        >ParamsOf</a
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#troutemap"
+                        >TRouteMap</a
+                      ><span class="tsd-signature-symbol">,</span>
+                      <a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="#troutes"
+                        >TRoutes</a
+                      ><span class="tsd-signature-symbol">[</span
+                      ><span class="tsd-signature-type">&quot;from&quot;</span
+                      ><span class="tsd-signature-symbol">]</span
+                      ><span class="tsd-signature-symbol">&gt;</span>
+                    </h4>
+                  </div>
+                </li>
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="params-3">
+                    <span class="tsd-kind-call-signature">params</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">pathname</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../types/RawParams.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >RawParams</a
+                    ><a
+                      href="#params-3"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">pathname</span>:
+                            <span class="tsd-signature-type">string</span></span
                           >
                         </li>
                       </ul>
@@ -1328,14 +1445,6 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>entering</span></a
-                  ><a href="#error"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>error</span></a
                   ><a href="#exiting"
                     ><svg
                       class="tsd-kind-icon"

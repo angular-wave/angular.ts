@@ -136,9 +136,18 @@
           <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
+            href="#policy"
+            >policy</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <a
+            href="../types/RestCachePolicy.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >RestCachePolicy</a
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
             href="#strategy"
             >strategy</a
-          ><span class="tsd-signature-symbol">:</span>
+          ><span class="tsd-signature-symbol">?:</span>
           <a
             href="../types/RestCacheStrategy.html"
             class="tsd-signature-type tsd-kind-type-alias"
@@ -194,6 +203,15 @@
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>on<wbr />Revalidate?</span></a
                     >
+                    <a href="#policy" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>policy?</span></a
+                    >
                     <a href="#strategy" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -201,7 +219,7 @@
                         aria-label="Property"
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>strategy</span></a
+                      ><span>strategy?</span></a
                     >
                   </div>
                 </section>
@@ -303,8 +321,35 @@
               </div>
             </section>
             <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="policy">
+                <code class="tsd-tag">Optional</code><span>policy</span
+                ><a
+                  href="#policy"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">policy</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <a
+                  href="../types/RestCachePolicy.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >RestCachePolicy</a
+                >
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Runtime policy used to choose the read strategy for each
+                  cacheable request.
+                </p>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="strategy">
-                <span>strategy</span
+                <code class="tsd-tag">Optional</code><span>strategy</span
                 ><a
                   href="#strategy"
                   aria-label="Permalink"
@@ -315,7 +360,7 @@
               </h3>
               <div class="tsd-signature">
                 <span class="tsd-kind-property">strategy</span
-                ><span class="tsd-signature-symbol">:</span>
+                ><span class="tsd-signature-symbol">?:</span>
                 <a
                   href="../types/RestCacheStrategy.html"
                   class="tsd-signature-type tsd-kind-type-alias"
@@ -323,7 +368,7 @@
                 >
               </div>
               <div class="tsd-comment tsd-typography">
-                <p>Read strategy used for cacheable GET requests.</p>
+                <p>Default read strategy used for cacheable GET requests.</p>
               </div>
             </section>
           </section>
@@ -513,6 +558,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>on<wbr />Revalidate</span></a
+                  ><a href="#policy"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>policy</span></a
                   ><a href="#strategy"
                     ><svg
                       class="tsd-kind-icon"

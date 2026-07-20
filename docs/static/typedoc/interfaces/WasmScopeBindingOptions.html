@@ -107,15 +107,10 @@
           <span class="tsd-signature-type">boolean</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
-            href="#name"
-            >name</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-property"
             href="#watch"
             >watch</a
           ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-keyword">readonly</span>
           <span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">[]</span
           ><span class="tsd-signature-symbol">;</span><br /><span
@@ -123,29 +118,6 @@
             >}</span
           >
         </div>
-        <section class="tsd-panel tsd-hierarchy" data-refl="3705">
-          <h4>
-            Hierarchy (<a href="../hierarchy.html#WasmScopeBindingOptions"
-              >View Summary</a
-            >)
-          </h4>
-          <ul class="tsd-hierarchy">
-            <li class="tsd-hierarchy-item">
-              <a
-                href="WasmScopeOptions.html"
-                class="tsd-signature-type tsd-kind-interface"
-                >WasmScopeOptions</a
-              >
-              <ul class="tsd-hierarchy">
-                <li class="tsd-hierarchy-item">
-                  <span class="tsd-hierarchy-target"
-                    >WasmScopeBindingOptions</span
-                  >
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </section>
         <section class="tsd-panel-group tsd-index-group">
           <section class="tsd-panel tsd-index-panel">
             <details class="tsd-index-content tsd-accordion" open>
@@ -173,15 +145,6 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>initial?</span></a
-                    >
-                    <a href="#name" class="tsd-index-link tsd-is-inherited"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Property"
-                      >
-                        <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>name?</span></a
                     >
                     <a href="#watch" class="tsd-index-link"
                       ><svg
@@ -230,39 +193,10 @@
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Emit the current value immediately when registering each
-                  watched path.
+                  Emit the current value for each watched path. Defaults to
+                  <code>true</code>.
                 </p>
               </div>
-            </section>
-            <section class="tsd-panel tsd-member tsd-is-inherited">
-              <h3 class="tsd-anchor-link" id="name">
-                <code class="tsd-tag">Optional</code><span>name</span
-                ><a href="#name" aria-label="Permalink" class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <div class="tsd-signature">
-                <span class="tsd-kind-property">name</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">string</span>
-              </div>
-              <div class="tsd-comment tsd-typography">
-                <p>
-                  Stable name exposed to Wasm clients. Defaults to
-                  <code>$scopename</code> or <code>$id</code>.
-                </p>
-              </div>
-              <aside class="tsd-sources">
-                <p>
-                  Inherited from
-                  <a href="WasmScopeOptions.html">WasmScopeOptions</a>.<a
-                    href="WasmScopeOptions.html#name"
-                    >name</a
-                  >
-                </p>
-              </aside>
             </section>
             <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="watch">
@@ -275,13 +209,14 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">watch</span
                 ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-keyword">readonly</span>
                 <span class="tsd-signature-type">string</span
                 ><span class="tsd-signature-symbol">[]</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Scope paths that should emit
-                  <code>ng_scope_on_update</code> callbacks.
+                  Scope paths included in
+                  <code>ng_scope_on_transaction</code> callbacks.
                 </p>
               </div>
             </section>
@@ -456,14 +391,6 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>initial</span></a
-                  ><a href="#name" class="tsd-is-inherited"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Property"
-                    >
-                      <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>name</span></a
                   ><a href="#watch"
                     ><svg
                       class="tsd-kind-icon"

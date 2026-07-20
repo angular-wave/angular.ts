@@ -8,11 +8,10 @@ AngularTS has two routing layers. `$location` manages the browser URL and histor
 
 Exact routing API signatures live in TypeDoc:
 
-- [`StateService`](../../../typedoc/classes/StateProvider.html)
+- [`StateService`](../../../typedoc/interfaces/StateService.html)
 - [`StateDeclaration`](../../../typedoc/interfaces/StateDeclaration.html)
 - [`TransitionOptions`](../../../typedoc/interfaces/TransitionOptions.html)
 - [`Location`](../../../typedoc/classes/Location.html)
-- [`LocationProvider`](../../../typedoc/classes/LocationProvider.html)
 
 ## Work With The URL
 
@@ -39,17 +38,18 @@ Changes to `$location` are applied asynchronously. `$locationChangeStart` and `$
 
 ## Configure URL Mode
 
-Configure `$locationProvider` before the application runs.
+Configure `$location` before the application runs.
 
 ```typescript
-angular.module("demo", []).config(($locationProvider: ng.LocationProvider) => {
-  $locationProvider.html5Mode({
-    enabled: true,
-    requireBase: false,
-    rewriteLinks: true,
-  });
-
-  $locationProvider.hashPrefix("!");
+angular.module("demo", []).config({
+  $location: {
+    html5Mode: {
+      enabled: true,
+      requireBase: false,
+      rewriteLinks: true,
+    },
+    hashPrefix: "!",
+  },
 });
 ```
 
@@ -86,14 +86,15 @@ const absolute = $state.href(
 
 ## Check Active States
 
-Use `is()` for exact matches and `includes()` for ancestors or glob patterns.
+Use `matches()` for ancestors or glob patterns and pass `exact` when only the
+current state should match.
 
 ```typescript
-$state.is("contacts.detail");
-$state.is("contacts.detail", { id: 42 });
+$state.matches("contacts.detail", undefined, { exact: true });
+$state.matches("contacts.detail", { id: 42 }, { exact: true });
 
-$state.includes("contacts");
-$state.includes("*.detail");
+$state.matches("contacts");
+$state.matches("*.detail");
 ```
 
 These helpers are useful for active navigation styling and conditional UI.

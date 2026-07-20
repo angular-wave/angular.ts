@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="module" src="/src/auto.ts"></script>
+    <script type="module" src="./scroll-focus.js"></script>
+    <style>
+      body {
+        margin: 0;
+        min-height: 1800px;
+        font-family: system-ui, sans-serif;
+      }
+
+      main {
+        padding: 24px;
+      }
+
+      .spacer {
+        height: 900px;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="routing-scroll-focus-app" ng-controller="ScrollFocusCtrl">
+      <h1>Router scroll and focus demo</h1>
+
+      <p>Current state: <b id="current-state">{{currentState}}</b></p>
+
+      <ng-view></ng-view>
+
+      <div class="spacer" aria-hidden="true"></div>
+    </main>
+  </body>
+</html>

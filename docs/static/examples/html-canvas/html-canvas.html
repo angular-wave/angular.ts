@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script type="module" src="./html-canvas.js"></script>
+  </head>
+  <body ng-app="htmlCanvasDemo">
+    <section ng-controller="HtmlCanvasDemoCtrl as vm">
+      <canvas
+        id="canvas"
+        width="638"
+        height="318"
+        layoutsubtree="true"
+        ng-if="vm.supported"
+        ng-html-canvas
+      >
+        <div
+          id="draw_element"
+          style="width: 578px"
+          ng-html-canvas-source
+          x="30"
+          y="18"
+        >
+          <form id="demo-form" action="#" method="get">
+            <fieldset>
+              <legend>Spaceship Control Panel</legend>
+              <p>
+                <label for="shipName">Ship Name:</label>
+                <input
+                  type="text"
+                  id="shipName"
+                  ng-model="vm.ship.name"
+                  data-testid="ship-input"
+                />
+              </p>
+              <p>
+                <input
+                  type="checkbox"
+                  id="hyperdrive"
+                  ng-model="vm.ship.hyperdrive"
+                />
+                <label for="hyperdrive">Engage Hyperdrive</label>
+              </p>
+              <fieldset>
+                <legend>Target System</legend>
+                <p>
+                  <input
+                    type="radio"
+                    id="alpha"
+                    name="system"
+                    value="alpha"
+                    ng-model="vm.ship.system"
+                  />
+                  <label for="alpha">Alpha Centauri</label>
+                </p>
+                <p>
+                  <input
+                    type="radio"
+                    id="beta"
+                    name="system"
+                    value="beta"
+                    ng-model="vm.ship.system"
+                  />
+                  <label for="beta">Betelgeuse</label>
+                </p>
+              </fieldset>
+              <p>
+                <label for="shieldLevel">Shield Strength:</label>
+                <input
+                  type="range"
+                  id="shieldLevel"
+                  min="0"
+                  max="100"
+                  ng-model="vm.ship.shield"
+                />
+              </p>
+              <p style="text-align: right; margin: 0">
+                <button type="submit">Launch</button>
+              </p>
+            </fieldset>
+          </form>
+        </div>
+      </canvas>
+
+      <p data-testid="ship-name">{{ vm.ship.name }}</p>
+      <p data-testid="html-canvas-status">{{ vm.status }}</p>
+    </section>
+
+    <section ng-controller="HtmlCanvasPolicyDemoCtrl as vm">
+      <canvas
+        width="420"
+        height="220"
+        layoutsubtree="true"
+        ng-if="vm.supported"
+        ng-html-canvas
+      >
+        <div style="width: 360px" ng-html-canvas-source data-x="24" data-y="16">
+          <form action="#" method="post" ng-submit="vm.approve()">
+            <fieldset>
+              <legend>Restricted Operation</legend>
+              <p>
+                <label for="approvalCode">Approval Code:</label>
+                <input
+                  id="approvalCode"
+                  type="text"
+                  ng-model="vm.request.approvalCode"
+                  data-testid="approval-code"
+                />
+              </p>
+              <p>
+                <button
+                  type="button"
+                  ng-click="vm.approve()"
+                  data-testid="approve-action"
+                >
+                  Approve
+                </button>
+              </p>
+            </fieldset>
+          </form>
+        </div>
+      </canvas>
+
+      <form
+        action="#"
+        method="post"
+        ng-if="!vm.supported"
+        ng-submit="vm.approve()"
+      >
+        <fieldset>
+          <legend>Restricted Operation</legend>
+          <p>
+            <label for="approvalCodeFallback">Approval Code:</label>
+            <input
+              id="approvalCodeFallback"
+              type="text"
+              ng-model="vm.request.approvalCode"
+              data-testid="approval-code"
+            />
+          </p>
+          <p>
+            <button
+              type="button"
+              ng-click="vm.approve()"
+              data-testid="approve-action"
+            >
+              Approve
+            </button>
+          </p>
+        </fieldset>
+      </form>
+
+      <p data-testid="policy-status">{{ vm.status }}</p>
+      <p data-testid="policy-mode">{{ vm.policy.interaction }}</p>
+    </section>
+  </body>
+</html>

@@ -1,5 +1,5 @@
 ---
 title: $interpolate
 description: >
-  HTTP service
+  Compile interpolation text into reusable expression functions.
 ---

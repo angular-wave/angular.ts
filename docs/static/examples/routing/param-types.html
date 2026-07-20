@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="module" src="/src/auto.ts"></script>
+    <script type="module" src="./param-types.js"></script>
+  </head>
+  <body>
+    <main id="routing-param-types-app">
+      <h1>Router param type demo</h1>
+
+      <p>Generated href: <b id="generated-href">pending</b></p>
+      <p>Current state: <b id="current-state">none</b></p>
+      <p>Current slug: <b id="current-slug">none</b></p>
+
+      <nav>
+        <a id="encoded-link" href="">Open encoded item</a>
+      </nav>
+
+      <ng-view></ng-view>
+    </main>
+  </body>
+</html>

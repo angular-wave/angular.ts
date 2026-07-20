@@ -40,10 +40,29 @@ angular.module('app').controller(
 );
 ```
 
-Cookie behavior can be customized globally using
-[`$cookieProvider.defaults`](../../../docs/provider/cookieprovider/#cookieproviderdefaults).
-Cookies are limited to roughly 4 KB, including key and value, so void storing
+Cookie behavior can be customized globally with
+`module.config({ $cookie: ... })`.
+
+```js
+angular.module("app", []).config({
+  $cookie: {
+    defaults: {
+      path: "/",
+      secure: true,
+      samesite: "Lax",
+    },
+  },
+});
+```
+
+Defaults are merged into `$cookie.put()`, `$cookie.putObject()`, and
+`$cookie.remove()` calls. Per-call options still override configured defaults.
+
+Cookies are limited to roughly 4 KB, including key and value, so avoid storing
 large objects; prefer identifiers or short tokens.
+
+Executable sample:
+[`log-cookie.html`](/examples/config/log-cookie.html)
 
 For detailed method description, see
 [CookieService](../../../typedoc/classes/CookieService.html)
