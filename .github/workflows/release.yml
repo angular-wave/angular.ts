@@ -40,6 +40,10 @@ jobs:
           registry-url: https://registry.npmjs.org/
           package-manager-cache: false
 
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "3.6"
+
       - name: Install trusted-publishing npm version
         run: npm install --global npm@11.18.0
 
