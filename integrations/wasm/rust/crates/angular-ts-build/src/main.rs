@@ -147,13 +147,18 @@ fn manifest_bootstrap_js(manifest: &AngularTsManifest) -> Result<String, String>
 
     Ok(format!(
         r#"import {{ angular }} from "@angular-wave/angular.ts";
-import {{ WasmScopeAbi }} from "@angular-wave/angular.ts/services/wasm";
+import {{ WasmAbi }} from "@angular-wave/angular.ts/services/wasm";
 import init, * as app from {package_path};
 
-const scopeAbi = new WasmScopeAbi();
+const scopeAbi = WasmAbi.create();
 globalThis.__angularTsWasmScopeAbi = scopeAbi;
 const wasmExports = await init();
 scopeAbi.attach(wasmExports);
+globalThis.__angularTsWasmConformance = {{
+  abi: scopeAbi,
+  exports: wasmExports,
+  ready: Promise.resolve(),
+}};
 
 const requireExport = (name) => {{
   const value = app[name];
@@ -610,7 +615,12 @@ fn write_scope_abi_module(bootstrap_path: &Path) -> Result<(), String> {
     };
 
     let abi_path = out_dir.join("abi.js");
-    let source = r#"const imports = () => {
+    fs::write(&abi_path, scope_abi_module_source())
+        .map_err(|error| format!("failed to write `{}`: {error}", abi_path.display()))
+}
+
+fn scope_abi_module_source() -> &'static str {
+    r#"const imports = () => {
   const abi = globalThis.__angularTsWasmScopeAbi;
 
   if (!abi?.imports?.angular_ts) {
@@ -624,40 +634,42 @@ export const scope_resolve = (namePtr, nameLen) =>
   imports().scope_resolve(namePtr, nameLen);
 export const scope_get = (scopeHandle, pathPtr, pathLen) =>
   imports().scope_get(scopeHandle, pathPtr, pathLen);
-export const scope_get_named = (namePtr, nameLen, pathPtr, pathLen) =>
-  imports().scope_get_named(namePtr, nameLen, pathPtr, pathLen);
 export const scope_set = (scopeHandle, pathPtr, pathLen, valuePtr, valueLen) =>
   imports().scope_set(scopeHandle, pathPtr, pathLen, valuePtr, valueLen);
-export const scope_set_named = (
-  namePtr,
-  nameLen,
+export const scope_apply = (scopeHandle, transactionPtr, transactionLen) =>
+  imports().scope_apply(scopeHandle, transactionPtr, transactionLen);
+export const scope_get_binary = (scopeHandle, pathPtr, pathLen) =>
+  imports().scope_get_binary(scopeHandle, pathPtr, pathLen);
+export const scope_set_binary = (
+  scopeHandle,
   pathPtr,
   pathLen,
   valuePtr,
   valueLen,
-) => imports().scope_set_named(namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen);
+  optionsPtr,
+  optionsLen,
+) => imports().scope_set_binary(
+  scopeHandle,
+  pathPtr,
+  pathLen,
+  valuePtr,
+  valueLen,
+  optionsPtr,
+  optionsLen,
+);
 export const scope_delete = (scopeHandle, pathPtr, pathLen) =>
   imports().scope_delete(scopeHandle, pathPtr, pathLen);
-export const scope_delete_named = (namePtr, nameLen, pathPtr, pathLen) =>
-  imports().scope_delete_named(namePtr, nameLen, pathPtr, pathLen);
 export const scope_sync = (scopeHandle) => imports().scope_sync(scopeHandle);
-export const scope_sync_named = (namePtr, nameLen) =>
-  imports().scope_sync_named(namePtr, nameLen);
 export const scope_watch = (scopeHandle, pathPtr, pathLen) =>
   imports().scope_watch(scopeHandle, pathPtr, pathLen);
-export const scope_watch_named = (namePtr, nameLen, pathPtr, pathLen) =>
-  imports().scope_watch_named(namePtr, nameLen, pathPtr, pathLen);
 export const scope_unwatch = (watchHandle) => imports().scope_unwatch(watchHandle);
 export const scope_unbind = (scopeHandle) => imports().scope_unbind(scopeHandle);
-export const scope_unbind_named = (namePtr, nameLen) =>
-  imports().scope_unbind_named(namePtr, nameLen);
 export const buffer_ptr = (bufferHandle) => imports().buffer_ptr(bufferHandle);
 export const buffer_len = (bufferHandle) => imports().buffer_len(bufferHandle);
 export const buffer_free = (bufferHandle) => imports().buffer_free(bufferHandle);
-"#;
-
-    fs::write(&abi_path, source)
-        .map_err(|error| format!("failed to write `{}`: {error}", abi_path.display()))
+export const error_code = () => imports().error_code();
+export const error_clear = () => imports().error_clear();
+"#
 }
 
 fn patch_wasm_bindgen_import(bootstrap_path: &Path, package_path: &str) -> Result<(), String> {
@@ -1310,7 +1322,7 @@ mod tests {
         let source = manifest_bootstrap_js(&manifest).unwrap();
 
         assert!(source.contains("import { angular }"));
-        assert!(source.contains("import { WasmScopeAbi }"));
+        assert!(source.contains("import { WasmAbi }"));
         assert!(source.contains("globalThis.__angularTsWasmScopeAbi = scopeAbi;"));
         assert!(source.contains("const readBridgeMetadata = (registration) =>"));
         assert!(source.contains("app[`${exportName}_bridgeMetadata`]"));
@@ -1321,6 +1333,35 @@ mod tests {
             controller_bridge_snapshot(&source),
         );
         assert_snapshot("registrations.snapshot.js", registrations_snapshot(&source));
+    }
+
+    #[test]
+    fn scope_abi_adapter_covers_every_v3_host_import() {
+        let source = scope_abi_module_source();
+
+        for name in [
+            "scope_resolve",
+            "scope_get",
+            "scope_set",
+            "scope_apply",
+            "scope_get_binary",
+            "scope_set_binary",
+            "scope_delete",
+            "scope_sync",
+            "scope_watch",
+            "scope_unwatch",
+            "scope_unbind",
+            "buffer_ptr",
+            "buffer_len",
+            "buffer_free",
+            "error_code",
+            "error_clear",
+        ] {
+            assert!(
+                source.contains(&format!("export const {name}")),
+                "missing adapter export for {name}"
+            );
+        }
     }
 
     #[test]

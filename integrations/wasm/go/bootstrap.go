@@ -58,7 +58,7 @@ func GenerateBootstrap(config BootstrapConfig) (string, error) {
 	out.WriteString("import { angular } from ")
 	out.WriteString(jsString(config.AngularImport))
 	out.WriteString(";\n")
-	out.WriteString("import { WasmScopeAbi } from ")
+	out.WriteString("import { WasmAbi } from ")
 	out.WriteString(jsString(config.WasmScopeAbiImport))
 	out.WriteString(";\n")
 	out.WriteString("import { GoWasmScopeAbi } from ")
@@ -76,7 +76,7 @@ func GenerateBootstrap(config BootstrapConfig) (string, error) {
 	out.WriteString("const manifest = ")
 	out.Write(manifestJSON)
 	out.WriteString(";\n\n")
-	out.WriteString(`const scopeAbi = new WasmScopeAbi();
+	out.WriteString(`const scopeAbi = WasmAbi.create();
 const goScopeAbi = new GoWasmScopeAbi(scopeAbi);
 
 globalThis.__angularTsGoWasmScopeAbi = goScopeAbi;
@@ -97,6 +97,16 @@ const result = await WebAssembly.instantiateStreaming(
 const exports = result.instance.exports;
 
 goScopeAbi.attach(exports);
+globalThis.__angularTsWasmConformance = {
+  abi: scopeAbi,
+  capabilities: { guestAllocation: false },
+  exports: {
+    ...exports,
+    memory: exports.memory || exports.mem,
+    ng_abi_version: () => 3,
+  },
+  ready: goReady,
+};
 
 void go.run(result.instance);
 await goReady;

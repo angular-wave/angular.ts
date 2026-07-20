@@ -54,16 +54,17 @@ func TestScopeGetDecodesJSONAndFreesBuffer(t *testing.T) {
 	}
 }
 
-func TestNamedScopeUsesNameBasedImports(t *testing.T) {
+func TestResolveScopeUsesHandleImports(t *testing.T) {
 	resetHostStub()
+	hostStub.resolveName["todoList:main"] = 14
 
-	if err := Named("todoList:main").Set("count", 3); err != nil {
+	if err := ResolveScope("todoList:main").Set("count", 3); err != nil {
 		t.Fatalf("Set returned error: %v", err)
 	}
 
 	call := hostStub.setCalls[0]
-	if call.ScopeName != "todoList:main" || call.Path != "count" || call.Value != "3" {
-		t.Fatalf("unexpected named set call: %#v", call)
+	if call.ScopeHandle != 14 || call.Path != "count" || call.Value != "3" {
+		t.Fatalf("unexpected resolved set call: %#v", call)
 	}
 }
 
@@ -78,9 +79,8 @@ func TestWatchDispatchesUpdates(t *testing.T) {
 		t.Fatal("expected watch handle")
 	}
 
-	path := []byte("count")
-	value := []byte("4")
-	ngScopeOnUpdate(9, bytesPointer(path), uint32(len(path)), bytesPointer(value), uint32(len(value)))
+	transaction := []byte(`{"set":{"count":4}}`)
+	ngScopeOnTransaction(9, bytesPointer(transaction), uint32(len(transaction)))
 
 	if got.ScopeHandle != 9 || got.Path != "count" || string(got.JSON) != "4" {
 		t.Fatalf("unexpected update: %#v", got)
@@ -147,11 +147,12 @@ func TestWasmBoundaryTypesMirrorScopeFacade(t *testing.T) {
 	bindingOptions := WasmScopeBindingOptions{Name: "todoList:main"}
 	imports := WasmScopeAbiImports{Module: "angular_ts"}
 	exports := WasmAbiExports{
-		Alloc:         "ng_abi_alloc",
-		Free:          "ng_abi_free",
-		OnScopeBind:   "ng_scope_on_bind",
-		OnScopeUnbind: "ng_scope_on_unbind",
-		OnScopeUpdate: "ng_scope_on_update",
+		Version:            "ng_abi_version",
+		Alloc:              "ng_abi_alloc",
+		Free:               "ng_abi_free",
+		OnScopeBind:        "ng_scope_on_bind",
+		OnScopeUnbind:      "ng_scope_on_unbind",
+		OnScopeTransaction: "ng_scope_on_transaction",
 	}
 
 	if reference.Handle != 12 || reference.Name != "todoList:main" {
@@ -163,7 +164,9 @@ func TestWasmBoundaryTypesMirrorScopeFacade(t *testing.T) {
 	if watchOptions.Path != "count" || bindingOptions.Name != "todoList:main" {
 		t.Fatalf("unexpected scope options")
 	}
-	if imports.Module != "angular_ts" || exports.Alloc != "ng_abi_alloc" {
+	if imports.Module != "angular_ts" ||
+		exports.Version != "ng_abi_version" ||
+		exports.Alloc != "ng_abi_alloc" {
 		t.Fatalf("unexpected abi metadata: %#v %#v", imports, exports)
 	}
 }

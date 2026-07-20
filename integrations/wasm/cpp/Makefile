@@ -34,11 +34,12 @@ wasm-build:
 	$(ZIG) c++ -target wasm32-wasi -D__wasm__ -Iinclude \
 		-fno-exceptions -fno-rtti \
 		-Wl,--no-entry \
+		-Wl,--export=ng_abi_version \
 		-Wl,--export=ng_abi_alloc \
 		-Wl,--export=ng_abi_free \
 		-Wl,--export=ng_scope_on_bind \
 		-Wl,--export=ng_scope_on_unbind \
-		-Wl,--export=ng_scope_on_update \
+		-Wl,--export=ng_scope_on_transaction \
 		-Wl,--export=todo_bind \
 		-Wl,--export=todo_add \
 		-Wl,--export=todo_toggle \

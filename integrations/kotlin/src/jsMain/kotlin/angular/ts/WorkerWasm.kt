@@ -1,29 +1,56 @@
 package angular.ts
 
-import angular.ts.generated.WasmScope as RawWasmScope
-import angular.ts.generated.WasmScopeAbi as RawWasmScopeAbi
+import angular.ts.generated.Scope as RawScope
+import angular.ts.generated.WorkerHandle as RawWorkerHandle
+import angular.ts.generated.WasmBinding as RawWasmBinding
+import angular.ts.generated.WasmError as RawWasmError
+import angular.ts.generated.WasmResource as RawWasmResource
 import angular.ts.generated.WasmService as RawWasmService
-import angular.ts.generated.WorkerConnection as RawWorkerConnection
+import kotlin.js.Promise
 
 public data class WorkerConfig public constructor(
-    public val onMessage: ((Any?, Any?) -> Unit)? = null,
-    public val onError: ((Any?) -> Unit)? = null,
-    public val autoRestart: Boolean? = null,
-    public val autoTerminate: Boolean? = null,
-    public val transformMessage: ((Any?) -> Any?)? = null,
-    public val logger: LogService? = null,
-    public val err: ExceptionHandlerService? = null,
+    public val type: String? = null,
+    public val name: String? = null,
+    public val credentials: String? = null,
+    public val restart: Boolean? = null,
+    public val restartDelay: Double? = null,
+    public val maxRestarts: Int? = null,
+    public val decode: ((Any?) -> Any?)? = null,
 )
 
-public class WorkerConnection internal constructor(
-    internal val raw: RawWorkerConnection,
+public class WorkerHandle internal constructor(
+    internal val raw: RawWorkerHandle<Any?, Any?>,
 ) {
-    public val config: Any?
-        get() = raw.config
+    public val status: String
+        get() = raw.status.unsafeCast<String>()
 
-    public fun post(data: Any?) {
-        raw.post(data)
+    public val error: Any?
+        get() = raw.error
+
+    public val restartCount: Int
+        get() = raw.restartCount.toInt()
+
+    public fun post(data: Any?, transfer: Array<Any?> = emptyArray()) {
+        raw.post(data, transfer)
     }
+
+    public fun request(
+        data: Any?,
+        timeout: Double? = null,
+    ): Promise<Any?> {
+        val options = js("({})")
+
+        if (timeout != null) options.timeout = timeout
+        return raw.asDynamic().request(data, options).unsafeCast<Promise<Any?>>()
+    }
+
+    public fun model(channel: String = "default"): dynamic = raw.asDynamic().model(channel)
+
+    public fun onMessage(listener: (Any?, Any?) -> Unit): () -> Unit =
+        raw.asDynamic().onMessage(listener).unsafeCast<() -> Unit>()
+
+    public fun onError(listener: (Any?) -> Unit): () -> Unit =
+        raw.asDynamic().onError(listener).unsafeCast<() -> Unit>()
 
     public fun terminate() {
         raw.terminate()
@@ -40,153 +67,122 @@ public class WorkerService internal constructor(
     public operator fun invoke(
         scriptPath: String,
         config: WorkerConfig = WorkerConfig(),
-    ): WorkerConnection =
-        WorkerConnection(callJsFunction(raw, null, arrayOf(scriptPath, config.toJs())).unsafeCast<RawWorkerConnection>())
+    ): WorkerHandle =
+        WorkerHandle(
+            callJsFunction(raw, null, arrayOf(scriptPath, config.toJs()))
+                .unsafeCast<RawWorkerHandle<Any?, Any?>>(),
+        )
 }
-
-public class WorkerProvider internal constructor(
-    internal val raw: dynamic,
-)
 
 public data class WorkerRegistration public constructor(
     public val scriptPath: String,
     public val config: WorkerConfig = WorkerConfig(),
 )
 
-public data class WasmOptions public constructor(
-    public val raw: Boolean = false,
-    public val extra: Map<String, Any?> = emptyMap(),
-)
-
-public data class WasmRegistration public constructor(
+public data class WasmLoadOptions public constructor(
     public val source: String,
     public val imports: Map<String, Any?> = emptyMap(),
-    public val options: WasmOptions = WasmOptions(),
+    public val compile: WasmCompileOptions? = null,
+    public val diagnostics: Boolean = false,
 )
 
-public typealias WasmAbiExports = Any
-
-public data class WasmInstantiationResult public constructor(
-    public val instance: Any?,
-    public val exports: Any?,
-    public val module: Any?,
+public data class WasmCompileOptions public constructor(
+    public val builtins: List<String> = emptyList(),
+    public val importedStringConstants: String? = null,
 )
 
-public data class WasmScopeOptions public constructor(
-    public val name: String? = null,
-)
-
-public typealias WasmScopeReference = Any
-
-public data class WasmScopeUpdate public constructor(
-    public val scopeHandle: Int,
-    public val scopeName: String,
-    public val path: String,
-    public val value: Any?,
-) {
-    internal companion object {
-        internal fun fromJs(raw: dynamic): WasmScopeUpdate =
-            WasmScopeUpdate(
-                scopeHandle = raw.scopeHandle.unsafeCast<Int>(),
-                scopeName = raw.scopeName.unsafeCast<String>(),
-                path = raw.path.unsafeCast<String>(),
-                value = raw.value,
-            )
-    }
-}
-
-public data class WasmScopeBindingOptions public constructor(
+public data class WasmBindingOptions public constructor(
     public val name: String? = null,
     public val watch: List<String> = emptyList(),
     public val initial: Boolean? = null,
 )
 
-public data class WasmScopeWatchOptions public constructor(
-    public val initial: Boolean? = null,
-)
-
-public class WasmScopeAbiImportObject internal constructor(
-    internal val raw: dynamic,
+public enum class WasmErrorCode(
+    public val raw: String,
 ) {
-    public val angularTs: Any?
-        get() = raw.angular_ts
+    Load("load"),
+    Binding("binding"),
+    Disposed("disposed"),
+    UnsupportedAbi("unsupported-abi"),
 }
 
-public class WasmScopeAbiImports internal constructor(
-    internal val raw: dynamic,
+public enum class WasmResourceStatus(
+    public val raw: String,
 ) {
-    public fun scopeResolve(
-        namePtr: Int,
-        nameLen: Int,
-    ): Int =
-        raw.scope_resolve(namePtr, nameLen).unsafeCast<Int>()
-
-    public fun bufferFree(bufferHandle: Int) {
-        raw.buffer_free(bufferHandle)
-    }
+    Loading("loading"),
+    Ready("ready"),
+    Error("error"),
+    Disposed("disposed"),
 }
 
-public class WasmScope internal constructor(
-    internal val raw: RawWasmScope,
+public class WasmError internal constructor(
+    internal val raw: RawWasmError,
 ) {
-    public val abi: Any?
-        get() = raw.abi
+    public val code: WasmErrorCode
+        get() = wasmErrorCode(raw.code)
 
-    public val handle: Int
-        get() = raw.handle.unsafeCast<Int>()
+    public val message: String
+        get() = raw.asDynamic().message.unsafeCast<String>()
 
+    public val source: Any?
+        get() = raw.source
+}
+
+public class WasmBinding<TState : Any> internal constructor(
+    internal val raw: RawWasmBinding<Any?>,
+) {
     public val name: String
-        get() = raw.name
+        get() = raw.name.unsafeCast<String>()
 
-    public val scope: Any?
-        get() = raw.scope
+    public val target: Scope<TState>
+        get() = Scope<TState>(raw.target.unsafeCast<RawScope>())
 
-    public fun isDisposed(): Boolean =
-        raw.isDisposed()
+    public val disposed: Boolean
+        get() = raw.disposed.unsafeCast<Boolean>()
 
-    public fun get(path: String): Any? =
-        raw.get(path)
-
-    public fun set(
-        path: String,
-        value: Any?,
-    ): Boolean =
-        raw.set(path, value)
-
-    public fun delete(path: String): Boolean =
-        raw.delete(path)
-
-    public fun sync() {
-        raw.sync()
+    public fun dispose() {
+        raw.dispose()
     }
+}
 
-    public fun onSync(callback: () -> Unit): () -> Unit {
-        val disposer = raw.onSync(callback)
+public class WasmResource internal constructor(
+    internal val raw: RawWasmResource<Any?>,
+) {
+    public val source: Any?
+        get() = raw.source
 
-        return { callJsFunction(disposer, null, emptyArray()) }
-    }
+    public val status: WasmResourceStatus
+        get() = wasmResourceStatus(raw.status)
 
-    public fun watch(
-        path: String,
-        options: WasmScopeWatchOptions = WasmScopeWatchOptions(),
-        callback: (WasmScopeUpdate) -> Unit,
-    ): () -> Unit {
-        val disposer = raw.watch(
-            path,
-            { update: dynamic -> callback(WasmScopeUpdate.fromJs(update)) },
-            options.toJs(),
-        )
+    public val ready: Promise<WasmResource>
+        get() = raw.ready.unsafeCast<Promise<Any?>>().then { this }
 
-        return { callJsFunction(disposer, null, emptyArray()) }
-    }
+    public val error: WasmError?
+        get() {
+            val value: dynamic = raw.error
 
-    public fun bindExports(
-        exports: WasmAbiExports,
-        options: WasmScopeBindingOptions = WasmScopeBindingOptions(),
-    ): () -> Unit {
-        val disposer = raw.bindExports(exports, options.toJs())
+            return if (value == null) null else WasmError(value.unsafeCast<RawWasmError>())
+        }
 
-        return { callJsFunction(disposer, null, emptyArray()) }
+    public val instance: Any?
+        get() = raw.instance
+
+    public val module: Any?
+        get() = raw.module
+
+    public val exports: dynamic
+        get() = raw.exports
+
+    public val disposed: Boolean
+        get() = raw.disposed.unsafeCast<Boolean>()
+
+    public fun <TState : Any> bind(
+        target: Scope<TState>,
+        options: WasmBindingOptions = WasmBindingOptions(),
+    ): Promise<WasmBinding<TState>> {
+        val promise = raw.bind(target.unsafe, options.toJs()).unsafeCast<Promise<Any?>>()
+
+        return promise.then { WasmBinding<TState>(it.unsafeCast<RawWasmBinding<Any?>>()) }
     }
 
     public fun dispose() {
@@ -194,109 +190,56 @@ public class WasmScope internal constructor(
     }
 }
 
-public class WasmScopeAbi internal constructor(
-    internal val raw: RawWasmScopeAbi,
-) {
-    public val imports: WasmScopeAbiImportObject
-        get() = WasmScopeAbiImportObject(raw.imports)
-
-    public fun attach(exports: WasmAbiExports) {
-        raw.attach(exports)
-    }
-
-    public fun createScope(
-        scope: Scope<*>,
-        options: WasmScopeOptions = WasmScopeOptions(),
-    ): WasmScope =
-        WasmScope(raw.createScope(scope.unsafe, options.toJs()).unsafeCast<RawWasmScope>())
-
-    public fun getScope(reference: WasmScopeReference): WasmScope? {
-        val scope = raw.getScope(reference)
-
-        return if (js("scope == null").unsafeCast<Boolean>()) {
-            null
-        } else {
-            WasmScope(scope.unsafeCast<RawWasmScope>())
-        }
-    }
-
-    public fun unregisterScope(handle: Int): Boolean =
-        raw.unregisterScope(handle.toDouble())
-
-    public fun notifyBind(scope: WasmScope) {
-        raw.notifyBind(scope.raw)
-    }
-
-    public fun notifyUpdate(update: WasmScopeUpdate) {
-        raw.notifyUpdate(update.toJs())
-    }
-
-    public fun notifyUnbind(scope: WasmScope) {
-        raw.notifyUnbind(scope.raw)
-    }
-
-    public fun freeBuffer(bufferHandle: Int) {
-        raw.freeBuffer(bufferHandle.toDouble())
-    }
-}
-
 public class WasmService internal constructor(
     internal val raw: RawWasmService,
 ) {
-    public operator fun invoke(
-        source: String,
-        imports: Map<String, Any?> = emptyMap(),
-        options: WasmOptions = WasmOptions(),
-    ): Any? =
-        callJsFunction(raw, null, arrayOf(source, imports.toJsRecord(), options.toJs()))
-
-    public fun scope(
-        scope: Scope<*>,
-        options: WasmScopeOptions = WasmScopeOptions(),
-    ): WasmScope =
-        WasmScope(raw.scope(scope.unsafe, options.toJs()).unsafeCast<RawWasmScope>())
-
-    public fun createScopeAbi(exports: WasmAbiExports? = null): WasmScopeAbi =
-        WasmScopeAbi(raw.createScopeAbi(exports ?: undefined).unsafeCast<RawWasmScopeAbi>())
+    public fun load(options: WasmLoadOptions): WasmResource =
+        WasmResource(raw.load(options.toJs()).unsafeCast<RawWasmResource<Any?>>())
 }
-
-public class WasmProvider internal constructor(
-    internal val raw: dynamic,
-)
 
 internal fun WorkerConfig.toJs(): dynamic {
     val raw = js("{}")
 
-    if (onMessage != null) raw.onMessage = onMessage
-    if (onError != null) raw.onError = onError
-    if (autoRestart != null) raw.autoRestart = autoRestart
-    if (autoTerminate != null) raw.autoTerminate = autoTerminate
-    if (transformMessage != null) raw.transformMessage = transformMessage
-    if (logger != null) raw.logger = logger.raw
-    if (err != null) raw.err = err.raw
-
+    if (type != null) raw.type = type
+    if (name != null) raw.name = name
+    if (credentials != null) raw.credentials = credentials
+    if (restart != null) raw.restart = restart
+    if (restartDelay != null) raw.restartDelay = restartDelay
+    if (maxRestarts != null) raw.maxRestarts = maxRestarts
+    if (decode != null) raw.decode = decode
     return raw
 }
 
-internal fun WasmOptions.toJs(): dynamic {
-    val options = extra.toJsRecord()
+private fun wasmErrorCode(value: Any?): WasmErrorCode {
+    val raw = value.unsafeCast<String>()
 
-    if (raw) {
-        options.raw = true
-    }
-
-    return options
+    return WasmErrorCode.values().first { code -> code.raw == raw }
 }
 
-private fun WasmScopeOptions.toJs(): dynamic {
+private fun wasmResourceStatus(value: Any?): WasmResourceStatus {
+    val raw = value.unsafeCast<String>()
+
+    return WasmResourceStatus.values().first { status -> status.raw == raw }
+}
+
+internal fun WasmLoadOptions.toJs(): dynamic {
     val raw = js("{}")
 
-    if (name != null) raw.name = name
+    raw.source = source
+    if (imports.isNotEmpty()) raw.imports = imports.toJsRecord()
+    if (compile != null) {
+        raw.compile = js("({})")
+        if (compile.builtins.isNotEmpty()) raw.compile.builtins = compile.builtins.toTypedArray()
+        if (compile.importedStringConstants != null) {
+            raw.compile.importedStringConstants = compile.importedStringConstants
+        }
+    }
+    if (diagnostics) raw.diagnostics = true
 
     return raw
 }
 
-private fun WasmScopeBindingOptions.toJs(): dynamic {
+private fun WasmBindingOptions.toJs(): dynamic {
     val raw = js("{}")
 
     if (name != null) raw.name = name
@@ -305,26 +248,3 @@ private fun WasmScopeBindingOptions.toJs(): dynamic {
 
     return raw
 }
-
-private fun WasmScopeWatchOptions.toJs(): dynamic {
-    val raw = js("{}")
-
-    if (initial != null) raw.initial = initial
-
-    return raw
-}
-
-private fun WasmScopeUpdate.toJs(): dynamic {
-    val raw = js("{}")
-
-    raw.scopeHandle = scopeHandle
-    raw.scopeName = scopeName
-    raw.path = path
-    raw.value = value
-
-    return raw
-}
-
-@Suppress("UNUSED_VARIABLE")
-private val undefined: dynamic =
-    js("undefined")

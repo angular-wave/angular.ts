@@ -763,14 +763,14 @@ function promiseReturnType(type, checker) {
   const aliasName = type.aliasSymbol?.getName();
 
   if (
-    ["Promise", "PromiseLike", "HttpPromise", "TransitionPromise"].includes(symbolName) ||
-    ["Promise", "PromiseLike", "HttpPromise", "TransitionPromise"].includes(aliasName)
+    ["Promise", "PromiseLike", "TransitionPromise"].includes(symbolName) ||
+    ["Promise", "PromiseLike", "TransitionPromise"].includes(aliasName)
   ) {
     return true;
   }
 
   const typeName = checker.typeToString(type);
-  if (/^(Promise|PromiseLike|HttpPromise|TransitionPromise)(<|$)/.test(typeName)) {
+  if (/^(Promise|PromiseLike|TransitionPromise)(<|$)/.test(typeName)) {
     return true;
   }
 

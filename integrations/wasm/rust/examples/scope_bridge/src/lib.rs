@@ -1,9 +1,12 @@
 use angular_ts::{angular_module, component, NgModule};
 
 #[cfg(target_arch = "wasm32")]
-use angular_ts::{wasm_bridge, WasmScope};
+use angular_ts::{wasm_bridge, Field, WasmScope};
+
 #[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+const COUNT: Field<i32> = Field::new("count");
+#[cfg(target_arch = "wasm32")]
+const SOURCE: Field<String> = Field::new("source");
 
 #[derive(Debug, Default)]
 #[component(selector = "scope-probe", template_url = "templates/scope-probe.html")]
@@ -21,6 +24,7 @@ pub fn app(module: &mut NgModule) {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bridge(component = "ScopeProbe")]
 pub struct ScopeProbeController {
+    scope: WasmScope,
     pub count: i32,
     pub seen_count: i32,
     pub source: String,
@@ -29,8 +33,9 @@ pub struct ScopeProbeController {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bridge(component = "ScopeProbe")]
 impl ScopeProbeController {
-    pub fn new(_scope: WasmScope) -> Self {
+    pub fn new(scope: WasmScope) -> Self {
         Self {
+            scope,
             count: 0,
             seen_count: 0,
             source: "constructed".to_string(),
@@ -38,22 +43,26 @@ impl ScopeProbeController {
     }
 
     pub fn increment(&mut self) {
-        self.count += 1;
-        self.seen_count = self.count;
+        let count = self.count + 1;
+        self.publish(count)
+            .expect("typed scope transaction should succeed");
+
+        self.count = count;
+        self.seen_count = count;
         self.source = "rust".to_string();
     }
 
-    #[scope_update(path = "count")]
-    pub fn apply_count_from_scope(&mut self, value: JsValue) {
-        let count = value.as_f64().or_else(|| {
-            value
-                .as_string()
-                .and_then(|value| value.parse::<f64>().ok())
-        });
-        let Some(count) = count.map(|count| count as i32) else {
-            return;
-        };
+    fn publish(&self, count: i32) -> Result<(), angular_ts::WasmError> {
+        self.scope
+            .update()
+            .set(COUNT, count)?
+            .set(SOURCE, "rust".to_string())?
+            .origin("rust")
+            .commit()
+    }
 
+    #[scope_update(path = "count")]
+    pub fn apply_count_from_scope(&mut self, count: i32) {
         if count == self.count {
             return;
         }
@@ -98,12 +107,13 @@ mod tests {
     fn scope_lifecycle_uses_macro_metadata_not_method_names() {
         let source = include_str!("lib.rs");
         let local_controller_registry = concat!("SCOPE", "_PROBE_CONTROLLERS");
-        let local_update_export = concat!("pub extern \"C\" fn ", "ng_scope_on_update");
+        let local_update_export = concat!("pub extern \"C\" fn ", "ng_scope_on_transaction");
         let manual_watch_route = concat!("watch", "_with");
         let count_getter = concat!("pub fn ", "count(&self)");
         let seen_count_getter = concat!("pub fn ", "seen_count(&self)");
         let source_getter = concat!("pub fn ", "source(&self)");
         let manual_scope_set = concat!("scope", ".set(");
+        let untyped_value = concat!("Js", "Value");
 
         assert!(!source.contains(local_controller_registry));
         assert!(!source.contains(local_update_export));
@@ -112,6 +122,7 @@ mod tests {
         assert!(!source.contains(count_getter));
         assert!(!source.contains(seen_count_getter));
         assert!(!source.contains(source_getter));
+        assert!(!source.contains(untyped_value));
         assert!(source.contains("scope_update(path = \"count\")"));
     }
 }

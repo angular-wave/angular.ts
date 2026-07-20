@@ -7,11 +7,8 @@ public object ng {
 
     public fun <T> token(name: String): Token<T> = Token(name)
 
-    public fun injector(
-        modules: List<String>,
-        strictDi: Boolean = false,
-    ): Injector =
-        Injector(angularRuntime.injector(modules.toTypedArray(), strictDi))
+    public fun injector(modules: List<String>): Injector =
+        Injector(angularRuntime.injector(modules.toTypedArray()))
 
     public fun <T> inject0(factory: () -> T): Injectable0<T> =
         Injectable0(factory)

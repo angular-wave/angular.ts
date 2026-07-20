@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectWasmAbiConformance } from "../../abi-conformance.ts";
 
 test("C++ Wasm todo demo updates AngularTS scope through WasmScope", async ({
   page,
@@ -25,6 +26,7 @@ test("C++ Wasm todo demo updates AngularTS scope through WasmScope", async ({
   await page.goto("/integrations/wasm/cpp/examples/todo/");
 
   expect(wasmRequests.length).toBeGreaterThan(0);
+  await expectWasmAbiConformance(page);
 
   const rows = page.locator(".todo-row");
   const input = page.getByLabel("C++ todo title");

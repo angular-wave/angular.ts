@@ -143,7 +143,7 @@ Initial package API:
 
 - `module(name: String) -> NgModule`
 - `module_with_requires(name: String, requires: List(String)) -> NgModule`
-- `bootstrap(root: Element, modules: List(String), config: BootstrapConfig)`
+- `bootstrap(root: Element, modules: List(String))`
 - `token.new(name: String) -> Token(a)`
 - `component.new(...) -> Component(controller)`
 - `directive.new(...) -> Directive(scope)`

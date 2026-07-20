@@ -1,5 +1,4 @@
 import angular_ts as ng
-import angular_ts/bootstrap
 import angular_ts/component
 import angular_ts/cookie
 import angular_ts/filters
@@ -8,6 +7,8 @@ import angular_ts/injectable
 import angular_ts/injection_tokens
 import angular_ts/storage
 import angular_ts/token
+import angular_ts/worker
+import gleam/option
 import gleeunit
 import gleeunit/should
 
@@ -35,22 +36,10 @@ pub fn binding_symbol_test() {
   |> should.equal("<?")
 }
 
-pub fn bootstrap_default_is_not_strict_test() {
-  bootstrap.default_config()
-  |> bootstrap.strict_di
-  |> should.equal(False)
-}
-
 pub fn generated_http_token_test() {
   injection_tokens.http()
   |> token.name
   |> should.equal("$http")
-}
-
-pub fn generated_unknown_token_fallback_test() {
-  injection_tokens.view()
-  |> token.name
-  |> should.equal("$view")
 }
 
 pub fn http_method_name_test() {
@@ -88,4 +77,22 @@ pub fn entry_filter_item_test() {
 
   item.value
   |> should.equal("AngularTS")
+}
+
+pub fn worker_restart_policy_test() {
+  let config =
+    worker.config()
+    |> worker.with_restart(250, 4)
+
+  config
+  |> worker.restart_enabled
+  |> should.equal(True)
+
+  config
+  |> worker.restart_delay
+  |> should.equal(option.Some(250))
+
+  config
+  |> worker.max_restarts
+  |> should.equal(option.Some(4))
 }

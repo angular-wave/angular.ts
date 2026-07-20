@@ -99,9 +99,8 @@ integration tests:
 
 ## Missing Runtime API
 
-- `AngularRuntime.createAngularBare` / custom runtime creation.
-- `createAngularCustom` and custom `ng` module configuration.
-- Runtime options such as `registerBuiltins` and `subapp`.
+- `createAngular` and declarative runtime composition.
+- Composition options such as modules, directives, services, and `subapp`.
 
 ## Built-In Service Coverage
 

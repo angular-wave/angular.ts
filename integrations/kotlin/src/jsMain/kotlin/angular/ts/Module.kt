@@ -82,8 +82,13 @@ public class NgModule internal constructor(
         return this
     }
 
-    public fun state(declaration: StateDeclaration): NgModule {
-        raw.state(declaration.name, declaration.toJs())
+    public fun router(declaration: StateDeclaration): NgModule {
+        raw.router(declaration.toJs())
+        return this
+    }
+
+    public fun router(declarations: List<StateDeclaration>): NgModule {
+        raw.router(declarations.map(StateDeclaration::toJs).toTypedArray())
         return this
     }
 
@@ -110,7 +115,6 @@ public class NgModule internal constructor(
         raw.websocket(
             token.name,
             registration.url,
-            registration.protocols.toTypedArray(),
             registration.config.toJs(),
         )
         return this
@@ -126,14 +130,9 @@ public class NgModule internal constructor(
 
     public fun <TValue> wasm(
         token: Token<TValue>,
-        registration: WasmRegistration,
+        config: WasmLoadOptions,
     ): NgModule {
-        raw.wasm(
-            token.name,
-            registration.source,
-            registration.imports.toJsRecord(),
-            registration.options.toJs(),
-        )
+        raw.wasm(token.name, config.toJs())
         return this
     }
 

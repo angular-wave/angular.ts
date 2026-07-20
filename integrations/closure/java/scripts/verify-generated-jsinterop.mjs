@@ -45,8 +45,7 @@ for (const expected of [
   "Scope",
   "HttpService",
   "RestService",
-  "PubSubProvider",
-  "PubSubService",
+  "EventBusService",
 ]) {
   assert(
     new RegExp(`\\b(?:class|interface)\\s+${expected}\\b`).test(allSource),

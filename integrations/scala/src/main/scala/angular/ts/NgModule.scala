@@ -1,6 +1,7 @@
 package angular.ts
 
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters.*
 
 final class NgModule private[ts] (private[ts] val raw: RuntimeNgModule):
   def name: String = raw.name
@@ -62,14 +63,14 @@ final class NgModule private[ts] (private[ts] val raw: RuntimeNgModule):
     this
 
   def model[A <: js.Object](
-      token: Token[AppModelValue[A]],
+      token: Token[Model[A]],
       initial: A,
   ): NgModule =
     raw.model(token.name, initial)
     this
 
   def model[A <: js.Object](
-      token: Token[AppModelValue[A]],
+      token: Token[Model[A]],
       factory: () => A,
   ): NgModule =
     raw.model(
@@ -79,7 +80,7 @@ final class NgModule private[ts] (private[ts] val raw: RuntimeNgModule):
     this
 
   def model[A <: js.Object](
-      token: Token[AppModelValue[A]],
+      token: Token[Model[A]],
       factory: InjectableFactory[A],
   ): NgModule =
     raw.model(token.name, factory.annotated)
@@ -87,36 +88,34 @@ final class NgModule private[ts] (private[ts] val raw: RuntimeNgModule):
 
   def machine[TData <: js.Object, TEvents <: js.Object](
       token: Token[Machine[TData, TEvents]],
-      config: MachineConfig[TData, TEvents],
+      config: MachineStateConfig[TData, TEvents],
   ): NgModule =
     raw.machine(token.name, config.toJS)
     this
 
   def machine[TData <: js.Object, TEvents <: js.Object](
       token: Token[Machine[TData, TEvents]],
-      factory: InjectableFactory[MachineConfig[TData, TEvents]],
+      factory: InjectableFactory[MachineStateConfig[TData, TEvents]],
   ): NgModule =
     raw.machine(token.name, factory.annotated)
     this
 
   def workflow[
       TData <: js.Object,
-      TEvents <: js.Object,
       TCommands <: js.Object,
   ](
-      token: Token[Workflow[TData, TEvents, TCommands]],
-      config: WorkflowConfig[TData, TEvents, TCommands],
+      token: Token[Workflow[TData, TCommands]],
+      config: WorkflowConfig[TData, TCommands],
   ): NgModule =
     raw.workflow(token.name, config.toJS)
     this
 
   def workflow[
       TData <: js.Object,
-      TEvents <: js.Object,
       TCommands <: js.Object,
   ](
-      token: Token[Workflow[TData, TEvents, TCommands]],
-      factory: InjectableFactory[WorkflowConfig[TData, TEvents, TCommands]],
+      token: Token[Workflow[TData, TCommands]],
+      factory: InjectableFactory[WorkflowConfig[TData, TCommands]],
   ): NgModule =
     raw.workflow(token.name, factory.annotated)
     this
@@ -170,12 +169,10 @@ final class NgModule private[ts] (private[ts] val raw: RuntimeNgModule):
     this
 
   def wasm(
-      token: Token[WasmService],
-      src: String,
-      imports: js.UndefOr[js.Object] = js.undefined,
-      options: WasmOptions = WasmOptions(),
+      token: Token[WasmResource],
+      config: WasmLoadOptions,
   ): NgModule =
-    raw.wasm(token.name, src, imports, options.toJS)
+    raw.wasm(token.name, config.toJS)
     this
 
   def rest[A, ID](
@@ -187,12 +184,12 @@ final class NgModule private[ts] (private[ts] val raw: RuntimeNgModule):
     raw.rest(token.name, url, entityClass, options.toJS)
     this
 
-  def state(declaration: StateDeclaration): NgModule =
-    raw.state(declaration.toJS)
-    this
-
   def router(declaration: RouterModuleDeclaration): NgModule =
     raw.router(declaration.toJS)
+    this
+
+  def router(declarations: Seq[RouterModuleDeclaration]): NgModule =
+    raw.router(declarations.map(_.toJS).toJSArray)
     this
 
   def lazyState(prefix: String, loader: LazyStateLoader): NgModule =

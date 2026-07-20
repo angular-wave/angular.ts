@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #if defined(__wasm__)
 #define ANGULAR_TS_WASM_IMPORT(name) \
@@ -39,29 +40,38 @@ struct Bytes {
 
 struct ScopeRef {
   ScopeHandle handle = 0;
-  std::string_view name;
 
   static ScopeRef FromHandle(ScopeHandle value) {
-    return ScopeRef{value, std::string_view{}};
+    return ScopeRef{value};
   }
 
-  static ScopeRef FromName(std::string_view value) {
-    return ScopeRef{0, value};
-  }
-
-  bool valid() const { return handle != 0 || !name.empty(); }
-  bool named() const { return handle == 0 && !name.empty(); }
+  bool valid() const { return handle != 0; }
 };
 
-struct ScopeUpdate {
+struct ScopeTransaction {
   ScopeHandle scope_handle = 0;
-  std::string_view path;
-  std::string_view value_json;
+  std::string_view transaction_json;
 };
 
 using BindCallback = void (*)(ScopeHandle, std::string_view);
 using UnbindCallback = void (*)(ScopeHandle);
-using UpdateCallback = void (*)(ScopeUpdate);
+using TransactionCallback = void (*)(ScopeTransaction);
+
+inline constexpr std::uint32_t kWasmAbiVersion = 3;
+
+enum class AbiError : std::uint32_t {
+  kNone = 0,
+  kDisposed = 1,
+  kInvalidHandle = 2,
+  kInvalidPointer = 3,
+  kInvalidLength = 4,
+  kInvalidJson = 5,
+  kUnsafePath = 6,
+  kLimitExceeded = 7,
+  kInvalidTransaction = 8,
+  kUnsupportedValue = 9,
+  kOperationFailed = 10,
+};
 
 namespace detail {
 
@@ -75,8 +85,8 @@ inline UnbindCallback& UnbindCallbackSlot() {
   return callback;
 }
 
-inline UpdateCallback& UpdateCallbackSlot() {
-  static UpdateCallback callback = nullptr;
+inline TransactionCallback& TransactionCallbackSlot() {
+  static TransactionCallback callback = nullptr;
   return callback;
 }
 
@@ -142,50 +152,40 @@ ANGULAR_TS_WASM_IMPORT(scope_get)
 angular_ts::BufferHandle angular_ts_scope_get(
     angular_ts::ScopeHandle scope_handle, const std::uint8_t* path_ptr,
     std::uint32_t path_len);
-ANGULAR_TS_WASM_IMPORT(scope_get_named)
-angular_ts::BufferHandle angular_ts_scope_get_named(
-    const std::uint8_t* name_ptr, std::uint32_t name_len,
-    const std::uint8_t* path_ptr, std::uint32_t path_len);
 ANGULAR_TS_WASM_IMPORT(scope_set)
 std::uint32_t angular_ts_scope_set(angular_ts::ScopeHandle scope_handle,
                                    const std::uint8_t* path_ptr,
                                    std::uint32_t path_len,
                                    const std::uint8_t* value_ptr,
                                    std::uint32_t value_len);
-ANGULAR_TS_WASM_IMPORT(scope_set_named)
-std::uint32_t angular_ts_scope_set_named(
-    const std::uint8_t* name_ptr, std::uint32_t name_len,
-    const std::uint8_t* path_ptr, std::uint32_t path_len,
-    const std::uint8_t* value_ptr, std::uint32_t value_len);
+ANGULAR_TS_WASM_IMPORT(scope_apply)
+std::uint32_t angular_ts_scope_apply(angular_ts::ScopeHandle scope_handle,
+                                     const std::uint8_t* transaction_ptr,
+                                     std::uint32_t transaction_len);
+ANGULAR_TS_WASM_IMPORT(scope_get_binary)
+angular_ts::BufferHandle angular_ts_scope_get_binary(
+    angular_ts::ScopeHandle scope_handle, const std::uint8_t* path_ptr,
+    std::uint32_t path_len);
+ANGULAR_TS_WASM_IMPORT(scope_set_binary)
+std::uint32_t angular_ts_scope_set_binary(
+    angular_ts::ScopeHandle scope_handle, const std::uint8_t* path_ptr,
+    std::uint32_t path_len, const std::uint8_t* value_ptr,
+    std::uint32_t value_len, const std::uint8_t* options_ptr,
+    std::uint32_t options_len);
 ANGULAR_TS_WASM_IMPORT(scope_delete)
 std::uint32_t angular_ts_scope_delete(angular_ts::ScopeHandle scope_handle,
                                       const std::uint8_t* path_ptr,
                                       std::uint32_t path_len);
-ANGULAR_TS_WASM_IMPORT(scope_delete_named)
-std::uint32_t angular_ts_scope_delete_named(const std::uint8_t* name_ptr,
-                                            std::uint32_t name_len,
-                                            const std::uint8_t* path_ptr,
-                                            std::uint32_t path_len);
 ANGULAR_TS_WASM_IMPORT(scope_sync)
 std::uint32_t angular_ts_scope_sync(angular_ts::ScopeHandle scope_handle);
-ANGULAR_TS_WASM_IMPORT(scope_sync_named)
-std::uint32_t angular_ts_scope_sync_named(const std::uint8_t* name_ptr,
-                                          std::uint32_t name_len);
 ANGULAR_TS_WASM_IMPORT(scope_watch)
 angular_ts::WatchHandle angular_ts_scope_watch(
     angular_ts::ScopeHandle scope_handle, const std::uint8_t* path_ptr,
     std::uint32_t path_len);
-ANGULAR_TS_WASM_IMPORT(scope_watch_named)
-angular_ts::WatchHandle angular_ts_scope_watch_named(
-    const std::uint8_t* name_ptr, std::uint32_t name_len,
-    const std::uint8_t* path_ptr, std::uint32_t path_len);
 ANGULAR_TS_WASM_IMPORT(scope_unwatch)
 std::uint32_t angular_ts_scope_unwatch(angular_ts::WatchHandle watch_handle);
 ANGULAR_TS_WASM_IMPORT(scope_unbind)
 std::uint32_t angular_ts_scope_unbind(angular_ts::ScopeHandle scope_handle);
-ANGULAR_TS_WASM_IMPORT(scope_unbind_named)
-std::uint32_t angular_ts_scope_unbind_named(const std::uint8_t* name_ptr,
-                                            std::uint32_t name_len);
 ANGULAR_TS_WASM_IMPORT(buffer_ptr)
 const std::uint8_t* angular_ts_buffer_ptr(
     angular_ts::BufferHandle buffer_handle);
@@ -193,6 +193,10 @@ ANGULAR_TS_WASM_IMPORT(buffer_len)
 std::uint32_t angular_ts_buffer_len(angular_ts::BufferHandle buffer_handle);
 ANGULAR_TS_WASM_IMPORT(buffer_free)
 void angular_ts_buffer_free(angular_ts::BufferHandle buffer_handle);
+ANGULAR_TS_WASM_IMPORT(error_code)
+std::uint32_t angular_ts_error_code();
+ANGULAR_TS_WASM_IMPORT(error_clear)
+void angular_ts_error_clear();
 #else
 inline angular_ts::ScopeHandle angular_ts_scope_resolve(
     const std::uint8_t*, std::uint32_t) {
@@ -202,19 +206,25 @@ inline angular_ts::BufferHandle angular_ts_scope_get(
     angular_ts::ScopeHandle, const std::uint8_t*, std::uint32_t) {
   return 0;
 }
-inline angular_ts::BufferHandle angular_ts_scope_get_named(
-    const std::uint8_t*, std::uint32_t, const std::uint8_t*, std::uint32_t) {
-  return 0;
-}
 inline std::uint32_t angular_ts_scope_set(angular_ts::ScopeHandle,
                                           const std::uint8_t*, std::uint32_t,
                                           const std::uint8_t*,
                                           std::uint32_t) {
   return 0;
 }
-inline std::uint32_t angular_ts_scope_set_named(
-    const std::uint8_t*, std::uint32_t, const std::uint8_t*, std::uint32_t,
-    const std::uint8_t*, std::uint32_t) {
+inline std::uint32_t angular_ts_scope_apply(angular_ts::ScopeHandle,
+                                            const std::uint8_t*,
+                                            std::uint32_t) {
+  return 0;
+}
+inline angular_ts::BufferHandle angular_ts_scope_get_binary(
+    angular_ts::ScopeHandle scope_handle, const std::uint8_t* path_ptr,
+    std::uint32_t path_len) {
+  return angular_ts_scope_get(scope_handle, path_ptr, path_len);
+}
+inline std::uint32_t angular_ts_scope_set_binary(
+    angular_ts::ScopeHandle, const std::uint8_t*, std::uint32_t,
+    const std::uint8_t*, std::uint32_t, const std::uint8_t*, std::uint32_t) {
   return 0;
 }
 inline std::uint32_t angular_ts_scope_delete(angular_ts::ScopeHandle,
@@ -222,35 +232,17 @@ inline std::uint32_t angular_ts_scope_delete(angular_ts::ScopeHandle,
                                              std::uint32_t) {
   return 0;
 }
-inline std::uint32_t angular_ts_scope_delete_named(const std::uint8_t*,
-                                                   std::uint32_t,
-                                                   const std::uint8_t*,
-                                                   std::uint32_t) {
-  return 0;
-}
 inline std::uint32_t angular_ts_scope_sync(angular_ts::ScopeHandle) {
-  return 0;
-}
-inline std::uint32_t angular_ts_scope_sync_named(const std::uint8_t*,
-                                                 std::uint32_t) {
   return 0;
 }
 inline angular_ts::WatchHandle angular_ts_scope_watch(
     angular_ts::ScopeHandle, const std::uint8_t*, std::uint32_t) {
   return 0;
 }
-inline angular_ts::WatchHandle angular_ts_scope_watch_named(
-    const std::uint8_t*, std::uint32_t, const std::uint8_t*, std::uint32_t) {
-  return 0;
-}
 inline std::uint32_t angular_ts_scope_unwatch(angular_ts::WatchHandle) {
   return 0;
 }
 inline std::uint32_t angular_ts_scope_unbind(angular_ts::ScopeHandle) {
-  return 0;
-}
-inline std::uint32_t angular_ts_scope_unbind_named(const std::uint8_t*,
-                                                   std::uint32_t) {
   return 0;
 }
 inline const std::uint8_t* angular_ts_buffer_ptr(
@@ -273,6 +265,8 @@ inline void angular_ts_buffer_free(angular_ts::BufferHandle buffer_handle) {
   angular_ts::detail::NativeFreedBufferSlot() = buffer_handle;
   ++angular_ts::detail::NativeBufferFreeCountSlot();
 }
+inline std::uint32_t angular_ts_error_code() { return 0; }
+inline void angular_ts_error_clear() {}
 #endif
 
 }  // extern "C"
@@ -312,6 +306,21 @@ class ResultBuffer {
     std::string out;
     if (data != nullptr && size != 0) {
       out.assign(reinterpret_cast<const char*>(data), size);
+    }
+    Reset();
+    return out;
+  }
+
+  std::vector<std::uint8_t> ReadBytes() {
+    if (!Valid()) {
+      return {};
+    }
+
+    const std::uint8_t* data = angular_ts_buffer_ptr(handle_);
+    const std::uint32_t size = angular_ts_buffer_len(handle_);
+    std::vector<std::uint8_t> out;
+    if (data != nullptr && size != 0) {
+      out.assign(data, data + size);
     }
     Reset();
     return out;
@@ -384,7 +393,7 @@ class Scope {
   }
 
   static Scope FromName(std::string_view name) {
-    return Scope(ScopeRef::FromName(name));
+    return Resolve(name);
   }
 
   static Scope Resolve(std::string_view name) {
@@ -406,12 +415,6 @@ class Scope {
     }
 
     Bytes path_bytes = detail::ToBytes(path);
-    if (ref_.named()) {
-      Bytes name_bytes = detail::ToBytes(ref_.name);
-      return ResultBuffer(angular_ts_scope_get_named(
-          name_bytes.data, name_bytes.size, path_bytes.data, path_bytes.size));
-    }
-
     return ResultBuffer(
         angular_ts_scope_get(ref_.handle, path_bytes.data, path_bytes.size));
   }
@@ -427,17 +430,49 @@ class Scope {
 
     Bytes path_bytes = detail::ToBytes(path);
     Bytes json_bytes = detail::ToBytes(json);
-    if (ref_.named()) {
-      Bytes name_bytes = detail::ToBytes(ref_.name);
-      return detail::Status(angular_ts_scope_set_named(
-          name_bytes.data, name_bytes.size, path_bytes.data, path_bytes.size,
-          json_bytes.data, json_bytes.size));
-    }
-
     return detail::Status(angular_ts_scope_set(
         ref_.handle, path_bytes.data, path_bytes.size, json_bytes.data,
         json_bytes.size));
   }
+
+  bool ApplyJson(std::string_view transaction_json) const {
+    if (!Valid() || transaction_json.empty()) {
+      return false;
+    }
+
+    Bytes transaction = detail::ToBytes(transaction_json);
+    return detail::Status(angular_ts_scope_apply(
+        ref_.handle, transaction.data, transaction.size));
+  }
+
+  ResultBuffer GetBinary(std::string_view path) const {
+    if (!Valid() || path.empty()) {
+      return ResultBuffer();
+    }
+
+    Bytes path_bytes = detail::ToBytes(path);
+    return ResultBuffer(angular_ts_scope_get_binary(
+        ref_.handle, path_bytes.data, path_bytes.size));
+  }
+
+  bool SetBinary(std::string_view path, Bytes value,
+                 std::string_view options_json = {}) const {
+    if (!Valid() || path.empty()) {
+      return false;
+    }
+
+    Bytes path_bytes = detail::ToBytes(path);
+    Bytes options = detail::ToBytes(options_json);
+    return detail::Status(angular_ts_scope_set_binary(
+        ref_.handle, path_bytes.data, path_bytes.size, value.data, value.size,
+        options.data, options.size));
+  }
+
+  AbiError ErrorCode() const {
+    return static_cast<AbiError>(angular_ts_error_code());
+  }
+
+  void ClearError() const { angular_ts_error_clear(); }
 
   bool Delete(std::string_view path) const {
     if (!Valid() || path.empty()) {
@@ -445,12 +480,6 @@ class Scope {
     }
 
     Bytes path_bytes = detail::ToBytes(path);
-    if (ref_.named()) {
-      Bytes name_bytes = detail::ToBytes(ref_.name);
-      return detail::Status(angular_ts_scope_delete_named(
-          name_bytes.data, name_bytes.size, path_bytes.data, path_bytes.size));
-    }
-
     return detail::Status(
         angular_ts_scope_delete(ref_.handle, path_bytes.data, path_bytes.size));
   }
@@ -458,12 +487,6 @@ class Scope {
   bool Sync() const {
     if (!Valid()) {
       return false;
-    }
-
-    if (ref_.named()) {
-      Bytes name_bytes = detail::ToBytes(ref_.name);
-      return detail::Status(
-          angular_ts_scope_sync_named(name_bytes.data, name_bytes.size));
     }
 
     return detail::Status(angular_ts_scope_sync(ref_.handle));
@@ -475,12 +498,6 @@ class Scope {
     }
 
     Bytes path_bytes = detail::ToBytes(path);
-    if (ref_.named()) {
-      Bytes name_bytes = detail::ToBytes(ref_.name);
-      return Watch(angular_ts_scope_watch_named(
-          name_bytes.data, name_bytes.size, path_bytes.data, path_bytes.size));
-    }
-
     return Watch(
         angular_ts_scope_watch(ref_.handle, path_bytes.data, path_bytes.size));
   }
@@ -488,12 +505,6 @@ class Scope {
   bool Unbind() const {
     if (!Valid()) {
       return false;
-    }
-
-    if (ref_.named()) {
-      Bytes name_bytes = detail::ToBytes(ref_.name);
-      return detail::Status(
-          angular_ts_scope_unbind_named(name_bytes.data, name_bytes.size));
     }
 
     return detail::Status(angular_ts_scope_unbind(ref_.handle));
@@ -513,11 +524,16 @@ inline void SetScopeUnbindCallback(UnbindCallback callback) {
   detail::UnbindCallbackSlot() = callback;
 }
 
-inline void SetScopeUpdateCallback(UpdateCallback callback) {
-  detail::UpdateCallbackSlot() = callback;
+inline void SetScopeTransactionCallback(TransactionCallback callback) {
+  detail::TransactionCallbackSlot() = callback;
 }
 
 }  // namespace angular_ts
+
+extern "C" ANGULAR_TS_WASM_EXPORT(ng_abi_version) inline std::uint32_t
+ng_abi_version() {
+  return angular_ts::kWasmAbiVersion;
+}
 
 extern "C" ANGULAR_TS_WASM_EXPORT(ng_abi_alloc) inline void* ng_abi_alloc(
     std::uint32_t size) {
@@ -553,17 +569,17 @@ ng_scope_on_unbind(angular_ts::ScopeHandle scope_handle) {
   }
 }
 
-extern "C" ANGULAR_TS_WASM_EXPORT(ng_scope_on_update) inline void
-ng_scope_on_update(angular_ts::ScopeHandle scope_handle,
-                   const std::uint8_t* path_ptr, std::uint32_t path_len,
-                   const std::uint8_t* value_ptr, std::uint32_t value_len) {
-  angular_ts::UpdateCallback callback =
-      angular_ts::detail::UpdateCallbackSlot();
+extern "C" ANGULAR_TS_WASM_EXPORT(ng_scope_on_transaction) inline void
+ng_scope_on_transaction(angular_ts::ScopeHandle scope_handle,
+                        const std::uint8_t* transaction_ptr,
+                        std::uint32_t transaction_len) {
+  angular_ts::TransactionCallback callback =
+      angular_ts::detail::TransactionCallbackSlot();
   if (callback != nullptr) {
-    callback(angular_ts::ScopeUpdate{
+    callback(angular_ts::ScopeTransaction{
         scope_handle,
-        std::string_view(reinterpret_cast<const char*>(path_ptr), path_len),
-        std::string_view(reinterpret_cast<const char*>(value_ptr), value_len),
+        std::string_view(reinterpret_cast<const char*>(transaction_ptr),
+                         transaction_len),
     });
   }
 }

@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
-export function __ng_manifest(): string;
-export function __ng_component_ScopeProbe_fieldBridgeMetadata(): string;
 export function __ng_component_ScopeProbe_bridgeMetadata(): string;
+export function __ng_component_ScopeProbe_fieldBridgeMetadata(): string;
+export function __ng_manifest(): string;
 /**
  * Rust facade for a host-owned AngularTS `WasmScope` ABI handle.
  */
@@ -19,9 +19,9 @@ export class WasmScope {
 }
 export class __ng_component_ScopeProbe {
   free(): void;
-  constructor(_scope: WasmScope);
+  applyCountFromScope(count: number): void;
+  constructor(scope: WasmScope);
   increment(): void;
-  applyCountFromScope(value: any): void;
   count: number;
   seenCount: number;
   source: string;
@@ -31,30 +31,34 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly __ng_manifest: (a: number) => void;
+  readonly __ng_component_ScopeProbe_bridgeMetadata: () => [number, number];
+  readonly __ng_component_ScopeProbe_fieldBridgeMetadata: () => [number, number];
+  readonly __ng_component_scopeprobe_applyCountFromScope: (a: number, b: number) => void;
+  readonly __ng_component_scopeprobe_increment: (a: number) => void;
+  readonly __ng_component_scopeprobe_new: (a: number) => number;
+  readonly __ng_manifest: () => [number, number];
   readonly __wbg___ng_component_scopeprobe_free: (a: number, b: number) => void;
   readonly __wbg_get___ng_component_scopeprobe_count: (a: number) => number;
-  readonly __wbg_set___ng_component_scopeprobe_count: (a: number, b: number) => void;
   readonly __wbg_get___ng_component_scopeprobe_seenCount: (a: number) => number;
+  readonly __wbg_get___ng_component_scopeprobe_source: (a: number) => [number, number];
+  readonly __wbg_set___ng_component_scopeprobe_count: (a: number, b: number) => void;
   readonly __wbg_set___ng_component_scopeprobe_seenCount: (a: number, b: number) => void;
-  readonly __wbg_get___ng_component_scopeprobe_source: (a: number, b: number) => void;
   readonly __wbg_set___ng_component_scopeprobe_source: (a: number, b: number, c: number) => void;
-  readonly __ng_component_ScopeProbe_fieldBridgeMetadata: (a: number) => void;
-  readonly __ng_component_scopeprobe_new: (a: number) => number;
-  readonly __ng_component_scopeprobe_increment: (a: number) => void;
-  readonly __ng_component_scopeprobe_applyCountFromScope: (a: number, b: number) => void;
-  readonly __ng_component_ScopeProbe_bridgeMetadata: (a: number) => void;
+  readonly __wbg_wasmscope_free: (a: number, b: number) => void;
   readonly ng_abi_alloc: (a: number) => number;
   readonly ng_abi_free: (a: number, b: number) => void;
-  readonly ng_scope_on_update: (a: number, b: number, c: number, d: number, e: number) => void;
-  readonly __wbg_wasmscope_free: (a: number, b: number) => void;
+  readonly ng_abi_version: () => number;
+  readonly ng_scope_on_transaction: (a: number, b: number, c: number) => void;
+  readonly wasmscope_named: (a: number, b: number, c: number, d: number) => [number, number, number];
   readonly wasmscope_new: (a: number, b: number, c: number) => number;
-  readonly wasmscope_named: (a: number, b: number, c: number, d: number) => number;
-  readonly __wbindgen_exn_store: (a: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly __wbindgen_exn_store: (a: number) => void;
+  readonly __externref_table_alloc: () => number;
+  readonly __wbindgen_export_4: WebAssembly.Table;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+  readonly __externref_table_dealloc: (a: number) => void;
+  readonly __wbindgen_start: () => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

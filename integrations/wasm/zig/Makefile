@@ -14,7 +14,7 @@ export ZIG_LOCAL_CACHE_DIR
 check: fmt test wasm-check example-check example-test js-check
 
 fmt:
-	$(ZIG) fmt build.zig src/angular_ts.zig examples/todo/main.zig
+	$(ZIG) fmt build.zig src/angular_ts.zig tests/generated_contract.zig examples/todo/main.zig
 
 test:
 	$(ZIG) build test

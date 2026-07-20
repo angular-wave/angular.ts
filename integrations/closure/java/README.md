@@ -138,6 +138,17 @@ exports a small `j2clTodoMain()` startup function from the paired native JS file
 so the browser page can register the AngularTS module after loading the
 compiled bundle.
 
+The demo intentionally keeps Java out of AngularTS view-scope plumbing. The
+Java `TodoController` owns todo domain behavior and publishes a small
+Closure-stable JavaScript facade. The paired native JS file adapts that facade
+into an AngularTS `app.model("todoModel", ...)` service, then exposes the model
+through `TodoCtrl as $ctrl`. Templates bind to `$ctrl` and `ng-model` normally;
+they do not receive `$scope`, call `$digest`, or run manual refresh helpers.
+
+When adding J2CL examples, keep public template keys quoted in native JS object
+literals. Closure `ADVANCED_OPTIMIZATIONS` can rename unquoted object-literal
+properties, while AngularTS templates resolve the runtime property names.
+
 Run the full Java integration check from the repository root:
 
 ```bash

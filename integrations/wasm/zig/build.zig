@@ -25,8 +25,30 @@ pub fn build(b: *std.Build) void {
 
     const run_tests = b.addRunArtifact(tests);
 
+    const player_contract = b.addModule("player-contract", .{
+        .root_source_file = b.path("../contracts/generated/player_contract.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "angular-ts", .module = module },
+        },
+    });
+    const contract_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/generated_contract.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "angular-ts", .module = module },
+                .{ .name = "player-contract", .module = player_contract },
+            },
+        }),
+    });
+    const run_contract_tests = b.addRunArtifact(contract_tests);
+
     const test_step = b.step("test", "Run Zig binding tests");
     test_step.dependOn(&run_tests.step);
+    test_step.dependOn(&run_contract_tests.step);
 
     const wasm_object = b.addObject(.{
         .name = "angular_ts_wasm_zig",

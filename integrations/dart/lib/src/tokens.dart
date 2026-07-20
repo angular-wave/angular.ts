@@ -14,9 +14,9 @@ T _facade<T extends AngularTsJsFacade>(
 }
 
 /// The angular token.
-final angularToken = token<AngularService>(
+final angularToken = token<Angular>(
   '\$angular',
-  fromJs: (value) => _facade(value, AngularService.new),
+  fromJs: (value) => _facade(value, Angular.new),
 );
 
 /// The scope token.
@@ -68,9 +68,9 @@ final controllerToken = token<ControllerService>(
 final documentToken = token<JSObject>('\$document');
 
 /// The event bus token.
-final eventBusToken = token<PubSubService>(
+final eventBusToken = token<EventBusService>(
   '\$eventBus',
-  fromJs: (value) => _facade(value, PubSubService.new),
+  fromJs: (value) => _facade(value, EventBusService.new),
 );
 
 /// The exception handler token.
@@ -149,16 +149,10 @@ final sceDelegateToken = token<SceDelegateService>(
 );
 
 /// The state token.
-final stateToken = token<StateService>(
-  '\$state',
-  fromJs: (value) => _facade(value, StateService.new),
-);
+final stateToken = token<JSObject>('\$state');
 
 /// The state registry token.
-final stateRegistryToken = token<StateRegistryService>(
-  '\$stateRegistry',
-  fromJs: (value) => _facade(value, StateRegistryService.new),
-);
+final stateRegistryToken = token<JSObject>('\$stateRegistry');
 
 /// The sse token.
 final sseToken = token<SseService>(
@@ -182,16 +176,13 @@ final templateRequestToken = token<TemplateRequestService>(
 );
 
 /// The transitions token.
-final transitionsToken = token<TransitionService>(
+final transitionsToken = token<TransitionsService>(
   '\$transitions',
-  fromJs: (value) => _facade(value, TransitionService.new),
+  fromJs: (value) => _facade(value, TransitionsService.new),
 );
 
-/// The view token.
-final viewToken = token<ViewService>(
-  '\$view',
-  fromJs: (value) => _facade(value, ViewService.new),
-);
+/// The internal router view token.
+final viewToken = token<JSObject>('\$view');
 
 /// The window token.
 final windowToken = token<JSObject>('\$window');
@@ -215,199 +206,10 @@ final wasmToken = token<WasmService>(
 );
 
 /// The provide token.
-final provideToken = token<ProvideService>(
-  '\$provide',
-  fromJs: (value) => _facade(value, ProvideService.new),
-);
+final provideToken = token<JSObject>('\$provide');
 
 /// The injector token.
 final injectorToken = token<Injector>(
   '\$injector',
   fromJs: (value) => Injector(value as JSObject),
-);
-
-/// The angular provider token.
-final angularProviderToken = token<AngularServiceProvider>(
-  '\$angularProvider',
-  fromJs: (value) => _facade(value, AngularServiceProvider.new),
-);
-
-/// The anchor scroll provider token.
-final anchorScrollProviderToken = token<AnchorScrollProvider>(
-  '\$anchorScrollProvider',
-  fromJs: (value) => _facade(value, AnchorScrollProvider.new),
-);
-
-/// The compile provider token.
-final compileProviderToken = token<CompileProvider>(
-  '\$compileProvider',
-  fromJs: (value) => _facade(value, CompileProvider.new),
-);
-
-/// The animate provider token.
-final animateProviderToken = token<AnimateProvider>(
-  '\$animateProvider',
-  fromJs: (value) => _facade(value, AnimateProvider.new),
-);
-
-/// The aria provider token.
-final ariaProviderToken = token<AriaProvider>(
-  '\$ariaProvider',
-  fromJs: (value) => _facade(value, AriaProvider.new),
-);
-
-/// The cookie provider token.
-final cookieProviderToken = token<CookieProvider>(
-  '\$cookieProvider',
-  fromJs: (value) => _facade(value, CookieProvider.new),
-);
-
-/// The event bus provider token.
-final eventBusProviderToken = token<EventBusProvider>(
-  '\$eventBusProvider',
-  fromJs: (value) => _facade(value, EventBusProvider.new),
-);
-
-/// The exception handler provider token.
-final exceptionHandlerProviderToken = token<ExceptionHandlerProvider>(
-  '\$exceptionHandlerProvider',
-  fromJs: (value) => _facade(value, ExceptionHandlerProvider.new),
-);
-
-/// The filter provider token.
-final filterProviderToken = token<FilterProvider>(
-  '\$filterProvider',
-  fromJs: (value) => _facade(value, FilterProvider.new),
-);
-
-/// The http provider token.
-final httpProviderToken = token<HttpProvider>(
-  '\$httpProvider',
-  fromJs: (value) => _facade(value, HttpProvider.new),
-);
-
-/// The http param serializer provider token.
-final httpParamSerializerProviderToken = token<HttpParamSerializerProvider>(
-  '\$httpParamSerializerProvider',
-  fromJs: (value) => _facade(value, HttpParamSerializerProvider.new),
-);
-
-/// The interpolate provider token.
-final interpolateProviderToken = token<InterpolateProvider>(
-  '\$interpolateProvider',
-  fromJs: (value) => _facade(value, InterpolateProvider.new),
-);
-
-/// The location provider token.
-final locationProviderToken = token<LocationProvider>(
-  '\$locationProvider',
-  fromJs: (value) => _facade(value, LocationProvider.new),
-);
-
-/// The log provider token.
-final logProviderToken = token<LogProvider>(
-  '\$logProvider',
-  fromJs: (value) => _facade(value, LogProvider.new),
-);
-
-/// The parse provider token.
-final parseProviderToken = token<ParseProvider>(
-  '\$parseProvider',
-  fromJs: (value) => _facade(value, ParseProvider.new),
-);
-
-/// The rest provider token.
-final restProviderToken = token<RestProvider>(
-  '\$restProvider',
-  fromJs: (value) => _facade(value, RestProvider.new),
-);
-
-/// The root scope provider token.
-final rootScopeProviderToken = token<RootScopeProvider>(
-  '\$rootScopeProvider',
-  fromJs: (value) => _facade(value, RootScopeProvider.new),
-);
-
-/// The sce provider token.
-final sceProviderToken = token<SceProvider>(
-  '\$sceProvider',
-  fromJs: (value) => _facade(value, SceProvider.new),
-);
-
-/// The sce delegate provider token.
-final sceDelegateProviderToken = token<SceDelegateProvider>(
-  '\$sceDelegateProvider',
-  fromJs: (value) => _facade(value, SceDelegateProvider.new),
-);
-
-/// The sse provider token.
-final sseProviderToken = token<SseProvider>(
-  '\$sseProvider',
-  fromJs: (value) => _facade(value, SseProvider.new),
-);
-
-/// The state provider token.
-final stateProviderToken = token<StateProvider>(
-  '\$stateProvider',
-  fromJs: (value) => _facade(value, StateProvider.new),
-);
-
-/// The state registry provider token.
-final stateRegistryProviderToken = token<StateRegistryProvider>(
-  '\$stateRegistryProvider',
-  fromJs: (value) => _facade(value, StateRegistryProvider.new),
-);
-
-/// The template cache provider token.
-final templateCacheProviderToken = token<TemplateCacheProvider>(
-  '\$templateCacheProvider',
-  fromJs: (value) => _facade(value, TemplateCacheProvider.new),
-);
-
-/// The template factory provider token.
-final templateFactoryProviderToken = token<TemplateFactoryProvider>(
-  '\$templateFactoryProvider',
-  fromJs: (value) => _facade(value, TemplateFactoryProvider.new),
-);
-
-/// The template request provider token.
-final templateRequestProviderToken = token<TemplateRequestProvider>(
-  '\$templateRequestProvider',
-  fromJs: (value) => _facade(value, TemplateRequestProvider.new),
-);
-
-/// The transitions provider token.
-final transitionsProviderToken = token<TransitionsProvider>(
-  '\$transitionsProvider',
-  fromJs: (value) => _facade(value, TransitionsProvider.new),
-);
-
-/// The view provider token.
-final viewProviderToken = token<ViewProvider>(
-  '\$viewProvider',
-  fromJs: (value) => _facade(value, ViewProvider.new),
-);
-
-/// The websocket provider token.
-final websocketProviderToken = token<WebSocketProvider>(
-  '\$websocketProvider',
-  fromJs: (value) => _facade(value, WebSocketProvider.new),
-);
-
-/// The worker provider token.
-final workerProviderToken = token<WorkerProvider>(
-  '\$workerProvider',
-  fromJs: (value) => _facade(value, WorkerProvider.new),
-);
-
-/// The wasm provider token.
-final wasmProviderToken = token<WasmProvider>(
-  '\$wasmProvider',
-  fromJs: (value) => _facade(value, WasmProvider.new),
-);
-
-/// The controller provider token.
-final controllerProviderToken = token<ControllerProvider>(
-  '\$controllerProvider',
-  fromJs: (value) => _facade(value, ControllerProvider.new),
 );

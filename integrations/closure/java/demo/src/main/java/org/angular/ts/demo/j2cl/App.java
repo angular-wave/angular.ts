@@ -24,8 +24,8 @@ public final class App {
 
   @JsMethod(namespace = JsPackage.GLOBAL, name = "registerJ2clTodoModule")
   private static native void registerJ2clTodoModule(
-      Object controllerFactory,
-      Object directiveFactory);
+      TodoControllerFactory controllerFactory,
+      DirectiveFactory directiveFactory);
 
   private static Object createBadgeDirective() {
     JsPropertyMap<Object> directive = JsPropertyMap.of();
@@ -37,7 +37,7 @@ public final class App {
 
   @JsFunction
   private interface TodoControllerFactory {
-    TodoController create(Object scope);
+    TodoController create();
   }
 
   @JsFunction

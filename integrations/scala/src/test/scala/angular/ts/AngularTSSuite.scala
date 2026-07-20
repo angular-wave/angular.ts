@@ -1,5 +1,7 @@
 package angular.ts
 
+import org.scalajs.dom
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
@@ -43,7 +45,7 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(Tokens.sse.name, "$sse")
     assertEquals(Tokens.state.name, "$state")
     assertEquals(Tokens.transitions.name, "$transitions")
-    assertEquals(Tokens.view.name, "$view")
+    assertEquals(Tokens.stateRegistry.name, "$stateRegistry")
     assertEquals(Tokens.wasm.name, "$wasm")
     assertEquals(Tokens.websocket.name, "$websocket")
     assertEquals(Tokens.webTransport.name, "$webTransport")
@@ -51,22 +53,21 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(Tokens.worker.name, "$worker")
     assertEquals(Tokens.workflow.name, "$workflow")
 
-  test("public service aliases preserve existing runtime service shapes"):
+  test("public service facades preserve runtime service shapes"):
     val angular: Angular = js.Dynamic.literal(version = "test").asInstanceOf[js.Object]
-    val angularService: AngularService = angular
     val eventBus = js.Dynamic
       .literal(
         publish = (_: String, _: js.Any) => (),
         subscribe = (_: String, _: js.Function1[js.Any, Unit]) => () => (),
+        isDisposed = () => false,
       )
       .asInstanceOf[EventBusService]
-    val pubSub: PubSubService = eventBus
 
     assertEquals(
-      angularService.asInstanceOf[js.Dynamic].selectDynamic("version").asInstanceOf[String],
+      angular.asInstanceOf[js.Dynamic].selectDynamic("version").asInstanceOf[String],
       "test",
     )
-    assertEquals(pubSub.asInstanceOf[js.Dynamic], eventBus.asInstanceOf[js.Dynamic])
+    assertEquals(eventBus.isDisposed(), false)
 
   test("inject helpers annotate JavaScript functions"):
     val token = AngularTS.token[String]("userName")
@@ -111,7 +112,7 @@ class AngularTSSuite extends munit.FunSuite:
       (_: Scope, _: js.UndefOr[CloneAttachFn], _: js.UndefOr[js.Object]) =>
         js.Dynamic.literal().asInstanceOf[org.scalajs.dom.Node]
     val transclude = transcludeRaw.asInstanceOf[TranscludeFn]
-    val link = linkRaw.asInstanceOf[PublicLinkFn]
+    val link = linkRaw.asInstanceOf[LinkFn]
 
     assert(js.Array.isArray(annotatedFactory.asInstanceOf[js.Any]))
     assertEquals(annotatedFactory(0).asInstanceOf[String], "dependency")
@@ -330,7 +331,7 @@ class AngularTSSuite extends munit.FunSuite:
   test("http request config builder emits request object"):
     val headers = js.Dictionary[js.Any]("Accept" -> "application/json")
     val params = js.Dictionary[js.Any]("page" -> 2)
-    val config = RequestConfig(
+    val config = HttpRequestConfig(
       method = HttpMethod.Get,
       url = "/api/users",
       headers = headers,
@@ -350,7 +351,7 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(config.selectDynamic("withCredentials").asInstanceOf[Boolean], true)
 
   test("http shortcut config builder emits request option object"):
-    val config = RequestShortcutConfig(
+    val config = HttpRequestOptions(
       headers = js.Dictionary[js.Any]("X-Test" -> "yes"),
       timeout = 2500.0,
     ).toJS.asInstanceOf[js.Dynamic]
@@ -361,37 +362,16 @@ class AngularTSSuite extends munit.FunSuite:
     )
     assertEquals(config.selectDynamic("timeout").asInstanceOf[Double], 2500.0)
 
-  test("filter option aliases and entry item builder preserve runtime shapes"):
+  test("filter entry item and currency options preserve runtime shapes"):
     val entry = EntryFilterItem("name", "Ada").asInstanceOf[js.Dynamic]
-    val dateOptions: DateFilterOptions =
-      js.Dynamic.literal(dateStyle = "medium").asInstanceOf[js.Object]
-    val numberOptions: NumberFilterOptions =
-      js.Dynamic.literal(maximumFractionDigits = 2).asInstanceOf[js.Object]
     val currencyOptions: CurrencyFilterOptions =
       js.Dynamic.literal(currency = "EUR").asInstanceOf[js.Object]
-    val relativeOptions: RelativeTimeFilterOptions =
-      js.Dynamic.literal(numeric = "auto").asInstanceOf[js.Object]
 
     assertEquals(entry.selectDynamic("key").asInstanceOf[String], "name")
     assertEquals(entry.selectDynamic("value").asInstanceOf[String], "Ada")
     assertEquals(
-      dateOptions.asInstanceOf[js.Dynamic].selectDynamic("dateStyle").asInstanceOf[String],
-      "medium",
-    )
-    assertEquals(
-      numberOptions
-        .asInstanceOf[js.Dynamic]
-        .selectDynamic("maximumFractionDigits")
-        .asInstanceOf[Int],
-      2,
-    )
-    assertEquals(
       currencyOptions.asInstanceOf[js.Dynamic].selectDynamic("currency").asInstanceOf[String],
       "EUR",
-    )
-    assertEquals(
-      relativeOptions.asInstanceOf[js.Dynamic].selectDynamic("numeric").asInstanceOf[String],
-      "auto",
     )
 
   test("core callable service facades preserve runtime call shapes"):
@@ -414,14 +394,14 @@ class AngularTSSuite extends munit.FunSuite:
       (nextScope, _, _) =>
         linkedScope = nextScope
         node
-    val linkFn = rawLink.asInstanceOf[PublicLinkFn]
+    val linkFn = rawLink.asInstanceOf[LinkFn]
     val rawCompile: js.Function5[
       CompileNode,
       js.UndefOr[ChildTranscludeOrLinkFn | Null],
       js.UndefOr[Double],
       js.UndefOr[String],
       js.UndefOr[js.Object | Null],
-      PublicLinkFn,
+      LinkFn,
     ] =
       (compileNode, _, _, _, _) =>
         assertEquals(compileNode.asInstanceOf[String], "<p>{{name}}</p>")
@@ -566,7 +546,7 @@ class AngularTSSuite extends munit.FunSuite:
       js.Dynamic.literal(opacity = 0).asInstanceOf[js.Object],
       js.Dynamic.literal(opacity = 1).asInstanceOf[js.Object],
     )
-    val options = NativeAnimationOptions(
+    val options = AnimationOptions(
       animation = "fade",
       keyframes = frames,
       addClass = "is-entering",
@@ -579,7 +559,7 @@ class AngularTSSuite extends munit.FunSuite:
       onStart = (_: org.scalajs.dom.Element, _: AnimationContext) => started = true,
     ).toJS.asInstanceOf[js.Dynamic]
     val handler: AnimationPresetHandler =
-      (_: org.scalajs.dom.Element, _: AnimationContext, _: NativeAnimationOptions) => ()
+      (_: org.scalajs.dom.Element, _: AnimationContext, _: AnimationOptions) => ()
     val preset = AnimationPreset(
       enter = frames,
       leave = handler,
@@ -663,11 +643,11 @@ class AngularTSSuite extends munit.FunSuite:
       service.addClass(
         element,
         "is-visible",
-        NativeAnimationOptions(duration = 250.0),
+        AnimationOptions(duration = 250.0),
       ),
       handle,
     )
-    assertEquals(service.leave(element, NativeAnimationOptions(duration = 50.0)), handle)
+    assertEquals(service.leave(element, AnimationOptions(duration = 50.0)), handle)
     assertEquals(capturedClass, "is-visible")
     assertEquals(
       capturedOptions
@@ -677,22 +657,16 @@ class AngularTSSuite extends munit.FunSuite:
       250.0,
     )
 
-  test("pubsub config builder emits event delivery policy object"):
-    val policy = js.Dynamic
-      .literal(
-        check = (_: EventDeliveryPolicyContext) =>
-          EventDeliveryPolicyDecision.deliver,
-      )
-      .asInstanceOf[EventDeliveryPolicy]
-    val config = PubSubConfig(deliveryPolicy = policy).toJS.asInstanceOf[js.Dynamic]
+  test("event bus config builder emits event delivery policy callback"):
+    val policy: EventDeliveryPolicy = (_: EventDeliveryPolicyContext) =>
+      EventDeliveryDecisionType.Deliver.value
+    val config = EventBusConfig(deliveryPolicy = policy).toJS.asInstanceOf[js.Dynamic]
 
     assertEquals(
       config
         .selectDynamic("deliveryPolicy")
-        .selectDynamic("check")
-        .asInstanceOf[js.Function1[EventDeliveryPolicyContext, EventDeliveryPolicyDecision]]
-        .apply(js.Dynamic.literal(topic = "ready").asInstanceOf[EventDeliveryPolicyContext])
-        .`type`,
+        .asInstanceOf[js.Function1[EventDeliveryPolicyContext, String]]
+        .apply(js.Dynamic.literal(topic = "ready").asInstanceOf[EventDeliveryPolicyContext]),
       "deliver",
     )
 
@@ -700,7 +674,6 @@ class AngularTSSuite extends munit.FunSuite:
     val config = SseConfig(
       withCredentials = true,
       params = js.Dictionary[js.Any]("room" -> "alpha"),
-      headers = js.Dictionary("X-Test" -> "yes"),
       connection = ConnectionConfig(
         retryDelay = 100.0,
         maxRetries = 3.0,
@@ -710,7 +683,6 @@ class AngularTSSuite extends munit.FunSuite:
 
     assertEquals(config.selectDynamic("withCredentials").asInstanceOf[Boolean], true)
     assertEquals(config.selectDynamic("params").selectDynamic("room").asInstanceOf[String], "alpha")
-    assertEquals(config.selectDynamic("headers").selectDynamic("X-Test").asInstanceOf[String], "yes")
     assertEquals(config.selectDynamic("retryDelay").asInstanceOf[Double], 100.0)
     assertEquals(config.selectDynamic("maxRetries").asInstanceOf[Double], 3.0)
     assertEquals(
@@ -724,16 +696,13 @@ class AngularTSSuite extends munit.FunSuite:
       data = "fallback",
       html = "<p>ready</p>",
       target = "#status",
-      swap = SwapModeType.BeforeEnd,
+      swap = SwapMode.BeforeEnd,
     ).asInstanceOf[js.Dynamic]
     val detail = RealtimeProtocolEventDetail[String, SseConnection](
       data = "ready",
       source = source,
       url = "/events",
     ).asInstanceOf[js.Dynamic]
-    val sseDetail = detail.asInstanceOf[SseProtocolEventDetail[String]]
-    val sseMessage = message.asInstanceOf[SseProtocolMessage]
-
     assertEquals(message.selectDynamic("data").asInstanceOf[String], "fallback")
     assertEquals(message.selectDynamic("html").asInstanceOf[String], "<p>ready</p>")
     assertEquals(message.selectDynamic("target").asInstanceOf[String], "#status")
@@ -741,12 +710,7 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(detail.selectDynamic("data").asInstanceOf[String], "ready")
     assertEquals(detail.selectDynamic("source").asInstanceOf[SseConnection], source)
     assertEquals(detail.selectDynamic("url").asInstanceOf[String], "/events")
-    assertEquals(SwapModeType.Delete.value, "delete")
-    assertEquals(sseDetail.asInstanceOf[js.Dynamic].selectDynamic("url").asInstanceOf[String], "/events")
-    assertEquals(
-      sseMessage.asInstanceOf[js.Dynamic].selectDynamic("swap").asInstanceOf[String],
-      "beforeend",
-    )
+    assertEquals(SwapMode.Delete.value, "delete")
 
   test("websocket config builder emits protocols and protocol callback"):
     val callback =
@@ -767,14 +731,22 @@ class AngularTSSuite extends munit.FunSuite:
 
   test("worker config builder emits lifecycle options"):
     val config = WorkerConfig(
-      autoRestart = true,
-      autoTerminate = false,
-      transformMessage = (value: js.Any) => value,
+      `type` = "classic",
+      name = "decoder",
+      credentials = "same-origin",
+      restart = true,
+      restartDelay = 250.0,
+      maxRestarts = 4,
+      decode = (value: js.Any) => value,
     ).toJS.asInstanceOf[js.Dynamic]
 
-    assertEquals(config.selectDynamic("autoRestart").asInstanceOf[Boolean], true)
-    assertEquals(config.selectDynamic("autoTerminate").asInstanceOf[Boolean], false)
-    assert(config.selectDynamic("transformMessage").isInstanceOf[js.Function])
+    assertEquals(config.selectDynamic("type").asInstanceOf[String], "classic")
+    assertEquals(config.selectDynamic("name").asInstanceOf[String], "decoder")
+    assertEquals(config.selectDynamic("credentials").asInstanceOf[String], "same-origin")
+    assertEquals(config.selectDynamic("restart").asInstanceOf[Boolean], true)
+    assertEquals(config.selectDynamic("restartDelay").asInstanceOf[Double], 250.0)
+    assertEquals(config.selectDynamic("maxRestarts").asInstanceOf[Int], 4)
+    assert(config.selectDynamic("decode").isInstanceOf[js.Function])
 
   test("stream option builders and service facade preserve runtime shapes"):
     val stream = js.Dynamic.literal(readable = true).asInstanceOf[ReadableByteStream]
@@ -945,10 +917,15 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(nativeClosed, true)
 
   test("wasm option builders and ABI facades preserve runtime shapes"):
-    val options = WasmOptions(raw = true).toJS.asInstanceOf[js.Dynamic]
+    val importsObject = js.Dynamic.literal(env = js.Dynamic.literal()).asInstanceOf[js.Object]
+    val options = WasmLoadOptions("/game.wasm", importsObject).toJS.asInstanceOf[js.Dynamic]
+    val resourceBindingOptions = WasmBindingOptions(
+      name = "player",
+      watch = js.Array("score", "health"),
+      initial = true,
+    ).toJS.asInstanceOf[js.Dynamic]
     val scopeOptions = WasmScopeOptions(name = "hud").toJS.asInstanceOf[js.Dynamic]
     val bindingOptions = WasmScopeBindingOptions(
-      name = "player",
       watch = js.Array("score", "health"),
       initial = true,
     ).toJS.asInstanceOf[js.Dynamic]
@@ -967,15 +944,9 @@ class AngularTSSuite extends munit.FunSuite:
         ng_abi_free = (_: Int, _: Int) => (),
       )
       .asInstanceOf[WasmAbiExports]
-    val result = js.Dynamic
-      .literal(
-        instance = js.Dynamic.literal(),
-        exports = js.Dynamic.literal(memory = exports.memory),
-        module = js.Dynamic.literal(),
-      )
-      .asInstanceOf[WasmInstantiationResult]
-
-    assertEquals(options.selectDynamic("raw").asInstanceOf[Boolean], true)
+    assertEquals(options.selectDynamic("source").asInstanceOf[String], "/game.wasm")
+    assertEquals(options.selectDynamic("imports").asInstanceOf[js.Object], importsObject)
+    assertEquals(resourceBindingOptions.selectDynamic("name").asInstanceOf[String], "player")
     assertEquals(scopeOptions.selectDynamic("name").asInstanceOf[String], "hud")
     assertEquals(
       bindingOptions.selectDynamic("watch").asInstanceOf[js.Array[String]].toSeq,
@@ -988,10 +959,6 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(update.path, "score")
     assertEquals(update.value.asInstanceOf[Int], 42)
     assertEquals(exports.memory.buffer.byteLength, 8)
-    assertEquals(
-      result.exports.asInstanceOf[js.Dynamic].selectDynamic("memory").asInstanceOf[js.Any],
-      exports.memory.asInstanceOf[js.Any],
-    )
 
   test("wasm scope, ABI, and service facades expose typed helpers"):
     val angularScope = js.Dynamic
@@ -1005,23 +972,18 @@ class AngularTSSuite extends munit.FunSuite:
     var watchedPath = ""
     var boundWithOptions = false
     var serviceLoadOptions: js.Any = js.Dynamic.literal()
+    var abiDisposed = false
     val imports = js.Dynamic
       .literal(
         angular_ts = js.Dynamic.literal(
           scope_resolve = (_: Int, _: Int) => 1,
           scope_get = (_: Int, _: Int, _: Int) => 2,
-          scope_get_named = (_: Int, _: Int, _: Int, _: Int) => 3,
           scope_set = (_: Int, _: Int, _: Int, _: Int, _: Int) => 1,
-          scope_set_named = (_: Int, _: Int, _: Int, _: Int, _: Int, _: Int) => 1,
           scope_delete = (_: Int, _: Int, _: Int) => 1,
-          scope_delete_named = (_: Int, _: Int, _: Int, _: Int) => 1,
           scope_sync = (_: Int) => 1,
-          scope_sync_named = (_: Int, _: Int) => 1,
           scope_watch = (_: Int, _: Int, _: Int) => 4,
-          scope_watch_named = (_: Int, _: Int, _: Int, _: Int) => 5,
           scope_unwatch = (_: Int) => 1,
           scope_unbind = (_: Int) => 1,
-          scope_unbind_named = (_: Int, _: Int) => 1,
           buffer_ptr = (_: Int) => 8,
           buffer_len = (_: Int) => 13,
           buffer_free = (_: Int) => (),
@@ -1030,11 +992,9 @@ class AngularTSSuite extends munit.FunSuite:
       .asInstanceOf[WasmScopeAbiImportObject]
     lazy val wasmScope: WasmScope = js.Dynamic
       .literal(
-        abi = abi,
         handle = 1,
         name = "player",
-        scope = angularScope,
-        isDisposed = () => false,
+        disposed = false,
         get = (_: String) => "value",
         set = (_: String, _: js.Any) => true,
         delete = (_: String) => true,
@@ -1043,7 +1003,7 @@ class AngularTSSuite extends munit.FunSuite:
         watch = (path: String, _: js.Function1[WasmScopeUpdate, Unit], _: js.Object) =>
           watchedPath = path
           (() => ()).asInstanceOf[js.Function0[Unit]],
-        bindExports = (_: WasmAbiExports, _: js.Object) =>
+        bind = (_: js.Object) =>
           boundWithOptions = true
           (() => ()).asInstanceOf[js.Function0[Unit]],
         dispose = () => (),
@@ -1055,39 +1015,41 @@ class AngularTSSuite extends munit.FunSuite:
         attach = (_: WasmAbiExports) => (),
         createScope = (_: Scope, _: js.Object) => wasmScope,
         getScope = (_: js.Any) => wasmScope,
-        unregisterScope = (_: Int) => true,
-        notifyBind = (_: WasmScope) => (),
-        notifyUpdate = (_: WasmScopeUpdate) => (),
-        notifyUnbind = (_: WasmScope) => (),
-        freeBuffer = (_: Int) => (),
+        disposed = false,
+        dispose = () => abiDisposed = true,
       )
       .asInstanceOf[WasmScopeAbi]
-    val exports = js.Dynamic
+    val binding = js.Dynamic
       .literal(
-        memory = js.Dynamic.literal(buffer = new js.typedarray.ArrayBuffer(8)),
-        ng_abi_alloc = (_: Int) => 0,
-        ng_abi_free = (_: Int, _: Int) => (),
+        name = "player",
+        target = angularScope,
+        disposed = false,
+        dispose = () => (),
       )
-      .asInstanceOf[WasmAbiExports]
-    val runtimeService
-        : js.Function3[
-          String,
-          js.UndefOr[js.Object],
-          js.UndefOr[js.Object],
-          js.Promise[js.Any],
-        ] = (
-        _: String,
-        _: js.UndefOr[js.Object],
-        options: js.UndefOr[js.Object],
-    ) =>
-      serviceLoadOptions = options.get
-      js.Promise.resolve(js.Dynamic.literal())
-    val runtimeServiceDynamic = runtimeService.asInstanceOf[js.Dynamic]
-    runtimeServiceDynamic.updateDynamic("scope")((_: Scope, _: js.Object) => wasmScope)
-    runtimeServiceDynamic.updateDynamic("createScopeAbi")((_: js.UndefOr[WasmAbiExports]) => abi)
-    val service = runtimeService.asInstanceOf[WasmService]
+      .asInstanceOf[WasmBinding]
+    val resource = js.Dynamic
+      .literal(
+        source = "demo.wasm",
+        status = "ready",
+        ready = js.Promise.resolve[js.Any](js.Dynamic.literal()),
+        instance = js.Dynamic.literal(),
+        module = js.Dynamic.literal(),
+        exports = js.Dynamic.literal(answer = 42),
+        disposed = false,
+        bind = (_: Scope, _: js.Object) => js.Promise.resolve(binding),
+        dispose = () => (),
+      )
+      .asInstanceOf[WasmResource]
+    val service = js.Dynamic
+      .literal(
+        load = (options: js.Object) =>
+          serviceLoadOptions = options
+          resource,
+      )
+      .asInstanceOf[WasmService]
 
     assertEquals(imports.angular_ts.scope_resolve(0, 0), 1)
+    assertEquals(abi.disposed, false)
     assertEquals(abi.createScope(angularScope, WasmScopeOptions(name = "player")), wasmScope)
     assertEquals(abi.getScope(1).get, wasmScope)
     assertEquals(wasmScope.get("name").asInstanceOf[String], "value")
@@ -1097,55 +1059,44 @@ class AngularTSSuite extends munit.FunSuite:
       (_: WasmScopeUpdate) => (),
       WasmScopeWatchOptions(initial = true),
     )
-    wasmScope.bindExports(
-      exports,
+    wasmScope.bind(
       WasmScopeBindingOptions(watch = js.Array("score"), initial = true),
     )
-    service.load("demo.wasm", options = WasmOptions(raw = true))
-    assertEquals(service.createScope(angularScope, WasmScopeOptions(name = "player")), wasmScope)
-    assertEquals(service.createScopeAbi(exports), abi)
+    val loaded = service.load(WasmLoadOptions("demo.wasm"))
+    loaded.bind(angularScope, WasmBindingOptions(name = "player"))
+    abi.dispose()
     assertEquals(watchedPath, "score")
     assertEquals(boundWithOptions, true)
+    assertEquals(abiDisposed, true)
     assertEquals(
-      serviceLoadOptions.asInstanceOf[js.Dynamic].selectDynamic("raw").asInstanceOf[Boolean],
-      true,
+      serviceLoadOptions.asInstanceOf[js.Dynamic].selectDynamic("source").asInstanceOf[String],
+      "demo.wasm",
     )
 
   test("ng module wasm helper passes typed registration options"):
     var capturedName = ""
-    var capturedSrc = ""
-    var capturedImports: js.Any = js.Dynamic.literal()
     var capturedOptions: js.Any = js.Dynamic.literal()
     val raw = js.Dynamic
       .literal(
         name = "demo",
-        wasm = (
-            name: String,
-            src: String,
-            imports: js.Any,
-            options: js.Any,
-        ) =>
+        wasm = (name: String, options: js.Any) =>
           capturedName = name
-          capturedSrc = src
-          capturedImports = imports
           capturedOptions = options
           js.Dynamic.literal(),
       )
       .asInstanceOf[RuntimeNgModule]
     val module = NgModule(raw)
     val imports = js.Dynamic.literal(env = js.Dynamic.literal()).asInstanceOf[js.Object]
-    val token = AngularTS.token[WasmService]("gameWasm")
+    val token = AngularTS.token[WasmResource]("gameWasm")
 
     assertEquals(
-      module.wasm(token, "/game.wasm", imports, WasmOptions(raw = true)),
+      module.wasm(token, WasmLoadOptions("/game.wasm", imports)),
       module,
     )
     assertEquals(capturedName, "gameWasm")
-    assertEquals(capturedSrc, "/game.wasm")
-    assertEquals(capturedImports, imports.asInstanceOf[js.Any])
     assertEquals(
-      capturedOptions.asInstanceOf[js.Dynamic].selectDynamic("raw").asInstanceOf[Boolean],
-      true,
+      capturedOptions.asInstanceOf[js.Dynamic].selectDynamic("source").asInstanceOf[String],
+      "/game.wasm",
     )
 
   test("ng module animation helper registers presets and factories"):
@@ -1270,12 +1221,8 @@ class AngularTSSuite extends munit.FunSuite:
         deletePrefix = (_: String) => js.Promise.resolve(()),
       )
       .asInstanceOf[RestCacheStore]
-    val policy = js.Dynamic
-      .literal(
-        check = (_: RestCachePolicyContext) =>
-          RestCachePolicyDecision(RestCacheStrategy.StaleWhileRevalidate),
-      )
-      .asInstanceOf[RestCachePolicy]
+    val policy: RestCachePolicy = (_: RestCachePolicyContext) =>
+      RestCacheStrategy.StaleWhileRevalidate.value
     val cached = CachedRestBackendOptions(
       network = network,
       cache = cache,
@@ -1290,16 +1237,10 @@ class AngularTSSuite extends munit.FunSuite:
     val config = RestConfig(defaults = RestOptions(extra = js.Dictionary("mode" -> "cors")))
       .toJS
       .asInstanceOf[js.Dynamic]
-    val definition = RestDefinition[js.Object](
-      name = "users",
-      url = "/api/users",
-      options = RestOptions(extra = js.Dictionary[js.Any]("cache" -> true)),
-    ).toJS.asInstanceOf[js.Dynamic]
-
     assert(cached.selectDynamic("network").isInstanceOf[js.Object])
     assert(cached.selectDynamic("cache").isInstanceOf[js.Object])
     assertEquals(cached.selectDynamic("strategy").asInstanceOf[String], "cache-first")
-    assert(cached.selectDynamic("policy").selectDynamic("check").isInstanceOf[js.Function])
+    assert(cached.selectDynamic("policy").isInstanceOf[js.Function])
     assert(cached.selectDynamic("onRevalidate").isInstanceOf[js.Function])
     assert(options.selectDynamic("backend").isInstanceOf[js.Object])
     assertEquals(options.selectDynamic("timeout").asInstanceOf[Int], 5000)
@@ -1307,13 +1248,6 @@ class AngularTSSuite extends munit.FunSuite:
       config.selectDynamic("defaults").selectDynamic("mode").asInstanceOf[String],
       "cors",
     )
-    assertEquals(definition.selectDynamic("name").asInstanceOf[String], "users")
-    assertEquals(definition.selectDynamic("url").asInstanceOf[String], "/api/users")
-    assertEquals(
-      definition.selectDynamic("options").selectDynamic("cache").asInstanceOf[Boolean],
-      true,
-    )
-
   test("rest factory extension passes typed options"):
     var capturedBaseUrl = ""
     var capturedOptions: js.UndefOr[js.Object] = js.undefined
@@ -1348,18 +1282,18 @@ class AngularTSSuite extends munit.FunSuite:
   test("app model tokens and lifecycle builders emit sync options"):
     final class PlayerModel(var x: Double, var y: Double) extends js.Object
 
-    val token = AngularTS.token[AppModelValue[PlayerModel]]("player")
-    val restoreOptions = AppModelRestoreOptions(
+    val token = AngularTS.token[Model[PlayerModel]]("player")
+    val restoreOptions = ModelRestoreOptions(
       origin = "socket",
-      mode = AppModelRestoreMode.Merge,
+      mode = ModelRestoreMode.Merge,
     ).toJS.asInstanceOf[js.Dynamic]
-    val syncOptions = AppModelSyncOptions(
-      failure = AppModelSyncFailurePolicy.Throw,
+    val syncOptions = ModelSyncOptions(
+      failure = ModelSyncFailurePolicy.Throw,
     ).toJS.asInstanceOf[js.Dynamic]
-    val target = AppModelSyncTarget[PlayerModel](
+    val target = ModelSyncTarget[PlayerModel](
       restore = () => new PlayerModel(1.0, 2.0),
-      write = (snapshot: PlayerModel, _: AppModelChange) => snapshot.x,
-      receive = (_: AppModelApply[PlayerModel]) => js.undefined,
+      write = (snapshot: PlayerModel, _: ModelChange) => snapshot.x,
+      receive = (_: ModelApply[PlayerModel]) => js.undefined,
       dispose = () => (),
     ).toJS.asInstanceOf[js.Dynamic]
 
@@ -1378,7 +1312,7 @@ class AngularTSSuite extends munit.FunSuite:
     var capturedTarget: js.UndefOr[js.Object] = js.undefined
     var capturedOptions: js.UndefOr[js.Object] = js.undefined
     val runtimeModel = js.Dynamic.literal()
-    val model = runtimeModel.asInstanceOf[AppModelLifecycle[PlayerModel]]
+    val model = runtimeModel.asInstanceOf[ModelLifecycle[PlayerModel]]
     var disposed = false
     runtimeModel.updateDynamic("$sync") {
       (target: js.Object, options: js.Object) =>
@@ -1388,10 +1322,10 @@ class AngularTSSuite extends munit.FunSuite:
         disposer
     }
     val dispose = model.sync(
-      AppModelSyncTarget[PlayerModel](
+      ModelSyncTarget[PlayerModel](
         restore = () => new PlayerModel(10),
       ),
-      AppModelSyncOptions(failure = AppModelSyncFailurePolicy.Ignore),
+      ModelSyncOptions(failure = ModelSyncFailurePolicy.Ignore),
     )
 
     dispose()
@@ -1414,32 +1348,34 @@ class AngularTSSuite extends munit.FunSuite:
       "ignore",
     )
 
-  test("machine config builders emit transitions, guards, and hooks"):
+  test("machine config builders emit state-tree transitions, guards, and hooks"):
     final class PlayerData(var status: String, var count: Int) extends js.Object
     type NoEvents = MachineNoEvents
 
-    val transition: MachineTransition[PlayerData, js.Any, NoEvents] =
-      (data: PlayerData, _: js.Any, _: Machine[PlayerData, NoEvents]) =>
-        data.count += 1
-        "ready"
-    val guard: MachineGuard[PlayerData, js.Any, NoEvents] =
-      (_: PlayerData, _: js.Any, _: Machine[PlayerData, NoEvents]) => true
-    val hook: MachineTransitionHook[PlayerData, NoEvents] =
-      (context: MachineTransitionContext[PlayerData, NoEvents, js.Any]) =>
-        context.data.status = context.to
-    val descriptor = MachineTransitionDescriptor[PlayerData, js.Any, NoEvents](
-      target = transition,
-      guard = guard,
-    )
-    val transitions: MachineTransitionMap[PlayerData, NoEvents] = js.Dictionary(
-      "idle" -> js.Dictionary[MachineTransitionDefinition[PlayerData, js.Any, NoEvents]](
-        "start" -> descriptor,
+    val update: MachineEventTransitionUpdate[PlayerData, NoEvents] =
+      (context: MachineEventTransitionContext[PlayerData, NoEvents, js.Any]) =>
+        context.data.count += 1
+    val guard: MachineEventTransitionGuard[PlayerData, NoEvents] =
+      (_: MachineEventTransitionContext[PlayerData, NoEvents, js.Any]) => true
+    val hook: MachineEventTransitionHook[PlayerData, NoEvents] =
+      (context: MachineEventTransitionContext[PlayerData, NoEvents, js.Any]) =>
+        context.data.status = context.to.getOrElse("")
+    val states: MachineStateMap[PlayerData, NoEvents] = js.Dictionary(
+      "idle" -> MachineStateDefinition[PlayerData, NoEvents](
+        on = js.Dictionary(
+          "start" -> MachineEventTransitionConfig[PlayerData, js.Any, NoEvents](
+            to = "ready",
+            guard = guard,
+            update = update,
+          ),
+        ),
       ),
+      "ready" -> MachineStateDefinition[PlayerData, NoEvents](),
     )
-    val config = MachineConfig[PlayerData, NoEvents](
+    val config = MachineStateConfig[PlayerData, NoEvents](
       initial = "idle",
       data = new PlayerData("idle", 0),
-      transitions = transitions,
+      states = states,
       hooks = MachineHooks[PlayerData, NoEvents](
         enter = js.Dictionary("ready" -> hook),
         transition = hook,
@@ -1453,16 +1389,18 @@ class AngularTSSuite extends munit.FunSuite:
     )
     assert(
       config
-        .selectDynamic("transitions")
+        .selectDynamic("states")
         .selectDynamic("idle")
+        .selectDynamic("on")
         .selectDynamic("start")
-        .selectDynamic("target")
+        .selectDynamic("update")
         .isInstanceOf[js.Function],
     )
     assert(
       config
-        .selectDynamic("transitions")
+        .selectDynamic("states")
         .selectDynamic("idle")
+        .selectDynamic("on")
         .selectDynamic("start")
         .selectDynamic("guard")
         .isInstanceOf[js.Function],
@@ -1481,19 +1419,21 @@ class AngularTSSuite extends munit.FunSuite:
     type NoEvents = MachineNoEvents
 
     val token = AngularTS.token[Machine[PlayerData, NoEvents]]("playerMachine")
-    val transition: MachineTransition[PlayerData, js.Any, NoEvents] =
-      (_: PlayerData, _: js.Any, _: Machine[PlayerData, NoEvents]) => "ready"
-    val config = AngularTS.defineMachine(
-      MachineConfig[PlayerData, NoEvents](
+    val config =
+      MachineStateConfig[PlayerData, NoEvents](
         initial = "idle",
         data = new PlayerData("idle"),
-        transitions = js.Dictionary(
-          "idle" -> js.Dictionary[MachineTransitionDefinition[PlayerData, js.Any, NoEvents]](
-            "start" -> transition,
+        states = js.Dictionary(
+          "idle" -> MachineStateDefinition[PlayerData, NoEvents](
+            on = js.Dictionary(
+              "start" -> MachineEventTransitionConfig[PlayerData, js.Any, NoEvents](
+                to = "ready",
+              ),
+            ),
           ),
+          "ready" -> MachineStateDefinition[PlayerData, NoEvents](),
         ),
-      ),
-    )
+      )
     val machine = js.Dynamic
       .literal(
         current = "idle",
@@ -1543,7 +1483,6 @@ class AngularTSSuite extends munit.FunSuite:
 
   test("workflow config builders emit commands, diagnostics, and options"):
     final class PlayerData(var status: String) extends js.Object
-    type NoEvents = MachineNoEvents
     type NoCommands = WorkflowNoCommands
 
     val diagnostic = WorkflowDiagnostic(
@@ -1552,43 +1491,35 @@ class AngularTSSuite extends munit.FunSuite:
       recoverable = true,
       command = "load",
     )
-    val command = AngularTS.defineCommand[
-      PlayerData,
-      String,
-      Int,
-      NoEvents,
-      NoCommands,
-      String,
-    ]((context: WorkflowCommandContext[PlayerData, String, NoEvents, NoCommands, String]) =>
-      WorkflowCommandResult.ok[Int](context.input.length),
-    )
-    val transitions: MachineTransitionMap[PlayerData, NoEvents] = js.Dictionary(
-      "idle" -> js.Dictionary.empty[MachineTransitionDefinition[PlayerData, js.Any, NoEvents]],
+    val command = WorkflowCommandDefinition[String, Int, PlayerData](
+      from = "idle",
+      pending = "loading",
+      execute = (context: WorkflowCommandContext[String, PlayerData]) => context.input.length,
+      success = WorkflowLifecycleTarget(
+        "complete",
+        (context: WorkflowSuccessContext[String, Int, PlayerData]) =>
+          context.data.status = s"loaded:${context.output}",
+      ),
+      failure = "failed",
+      concurrency = WorkflowConcurrencyPolicy.Queue,
+      commandTimeout = 250,
     )
     val config = AngularTS
       .defineWorkflow(
-        WorkflowConfig[PlayerData, NoEvents, NoCommands](
+        WorkflowConfig[PlayerData, NoCommands](
           id = "player",
           initial = "idle",
           data = new PlayerData("idle"),
-          transitions = transitions,
-          commands = js.Dictionary("load" -> command),
-          commandTimeout = 250,
-          concurrency = WorkflowConcurrencyPolicy.Queue,
+          commands = WorkflowCommandMap("load" -> command),
           diagnosticLimit = 5,
           historyLimit = 10,
         ),
       )
       .toJS
       .asInstanceOf[js.Dynamic]
-    val options = WorkflowCommandOptions(
-      concurrency = WorkflowConcurrencyPolicy.Reject,
-      timeout = 100,
-    ).toJS.asInstanceOf[js.Dynamic]
-    val failed = WorkflowCommandResult.failed[Int](js.Array(diagnostic))
     val snapshot = WorkflowSnapshot(
       id = "player",
-      current = "idle",
+      state = "idle",
       data = new PlayerData("idle"),
       diagnostics = js.Array(diagnostic),
       history = js.Array(
@@ -1602,68 +1533,42 @@ class AngularTSSuite extends munit.FunSuite:
     )
 
     assertEquals(config.selectDynamic("id").asInstanceOf[String], "player")
-    assertEquals(config.selectDynamic("concurrency").asInstanceOf[String], "queue")
-    assertEquals(config.selectDynamic("commandTimeout").asInstanceOf[Double], 250.0)
-    assert(config.selectDynamic("commands").selectDynamic("load").isInstanceOf[js.Function])
-    assertEquals(options.selectDynamic("concurrency").asInstanceOf[String], "reject")
-    assertEquals(options.selectDynamic("timeout").asInstanceOf[Double], 100.0)
-    assertEquals(failed.ok, false)
-    assertEquals(failed.diagnostics.get.head.code, "workflow.timeout")
+    val emittedCommand = config.selectDynamic("commands").selectDynamic("load")
+    assertEquals(emittedCommand.selectDynamic("pending").asInstanceOf[String], "loading")
+    assertEquals(emittedCommand.selectDynamic("concurrency").asInstanceOf[String], "queue")
+    assertEquals(emittedCommand.selectDynamic("commandTimeout").asInstanceOf[Double], 250.0)
+    assert(emittedCommand.selectDynamic("execute").isInstanceOf[js.Function])
     assertEquals(snapshot.version, 1)
     assertEquals(snapshot.history.head.command, "load")
 
   test("workflow service facade and module helper pass typed workflow config"):
     final class PlayerData(var status: String) extends js.Object
-    type NoEvents = MachineNoEvents
     type NoCommands = WorkflowNoCommands
 
-    val token = AngularTS.token[Workflow[PlayerData, NoEvents, NoCommands]]("playerWorkflow")
-    val config = WorkflowConfig[PlayerData, NoEvents, NoCommands](
+    val token = AngularTS.token[Workflow[PlayerData, NoCommands]]("playerWorkflow")
+    val config = WorkflowConfig[PlayerData, NoCommands](
       id = "player",
       initial = "idle",
       data = new PlayerData("idle"),
-      transitions = js.Dictionary(
-        "idle" -> js.Dictionary.empty[MachineTransitionDefinition[PlayerData, js.Any, NoEvents]],
-      ),
+      commands = WorkflowCommandMap(),
     )
     val workflow = js.Dynamic
       .literal(
         id = "player",
-        current = "idle",
+        state = "idle",
         data = new PlayerData("idle"),
         diagnostics = js.Array[WorkflowDiagnostic](),
         history = js.Array[WorkflowHistoryEntry](),
-        send = ((_: String, _: js.UndefOr[js.Any]) => true)
-          .asInstanceOf[js.Function2[String, js.UndefOr[js.Any], Boolean]],
         can = ((_: String) => true).asInstanceOf[js.Function1[String, Boolean]],
-        matches = ((mode: String) => mode == "idle")
-          .asInstanceOf[js.Function1[String, Boolean]],
-        run = ((_: String, _: js.UndefOr[js.Any], _: js.UndefOr[js.Object]) =>
-          js.Promise.resolve(WorkflowCommandResult.ok[js.Any]()))
+        run = ((_: String, _: js.UndefOr[js.Any]) =>
+          js.Promise.resolve(
+            js.Dynamic.literal(ok = true, status = "completed", output = js.undefined),
+          ))
           .asInstanceOf[
-            js.Function3[
+            js.Function2[
               String,
               js.UndefOr[js.Any],
-              js.UndefOr[js.Object],
-              js.Promise[WorkflowCommandResult[js.Any]],
-            ],
-          ],
-        retry = ((_: js.UndefOr[String], _: js.UndefOr[js.Object]) =>
-          js.Promise.resolve(WorkflowCommandResult.ok[js.Any]()))
-          .asInstanceOf[
-            js.Function2[
-              js.UndefOr[String],
-              js.UndefOr[js.Object],
-              js.Promise[WorkflowCommandResult[js.Any]],
-            ],
-          ],
-        repeat = ((_: js.UndefOr[String], _: js.UndefOr[js.Object]) =>
-          js.Promise.resolve(WorkflowCommandResult.ok[js.Any]()))
-          .asInstanceOf[
-            js.Function2[
-              js.UndefOr[String],
-              js.UndefOr[js.Object],
-              js.Promise[WorkflowCommandResult[js.Any]],
+              js.Promise[WorkflowResult[js.Any]],
             ],
           ],
         cancel = ((_: js.UndefOr[String]) => 0)
@@ -1672,11 +1577,11 @@ class AngularTSSuite extends munit.FunSuite:
           .asInstanceOf[js.Function0[WorkflowSnapshot[PlayerData]]],
         restore = ((_: js.Any) => ()).asInstanceOf[js.Function1[js.Any, Unit]],
       )
-      .asInstanceOf[Workflow[PlayerData, NoEvents, NoCommands]]
+      .asInstanceOf[Workflow[PlayerData, NoCommands]]
     var capturedServiceConfig: js.UndefOr[js.Dynamic] = js.undefined
     val runtimeService: js.Function1[
       js.Object,
-      Workflow[PlayerData, NoEvents, NoCommands],
+      Workflow[PlayerData, NoCommands],
     ] =
       (workflowConfig: js.Object) =>
         capturedServiceConfig = workflowConfig.asInstanceOf[js.Dynamic]
@@ -1703,16 +1608,13 @@ class AngularTSSuite extends munit.FunSuite:
 
   test("workflow supervisor builders emit persistence, recovery, and snapshots"):
     final class PlayerData(var status: String) extends js.Object
-    type NoEvents = MachineNoEvents
     type NoCommands = WorkflowNoCommands
 
-    val workflowConfig = WorkflowConfig[PlayerData, NoEvents, NoCommands](
+    val workflowConfig = WorkflowConfig[PlayerData, NoCommands](
       id = "player",
       initial = "idle",
       data = new PlayerData("idle"),
-      transitions = js.Dictionary(
-        "idle" -> js.Dictionary.empty[MachineTransitionDefinition[PlayerData, js.Any, NoEvents]],
-      ),
+      commands = WorkflowCommandMap(),
     )
     val workflows = js.Dictionary[js.Any]("player" -> workflowConfig.toJS)
     val workflowSnapshot =
@@ -1744,34 +1646,30 @@ class AngularTSSuite extends munit.FunSuite:
           .asInstanceOf[
             js.Function2[String, WorkflowSupervisorSnapshot[js.Object], js.Promise[Unit]],
           ],
-        remove = ((_: String) => js.Promise.resolve(()))
-          .asInstanceOf[js.Function1[String, js.Promise[Unit]]],
       )
       .asInstanceOf[WorkflowSupervisorPersistence[WorkflowSupervisorSnapshot[js.Object]]]
     val config = WorkflowSupervisorConfig(
       id = "session",
       workflows = workflows.asInstanceOf[js.Object],
       persistence = persistence,
-      persistencePolicy = WorkflowSupervisorPersistencePolicy.AfterCommand,
-      recovery = WorkflowSupervisorRecoveryPolicy(
-        restoreOnStart = true,
-        retryRecoverable = false,
-      ),
+      autoPersist = true,
+      autoRecover = true,
     ).toJS.asInstanceOf[js.Dynamic]
-    val idbConfig = WorkflowSupervisorIndexedDbPersistenceConfig(
+    val idbConfig = WorkflowSupervisorPersistenceConfig(
       database = "app-workflows",
       store = "snapshots",
       version = 2,
       indexedDB = js.Dynamic.literal(),
     ).toJS.asInstanceOf[js.Dynamic]
 
+    assertEquals(idbConfig.selectDynamic("type").asInstanceOf[String], "indexeddb")
     assertEquals(config.selectDynamic("id").asInstanceOf[String], "session")
     assertEquals(
-      config.selectDynamic("persistencePolicy").asInstanceOf[String],
-      "after-command",
+      config.selectDynamic("autoPersist").asInstanceOf[Boolean],
+      true,
     )
     assertEquals(
-      config.selectDynamic("recovery").selectDynamic("restoreOnStart").asInstanceOf[Boolean],
+      config.selectDynamic("autoRecover").asInstanceOf[Boolean],
       true,
     )
     assert(config.selectDynamic("persistence").isInstanceOf[js.Object])
@@ -1789,7 +1687,7 @@ class AngularTSSuite extends munit.FunSuite:
       workflows = js.Dictionary[js.Any](
         "player" -> js.Dynamic.literal(id = "player"),
       ).asInstanceOf[js.Object],
-      persistencePolicy = WorkflowSupervisorPersistencePolicy.Manual,
+      autoPersist = false,
     )
     var capturedModuleName = ""
     var capturedModuleConfig: js.UndefOr[js.Dynamic] = js.undefined
@@ -1807,8 +1705,8 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(capturedModuleName, "sessionSupervisor")
     assertEquals(capturedModuleConfig.get.selectDynamic("id").asInstanceOf[String], "session")
     assertEquals(
-      capturedModuleConfig.get.selectDynamic("persistencePolicy").asInstanceOf[String],
-      "manual",
+      capturedModuleConfig.get.selectDynamic("autoPersist").asInstanceOf[Boolean],
+      false,
     )
 
   test("workflow worker protocol builders preserve runtime message shapes"):
@@ -1824,7 +1722,10 @@ class AngularTSSuite extends munit.FunSuite:
     val response = WorkflowWorkerResponse(
       id = "1",
       ok = true,
-      result = WorkflowCommandResult.ok[String]("loaded"),
+      result = js
+        .Dynamic
+        .literal(ok = true, status = "completed", output = "loaded")
+        .asInstanceOf[WorkflowResult[String]],
     )
     val snapshotMessage = WorkflowWorkerSnapshotMessage(
       js.Dictionary("player" -> workflowSnapshot),
@@ -1837,19 +1738,19 @@ class AngularTSSuite extends munit.FunSuite:
       .literal(
         latestSnapshot = js.Dictionary("player" -> workflowSnapshot),
         run = ((_: String, _: String, _: js.UndefOr[js.Any]) =>
-          js.Promise.resolve(WorkflowCommandResult.ok[String]("loaded")))
+          js.Promise.resolve(
+            js
+              .Dynamic
+              .literal(ok = true, status = "completed", output = "loaded")
+              .asInstanceOf[WorkflowResult[String]],
+          ))
           .asInstanceOf[
             js.Function3[
               String,
               String,
               js.UndefOr[js.Any],
-              js.Promise[WorkflowCommandResult[String]],
+              js.Promise[WorkflowResult[String]],
             ],
-          ],
-        send = ((_: String, _: String, _: js.UndefOr[js.Any]) =>
-          js.Promise.resolve(true))
-          .asInstanceOf[
-            js.Function3[String, String, js.UndefOr[js.Any], js.Promise[Boolean]],
           ],
         snapshot = (() => js.Promise.resolve(js.Dictionary("player" -> workflowSnapshot)))
           .asInstanceOf[js.Function0[js.Promise[js.Dictionary[WorkflowSnapshot[js.Object]]]]],
@@ -1886,7 +1787,6 @@ class AngularTSSuite extends munit.FunSuite:
       `type` = ServiceWorkerWorkerType.Module,
       updateViaCache = ServiceWorkerUpdateViaCache.None,
       autoRegister = true,
-      scriptUrl = "/sw.js",
       checkForUpdatesOnRegister = true,
     ).toJS.asInstanceOf[js.Dynamic]
 
@@ -1894,60 +1794,21 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(config.selectDynamic("type").asInstanceOf[String], "module")
     assertEquals(config.selectDynamic("updateViaCache").asInstanceOf[String], "none")
     assertEquals(config.selectDynamic("autoRegister").asInstanceOf[Boolean], true)
-    assertEquals(config.selectDynamic("scriptUrl").asInstanceOf[String], "/sw.js")
     assertEquals(
       config.selectDynamic("checkForUpdatesOnRegister").asInstanceOf[Boolean],
       true,
     )
 
-  test("service worker message client option builders emit protocol options"):
-    val client = ServiceWorkerMessageClientOptions(
-      requestType = "request",
-      responseType = "response",
-      timeout = 5000.0,
-      createId = () => "id",
-      target = ServiceWorkerMessageTarget.Waiting,
-    ).toJS.asInstanceOf[js.Dynamic]
-    val request = ServiceWorkerMessageClientRequestOptions(
+  test("service worker request options map to the direct request contract"):
+    import ServiceWorkerService.*
+
+    val request = ServiceWorkerRequestOptions(
       transfer = js.Array(),
       timeout = 1000.0,
       target = ServiceWorkerMessageTarget.Active,
     ).toJS.asInstanceOf[js.Dynamic]
-
-    assertEquals(client.selectDynamic("requestType").asInstanceOf[String], "request")
-    assertEquals(client.selectDynamic("responseType").asInstanceOf[String], "response")
-    assertEquals(client.selectDynamic("timeout").asInstanceOf[Double], 5000.0)
-    assert(client.selectDynamic("createId").isInstanceOf[js.Function])
-    assertEquals(client.selectDynamic("target").asInstanceOf[String], "waiting")
-    assert(request.selectDynamic("transfer").isInstanceOf[js.Array[js.Any]])
-    assertEquals(request.selectDynamic("timeout").asInstanceOf[Double], 1000.0)
-    assertEquals(request.selectDynamic("target").asInstanceOf[String], "active")
-
-  test("service worker message contracts preserve runtime protocol shape"):
-    import ServiceWorkerMessageClient.*
-
-    val request = ServiceWorkerMessageRequest(
-      messageType = "request",
-      id = "request-1",
-      payload = js.Dynamic.literal(action = "sync"),
-    ).asInstanceOf[js.Dynamic]
-    val response = ServiceWorkerMessageResponse(
-      messageType = "response",
-      id = "request-1",
-      ok = true,
-      data = js.Dynamic.literal(status = "ok"),
-    ).asInstanceOf[js.Dynamic]
-    val error = js.Dynamic
-      .literal(
-        name = "ServiceWorkerMessageClientError",
-        message = "timed out",
-        code = ServiceWorkerMessageClientErrorCode.Timeout.value,
-        detail = js.Dynamic.literal(id = "request-1"),
-      )
-      .asInstanceOf[ServiceWorkerMessageClientError]
-    var disposed = false
     var capturedTarget = ""
-    val runtimeClient = js.Dynamic.literal(pending = 1, disposed = false)
+    val runtimeService = js.Dynamic.literal()
     val requestFn: js.Function2[js.Any, js.Object, js.Promise[String]] =
       (_: js.Any, options: js.Object) =>
         capturedTarget = options
@@ -1955,36 +1816,34 @@ class AngularTSSuite extends munit.FunSuite:
           .selectDynamic("target")
           .asInstanceOf[String]
         js.Promise.resolve("accepted")
-    val disposeFn: js.Function0[Unit] = () => disposed = true
-    runtimeClient.updateDynamic("request")(requestFn)
-    runtimeClient.updateDynamic("dispose")(disposeFn)
-    val messageClient = runtimeClient.asInstanceOf[ServiceWorkerMessageClient]
+    runtimeService.updateDynamic("request")(requestFn)
+    val service = runtimeService.asInstanceOf[ServiceWorkerService]
 
-    assertEquals(request.selectDynamic("type").asInstanceOf[String], "request")
-    assertEquals(request.selectDynamic("id").asInstanceOf[String], "request-1")
-    assertEquals(
-      request
-        .selectDynamic("payload")
-        .asInstanceOf[js.Dynamic]
-        .selectDynamic("action")
-        .asInstanceOf[String],
-      "sync",
-    )
-    assertEquals(response.selectDynamic("type").asInstanceOf[String], "response")
-    assertEquals(response.selectDynamic("ok").asInstanceOf[Boolean], true)
-    assertEquals(error.name, "ServiceWorkerMessageClientError")
-    assertEquals(error.message, "timed out")
-    assertEquals(error.code, "timeout")
-    assertEquals(messageClient.pending, 1)
-    messageClient.requestWithOptions[String](
-      js.Dynamic.literal(),
-      ServiceWorkerMessageClientRequestOptions(
-        target = ServiceWorkerMessageTarget.Waiting,
-      ),
-    )
-    messageClient.dispose()
+    assert(request.selectDynamic("transfer").isInstanceOf[js.Array[js.Any]])
+    assertEquals(request.selectDynamic("timeout").asInstanceOf[Double], 1000.0)
+    assertEquals(request.selectDynamic("target").asInstanceOf[String], "active")
+    service.requestWithOptions[String](js.Dynamic.literal(), ServiceWorkerRequestOptions(
+      target = ServiceWorkerMessageTarget.Waiting,
+    ))
     assertEquals(capturedTarget, "waiting")
-    assertEquals(disposed, true)
+
+  test("service worker errors preserve stable operation details"):
+    val error = js.Dynamic
+      .literal(
+        name = "ServiceWorkerError",
+        message = "timed out",
+        code = ServiceWorkerErrorCode.RequestTimeout.value,
+        detail = js.Dynamic.literal(operation = "request"),
+      )
+      .asInstanceOf[ServiceWorkerError]
+
+    assertEquals(error.name, "ServiceWorkerError")
+    assertEquals(error.message, "timed out")
+    assertEquals(error.code, "request-timeout")
+    assertEquals(
+      error.detail.get.asInstanceOf[js.Dynamic].selectDynamic("operation").asInstanceOf[String],
+      "request",
+    )
 
   test("aria, interpolate, and sce config builders emit runtime objects"):
     val aria = AriaConfig(
@@ -2030,67 +1889,66 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(SceContexts.Html, "html")
     assertEquals(SceContexts.ResourceUrl, "resourceUrl")
 
-  test("security config builder emits credential and navigation policy options"):
-    val config = SecurityPolicyConfig(
-      defaultDecision = SecurityPolicyDecisionType.Deny,
-      branches = js.Array("jwt", "cookieSession"),
-      allowInsecureTransport = false,
-      credentials = SecurityPolicyCredentialConfig(
-        jwt = () => "token",
-        cookieSession = SecurityCookieSessionConfig(withCredentials = true),
+  test("security config builder emits credentials and permissions"):
+    val config = SecurityConfig(
+      fallback = SecurityFallbackDecision.Deny,
+      allowInsecureOrigins = js.Array("http://localhost:8080"),
+      credentials = SecurityCredentialsConfig(
+        bearer = () => "token",
+        basic = SecurityBasicCredentials("user", "password"),
+        cookie = true,
+        order = js.Array("bearer", "cookie"),
       ),
-      navigation = SecurityNavigationPolicyConfig(
-        rules = js.Array(
-          SecurityNavigationRule(
-            state = js.Array("admin"),
-            decision = SecurityPolicyDecisionType.Redirect,
-            reason = "login required",
-            status = 302,
-            target = "login",
-          ),
-        ),
-        permissions = () => js.Array("admin.read"),
-      ),
+      isAuthenticated = true,
+      permissions = js.Array("admin.read"),
     ).toJS.asInstanceOf[js.Dynamic]
 
-    assertEquals(config.selectDynamic("defaultDecision").asInstanceOf[String], "deny")
+    assertEquals(config.selectDynamic("fallback").asInstanceOf[String], "deny")
     assertEquals(
-      config.selectDynamic("branches").asInstanceOf[js.Array[String]].toSeq,
-      Seq("jwt", "cookieSession"),
+      config.selectDynamic("allowInsecureOrigins").asInstanceOf[js.Array[String]].toSeq,
+      Seq("http://localhost:8080"),
     )
-    assertEquals(config.selectDynamic("allowInsecureTransport").asInstanceOf[Boolean], false)
-    assert(config.selectDynamic("credentials").selectDynamic("jwt").isInstanceOf[js.Function])
+    assert(config.selectDynamic("credentials").selectDynamic("bearer").isInstanceOf[js.Function])
     assertEquals(
       config
         .selectDynamic("credentials")
-        .selectDynamic("cookieSession")
-        .selectDynamic("withCredentials")
+        .selectDynamic("basic")
+        .selectDynamic("username")
+        .asInstanceOf[String],
+      "user",
+    )
+    assertEquals(config.selectDynamic("isAuthenticated").asInstanceOf[Boolean], true)
+    assertEquals(
+      config
+        .selectDynamic("credentials")
+        .selectDynamic("cookie")
         .asInstanceOf[Boolean],
       true,
     )
     assertEquals(
       config
-        .selectDynamic("navigation")
-        .selectDynamic("rules")
-        .asInstanceOf[js.Array[js.Dynamic]]
-        .head
-        .selectDynamic("decision")
-        .asInstanceOf[String],
-      "redirect",
+        .selectDynamic("credentials")
+        .selectDynamic("order")
+        .asInstanceOf[js.Array[String]]
+        .toSeq,
+      Seq("bearer", "cookie"),
     )
-    assert(config.selectDynamic("navigation").selectDynamic("permissions").isInstanceOf[js.Function])
+    assertEquals(
+      config.selectDynamic("permissions").asInstanceOf[js.Array[String]].toSeq,
+      Seq("admin.read"),
+    )
 
   test("angular config builder emits security config under injectable name"):
     val config = AngularConfig(
-      security = SecurityPolicyConfig(
-        defaultDecision = SecurityPolicyDecisionType.Allow,
+      security = SecurityConfig(
+        fallback = SecurityFallbackDecision.Allow,
       ),
     ).toJS.asInstanceOf[js.Dynamic]
 
     assertEquals(
       config
         .selectDynamic("$security")
-        .selectDynamic("defaultDecision")
+        .selectDynamic("fallback")
         .asInstanceOf[String],
       "allow",
     )
@@ -2201,7 +2059,7 @@ class AngularTSSuite extends munit.FunSuite:
         disposer
     }
 
-    val service = runtimeService.asInstanceOf[TransitionService]
+    val service = runtimeService.asInstanceOf[TransitionsService]
     val deregister = service.before(
       HookMatchCriteria(to = "dashboard"),
       (_: Transition) => true,
@@ -2299,16 +2157,13 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(state.selectDynamic("params").selectDynamic("id").asInstanceOf[String], "1")
     assertEquals(state.selectDynamic("data").selectDynamic("title").asInstanceOf[String], "Home")
 
-  test("typed route aliases and resolve builders preserve router shapes"):
-    type AppRoutes = TypedRouteMap
-    type UserRouteName = TypedRouteName[AppRoutes]
-    type UserParams = TypedRouteParams[AppRoutes, UserRouteName]
-    type UserResolves = TypedRouteResolves[AppRoutes, UserRouteName]
-    type AppState = TypedStateService[AppRoutes]
-    type AppTransition = TypedTransition[AppRoutes, UserRouteName, UserRouteName]
+  test("route contracts and resolve builders preserve router shapes"):
+    type AppRoutes = RouteMap
+    type AppState = StateService
+    type AppTransition = Transition
 
-    val routeName: UserRouteName = "admin.users"
-    val routeDeclaration = TypedRouteDeclaration(
+    val routeName = "admin.users"
+    val routeDeclaration = RouteContract(
       params = js.Dictionary[js.Any]("id" -> "u1"),
       resolves = js.Dictionary[js.Any]("user" -> "loaded"),
     )
@@ -2316,8 +2171,8 @@ class AngularTSSuite extends munit.FunSuite:
     val routeMap: AppRoutes = js.Dictionary(
       routeName -> routeDeclaration,
     )
-    val params: UserParams = js.Dictionary[js.Any]("id" -> "u1")
-    val resolves: UserResolves = js.Dictionary[js.Any]("user" -> "loaded")
+    val params = js.Dictionary[js.Any]("id" -> "u1")
+    val resolves = js.Dictionary[js.Any]("user" -> "loaded")
     val resolveFn: js.Function0[String] = () => "loaded"
     val resolveObject = StateResolveObject("user" -> resolveFn)
     val resolveArray = StateResolveArray(
@@ -2364,7 +2219,7 @@ class AngularTSSuite extends munit.FunSuite:
       url = "/editor/:id",
       policy = StatePolicyDeclaration(
         navigation = StateNavigationPolicyDeclaration(
-          require = js.Array("auth"),
+          authenticated = true,
           permissions = "editor.write",
           redirectTo = "login",
           reason = "editor login required",
@@ -2392,10 +2247,9 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(
       policy
         .selectDynamic("navigation")
-        .selectDynamic("require")
-        .asInstanceOf[js.Array[String]]
-        .toSeq,
-      Seq("auth"),
+        .selectDynamic("authenticated")
+        .asInstanceOf[Boolean],
+      true,
     )
     assertEquals(
       policy
@@ -2435,7 +2289,7 @@ class AngularTSSuite extends munit.FunSuite:
       url = "/workspace",
       abstractState = true,
       policy = StatePolicyDeclaration(
-        navigation = StateNavigationPolicyDeclaration(require = "auth"),
+        navigation = StateNavigationPolicyDeclaration(authenticated = true),
       ),
       children = js.Array(
         RouterModuleDeclaration(
@@ -2452,9 +2306,9 @@ class AngularTSSuite extends munit.FunSuite:
       tree
         .selectDynamic("policy")
         .selectDynamic("navigation")
-        .selectDynamic("require")
-        .asInstanceOf[String],
-      "auth",
+        .selectDynamic("authenticated")
+        .asInstanceOf[Boolean],
+      true,
     )
     val child = tree
       .selectDynamic("children")

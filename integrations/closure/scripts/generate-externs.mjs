@@ -10,11 +10,7 @@ const namespacePath = resolve(repoRoot, "src/namespace.ts");
 const externsPath = resolve(integrationRoot, "externs/angular.js");
 
 const nativeAliases = new Map([
-  ["DocumentService", "!Document"],
-  ["RootElementService", "!Element"],
   ["TemplateCacheService", "!Map<string, string>"],
-  ["WindowService", "!Window"],
-  ["NativeWebTransport", "!WebTransport"],
   ["WebTransportBufferInput", "BufferSource"],
 ]);
 
@@ -35,10 +31,6 @@ const semanticTypedefs = new Map([
     "Injectable",
     "(!ng.AnnotatedFactory|function(...?): ?|function(new: ?, ...?))",
   ],
-  [
-    "HttpPromise",
-    "!Promise<!ng.HttpResponse<?>>",
-  ],
 ]);
 
 const directiveLinkTypedef =
@@ -57,13 +49,9 @@ semanticTypedefs.set(
 );
 
 const memberTypeOverrides = new Map([
-  ["Angular.subapps", "!Array<!ng.AngularService>"],
-  ["Angular.$t", "!ng.InjectionTokens"],
-  ["AngularService.subapps", "!Array<!ng.AngularService>"],
-  ["AngularService.$t", "!ng.InjectionTokens"],
+  ["Angular.subapps", "!Array<!ng.Angular>"],
+  ["Angular.$t", "!Object"],
   ["Scope.$target", "!Object"],
-  ["RootScopeService.$target", "!Object"],
-  ["ServiceProvider.$get", "!ng.Injectable"],
 ]);
 
 const moduleListType = "!Array<(string|!ng.Injectable)>";
@@ -82,9 +70,6 @@ const parameterTypeOverrides = new Map([
   ["Angular.module.configFn", "!ng.Injectable"],
   ["Angular.bootstrap.modules", moduleListType],
   ["Angular.injector.modules", moduleListType],
-  ["AngularService.module.configFn", "!ng.Injectable"],
-  ["AngularService.bootstrap.modules", moduleListType],
-  ["AngularService.injector.modules", moduleListType],
   ["NgModule.constant.object", constantValueType],
   ["NgModule.config.configFn", "!ng.Injectable"],
   ["NgModule.run.block", "!ng.Injectable"],
@@ -96,11 +81,6 @@ const parameterTypeOverrides = new Map([
   ["NgModule.animation.animationFactory", "!ng.Injectable"],
   ["NgModule.controller.ctlFn", "!ng.Injectable"],
   ["NgModule.store.ctor", storeCreatorType],
-  ["ProvideService.directive.directive", "!ng.DirectiveFactory"],
-  ["ProvideService.provider.provider", "(!ng.ServiceProvider|!ng.Injectable|!Object)"],
-  ["ProvideService.factory.factoryFn", "!ng.Injectable"],
-  ["ProvideService.service.constructor", "!ng.Injectable"],
-  ["ProvideService.decorator.fn", "!ng.Injectable"],
   ["NativeService.receive.message", "(string|!Object)"],
   ["TransitionService.onBefore.callback", transitionHookFnType],
   ["TransitionService.onStart.callback", transitionHookFnType],
@@ -113,9 +93,6 @@ const parameterTypeOverrides = new Map([
   ["Scope.get.property", "(number|string|symbol)"],
   ["Scope.deleteProperty.property", "(number|string|symbol)"],
   ["Scope.$merge.newTarget", "!Object"],
-  ["RootScopeService.get.property", "(number|string|symbol)"],
-  ["RootScopeService.deleteProperty.property", "(number|string|symbol)"],
-  ["RootScopeService.$merge.newTarget", "!Object"],
 ]);
 
 const memberReturnTypeOverrides = new Map([
@@ -141,8 +118,7 @@ const constructorTypes = new Set([
   "Scope",
   "HttpService",
   "NativeService",
-  "PubSubProvider",
-  "PubSubService",
+  "EventBusService",
 ]);
 
 let publicAliasNames = new Set();
@@ -150,9 +126,8 @@ let publicAliasTemplateNames = new Map();
 let activeTemplateNames = new Set();
 
 const sourceTypeAliasNames = new Map([
-  ["PubSub", "PubSubService"],
+  ["EventBus", "EventBusService"],
   ["Location", "LocationService"],
-  ["Provider", "ProvideService"],
 ]);
 
 const browserTypeNames = new Set([
@@ -193,11 +168,7 @@ const typeDescriptions = new Map([
     "Native bridge service used to call host-platform methods, receive replies, subscribe to native events, and access the active adapter.",
   ],
   [
-    "PubSubProvider",
-    "Provider used during module configuration to register and expose the application-wide AngularTS pub/sub event bus service.",
-  ],
-  [
-    "PubSubService",
+    "EventBusService",
     "Topic-based publish/subscribe service for decoupled application events.",
   ],
   [

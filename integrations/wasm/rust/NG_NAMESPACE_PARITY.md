@@ -26,13 +26,15 @@ required Rust namespace porting surface is covered here and tested.
 
 Required Rust porting entries:
 
-- Wasm scope boundary: `WasmScope`, `WasmScopeAbiImports`, `WasmAbiExports`,
-  `WasmScopeUpdate`, `WasmScopeWatchOptions`, `WasmScopeBindingOptions`, and
-  `WasmScopeReference`.
+- Direct Wasm scope ABI boundary from
+  `@angular-wave/angular.ts/services/wasm`: `WasmScopeAbiImports`,
+  `WasmAbiExports`, and `WasmScopeReference`, represented for Rust authoring by
+  `Field`, `BinaryField`, `ScopeUpdate`, `WatchOptions`, and `WriteOptions`.
+  These are no longer ambient `ng` namespace parity rows.
 - Restricted scope/lifecycle facade: `Scope` and `RootScopeService`.
 - Rust authoring metadata: `Component`, `Controller`,
   `ControllerConstructor`, `NgModule`, `Injectable`, and `InjectionTokens`.
-- HTTP facade: `HttpService`, `RequestConfig`, `RequestShortcutConfig`,
+- HTTP facade: `HttpService`, `HttpRequestConfig`, `HttpRequestOptions`,
   `HttpMethod`, `HttpResponse`, and `HttpResponseStatus`.
 - Diagnostics and events: `LogService`, `ExceptionHandlerService`,
   `PubSubService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`.
@@ -47,13 +49,11 @@ plan change.
 
 The selected next-priority Rust app-authoring surfaces after the required
 surface are now covered: router/state, realtime, core REST facades, and the
-machine data/config/runtime facade. `MachineProvider` is covered as a
-config-free provider facade because the current machine API keeps all behavior
-in per-machine `MachineConfig` values. Forms and validation remain the next
-useful application-level gap. Other provider/config-time APIs, compile/link
-internals, browser object aliases, animation, worker, web component, REST
-cache/revalidation helpers, and parse/interpolate/filter/SCE/location APIs
-remain deferred unless a Rust reference example makes one necessary.
+machine data/config/runtime facade. Forms and validation remain the next useful
+application-level gap. Other provider/config-time APIs, compile/link internals,
+browser object aliases, animation, worker, web component, REST cache/revalidation
+helpers, and parse/interpolate/filter/SCE/location APIs remain deferred unless a
+Rust reference example makes one necessary.
 
 ## Status Legend
 
@@ -69,6 +69,7 @@ remain deferred unless a Rust reference example makes one necessary.
 | ng type | Rust status |
 | --- | --- |
 | `Angular` | deferred |
+| `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | deferred |
 | `ClassMap` | deferred |
 | `ClassValue` | deferred |
@@ -77,145 +78,102 @@ remain deferred unless a Rust reference example makes one necessary.
 | `Directive` | deferred |
 | `DirectiveRestrict` | deferred |
 | `DirectiveFactory` | deferred |
+| `DocumentService` | alias |
+| `ElementService` | alias |
+| `InjectionTokenMap` | deferred |
 | `NgModule` | covered |
-| `PublicLinkFn` | deferred |
-| `PubSubProvider` | deferred |
+| `LinkFn` | deferred |
 | `Scope` | covered |
-| `ScopeService` | covered |
+| `ScopeService` | alias |
+| `RootScopeService` | alias |
+| `RootElementService` | alias |
 | `TranscludeFn` | deferred |
 | `AnnotatedFactory` | deferred |
 | `ControllerConstructor` | covered |
 | `Expression` | deferred |
 | `Injectable` | covered |
-| `InjectionTokens` | covered |
-| `InvocationDetail` | covered |
 | `ListenerFn` | covered |
 | `Machine` | covered |
-| `MachineConfig` | covered |
-| `MachineEventMap` | covered |
-| `MachineGuard` | covered |
-| `MachineHooks` | covered |
-| `MachineMode` | covered |
-| `MachineModeHooks` | covered |
-| `MachineNoEvents` | covered |
+| `MachineContract` | deferred |
+| `MachineConfig` | deferred |
+| `MachineSendResult` | deferred |
+| `MachineSendStatus` | deferred |
 | `MachineSnapshot` | covered |
-| `MachineTransition` | covered |
-| `MachineTransitionContext` | covered |
-| `MachineTransitionDefinition` | covered |
-| `MachineTransitionDescriptor` | covered |
-| `MachineTransitionHook` | covered |
-| `MachineTransitionMap` | covered |
-| `MachineTransitionResult` | covered |
+| `Model` | deferred |
+| `ModelChange` | deferred |
+| `ModelRestoreOptions` | deferred |
+| `ModelSyncFailureMode` | deferred |
+| `ModelSyncOptions` | deferred |
+| `ModelSyncTarget` | deferred |
+| `Policy` | deferred |
+| `PolicyContext` | deferred |
+| `PolicyDecision` | deferred |
 | `Workflow` | deferred |
 | `WorkflowCommand` | deferred |
+| `WorkflowCommandContract` | deferred |
 | `WorkflowCommandContext` | deferred |
-| `WorkflowCommandMap` | deferred |
-| `WorkflowCommandOptions` | deferred |
-| `WorkflowConcurrencyPolicy` | deferred |
-| `WorkflowCommandResult` | deferred |
-| `WorkflowConfig` | deferred |
-| `WorkflowDiagnostic` | deferred |
-| `WorkflowHistoryEntry` | deferred |
-| `WorkflowMode` | deferred |
-| `WorkflowNoCommands` | deferred |
+| `WorkflowCommandDefinition` | deferred |
+| `WorkflowContract` | deferred |
+| `WorkflowResult` | deferred |
 | `WorkflowSnapshot` | deferred |
-| `WorkflowSnapshotMigration` | deferred |
-| `WorkflowStatus` | deferred |
+| `WorkflowSupervisor` | deferred |
+| `WorkflowSupervisorConfig` | deferred |
+| `WorkflowSupervisorPersistence` | deferred |
+| `WorkflowSupervisorPersistenceConfig` | deferred |
+| `WorkflowSupervisorSnapshot` | deferred |
 | `ScopeEvent` | covered |
-| `ServiceProvider` | deferred |
 | `Validator` | deferred |
+| `WindowService` | alias |
 
 ## Providers
 
 | ng type | Rust status |
 | --- | --- |
-| `AnchorScrollProvider` | deferred |
-| `AngularProvider` | deferred |
-| `AngularServiceProvider` | deferred |
-| `AnimateProvider` | deferred |
-| `AriaProvider` | deferred |
-| `CompileLifecycleProvider` | deferred |
-| `CompileProvider` | deferred |
-| `ControllerProvider` | deferred |
-| `CookieProvider` | deferred |
-| `EventBusProvider` | deferred |
-| `ExceptionHandlerProvider` | deferred |
-| `FilterProvider` | deferred |
-| `HttpParamSerializerProvider` | deferred |
-| `HttpProvider` | deferred |
-| `InterpolateProvider` | deferred |
-| `LocationProvider` | deferred |
-| `LogProvider` | deferred |
-| `MachineProvider` | covered |
-| `WorkflowProvider` | deferred |
-| `ParseProvider` | deferred |
-| `RestProvider` | deferred |
-| `RootScopeProvider` | deferred |
-| `RouterProvider` | deferred |
-| `SceDelegateProvider` | deferred |
-| `SceProvider` | deferred |
-| `SseProvider` | deferred |
-| `StateProvider` | deferred |
-| `StateRegistryProvider` | deferred |
-| `StreamProvider` | deferred |
-| `TemplateCacheProvider` | deferred |
-| `TemplateFactoryProvider` | deferred |
-| `TemplateRequestProvider` | deferred |
-| `TransitionProvider` | deferred |
-| `TransitionsProvider` | deferred |
-| `TransitionService` | deferred |
-| `ViewProvider` | deferred |
-| `WasmProvider` | deferred |
-| `WebComponentProvider` | deferred |
-| `WebSocketProvider` | deferred |
-| `WebTransportProvider` | deferred |
-| `WorkerProvider` | deferred |
+| `ProviderDefinition` | deferred |
 
 ## Services
 
 | ng type | Rust status |
 | --- | --- |
 | `AnchorScrollService` | deferred |
-| `AngularService` | deferred |
 | `AnimateService` | deferred |
+| `AriaConfig` | deferred |
 | `AriaService` | deferred |
-| `CompileLifecycleService` | deferred |
 | `CompileService` | deferred |
 | `ControllerService` | deferred |
 | `CookieService` | covered |
-| `DocumentService` | alias |
-| `ElementService` | alias |
 | `EventBusService` | covered |
 | `ExceptionHandlerService` | covered |
 | `FilterService` | deferred |
 | `HttpParamSerializerService` | deferred |
 | `HttpService` | covered |
 | `InjectorService` | deferred |
+| `InterpolateConfig` | deferred |
 | `InterpolateService` | deferred |
 | `LocationService` | deferred |
+| `LogBeaconConfig` | deferred |
+| `LogBeaconSerializer` | deferred |
+| `LogEntry` | deferred |
+| `LogLevel` | deferred |
 | `LogService` | covered |
 | `MachineService` | covered |
+| `EventBusConfig` | deferred |
 | `WorkflowService` | deferred |
 | `ParseService` | deferred |
-| `ProvideService` | deferred |
-| `PubSubService` | covered |
-| `RootElementService` | alias |
-| `RootScopeService` | covered |
 | `SceDelegateService` | deferred |
 | `SceService` | deferred |
-| `StateRegistryService` | covered |
-| `StateService` | covered |
+| `SecurityPolicy` | deferred |
+| `SecurityConfig` | deferred |
+| `SecurityCredentialsConfig` | deferred |
+| `ServiceWorkerService` | deferred |
 | `StreamService` | deferred |
 | `TemplateCacheService` | covered |
-| `TemplateFactoryService` | deferred |
 | `TemplateRequestService` | covered |
 | `TransitionsService` | deferred |
-| `ViewService` | deferred |
 | `WebComponentService` | deferred |
 | `WebSocketService` | covered |
 | `WebTransportService` | deferred |
-| `WindowService` | alias |
-| `WorkerService` | deferred |
+| `WorkerService` | covered |
 
 ## HTTP And REST
 
@@ -224,16 +182,16 @@ remain deferred unless a Rust reference example makes one necessary.
 | `CachedRestBackendOptions` | deferred |
 | `EntityClass` | deferred |
 | `HttpMethod` | covered |
-| `HttpPromise` | deferred |
-| `HttpProviderDefaults` | deferred |
+| `HttpDefaults` | deferred |
 | `HttpResponse` | covered |
 | `HttpResponseStatus` | covered |
-| `RequestConfig` | covered |
-| `RequestShortcutConfig` | covered |
+| `HttpRequestConfig` | covered |
+| `HttpRequestOptions` | covered |
+| `RestCachePolicy` | deferred |
+| `RestCachePolicyContext` | deferred |
 | `RestBackend` | covered |
 | `RestCacheStore` | deferred |
 | `RestCacheStrategy` | deferred |
-| `RestDefinition` | covered |
 | `RestFactory` | covered |
 | `RestOptions` | covered |
 | `RestRequest` | covered |
@@ -246,12 +204,9 @@ remain deferred unless a Rust reference example makes one necessary.
 | ng type | Rust status |
 | --- | --- |
 | `CurrencyFilterOptions` | deferred |
-| `DateFilterOptions` | deferred |
 | `EntryFilterItem` | deferred |
 | `FilterFactory` | deferred |
 | `FilterFn` | deferred |
-| `NumberFilterOptions` | deferred |
-| `RelativeTimeFilterOptions` | deferred |
 
 ## Animation
 
@@ -265,16 +220,25 @@ remain deferred unless a Rust reference example makes one necessary.
 | `AnimationPreset` | deferred |
 | `AnimationPresetHandler` | deferred |
 | `AnimationResult` | deferred |
-| `NativeAnimationOptions` | deferred |
 
 ## Router
 
 | ng type | Rust status |
 | --- | --- |
+| `ParamsOf` | deferred |
+| `ResolvesOf` | deferred |
+| `RouterConfig` | deferred |
+| `RouterModuleDeclaration` | deferred |
+| `RoutesOf` | deferred |
 | `StateDeclaration` | covered |
-| `StateResolveArray` | covered |
-| `StateResolveObject` | covered |
+| `StatePolicyDeclaration` | deferred |
+| `StateRegistryService` | covered |
+| `RouteContract` | deferred |
+| `RouteMap` | deferred |
+| `RouterModule` | deferred |
+| `StateService` | deferred |
 | `Transition` | covered |
+| `TransitionRouteContract` | deferred |
 
 ## Realtime And Connections
 
@@ -282,42 +246,38 @@ remain deferred unless a Rust reference example makes one necessary.
 | --- | --- |
 | `ConnectionConfig` | covered |
 | `ConnectionEvent` | covered |
+| `EventDeliveryPolicy` | deferred |
+| `EventDeliveryPolicyContext` | deferred |
 | `RealtimeProtocolEventDetail` | covered |
 | `RealtimeProtocolMessage` | covered |
 | `SseConfig` | covered |
 | `SseConnection` | covered |
-| `SseProtocolEventDetail` | deferred |
-| `SseProtocolMessage` | deferred |
 | `SseService` | covered |
-| `SwapModeType` | covered |
+| `SwapMode` | covered |
 | `WebSocketConfig` | covered |
 | `WebSocketConnection` | covered |
 | `WebTransportBufferInput` | deferred |
-| `WebTransportCertificateHash` | deferred |
 | `WebTransportConfig` | deferred |
 | `WebTransportConnection` | deferred |
 | `WebTransportDatagramEvent` | deferred |
-| `WebTransportOptions` | deferred |
 | `WebTransportReconnectEvent` | deferred |
 | `WebTransportRetryDelay` | deferred |
-| `NativeWebTransport` | deferred |
 
 ## Wasm ABI
 
 | ng type | Rust status |
 | --- | --- |
-| `WasmAbiExports` | covered |
-| `WasmInstantiationResult` | not-applicable |
-| `WasmOptions` | not-applicable |
-| `WasmScope` | covered |
-| `WasmScopeAbi` | not-applicable |
-| `WasmScopeAbiImportObject` | not-applicable |
-| `WasmScopeAbiImports` | covered |
-| `WasmScopeBindingOptions` | covered |
-| `WasmScopeOptions` | not-applicable |
-| `WasmScopeReference` | covered |
-| `WasmScopeUpdate` | covered |
-| `WasmScopeWatchOptions` | covered |
+| `WasmBinding` | covered |
+| `WasmBindingOptions` | covered |
+| `WasmCompileOptions` | not-applicable |
+| `WasmError` | not-applicable |
+| `WasmErrorCode` | not-applicable |
+| `WasmErrorStage` | not-applicable |
+| `WasmLoadOptions` | not-applicable |
+| `WasmResource` | not-applicable |
+| `WasmResourceStatus` | not-applicable |
+| `WasmSource` | not-applicable |
+| `WasmTarget` | covered |
 | `WasmService` | not-applicable |
 
 ## Web Components
@@ -331,6 +291,7 @@ remain deferred unless a Rust reference example makes one necessary.
 | `ElementScopeOptions` | deferred |
 | `ScopeElement` | deferred |
 | `ScopeElementConstructor` | deferred |
+| `WebComponentConfig` | deferred |
 | `WebComponentContext` | deferred |
 | `WebComponentInput` | deferred |
 | `WebComponentInputConfig` | deferred |
@@ -345,10 +306,28 @@ remain deferred unless a Rust reference example makes one necessary.
 | `ErrorHandlingConfig` | deferred |
 | `InterpolationFunction` | deferred |
 | `NgModelController` | deferred |
+| `HtmlCanvasConfig` | deferred |
+| `HtmlCanvasRuntimeSupport` | deferred |
+| `HtmlCanvasService` | deferred |
+| `ServiceWorkerConfig` | deferred |
+| `ServiceWorkerErrorCode` | deferred |
+| `ServiceWorkerMessageEvent` | deferred |
+| `ServiceWorkerMessageTarget` | deferred |
+| `ServiceWorkerPostOptions` | deferred |
+| `ServiceWorkerRegistrationState` | deferred |
+| `ServiceWorkerRequestOptions` | deferred |
+| `ServiceWorkerUpdateState` | deferred |
 | `StorageBackend` | covered |
 | `StorageType` | covered |
-| `WorkerConfig` | deferred |
-| `WorkerConnection` | deferred |
+| `WorkerConfig` | covered |
+| `WorkerError` | covered |
+| `WorkerErrorCode` | covered |
+| `WorkerHandle` | covered |
+| `WorkerModelMessage` | covered |
+| `WorkerRequest` | covered |
+| `WorkerRequestOptions` | covered |
+| `WorkerResponse` | covered |
+| `WorkerStatus` | covered |
 
 ## Parity Rules
 

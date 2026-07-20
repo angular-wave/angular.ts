@@ -96,7 +96,7 @@ final class RealtimeProtocolMessage {
   final String? target;
 
   /// Optional swap mode that overrides the directive swap mode.
-  final SwapModeType? swap;
+  final SwapMode? swap;
 }
 
 /// Realtime protocol event detail.
@@ -126,15 +126,8 @@ final class RealtimeProtocolEventDetail<T, TSource> {
   final Object? error;
 }
 
-/// Signature for sse protocol message.
-typedef SseProtocolMessage = RealtimeProtocolMessage;
-
-/// Signature for sse protocol event detail.
-typedef SseProtocolEventDetail<T>
-    = RealtimeProtocolEventDetail<T, SseConnection>;
-
 /// Supported swap mode type values.
-enum SwapModeType {
+enum SwapMode {
   /// Replaces the contents inside the element.
   innerHTML('innerHTML'),
 
@@ -162,7 +155,7 @@ enum SwapModeType {
   /// Performs no insertion.
   none('none');
 
-  const SwapModeType(this.value);
+  const SwapMode(this.value);
 
   /// Registers an AngularTS value.
   final String value;
@@ -186,7 +179,6 @@ final class SseConfig {
     this.transformMessage,
     this.withCredentials,
     this.params,
-    this.headers,
   });
 
   /// The connection.
@@ -230,9 +222,6 @@ final class SseConfig {
 
   /// The params.
   final Map<String, Object?>? params;
-
-  /// The headers.
-  final Map<String, String>? headers;
 }
 
 /// Runtime interface for sse connection.
@@ -240,8 +229,8 @@ abstract interface class SseConnection {
   /// The close.
   void close();
 
-  /// The connect.
-  void connect();
+  /// Reconnects using the original configuration.
+  void reconnect();
 }
 
 /// Represents web socket config.
@@ -310,8 +299,8 @@ final class WebSocketConfig {
 
 /// Runtime handle for an AngularTS WebSocket connection.
 abstract interface class WebSocketConnection {
-  /// The connect.
-  void connect();
+  /// Reconnects using the original configuration.
+  void reconnect();
 
   /// The send.
   void send(Object? data);

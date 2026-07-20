@@ -27,6 +27,7 @@ final class StateDeclaration implements unsafe.JsConvertible {
     this.controller,
     this.templateUrl,
     this.resolve,
+    this.children,
   });
 
   /// The name.
@@ -83,6 +84,9 @@ final class StateDeclaration implements unsafe.JsConvertible {
   /// The resolve.
   final Object? resolve;
 
+  /// Nested route declarations whose names are relative to this route.
+  final List<StateDeclaration>? children;
+
   /// The to map.
   Map<String, Object?> toMap() {
     return {
@@ -104,6 +108,8 @@ final class StateDeclaration implements unsafe.JsConvertible {
       if (controller != null) 'controller': _injectableValueToJs(controller),
       if (templateUrl != null) 'templateUrl': templateUrl,
       if (resolve != null) 'resolve': _resolveToJs(resolve),
+      if (children != null)
+        'children': [for (final child in children!) child.toJsObject()],
     };
   }
 
@@ -153,13 +159,14 @@ Object? _injectableValueToJs(Object? value) {
   return value;
 }
 
-/// WebAssembly injectable registration options.
-final class WasmRegistration implements unsafe.JsConvertible {
-  /// Creates a wasm registration.
-  const WasmRegistration({
+/// Declarative options for loading or registering a WebAssembly module.
+final class WasmLoadOptions implements unsafe.JsConvertible {
+  /// Creates WebAssembly loading options.
+  const WasmLoadOptions({
     required this.source,
     this.imports = const {},
-    this.raw = false,
+    this.compile,
+    this.diagnostics = false,
   });
 
   /// The source.
@@ -168,18 +175,41 @@ final class WasmRegistration implements unsafe.JsConvertible {
   /// The imports.
   final Map<String, Object?> imports;
 
-  /// The raw.
-  final bool raw;
+  /// Standard options forwarded to WebAssembly compilation.
+  final WasmCompileOptions? compile;
 
-  /// The to options object.
-  JSObject toOptionsObject() {
-    return unsafe.object({
-      if (raw) 'raw': raw,
-    });
-  }
+  /// Whether browser Performance entries are recorded for this resource.
+  final bool diagnostics;
 
   @override
-  JSAny? toJsValue() => toOptionsObject();
+  JSAny? toJsValue() => unsafe.object({
+        'source': source,
+        if (imports.isNotEmpty) 'imports': imports,
+        if (compile case final compile?) 'compile': compile,
+        if (diagnostics) 'diagnostics': true,
+      });
+}
+
+/// Standard options forwarded to WebAssembly compilation.
+final class WasmCompileOptions implements unsafe.JsConvertible {
+  /// Creates WebAssembly compilation options.
+  const WasmCompileOptions({
+    this.builtins = const [],
+    this.importedStringConstants,
+  });
+
+  /// Native WebAssembly builtin modules enabled while compiling.
+  final List<String> builtins;
+
+  /// Native module name used for imported global string constants.
+  final String? importedStringConstants;
+
+  @override
+  JSAny? toJsValue() => unsafe.object({
+        if (builtins.isNotEmpty) 'builtins': builtins,
+        if (importedStringConstants case final name?)
+          'importedStringConstants': name,
+      });
 }
 
 /// Web Worker injectable registration options.
@@ -250,15 +280,11 @@ final class WebSocketRegistration {
   /// Creates a web socket registration.
   const WebSocketRegistration(
     this.url, {
-    this.protocols = const [],
     this.config = const {},
   });
 
   /// The url.
   final String url;
-
-  /// The protocols.
-  final List<String> protocols;
 
   /// The config.
   final Map<String, Object?> config;

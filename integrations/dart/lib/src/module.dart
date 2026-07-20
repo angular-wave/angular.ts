@@ -118,21 +118,36 @@ final class NgModule extends GeneratedNgNgModule {
     return this;
   }
 
-  /// The state.
-  NgModule state(StateDeclaration state) {
-    rawState(state);
+  /// Registers a module-owned route tree or forest.
+  NgModule router(Object declaration) {
+    final value = switch (declaration) {
+      final StateDeclaration route => route.toJsObject(),
+      final List<StateDeclaration> routes => [
+          for (final route in routes) route.toJsObject()
+        ],
+      _ => throw ArgumentError.value(
+          declaration,
+          'declaration',
+          'Expected StateDeclaration or List<StateDeclaration>',
+        ),
+    };
+
+    rawRouter(value);
     return this;
   }
 
   /// Registers an AngularTS REST resource.
   NgModule rest<T>(
-    RestDefinition<T> definition,
-  ) {
+    String name,
+    String url, {
+    EntityClass<T>? entityClass,
+    RestOptions options = const RestOptions(),
+  }) {
     rawRest(
-      definition.name,
-      definition.url,
-      definition.entityClass,
-      definition.options.extra,
+      name,
+      url,
+      entityClass,
+      options.extra,
     );
     return this;
   }
@@ -140,9 +155,9 @@ final class NgModule extends GeneratedNgNgModule {
   /// Registers an AngularTS WebAssembly dependency.
   NgModule wasm<TValue>(
     Token<TValue> token,
-    WasmRegistration wasm,
+    WasmLoadOptions config,
   ) {
-    rawWasm(token.name, wasm.source, wasm.imports, wasm);
+    rawWasm(token.name, config);
     return this;
   }
 
@@ -186,7 +201,6 @@ final class NgModule extends GeneratedNgNgModule {
     rawWebsocket(
       token.name,
       websocket.url,
-      websocket.protocols.isEmpty ? null : unsafe.strings(websocket.protocols),
       websocket.config,
     );
     return this;

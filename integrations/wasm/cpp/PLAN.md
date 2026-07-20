@@ -20,18 +20,12 @@ The C++ facade must call the same `angular_ts` imports:
 ```text
 scope_resolve
 scope_get
-scope_get_named
 scope_set
-scope_set_named
 scope_delete
-scope_delete_named
 scope_sync
-scope_sync_named
 scope_watch
-scope_watch_named
 scope_unwatch
 scope_unbind
-scope_unbind_named
 buffer_ptr
 buffer_len
 buffer_free
@@ -49,7 +43,7 @@ ng_abi_alloc
 ng_abi_free
 ng_scope_on_bind
 ng_scope_on_unbind
-ng_scope_on_update
+ng_scope_on_transaction
 ```
 
 ## Initial Facade Shape

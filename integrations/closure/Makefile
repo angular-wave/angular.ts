@@ -22,7 +22,7 @@ closure-validate:
 	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/scripts/validate-externs.mjs
 
 closure-build: closure-validate
-	@$(MAKE) -C $(CLOSURE_REPO_ROOT) build
+	@$(MAKE) -C $(CLOSURE_REPO_ROOT) release-build
 	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/scripts/build.mjs
 
 closure-test: closure-build clojurescript-build java-check

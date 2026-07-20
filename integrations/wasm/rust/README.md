@@ -14,6 +14,8 @@ The integration is strict by default:
 - Raw JavaScript interop is isolated behind explicit unsafe APIs.
 - Public API coverage is tracked against the published AngularTS `ng`
   namespace in [NG_NAMESPACE_PARITY.md](NG_NAMESPACE_PARITY.md).
+- The guest exports `ng_abi_version` so incompatible host and facade builds
+  fail before scope binding.
 
 This package is an active implementation. The current crates compile and
 establish the workspace, public facade shape, strict metadata-generating macros,
@@ -22,7 +24,82 @@ browser-tested example apps. The covered Rust facade set now includes core
 module/component/service authoring, scope and Wasm ABI types, `$http`,
 template/cache, storage/cookie, diagnostics/event bus, router/state, realtime
 WebSocket/SSE, core `$rest` resource APIs, and `$machine` state-machine
-facades.
+facades. `$worker` exposes managed `WorkerHandle` lifecycle, correlated JSON
+requests, model synchronization channels, typed restart configuration, and
+native message/error subscriptions for browser Wasm applications.
+
+## Scope ABI And App Models
+
+Rust `WasmScope` is for component/controller/view-scope work. It should remain
+the boundary for Rust-authored AngularTS components that read and write
+template-visible scope state.
+
+Generated contracts carry Rust value types with their paths. Normal
+application code does not pass path strings or `JsValue` through the scope API:
+
+```rust
+mod player {
+    include!("../../contracts/generated/player_contract.rs");
+}
+
+let health = scope.get(player::HEALTH)?;
+scope.set(player::NAME, "Ada".to_string())?;
+scope
+    .update()
+    .set(player::POSITION_X, 12.5)?
+    .set(player::POSITION_Y, 8.0)?
+    .origin("physics")
+    .commit()?;
+```
+
+Resolve named scopes with `WasmScope::resolve(...)`. Resolution fails
+immediately with `WasmError` instead of creating a wrapper around handle `0`.
+
+`get`, `set`, `delete`, binary operations, transactions, and watch
+registration return `Result` rather than dropping ABI errors. Observers decode
+host values against the generated field type and retain transaction metadata:
+
+```rust
+let health_watch = scope.observe_with(
+    player::HEALTH,
+    angular_ts::WatchOptions::new().with_initial(true),
+    |update| match update {
+        Ok(update) => log_health(update.value(), update.origin()),
+        Err(error) => report_contract_error(error),
+    },
+)?;
+```
+
+Keep the returned `Watch` alive while updates are needed. It unregisters its
+host watch and Rust callback when dropped, and multiple observers may watch the
+same scope path independently. For component-prefixed scopes, `ScopeUpdate`
+reports the local generated path (`health`) rather than the host-qualified path
+(`ctrl.health`).
+
+App-owned state now belongs to AngularTS models. When Rust or another Wasm
+runtime needs durable or shared app state, keep the model boundary in host-side
+AngularTS JavaScript:
+
+```js
+app.model("session", () => ({ count: 0 }));
+
+app.controller("SessionCtrl", class {
+  static $inject = ["session", "rustRuntimeSync", "$scope"];
+
+  constructor(session, rustRuntimeSync, $scope) {
+    this.session = session;
+    const stopSync = session.$sync(rustRuntimeSync);
+
+    $scope.$on("$destroy", stopSync);
+  }
+});
+```
+
+The Rust facade should not add model handles or model watch imports to the raw
+Wasm ABI yet. Use `WasmScope` for view scopes; use `app.model(...)` plus
+`$sync()` targets for app state that must survive root destruction, coordinate
+multiple roots, or synchronize with storage, workers, engines, machines,
+workflows, or network services.
 
 The bridge still requires Rust-side `#[wasm_bridge]` annotations for
 Wasm-visible controllers, service wrappers, values, and boundary types. The

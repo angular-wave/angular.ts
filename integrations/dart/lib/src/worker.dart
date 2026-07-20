@@ -2,114 +2,150 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart';
 
-import 'services.dart';
 import 'unsafe.dart' as unsafe;
 
-/// Configuration for a managed AngularTS Web Worker connection.
+/// Configuration for a managed AngularTS Web Worker handle.
 final class WorkerConfig {
   /// Creates a worker config.
   const WorkerConfig({
-    this.onMessage,
-    this.onError,
-    this.autoRestart,
-    this.autoTerminate,
-    this.transformMessage,
-    this.logger,
-    this.err,
+    this.type,
+    this.name,
+    this.credentials,
+    this.restart,
+    this.restartDelay,
+    this.maxRestarts,
+    this.decode,
   });
 
-  /// Called for every message received from the worker.
-  final void Function(Object? data, MessageEvent event)? onMessage;
+  /// Native worker script type (`module` or `classic`).
+  final String? type;
 
-  /// Called when the underlying worker emits an error.
-  final void Function(ErrorEvent error)? onError;
+  /// Native worker name.
+  final String? name;
 
-  /// Restarts the worker automatically after an error when enabled.
-  final bool? autoRestart;
+  /// Native worker credentials mode.
+  final String? credentials;
 
-  /// Terminates the worker automatically when its owner is destroyed.
-  final bool? autoTerminate;
+  /// Restarts the worker after an error when enabled.
+  final bool? restart;
 
-  /// Converts outbound messages before they are posted to the worker.
-  final Object? Function(Object? data)? transformMessage;
+  /// Base restart delay in milliseconds.
+  final num? restartDelay;
 
-  /// Logger service used by the worker manager.
-  final LogService? logger;
+  /// Maximum number of automatic restarts.
+  final int? maxRestarts;
 
-  /// Exception handler service used by the worker manager.
-  final ExceptionHandlerService? err;
+  /// Decodes inbound worker messages before delivery to subscribers.
+  final Object? Function(Object? data)? decode;
 
   /// The to js object.
   JSObject toJsObject() {
     return unsafe.object({
-      if (onMessage != null)
-        'onMessage': unsafe.JsValue(((JSAny? data, MessageEvent event) {
-          onMessage!(unsafe.jsToDart<Object?>(data), event);
+      if (type != null) 'type': type,
+      if (name != null) 'name': name,
+      if (credentials != null) 'credentials': credentials,
+      if (restart != null) 'restart': restart,
+      if (restartDelay != null) 'restartDelay': restartDelay,
+      if (maxRestarts != null) 'maxRestarts': maxRestarts,
+      if (decode != null)
+        'decode': unsafe.JsValue(((JSAny? data) {
+          return unsafe.dartToJs(decode!(unsafe.jsToDart(data)));
         }).toJS),
-      if (onError != null) 'onError': unsafe.JsValue(onError!.toJS),
-      if (autoRestart != null) 'autoRestart': autoRestart,
-      if (autoTerminate != null) 'autoTerminate': autoTerminate,
-      if (transformMessage != null)
-        'transformMessage': unsafe.JsValue(((JSAny? data) {
-          return unsafe.dartToJs(transformMessage!(unsafe.jsToDart(data)));
-        }).toJS),
-      if (logger != null) 'logger': unsafe.JsValue(logger!.raw),
-      if (err != null) 'err': unsafe.JsValue(err!.raw),
     });
   }
 }
 
-/// Fully populated worker configuration used internally by AngularTS.
-final class DefaultWorkerConfig {
-  /// Creates a default worker config.
-  const DefaultWorkerConfig({
-    required this.onMessage,
-    required this.onError,
-    required this.autoRestart,
-    required this.autoTerminate,
-    required this.transformMessage,
-    required this.logger,
-    required this.err,
-  });
+/// Typed failure reported by a managed AngularTS Web Worker.
+final class WorkerError {
+  /// Creates a typed worker error facade.
+  const WorkerError(this.raw);
 
-  /// Callback for function.
-  final void Function(Object? data, MessageEvent event) onMessage;
+  /// The raw JavaScript error.
+  final JSObject raw;
 
-  /// Callback for function.
-  final void Function(ErrorEvent error) onError;
+  /// Stable worker error code.
+  String get code => unsafe.jsToDart<String>(unsafe.getProperty(raw, 'code'));
 
-  /// The auto restart.
-  final bool autoRestart;
-
-  /// The auto terminate.
-  final bool autoTerminate;
-
-  /// Callback for function.
-  final Object? Function(Object? data) transformMessage;
-
-  /// The logger.
-  final LogService logger;
-
-  /// The err.
-  final ExceptionHandlerService err;
+  /// Human-readable failure message.
+  String get message =>
+      unsafe.jsToDart<String>(unsafe.getProperty(raw, 'message'));
 }
 
 /// Runtime handle for a managed AngularTS Web Worker.
-final class WorkerConnection {
-  /// Creates a worker connection.
-  const WorkerConnection(this.raw);
+final class WorkerHandle {
+  /// Creates a worker handle.
+  const WorkerHandle(this.raw);
 
   /// The raw.
   final JSObject raw;
 
-  /// Runtime configuration attached to this connection.
-  Object? get config => unsafe.jsToDart<Object?>(
-        unsafe.getProperty(raw, 'config'),
-      );
+  /// Current managed lifecycle status.
+  String get status =>
+      unsafe.jsToDart<String>(unsafe.getProperty(raw, 'status'));
+
+  /// Latest managed worker error.
+  WorkerError? get error {
+    final value = unsafe.getProperty(raw, 'error');
+
+    return value == null ? null : WorkerError(value as JSObject);
+  }
+
+  /// Number of worker replacements.
+  int get restartCount =>
+      unsafe.jsToDart<num>(unsafe.getProperty(raw, 'restartCount')).toInt();
 
   /// Posts data to the worker.
-  void post(Object? data) {
-    unsafe.callMethod(raw, 'post', unsafe.dartToJs(data));
+  void post(Object? data, [List<Object?> transfer = const []]) {
+    unsafe.callMethod(
+      raw,
+      'post',
+      unsafe.dartToJs(data),
+      unsafe.dartToJs(transfer),
+    );
+  }
+
+  /// Sends a correlated request and awaits its decoded result.
+  Future<Object?> request(
+    Object? data, {
+    num? timeout,
+    List<Object?> transfer = const [],
+  }) async {
+    final options = unsafe.object({
+      if (timeout != null) 'timeout': timeout,
+      if (transfer.isNotEmpty) 'transfer': transfer,
+    });
+    final promise = unsafe.callMethod(
+      raw,
+      'request',
+      unsafe.dartToJs(data),
+      options,
+    ) as JSPromise<JSAny?>;
+
+    return unsafe.jsToDart<Object?>(await promise.toDart);
+  }
+
+  /// Returns a model synchronization target for a worker channel.
+  JSObject model([String channel = 'default']) =>
+      unsafe.callMethod(raw, 'model', channel.toJS) as JSObject;
+
+  /// Subscribes to native worker errors and returns a disposer.
+  void Function() onError(void Function(WorkerError error) listener) {
+    final callback = ((JSObject error) => listener(WorkerError(error))).toJS;
+    final dispose = unsafe.callMethod(raw, 'onError', callback) as JSFunction;
+
+    return () => unsafe.callFunction(dispose, const []);
+  }
+
+  /// Subscribes to messages and returns a disposer.
+  void Function() onMessage(
+    void Function(Object? data, MessageEvent event) listener,
+  ) {
+    final callback = ((JSAny? data, MessageEvent event) {
+      listener(unsafe.jsToDart<Object?>(data), event);
+    }).toJS;
+    final dispose = unsafe.callMethod(raw, 'onMessage', callback) as JSFunction;
+
+    return () => unsafe.callFunction(dispose, const []);
   }
 
   /// Terminates the worker.

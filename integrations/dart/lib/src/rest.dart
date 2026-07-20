@@ -30,29 +30,6 @@ typedef RestFactory = RestService<T, ID> Function<T, ID>(
   RestOptions? options,
 ]);
 
-/// Represents rest definition.
-final class RestDefinition<T> {
-  /// Creates a rest definition.
-  const RestDefinition({
-    required this.name,
-    required this.url,
-    this.entityClass,
-    this.options = const RestOptions(),
-  });
-
-  /// The name.
-  final String name;
-
-  /// The url.
-  final String url;
-
-  /// The entity class.
-  final EntityClass<T>? entityClass;
-
-  /// The options.
-  final RestOptions options;
-}
-
 /// Represents rest request.
 final class RestRequest {
   /// Creates a rest request.
@@ -118,7 +95,7 @@ final class RestResponse<T> {
   final HttpHeaders? headers;
 
   /// The config.
-  final RequestConfig? config;
+  final HttpRequestConfig? config;
 
   /// The status text.
   final String? statusText;
@@ -218,23 +195,20 @@ final class RestOptions {
 
 /// Runtime interface for rest service.
 abstract interface class RestService<T, ID> {
-  /// The build url.
-  String buildUrl(String template, Map<String, Object?> params);
-
   /// The list.
   Future<List<T>> list([Map<String, Object?>? params]);
 
   /// The get.
-  Future<Object?> get(ID id, [Map<String, Object?>? params]);
+  Future<T?> get(ID id, [Map<String, Object?>? params]);
 
   /// The create.
-  Future<Object?> create(T item);
+  Future<T?> create(T item);
 
   /// The update.
-  Future<Object?> update(ID id, Partial<T> item);
+  Future<T?> update(ID id, Partial<T> item);
 
   /// The delete.
-  Future<bool> delete(ID id);
+  Future<void> delete(ID id);
 }
 
 /// Signature for partial.

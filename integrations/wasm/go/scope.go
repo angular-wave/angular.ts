@@ -7,11 +7,6 @@ type Scope struct {
 	Handle uint32
 }
 
-// NamedScope targets one AngularTS WasmScope by stable scope name.
-type NamedScope struct {
-	Name string
-}
-
 // Watch is a host-owned AngularTS watch registration.
 type Watch struct {
 	Handle uint32
@@ -23,7 +18,39 @@ type Update struct {
 	ScopeName   string
 	Path        string
 	JSON        []byte
+	Deleted     bool
 }
+
+// Transaction applies multiple scope mutations as one reactive operation.
+type Transaction struct {
+	Set    map[string]any `json:"set,omitempty"`
+	Delete []string       `json:"delete,omitempty"`
+	Origin string         `json:"origin,omitempty"`
+	Echo   *bool          `json:"echo,omitempty"`
+}
+
+// WriteOptions controls binary write origin and guest echo behavior.
+type WriteOptions struct {
+	Origin string `json:"origin,omitempty"`
+	Echo   *bool  `json:"echo,omitempty"`
+}
+
+// AbiError is a machine-readable failure reported by the host ABI.
+type AbiError uint32
+
+const (
+	AbiErrorNone AbiError = iota
+	AbiErrorDisposed
+	AbiErrorInvalidHandle
+	AbiErrorInvalidPointer
+	AbiErrorInvalidLength
+	AbiErrorInvalidJSON
+	AbiErrorUnsafePath
+	AbiErrorLimitExceeded
+	AbiErrorInvalidTransaction
+	AbiErrorUnsupportedValue
+	AbiErrorOperationFailed
+)
 
 // ResolveScope resolves a stable AngularTS scope name to a numeric handle.
 func ResolveScope(name string) Scope {
@@ -32,11 +59,6 @@ func ResolveScope(name string) Scope {
 	})
 
 	return Scope{Handle: handle}
-}
-
-// Named returns a name-targeted scope facade.
-func Named(name string) NamedScope {
-	return NamedScope{Name: name}
 }
 
 // Get decodes a JSON-compatible scope path value into out.
@@ -75,6 +97,88 @@ func (s Scope) Set(path string, value any) error {
 	}
 
 	return nil
+}
+
+// Apply sends one atomic transaction to the host reactive target.
+func (s Scope) Apply(transaction Transaction) error {
+	if s.Handle == 0 {
+		return ErrInvalidScope
+	}
+
+	payload, err := json.Marshal(transaction)
+	if err != nil {
+		return err
+	}
+
+	if withBytes(payload, func(ptr uint32, length uint32) uint32 {
+		return hostScopeApply(s.Handle, ptr, length)
+	}) == 0 {
+		return ErrInvalidScope
+	}
+
+	return nil
+}
+
+// GetBytes reads one scope path through the raw byte channel.
+func (s Scope) GetBytes(path string) ([]byte, error) {
+	if s.Handle == 0 {
+		return nil, ErrInvalidScope
+	}
+	if path == "" {
+		return nil, ErrInvalidPath
+	}
+
+	handle := withString(path, func(ptr uint32, length uint32) uint32 {
+		return hostScopeGetBinary(s.Handle, ptr, length)
+	})
+
+	return readBuffer(handle)
+}
+
+// SetBytes writes raw bytes with optional origin and echo behavior.
+func (s Scope) SetBytes(path string, value []byte, options WriteOptions) error {
+	if s.Handle == 0 {
+		return ErrInvalidScope
+	}
+	if path == "" {
+		return ErrInvalidPath
+	}
+
+	optionsJSON, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+
+	ok := withString(path, func(pathPtr uint32, pathLen uint32) uint32 {
+		return withBytes(value, func(valuePtr uint32, valueLen uint32) uint32 {
+			return withBytes(optionsJSON, func(optionsPtr uint32, optionsLen uint32) uint32 {
+				return hostScopeSetBinary(
+					s.Handle,
+					pathPtr,
+					pathLen,
+					valuePtr,
+					valueLen,
+					optionsPtr,
+					optionsLen,
+				)
+			})
+		})
+	})
+	if ok == 0 {
+		return ErrInvalidScope
+	}
+
+	return nil
+}
+
+// LastError returns the last machine-readable host ABI failure.
+func LastError() AbiError {
+	return AbiError(hostErrorCode())
+}
+
+// ClearError clears the last machine-readable host ABI failure.
+func ClearError() {
+	hostErrorClear()
 }
 
 // Delete removes a scope path.
@@ -138,102 +242,6 @@ func (u Update) Decode(out any) error {
 	return json.Unmarshal(u.JSON, out)
 }
 
-// Get decodes a JSON-compatible named-scope path value into out.
-func (s NamedScope) Get(path string, out any) error {
-	if s.Name == "" {
-		return ErrInvalidScope
-	}
-	if path == "" {
-		return ErrInvalidPath
-	}
-
-	buffer := withString(s.Name, func(namePtr uint32, nameLen uint32) uint32 {
-		return withString(path, func(pathPtr uint32, pathLen uint32) uint32 {
-			return hostScopeGetNamed(namePtr, nameLen, pathPtr, pathLen)
-		})
-	})
-
-	return decodeBuffer(buffer, out)
-}
-
-// Set writes a JSON-compatible value into a named-scope path.
-func (s NamedScope) Set(path string, value any) error {
-	if s.Name == "" {
-		return ErrInvalidScope
-	}
-	if path == "" {
-		return ErrInvalidPath
-	}
-
-	payload, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	ok := withString(s.Name, func(namePtr uint32, nameLen uint32) uint32 {
-		return withString(path, func(pathPtr uint32, pathLen uint32) uint32 {
-			return withBytes(payload, func(valuePtr uint32, valueLen uint32) uint32 {
-				return hostScopeSetNamed(namePtr, nameLen, pathPtr, pathLen, valuePtr, valueLen)
-			})
-		})
-	})
-	if ok == 0 {
-		return ErrInvalidScope
-	}
-
-	return nil
-}
-
-// Delete removes a named-scope path.
-func (s NamedScope) Delete(path string) bool {
-	if s.Name == "" || path == "" {
-		return false
-	}
-
-	return withString(s.Name, func(namePtr uint32, nameLen uint32) uint32 {
-		return withString(path, func(pathPtr uint32, pathLen uint32) uint32 {
-			return hostScopeDeleteNamed(namePtr, nameLen, pathPtr, pathLen)
-		})
-	}) == 1
-}
-
-// Sync asks AngularTS to sync queued callbacks for the named scope.
-func (s NamedScope) Sync() bool {
-	if s.Name == "" {
-		return false
-	}
-
-	return withString(s.Name, hostScopeSyncNamed) == 1
-}
-
-// Watch registers a named-scope path callback.
-func (s NamedScope) Watch(path string, fn func(Update)) Watch {
-	if s.Name == "" || path == "" {
-		return Watch{}
-	}
-
-	handle := withString(s.Name, func(namePtr uint32, nameLen uint32) uint32 {
-		return withString(path, func(pathPtr uint32, pathLen uint32) uint32 {
-			return hostScopeWatchNamed(namePtr, nameLen, pathPtr, pathLen)
-		})
-	})
-	if handle == 0 {
-		return Watch{}
-	}
-
-	registerWatch(handle, 0, path, fn)
-	return Watch{Handle: handle}
-}
-
-// Unbind releases the named host scope handle without destroying the AngularTS scope.
-func (s NamedScope) Unbind() bool {
-	if s.Name == "" {
-		return false
-	}
-
-	return withString(s.Name, hostScopeUnbindNamed) == 1
-}
-
 func scopeGet(scopeHandle uint32, path string) uint32 {
 	return withString(path, func(ptr uint32, length uint32) uint32 {
 		return hostScopeGet(scopeHandle, ptr, length)
@@ -241,21 +249,28 @@ func scopeGet(scopeHandle uint32, path string) uint32 {
 }
 
 func decodeBuffer(bufferHandle uint32, out any) error {
+	payload, err := readBuffer(bufferHandle)
+	if err != nil {
+		return err
+	}
+	if out == nil {
+		return nil
+	}
+
+	return json.Unmarshal(payload, out)
+}
+
+func readBuffer(bufferHandle uint32) ([]byte, error) {
 	if bufferHandle == 0 {
-		return ErrInvalidBuffer
+		return nil, ErrInvalidBuffer
 	}
 	defer hostBufferFree(bufferHandle)
 
 	ptr := hostBufferPtr(bufferHandle)
 	length := hostBufferLen(bufferHandle)
 	if ptr == 0 && length > 0 {
-		return ErrInvalidBuffer
+		return nil, ErrInvalidBuffer
 	}
 
-	payload := bytesFromHost(ptr, length)
-	if out == nil {
-		return nil
-	}
-
-	return json.Unmarshal(payload, out)
+	return append([]byte(nil), bytesFromHost(ptr, length)...), nil
 }

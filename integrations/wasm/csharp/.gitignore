@@ -1,0 +1,7 @@
+src/bin/
+src/obj/
+examples/todo/bin/
+examples/todo/obj/
+examples/todo/_framework/
+.dotnet/
+.dotnet-install/

@@ -68,6 +68,11 @@ AngularTS core must expose stable contracts for the Dart package:
 - A generated or checked inventory of the public `ng` namespace so Dart parity
   cannot drift silently.
 
+WASM scope types exposed through the public namespace are view-scope bindings,
+not app model bindings. Dart should keep `WasmScope` wrappers scoped to
+DOM/root-scoped state. App-owned state should use `app.model(...)` and
+host-side `model.$sync(...)` targets around external runtimes.
+
 ## Dart Technology Choices
 
 - Use `dart:js_interop` for JavaScript bindings.
@@ -113,7 +118,7 @@ void main() {
 Initial package API:
 
 - `ng.module(String name, [List<String> requires])`
-- `ng.bootstrap(Element root, List<String> modules, {BootstrapConfig? config})`
+- `ng.bootstrap(Element root, List<String> modules)`
 - `Token<T> ng.token<T>(String name)`
 - `NgModule.component<TController>(String name, Component<TController> options)`
 - `NgModule.directive<TScope>(String name, Directive<TScope> options)`

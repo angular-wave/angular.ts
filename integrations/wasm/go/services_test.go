@@ -18,7 +18,7 @@ func TestBuiltInServiceTokenNames(t *testing.T) {
 		"sse":             (SseService{}).TokenName(),
 		"rest":            (RestFactory{}).TokenName(),
 		"machine":         (MachineService{}).TokenName(),
-		"machineProvider": (MachineProvider{}).ProviderName(),
+		"worker":          (WorkerService{}).TokenName(),
 	}
 
 	want := map[string]string{
@@ -36,7 +36,7 @@ func TestBuiltInServiceTokenNames(t *testing.T) {
 		"sse":             "$sse",
 		"rest":            "$rest",
 		"machine":         "$machine",
-		"machineProvider": "$machineProvider",
+		"worker":          "$worker",
 	}
 
 	for name, got := range tests {
@@ -44,16 +44,50 @@ func TestBuiltInServiceTokenNames(t *testing.T) {
 			t.Fatalf("%s token mismatch: want %s got %s", name, want[name], got)
 		}
 	}
+}
 
-	if (MachineProvider{}).ServiceName() != "$machine" {
-		t.Fatalf("machine provider should expose the $machine runtime service")
+func TestWorkerFacadesPreserveRestartAndProtocolMetadata(t *testing.T) {
+	config := NewWorkerConfig().
+		Classic().
+		WithName("physics").
+		WithCredentials(WorkerCredentialsSameOrigin).
+		WithRestart(250, 4)
+	options := NewWorkerRequestOptions().WithTimeout(1500)
+	request := WorkerRequest[string]{
+		Type:    "angular-ts:worker:request",
+		ID:      "worker-1",
+		Payload: "step",
+	}
+	response := WorkerResponse[int]{
+		Type:   "angular-ts:worker:response",
+		ID:     request.ID,
+		OK:     true,
+		Result: 2,
+	}
+	message := WorkerModelMessage[map[string]int]{
+		Type:     "angular-ts:worker:model:snapshot",
+		Channel:  "player",
+		Snapshot: map[string]int{"score": 2},
+	}
+
+	if config.Type != WorkerClassic || config.Name != "physics" || !config.Restart {
+		t.Fatalf("unexpected worker config: %#v", config)
+	}
+	if config.RestartDelayMS != 250 || config.MaxRestarts != 4 {
+		t.Fatalf("unexpected restart policy: %#v", config)
+	}
+	if options.TimeoutMS != 1500 || response.Result != 2 || message.Snapshot["score"] != 2 {
+		t.Fatalf("unexpected worker protocol metadata")
+	}
+	if WorkerRestarting != "restarting" || WorkerRequestTimeoutError != "request-timeout" {
+		t.Fatalf("unexpected worker enum values")
 	}
 }
 
 func TestHTTPRequestFacadesPreserveOptions(t *testing.T) {
 	credentials := true
 	config := GetRequest("/api/todos")
-	config.RequestShortcutConfig = NewRequestShortcutConfig().
+	config.HttpRequestOptions = NewRequestShortcutConfig().
 		WithHeader("Accept", "application/json").
 		WithParam("owner", "Go").
 		WithTimeout(1500).
@@ -70,7 +104,7 @@ func TestHTTPRequestFacadesPreserveOptions(t *testing.T) {
 		t.Fatalf("unexpected params: %#v", config.Params)
 	}
 	if config.TimeoutMS != 1500 || config.ResponseType != "json" {
-		t.Fatalf("unexpected shortcut config: %#v", config.RequestShortcutConfig)
+		t.Fatalf("unexpected shortcut config: %#v", config.HttpRequestOptions)
 	}
 	if config.Credentials == nil || !*config.Credentials {
 		t.Fatalf("expected credentials flag")
@@ -169,7 +203,6 @@ func TestRealtimeFacadesPreserveTransportOptions(t *testing.T) {
 }
 
 func TestRestFacadesPreserveRequestAndResponseMetadata(t *testing.T) {
-	definition := RestDefinition{Name: "todos", URL: "/api/todos"}
 	request := RestRequest{
 		Method:        HttpGet,
 		URL:           "/api/todos/1",
@@ -183,9 +216,6 @@ func TestRestFacadesPreserveRequestAndResponseMetadata(t *testing.T) {
 		Source: "network",
 	}
 
-	if definition.Name != "todos" || definition.URL != "/api/todos" {
-		t.Fatalf("unexpected rest definition: %#v", definition)
-	}
 	if request.Method != HttpGet || request.Options["cache"] != "network-first" {
 		t.Fatalf("unexpected rest request: %#v", request)
 	}
@@ -194,7 +224,7 @@ func TestRestFacadesPreserveRequestAndResponseMetadata(t *testing.T) {
 	}
 }
 
-func TestMachineFacadeRunsTransitionsHooksAndSnapshots(t *testing.T) {
+func TestMachineFacadeRunsStateTreeHooksAndSnapshots(t *testing.T) {
 	type sessionData struct {
 		Starts     int
 		LastPlayer string
@@ -204,13 +234,13 @@ func TestMachineFacadeRunsTransitionsHooksAndSnapshots(t *testing.T) {
 	exitCount := 0
 	transitionCount := 0
 
-	config := MachineConfig[sessionData, string]{
-		Initial: MachineMode("idle"),
+	config := MachineStateConfig[sessionData, string]{
+		Initial: MachineState("idle"),
 		Data:    sessionData{},
 		Hooks: MachineHooks[sessionData, string]{
-			Enter: MachineModeHooks[sessionData, string]{
-				MachineMode("active"): func(context MachineTransitionContext[sessionData, string]) {
-					if context.From != MachineMode("idle") || context.To != MachineMode("active") {
+			Enter: MachineStateHooks[sessionData, string]{
+				MachineState("active"): func(context MachineEventTransitionContext[sessionData, string]) {
+					if context.From != MachineState("idle") || context.To != MachineState("active") {
 						t.Fatalf("unexpected enter context: %#v", context)
 					}
 					if context.Data == nil || context.Data.Starts != 1 {
@@ -219,15 +249,15 @@ func TestMachineFacadeRunsTransitionsHooksAndSnapshots(t *testing.T) {
 					enterCount++
 				},
 			},
-			Exit: MachineModeHooks[sessionData, string]{
-				MachineMode("idle"): func(context MachineTransitionContext[sessionData, string]) {
+			Exit: MachineStateHooks[sessionData, string]{
+				MachineState("idle"): func(context MachineEventTransitionContext[sessionData, string]) {
 					if context.Type != "start" || context.Payload != "ada" {
 						t.Fatalf("unexpected exit context: %#v", context)
 					}
 					exitCount++
 				},
 			},
-			Transition: func(context MachineTransitionContext[sessionData, string]) {
+			Transition: func(context MachineEventTransitionContext[sessionData, string]) {
 				if context.To == "" || context.Machine == nil {
 					t.Fatalf("unexpected transition context: %#v", context)
 				}
@@ -235,44 +265,45 @@ func TestMachineFacadeRunsTransitionsHooksAndSnapshots(t *testing.T) {
 			},
 		},
 	}.
-		WithTransition(MachineMode("idle"), "start", func(data *sessionData, payload string, machine *Machine[sessionData, string]) MachineTransitionResult {
-			data.Starts++
-			data.LastPlayer = payload
-			return NextMode(MachineMode("active"))
+		WithEvent(MachineState("idle"), "start", MachineEventTransitionConfig[sessionData, string]{
+			To: MachineState("active"),
+			Update: func(context *MachineEventTransitionContext[sessionData, string]) {
+				context.Data.Starts++
+				context.Data.LastPlayer = context.Payload
+			},
 		}).
-		WithTransition(MachineMode("active"), "refresh", func(data *sessionData, payload string, machine *Machine[sessionData, string]) MachineTransitionResult {
-			data.LastPlayer = payload
-			return Stay()
+		WithUpdate(MachineState("active"), "refresh", func(context *MachineEventTransitionContext[sessionData, string]) {
+			context.Data.LastPlayer = context.Payload
 		})
 	machine := NewMachine(config)
 
-	if !machine.Matches(MachineMode("idle")) || !machine.Can("start") || machine.Can("refresh") {
+	if !machine.Matches(MachineState("idle")) || !machine.Can("start") || machine.Can("refresh") {
 		t.Fatalf("unexpected initial machine state: %#v", machine)
 	}
 	if !machine.Send("start", "ada") {
 		t.Fatalf("expected start transition to run")
 	}
-	if !machine.Matches(MachineMode("active")) || machine.Data.Starts != 1 || machine.Data.LastPlayer != "ada" {
+	if !machine.Matches(MachineState("active")) || machine.Data.Starts != 1 || machine.Data.LastPlayer != "ada" {
 		t.Fatalf("unexpected started machine: %#v", machine)
 	}
 	if enterCount != 1 || exitCount != 1 || transitionCount != 1 {
 		t.Fatalf("unexpected hook counts: enter=%d exit=%d transition=%d", enterCount, exitCount, transitionCount)
 	}
 	if !machine.Send("refresh", "grace") {
-		t.Fatalf("expected same-mode transition to run")
+		t.Fatalf("expected same-state transition to run")
 	}
-	if !machine.Matches(MachineMode("active")) || machine.Data.LastPlayer != "grace" {
+	if !machine.Matches(MachineState("active")) || machine.Data.LastPlayer != "grace" {
 		t.Fatalf("unexpected refreshed machine: %#v", machine)
 	}
 	if enterCount != 1 || exitCount != 1 || transitionCount != 2 {
-		t.Fatalf("unexpected same-mode hook counts: enter=%d exit=%d transition=%d", enterCount, exitCount, transitionCount)
+		t.Fatalf("unexpected same-state hook counts: enter=%d exit=%d transition=%d", enterCount, exitCount, transitionCount)
 	}
 
 	snapshot := machine.Snapshot()
 	machine.Data.Starts = 99
 	machine.Restore(snapshot)
 
-	if machine.Current != MachineMode("active") || machine.Data.Starts != 1 || machine.Data.LastPlayer != "grace" {
+	if machine.State != MachineState("active") || machine.Data.Starts != 1 || machine.Data.LastPlayer != "grace" {
 		t.Fatalf("unexpected restored machine: %#v", machine)
 	}
 	if machine.Send("missing", "nobody") {
@@ -286,28 +317,44 @@ func TestMachineFacadeSupportsGuardedTransitionDefinitions(t *testing.T) {
 		LastPlayer string
 	}
 
-	guard := func(data *sessionData, payload string, machine *Machine[sessionData, string]) bool {
-		return data.Starts == 0 && payload != "blocked" && machine.Matches(MachineMode("idle"))
+	guard := func(context MachineEventTransitionContext[sessionData, string]) bool {
+		return context.Data.Starts == 0 && context.Payload != "blocked" && context.Machine.Matches(MachineState("idle"))
 	}
-	start := func(data *sessionData, payload string, machine *Machine[sessionData, string]) MachineTransitionResult {
-		data.Starts++
-		data.LastPlayer = payload
-		return NextMode(MachineMode("active"))
+	start := func(context *MachineEventTransitionContext[sessionData, string]) {
+		context.Data.Starts++
+		context.Data.LastPlayer = context.Payload
 	}
-	descriptor := NewMachineTransitionDescriptor(guard, start)
-	definition := descriptor.Definition()
+	definition := MachineEventTransitionConfig[sessionData, string]{
+		To:     MachineState("active"),
+		Guard:  guard,
+		Update: start,
+	}
 
-	if !definition.CanRun(&sessionData{}, "ada", &Machine[sessionData, string]{Current: MachineMode("idle")}) {
+	if !definition.CanRun(MachineEventTransitionContext[sessionData, string]{
+		Type:    "start",
+		From:    MachineState("idle"),
+		To:      MachineState("active"),
+		Payload: "ada",
+		Data:    &sessionData{},
+		Machine: &Machine[sessionData, string]{State: MachineState("idle")},
+	}) {
 		t.Fatalf("expected descriptor guard to allow ada")
 	}
-	if definition.CanRun(&sessionData{}, "blocked", &Machine[sessionData, string]{Current: MachineMode("idle")}) {
+	if definition.CanRun(MachineEventTransitionContext[sessionData, string]{
+		Type:    "start",
+		From:    MachineState("idle"),
+		To:      MachineState("active"),
+		Payload: "blocked",
+		Data:    &sessionData{},
+		Machine: &Machine[sessionData, string]{State: MachineState("idle")},
+	}) {
 		t.Fatalf("expected descriptor guard to block payload")
 	}
 
-	config := MachineConfig[sessionData, string]{
-		Initial: MachineMode("idle"),
+	config := MachineStateConfig[sessionData, string]{
+		Initial: MachineState("idle"),
 		Data:    sessionData{},
-	}.WithTransitionDefinition(MachineMode("idle"), "start", definition)
+	}.WithEvent(MachineState("idle"), "start", definition)
 	machine := NewMachine(config)
 
 	if !machine.Can("start") {
@@ -319,7 +366,7 @@ func TestMachineFacadeSupportsGuardedTransitionDefinitions(t *testing.T) {
 	if machine.Send("start", "blocked") {
 		t.Fatalf("blocked transition should not run")
 	}
-	if !machine.Matches(MachineMode("idle")) || machine.Data.Starts != 0 || machine.Data.LastPlayer != "" {
+	if !machine.Matches(MachineState("idle")) || machine.Data.Starts != 0 || machine.Data.LastPlayer != "" {
 		t.Fatalf("blocked transition mutated machine: %#v", machine)
 	}
 	if !machine.CanWithPayload("start", "ada") {
@@ -328,7 +375,7 @@ func TestMachineFacadeSupportsGuardedTransitionDefinitions(t *testing.T) {
 	if !machine.Send("start", "ada") {
 		t.Fatalf("expected allowed transition to run")
 	}
-	if !machine.Matches(MachineMode("active")) || machine.Data.Starts != 1 || machine.Data.LastPlayer != "ada" {
+	if !machine.Matches(MachineState("active")) || machine.Data.Starts != 1 || machine.Data.LastPlayer != "ada" {
 		t.Fatalf("unexpected started machine: %#v", machine)
 	}
 }

@@ -18,7 +18,7 @@ integration.
 - Review service facade coverage before every minor AngularTS release.
 - Review unsafe-surface decisions before promoting any dynamic interop into the
   default Scala package API.
-- Review `README.md`, `SCALA_JS_INTEGRATION_ROADMAP.md`, and
+- Review `README.md`, `UNSAFE_SURFACE_DECISIONS.md`, and
   `NG_NAMESPACE_PARITY.md` before publishing a Scala package candidate.
 
 ## Required Checks

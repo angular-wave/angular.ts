@@ -38,9 +38,9 @@ final class TranscludeFn extends GeneratedNgTranscludeFn {
 }
 
 /// Wrapper for the public link function returned by `$compile`.
-final class PublicLinkFn extends GeneratedNgPublicLinkFn {
+final class LinkFn extends GeneratedNgLinkFn {
   /// Creates a public link fn.
-  const PublicLinkFn(super.raw);
+  const LinkFn(super.raw);
 
   /// Optional pre-link metadata attached to this link function.
   @override

@@ -29,9 +29,10 @@ type WasmScopeAbiImports struct {
 
 // WasmAbiExports documents the guest exports supplied by the Go Wasm package.
 type WasmAbiExports struct {
-	Alloc         string
-	Free          string
-	OnScopeBind   string
-	OnScopeUnbind string
-	OnScopeUpdate string
+	Version            string
+	Alloc              string
+	Free               string
+	OnScopeBind        string
+	OnScopeUnbind      string
+	OnScopeTransaction string
 }

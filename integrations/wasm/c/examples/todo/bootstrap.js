@@ -1,19 +1,12 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
+import { wasmModule } from "@angular-wave/angular.ts/runtime/wasm";
 
 const moduleName = "cWasmTodo";
 const scopeName = "cTodo:main";
 const wasmURL = new URL("./main.wasm", import.meta.url);
+const installedWasmModule = wasmModule(angular);
 
-const scopeAbi = new WasmScopeAbi();
-const result = await WebAssembly.instantiateStreaming(fetch(wasmURL), {
-  angular_ts: scopeAbi.imports.angular_ts,
-});
-const exports = result.instance.exports;
-
-scopeAbi.attach(exports);
-
-const writeString = (value) => {
+const writeString = (exports, value) => {
   const encoded = new TextEncoder().encode(value);
   const ptr = exports.ng_abi_alloc(encoded.byteLength);
   if (!ptr) {
@@ -24,8 +17,8 @@ const writeString = (value) => {
   return { ptr, len: encoded.byteLength };
 };
 
-const callWithString = (fn, value) => {
-  const bytes = writeString(value);
+const callWithString = (exports, fn, value) => {
+  const bytes = writeString(exports, value);
   try {
     fn(bytes.ptr, bytes.len);
   } finally {
@@ -33,23 +26,37 @@ const callWithString = (fn, value) => {
   }
 };
 
-const app = angular.module(moduleName, []);
+const app = angular
+  .module(moduleName, [installedWasmModule.name])
+  .wasm("cTodoGuest", { source: wasmURL });
 
 app.controller("cTodoController", [
   "$scope",
-  ($scope) => {
-    const scope = scopeAbi.createScope($scope, { name: scopeName });
+  "cTodoGuest",
+  ($scope, guest) => {
+    globalThis.__angularTsWasmConformance = {
+      abi: guest._abi,
+      get exports() {
+        return guest.exports;
+      },
+      ready: guest.ready,
+    };
+    const ready = guest
+      .bind($scope, { name: scopeName })
+      .then(() => guest.exports.todo_bind());
 
-    $scope.add = (title) => callWithString(exports.todo_add, title || "");
-    $scope.toggle = (index) => exports.todo_toggle(index);
-    $scope.archive = () => exports.todo_archive_completed();
+    $scope.add = (title) =>
+      void ready.then(() =>
+        callWithString(guest.exports, guest.exports.todo_add, title || ""),
+      );
+    $scope.toggle = (index) =>
+      void ready.then(() => guest.exports.todo_toggle(index));
+    $scope.archive = () =>
+      void ready.then(() => guest.exports.todo_archive_completed());
 
     $scope.$on("$destroy", () => {
-      exports.todo_unbind();
-      scopeAbi.unbind(scope.name);
+      if (guest.status === "ready") guest.exports.todo_unbind();
     });
-
-    exports.todo_bind();
   },
 ]);
 

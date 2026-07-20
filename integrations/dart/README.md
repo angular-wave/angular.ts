@@ -34,6 +34,15 @@ member. Type overrides in `tool/generator-overrides.json` are reserved for
 stable platform mappings such as DOM and stream types from `package:web`; parity
 checks reject stale type overrides.
 
+## WASM Scope And App Models
+
+Generated `WasmScope` facades, when enabled, represent the view-scope ABI only.
+They should be used for DOM/root-scoped controller or component state. App-owned
+state belongs to `app.model(...)`; durable or shared state should synchronize
+with external runtimes through host-side AngularTS services or
+`model.$sync(...)` targets. Dart wrappers should not add model handles or model
+watch imports unless the shared WASM ABI adds that surface.
+
 Regenerate raw facades after public namespace type changes:
 
 ```sh

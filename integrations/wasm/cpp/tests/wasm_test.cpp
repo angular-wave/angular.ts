@@ -9,7 +9,7 @@ namespace {
 angular_ts::ScopeHandle last_bind_handle = 0;
 std::string_view last_bind_name;
 angular_ts::ScopeHandle last_unbind_handle = 0;
-angular_ts::ScopeUpdate last_update;
+angular_ts::ScopeTransaction last_transaction;
 
 void RememberBind(angular_ts::ScopeHandle scope_handle,
                   std::string_view name) {
@@ -21,11 +21,15 @@ void RememberUnbind(angular_ts::ScopeHandle scope_handle) {
   last_unbind_handle = scope_handle;
 }
 
-void RememberUpdate(angular_ts::ScopeUpdate update) { last_update = update; }
+void RememberTransaction(angular_ts::ScopeTransaction transaction) {
+  last_transaction = transaction;
+}
 
 }  // namespace
 
 int main() {
+  assert(ng_abi_version() == angular_ts::kWasmAbiVersion);
+
   angular_ts::Bytes bytes = angular_ts::Bytes::FromString("todo");
   assert(bytes.size == 4);
   assert(!bytes.empty());
@@ -40,9 +44,7 @@ int main() {
   assert(!invalid.Unbind());
 
   angular_ts::Scope named = angular_ts::Scope::FromName("todoList:main");
-  assert(named.Valid());
-  assert(named.ref().named());
-  assert(named.ref().name == "todoList:main");
+  assert(!named.Valid());
 
   angular_ts::Scope resolved = angular_ts::Scope::Resolve("missing");
   assert(!resolved.Valid());
@@ -73,7 +75,7 @@ int main() {
 
   angular_ts::SetScopeBindCallback(&RememberBind);
   angular_ts::SetScopeUnbindCallback(&RememberUnbind);
-  angular_ts::SetScopeUpdateCallback(&RememberUpdate);
+  angular_ts::SetScopeTransactionCallback(&RememberTransaction);
 
   const std::string_view scope_name = "todoList:main";
   ng_scope_on_bind(
@@ -85,20 +87,17 @@ int main() {
   ng_scope_on_unbind(12);
   assert(last_unbind_handle == 12);
 
-  const std::string_view path = "newTodo";
-  const std::string_view value = "\"Review C++\"";
-  ng_scope_on_update(
-      12, reinterpret_cast<const std::uint8_t*>(path.data()),
-      static_cast<std::uint32_t>(path.size()),
-      reinterpret_cast<const std::uint8_t*>(value.data()),
-      static_cast<std::uint32_t>(value.size()));
-  assert(last_update.scope_handle == 12);
-  assert(last_update.path == "newTodo");
-  assert(last_update.value_json == "\"Review C++\"");
+  const std::string_view transaction =
+      "{\"set\":{\"newTodo\":\"Review C++\"}}";
+  ng_scope_on_transaction(
+      12, reinterpret_cast<const std::uint8_t*>(transaction.data()),
+      static_cast<std::uint32_t>(transaction.size()));
+  assert(last_transaction.scope_handle == 12);
+  assert(last_transaction.transaction_json == transaction);
 
   angular_ts::SetScopeBindCallback(nullptr);
   angular_ts::SetScopeUnbindCallback(nullptr);
-  angular_ts::SetScopeUpdateCallback(nullptr);
+  angular_ts::SetScopeTransactionCallback(nullptr);
 
   return 0;
 }

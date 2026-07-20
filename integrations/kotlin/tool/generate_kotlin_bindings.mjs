@@ -237,7 +237,7 @@ function renderMember(member) {
 }
 
 function renderParameter(parameter, index) {
-  if (parameter.rest) return `vararg p${index}: ${parameter.type}`;
+  if (parameter.rest) return `vararg p${index}: ${parameter.restType}`;
   return `p${index}: ${parameter.type} = definedExternally`;
 }
 
@@ -260,6 +260,9 @@ function signatureParameters(checker, overrides, signature) {
     return {
       rest: Boolean(declaration && ts.isParameter(declaration) && declaration.dotDotDotToken),
       type: parameterType ? kotlinType(checker, overrides, parameterType) : "dynamic",
+      restType: parameterType
+        ? kotlinArrayElementType(checker, overrides, parameterType)
+        : "dynamic",
     };
   });
 }
@@ -291,20 +294,66 @@ function kotlinType(checker, overrides, type) {
         !(part.flags & ts.TypeFlags.Undefined),
     );
 
-    if (nonEmpty.length === 1) {
-      const mapped = kotlinType(checker, overrides, nonEmpty[0]);
-      return mapped === "Unit" ? "Unit" : `${mapped}?`;
-    }
+    if (nonEmpty.length === 1) return nullableKotlinType(kotlinType(checker, overrides, nonEmpty[0]));
 
     return "dynamic";
   }
 
   const signatures = checker.getSignaturesOfType(type, ts.SignatureKind.Call);
-  if (signatures.length > 0) return "Function<*>";
+  if (signatures.length > 0) {
+    return kotlinFunctionType(checker, overrides, signatureWithMostParameters(signatures));
+  }
 
-  if (checker.isArrayType(type) || checker.isTupleType(type)) return "Array<dynamic>";
+  if (checker.isArrayType(type) || checker.isTupleType(type)) {
+    return `Array<${kotlinArrayElementType(checker, overrides, type)}>`;
+  }
 
   return "dynamic";
+}
+
+function nullableKotlinType(type) {
+  if (type === "Unit") return "Unit";
+  return type.includes("->") ? `(${type})?` : `${type}?`;
+}
+
+function kotlinFunctionType(checker, overrides, signature) {
+  if (!signature || signature.parameters.length > 5) return "Function<*>";
+
+  const parameters = signature.parameters.map((parameter) => {
+    const declaration = parameter.valueDeclaration ?? parameter.declarations?.[0];
+
+    if (declaration && ts.isParameter(declaration) && declaration.dotDotDotToken) {
+      return undefined;
+    }
+
+    const parameterType = declaration
+      ? checker.getTypeOfSymbolAtLocation(parameter, declaration)
+      : undefined;
+
+    return parameterType ? kotlinType(checker, overrides, parameterType) : "dynamic";
+  });
+
+  if (parameters.some((parameter) => !parameter)) return "Function<*>";
+
+  return `(${parameters.join(", ")}) -> ${kotlinType(
+    checker,
+    overrides,
+    checker.getReturnTypeOfSignature(signature),
+  )}`;
+}
+
+function kotlinArrayElementType(checker, overrides, type) {
+  if (checker.isTupleType(type)) {
+    const tupleTypes = checker.getTypeArguments(type);
+    if (tupleTypes.length === 1) return kotlinType(checker, overrides, tupleTypes[0]);
+    return "dynamic";
+  }
+
+  const elementType =
+    checker.getElementTypeOfArrayType?.(type) ??
+    checker.getTypeArguments(type)?.[0];
+
+  return elementType ? kotlinType(checker, overrides, elementType) : "dynamic";
 }
 
 function symbolName(type) {

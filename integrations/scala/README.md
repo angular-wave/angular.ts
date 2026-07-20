@@ -100,7 +100,7 @@ Implemented:
   components, directives, app components, persistent stores, and native
   web-component constructors
 - `NgModule.model(...)` for app-owned reactive model services
-- `NgModule.state(...)` for common router state declarations
+- `NgModule.router(...)` for module-owned route trees and forests
 - `NgModule.router(...)` for module-owned route trees
 - `NgModule.lazyState(...)` for lazy router state namespaces
 - component/directive/app-component config builders
@@ -111,7 +111,7 @@ Implemented:
   `$parse`, `$rest`, `$sce`, `$sceDelegate`, `$security`, `$serviceWorker`,
   `$sse`, `$state`, `$transitions`, `$templateCache`, `$templateRequest`,
   `$websocket`, `$webTransport`, `$worker`, and DOM/root services
-- core compile/scope callback shapes including `PublicLinkFn`, `TranscludeFn`,
+- core compile/scope callback shapes including `LinkFn`, `TranscludeFn`,
   `ScopeEvent`, and `Validator`
 - public utility aliases including `Expression`, `ClassMap`, `ClassValue`,
   `Injectable`, and `ListenerFn`, plus a typed `NgModelController` facade
@@ -233,12 +233,12 @@ synchronize with another runtime.
 ```scala
 final class Player(var x: Double, var y: Double) extends js.Object
 
-val playerToken = AngularTS.token[AppModelValue[Player]]("player")
+val playerToken = AngularTS.token[Model[Player]]("player")
 
 app.model(playerToken, () => new Player(0.0, 0.0))
 
-val socketSync = AppModelSyncTarget[Player](
-  write = (snapshot: Player, change: AppModelChange) =>
+val socketSync = ModelSyncTarget[Player](
+  write = (snapshot: Player, change: ModelChange) =>
     js.Dynamic.global.playerSocket.send(
       js.JSON.stringify(
         js.Dynamic.literal(

@@ -33,149 +33,107 @@ part of the Dart public facade.
 | ng type | Dart status |
 | --- | --- |
 | `Angular` | started |
+| `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | started |
+| `AriaConfig` | started |
 | `ClassMap` | started |
 | `ClassValue` | review |
 | `Component` | started |
 | `Controller` | started |
+| `DocumentService` | alias |
 | `Directive` | started |
 | `DirectiveRestrict` | started |
 | `DirectiveFactory` | started |
+| `ElementService` | alias |
+| `InjectionTokenMap` | review |
 | `NgModule` | started |
-| `PublicLinkFn` | started |
+| `LinkFn` | started |
+| `Model` | started |
+| `ModelChange` | started |
+| `ModelRestoreOptions` | started |
+| `ModelSyncFailureMode` | started |
+| `ModelSyncOptions` | started |
+| `ModelSyncTarget` | started |
+| `RootElementService` | alias |
+| `RootScopeService` | alias |
 | `Scope` | started |
-| `ScopeService` | started |
+| `ScopeService` | alias |
 | `TranscludeFn` | started |
 | `AnnotatedFactory` | started |
 | `ControllerConstructor` | started |
 | `Expression` | alias |
 | `Injectable` | started |
-| `InjectionTokens` | started |
-| `InvocationDetail` | started |
 | `ListenerFn` | started |
 | `Machine` | started |
+| `MachineContract` | started |
 | `MachineConfig` | started |
-| `MachineEventMap` | started |
-| `MachineHooks` | started |
-| `MachineMode` | alias |
-| `MachineModeHooks` | review |
-| `MachineNoEvents` | started |
+| `MachineSendResult` | started |
+| `MachineSendStatus` | started |
 | `MachineSnapshot` | started |
-| `MachineTransition` | started |
-| `MachineTransitionContext` | started |
-| `MachineTransitionHook` | started |
-| `MachineTransitionMap` | review |
-| `MachineTransitionResult` | review |
 | `Workflow` | started |
 | `WorkflowCommand` | started |
+| `WorkflowCommandContract` | started |
 | `WorkflowCommandContext` | started |
-| `WorkflowCommandMap` | review |
-| `WorkflowCommandOptions` | started |
-| `WorkflowConcurrencyPolicy` | started |
-| `WorkflowCommandResult` | review |
-| `WorkflowConfig` | started |
-| `WorkflowDiagnostic` | started |
-| `WorkflowHistoryEntry` | started |
-| `WorkflowMode` | alias |
-| `WorkflowNoCommands` | started |
+| `WorkflowCommandDefinition` | started |
+| `WorkflowContract` | started |
+| `WorkflowResult` | started |
 | `WorkflowSnapshot` | started |
-| `WorkflowSnapshotMigration` | started |
-| `WorkflowStatus` | alias |
+| `WorkflowSupervisorPersistence` | started |
+| `WorkflowSupervisorPersistenceConfig` | started |
+| `Policy` | started |
+| `PolicyContext` | started |
+| `PolicyDecision` | started |
+| `SecurityConfig` | started |
+| `SecurityCredentialsConfig` | started |
+| `ServiceWorkerPostOptions` | started |
+| `TransitionRouteContract` | started |
 | `ScopeEvent` | started |
-| `ServiceProvider` | started |
 | `Validator` | started |
+| `WindowService` | alias |
 
 ## Providers
 
 | ng type | Dart status |
 | --- | --- |
-| `AnchorScrollProvider` | started |
-| `AngularProvider` | started |
-| `AngularServiceProvider` | started |
-| `AnimateProvider` | started |
-| `AriaProvider` | started |
-| `CompileLifecycleProvider` | started |
-| `CompileProvider` | started |
-| `ControllerProvider` | started |
-| `CookieProvider` | started |
-| `EventBusProvider` | started |
-| `ExceptionHandlerProvider` | started |
-| `FilterProvider` | started |
-| `HttpParamSerializerProvider` | started |
-| `HttpProvider` | started |
-| `InterpolateProvider` | started |
-| `LocationProvider` | started |
-| `LogProvider` | started |
-| `MachineProvider` | started |
-| `WorkflowProvider` | started |
-| `ParseProvider` | started |
-| `PubSubProvider` | started |
-| `RestProvider` | started |
-| `RootScopeProvider` | started |
-| `RouterProvider` | started |
-| `SceDelegateProvider` | started |
-| `SceProvider` | started |
-| `SseProvider` | started |
-| `StateProvider` | started |
-| `StateRegistryProvider` | started |
-| `StreamProvider` | started |
-| `TemplateCacheProvider` | started |
-| `TemplateFactoryProvider` | started |
-| `TemplateRequestProvider` | started |
-| `TransitionProvider` | started |
-| `TransitionsProvider` | started |
-| `TransitionService` | started |
-| `ViewProvider` | started |
-| `WasmProvider` | started |
-| `WebComponentProvider` | started |
-| `WebSocketProvider` | started |
-| `WebTransportProvider` | started |
-| `WorkerProvider` | started |
+| `ProviderDefinition` | review |
 
 ## Services
 
 | ng type | Dart status |
 | --- | --- |
 | `AnchorScrollService` | started |
-| `AngularService` | started |
 | `AnimateService` | started |
 | `AriaService` | started |
-| `CompileLifecycleService` | started |
 | `CompileService` | started |
 | `ControllerService` | started |
 | `CookieService` | started |
-| `DocumentService` | alias |
-| `ElementService` | alias |
 | `EventBusService` | started |
 | `ExceptionHandlerService` | started |
 | `FilterService` | started |
 | `HttpParamSerializerService` | started |
 | `HttpService` | started |
 | `InjectorService` | started |
+| `InterpolateConfig` | started |
 | `InterpolateService` | started |
 | `LocationService` | started |
 | `LogService` | started |
+| `LogBeaconConfig` | started |
+| `LogBeaconSerializer` | started |
+| `LogEntry` | started |
+| `LogLevel` | started |
 | `MachineService` | started |
+| `SecurityPolicy` | started |
 | `WorkflowService` | started |
 | `ParseService` | started |
-| `ProvideService` | started |
-| `PubSubService` | started |
-| `RootElementService` | alias |
-| `RootScopeService` | started |
 | `SceDelegateService` | started |
 | `SceService` | started |
-| `StateRegistryService` | started |
-| `StateService` | started |
 | `StreamService` | started |
 | `TemplateCacheService` | started |
-| `TemplateFactoryService` | started |
 | `TemplateRequestService` | started |
 | `TransitionsService` | started |
-| `ViewService` | started |
 | `WebComponentService` | started |
 | `WebSocketService` | started |
 | `WebTransportService` | started |
-| `WindowService` | alias |
 | `WorkerService` | started |
 
 ## HTTP And REST
@@ -185,16 +143,14 @@ part of the Dart public facade.
 | `CachedRestBackendOptions` | started |
 | `EntityClass` | started |
 | `HttpMethod` | started |
-| `HttpPromise` | started |
-| `HttpProviderDefaults` | started |
+| `HttpDefaults` | started |
 | `HttpResponse` | started |
 | `HttpResponseStatus` | started |
-| `RequestConfig` | started |
-| `RequestShortcutConfig` | started |
+| `HttpRequestConfig` | started |
+| `HttpRequestOptions` | started |
 | `RestBackend` | started |
 | `RestCacheStore` | started |
 | `RestCacheStrategy` | started |
-| `RestDefinition` | started |
 | `RestFactory` | started |
 | `RestOptions` | started |
 | `RestRequest` | started |
@@ -207,12 +163,9 @@ part of the Dart public facade.
 | ng type | Dart status |
 | --- | --- |
 | `CurrencyFilterOptions` | started |
-| `DateFilterOptions` | started |
 | `EntryFilterItem` | started |
 | `FilterFactory` | started |
 | `FilterFn` | started |
-| `NumberFilterOptions` | started |
-| `RelativeTimeFilterOptions` | started |
 
 ## Animation
 
@@ -226,15 +179,17 @@ part of the Dart public facade.
 | `AnimationPreset` | started |
 | `AnimationPresetHandler` | started |
 | `AnimationResult` | started |
-| `NativeAnimationOptions` | started |
 
 ## Router
 
 | ng type | Dart status |
 | --- | --- |
+| `ParamsOf` | started |
+| `ResolvesOf` | started |
+| `RouterModule` | started |
+| `RoutesOf` | started |
 | `StateDeclaration` | started |
-| `StateResolveArray` | started |
-| `StateResolveObject` | started |
+| `StateRegistryService` | started |
 | `Transition` | started |
 
 ## Realtime And Connections
@@ -247,39 +202,32 @@ part of the Dart public facade.
 | `RealtimeProtocolMessage` | started |
 | `SseConfig` | started |
 | `SseConnection` | started |
-| `SseProtocolEventDetail` | started |
-| `SseProtocolMessage` | started |
 | `SseService` | started |
-| `SwapModeType` | started |
+| `SwapMode` | started |
 | `WebSocketConfig` | started |
 | `WebSocketConnection` | started |
 | `WebTransportBufferInput` | started |
-| `WebTransportCertificateHash` | started |
 | `WebTransportConfig` | started |
 | `WebTransportConnection` | started |
 | `WebTransportDatagramEvent` | started |
-| `WebTransportOptions` | started |
 | `WebTransportReconnectEvent` | started |
 | `WebTransportRetryDelay` | started |
-| `NativeWebTransport` | started |
 
 ## Wasm
 
 | ng type | Dart status |
 | --- | --- |
-| `WasmAbiExports` | planned |
-| `WasmInstantiationResult` | planned |
-| `WasmOptions` | planned |
-| `WasmScope` | planned |
-| `WasmScopeAbi` | planned |
-| `WasmScopeAbiImportObject` | planned |
-| `WasmScopeAbiImports` | planned |
-| `WasmScopeBindingOptions` | planned |
-| `WasmScopeOptions` | planned |
-| `WasmScopeReference` | planned |
-| `WasmScopeUpdate` | planned |
-| `WasmScopeWatchOptions` | planned |
+| `WasmBinding` | started |
+| `WasmBindingOptions` | started |
+| `WasmCompileOptions` | started |
+| `WasmError` | started |
+| `WasmErrorCode` | started |
+| `WasmLoadOptions` | started |
+| `WasmResource` | started |
+| `WasmResourceStatus` | started |
 | `WasmService` | started |
+| `WasmSource` | started |
+| `WasmTarget` | started |
 
 ## Web Components
 
@@ -293,6 +241,7 @@ part of the Dart public facade.
 | `ScopeElement` | started |
 | `ScopeElementConstructor` | started |
 | `WebComponentContext` | started |
+| `WebComponentConfig` | started |
 | `WebComponentInput` | started |
 | `WebComponentInputConfig` | started |
 | `WebComponentInputs` | started |
@@ -306,10 +255,51 @@ part of the Dart public facade.
 | `ErrorHandlingConfig` | started |
 | `InterpolationFunction` | started |
 | `NgModelController` | started |
+| `HtmlCanvasConfig` | started |
+| `HtmlCanvasRuntimeSupport` | started |
+| `HtmlCanvasService` | started |
 | `StorageBackend` | started |
 | `StorageType` | started |
 | `WorkerConfig` | started |
-| `WorkerConnection` | started |
+| `WorkerError` | started |
+| `WorkerErrorCode` | started |
+| `WorkerHandle` | started |
+| `WorkerModelMessage` | started |
+| `WorkerRequest` | started |
+| `WorkerRequestOptions` | started |
+| `WorkerResponse` | started |
+| `WorkerStatus` | started |
+
+## Recent Generated Surface
+
+These entries were added after the initial Dart parity table. They are tracked
+explicitly here until a later ergonomic pass moves them into narrower sections.
+
+| ng type | Dart status |
+| --- | --- |
+| `EventDeliveryPolicy` | started |
+| `EventDeliveryPolicyContext` | started |
+| `EventBusConfig` | started |
+| `RestCachePolicy` | started |
+| `RestCachePolicyContext` | started |
+| `RouterConfig` | started |
+| `RouterModuleDeclaration` | started |
+| `ServiceWorkerConfig` | started |
+| `ServiceWorkerErrorCode` | started |
+| `ServiceWorkerMessageEvent` | started |
+| `ServiceWorkerMessageTarget` | started |
+| `ServiceWorkerRegistrationState` | started |
+| `ServiceWorkerRequestOptions` | started |
+| `ServiceWorkerService` | started |
+| `ServiceWorkerUpdateState` | started |
+| `WasmErrorStage` | started |
+| `StatePolicyDeclaration` | started |
+| `RouteContract` | started |
+| `RouteMap` | started |
+| `StateService` | started |
+| `WorkflowSupervisor` | started |
+| `WorkflowSupervisorConfig` | started |
+| `WorkflowSupervisorSnapshot` | started |
 
 ## Parity Rules
 

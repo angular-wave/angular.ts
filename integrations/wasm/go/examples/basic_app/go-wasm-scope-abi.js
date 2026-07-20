@@ -12,6 +12,7 @@ export class GoWasmScopeAbi {
     this.scopeAbi.attach({
       ...exports,
       memory: exports.memory || exports.mem,
+      ng_abi_version: () => 3,
       ng_abi_alloc() {
         throw new Error("standard Go Wasm does not expose ng_abi_alloc");
       },

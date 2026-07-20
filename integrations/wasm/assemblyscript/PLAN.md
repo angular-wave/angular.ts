@@ -17,23 +17,24 @@ AssemblyScript targets the shared ABI documented in:
 integrations/wasm/ABI.md
 ```
 
+This plan covers `WasmScope` only. AssemblyScript should use the scope ABI for
+view-local controller/component state. App-owned state should use
+`app.model(...)` and host-side `model.$sync(...)` targets around an
+AssemblyScript runtime; do not add model handles, model path writes, or model
+watch imports to the AssemblyScript facade unless the shared ABI adds that
+surface later.
+
 The AssemblyScript facade must call the same `angular_ts` imports:
 
 ```text
 scope_resolve
 scope_get
-scope_get_named
 scope_set
-scope_set_named
 scope_delete
-scope_delete_named
 scope_sync
-scope_sync_named
 scope_watch
-scope_watch_named
 scope_unwatch
 scope_unbind
-scope_unbind_named
 buffer_ptr
 buffer_len
 buffer_free
@@ -51,7 +52,7 @@ ng_abi_alloc
 ng_abi_free
 ng_scope_on_bind
 ng_scope_on_unbind
-ng_scope_on_update
+ng_scope_on_transaction
 ```
 
 ## Initial Facade Shape
@@ -78,29 +79,33 @@ add typed handles or binary encodings without changing the base ABI.
 
 ### Phase A - ABI Package
 
-- [ ] Create an AssemblyScript ABI package under `integrations/wasm/assemblyscript`.
-- [ ] Declare the `angular_ts` host imports.
-- [ ] Export `ng_abi_alloc` and `ng_abi_free`.
-- [ ] Add UTF-8 string helpers.
-- [ ] Add JSON encode/decode helpers.
-- [ ] Add `Scope`, `Watch`, and `ScopeUpdate` wrappers.
+- [x] Create an AssemblyScript ABI package under `integrations/wasm/assemblyscript`.
+- [x] Declare the `angular_ts` host imports.
+- [x] Export `ng_abi_alloc` and `ng_abi_free`.
+- [x] Add UTF-8 string helpers.
+- [x] Add JSON string boundary helpers.
+- [x] Add `Scope`, `Watch`, and `ScopeUpdate` wrappers.
+- [x] Add AssemblyScript compiler/package wiring and syntax validation.
 
 ### Phase B - Todo Proof
 
-- [ ] Create an AssemblyScript todo example.
-- [ ] Use `Scope.set` to update real AngularTS scope state.
-- [ ] Use `Scope.watch` to receive UI-originated scope updates.
-- [ ] Add a generated or minimal bootstrap that binds `WasmScope`.
+- [x] Create an AssemblyScript todo example.
+- [x] Use `Scope.setJson` to update real AngularTS scope state.
+- [x] Use `Scope.watch` to receive UI-originated scope updates.
+- [x] Add a generated or minimal bootstrap that binds `WasmScope`.
 
 ### Phase C - Browser Validation
 
-- [ ] Add Playwright coverage for the AssemblyScript todo example.
-- [ ] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
-- [ ] Verify result buffers are freed.
+- [x] Add Playwright coverage for the AssemblyScript todo example.
+- [x] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
+- [x] Verify result buffers are freed through the shared `WasmScope` ABI
+      callback/result-buffer path.
 
 ## Non-Goals
 
 - Reimplement AngularTS in AssemblyScript.
 - Introduce AssemblyScript-specific scope sync.
+- Introduce AssemblyScript-specific model sync.
+- Use `WasmScope` as a substitute for app-owned AngularTS models.
 - Depend on event bus for Wasm scope mutation.
 - Require `wasm-bindgen`.

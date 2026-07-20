@@ -4,6 +4,7 @@ import angular_ts/injectable.{type Injectable}
 import angular_ts/token.{type Token}
 import angular_ts/unsafe as js
 import angular_ts/web_component.{type AppComponent, type ScopeElementConstructor}
+import angular_ts/worker.{type WorkerConfig}
 import gleam/dynamic.{type Dynamic}
 
 pub opaque type NgModule {
@@ -172,6 +173,22 @@ pub fn animation(
     "animation",
     js.coerce(name),
     injectable.to_annotated_array(factory),
+  )
+  ng_module
+}
+
+pub fn worker(
+  ng_module: NgModule,
+  name: String,
+  script_path: String,
+  config: WorkerConfig(receive),
+) -> NgModule {
+  js.call_method3(
+    ng_module.handle,
+    "worker",
+    js.coerce(name),
+    js.coerce(script_path),
+    worker.to_js_config(config),
   )
   ng_module
 }

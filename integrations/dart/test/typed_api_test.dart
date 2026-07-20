@@ -50,21 +50,18 @@ void main() {
       numeric: 'auto',
       style: 'short',
     );
-    const animation = ng.NativeAnimationOptions(
+    const animation = ng.AnimationOptions(
       animation: 'fade',
       duration: 250,
       easing: 'ease-out',
       fill: 'both',
     );
     const errorHandling = ng.ErrorHandlingConfig(objectMaxDepth: 3);
-    const worker = ng.WorkerConfig(autoRestart: true);
-    final anchorProviderRaw = JSObject()
-      ..setProperty('autoScrollingEnabled'.toJS, true.toJS);
-    final anchorProvider = ng.AnchorScrollProvider(anchorProviderRaw);
-    final animateProviderRaw = JSObject()
-      ..setProperty('register'.toJS, ((JSAny? _, JSAny? __) => null).toJS)
-      ..setProperty(r'$get'.toJS, <JSAny?>[].toJS);
-    final animateProvider = ng.AnimateProvider(animateProviderRaw);
+    const worker = ng.WorkerConfig(
+      restart: true,
+      restartDelay: 250,
+      maxRestarts: 4,
+    );
     JSPromise<JSAny?> promise() {
       return Future<JSAny?>.value(JSObject()).toJS;
     }
@@ -105,26 +102,11 @@ void main() {
     final ariaServiceRaw = JSObject()
       ..setProperty('config'.toJS, ((JSAny? _) => true.toJS).toJS);
     final ariaService = ng.AriaService(ariaServiceRaw);
-    final cookieProviderRaw = JSObject();
-    final cookieProvider = ng.CookieProvider(cookieProviderRaw);
-    final interpolateProviderRaw = JSObject()
-      ..setProperty('startSymbol'.toJS, '{{'.toJS)
-      ..setProperty('endSymbol'.toJS, '}}'.toJS);
-    final interpolateProvider = ng.InterpolateProvider(interpolateProviderRaw);
-    final filterProviderRaw = JSObject();
-    filterProviderRaw
-      ..setProperty(
-        'register'.toJS,
-        ((JSAny? _, JSAny? __) => filterProviderRaw).toJS,
-      )
-      ..setProperty(r'$get'.toJS, <JSAny?>[].toJS);
-    final filterProvider = ng.FilterProvider(filterProviderRaw);
     final interpolateServiceRaw = JSObject()
       ..setProperty('startSymbol'.toJS, (() => '{{'.toJS).toJS)
       ..setProperty('endSymbol'.toJS, (() => '}}'.toJS).toJS);
     final interpolateService = ng.InterpolateService(interpolateServiceRaw);
     final injectorRaw = JSObject()
-      ..setProperty('strictDi'.toJS, true.toJS)
       ..setProperty('get'.toJS, ((JSAny? name) => name).toJS)
       ..setProperty('has'.toJS, ((JSAny? _) => true.toJS).toJS)
       ..setProperty('invoke'.toJS,
@@ -155,35 +137,6 @@ void main() {
         ((JSAny? _, JSAny? __, [JSAny? ___]) => promise()).toJS,
       );
     final http = ng.HttpService(httpRaw);
-    final provideRaw = JSObject();
-    final provideMethod = ((JSAny? _, [JSAny? __]) => provideRaw).toJS;
-    provideRaw
-      ..setProperty('provider'.toJS, provideMethod)
-      ..setProperty('factory'.toJS, provideMethod)
-      ..setProperty('service'.toJS, provideMethod)
-      ..setProperty('value'.toJS, provideMethod)
-      ..setProperty('constant'.toJS, provideMethod)
-      ..setProperty('decorator'.toJS, provideMethod)
-      ..setProperty('directive'.toJS, provideMethod);
-    final provide = ng.ProvideService(provideRaw);
-    final locationProviderRaw = JSObject()
-      ..setProperty('hashPrefixConf'.toJS, '!'.toJS)
-      ..setProperty('lastCachedState'.toJS, 'state'.toJS)
-      ..setProperty(
-        'html5ModeConf'.toJS,
-        JSObject()
-          ..setProperty('enabled'.toJS, true.toJS)
-          ..setProperty('requireBase'.toJS, false.toJS)
-          ..setProperty('rewriteLinks'.toJS, true.toJS),
-      )
-      ..setProperty('setUrl'.toJS, ((JSAny? _, [JSAny? __]) => null).toJS)
-      ..setProperty(
-        'getBrowserUrl'.toJS,
-        (() => 'https://example.test/'.toJS).toJS,
-      )
-      ..setProperty('state'.toJS, (() => 'state'.toJS).toJS)
-      ..setProperty('cacheState'.toJS, (() => null).toJS);
-    final locationProvider = ng.LocationProvider(locationProviderRaw);
     final locationServiceRaw = JSObject()
       ..setProperty('appBase'.toJS, 'https://example.test/app/'.toJS)
       ..setProperty('appBaseNoFile'.toJS, 'https://example.test/'.toJS)
@@ -212,24 +165,6 @@ void main() {
           'parseLinkUrl'.toJS, ((JSAny? _, JSAny? __) => true.toJS).toJS)
       ..setProperty('parse'.toJS, ((JSAny? _) => null).toJS);
     final locationService = ng.LocationService(locationServiceRaw);
-    final sceDelegateProviderRaw = JSObject()
-      ..setProperty(
-        'trustedResourceUrlList'.toJS,
-        (([JSAny? _]) => ['self'.toJS].toJS).toJS,
-      )
-      ..setProperty(
-        'bannedResourceUrlList'.toJS,
-        (([JSAny? _]) => <JSString>[].toJS).toJS,
-      )
-      ..setProperty(
-        'aHrefSanitizationTrustedUrlList'.toJS,
-        (([JSAny? _]) => 'href-regexp'.toJS).toJS,
-      )
-      ..setProperty(
-        'imgSrcSanitizationTrustedUrlList'.toJS,
-        (([JSAny? _]) => 'img-regexp'.toJS).toJS,
-      );
-    final sceDelegateProvider = ng.SceDelegateProvider(sceDelegateProviderRaw);
     final sceServiceRaw = JSObject()
       ..setProperty(
         'getTrusted'.toJS,
@@ -278,70 +213,34 @@ void main() {
         ((JSAny? _, [JSAny? __, JSAny? ___]) => JSObject()).toJS,
       );
     final webComponentService = ng.WebComponentService(webComponentServiceRaw);
-    final wasmRaw = ((JSAny? _, [JSAny? __, JSAny? ___]) => promise()).toJS;
-    (wasmRaw as JSObject)
-      ..setProperty('scope'.toJS, ((JSAny? scope, [JSAny? _]) => scope).toJS)
-      ..setProperty(
-        'createScopeAbi'.toJS,
-        (([JSAny? exports]) => exports ?? JSObject()).toJS,
-      );
-    final wasm = ng.WasmService(wasmRaw as JSObject);
     final scope = ng.Scope<Object?>.unsafe(JSObject());
-    final stateRegistryRaw = JSObject()
-      ..setProperty(r'$get'.toJS, <JSAny?>[].toJS)
-      ..setProperty('registerRoot'.toJS, (() => null).toJS)
+    final wasmBindingRaw = JSObject()
+      ..setProperty('name'.toJS, 'demo'.toJS)
+      ..setProperty('target'.toJS, scope.raw)
+      ..setProperty('disposed'.toJS, false.toJS)
+      ..setProperty('dispose'.toJS, (() => null).toJS);
+    final wasmBinding = ng.WasmBinding<Object?>(wasmBindingRaw);
+    final wasmErrorRaw = JSObject()
+      ..setProperty('code'.toJS, 'binding'.toJS)
+      ..setProperty('message'.toJS, 'Unable to bind'.toJS);
+    final wasmError = ng.WasmError(wasmErrorRaw);
+    final wasmResourceRaw = JSObject()
+      ..setProperty('source'.toJS, '/demo.wasm'.toJS)
+      ..setProperty('status'.toJS, 'ready'.toJS)
+      ..setProperty('ready'.toJS, promise())
+      ..setProperty('instance'.toJS, JSObject())
+      ..setProperty('module'.toJS, JSObject())
+      ..setProperty('exports'.toJS, JSObject())
+      ..setProperty('disposed'.toJS, false.toJS)
       ..setProperty(
-        'onStatesChanged'.toJS,
-        ((JSAny? _) => (() => null).toJS).toJS,
+        'bind'.toJS,
+        ((JSAny? _, [JSAny? __]) => Future<JSAny?>.value(wasmBindingRaw).toJS)
+            .toJS,
       )
-      ..setProperty('root'.toJS, JSObject.new.toJS)
-      ..setProperty('register'.toJS, ((JSAny? state) => state).toJS)
-      ..setProperty('deregister'.toJS, ((JSAny? _) => <JSAny?>[].toJS).toJS)
-      ..setProperty('getAll'.toJS, (() => <JSAny?>[].toJS).toJS)
-      ..setProperty(
-        'get'.toJS,
-        (([JSAny? state, JSAny? _]) => state ?? <JSAny?>[].toJS).toJS,
-      );
-    final stateRegistryProvider = ng.StateRegistryProvider(stateRegistryRaw);
-    final stateRegistryService = ng.StateRegistryService(stateRegistryRaw);
-    final stateServiceRaw = JSObject()
-      ..setProperty('params'.toJS, JSObject())
-      ..setProperty('current'.toJS, JSObject())
-      ..setProperty(r'$current'.toJS, JSObject())
-      ..setProperty(r'$get'.toJS, <JSAny?>[].toJS)
-      ..setProperty('state'.toJS, ((JSAny? _, [JSAny? __]) => null).toJS)
-      ..setProperty('lazy'.toJS, ((JSAny? _, JSAny? __) => null).toJS)
-      ..setProperty('reload'.toJS, (([JSAny? _]) => promise()).toJS)
-      ..setProperty(
-        'go'.toJS,
-        ((JSAny? _, [JSAny? __, JSAny? ___]) => promise()).toJS,
-      )
-      ..setProperty(
-        'target'.toJS,
-        ((JSAny? _, [JSAny? __, JSAny? ___]) => JSObject()).toJS,
-      )
-      ..setProperty('getCurrentPath'.toJS, (() => <JSAny?>[].toJS).toJS)
-      ..setProperty(
-        'transitionTo'.toJS,
-        ((JSAny? _, [JSAny? __, JSAny? ___]) => promise()).toJS,
-      )
-      ..setProperty(
-          'is'.toJS, ((JSAny? _, [JSAny? __, JSAny? ___]) => true.toJS).toJS)
-      ..setProperty(
-        'includes'.toJS,
-        ((JSAny? _, [JSAny? __, JSAny? ___]) => true.toJS).toJS,
-      )
-      ..setProperty(
-        'href'.toJS,
-        ((JSAny? _, [JSAny? __, JSAny? ___]) => '/home'.toJS).toJS,
-      )
-      ..setProperty(
-        'defaultErrorHandler'.toJS,
-        (([JSAny? handler]) => handler ?? (() => null).toJS).toJS,
-      )
-      ..setProperty('get'.toJS,
-          (([JSAny? state, JSAny? _]) => state ?? <JSAny?>[].toJS).toJS);
-    final stateService = ng.StateService(stateServiceRaw);
+      ..setProperty('dispose'.toJS, (() => null).toJS);
+    final wasmRaw = JSObject()
+      ..setProperty('load'.toJS, ((JSAny? _) => wasmResourceRaw).toJS);
+    final wasm = ng.WasmService(wasmRaw);
     final streamRaw = JSObject()
       ..setProperty('isReadableStream'.toJS, ((JSAny? _) => true.toJS).toJS)
       ..setProperty(
@@ -377,7 +276,7 @@ void main() {
       ..setProperty('onFinish'.toJS, transitionHook)
       ..setProperty('onSuccess'.toJS, transitionHook)
       ..setProperty('onError'.toJS, transitionHook);
-    final transitionService = ng.TransitionService(transitionServiceRaw);
+    final transitionService = ng.TransitionsService(transitionServiceRaw);
     final transitionRaw = JSObject()
       ..setProperty('run'.toJS, (() => 'done'.toJS).toJS);
     final transition = ng.Transition(transitionRaw);
@@ -396,12 +295,12 @@ void main() {
       dynamicState: true,
       data: {'title': 'Home'},
     );
-    const httpDefaults = ng.HttpProviderDefaults(
+    const httpDefaults = ng.HttpDefaults(
       cache: true,
       transformRequest: 'requestTransform',
       transformResponse: 'responseTransform',
     );
-    const shortcut = ng.RequestShortcutConfig(
+    const shortcut = ng.HttpRequestOptions(
       defaults: httpDefaults,
       headers:
           ng.HttpRequestConfigHeaders(common: {'Accept': 'application/json'}),
@@ -410,7 +309,7 @@ void main() {
       params: {'page': 1},
       responseType: ng.HttpResponseType.json,
     );
-    const request = ng.RequestConfig(
+    const request = ng.HttpRequestConfig(
       method: ng.HttpMethod.get,
       url: '/api/entity',
       shortcut: shortcut,
@@ -419,11 +318,7 @@ void main() {
       timeout: 1000,
       xsrfHeaderName: 'X-XSRF-TOKEN',
     );
-    final rest = ng.RestDefinition<ApiEntity>(
-      name: 'entity',
-      url: '/api/entity',
-      entityClass: ApiEntity.new,
-    );
+    final entityClass = ApiEntity.new;
     const response = ng.RestResponse<String>(
       data: 'ok',
       status: 200,
@@ -450,18 +345,11 @@ void main() {
     const realtime = ng.RealtimeProtocolMessage(
       html: '<p>Updated</p>',
       target: '#message',
-      swap: ng.SwapModeType.outerHTML,
+      swap: ng.SwapMode.outerHTML,
     );
     const eventDetail = ng.RealtimeProtocolEventDetail<String, Object>(
       data: 'ready',
       url: '/events',
-    );
-    final invocation = ng.InvocationDetail(
-      expr: 'service.run()',
-      reply: ng.InvocationReply(
-        resolve: (value) => value,
-        reject: (reason) => Future<Never>.error(reason ?? 'rejected'),
-      ),
     );
     final ng.ControllerConstructor<LifecycleController> constructor =
         LifecycleController.new;
@@ -475,12 +363,9 @@ void main() {
     expect(animation.duration, 250);
     expect(animation.fill, 'both');
     expect(errorHandling.toMap()['objectMaxDepth'], 3);
-    expect(worker.autoRestart, isTrue);
-    expect(anchorProvider.autoScrollingEnabled, isTrue);
-    anchorProvider.autoScrollingEnabled = false;
-    expect(anchorProvider.autoScrollingEnabled, isFalse);
-    animateProvider.register('fade', JSObject());
-    expect(animateProvider.$get, isNotNull);
+    expect(worker.restart, isTrue);
+    expect(worker.restartDelay, 250);
+    expect(worker.maxRestarts, 4);
     animateService.cancel();
     animateService.cancel(JSObject());
     animateService.define('fade', const ng.AnimationPreset(options: animation));
@@ -517,63 +402,25 @@ void main() {
     anchorService.yOffset = 24;
     expect(anchorService.yOffset, isNotNull);
     expect(ariaService.config('ariaHidden'), isTrue);
-    cookieProvider.defaults = const ng.CookieOptions(path: '/app');
-    expect(cookieProvider.defaults, isNotNull);
-    expect(interpolateProvider.startSymbol, '{{');
-    interpolateProvider.startSymbol = '[[';
-    interpolateProvider.endSymbol = ']]';
-    expect(interpolateProvider.startSymbol, '[[');
-    expect(interpolateProvider.endSymbol, ']]');
-    expect(filterProvider.$get, isNotNull);
-    expect(
-        filterProvider.register(
-            'demo', ng.inject0(() => (Object? input, [args]) => input)),
-        filterProvider);
     expect(interpolateService.startSymbol(), '{{');
     expect(interpolateService.endSymbol(), '}}');
-    expect(injector.strictDi, isTrue);
-    injector.strictDi = false;
-    expect(injector.strictDi, isFalse);
     expect(injector.get('service'), isNotNull);
     expect(injector.has('service'), isTrue);
     expect(injector.invoke('fn'), isNotNull);
     expect(injector.instantiate('Type'), isNotNull);
     injector.loadNewModules(['lazy']);
     expect(http.defaults, isNotNull);
-    http.defaults = const ng.HttpProviderDefaults(withCredentials: true);
+    http.defaults = const ng.HttpDefaults(withCredentials: true);
     expect(http.defaults, isNotNull);
     expect(http.pendingRequests, isNotNull);
     http.pendingRequests = [];
     expect(http.get('/api'), isNotNull);
-    expect(http.get('/api', const ng.RequestShortcutConfig()), isNotNull);
+    expect(http.get('/api', const ng.HttpRequestOptions()), isNotNull);
     expect(http.delete('/api/1'), isNotNull);
     expect(http.head('/api'), isNotNull);
     expect(http.post('/api', {'name': 'demo'}), isNotNull);
     expect(http.put('/api/1', {'name': 'demo'}), isNotNull);
     expect(http.patch('/api/1', {'name': 'demo'}), isNotNull);
-    expect(provide.provider('demo', JSObject()), provide);
-    expect(provide.factory('demoFactory', ng.inject0(() => 'demo')), provide);
-    expect(provide.service('demoService', JSObject()), provide);
-    expect(provide.value('demoValue', null), provide);
-    expect(provide.constant('demoConstant', 1), provide);
-    expect(
-        provide.decorator('demoValue', ng.inject0(() => 'decorated')), provide);
-    expect(
-        provide.directive('demoDirective', ng.inject0(JSObject.new)), provide);
-    expect(locationProvider.hashPrefixConf, '!');
-    locationProvider.hashPrefixConf = '?';
-    expect(locationProvider.hashPrefixConf, '?');
-    expect(locationProvider.lastCachedState, isNotNull);
-    locationProvider.html5ModeConf = {
-      'enabled': true,
-      'requireBase': false,
-      'rewriteLinks': true,
-    };
-    expect(locationProvider.html5ModeConf, isNotNull);
-    expect(locationProvider.setUrl('https://example.test/'), locationProvider);
-    expect(locationProvider.getBrowserUrl(), 'https://example.test/');
-    expect(locationProvider.state(), isNotNull);
-    locationProvider.cacheState();
     expect(locationService.appBase, 'https://example.test/app/');
     locationService.appBase = 'https://example.test/new/';
     expect(locationService.appBase, 'https://example.test/new/');
@@ -606,16 +453,6 @@ void main() {
     expect(locationService.state(null), isNotNull);
     expect(locationService.parseLinkUrl('/home', '/home'), isTrue);
     locationService.parse('/home');
-    expect(sceDelegateProvider.trustedResourceUrlList(), isNotNull);
-    expect(sceDelegateProvider.bannedResourceUrlList(), isNotNull);
-    expect(
-      sceDelegateProvider.aHrefSanitizationTrustedUrlList(),
-      'href-regexp',
-    );
-    expect(
-      sceDelegateProvider.imgSrcSanitizationTrustedUrlList(),
-      'img-regexp',
-    );
     expect(sceService.getTrusted('html', 'safe'), isNotNull);
     expect(sceService.getTrustedHtml('safe'), isNotNull);
     expect(sceService.getTrustedMediaUrl('safe'), isNotNull);
@@ -659,51 +496,22 @@ void main() {
       ),
       isNotNull,
     );
-    expect(wasm.call('/demo.wasm'), isNotNull);
-    expect(wasm.call('/demo.wasm', {}, {'raw': true}), isNotNull);
-    expect(wasm.scope(scope), isNotNull);
-    expect(wasm.scope(scope, {'name': 'demo'}), isNotNull);
-    expect(wasm.createScopeAbi(), isNotNull);
-    expect(wasm.createScopeAbi(JSObject()), isNotNull);
-    expect(stateRegistryProvider.$get, isNotNull);
-    stateRegistryProvider.registerRoot();
-    expect(stateRegistryProvider.onStatesChanged(JSObject()), isNotNull);
-    expect(stateRegistryProvider.root(), isNotNull);
-    expect(stateRegistryProvider.register(JSObject()), isNotNull);
-    expect(stateRegistryProvider.deregister('home'), isNotNull);
-    expect(stateRegistryProvider.getAll(), isNotNull);
-    expect(stateRegistryProvider.get(), isNotNull);
-    expect(stateRegistryProvider.get('home'), isNotNull);
-    expect(stateRegistryService.$get, isNotNull);
-    stateRegistryService.registerRoot();
-    expect(stateRegistryService.onStatesChanged((() => null).toJS), isNotNull);
-    expect(stateRegistryService.root(), isNotNull);
-    expect(stateRegistryService.register(JSObject()), isNotNull);
-    expect(stateRegistryService.deregister('home'), isNotNull);
-    expect(stateRegistryService.getAll(), isNotNull);
-    expect(stateRegistryService.get(), isNotNull);
-    expect(stateRegistryService.get('home'), isNotNull);
-    expect(stateService.params, isNotNull);
-    expect(stateService.current, isNotNull);
-    expect(stateService.$current, isNotNull);
-    expect(stateService.$get, isNotNull);
-    expect(stateService.state(state), stateService);
-    expect(stateService.state('about', state), stateService);
-    expect(stateService.lazy('admin', JSObject()), stateService);
-    expect(stateService.reload(), isNotNull);
-    expect(stateService.reload('home'), isNotNull);
-    expect(stateService.go('home'), isNotNull);
-    expect(stateService.go('home', {'id': 1}), isNotNull);
-    expect(stateService.target('home'), isNotNull);
-    expect(stateService.getCurrentPath(), isNotNull);
-    expect(stateService.transitionTo('home'), isNotNull);
-    expect(stateService.isState('home'), isTrue);
-    expect(stateService.includes('home'), isTrue);
-    expect(stateService.href('home'), '/home');
-    expect(stateService.defaultErrorHandler(), isNotNull);
-    expect(stateService.defaultErrorHandler(JSObject()), isNotNull);
-    expect(stateService.get(), isNotNull);
-    expect(stateService.get('home'), isNotNull);
+    final wasmResource = wasm.load(
+      const ng.WasmLoadOptions(
+        source: '/demo.wasm',
+        compile: ng.WasmCompileOptions(builtins: ['js-string']),
+        diagnostics: true,
+      ),
+    );
+    final Future<ng.WasmBinding<Object?>> binding = wasmResource.bind(
+      scope,
+      const ng.WasmBindingOptions(name: 'demo'),
+    );
+    expect(wasmResource.status, ng.WasmResourceStatus.ready);
+    expect(wasmResource.source, isNotNull);
+    expect(wasmBinding.target.raw, same(scope.raw));
+    expect(wasmError.code, ng.WasmErrorCode.binding);
+    expect(binding, isA<Future<ng.WasmBinding<Object?>>>());
     final readableStream = ReadableStream();
     expect(stream.isReadableStream(readableStream), isTrue);
     expect(stream.consumeText(readableStream), isNotNull);
@@ -733,7 +541,7 @@ void main() {
     expect(shortcut.toMap()['withCredentials'], isTrue);
     expect(request.cache, isFalse);
     expect(request.xsrfHeaderName, 'X-XSRF-TOKEN');
-    expect(rest.entityClass?.call({'id': 1}).raw, {'id': 1});
+    expect(entityClass({'id': 1}).raw, {'id': 1});
     expect(response.status, 200);
     expect(response.xhrStatus, ng.HttpResponseStatus.complete);
     expect(cookie.samesite?.value, 'Lax');
@@ -743,7 +551,6 @@ void main() {
     expect(webTransport.retryDelay, 250);
     expect(realtime.swap?.value, 'outerHTML');
     expect(eventDetail.url, '/events');
-    expect(invocation.reply?.resolve('ok'), 'ok');
     expect(constructor(), isA<LifecycleController>());
   });
 }

@@ -1,6 +1,5 @@
 export 'src/animation.dart';
 export 'src/angular_element.dart';
-export 'src/bootstrap.dart';
 export 'src/connection.dart';
 export 'src/component.dart';
 export 'src/compile.dart';
@@ -19,7 +18,16 @@ export 'src/rest.dart';
 export 'src/router.dart';
 export 'src/runtime.dart';
 export 'src/scope.dart';
-export 'src/services.dart';
+export 'src/services.dart'
+    hide
+        WasmScope,
+        WasmScopeAbi,
+        WasmScopeAbiImportObject,
+        WasmScopeAbiImports,
+        WasmScopeBindingOptions,
+        WasmScopeOptions,
+        WasmScopeUpdate,
+        WasmScopeWatchOptions;
 export 'src/storage.dart';
 export 'src/token.dart';
 export 'src/tokens.dart';

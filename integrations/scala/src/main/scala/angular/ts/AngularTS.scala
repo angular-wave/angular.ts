@@ -16,46 +16,17 @@ object AngularTS:
   def bootstrap(
       element: dom.Element,
       modules: Seq[String],
-      config: js.UndefOr[js.Object] = js.undefined,
   ): Injector =
-    val raw = config.fold(RuntimeAngular.bootstrap(element, modules.toJSArray))(
-      configObject => RuntimeAngular.bootstrap(element, modules.toJSArray, configObject),
-    )
-
-    Injector(raw)
+    Injector(RuntimeAngular.bootstrap(element, modules.toJSArray))
 
   def token[A](name: String): Token[A] = Token(name)
 
-  def defineMachine[TData <: js.Object, TEvents <: js.Object](
-      config: MachineConfig[TData, TEvents],
-  ): MachineConfig[TData, TEvents] = config
-
   def defineWorkflow[
       TData <: js.Object,
-      TEvents <: js.Object,
       TCommands <: js.Object,
   ](
-      config: WorkflowConfig[TData, TEvents, TCommands],
-  ): WorkflowConfig[TData, TEvents, TCommands] = config
-
-  def defineCommand[
-      TData <: js.Object,
-      TInput,
-      TOutput,
-      TEvents <: js.Object,
-      TCommands <: js.Object,
-      TName <: String,
-  ](
-      command: WorkflowCommand[
-        TData,
-        TInput,
-        TOutput,
-        TEvents,
-        TCommands,
-        TName,
-      ],
-  ): WorkflowCommand[TData, TInput, TOutput, TEvents, TCommands, TName] =
-    command
+      config: WorkflowConfig[TData, TCommands],
+  ): WorkflowConfig[TData, TCommands] = config
 
   def inject0[A](factory: () => A): InjectableFactory[A] =
     InjectableFactory(Nil, () => factory().asInstanceOf[js.Any])

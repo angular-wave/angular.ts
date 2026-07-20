@@ -3,13 +3,7 @@ package angular.ts
 import org.scalajs.dom
 import scala.scalajs.js
 
-type DocumentService = dom.Document
-type ElementService = dom.Element
-type RootElementService = dom.Element
-type RootScopeService = Scope
-type WindowService = dom.Window
 type Angular = js.Object
-type AngularService = Angular
 type Expression = String
 type ClassMap = js.Dictionary[Boolean | Null]
 type ClassValue = String | ClassMap | js.Array[String | ClassMap | Null] | Null
@@ -17,71 +11,43 @@ type AnnotatedFactory[A] = js.Array[String | js.Function]
 type Injectable[A] = InjectableFactory[A]
 type Controller = js.Object
 type ControllerConstructor = js.Function
-type EventBusService = PubSubService
-type MachineMode = String
+type MachineState = String
 type MachineEventMap = js.Dictionary[js.Any]
 type MachineNoEvents = js.Object
-type MachineTransitionResult = MachineMode | Boolean | Unit
-type MachineTransition[
-    TData <: js.Object,
-    TPayload,
-    TEvents <: js.Object,
-] = js.Function3[TData, TPayload, Machine[TData, TEvents], MachineTransitionResult]
-type MachineGuard[
-    TData <: js.Object,
-    TPayload,
-    TEvents <: js.Object,
-] = js.Function3[TData, TPayload, Machine[TData, TEvents], Boolean]
-type MachineTransitionDefinition[
-    TData <: js.Object,
-    TPayload,
-    TEvents <: js.Object,
-] =
-  MachineTransition[TData, TPayload, TEvents] |
-    MachineTransitionDescriptor[TData, TPayload, TEvents]
-type MachineTransitionMap[
+type MachineEventTransitionGuard[
     TData <: js.Object,
     TEvents <: js.Object,
-] = js.Dictionary[js.UndefOr[js.Dictionary[MachineTransitionDefinition[TData, js.Any, TEvents]]]]
-type MachineTransitionHook[
+] = js.Function1[MachineEventTransitionContext[TData, TEvents, js.Any], Boolean]
+type MachineEventTransitionUpdate[
     TData <: js.Object,
     TEvents <: js.Object,
-] = js.Function1[MachineTransitionContext[TData, TEvents, js.Any], Unit]
-type MachineModeHooks[
+] = js.Function1[MachineEventTransitionContext[TData, TEvents, js.Any], Unit]
+type MachineEventTransitionHook[
     TData <: js.Object,
     TEvents <: js.Object,
-] = js.Dictionary[MachineTransitionHook[TData, TEvents]]
-type WorkflowMode = MachineMode
-type WorkflowStatus = WorkflowMode
+] = js.Function1[MachineEventTransitionContext[TData, TEvents, js.Any], Unit]
+type MachineStateTransitionMap[
+    TData <: js.Object,
+    TEvents <: js.Object,
+] = js.Dictionary[MachineEventTransitionConfig[TData, js.Any, TEvents]]
+type MachineStateMap[
+    TData <: js.Object,
+    TEvents <: js.Object,
+] = js.Dictionary[MachineStateDefinition[TData, TEvents]]
+type MachineStateHooks[
+    TData <: js.Object,
+    TEvents <: js.Object,
+] = js.Dictionary[MachineEventTransitionHook[TData, TEvents]]
+type WorkflowState = MachineState
 type WorkflowNoCommands = js.Object
-type WorkflowCommandReturn[TOutput] =
-  WorkflowCommandResult[TOutput] | TOutput |
-    js.Promise[WorkflowCommandResult[TOutput] | TOutput]
-type WorkflowCommand[
-    TData <: js.Object,
-    TInput,
-    TOutput,
-    TEvents <: js.Object,
-    TCommands <: js.Object,
-    TName <: String,
-] = js.Function1[
-  WorkflowCommandContext[TData, TInput, TEvents, TCommands, TName],
+type WorkflowCommandReturn[TOutput] = TOutput | js.Promise[TOutput]
+type WorkflowCommand[TInput, TOutput, TData <: js.Object] = js.Function1[
+  WorkflowCommandContext[TInput, TData],
   WorkflowCommandReturn[TOutput],
 ]
-type WorkflowCommandMap[
-    TData <: js.Object,
-    TEvents <: js.Object,
-] = js.Dictionary[js.Function]
+type WorkflowCommandMap = js.Dictionary[js.Object]
 type WorkflowSnapshotMigration[TData <: js.Object] =
   js.Function1[js.Any, WorkflowSnapshot[TData]]
-type WorkflowStateEngineFactory[
-    TData <: js.Object,
-    TEvents <: js.Object,
-    TCommands <: js.Object,
-] = js.Function1[
-  WorkflowStateEngineContext[TData, TEvents, TCommands],
-  WorkflowStateEngine[TData, TEvents],
-]
 type WorkflowSupervisorWorkflowMap = js.Dictionary[js.Any]
 type WorkflowWorkerMessage =
   WorkflowWorkerRequest | WorkflowWorkerResponse[js.Any] | WorkflowWorkerSnapshotMessage
@@ -94,35 +60,58 @@ type ModelViewChangeListener = js.Function0[Unit]
 type PublicValidationState = Boolean | Null
 
 @js.native
-trait MachineTransitionDescriptor[
+trait MachineEventTransitionContext[
+    TData <: js.Object,
+    TEvents <: js.Object,
+    TPayload,
+] extends js.Object:
+  val `type`: String = js.native
+  val from: MachineState = js.native
+  var to: js.UndefOr[MachineState] = js.native
+  val payload: TPayload = js.native
+  val data: TData = js.native
+  val machine: Machine[TData, TEvents] = js.native
+
+final case class MachineEventTransitionConfig[
     TData <: js.Object,
     TPayload,
     TEvents <: js.Object,
-] extends js.Object:
-  val guard: js.UndefOr[MachineGuard[TData, TPayload, TEvents]] = js.native
-  val target: MachineTransition[TData, TPayload, TEvents] = js.native
-
-object MachineTransitionDescriptor:
-  def apply[
-      TData <: js.Object,
-      TPayload,
-      TEvents <: js.Object,
-  ](
-      target: MachineTransition[TData, TPayload, TEvents],
-      guard: js.UndefOr[MachineGuard[TData, TPayload, TEvents]] = js.undefined,
-  ): MachineTransitionDescriptor[TData, TPayload, TEvents] =
+](
+    to: js.UndefOr[MachineState] = js.undefined,
+    guard: js.UndefOr[MachineEventTransitionGuard[TData, TEvents]] = js.undefined,
+    before: js.UndefOr[MachineEventTransitionHook[TData, TEvents]] = js.undefined,
+    update: js.UndefOr[MachineEventTransitionUpdate[TData, TEvents]] = js.undefined,
+    after: js.UndefOr[MachineEventTransitionHook[TData, TEvents]] = js.undefined,
+    denied: js.UndefOr[MachineEventTransitionHook[TData, TEvents]] = js.undefined,
+):
+  private[ts] def toJS: js.Object =
     JsObjectBuilder(
+      "to" -> to,
       "guard" -> guard.asInstanceOf[js.UndefOr[js.Any]],
-      "target" -> target,
-    ).asInstanceOf[MachineTransitionDescriptor[TData, TPayload, TEvents]]
+      "before" -> before.asInstanceOf[js.UndefOr[js.Any]],
+      "update" -> update.asInstanceOf[js.UndefOr[js.Any]],
+      "after" -> after.asInstanceOf[js.UndefOr[js.Any]],
+      "denied" -> denied.asInstanceOf[js.UndefOr[js.Any]],
+    )
+
+final case class MachineStateDefinition[
+    TData <: js.Object,
+    TEvents <: js.Object,
+](
+    on: js.UndefOr[MachineStateTransitionMap[TData, TEvents]] = js.undefined,
+):
+  private[ts] def toJS: js.Object =
+    val mappedOn = on.map(_.map { case (name, transition) => name -> transition.toJS })
+
+    JsObjectBuilder("on" -> mappedOn.map(entries => js.Dictionary(entries.toSeq*)))
 
 final case class MachineHooks[
     TData <: js.Object,
     TEvents <: js.Object,
 ](
-    enter: js.UndefOr[MachineModeHooks[TData, TEvents]] = js.undefined,
-    exit: js.UndefOr[MachineModeHooks[TData, TEvents]] = js.undefined,
-    transition: js.UndefOr[MachineTransitionHook[TData, TEvents]] = js.undefined,
+    enter: js.UndefOr[MachineStateHooks[TData, TEvents]] = js.undefined,
+    exit: js.UndefOr[MachineStateHooks[TData, TEvents]] = js.undefined,
+    transition: js.UndefOr[MachineEventTransitionHook[TData, TEvents]] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
@@ -131,63 +120,52 @@ final case class MachineHooks[
       "transition" -> transition,
     )
 
-final case class MachineConfig[
+final case class MachineStateConfig[
     TData <: js.Object,
     TEvents <: js.Object,
 ](
-    initial: MachineMode,
+    initial: MachineState,
     data: TData,
-    transitions: MachineTransitionMap[TData, TEvents],
+    states: MachineStateMap[TData, TEvents],
     hooks: js.UndefOr[MachineHooks[TData, TEvents]] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
+    val mappedStates = states.map { case (name, state) => name -> state.toJS }
+
     JsObjectBuilder(
       "initial" -> initial,
       "data" -> data,
-      "transitions" -> transitions,
+      "states" -> js.Dictionary(mappedStates.toSeq*),
       "hooks" -> hooks.map(_.toJS),
     )
 
 @js.native
 trait MachineSnapshot[TData <: js.Object] extends js.Object:
-  val current: MachineMode = js.native
+  val state: MachineState = js.native
   val data: TData = js.native
 
 object MachineSnapshot:
   def apply[TData <: js.Object](
-      current: MachineMode,
+      state: MachineState,
       data: TData,
   ): MachineSnapshot[TData] =
     JsObjectBuilder(
-      "current" -> current,
+      "state" -> state,
       "data" -> data,
     ).asInstanceOf[MachineSnapshot[TData]]
-
-@js.native
-trait MachineTransitionContext[
-    TData <: js.Object,
-    TEvents <: js.Object,
-    TPayload,
-] extends js.Object:
-  val `type`: String = js.native
-  val from: MachineMode = js.native
-  val to: MachineMode = js.native
-  val payload: TPayload = js.native
-  val data: TData = js.native
-  val machine: Machine[TData, TEvents] = js.native
 
 @js.native
 trait Machine[
     TData <: js.Object,
     TEvents <: js.Object,
 ] extends js.Object:
-  var current: MachineMode = js.native
+  val state: MachineState = js.native
   val data: TData = js.native
   def send(`type`: String, payload: js.UndefOr[js.Any] = js.undefined): Boolean =
     js.native
   def can(`type`: String, payload: js.UndefOr[js.Any] = js.undefined): Boolean =
     js.native
-  def matches(mode: MachineMode): Boolean = js.native
+  def matches(state: MachineState): Boolean = js.native
   def snapshot(): MachineSnapshot[TData] = js.native
   def restore(snapshot: MachineSnapshot[TData]): Unit = js.native
 
@@ -203,17 +181,17 @@ trait MachineService extends js.Object:
   ](scope: Scope, config: js.Object): Machine[TData, TEvents] = js.native
 
 extension [TData <: js.Object, TEvents <: js.Object] (service: MachineService)
-  def create(config: MachineConfig[TData, TEvents]): Machine[TData, TEvents] =
+  def create(config: MachineStateConfig[TData, TEvents]): Machine[TData, TEvents] =
     service.apply[TData, TEvents](config.toJS)
 
   def create(
       scope: Scope,
-      config: MachineConfig[TData, TEvents],
+      config: MachineStateConfig[TData, TEvents],
   ): Machine[TData, TEvents] =
     service.apply[TData, TEvents](scope, config.toJS)
 
 enum WorkflowConcurrencyPolicy(val value: String):
-  case Allow extends WorkflowConcurrencyPolicy("allow")
+  case Parallel extends WorkflowConcurrencyPolicy("parallel")
   case Reject extends WorkflowConcurrencyPolicy("reject")
   case Queue extends WorkflowConcurrencyPolicy("queue")
 
@@ -245,79 +223,89 @@ object WorkflowDiagnostic:
     ).asInstanceOf[WorkflowDiagnostic]
 
 @js.native
-trait WorkflowCommandResult[TOutput] extends js.Object:
+trait WorkflowResult[TOutput] extends js.Object:
   val ok: Boolean = js.native
+  val status: String = js.native
   val output: js.UndefOr[TOutput] = js.native
   val diagnostics: js.UndefOr[js.Array[WorkflowDiagnostic]] = js.native
 
-object WorkflowCommandResult:
-  def ok[TOutput](
-      output: js.UndefOr[TOutput] = js.undefined,
-      diagnostics: js.UndefOr[js.Array[WorkflowDiagnostic]] = js.undefined,
-  ): WorkflowCommandResult[TOutput] =
-    JsObjectBuilder(
-      "ok" -> true,
-      "output" -> output.asInstanceOf[js.UndefOr[js.Any]],
-      "diagnostics" -> diagnostics,
-    ).asInstanceOf[WorkflowCommandResult[TOutput]]
-
-  def failed[TOutput](
-      diagnostics: js.Array[WorkflowDiagnostic],
-  ): WorkflowCommandResult[TOutput] =
-    JsObjectBuilder(
-      "ok" -> false,
-      "diagnostics" -> diagnostics,
-    ).asInstanceOf[WorkflowCommandResult[TOutput]]
-
-final case class WorkflowCommandOptions(
-    concurrency: js.UndefOr[WorkflowConcurrencyPolicy] = js.undefined,
-    signal: js.UndefOr[dom.AbortSignal] = js.undefined,
-    timeout: js.UndefOr[Double] = js.undefined,
-):
-  private[ts] def toJS: js.Object =
-    JsObjectBuilder(
-      "concurrency" -> concurrency.map(_.value),
-      "signal" -> signal,
-      "timeout" -> timeout,
-    )
-
 @js.native
 trait WorkflowCommandContext[
-    TData <: js.Object,
     TInput,
-    TEvents <: js.Object,
-    TCommands <: js.Object,
-    TName <: String,
+    TData <: js.Object,
 ] extends js.Object:
-  val workflow: Workflow[TData, TEvents, TCommands] = js.native
   val data: TData = js.native
   val input: TInput = js.native
-  val command: TName = js.native
+  val command: String = js.native
   val signal: dom.AbortSignal = js.native
   def cleanup(callback: js.Function0[Unit]): Unit = js.native
+  def reject(diagnostic: WorkflowDiagnostic): Nothing = js.native
 
 @js.native
-trait WorkflowStateEngine[
-    TData <: js.Object,
-    TEvents <: js.Object,
-] extends js.Object:
-  val current: WorkflowMode = js.native
+trait WorkflowLifecycleContext[TInput, TData <: js.Object] extends js.Object:
+  val command: String = js.native
+  val input: TInput = js.native
   val data: TData = js.native
-  def send(`type`: String, payload: js.UndefOr[js.Any] = js.undefined): Boolean =
-    js.native
-  def can(`type`: String): Boolean = js.native
-  def matches(mode: WorkflowMode): Boolean = js.native
-  def snapshot(): MachineSnapshot[TData] = js.native
-  def restore(snapshot: MachineSnapshot[TData]): Unit = js.native
 
 @js.native
-trait WorkflowStateEngineContext[
-    TData <: js.Object,
-    TEvents <: js.Object,
-    TCommands <: js.Object,
-] extends js.Object:
-  val config: WorkflowConfig[TData, TEvents, TCommands] = js.native
-  def createDefaultEngine(): WorkflowStateEngine[TData, TEvents] = js.native
+trait WorkflowSuccessContext[TInput, TOutput, TData <: js.Object]
+    extends WorkflowLifecycleContext[TInput, TData]:
+  val output: TOutput = js.native
+
+@js.native
+trait WorkflowFailureContext[TInput, TData <: js.Object]
+    extends WorkflowLifecycleContext[TInput, TData]:
+  val diagnostic: WorkflowDiagnostic = js.native
+  val diagnostics: js.Array[WorkflowDiagnostic] = js.native
+
+final case class WorkflowLifecycleTarget[TContext](
+    to: WorkflowState,
+    update: js.UndefOr[js.Function1[TContext, Unit]] = js.undefined,
+):
+  private[ts] def toJS: js.Object = JsObjectBuilder("to" -> to, "update" -> update)
+
+final case class WorkflowCommandDefinition[TInput, TOutput, TData <: js.Object](
+    from: WorkflowState | js.Array[WorkflowState],
+    pending: WorkflowState | WorkflowLifecycleTarget[WorkflowLifecycleContext[TInput, TData]],
+    success: WorkflowState | WorkflowLifecycleTarget[
+      WorkflowSuccessContext[TInput, TOutput, TData]
+    ],
+    failure: WorkflowState | WorkflowLifecycleTarget[WorkflowFailureContext[TInput, TData]],
+    execute: js.UndefOr[WorkflowCommand[TInput, TOutput, TData]] = js.undefined,
+    cancelled: js.UndefOr[
+      WorkflowState | WorkflowLifecycleTarget[WorkflowFailureContext[TInput, TData]]
+    ] = js.undefined,
+    timeout: js.UndefOr[
+      WorkflowState | WorkflowLifecycleTarget[WorkflowFailureContext[TInput, TData]]
+    ] = js.undefined,
+    concurrency: js.UndefOr[WorkflowConcurrencyPolicy] = js.undefined,
+    commandTimeout: js.UndefOr[Double] = js.undefined,
+    retry: js.UndefOr[Int] = js.undefined,
+):
+  private def target(value: Any): js.Any =
+    value match
+      case target: WorkflowLifecycleTarget[?] => target.toJS
+      case state => state.asInstanceOf[js.Any]
+
+  private[ts] def toJS: js.Object =
+    JsObjectBuilder(
+      "from" -> from.asInstanceOf[js.Any],
+      "pending" -> target(pending),
+      "execute" -> execute,
+      "success" -> target(success),
+      "failure" -> target(failure),
+      "cancelled" -> cancelled.map(value => target(value)),
+      "timeout" -> timeout.map(value => target(value)),
+      "concurrency" -> concurrency.map(_.value),
+      "commandTimeout" -> commandTimeout,
+      "retry" -> retry,
+    )
+
+object WorkflowCommandMap:
+  def apply(
+      entries: (String, WorkflowCommandDefinition[?, ?, ? <: js.Object])*,
+  ): WorkflowCommandMap =
+    js.Dictionary(entries.map { case (name, definition) => name -> definition.toJS }*)
 
 @js.native
 trait WorkflowHistoryEntry extends js.Object:
@@ -348,34 +336,24 @@ object WorkflowHistoryEntry:
 
 final case class WorkflowConfig[
     TData <: js.Object,
-    TEvents <: js.Object,
     TCommands <: js.Object,
 ](
     id: String,
-    initial: WorkflowMode,
+    initial: WorkflowState,
     data: TData,
-    transitions: MachineTransitionMap[TData, TEvents],
-    commands: js.UndefOr[WorkflowCommandMap[TData, TEvents]] = js.undefined,
-    commandTimeout: js.UndefOr[Double] = js.undefined,
-    concurrency: js.UndefOr[WorkflowConcurrencyPolicy] = js.undefined,
+    commands: WorkflowCommandMap,
     diagnosticLimit: js.UndefOr[Int] = js.undefined,
     historyLimit: js.UndefOr[Int] = js.undefined,
     migrateSnapshot: js.UndefOr[WorkflowSnapshotMigration[TData]] = js.undefined,
-    stateEngine: js.UndefOr[WorkflowStateEngineFactory[TData, TEvents, TCommands]] =
-      js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
-      "commandTimeout" -> commandTimeout,
-      "concurrency" -> concurrency.map(_.value),
       "diagnosticLimit" -> diagnosticLimit,
       "id" -> id,
       "initial" -> initial,
       "data" -> data,
       "historyLimit" -> historyLimit,
       "migrateSnapshot" -> migrateSnapshot,
-      "stateEngine" -> stateEngine,
-      "transitions" -> transitions,
       "commands" -> commands,
     )
 
@@ -383,7 +361,7 @@ final case class WorkflowConfig[
 trait WorkflowSnapshot[TData <: js.Object] extends js.Object:
   val version: Int = js.native
   val id: String = js.native
-  val current: WorkflowMode = js.native
+  val state: WorkflowState = js.native
   val data: TData = js.native
   val diagnostics: js.Array[WorkflowDiagnostic] = js.native
   val history: js.Array[WorkflowHistoryEntry] = js.native
@@ -391,7 +369,7 @@ trait WorkflowSnapshot[TData <: js.Object] extends js.Object:
 object WorkflowSnapshot:
   def apply[TData <: js.Object](
       id: String,
-      current: WorkflowMode,
+      state: WorkflowState,
       data: TData,
       diagnostics: js.Array[WorkflowDiagnostic] = js.Array(),
       history: js.Array[WorkflowHistoryEntry] = js.Array(),
@@ -399,7 +377,7 @@ object WorkflowSnapshot:
     JsObjectBuilder(
       "version" -> 1,
       "id" -> id,
-      "current" -> current,
+      "state" -> state,
       "data" -> data,
       "diagnostics" -> diagnostics,
       "history" -> history,
@@ -408,34 +386,18 @@ object WorkflowSnapshot:
 @js.native
 trait Workflow[
     TData <: js.Object,
-    TEvents <: js.Object,
     TCommands <: js.Object,
 ] extends js.Object:
   val id: String = js.native
-  val current: WorkflowMode = js.native
+  val state: WorkflowState = js.native
   val data: TData = js.native
   val diagnostics: js.Array[WorkflowDiagnostic] = js.native
   val history: js.Array[WorkflowHistoryEntry] = js.native
-  def send(`type`: String, payload: js.UndefOr[js.Any] = js.undefined): Boolean =
-    js.native
-  def can(`type`: String): Boolean = js.native
-  def matches(mode: WorkflowMode): Boolean = js.native
-  val run: js.Function3[
-    String,
-    js.UndefOr[js.Any],
-    js.UndefOr[js.Object],
-    js.Promise[WorkflowCommandResult[js.Any]],
-  ] = js.native
-  val retry: js.Function2[
-    js.UndefOr[String],
-    js.UndefOr[js.Object],
-    js.Promise[WorkflowCommandResult[js.Any]],
-  ] = js.native
-  val repeat: js.Function2[
-    js.UndefOr[String],
-    js.UndefOr[js.Object],
-    js.Promise[WorkflowCommandResult[js.Any]],
-  ] = js.native
+  def can(command: String): Boolean = js.native
+  def run[TOutput](
+      command: String,
+      input: js.UndefOr[js.Any] = js.undefined,
+  ): js.Promise[WorkflowResult[TOutput]] = js.native
   def cancel(command: js.UndefOr[String] = js.undefined): Int = js.native
   def snapshot(): WorkflowSnapshot[TData] = js.native
   def restore(snapshot: js.Any): Unit = js.native
@@ -444,44 +406,36 @@ trait Workflow[
 trait WorkflowService extends js.Object:
   def apply[
       TData <: js.Object,
-      TEvents <: js.Object,
       TCommands <: js.Object,
-  ](config: js.Object): Workflow[TData, TEvents, TCommands] = js.native
+  ](config: js.Object): Workflow[TData, TCommands] = js.native
   def apply[
       TData <: js.Object,
-      TEvents <: js.Object,
       TCommands <: js.Object,
-  ](scope: Scope, config: js.Object): Workflow[TData, TEvents, TCommands] =
+  ](scope: Scope, config: js.Object): Workflow[TData, TCommands] =
     js.native
 
-extension [TData <: js.Object, TEvents <: js.Object, TCommands <: js.Object] (
+extension [TData <: js.Object, TCommands <: js.Object] (
     service: WorkflowService
 )
   def create(
-      config: WorkflowConfig[TData, TEvents, TCommands],
-  ): Workflow[TData, TEvents, TCommands] =
-    service.apply[TData, TEvents, TCommands](config.toJS)
+      config: WorkflowConfig[TData, TCommands],
+  ): Workflow[TData, TCommands] =
+    service.apply[TData, TCommands](config.toJS)
 
   def create(
       scope: Scope,
-      config: WorkflowConfig[TData, TEvents, TCommands],
-  ): Workflow[TData, TEvents, TCommands] =
-    service.apply[TData, TEvents, TCommands](scope, config.toJS)
+      config: WorkflowConfig[TData, TCommands],
+  ): Workflow[TData, TCommands] =
+    service.apply[TData, TCommands](scope, config.toJS)
 
 enum WorkflowSupervisorStatus(val value: String):
   case Idle extends WorkflowSupervisorStatus("idle")
-  case Running extends WorkflowSupervisorStatus("running")
   case Persisting extends WorkflowSupervisorStatus("persisting")
   case Recovering extends WorkflowSupervisorStatus("recovering")
   case Failed extends WorkflowSupervisorStatus("failed")
 
-enum WorkflowSupervisorPersistencePolicy(val value: String):
-  case Manual extends WorkflowSupervisorPersistencePolicy("manual")
-  case AfterCommand extends WorkflowSupervisorPersistencePolicy("after-command")
-
 enum WorkflowWorkerRequestOperation(val value: String):
   case Run extends WorkflowWorkerRequestOperation("run")
-  case Send extends WorkflowWorkerRequestOperation("send")
   case Snapshot extends WorkflowWorkerRequestOperation("snapshot")
   case Restore extends WorkflowWorkerRequestOperation("restore")
 
@@ -546,9 +500,8 @@ trait WorkflowSupervisorPersistence[
 ] extends js.Object:
   def load(id: String): js.Promise[js.UndefOr[TSnapshot]] = js.native
   def save(id: String, snapshot: TSnapshot): js.Promise[Unit] = js.native
-  val remove: js.UndefOr[js.Function1[String, js.Promise[Unit]]] = js.native
 
-final case class WorkflowSupervisorIndexedDbPersistenceConfig(
+final case class WorkflowSupervisorPersistenceConfig(
     database: js.UndefOr[String] = js.undefined,
     store: js.UndefOr[String] = js.undefined,
     version: js.UndefOr[Int] = js.undefined,
@@ -556,20 +509,11 @@ final case class WorkflowSupervisorIndexedDbPersistenceConfig(
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
+      "type" -> "indexeddb",
       "database" -> database,
       "store" -> store,
       "version" -> version,
       "indexedDB" -> indexedDB,
-    )
-
-final case class WorkflowSupervisorRecoveryPolicy(
-    restoreOnStart: js.UndefOr[Boolean] = js.undefined,
-    retryRecoverable: js.UndefOr[Boolean] = js.undefined,
-):
-  private[ts] def toJS: js.Object =
-    JsObjectBuilder(
-      "restoreOnStart" -> restoreOnStart,
-      "retryRecoverable" -> retryRecoverable,
     )
 
 final case class WorkflowSupervisorConfig[
@@ -577,19 +521,24 @@ final case class WorkflowSupervisorConfig[
 ](
     id: String,
     workflows: TWorkflows,
-    persistence: js.UndefOr[WorkflowSupervisorPersistence[? <: WorkflowSupervisorSnapshot[? <: js.Object]]] =
+    persistence: js.UndefOr[
+      String | WorkflowSupervisorPersistenceConfig | WorkflowSupervisorPersistence[? <: WorkflowSupervisorSnapshot[? <: js.Object]],
+    ] =
       js.undefined,
-    persistencePolicy: js.UndefOr[WorkflowSupervisorPersistencePolicy] =
-      js.undefined,
-    recovery: js.UndefOr[WorkflowSupervisorRecoveryPolicy] = js.undefined,
+    autoPersist: js.UndefOr[Boolean] = js.undefined,
+    autoRecover: js.UndefOr[Boolean] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
+    val persistenceValue = persistence.map:
+      case config: WorkflowSupervisorPersistenceConfig => config.toJS
+      case value                                       => value.asInstanceOf[js.Any]
+
     JsObjectBuilder(
       "id" -> id,
       "workflows" -> workflows,
-      "persistence" -> persistence,
-      "persistencePolicy" -> persistencePolicy.map(_.value),
-      "recovery" -> recovery.map(_.toJS),
+      "persistence" -> persistenceValue,
+      "autoPersist" -> autoPersist,
+      "autoRecover" -> autoRecover,
     )
 
 @js.native
@@ -599,23 +548,13 @@ trait WorkflowSupervisor[
   val id: String = js.native
   val status: String = js.native
   val diagnostics: js.Array[WorkflowSupervisorDiagnostic] = js.native
-  def workflow(name: String): Workflow[? <: js.Object, ? <: js.Object, ? <: js.Object] =
+  val ready: js.Promise[js.UndefOr[WorkflowSupervisorSnapshot[js.Object]]] = js.native
+  def workflow(name: String): Workflow[? <: js.Object, ? <: js.Object] =
     js.native
-  val run: js.Function4[
-    String,
-    String,
-    js.UndefOr[js.Any],
-    js.UndefOr[js.Object],
-    js.Promise[WorkflowCommandResult[js.Any]],
-  ] = js.native
-  val send: js.Function3[String, String, js.UndefOr[js.Any], Boolean] = js.native
-  val cancel: js.Function2[String, js.UndefOr[String], Int] = js.native
   def cancelAll(): Int = js.native
   def snapshot(): WorkflowSupervisorSnapshot[js.Object] = js.native
   def restore(snapshot: js.Any): Unit = js.native
   def persist(): js.Promise[WorkflowSupervisorSnapshot[js.Object]] = js.native
-  def load(): js.Promise[js.UndefOr[WorkflowSupervisorSnapshot[js.Object]]] =
-    js.native
   def recover(): js.Promise[js.UndefOr[WorkflowSupervisorSnapshot[js.Object]]] =
     js.native
 
@@ -626,9 +565,7 @@ trait WorkflowWorkerRequest extends js.Object:
   val operation: String = js.native
   val workflow: js.UndefOr[String] = js.native
   val command: js.UndefOr[String] = js.native
-  val event: js.UndefOr[String] = js.native
   val input: js.UndefOr[js.Any] = js.native
-  val payload: js.UndefOr[js.Any] = js.native
   val snapshot: js.UndefOr[js.Any] = js.native
 
 object WorkflowWorkerRequest:
@@ -637,9 +574,7 @@ object WorkflowWorkerRequest:
       operation: WorkflowWorkerRequestOperation,
       workflow: js.UndefOr[String] = js.undefined,
       command: js.UndefOr[String] = js.undefined,
-      event: js.UndefOr[String] = js.undefined,
       input: js.UndefOr[js.Any] = js.undefined,
-      payload: js.UndefOr[js.Any] = js.undefined,
       snapshot: js.UndefOr[js.Any] = js.undefined,
   ): WorkflowWorkerRequest =
     JsObjectBuilder(
@@ -648,9 +583,7 @@ object WorkflowWorkerRequest:
       "operation" -> operation.value,
       "workflow" -> workflow,
       "command" -> command,
-      "event" -> event,
       "input" -> input,
-      "payload" -> payload,
       "snapshot" -> snapshot,
     ).asInstanceOf[WorkflowWorkerRequest]
 
@@ -719,12 +652,7 @@ trait WorkflowWorkerClient extends js.Object:
       workflow: String,
       command: String,
       input: js.UndefOr[js.Any] = js.undefined,
-  ): js.Promise[WorkflowCommandResult[TOutput]] = js.native
-  def send(
-      workflow: String,
-      event: String,
-      payload: js.UndefOr[js.Any] = js.undefined,
-  ): js.Promise[Boolean] = js.native
+  ): js.Promise[WorkflowResult[TOutput]] = js.native
   def snapshot(): js.Promise[js.Dictionary[WorkflowSnapshot[js.Object]]] =
     js.native
   def restore(
@@ -760,7 +688,7 @@ type AnimationLifecycleCallback = js.Function2[dom.Element, AnimationContext, Un
 
 type AnimationKeyframes = js.Array[js.Object] | js.Dictionary[js.Any]
 
-final case class NativeAnimationOptions(
+final case class AnimationOptions(
     animation: js.UndefOr[String] = js.undefined,
     keyframes: js.UndefOr[AnimationKeyframes] = js.undefined,
     enter: js.UndefOr[AnimationKeyframes] = js.undefined,
@@ -802,10 +730,8 @@ final case class NativeAnimationOptions(
       "onCancel" -> onCancel,
     )
 
-type AnimationOptions = NativeAnimationOptions
-
 type AnimationPresetHandler =
-  js.Function3[dom.Element, AnimationContext, NativeAnimationOptions, AnimationResult]
+  js.Function3[dom.Element, AnimationContext, AnimationOptions, AnimationResult]
 
 type AnimationPresetValue = AnimationPresetHandler | AnimationKeyframes
 
@@ -897,7 +823,7 @@ object AnimateService:
         element: dom.Element,
         parent: js.UndefOr[dom.Node | Null],
         after: js.UndefOr[dom.Node | Null],
-        options: NativeAnimationOptions,
+        options: AnimationOptions,
     ): AnimationHandle =
       service.enter(element, parent, after, options.toJS)
 
@@ -905,24 +831,24 @@ object AnimateService:
         element: dom.Element,
         parent: dom.Node | Null,
         after: js.UndefOr[dom.Node | Null],
-        options: NativeAnimationOptions,
+        options: AnimationOptions,
     ): AnimationHandle =
       service.move(element, parent, after, options.toJS)
 
-    def leave(element: dom.Element, options: NativeAnimationOptions): AnimationHandle =
+    def leave(element: dom.Element, options: AnimationOptions): AnimationHandle =
       service.leave(element, options.toJS)
 
     def addClass(
         element: dom.Element,
         className: String,
-        options: NativeAnimationOptions,
+        options: AnimationOptions,
     ): AnimationHandle =
       service.addClass(element, className, options.toJS)
 
     def removeClass(
         element: dom.Element,
         className: String,
-        options: NativeAnimationOptions,
+        options: AnimationOptions,
     ): AnimationHandle =
       service.removeClass(element, className, options.toJS)
 
@@ -930,7 +856,7 @@ object AnimateService:
         element: dom.Element,
         add: String,
         remove: String,
-        options: NativeAnimationOptions,
+        options: AnimationOptions,
     ): AnimationHandle =
       service.setClass(element, add, remove, options.toJS)
 
@@ -939,7 +865,7 @@ object AnimateService:
         from: js.Dictionary[String | Double],
         to: js.UndefOr[js.Dictionary[String | Double]],
         className: js.UndefOr[String],
-        options: NativeAnimationOptions,
+        options: AnimationOptions,
     ): AnimationHandle =
       service.animate(element, from, to, className, options.toJS)
 
@@ -962,7 +888,7 @@ trait TranscludeFn
     js.native
 
 @js.native
-trait PublicLinkFn
+trait LinkFn
     extends js.Function3[
       Scope,
       js.UndefOr[CloneAttachFn],
@@ -972,7 +898,7 @@ trait PublicLinkFn
   val pre: js.UndefOr[js.Any] = js.native
   val post: js.UndefOr[js.Any] = js.native
 
-type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn
+type ChildTranscludeOrLinkFn = TranscludeFn | LinkFn
 
 @js.native
 trait CompileService
@@ -982,7 +908,7 @@ trait CompileService
       js.UndefOr[Double],
       js.UndefOr[String],
       js.UndefOr[js.Object | Null],
-      PublicLinkFn,
+      LinkFn,
     ]
 
 @js.native
@@ -1116,9 +1042,8 @@ object PolicyDecision:
       "meta" -> meta,
     ).asInstanceOf[PolicyDecision]
 
-@js.native
-trait Policy[-C <: PolicyContext, +D <: PolicyDecision] extends js.Object:
-  def check(context: C): D | js.Promise[D] = js.native
+type Policy[-C <: PolicyContext, +D <: PolicyDecision] =
+  js.Function1[C, D | String | js.Promise[D | String]]
 
 @js.native
 trait AriaService extends js.Object:
@@ -1151,20 +1076,20 @@ final case class AriaConfig(
       "bindRoleForClick" -> bindRoleForClick,
     )
 
-type AppModelValue[A <: js.Object] = A & Scope & AppModelLifecycle[A]
+type Model[A <: js.Object] = A & Scope & ModelLifecycle[A]
 
-enum AppModelRestoreMode(val value: String):
-  case Replace extends AppModelRestoreMode("replace")
-  case Merge extends AppModelRestoreMode("merge")
+enum ModelRestoreMode(val value: String):
+  case Replace extends ModelRestoreMode("replace")
+  case Merge extends ModelRestoreMode("merge")
 
-enum AppModelSyncFailurePolicy(val value: String):
-  case Report extends AppModelSyncFailurePolicy("report")
-  case Throw extends AppModelSyncFailurePolicy("throw")
-  case Ignore extends AppModelSyncFailurePolicy("ignore")
+enum ModelSyncFailurePolicy(val value: String):
+  case Report extends ModelSyncFailurePolicy("report")
+  case Throw extends ModelSyncFailurePolicy("throw")
+  case Ignore extends ModelSyncFailurePolicy("ignore")
 
-final case class AppModelRestoreOptions(
+final case class ModelRestoreOptions(
     origin: js.UndefOr[String] = js.undefined,
-    mode: js.UndefOr[AppModelRestoreMode] = js.undefined,
+    mode: js.UndefOr[ModelRestoreMode] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
@@ -1172,8 +1097,8 @@ final case class AppModelRestoreOptions(
       "mode" -> mode.map(_.value),
     )
 
-final case class AppModelSyncOptions(
-    failure: js.UndefOr[AppModelSyncFailurePolicy] = js.undefined,
+final case class ModelSyncOptions(
+    failure: js.UndefOr[ModelSyncFailurePolicy] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
@@ -1181,17 +1106,17 @@ final case class AppModelSyncOptions(
     )
 
 @js.native
-trait AppModelChange extends js.Object:
+trait ModelChange extends js.Object:
   val origin: js.UndefOr[String] = js.native
   val keys: js.Array[String] = js.native
   val snapshotVersion: Int = js.native
 
-type AppModelApply[A <: js.Object] = js.Function2[A, js.UndefOr[js.Object], Unit]
+type ModelApply[A <: js.Object] = js.Function2[A, js.UndefOr[js.Object], Unit]
 
-final case class AppModelSyncTarget[A <: js.Object](
+final case class ModelSyncTarget[A <: js.Object](
     restore: js.UndefOr[js.Function0[js.Any]] = js.undefined,
-    write: js.UndefOr[js.Function2[A, AppModelChange, js.Any]] = js.undefined,
-    receive: js.UndefOr[js.Function1[AppModelApply[A], js.UndefOr[js.Function0[Unit]]]] =
+    write: js.UndefOr[js.Function2[A, ModelChange, js.Any]] = js.undefined,
+    receive: js.UndefOr[js.Function1[ModelApply[A], js.UndefOr[js.Function0[Unit]]]] =
       js.undefined,
     dispose: js.UndefOr[js.Function0[Unit]] = js.undefined,
 ):
@@ -1204,7 +1129,7 @@ final case class AppModelSyncTarget[A <: js.Object](
     )
 
 @js.native
-trait AppModelLifecycle[A <: js.Object] extends js.Object:
+trait ModelLifecycle[A <: js.Object] extends js.Object:
   def $snapshot(): A = js.native
   def $restore(snapshot: A): Unit = js.native
   def $restore(snapshot: A, options: js.Object): Unit = js.native
@@ -1215,20 +1140,20 @@ trait AppModelLifecycle[A <: js.Object] extends js.Object:
   def $sync(target: js.Function, options: js.Object): js.Function0[Unit] =
     js.native
 
-object AppModelLifecycle:
-  extension [A <: js.Object](model: AppModelLifecycle[A])
-    def restore(snapshot: A, options: AppModelRestoreOptions): Unit =
+object ModelLifecycle:
+  extension [A <: js.Object](model: ModelLifecycle[A])
+    def restore(snapshot: A, options: ModelRestoreOptions): Unit =
       model.$restore(snapshot, options.toJS)
 
     def sync(
-        target: AppModelSyncTarget[A],
-        options: AppModelSyncOptions = AppModelSyncOptions(),
+        target: ModelSyncTarget[A],
+        options: ModelSyncOptions = ModelSyncOptions(),
     ): js.Function0[Unit] =
       model.$sync(target.toJS, options.toJS)
 
     def sync(
         target: InjectableFactory[js.Object],
-        options: AppModelSyncOptions,
+        options: ModelSyncOptions,
     ): js.Function0[Unit] =
       model.$sync(target.annotated, options.toJS)
 
@@ -1304,11 +1229,16 @@ enum ServiceWorkerMessageTarget(val value: String):
   case Waiting extends ServiceWorkerMessageTarget("waiting")
   case Installing extends ServiceWorkerMessageTarget("installing")
 
-enum ServiceWorkerMessageClientErrorCode(val value: String):
-  case Disposed extends ServiceWorkerMessageClientErrorCode("disposed")
-  case PostFailed extends ServiceWorkerMessageClientErrorCode("post-failed")
-  case ResponseError extends ServiceWorkerMessageClientErrorCode("response-error")
-  case Timeout extends ServiceWorkerMessageClientErrorCode("timeout")
+enum ServiceWorkerErrorCode(val value: String):
+  case Unsupported extends ServiceWorkerErrorCode("unsupported")
+  case NoController extends ServiceWorkerErrorCode("no-controller")
+  case NoRegistration extends ServiceWorkerErrorCode("no-registration")
+  case RegisterFailed extends ServiceWorkerErrorCode("register-failed")
+  case ReadyFailed extends ServiceWorkerErrorCode("ready-failed")
+  case UpdateFailed extends ServiceWorkerErrorCode("update-failed")
+  case UnregisterFailed extends ServiceWorkerErrorCode("unregister-failed")
+  case RequestFailed extends ServiceWorkerErrorCode("request-failed")
+  case RequestTimeout extends ServiceWorkerErrorCode("request-timeout")
 
 enum ServiceWorkerStatus(val value: String):
   case Unsupported extends ServiceWorkerStatus("unsupported")
@@ -1325,7 +1255,6 @@ final case class ServiceWorkerConfig(
     `type`: js.UndefOr[ServiceWorkerWorkerType] = js.undefined,
     updateViaCache: js.UndefOr[ServiceWorkerUpdateViaCache] = js.undefined,
     autoRegister: js.UndefOr[Boolean] = js.undefined,
-    scriptUrl: js.UndefOr[String | dom.URL] = js.undefined,
     checkForUpdatesOnRegister: js.UndefOr[Boolean] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
@@ -1334,14 +1263,13 @@ final case class ServiceWorkerConfig(
       "type" -> `type`.map(_.value),
       "updateViaCache" -> updateViaCache.map(_.value),
       "autoRegister" -> autoRegister,
-      "scriptUrl" -> scriptUrl.asInstanceOf[js.UndefOr[js.Any]],
       "checkForUpdatesOnRegister" -> checkForUpdatesOnRegister,
     )
 
 @js.native
-trait ServiceWorkerSupport extends js.Object:
-  val supported: Boolean = js.native
-  val reason: js.UndefOr[String] = js.native
+trait ServiceWorkerError extends js.Error:
+  val code: String = js.native
+  val detail: js.UndefOr[js.Any] = js.native
 
 @js.native
 trait ServiceWorkerRegistrationState extends js.Object:
@@ -1370,65 +1298,7 @@ trait ServiceWorkerMessageEvent[+A] extends js.Object:
   val event: dom.MessageEvent = js.native
   val source: js.UndefOr[js.Any] = js.native
 
-@js.native
-trait ServiceWorkerMessageRequest[+A] extends js.Object:
-  val `type`: String = js.native
-  val id: String = js.native
-  val payload: A = js.native
-
-object ServiceWorkerMessageRequest:
-  def apply[A](
-      messageType: String,
-      id: String,
-      payload: A,
-  ): ServiceWorkerMessageRequest[A] =
-    JsObjectBuilder(
-      "type" -> messageType,
-      "id" -> id,
-      "payload" -> payload.asInstanceOf[js.Any],
-    ).asInstanceOf[ServiceWorkerMessageRequest[A]]
-
-@js.native
-trait ServiceWorkerMessageResponse[+A] extends js.Object:
-  val `type`: String = js.native
-  val id: String = js.native
-  val ok: js.UndefOr[Boolean] = js.native
-  val data: js.UndefOr[A] = js.native
-  val error: js.UndefOr[js.Any] = js.native
-
-object ServiceWorkerMessageResponse:
-  def apply[A](
-      messageType: String,
-      id: String,
-      ok: js.UndefOr[Boolean] = js.undefined,
-      data: js.UndefOr[A] = js.undefined,
-      error: js.UndefOr[js.Any] = js.undefined,
-  ): ServiceWorkerMessageResponse[A] =
-    JsObjectBuilder(
-      "type" -> messageType,
-      "id" -> id,
-      "ok" -> ok,
-      "data" -> data.asInstanceOf[js.UndefOr[js.Any]],
-      "error" -> error,
-    ).asInstanceOf[ServiceWorkerMessageResponse[A]]
-
-final case class ServiceWorkerMessageClientOptions(
-    requestType: js.UndefOr[String] = js.undefined,
-    responseType: js.UndefOr[String] = js.undefined,
-    timeout: js.UndefOr[Double] = js.undefined,
-    createId: js.UndefOr[js.Function0[String]] = js.undefined,
-    target: js.UndefOr[ServiceWorkerMessageTarget] = js.undefined,
-):
-  private[ts] def toJS: js.Object =
-    JsObjectBuilder(
-      "requestType" -> requestType,
-      "responseType" -> responseType,
-      "timeout" -> timeout,
-      "createId" -> createId,
-      "target" -> target.map(_.value),
-    )
-
-final case class ServiceWorkerMessageClientRequestOptions(
+final case class ServiceWorkerRequestOptions(
     transfer: js.UndefOr[js.Array[js.Any]] = js.undefined,
     timeout: js.UndefOr[Double] = js.undefined,
     target: js.UndefOr[ServiceWorkerMessageTarget] = js.undefined,
@@ -1440,78 +1310,36 @@ final case class ServiceWorkerMessageClientRequestOptions(
       "target" -> target.map(_.value),
     )
 
-@js.native
-trait ServiceWorkerMessageClientError extends js.Object:
-  val name: String = js.native
-  val message: String = js.native
-  val code: String = js.native
-  val detail: js.UndefOr[js.Any] = js.native
-
-@js.native
-trait ServiceWorkerMessageClient extends js.Object:
-  val pending: Int = js.native
-  val disposed: Boolean = js.native
-  def request[A](payload: js.Any): js.Promise[A] = js.native
-  def dispose(): Unit = js.native
-
-object ServiceWorkerMessageClient:
-  extension (client: ServiceWorkerMessageClient)
-    def requestWithOptions[A](
-        payload: js.Any,
-        options: ServiceWorkerMessageClientRequestOptions,
-    ): js.Promise[A] =
-      client
-        .asInstanceOf[js.Dynamic]
-        .applyDynamic("request")(payload, options.toJS)
-        .asInstanceOf[js.Promise[A]]
-
-enum SecurityPolicyDecisionType(val value: String):
-  case Allow extends SecurityPolicyDecisionType("allow")
-  case Deny extends SecurityPolicyDecisionType("deny")
-  case Redirect extends SecurityPolicyDecisionType("redirect")
-
-enum SecurityCredentialKind(val value: String):
-  case Jwt extends SecurityCredentialKind("jwt")
-  case CookieSession extends SecurityCredentialKind("cookieSession")
-  case Basic extends SecurityCredentialKind("basic")
-  case Custom extends SecurityCredentialKind("custom")
+enum SecurityFallbackDecision(val value: String):
+  case Allow extends SecurityFallbackDecision("allow")
+  case Deny extends SecurityFallbackDecision("deny")
 
 type SecurityCredentialSource = String | js.Function0[String | Null]
 
-@js.native
-trait SecurityCredential extends js.Object:
-  val kind: String = js.native
-  val value: String = js.native
+final case class SecurityBasicCredentials(
+    username: SecurityCredentialSource,
+    password: SecurityCredentialSource,
+):
+  private[ts] def toJS: js.Object =
+    JsObjectBuilder(
+      "username" -> username.asInstanceOf[js.Any],
+      "password" -> password.asInstanceOf[js.Any],
+    )
 
 @js.native
 trait SecurityRequestCredentials extends js.Object:
   val headers: js.UndefOr[js.Dictionary[String]] = js.native
-  val credential: js.UndefOr[SecurityCredential] = js.native
   val withCredentials: js.UndefOr[Boolean] = js.native
 
 @js.native
 trait SecurityPolicyDecision extends js.Object:
   val `type`: String = js.native
-  val scheme: js.UndefOr[String] = js.native
+  val credentials: js.UndefOr[SecurityRequestCredentials] = js.native
   val reason: js.UndefOr[String] = js.native
   val status: js.UndefOr[Int] = js.native
   val target: js.UndefOr[String] = js.native
   val error: js.UndefOr[js.Any] = js.native
   val meta: js.UndefOr[js.Dictionary[js.Any]] = js.native
-
-object SecurityPolicyDecision:
-  def apply(
-      decision: SecurityPolicyDecisionType,
-      reason: js.UndefOr[String] = js.undefined,
-      status: js.UndefOr[Int] = js.undefined,
-      target: js.UndefOr[String] = js.undefined,
-  ): SecurityPolicyDecision =
-    JsObjectBuilder(
-      "type" -> decision.value,
-      "reason" -> reason,
-      "status" -> status,
-      "target" -> target,
-    ).asInstanceOf[SecurityPolicyDecision]
 
 @js.native
 trait NavigationPolicyContext extends js.Object:
@@ -1525,92 +1353,59 @@ trait NavigationPolicyContext extends js.Object:
 @js.native
 trait RequestPolicyContext extends js.Object:
   val operation: String = js.native
+  val transport: String = js.native
   val method: String = js.native
   val url: String = js.native
-  val requestInit: js.Object = js.native
+  val credentials: js.UndefOr[String] = js.native
   val headers: js.UndefOr[js.Dictionary[String]] = js.native
   val hasBody: js.UndefOr[Boolean] = js.native
 
-final case class SecurityCookieSessionConfig(
-    enabled: js.UndefOr[Boolean] = js.undefined,
-    withCredentials: js.UndefOr[Boolean] = js.undefined,
+final case class SecurityCredentialsConfig(
+    bearer: js.UndefOr[SecurityCredentialSource] = js.undefined,
+    basic: js.UndefOr[SecurityBasicCredentials] = js.undefined,
+    cookie: js.UndefOr[Boolean] = js.undefined,
+    order: js.UndefOr[js.Array[String]] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
-      "enabled" -> enabled,
-      "withCredentials" -> withCredentials,
+      "bearer" -> bearer.asInstanceOf[js.UndefOr[js.Any]],
+      "basic" -> basic.map(_.toJS),
+      "cookie" -> cookie,
+      "order" -> order,
     )
 
-final case class SecurityPolicyCredentialConfig(
-    jwt: js.UndefOr[SecurityCredentialSource] = js.undefined,
-    basicAuth: js.UndefOr[SecurityCredentialSource] = js.undefined,
-    basic: js.UndefOr[SecurityCredentialSource] = js.undefined,
-    cookieSession: js.UndefOr[Boolean | SecurityCookieSessionConfig] =
-      js.undefined,
-):
-  private[ts] def toJS: js.Object =
-    JsObjectBuilder(
-      "jwt" -> jwt.asInstanceOf[js.UndefOr[js.Any]],
-      "basicAuth" -> basicAuth.asInstanceOf[js.UndefOr[js.Any]],
-      "basic" -> basic.asInstanceOf[js.UndefOr[js.Any]],
-      "cookieSession" -> cookieSession
-        .map {
-          case config: SecurityCookieSessionConfig => config.toJS
-          case enabled => enabled.asInstanceOf[js.Any]
-        }
-        .asInstanceOf[js.UndefOr[js.Any]],
-    )
+type SecurityPermissions = js.Array[String] | js.Function2[
+  String,
+  NavigationPolicyContext,
+  Boolean | js.Promise[Boolean],
+]
 
-final case class SecurityNavigationRule(
-    state: js.UndefOr[String | js.Array[String]] = js.undefined,
-    url: js.UndefOr[String | js.RegExp] = js.undefined,
-    decision: SecurityPolicyDecisionType,
-    reason: js.UndefOr[String] = js.undefined,
-    status: js.UndefOr[Int] = js.undefined,
-    target: js.UndefOr[String] = js.undefined,
-):
-  private[ts] def toJS: js.Object =
-    JsObjectBuilder(
-      "state" -> state.asInstanceOf[js.UndefOr[js.Any]],
-      "url" -> url.asInstanceOf[js.UndefOr[js.Any]],
-      "decision" -> decision.value,
-      "reason" -> reason,
-      "status" -> status,
-      "target" -> target,
-    )
+type SecurityAuthentication = Boolean | js.Function1[
+  NavigationPolicyContext,
+  Boolean | js.Promise[Boolean],
+]
 
-final case class SecurityNavigationPolicyConfig(
-    rules: js.UndefOr[js.Array[SecurityNavigationRule]] = js.undefined,
-    permissions: js.UndefOr[js.Array[String] | js.Function0[js.Array[String] | Null]] =
-      js.undefined,
+final case class SecurityConfig(
+    fallback: js.UndefOr[SecurityFallbackDecision] = js.undefined,
+    allowInsecureOrigins: js.UndefOr[js.Array[String]] = js.undefined,
+    credentials: js.UndefOr[SecurityCredentialsConfig] = js.undefined,
+    isAuthenticated: js.UndefOr[SecurityAuthentication] = js.undefined,
+    permissions: js.UndefOr[SecurityPermissions] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
-      "rules" -> rules.map(_.map(_.toJS)),
-      "permissions" -> permissions.asInstanceOf[js.UndefOr[js.Any]],
-    )
-
-final case class SecurityPolicyConfig(
-    defaultDecision: js.UndefOr[SecurityPolicyDecisionType] = js.undefined,
-    branches: js.UndefOr[js.Array[String]] = js.undefined,
-    allowInsecureTransport: js.UndefOr[Boolean] = js.undefined,
-    credentials: js.UndefOr[SecurityPolicyCredentialConfig] = js.undefined,
-    navigation: js.UndefOr[SecurityNavigationPolicyConfig] = js.undefined,
-):
-  private[ts] def toJS: js.Object =
-    JsObjectBuilder(
-      "defaultDecision" -> defaultDecision.map(_.value),
-      "branches" -> branches,
-      "allowInsecureTransport" -> allowInsecureTransport,
+      "fallback" -> fallback.map(_.value),
+      "allowInsecureOrigins" -> allowInsecureOrigins,
       "credentials" -> credentials.map(_.toJS),
-      "navigation" -> navigation.map(_.toJS),
+      "isAuthenticated" -> isAuthenticated.asInstanceOf[js.UndefOr[js.Any]],
+      "permissions" -> permissions.asInstanceOf[js.UndefOr[js.Any]],
     )
 
 final case class AngularConfig(
     aria: js.UndefOr[AriaConfig] = js.undefined,
     htmlCanvas: js.UndefOr[HtmlCanvasConfig] = js.undefined,
     interpolate: js.UndefOr[InterpolateConfig] = js.undefined,
-    security: js.UndefOr[SecurityPolicyConfig] = js.undefined,
+    security: js.UndefOr[SecurityConfig] = js.undefined,
     router: js.UndefOr[RouterConfig] = js.undefined,
     sce: js.UndefOr[SceConfig] = js.undefined,
     sceDelegate: js.UndefOr[SceDelegateConfig] = js.undefined,
@@ -1630,14 +1425,6 @@ final case class AngularConfig(
 trait SecurityPolicyService extends js.Object:
   def check(context: NavigationPolicyContext | RequestPolicyContext): js.Promise[SecurityPolicyDecision] =
     js.native
-  def checkNavigation(
-      context: NavigationPolicyContext,
-  ): js.Promise[SecurityPolicyDecision] = js.native
-  def checkRequest(context: RequestPolicyContext): js.Promise[SecurityPolicyDecision] =
-    js.native
-  def attachRequestAuth(
-      context: RequestPolicyContext,
-  ): js.Promise[SecurityRequestCredentials | Unit] = js.native
 
 @js.native
 trait Transition extends js.Object:
@@ -1685,12 +1472,7 @@ type RouteStringList = String | js.Array[String]
 type RouterInjectable = js.Function | js.Array[js.Any] | InjectableFactory[js.Any]
 type StateResolveObject = js.Dictionary[RouterInjectable]
 type StateResolveArray = js.Array[js.Object]
-type TypedRouteMap = js.Dictionary[TypedRouteDeclaration]
-type TypedRouteName[TRouteMap] = String
-type TypedRouteParams[TRouteMap, TRouteName] = js.Dictionary[js.Any]
-type TypedRouteResolves[TRouteMap, TRouteName] = js.Dictionary[js.Any]
-type TypedStateService[TRouteMap] = StateService
-type TypedTransition[TRouteMap, TToRouteName, TFromRouteName] = Transition
+type RouteMap = js.Dictionary[RouteContract]
 type ActiveNgView = js.Object
 type ViewConfig = js.Object
 type RetainedViewEntry = js.Object
@@ -1734,7 +1516,7 @@ final case class RouterConfig(
         .asInstanceOf[js.UndefOr[js.Any]],
     )
 
-final case class TypedRouteDeclaration(
+final case class RouteContract(
     params: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
     resolves: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
 ):
@@ -1798,7 +1580,7 @@ final case class HookRegOptions(
     )
 
 final case class StateNavigationPolicyDeclaration(
-    require: js.UndefOr[RouteStringList] = js.undefined,
+    authenticated: js.UndefOr[Boolean] = js.undefined,
     permissions: js.UndefOr[RouteStringList] = js.undefined,
     redirectTo: js.UndefOr[String] = js.undefined,
     publicRoute: js.UndefOr[Boolean] = js.undefined,
@@ -1806,7 +1588,7 @@ final case class StateNavigationPolicyDeclaration(
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
-      "require" -> require.asInstanceOf[js.UndefOr[js.Any]],
+      "authenticated" -> authenticated,
       "permissions" -> permissions.asInstanceOf[js.UndefOr[js.Any]],
       "redirectTo" -> redirectTo,
       "public" -> publicRoute,
@@ -2056,8 +1838,6 @@ trait TransitionPromise extends js.Promise[js.Any]:
 trait StateService extends js.Object:
   val params: js.Dictionary[js.Any] = js.native
   val current: js.UndefOr[js.Object] = js.native
-  def reload(): TransitionPromise = js.native
-  def reload(reloadState: String): TransitionPromise = js.native
   def go(to: String): TransitionPromise = js.native
   def go(to: String, params: js.Dictionary[js.Any]): TransitionPromise = js.native
   def go(
@@ -2065,16 +1845,14 @@ trait StateService extends js.Object:
       params: js.Dictionary[js.Any],
       options: js.Object,
   ): TransitionPromise = js.native
-  def transitionTo(to: String): TransitionPromise = js.native
-  def transitionTo(to: String, params: js.Dictionary[js.Any]): TransitionPromise =
+  def matches(stateOrName: String): Boolean = js.native
+  def matches(stateOrName: String, params: js.Dictionary[js.Any]): Boolean =
     js.native
-  def transitionTo(
-      to: String,
+  def matches(
+      stateOrName: String,
       params: js.Dictionary[js.Any],
       options: js.Object,
-  ): TransitionPromise = js.native
-  def is(stateOrName: String): js.UndefOr[Boolean] = js.native
-  def includes(stateOrName: String): js.UndefOr[Boolean] = js.native
+  ): Boolean = js.native
   def href(stateOrName: String): String | Null = js.native
   def href(stateOrName: String, params: js.Dictionary[js.Any]): String | Null =
     js.native
@@ -2088,15 +1866,22 @@ object StateService:
     ): TransitionPromise =
       service.go(to, params, options.toJS)
 
-    def transitionTo(
-        to: String,
-        params: js.Dictionary[js.Any],
-        options: TransitionOptions,
-    ): TransitionPromise =
-      service.transitionTo(to, params, options.toJS)
+@js.native
+trait StateRegistryService extends js.Object:
+  def root(): js.Object = js.native
+  def register(state: js.Object): js.Object = js.native
+  def deregister(stateOrName: String): js.Array[js.Object] = js.native
+  def getAll(): js.Array[js.Object] = js.native
+  def get(): js.Array[js.Object] = js.native
+  def get(stateOrName: String): js.Object | Null = js.native
+
+object StateRegistryService:
+  extension (service: StateRegistryService)
+    def register(state: StateDeclaration): js.Object =
+      service.register(state.toJS)
 
 @js.native
-trait TransitionService extends js.Object:
+trait TransitionsService extends js.Object:
   def onBefore(
       matchCriteria: js.Object,
       callback: TransitionHookFn,
@@ -2170,8 +1955,8 @@ trait TransitionService extends js.Object:
       options: js.Object,
   ): TransitionDeregister = js.native
 
-object TransitionService:
-  extension (service: TransitionService)
+object TransitionsService:
+  extension (service: TransitionsService)
     def before(
         matchCriteria: HookMatchCriteria,
         callback: TransitionHookFn,
@@ -2230,7 +2015,6 @@ object TransitionService:
 
 @js.native
 trait ServiceWorkerService extends js.Object:
-  val support: ServiceWorkerSupport = js.native
   val supported: Boolean = js.native
   val status: String = js.native
   val controller: dom.ServiceWorker | Null = js.native
@@ -2258,6 +2042,8 @@ trait ServiceWorkerService extends js.Object:
       transfer: js.Array[js.Any],
       target: String,
   ): js.Promise[Unit] = js.native
+  def request[A](message: js.Any): js.Promise[A] = js.native
+  def request[A](message: js.Any, options: js.Object): js.Promise[A] = js.native
   def onMessage[A](
       callback: js.Function1[ServiceWorkerMessageEvent[A], Unit],
   ): js.Function0[Unit] = js.native
@@ -2289,21 +2075,13 @@ object ServiceWorkerService:
     ): js.Promise[Unit] =
       service.post(message, transfer, target.value)
 
-type EntityClass[A] = js.Function
+    def requestWithOptions[A](
+        message: js.Any,
+        options: ServiceWorkerRequestOptions,
+    ): js.Promise[A] =
+      service.request[A](message, options.toJS)
 
-final case class RestDefinition[A](
-    name: String,
-    url: String,
-    entityClass: js.UndefOr[EntityClass[A]] = js.undefined,
-    options: js.UndefOr[RestOptions] = js.undefined,
-):
-  private[ts] def toJS: js.Object =
-    JsObjectBuilder(
-      "name" -> name,
-      "url" -> url,
-      "entityClass" -> entityClass,
-      "options" -> options.map(_.toJS),
-    )
+type EntityClass[A] = js.Function
 
 @js.native
 trait RestRequest extends js.Object:
@@ -2344,15 +2122,7 @@ trait RestCachePolicyContext extends PolicyContext:
   val options: js.UndefOr[js.Dictionary[js.Any]] = js.native
   val cacheKey: String = js.native
 
-type RestCachePolicyDecision = PolicyDecision
-type RestCachePolicy = Policy[RestCachePolicyContext, RestCachePolicyDecision]
-
-object RestCachePolicyDecision:
-  def apply(
-      strategy: RestCacheStrategy,
-      reason: js.UndefOr[String] = js.undefined,
-  ): RestCachePolicyDecision =
-    PolicyDecision(strategy.value, reason = reason)
+type RestCachePolicy = Policy[RestCachePolicyContext, PolicyDecision]
 
 @js.native
 trait RestCacheStore extends js.Object:
@@ -2408,16 +2178,14 @@ final case class RestConfig(
 
 @js.native
 trait RestService[A, ID] extends js.Object:
-  def buildUrl(template: String, params: js.Dictionary[js.Any]): String =
-    js.native
   def list(): js.Promise[js.Array[A]] = js.native
   def list(params: js.Dictionary[js.Any]): js.Promise[js.Array[A]] = js.native
   def get(id: ID): js.Promise[A | Null] = js.native
   def get(id: ID, params: js.Dictionary[js.Any]): js.Promise[A | Null] =
     js.native
-  def create(item: A): js.Promise[A] = js.native
+  def create(item: A): js.Promise[A | Null] = js.native
   def update(id: ID, item: js.Any): js.Promise[A | Null] = js.native
-  def delete(id: ID): js.Promise[Boolean] = js.native
+  def delete(id: ID): js.Promise[Unit] = js.native
 
 @js.native
 trait RestFactory extends js.Object:
@@ -2517,37 +2285,17 @@ enum EventDeliveryDecisionType(val value: String):
   case Drop extends EventDeliveryDecisionType("drop")
 
 @js.native
-trait EventDeliveryPolicyContext extends js.Object:
-  val operation: String = js.native
+trait EventDeliveryPolicyContext extends PolicyContext:
+  override val operation: String = js.native
   val topic: String = js.native
   val args: js.Array[js.Any] = js.native
   val listenerIndex: Int = js.native
   val scopeOwned: Boolean = js.native
   val targetAlive: Boolean = js.native
 
-@js.native
-trait EventDeliveryPolicyDecision extends js.Object:
-  val `type`: String = js.native
+type EventDeliveryPolicy = Policy[EventDeliveryPolicyContext, PolicyDecision]
 
-object EventDeliveryPolicyDecision:
-  def deliver: EventDeliveryPolicyDecision =
-    js.Dynamic
-      .literal(`type` = EventDeliveryDecisionType.Deliver.value)
-      .asInstanceOf[EventDeliveryPolicyDecision]
-
-  def drop: EventDeliveryPolicyDecision =
-    js.Dynamic
-      .literal(`type` = EventDeliveryDecisionType.Drop.value)
-      .asInstanceOf[EventDeliveryPolicyDecision]
-
-@js.native
-trait EventDeliveryPolicy extends js.Object:
-  def check(
-      context: EventDeliveryPolicyContext,
-  ): EventDeliveryPolicyDecision | js.Promise[EventDeliveryPolicyDecision] =
-    js.native
-
-final case class PubSubConfig(
+final case class EventBusConfig(
     deliveryPolicy: js.UndefOr[EventDeliveryPolicy] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
@@ -2555,33 +2303,33 @@ final case class PubSubConfig(
       "deliveryPolicy" -> deliveryPolicy,
     )
 
-type PubSubListener = js.Function
+type EventBusListener = js.Function
 
 @js.native
-trait PubSubService extends js.Object:
+trait EventBusService extends js.Object:
   def reset(): Unit = js.native
   def setDeliveryPolicy(): Unit = js.native
   def setDeliveryPolicy(policy: EventDeliveryPolicy): Unit = js.native
   def isDisposed(): Boolean = js.native
   def dispose(): Unit = js.native
-  def subscribe(topic: String, fn: PubSubListener): js.Function0[Boolean] =
+  def subscribe(topic: String, fn: EventBusListener): js.Function0[Boolean] =
     js.native
   def subscribe(
       topic: String,
-      fn: PubSubListener,
+      fn: EventBusListener,
       context: js.Any,
   ): js.Function0[Boolean] = js.native
-  def subscribeOnce(topic: String, fn: PubSubListener): js.Function0[Boolean] =
+  def subscribeOnce(topic: String, fn: EventBusListener): js.Function0[Boolean] =
     js.native
   def subscribeOnce(
       topic: String,
-      fn: PubSubListener,
+      fn: EventBusListener,
       context: js.Any,
   ): js.Function0[Boolean] = js.native
-  def unsubscribe(topic: String, fn: PubSubListener): Boolean = js.native
+  def unsubscribe(topic: String, fn: EventBusListener): Boolean = js.native
   def unsubscribe(
       topic: String,
-      fn: PubSubListener,
+      fn: EventBusListener,
       context: js.Any,
   ): Boolean = js.native
   def getCount(topic: String): Int = js.native
@@ -2627,7 +2375,6 @@ final case class ConnectionConfig(
 final case class SseConfig(
     withCredentials: js.UndefOr[Boolean] = js.undefined,
     params: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
-    headers: js.UndefOr[js.Dictionary[String]] = js.undefined,
     connection: ConnectionConfig = ConnectionConfig(),
 ):
   private[ts] def toJS: js.Object =
@@ -2636,14 +2383,12 @@ final case class SseConfig(
     if !js.isUndefined(withCredentials) then
       base.updateDynamic("withCredentials")(withCredentials)
     if !js.isUndefined(params) then base.updateDynamic("params")(params)
-    if !js.isUndefined(headers) then base.updateDynamic("headers")(headers)
-
     base.asInstanceOf[js.Object]
 
 @js.native
 trait SseConnection extends js.Object:
   def close(): Unit = js.native
-  def connect(): Unit = js.native
+  def reconnect(): Unit = js.native
 
 @js.native
 trait SseService extends js.Object:
@@ -2662,23 +2407,23 @@ trait RealtimeProtocolMessage extends js.Object:
   val target: js.UndefOr[String] = js.native
   val swap: js.UndefOr[String] = js.native
 
-enum SwapModeType(val value: String):
-  case InnerHTML extends SwapModeType("innerHTML")
-  case OuterHTML extends SwapModeType("outerHTML")
-  case TextContent extends SwapModeType("textContent")
-  case BeforeBegin extends SwapModeType("beforebegin")
-  case AfterBegin extends SwapModeType("afterbegin")
-  case BeforeEnd extends SwapModeType("beforeend")
-  case AfterEnd extends SwapModeType("afterend")
-  case Delete extends SwapModeType("delete")
-  case None extends SwapModeType("none")
+enum SwapMode(val value: String):
+  case InnerHTML extends SwapMode("innerHTML")
+  case OuterHTML extends SwapMode("outerHTML")
+  case TextContent extends SwapMode("textContent")
+  case BeforeBegin extends SwapMode("beforebegin")
+  case AfterBegin extends SwapMode("afterbegin")
+  case BeforeEnd extends SwapMode("beforeend")
+  case AfterEnd extends SwapMode("afterend")
+  case Delete extends SwapMode("delete")
+  case None extends SwapMode("none")
 
 object RealtimeProtocolMessage:
   def apply(
       data: js.UndefOr[js.Any] = js.undefined,
       html: js.UndefOr[js.Any] = js.undefined,
       target: js.UndefOr[String] = js.undefined,
-      swap: js.UndefOr[SwapModeType] = js.undefined,
+      swap: js.UndefOr[SwapMode] = js.undefined,
   ): RealtimeProtocolMessage =
     JsObjectBuilder(
       "data" -> data,
@@ -2686,8 +2431,6 @@ object RealtimeProtocolMessage:
       "target" -> target,
       "swap" -> swap.map(_.value),
     ).asInstanceOf[RealtimeProtocolMessage]
-
-type SseProtocolMessage = RealtimeProtocolMessage
 
 @js.native
 trait RealtimeProtocolEventDetail[+A, +Source] extends js.Object:
@@ -2713,8 +2456,6 @@ object RealtimeProtocolEventDetail:
       "error" -> error,
     ).asInstanceOf[RealtimeProtocolEventDetail[A, Source]]
 
-type SseProtocolEventDetail[A] = RealtimeProtocolEventDetail[A, SseConnection]
-
 final case class WebSocketConfig(
     protocols: js.UndefOr[js.Array[String]] = js.undefined,
     onProtocolMessage: js.UndefOr[
@@ -2733,25 +2474,19 @@ final case class WebSocketConfig(
 
 @js.native
 trait WebSocketConnection extends js.Object:
-  def connect(): Unit = js.native
+  def reconnect(): Unit = js.native
   def send(data: js.Any): Unit = js.native
   def close(): Unit = js.native
 
 @js.native
 trait WebSocketService extends js.Object:
   def apply(url: String): WebSocketConnection = js.native
-  def apply(url: String, protocols: js.Array[String]): WebSocketConnection =
-    js.native
-  def apply(
-      url: String,
-      protocols: js.Array[String],
-      config: js.Object,
-  ): WebSocketConnection = js.native
+  def apply(url: String, config: js.Object): WebSocketConnection = js.native
 
 object WebSocketService:
   extension (service: WebSocketService)
     def connect(url: String, config: WebSocketConfig): WebSocketConnection =
-      service.apply(url, config.protocols.getOrElse(js.Array()), config.toJS)
+      service.apply(url, config.toJS)
 
 type WebTransportBufferInput =
   String | js.typedarray.ArrayBuffer | js.typedarray.Uint8Array
@@ -2894,12 +2629,40 @@ object WebTransportService:
     def connect(url: String, config: WebTransportConfig): WebTransportConnection =
       service.apply(url, config.toJS)
 
-final case class WasmOptions(
-    raw: js.UndefOr[Boolean] = js.undefined,
+final case class WasmLoadOptions(
+    source: String,
+    imports: js.UndefOr[js.Object] = js.undefined,
+    compile: js.UndefOr[WasmCompileOptions] = js.undefined,
+    diagnostics: js.UndefOr[Boolean] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
-      "raw" -> raw,
+      "source" -> source,
+      "imports" -> imports,
+      "compile" -> compile.map(_.toJS),
+      "diagnostics" -> diagnostics,
+    )
+
+final case class WasmCompileOptions(
+    builtins: js.UndefOr[js.Array[String]] = js.undefined,
+    importedStringConstants: js.UndefOr[String] = js.undefined,
+):
+  private[ts] def toJS: js.Object =
+    JsObjectBuilder(
+      "builtins" -> builtins,
+      "importedStringConstants" -> importedStringConstants,
+    )
+
+final case class WasmBindingOptions(
+    name: js.UndefOr[String] = js.undefined,
+    watch: js.UndefOr[js.Array[String]] = js.undefined,
+    initial: js.UndefOr[Boolean] = js.undefined,
+):
+  private[ts] def toJS: js.Object =
+    JsObjectBuilder(
+      "name" -> name,
+      "watch" -> watch,
+      "initial" -> initial,
     )
 
 @js.native
@@ -2949,13 +2712,11 @@ object WasmScopeUpdate:
     ).asInstanceOf[WasmScopeUpdate]
 
 final case class WasmScopeBindingOptions(
-    name: js.UndefOr[String] = js.undefined,
     watch: js.UndefOr[js.Array[String]] = js.undefined,
     initial: js.UndefOr[Boolean] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
-      "name" -> name,
       "watch" -> watch,
       "initial" -> initial,
     )
@@ -2972,12 +2733,6 @@ final case class WasmScopeWatchOptions(
 trait WasmScopeAbiImports extends js.Object:
   def scope_resolve(namePtr: Int, nameLen: Int): Int = js.native
   def scope_get(scopeHandle: Int, pathPtr: Int, pathLen: Int): Int = js.native
-  def scope_get_named(
-      namePtr: Int,
-      nameLen: Int,
-      pathPtr: Int,
-      pathLen: Int,
-  ): Int = js.native
   def scope_set(
       scopeHandle: Int,
       pathPtr: Int,
@@ -2985,35 +2740,13 @@ trait WasmScopeAbiImports extends js.Object:
       valuePtr: Int,
       valueLen: Int,
   ): Int = js.native
-  def scope_set_named(
-      namePtr: Int,
-      nameLen: Int,
-      pathPtr: Int,
-      pathLen: Int,
-      valuePtr: Int,
-      valueLen: Int,
-  ): Int = js.native
   def scope_delete(scopeHandle: Int, pathPtr: Int, pathLen: Int): Int =
     js.native
-  def scope_delete_named(
-      namePtr: Int,
-      nameLen: Int,
-      pathPtr: Int,
-      pathLen: Int,
-  ): Int = js.native
   def scope_sync(scopeHandle: Int): Int = js.native
-  def scope_sync_named(namePtr: Int, nameLen: Int): Int = js.native
   def scope_watch(scopeHandle: Int, pathPtr: Int, pathLen: Int): Int =
     js.native
-  def scope_watch_named(
-      namePtr: Int,
-      nameLen: Int,
-      pathPtr: Int,
-      pathLen: Int,
-  ): Int = js.native
   def scope_unwatch(watchHandle: Int): Int = js.native
   def scope_unbind(scopeHandle: Int): Int = js.native
-  def scope_unbind_named(namePtr: Int, nameLen: Int): Int = js.native
   def buffer_ptr(bufferHandle: Int): Int = js.native
   def buffer_len(bufferHandle: Int): Int = js.native
   def buffer_free(bufferHandle: Int): Unit = js.native
@@ -3023,18 +2756,10 @@ trait WasmScopeAbiImportObject extends js.Object:
   val angular_ts: WasmScopeAbiImports = js.native
 
 @js.native
-trait WasmInstantiationResult extends js.Object:
-  val instance: js.Object = js.native
-  val exports: js.Object = js.native
-  val module: js.Object = js.native
-
-@js.native
 trait WasmScope extends js.Object:
-  val abi: WasmScopeAbi = js.native
   val handle: Int = js.native
   val name: String = js.native
-  val scope: Scope = js.native
-  def isDisposed(): Boolean = js.native
+  val disposed: Boolean = js.native
   def get(path: String): js.Any = js.native
   def set(path: String, value: js.Any): Boolean = js.native
   def delete(path: String): Boolean = js.native
@@ -3049,11 +2774,8 @@ trait WasmScope extends js.Object:
       callback: js.Function1[WasmScopeUpdate, Unit],
       options: js.Object,
   ): js.Function0[Unit] = js.native
-  def bindExports(exports: WasmAbiExports): js.Function0[Unit] = js.native
-  def bindExports(
-      exports: WasmAbiExports,
-      options: js.Object,
-  ): js.Function0[Unit] = js.native
+  def bind(): js.Function0[Unit] = js.native
+  def bind(options: js.Object): js.Function0[Unit] = js.native
   def dispose(): Unit = js.native
 
 object WasmScope:
@@ -3065,24 +2787,20 @@ object WasmScope:
     ): js.Function0[Unit] =
       scope.watch(path, callback, options.toJS)
 
-    def bindExports(
-        exports: WasmAbiExports,
+    def bind(
         options: WasmScopeBindingOptions,
     ): js.Function0[Unit] =
-      scope.bindExports(exports, options.toJS)
+      scope.bind(options.toJS)
 
 @js.native
 trait WasmScopeAbi extends js.Object:
   val imports: WasmScopeAbiImportObject = js.native
-  def attach(exports: WasmAbiExports): Unit = js.native
+  val disposed: Boolean = js.native
+  def attach(exports: js.Object): Unit = js.native
   def createScope(scope: Scope): WasmScope = js.native
   def createScope(scope: Scope, options: js.Object): WasmScope = js.native
   def getScope(reference: WasmScopeReference): js.UndefOr[WasmScope] = js.native
-  def unregisterScope(handle: Int): Boolean = js.native
-  def notifyBind(scope: WasmScope): Unit = js.native
-  def notifyUpdate(update: WasmScopeUpdate): Unit = js.native
-  def notifyUnbind(scope: WasmScope): Unit = js.native
-  def freeBuffer(bufferHandle: Int): Unit = js.native
+  def dispose(): Unit = js.native
 
 object WasmScopeAbi:
   extension (abi: WasmScopeAbi)
@@ -3090,29 +2808,47 @@ object WasmScopeAbi:
       abi.createScope(scope, options.toJS)
 
 @js.native
-trait WasmService
-    extends js.Function3[
-      String,
-      js.UndefOr[js.Object],
-      js.UndefOr[js.Object],
-      js.Promise[js.Any],
-    ]:
-  def scope(scope: Scope): WasmScope = js.native
-  def scope(scope: Scope, options: js.Object): WasmScope = js.native
-  def createScopeAbi(): WasmScopeAbi = js.native
-  def createScopeAbi(exports: WasmAbiExports): WasmScopeAbi = js.native
+trait WasmError extends js.Error:
+  val code: String = js.native
+  val source: js.UndefOr[String | dom.URL] = js.native
+
+@js.native
+trait WasmBinding extends js.Object:
+  val name: String = js.native
+  val target: Scope = js.native
+  val disposed: Boolean = js.native
+  def dispose(): Unit = js.native
+
+@js.native
+trait WasmResource extends js.Object:
+  val source: String | dom.URL = js.native
+  val status: String = js.native
+  val ready: js.Promise[WasmResource] = js.native
+  val error: js.UndefOr[WasmError] = js.native
+  val instance: js.Object = js.native
+  val module: js.Object = js.native
+  val exports: js.Dynamic = js.native
+  val disposed: Boolean = js.native
+  def bind(target: Scope): js.Promise[WasmBinding] = js.native
+  def bind(target: Scope, options: js.Object): js.Promise[WasmBinding] = js.native
+  def dispose(): Unit = js.native
+
+object WasmResource:
+  extension (resource: WasmResource)
+    def bind(
+        target: Scope,
+        options: WasmBindingOptions,
+    ): js.Promise[WasmBinding] =
+      resource.bind(target, options.toJS)
+
+@js.native
+trait WasmService extends js.Object:
+  def load(options: js.Object): WasmResource = js.native
 
 object WasmService:
   extension (service: WasmService)
-    def load(
-        src: String,
-        imports: js.UndefOr[js.Object] = js.undefined,
-        options: WasmOptions = WasmOptions(),
-    ): js.Promise[js.Any] =
-      service.apply(src, imports, options.toJS)
-
-    def createScope(scope: Scope, options: WasmScopeOptions): WasmScope =
-      service.scope(scope, options.toJS)
+    def load(options: WasmLoadOptions): WasmResource =
+      service.load(options.toJS)
 
 type ReadableByteStream = js.Object
 
@@ -3226,47 +2962,70 @@ object StreamService:
     ): js.Promise[js.Array[A]] =
       service.readJsonLines[A](stream, options.toJS)
 
+enum WorkerStatus(val value: String):
+  case Running extends WorkerStatus("running")
+  case Restarting extends WorkerStatus("restarting")
+  case Error extends WorkerStatus("error")
+  case Terminated extends WorkerStatus("terminated")
+
 final case class WorkerConfig(
-    onMessage: js.UndefOr[js.Function2[js.Any, dom.MessageEvent, Unit]] =
-      js.undefined,
-    onError: js.UndefOr[js.Function1[dom.ErrorEvent, Unit]] = js.undefined,
-    autoRestart: js.UndefOr[Boolean] = js.undefined,
-    autoTerminate: js.UndefOr[Boolean] = js.undefined,
-    transformMessage: js.UndefOr[js.Function1[js.Any, js.Any]] = js.undefined,
-    logger: js.UndefOr[LogService] = js.undefined,
-    err: js.UndefOr[ExceptionHandlerService] = js.undefined,
+    `type`: js.UndefOr[String] = js.undefined,
+    name: js.UndefOr[String] = js.undefined,
+    credentials: js.UndefOr[String] = js.undefined,
+    restart: js.UndefOr[Boolean] = js.undefined,
+    restartDelay: js.UndefOr[Double] = js.undefined,
+    maxRestarts: js.UndefOr[Int] = js.undefined,
+    decode: js.UndefOr[js.Function1[js.Any, js.Any]] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
-      "onMessage" -> onMessage,
-      "onError" -> onError,
-      "autoRestart" -> autoRestart,
-      "autoTerminate" -> autoTerminate,
-      "transformMessage" -> transformMessage,
-      "logger" -> logger,
-      "err" -> err,
+      "type" -> `type`,
+      "name" -> name,
+      "credentials" -> credentials,
+      "restart" -> restart,
+      "restartDelay" -> restartDelay,
+      "maxRestarts" -> maxRestarts,
+      "decode" -> decode,
     )
 
 @js.native
-trait WorkerConnection extends js.Object:
-  val config: js.Object = js.native
+trait WorkerError extends js.Error:
+  val code: String = js.native
+  val event: js.UndefOr[dom.Event] = js.native
+
+@js.native
+trait WorkerHandle extends js.Object:
+  val status: String = js.native
+  val error: js.UndefOr[WorkerError] = js.native
+  val restartCount: Int = js.native
   def post(data: js.Any): Unit = js.native
+  def post(data: js.Any, transfer: js.Array[js.Any]): Unit = js.native
+  def request(data: js.Any): js.Promise[js.Any] = js.native
+  def request(data: js.Any, options: js.Object): js.Promise[js.Any] = js.native
+  def model(): js.Object = js.native
+  def model(channel: String): js.Object = js.native
+  def onMessage(
+      listener: js.Function2[js.Any, dom.MessageEvent, Unit],
+  ): js.Function0[Unit] = js.native
+  def onError(
+      listener: js.Function1[WorkerError, Unit],
+  ): js.Function0[Unit] = js.native
   def terminate(): Unit = js.native
   def restart(): Unit = js.native
 
 @js.native
 trait WorkerService extends js.Object:
-  def apply(scriptPath: String): WorkerConnection = js.native
-  def apply(scriptPath: String, config: js.Object): WorkerConnection = js.native
-  def apply(scriptPath: dom.URL): WorkerConnection = js.native
-  def apply(scriptPath: dom.URL, config: js.Object): WorkerConnection = js.native
+  def apply(scriptPath: String): WorkerHandle = js.native
+  def apply(scriptPath: String, config: js.Object): WorkerHandle = js.native
+  def apply(scriptPath: dom.URL): WorkerHandle = js.native
+  def apply(scriptPath: dom.URL, config: js.Object): WorkerHandle = js.native
 
 object WorkerService:
   extension (service: WorkerService)
-    def connect(scriptPath: String, config: WorkerConfig): WorkerConnection =
+    def start(scriptPath: String, config: WorkerConfig): WorkerHandle =
       service.apply(scriptPath, config.toJS)
 
-    def connect(scriptPath: dom.URL, config: WorkerConfig): WorkerConnection =
+    def start(scriptPath: dom.URL, config: WorkerConfig): WorkerHandle =
       service.apply(scriptPath, config.toJS)
 
 @js.native
@@ -3376,10 +3135,7 @@ final case class InterpolateConfig(
 
 type FilterFn = js.Function
 type FilterFactory = js.Function
-type DateFilterOptions = js.Object
-type NumberFilterOptions = js.Object
 type CurrencyFilterOptions = js.Object
-type RelativeTimeFilterOptions = js.Object
 
 @js.native
 trait EntryFilterItem extends js.Object:
@@ -3422,7 +3178,7 @@ enum HttpResponseStatus(val value: String):
   case Timeout extends HttpResponseStatus("timeout")
   case Abort extends HttpResponseStatus("abort")
 
-final case class RequestShortcutConfig(
+final case class HttpRequestOptions(
     params: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
     data: js.UndefOr[js.Any] = js.undefined,
     timeout: js.UndefOr[Double | js.Promise[js.Any]] = js.undefined,
@@ -3440,7 +3196,7 @@ final case class RequestShortcutConfig(
       "headers" -> headers,
     )
 
-final case class RequestConfig(
+final case class HttpRequestConfig(
     method: HttpMethod,
     url: String,
     params: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
@@ -3476,10 +3232,8 @@ trait HttpResponse[+A] extends js.Object:
   val statusText: String = js.native
   val xhrStatus: String = js.native
 
-type HttpPromise[A] = js.Promise[HttpResponse[A]]
-
 @js.native
-trait HttpProviderDefaults extends js.Object:
+trait HttpDefaults extends js.Object:
   var cache: js.UndefOr[Boolean | js.Object] = js.native
   var headers: js.UndefOr[js.Dictionary[js.Any]] = js.native
   var xsrfHeaderName: js.UndefOr[String] = js.native
@@ -3490,56 +3244,56 @@ trait HttpProviderDefaults extends js.Object:
 
 @js.native
 trait HttpService extends js.Object:
-  val defaults: HttpProviderDefaults = js.native
+  val defaults: HttpDefaults = js.native
   val pendingRequests: js.Array[js.Object] = js.native
-  def apply[A](config: js.Object): HttpPromise[A] = js.native
-  def get[A](url: String): HttpPromise[A] = js.native
-  def get[A](url: String, config: js.Object): HttpPromise[A] = js.native
-  def delete[A](url: String): HttpPromise[A] = js.native
-  def delete[A](url: String, config: js.Object): HttpPromise[A] = js.native
-  def head[A](url: String): HttpPromise[A] = js.native
-  def head[A](url: String, config: js.Object): HttpPromise[A] = js.native
-  def post[A](url: String, data: js.Any): HttpPromise[A] = js.native
-  def post[A](url: String, data: js.Any, config: js.Object): HttpPromise[A] =
+  def apply[A](config: js.Object): js.Promise[HttpResponse[A]] = js.native
+  def get[A](url: String): js.Promise[HttpResponse[A]] = js.native
+  def get[A](url: String, config: js.Object): js.Promise[HttpResponse[A]] = js.native
+  def delete[A](url: String): js.Promise[HttpResponse[A]] = js.native
+  def delete[A](url: String, config: js.Object): js.Promise[HttpResponse[A]] = js.native
+  def head[A](url: String): js.Promise[HttpResponse[A]] = js.native
+  def head[A](url: String, config: js.Object): js.Promise[HttpResponse[A]] = js.native
+  def post[A](url: String, data: js.Any): js.Promise[HttpResponse[A]] = js.native
+  def post[A](url: String, data: js.Any, config: js.Object): js.Promise[HttpResponse[A]] =
     js.native
-  def put[A](url: String, data: js.Any): HttpPromise[A] = js.native
-  def put[A](url: String, data: js.Any, config: js.Object): HttpPromise[A] =
+  def put[A](url: String, data: js.Any): js.Promise[HttpResponse[A]] = js.native
+  def put[A](url: String, data: js.Any, config: js.Object): js.Promise[HttpResponse[A]] =
     js.native
-  def patch[A](url: String, data: js.Any): HttpPromise[A] = js.native
-  def patch[A](url: String, data: js.Any, config: js.Object): HttpPromise[A] =
+  def patch[A](url: String, data: js.Any): js.Promise[HttpResponse[A]] = js.native
+  def patch[A](url: String, data: js.Any, config: js.Object): js.Promise[HttpResponse[A]] =
     js.native
 
 object HttpService:
   extension (service: HttpService)
-    def apply[A](config: RequestConfig): HttpPromise[A] =
+    def apply[A](config: HttpRequestConfig): js.Promise[HttpResponse[A]] =
       service.apply[A](config.toJS)
 
-    def get[A](url: String, config: RequestShortcutConfig): HttpPromise[A] =
+    def get[A](url: String, config: HttpRequestOptions): js.Promise[HttpResponse[A]] =
       service.get[A](url, config.toJS)
 
-    def delete[A](url: String, config: RequestShortcutConfig): HttpPromise[A] =
+    def delete[A](url: String, config: HttpRequestOptions): js.Promise[HttpResponse[A]] =
       service.delete[A](url, config.toJS)
 
-    def head[A](url: String, config: RequestShortcutConfig): HttpPromise[A] =
+    def head[A](url: String, config: HttpRequestOptions): js.Promise[HttpResponse[A]] =
       service.head[A](url, config.toJS)
 
     def post[A](
         url: String,
         data: js.Any,
-        config: RequestShortcutConfig,
-    ): HttpPromise[A] =
+        config: HttpRequestOptions,
+    ): js.Promise[HttpResponse[A]] =
       service.post[A](url, data, config.toJS)
 
     def put[A](
         url: String,
         data: js.Any,
-        config: RequestShortcutConfig,
-    ): HttpPromise[A] =
+        config: HttpRequestOptions,
+    ): js.Promise[HttpResponse[A]] =
       service.put[A](url, data, config.toJS)
 
     def patch[A](
         url: String,
         data: js.Any,
-        config: RequestShortcutConfig,
-    ): HttpPromise[A] =
+        config: HttpRequestOptions,
+    ): js.Promise[HttpResponse[A]] =
       service.patch[A](url, data, config.toJS)

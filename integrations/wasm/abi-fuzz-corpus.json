@@ -1,0 +1,42 @@
+[
+  {
+    "name": "truncated-json",
+    "payload": "{",
+    "error": 5
+  },
+  {
+    "name": "array-request",
+    "payload": "[]",
+    "error": 8
+  },
+  {
+    "name": "empty-transaction",
+    "payload": "{}",
+    "error": 8
+  },
+  {
+    "name": "prototype-path",
+    "payload": "{\"set\":{\"__proto__.polluted\":true}}",
+    "error": 6
+  },
+  {
+    "name": "overlapping-operations",
+    "payload": "{\"set\":{\"count\":1},\"delete\":[\"count\"]}",
+    "error": 8
+  },
+  {
+    "name": "non-string-delete",
+    "payload": "{\"delete\":[1]}",
+    "error": 8
+  },
+  {
+    "name": "non-string-origin",
+    "payload": "{\"set\":{\"count\":1},\"origin\":42}",
+    "error": 8
+  },
+  {
+    "name": "non-boolean-echo",
+    "payload": "{\"set\":{\"count\":1},\"echo\":\"yes\"}",
+    "error": 8
+  }
+]

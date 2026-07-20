@@ -7,20 +7,18 @@ import angular.ts.generated.CompileService as RawCompileService
 import angular.ts.generated.ControllerService as RawControllerService
 import angular.ts.generated.CookieService as RawCookieService
 import angular.ts.generated.ExceptionHandlerService as RawExceptionHandlerService
-import angular.ts.generated.FilterProvider as RawFilterProvider
 import angular.ts.generated.FilterService as RawFilterService
-import angular.ts.generated.HttpParamSerializerProvider as RawHttpParamSerializerProvider
 import angular.ts.generated.HttpParamSerializerService as RawHttpParamSerializerService
 import angular.ts.generated.HttpService as RawHttpService
 import angular.ts.generated.InterpolateService as RawInterpolateService
 import angular.ts.generated.LocationService as RawLocationService
 import angular.ts.generated.LogService as RawLogService
 import angular.ts.generated.ParseService as RawParseService
-import angular.ts.generated.ProvideService as RawProvideService
 import angular.ts.generated.RestFactory as RawRestFactory
 import angular.ts.generated.RestService as RawRestService
 import angular.ts.generated.TemplateCacheService as RawTemplateCacheService
 import angular.ts.generated.TemplateRequestService as RawTemplateRequestService
+import kotlin.js.Promise
 import org.w3c.dom.Element
 
 public enum class SameSite(
@@ -138,7 +136,7 @@ public data class HttpRequestConfigHeaders public constructor(
     public val patch: HttpHeaders? = null,
 )
 
-public data class HttpProviderDefaults public constructor(
+public data class HttpDefaults public constructor(
     public val cache: Any? = null,
     public val transformRequest: Any? = null,
     public val transformResponse: Any? = null,
@@ -149,8 +147,8 @@ public data class HttpProviderDefaults public constructor(
     public val paramSerializer: Any? = null,
 )
 
-public data class RequestShortcutConfig public constructor(
-    public val defaults: HttpProviderDefaults = HttpProviderDefaults(),
+public data class HttpRequestOptions public constructor(
+    public val defaults: HttpDefaults = HttpDefaults(),
     public val cache: Any? = null,
     public val transformRequest: Any? = null,
     public val transformResponse: Any? = null,
@@ -165,10 +163,10 @@ public data class RequestShortcutConfig public constructor(
     public val responseType: HttpResponseType? = null,
 )
 
-public data class RequestConfig public constructor(
+public data class HttpRequestConfig public constructor(
     public val method: HttpMethod,
     public val url: String,
-    public val shortcut: RequestShortcutConfig = RequestShortcutConfig(),
+    public val shortcut: HttpRequestOptions = HttpRequestOptions(),
     public val cache: Any? = null,
     public val transformRequest: Any? = null,
     public val transformResponse: Any? = null,
@@ -189,7 +187,7 @@ public data class HttpResponse<T> public constructor(
     public val data: T,
     public val status: Int,
     public val headers: HttpHeaders = emptyMap(),
-    public val config: RequestConfig? = null,
+    public val config: HttpRequestConfig? = null,
     public val statusText: String = "",
     public val xhrStatus: HttpResponseStatus? = null,
 ) {
@@ -203,13 +201,6 @@ public data class HttpResponse<T> public constructor(
             )
     }
 }
-
-public data class RestDefinition<T> public constructor(
-    public val name: String,
-    public val url: String,
-    public val entityClass: EntityClass<T>? = null,
-    public val options: RestOptions = RestOptions(),
-)
 
 public data class RestRequest public constructor(
     public val method: HttpMethod,
@@ -238,7 +229,7 @@ public data class RestResponse<T> public constructor(
     public val stale: Boolean = false,
     public val status: Int? = null,
     public val headers: HttpHeaders? = null,
-    public val config: RequestConfig? = null,
+    public val config: HttpRequestConfig? = null,
     public val statusText: String? = null,
     public val xhrStatus: HttpResponseStatus? = null,
 ) {
@@ -315,7 +306,7 @@ public interface StorageBackend {
     public fun remove(key: String)
 }
 
-public class AngularService internal constructor(
+public class Angular internal constructor(
     internal val raw: RawAngular,
 ) {
     public val version: String
@@ -410,10 +401,6 @@ public class FilterFunction internal constructor(
         callJsFunction(raw, null, arrayOf(input, *args))
 }
 
-public class FilterProvider internal constructor(
-    internal val raw: RawFilterProvider,
-)
-
 public class FilterService internal constructor(
     internal val raw: RawFilterService,
 ) {
@@ -478,10 +465,6 @@ public class FilterService internal constructor(
     }
 }
 
-public class HttpParamSerializerProvider internal constructor(
-    internal val raw: RawHttpParamSerializerProvider,
-)
-
 public class HttpParamSerializerService internal constructor(
     internal val raw: RawHttpParamSerializerService,
 ) {
@@ -492,32 +475,10 @@ public class HttpParamSerializerService internal constructor(
 public class HttpProvider internal constructor(
     internal val raw: dynamic,
 ) {
-    public fun setDefaults(defaults: HttpProviderDefaults): HttpProvider {
+    public fun setDefaults(defaults: HttpDefaults): HttpProvider {
         raw.defaults = defaults.toJs()
         return this
     }
-}
-
-public class HttpPromise<T> internal constructor(
-    internal val raw: dynamic,
-) {
-    public fun then(
-        onFulfilled: (HttpResponse<T>) -> Any?,
-        onRejected: ((Any?) -> Any?)? = null,
-    ): dynamic {
-        val fulfilled = { response: dynamic ->
-            onFulfilled(HttpResponse.fromJs(response))
-        }
-
-        return if (onRejected == null) {
-            raw.then(fulfilled)
-        } else {
-            raw.then(fulfilled, onRejected)
-        }
-    }
-
-    public fun catchError(onRejected: (Any?) -> Any?): dynamic =
-        raw.asDynamic().catch(onRejected)
 }
 
 public class HttpService internal constructor(
@@ -526,53 +487,58 @@ public class HttpService internal constructor(
     public val pendingRequestsCount: Int
         get() = raw.pendingRequests.size
 
-    public fun setDefaults(defaults: HttpProviderDefaults): HttpService {
+    public fun setDefaults(defaults: HttpDefaults): HttpService {
         raw.defaults = defaults.toJs()
         return this
     }
 
-    public fun <T> request(config: RequestConfig): HttpPromise<T> =
-        HttpPromise(raw(config.toJs()))
+    public fun <T> request(config: HttpRequestConfig): Promise<HttpResponse<T>> =
+        mapHttpResponse(raw(config.toJs()))
 
     public fun <T> get(
         url: String,
-        config: RequestShortcutConfig = RequestShortcutConfig(),
-    ): HttpPromise<T> =
-        HttpPromise(raw.get(url, config.toJs()))
+        config: HttpRequestOptions = HttpRequestOptions(),
+    ): Promise<HttpResponse<T>> =
+        mapHttpResponse(raw.get(url, config.toJs()))
 
     public fun <T> delete(
         url: String,
-        config: RequestShortcutConfig = RequestShortcutConfig(),
-    ): HttpPromise<T> =
-        HttpPromise(raw.delete(url, config.toJs()))
+        config: HttpRequestOptions = HttpRequestOptions(),
+    ): Promise<HttpResponse<T>> =
+        mapHttpResponse(raw.delete(url, config.toJs()))
 
     public fun <T> head(
         url: String,
-        config: RequestShortcutConfig = RequestShortcutConfig(),
-    ): HttpPromise<T> =
-        HttpPromise(raw.head(url, config.toJs()))
+        config: HttpRequestOptions = HttpRequestOptions(),
+    ): Promise<HttpResponse<T>> =
+        mapHttpResponse(raw.head(url, config.toJs()))
 
     public fun <T> post(
         url: String,
         data: Any?,
-        config: RequestShortcutConfig = RequestShortcutConfig(),
-    ): HttpPromise<T> =
-        HttpPromise(raw.post(url, data, config.toJs()))
+        config: HttpRequestOptions = HttpRequestOptions(),
+    ): Promise<HttpResponse<T>> =
+        mapHttpResponse(raw.post(url, data, config.toJs()))
 
     public fun <T> put(
         url: String,
         data: Any?,
-        config: RequestShortcutConfig = RequestShortcutConfig(),
-    ): HttpPromise<T> =
-        HttpPromise(raw.put(url, data, config.toJs()))
+        config: HttpRequestOptions = HttpRequestOptions(),
+    ): Promise<HttpResponse<T>> =
+        mapHttpResponse(raw.put(url, data, config.toJs()))
 
     public fun <T> patch(
         url: String,
         data: Any?,
-        config: RequestShortcutConfig = RequestShortcutConfig(),
-    ): HttpPromise<T> =
-        HttpPromise(raw.patch(url, data, config.toJs()))
+        config: HttpRequestOptions = HttpRequestOptions(),
+    ): Promise<HttpResponse<T>> =
+        mapHttpResponse(raw.patch(url, data, config.toJs()))
 }
+
+private fun <T> mapHttpResponse(promise: dynamic): Promise<HttpResponse<T>> =
+    promise.unsafeCast<Promise<dynamic>>().then { response: dynamic ->
+        HttpResponse.fromJs<T>(response)
+    }
 
 public class RestProvider internal constructor(
     internal val raw: dynamic,
@@ -595,32 +561,26 @@ public class RestFactory internal constructor(
 public class RestService<T, ID> internal constructor(
     internal val raw: RawRestService<T, ID>,
 ) {
-    public fun buildUrl(
-        template: String,
-        params: Map<String, Any?> = emptyMap(),
-    ): String =
-        raw.buildUrl(template, params.toJsRecord())
-
-    public fun list(params: Map<String, Any?>? = null): Any? =
-        raw.list(params?.toJsRecord())
+    public fun list(params: Map<String, Any?>? = null): Promise<Array<T>> =
+        raw.list(params?.toJsRecord()).unsafeCast<Promise<Array<T>>>()
 
     public fun get(
         id: ID,
         params: Map<String, Any?>? = null,
-    ): Any? =
-        raw.get(id, params?.toJsRecord())
+    ): Promise<T?> =
+        raw.get(id, params?.toJsRecord()).unsafeCast<Promise<T?>>()
 
-    public fun create(item: T): Any? =
-        raw.create(item)
+    public fun create(item: T): Promise<T?> =
+        raw.create(item).unsafeCast<Promise<T?>>()
 
     public fun update(
         id: ID,
         item: Any?,
-    ): Any? =
-        raw.update(id, item)
+    ): Promise<T?> =
+        raw.update(id, item).unsafeCast<Promise<T?>>()
 
-    public fun delete(id: ID): Any? =
-        raw.delete(id)
+    public fun delete(id: ID): Promise<Unit> =
+        raw.delete(id).unsafeCast<Promise<Unit>>()
 }
 
 public class Interpolation internal constructor(
@@ -741,26 +701,6 @@ public class ParseService internal constructor(
         ParsedExpression(callJsFunction(raw, null, arrayOf(expression)))
 }
 
-public class ProvideService internal constructor(
-    internal val raw: RawProvideService,
-) {
-    public fun <T> value(
-        token: Token<T>,
-        value: T,
-    ): ProvideService {
-        raw.value(token.name, value)
-        return this
-    }
-
-    public fun <T> factory(
-        token: Token<T>,
-        factory: InjectableFactory<T>,
-    ): ProvideService {
-        raw.factory(token.name, factory.toJs())
-        return this
-    }
-}
-
 public class TemplateCacheService internal constructor(
     internal val raw: RawTemplateCacheService,
 ) {
@@ -820,7 +760,7 @@ private fun HttpRequestConfigHeaders.toJs(): dynamic {
     return raw
 }
 
-private fun HttpProviderDefaults.toJs(): dynamic {
+private fun HttpDefaults.toJs(): dynamic {
     val raw = js("{}")
 
     if (cache != null) raw.cache = cache
@@ -835,7 +775,7 @@ private fun HttpProviderDefaults.toJs(): dynamic {
     return raw
 }
 
-private fun RequestShortcutConfig.toJs(): dynamic {
+private fun HttpRequestOptions.toJs(): dynamic {
     val raw = defaults.toJs()
 
     if (cache != null) raw.cache = cache
@@ -854,7 +794,7 @@ private fun RequestShortcutConfig.toJs(): dynamic {
     return raw
 }
 
-private fun RequestConfig.toJs(): dynamic {
+private fun HttpRequestConfig.toJs(): dynamic {
     val raw = shortcut.toJs()
 
     if (cache != null) raw.cache = cache
@@ -874,17 +814,6 @@ private fun RequestConfig.toJs(): dynamic {
 
     raw.method = method.raw
     raw.url = url
-
-    return raw
-}
-
-private fun RestDefinition<*>.toJs(): dynamic {
-    val raw = js("{}")
-
-    raw.name = name
-    raw.url = url
-    if (entityClass != null) raw.entityClass = entityClass
-    raw.options = options.toJs()
 
     return raw
 }

@@ -1,0 +1,10 @@
+{
+  "name": "Player",
+  "fields": [
+    { "path": "position.x", "type": "f64" },
+    { "path": "position.y", "type": "f64" },
+    { "path": "health", "type": "u32" },
+    { "path": "name", "type": "string" },
+    { "path": "frame", "type": "bytes", "optional": true }
+  ]
+}

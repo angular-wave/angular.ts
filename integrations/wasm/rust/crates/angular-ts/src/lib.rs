@@ -26,23 +26,26 @@ pub use services::MemoryStorageBackend;
 pub use services::{
     ConnectionConfig, ConnectionEvent, CookieOptions, CookieSameSite, CookieService,
     CookieStoreOptions, EventBusListener, EventBusService, ExceptionHandlerService, HttpMethod,
-    HttpResponse, HttpResponseStatus, HttpService, LogService, Machine, MachineConfig,
-    MachineEventMap, MachineGuard, MachineHooks, MachineMode, MachineModeHooks, MachineProvider,
-    MachineService, MachineSnapshot, MachineTransition, MachineTransitionContext,
-    MachineTransitionDefinition, MachineTransitionDescriptor, MachineTransitionHook,
-    MachineTransitionMap, MachineTransitionResult, PubSubService, RealtimeProtocolEventDetail,
-    RealtimeProtocolMessage, RequestConfig, RequestShortcutConfig, RestBackend, RestDefinition,
+    HttpRequestConfig, HttpRequestOptions, HttpResponse, HttpResponseStatus, HttpService,
+    LogService, Machine, MachineEventMap, MachineEventTransitionConfig,
+    MachineEventTransitionContext, MachineEventTransitionGuard, MachineEventTransitionHook,
+    MachineEventTransitionUpdate, MachineHooks, MachineService, MachineSnapshot, MachineState,
+    MachineStateConfig, MachineStateDefinition, MachineStateHooks, MachineStateMap,
+    MachineStateTransitionMap, RealtimeProtocolEventDetail, RealtimeProtocolMessage, RestBackend,
     RestFactory, RestOptions, RestRequest, RestResponse, RestService, RootScopeService, Service,
     SseConfig, SseConnection, SseService, StateDeclaration, StateRegistryService,
-    StateResolveArray, StateResolveObject, StateService, StorageBackend, StorageType, SwapModeType,
+    StateResolveArray, StateResolveObject, StateService, StorageBackend, StorageType, SwapMode,
     TemplateCacheService, TemplateRequestService, Transition, WebSocketConfig, WebSocketConnection,
-    WebSocketService,
+    WebSocketService, WorkerConfig, WorkerCredentials, WorkerError, WorkerErrorCode, WorkerHandle,
+    WorkerModelMessage, WorkerRequest, WorkerRequestOptions, WorkerResponse, WorkerService,
+    WorkerStatus, WorkerType,
 };
 #[cfg(target_arch = "wasm32")]
 pub use services::{HttpServiceExt, TemplateRequestServiceExt};
 pub use token::{token, Token};
 #[cfg(target_arch = "wasm32")]
-pub use wasm::{read_abi_json, read_abi_string, WasmScope};
+pub use wasm::{WasmScope, Watch};
 pub use wasm_types::{
-    WasmScopeBindingOptions, WasmScopeReference, WasmScopeUpdate, WasmScopeWatchOptions,
+    AbiError, BinaryField, Field, ScopeUpdate, WasmError, WasmScopeReference, WatchOptions,
+    WriteOptions,
 };

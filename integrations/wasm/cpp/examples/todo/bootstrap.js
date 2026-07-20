@@ -1,18 +1,18 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
+import { wasmModule } from "@angular-wave/angular.ts/runtime/wasm";
 
 const moduleName = "cppWasmTodo";
 const scopeName = "cppTodo:main";
 const wasmURL = new URL("./main.wasm", import.meta.url);
+const installedWasmModule = wasmModule(angular);
 
-const scopeAbi = new WasmScopeAbi();
-let exports;
+let guest;
 
 const writeU32 = (ptr, value) => {
-  if (!exports?.memory) {
+  if (guest?.status !== "ready") {
     return;
   }
-  new DataView(exports.memory.buffer).setUint32(ptr, value, true);
+  new DataView(guest.exports.memory.buffer).setUint32(ptr, value, true);
 };
 
 const writeU64 = (ptr, value) => {
@@ -38,9 +38,9 @@ const wasi = new Proxy(
       }
       if (name === "random_get") {
         return (ptr, len) => {
-          if (exports?.memory) {
+          if (guest?.status === "ready") {
             crypto.getRandomValues(
-              new Uint8Array(exports.memory.buffer, ptr, len),
+              new Uint8Array(guest.exports.memory.buffer, ptr, len),
             );
           }
           return 0;
@@ -51,15 +51,11 @@ const wasi = new Proxy(
   },
 );
 
-const result = await WebAssembly.instantiateStreaming(fetch(wasmURL), {
-  angular_ts: scopeAbi.imports.angular_ts,
+const imports = {
   wasi_snapshot_preview1: wasi,
-});
-exports = result.instance.exports;
+};
 
-scopeAbi.attach(exports);
-
-const writeString = (value) => {
+const writeString = (exports, value) => {
   const encoded = new TextEncoder().encode(value);
   const ptr = exports.ng_abi_alloc(encoded.byteLength);
   if (!ptr) {
@@ -70,8 +66,8 @@ const writeString = (value) => {
   return { ptr, len: encoded.byteLength };
 };
 
-const callWithString = (fn, value) => {
-  const bytes = writeString(value);
+const callWithString = (exports, fn, value) => {
+  const bytes = writeString(exports, value);
   try {
     fn(bytes.ptr, bytes.len);
   } finally {
@@ -79,23 +75,39 @@ const callWithString = (fn, value) => {
   }
 };
 
-const app = angular.module(moduleName, []);
+const app = angular
+  .module(moduleName, [installedWasmModule.name])
+  .wasm("cppTodoGuest", { source: wasmURL, imports });
 
 app.controller("cppTodoController", [
   "$scope",
-  ($scope) => {
-    const scope = scopeAbi.createScope($scope, { name: scopeName });
+  "cppTodoGuest",
+  ($scope, resource) => {
+    guest = resource;
+    globalThis.__angularTsWasmConformance = {
+      abi: guest._abi,
+      get exports() {
+        return guest.exports;
+      },
+      ready: guest.ready,
+    };
 
-    $scope.add = (title) => callWithString(exports.todo_add, title || "");
-    $scope.toggle = (index) => exports.todo_toggle(index);
-    $scope.archive = () => exports.todo_archive_completed();
+    const ready = guest
+      .bind($scope, { name: scopeName })
+      .then(() => guest.exports.todo_bind());
+
+    $scope.add = (title) =>
+      void ready.then(() =>
+        callWithString(guest.exports, guest.exports.todo_add, title || ""),
+      );
+    $scope.toggle = (index) =>
+      void ready.then(() => guest.exports.todo_toggle(index));
+    $scope.archive = () =>
+      void ready.then(() => guest.exports.todo_archive_completed());
 
     $scope.$on("$destroy", () => {
-      exports.todo_unbind();
-      scopeAbi.unbind(scope.name);
+      if (guest.status === "ready") guest.exports.todo_unbind();
     });
-
-    exports.todo_bind();
   },
 ]);
 

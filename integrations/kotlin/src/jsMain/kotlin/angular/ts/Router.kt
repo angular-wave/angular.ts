@@ -3,7 +3,9 @@ package angular.ts
 import angular.ts.generated.StateRegistryService as RawStateRegistryService
 import angular.ts.generated.StateService as RawStateService
 import angular.ts.generated.Transition as RawTransition
-import angular.ts.generated.TransitionService as RawTransitionService
+import angular.ts.generated.TransitionsService as RawTransitionsService
+
+private typealias RawAnyTransition = RawTransition<dynamic, dynamic>
 
 public typealias StateOrName = Any
 
@@ -23,6 +25,69 @@ public typealias TransitionStateHookFn = (
     transition: Transition,
     state: Any?,
 ) -> Any?
+
+public class StateService internal constructor(
+    internal val raw: RawStateService<Any?>,
+) {
+    public val current: Any?
+        get() = raw.current
+
+    public val params: Any?
+        get() = raw.params
+
+    public fun get(): Any? =
+        raw.get()
+
+    public fun get(
+        state: Any?,
+        base: Any? = undefined,
+    ): Any? = raw.get(state, base)
+
+    public fun go(
+        state: Any?,
+        params: Any? = undefined,
+        options: Any? = undefined,
+    ): Any? = raw.go(state, params, options)
+
+    public fun href(
+        state: Any?,
+        params: Any? = undefined,
+        options: Any? = undefined,
+    ): String = raw.href(state, params, options)
+
+    public fun matches(
+        state: Any?,
+        params: Any? = undefined,
+        options: Any? = undefined,
+    ): Boolean = raw.matches(state, params, options)
+}
+
+public class StateRegistryService internal constructor(
+    internal val raw: RawStateRegistryService,
+) {
+    public fun register(state: StateDeclaration): Any? =
+        raw.register(state.toJs())
+
+    public fun deregister(state: Any?): Array<dynamic> =
+        raw.deregister(state)
+
+    public fun get(): Any? =
+        raw.get()
+
+    public fun get(
+        state: Any?,
+        base: Any? = undefined,
+    ): Any? = raw.get(state, base)
+
+    public fun getAll(): Array<dynamic> =
+        raw.getAll()
+
+    public fun root(): Any? =
+        raw.root()
+
+    public fun onStatesChanged(callback: (String, Array<dynamic>) -> Unit): () -> Unit =
+        raw.onStatesChanged(callback)
+}
 
 public data class ViewDeclaration public constructor(
     public val name: String? = null,
@@ -63,10 +128,11 @@ public data class StateDeclaration public constructor(
     public val controller: InjectableFactory<*>? = null,
     public val templateUrl: Any? = null,
     public val resolve: Any? = null,
+    public val children: List<StateDeclaration>? = null,
 )
 
 public class Transition internal constructor(
-    internal val raw: RawTransition,
+    internal val raw: RawAnyTransition,
 ) {
     public val id: Int?
         get() = raw.`$id`.unsafeCast<Int?>()
@@ -97,7 +163,7 @@ public class Transition internal constructor(
         raw.exiting()
 
     public fun redirect(targetState: Any?): Transition =
-        Transition(raw.redirect(routerValueToJs(targetState)).unsafeCast<RawTransition>())
+        Transition(raw.redirect(routerValueToJs(targetState)).unsafeCast<RawAnyTransition>())
 
     public fun isDynamic(): Boolean =
         raw.dynamic()
@@ -112,9 +178,6 @@ public class Transition internal constructor(
         raw.abort()
     }
 
-    public fun error(): Any? =
-        raw.error()
-
     override fun toString(): String =
         raw.toString()
 }
@@ -124,118 +187,8 @@ public class TransitionPromise internal constructor(
     public val transition: Transition,
 )
 
-public class StateService internal constructor(
-    internal val raw: RawStateService,
-) {
-    public val current: Any?
-        get() = raw.current
-
-    public val params: Any?
-        get() = raw.params
-
-    public fun defaultErrorHandler(handler: (Any?) -> Any?): (Any?) -> Any? =
-        raw.defaultErrorHandler(handler).unsafeCast<(Any?) -> Any?>()
-
-    public fun get(
-        state: StateOrName? = null,
-        base: StateOrName? = null,
-    ): Any? =
-        raw.get(routerValueToJs(state), routerValueToJs(base))
-
-    public fun getCurrentPath(): Array<dynamic> =
-        raw.getCurrentPath()
-
-    public fun go(
-        state: StateOrName,
-        params: Map<String, Any?>? = null,
-        options: Map<String, Any?>? = null,
-    ): Any? =
-        raw.go(routerValueToJs(state), params?.toJsRecord(), options?.toJsRecord())
-
-    public fun href(
-        state: StateOrName,
-        params: Map<String, Any?>? = null,
-        options: Map<String, Any?>? = null,
-    ): String =
-        raw.href(routerValueToJs(state), params?.toJsRecord(), options?.toJsRecord())
-
-    public fun includes(
-        state: StateOrName,
-        params: Map<String, Any?>? = null,
-        options: Map<String, Any?>? = null,
-    ): Boolean =
-        raw.includes(routerValueToJs(state), params?.toJsRecord(), options?.toJsRecord())
-
-    public fun isState(
-        state: StateOrName,
-        params: Map<String, Any?>? = null,
-        options: Map<String, Any?>? = null,
-    ): Boolean =
-        raw.`is`(routerValueToJs(state), params?.toJsRecord(), options?.toJsRecord())
-
-    public fun lazy(
-        name: String,
-        loader: () -> Any?,
-    ): Any? =
-        raw.lazy(name, loader)
-
-    public fun reload(state: StateOrName? = null): Any? =
-        raw.reload(routerValueToJs(state))
-
-    public fun state(declaration: StateDeclaration): Any? =
-        raw.state(declaration.name, declaration.toJs())
-
-    public fun target(
-        state: StateOrName,
-        params: Map<String, Any?>? = null,
-        options: Map<String, Any?>? = null,
-    ): Any? =
-        raw.target(routerValueToJs(state), params?.toJsRecord(), options?.toJsRecord())
-
-    public fun transitionTo(
-        state: StateOrName,
-        params: Map<String, Any?>? = null,
-        options: Map<String, Any?>? = null,
-    ): Any? =
-        raw.transitionTo(routerValueToJs(state), params?.toJsRecord(), options?.toJsRecord())
-}
-
-public class StateRegistryService internal constructor(
-    internal val raw: RawStateRegistryService,
-) {
-    public fun register(declaration: StateDeclaration): Any? =
-        raw.register(declaration.toJs())
-
-    public fun deregister(state: StateOrName): Array<dynamic> =
-        raw.deregister(routerValueToJs(state))
-
-    public fun get(
-        state: StateOrName? = null,
-        base: StateOrName? = null,
-    ): Any? =
-        raw.get(routerValueToJs(state), routerValueToJs(base))
-
-    public fun getAll(): Array<dynamic> =
-        raw.getAll()
-
-    public fun onStatesChanged(listener: (event: String, states: Array<dynamic>) -> Unit): () -> Unit {
-        val disposer = raw.onStatesChanged { event: String, states: Array<dynamic> ->
-            listener(event, states)
-        }
-
-        return { callJsFunction(disposer, null, emptyArray()) }
-    }
-
-    public fun registerRoot() {
-        raw.registerRoot()
-    }
-
-    public fun root(): Any? =
-        raw.root()
-}
-
-public class TransitionService internal constructor(
-    internal val raw: RawTransitionService,
+public class TransitionsService internal constructor(
+    internal val raw: RawTransitionsService,
 ) {
     public fun onBefore(
         criteria: Map<String, Any?> = emptyMap(),
@@ -293,8 +246,8 @@ public class TransitionService internal constructor(
     ): () -> Unit =
         hook(raw.onError(criteria.toJsRecord(), transitionCallback(callback), options.toJsRecord()))
 
-    private fun hook(disposer: Function<*>): () -> Unit =
-        { callJsFunction(disposer, null, emptyArray()) }
+    private fun hook(disposer: () -> Unit): () -> Unit =
+        disposer
 }
 
 internal fun StateDeclaration.toJs(): dynamic {
@@ -318,6 +271,7 @@ internal fun StateDeclaration.toJs(): dynamic {
     if (controller != null) raw.controller = controller.toJs()
     if (templateUrl != null) raw.templateUrl = routerValueToJs(templateUrl)
     if (resolve != null) raw.resolve = routerValueToJs(resolve)
+    if (children != null) raw.children = children.map(StateDeclaration::toJs).toTypedArray()
 
     return raw
 }
@@ -354,12 +308,12 @@ private fun RedirectTo.toJs(): dynamic {
     return raw
 }
 
-private fun transitionCallback(callback: TransitionHookFn): Function<*> =
-    { transition: dynamic -> callback(Transition(transition.unsafeCast<RawTransition>())) }
+private fun transitionCallback(callback: TransitionHookFn): (dynamic) -> dynamic =
+    { transition: dynamic -> callback(Transition(transition.unsafeCast<RawAnyTransition>())) }
 
-private fun stateTransitionCallback(callback: TransitionStateHookFn): Function<*> =
+private fun stateTransitionCallback(callback: TransitionStateHookFn): (dynamic, dynamic) -> dynamic =
     { transition: dynamic, state: dynamic ->
-        callback(Transition(transition.unsafeCast<RawTransition>()), state)
+        callback(Transition(transition.unsafeCast<RawAnyTransition>()), state)
     }
 
 private fun Map<*, *>.mapValuesToJs(): dynamic {

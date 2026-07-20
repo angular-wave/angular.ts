@@ -13,8 +13,8 @@ const outputPath = path.join(
 const typeMap = new Map(
   Object.entries({
     $angular: "namespace.AngularService",
-    $scope: "namespace.Scope",
-    $element: "namespace.RootElementService",
+    $scope: "namespace.ScopeService",
+    $element: "namespace.ElementService",
     $anchorScroll: "namespace.AnchorScrollService",
     $animate: "namespace.AnimateService",
     $aria: "namespace.AriaService",
@@ -22,9 +22,10 @@ const typeMap = new Map(
     $cookie: "namespace.CookieService",
     $controller: "namespace.ControllerService",
     $document: "namespace.DocumentService",
-    $eventBus: "namespace.PubSubService",
+    $eventBus: "namespace.EventBusService",
     $exceptionHandler: "namespace.ExceptionHandlerService",
     $filter: "namespace.FilterService",
+    $htmlCanvas: "namespace.HtmlCanvasService",
     $http: "namespace.HttpService",
     $httpParamSerializer: "namespace.HttpParamSerializerService",
     $interpolate: "namespace.InterpolateService",
@@ -38,41 +39,22 @@ const typeMap = new Map(
     $rootElement: "namespace.RootElementService",
     $sce: "namespace.SceService",
     $sceDelegate: "namespace.SceDelegateService",
-    $state: "namespace.StateService",
+    $security: "namespace.SecurityPolicy",
+    $serviceWorker: "namespace.ServiceWorkerService",
+    $state: "namespace.StateService(js.JsValue)",
     $stateRegistry: "namespace.StateRegistryService",
+    $stream: "namespace.StreamService",
     $sse: "namespace.SseService",
     $templateCache: "namespace.TemplateCacheService",
     $templateRequest: "namespace.TemplateRequestService",
-    $transitions: "namespace.TransitionService",
+    $transitions: "namespace.TransitionsService",
     $window: "namespace.WindowService",
+    $webComponent: "namespace.WebComponentService",
+    $webTransport: "namespace.WebTransportService",
     $websocket: "namespace.WebSocketService",
-    $worker: "namespace.WorkerConnection",
-    $wasm: "namespace.WasmService",
-    $provide: "namespace.ProvideService",
-    $injector: "namespace.InjectorService",
-    $angularProvider: "namespace.AngularServiceProvider",
-    $anchorScrollProvider: "namespace.AnchorScrollProvider",
-    $animateProvider: "namespace.AnimateProvider",
-    $ariaProvider: "namespace.AriaService",
-    $cookieProvider: "namespace.CookieService",
-    $eventBusProvider: "namespace.PubSubProvider",
-    $exceptionHandlerProvider: "namespace.ExceptionHandlerProvider",
-    $filterProvider: "namespace.FilterProvider",
-    $httpParamSerializerProvider: "namespace.HttpParamSerializerProvider",
-    $interpolateProvider: "namespace.InterpolateProvider",
-    $locationProvider: "namespace.LocationProvider",
-    $machineProvider: "namespace.MachineProvider",
-    $workflowProvider: "namespace.WorkflowProvider",
-    $sceProvider: "namespace.SceProvider",
-    $sceDelegateProvider: "namespace.SceDelegateProvider",
-    $sseProvider: "namespace.SseService",
-    $stateProvider: "namespace.StateService",
-    $stateRegistryProvider: "namespace.StateRegistryService",
-    $transitionsProvider: "namespace.TransitionService",
-    $websocketProvider: "namespace.WebSocketService",
-    $workerProvider: "namespace.WorkerConnection",
-    $wasmProvider: "namespace.WasmService",
-    $controllerProvider: "namespace.ControllerService",
+    $worker: "namespace.WorkerService",
+    $wasm: "wasm.WasmService",
+    $injector: "namespace.InjectorService(js.JsValue)",
   }),
 );
 
@@ -132,10 +114,15 @@ function render(tokens) {
     "import angular_ts/namespace",
     "import angular_ts/token.{type Token}",
     "import angular_ts/unsafe as js",
+    "import angular_ts/wasm",
     "",
   ];
 
   for (const { property, value } of tokens) {
+    if (property.endsWith("Provider")) {
+      continue;
+    }
+
     const fnName = toFunctionName(property);
     const typeName = typeMap.get(property) ?? "js.JsValue";
     const signature = `pub fn ${fnName}() -> Token(${typeName}) {`;

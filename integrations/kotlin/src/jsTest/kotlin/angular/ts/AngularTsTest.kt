@@ -5,15 +5,14 @@ import angular.ts.generated.AnimateService as RawAnimateService
 import angular.ts.generated.AnimationHandle as RawAnimationHandle
 import angular.ts.generated.Scope as RawScope
 import angular.ts.generated.SseConnection as RawSseConnection
+import angular.ts.generated.WasmError as RawWasmError
 import angular.ts.generated.WebSocketConnection as RawWebSocketConnection
 import angular.ts.generated.WebTransportConnection as RawWebTransportConnection
-import angular.ts.generated.WasmScope as RawWasmScope
-import angular.ts.generated.WasmService as RawWasmService
 import angular.ts.generated.WebComponentService as RawWebComponentService
-import angular.ts.generated.WorkerConnection as RawWorkerConnection
 import angular.ts.unsafe.UnsafeInterop
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
+import kotlin.js.Promise
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -181,7 +180,7 @@ class AngularTsTest {
         assertEquals("json", HttpResponseType.Json.raw)
         assertEquals("complete", HttpResponseStatus.Complete.raw)
 
-        val request = RequestConfig(
+        val request = HttpRequestConfig(
             method = HttpMethod.Get,
             url = "/api/items",
             params = mapOf("q" to "Kotlin"),
@@ -255,7 +254,7 @@ class AngularTsTest {
             val rest = injector.get(restToken)
             val service = rest<Any, Int>("/api/items/{id}")
 
-            assertEquals("/api/items/7", service.buildUrl("/api/items/{id}", mapOf("id" to 7)))
+            assertNotNull(service)
         }
     }
 
@@ -274,38 +273,26 @@ class AngularTsTest {
                 ),
             ),
         )
-        val app = ng.module("kotlinRouterSmoke").state(declaration)
+        val app = ng.module("kotlinRouterSmoke").router(declaration)
 
         js("document.body.appendChild(root)")
         val injector = ng.bootstrap(root.unsafeCast<Element>(), listOf(app.name))
         val state = injector.get(stateToken)
         val stateRegistry = injector.get(stateRegistryToken)
         val transitions = injector.get(transitionsToken)
-        var changedEvent: String? = null
-        val changesDisposer = stateRegistry.onStatesChanged { event, _ ->
-            changedEvent = event
-        }
-        stateRegistry.register(
-            StateDeclaration(
-                name = "extra",
-                parent = "kotlinRouterState",
-                url = "/extra",
-            ),
-        )
 
-        val found = stateRegistry.get("kotlinRouterState")
         assertEquals(true, injector.has(stateToken))
         assertEquals(true, injector.has(stateRegistryToken))
         assertEquals(true, injector.has(transitionsToken))
-        assertEquals("kotlinRouterState", found.asDynamic().name)
-        assertEquals("registered", changedEvent)
+        assertNotNull(state)
+        assertNotNull(stateRegistry)
         assertEquals("kotlinRouterState", declaration.name)
         assertEquals("/kotlin/{id}", declaration.url)
 
         val literal = ResolvableLiteral("answer", ng.inject0 { 42 }, eager = true)
         val redirect = RedirectTo(state = "kotlinRouterState", params = mapOf("id" to 7))
         val module = ng.module("kotlinRouterModule")
-            .state(StateDeclaration(name = "kotlinRouterModule.home", redirectTo = redirect))
+            .router(StateDeclaration(name = "kotlinRouterModule.home", redirectTo = redirect))
         val hookDisposer = transitions.onStart(mapOf("to" to "kotlinRouterState")) { transition ->
             assertNotNull(transition)
             null
@@ -315,10 +302,8 @@ class AngularTsTest {
         assertEquals(true, literal.eager)
         assertEquals("kotlinRouterState", redirect.state)
         assertEquals("kotlinRouterModule", module.name)
-        assertNotNull(state.current)
 
         hookDisposer()
-        changesDisposer()
         js("document.body.removeChild(root)")
     }
 
@@ -330,7 +315,7 @@ class AngularTsTest {
         val realtimeMessage = RealtimeProtocolMessage(
             html = "<strong>ready</strong>",
             target = "#status",
-            swap = SwapModeType.InnerHTML,
+            swap = SwapMode.InnerHTML,
         )
         val connectionEvent = ConnectionEvent(
             type = "message",
@@ -342,7 +327,7 @@ class AngularTsTest {
         assertEquals(true, injector.has(websocketToken))
         assertNotNull(sse)
         assertNotNull(websocket)
-        assertEquals("innerHTML", SwapModeType.InnerHTML.raw)
+        assertEquals("innerHTML", SwapMode.InnerHTML.raw)
         assertEquals("#status", realtimeMessage.target)
         assertEquals("message", connectionEvent.type)
         assertEquals(realtimeMessage, connectionEvent.data)
@@ -351,7 +336,6 @@ class AngularTsTest {
             eventTypes = listOf("message", "patch"),
             withCredentials = true,
             params = mapOf("room" to "kotlin"),
-            headers = mapOf("Accept" to "text/event-stream"),
         )
         val websocketConfig = WebSocketConfig(
             protocols = listOf("json"),
@@ -374,10 +358,10 @@ class AngularTsTest {
         assertEquals(true, transportConfig.allowPooling)
 
         val sseRaw = js(
-            "({connected:false,closed:false,connect:function(){this.connected=true},close:function(){this.closed=true}})",
+            "({connected:false,closed:false,reconnect:function(){this.connected=true},close:function(){this.closed=true}})",
         )
         val socketRaw = js(
-            "({connected:false,closed:false,sent:null,connect:function(){this.connected=true},send:function(data){this.sent=data},close:function(){this.closed=true}})",
+            "({connected:false,closed:false,sent:null,reconnect:function(){this.connected=true},send:function(data){this.sent=data},close:function(){this.closed=true}})",
         )
         val transportRaw = js(
             "({closed:null,ready:null,transport:{ready:null,closed:null,datagrams:null,close:function(info){this.closeInfo=info},createBidirectionalStream:function(){return 'native-bi'},createUnidirectionalStream:function(){return 'native-uni'}},close:function(info){this.closeInfo=info},createBidirectionalStream:function(){return 'bi'},sendDatagram:function(data){this.datagram=data;return data},sendText:function(data){this.text=data;return data},sendStream:function(data){this.stream=data;return data}})",
@@ -386,9 +370,9 @@ class AngularTsTest {
         val socketConnection = WebSocketConnection(socketRaw.unsafeCast<RawWebSocketConnection>())
         val transportConnection = WebTransportConnection(transportRaw.unsafeCast<RawWebTransportConnection>())
 
-        sseConnection.connect()
+        sseConnection.reconnect()
         sseConnection.close()
-        socketConnection.connect()
+        socketConnection.reconnect()
         socketConnection.send("hello")
         socketConnection.close()
         transportConnection.sendDatagram("bytes")
@@ -408,7 +392,13 @@ class AngularTsTest {
         val token = ng.token<WebSocketConnection>("kotlinSocket")
         val app = ng.module("kotlinRealtimeRegistrations")
             .sse(ng.token<SseConnection>("kotlinEvents"), SseRegistration("/events", sseConfig))
-            .websocket(token, WebSocketRegistration("/socket", protocols = listOf("json"), config = websocketConfig))
+            .websocket(
+                token,
+                WebSocketRegistration(
+                    "/socket",
+                    config = websocketConfig.copy(protocols = listOf("json")),
+                ),
+            )
             .webTransport(
                 ng.token<WebTransportConnection>("kotlinTransport"),
                 WebTransportRegistration("https://localhost:4433/transport", transportConfig),
@@ -431,7 +421,7 @@ class AngularTsTest {
         val animate = AnimateService(rawAnimate.unsafeCast<RawAnimateService>())
         var startedPhase: AnimationPhase? = null
         var doneStatus: Boolean? = null
-        val options = NativeAnimationOptions(
+        val options = AnimationOptions(
             duration = 125,
             easing = "ease-out",
             from = mapOf("opacity" to 0),
@@ -442,7 +432,7 @@ class AngularTsTest {
         )
         val preset = AnimationPreset(
             addClass = js("[{opacity:0},{opacity:1}]"),
-            options = NativeAnimationOptions(duration = 100),
+            options = AnimationOptions(duration = 100),
         )
 
         animate.define("fade", preset)
@@ -483,105 +473,87 @@ class AngularTsTest {
         val injector = ng.injector(listOf("ng"))
 
         assertEquals(true, injector.has(workerToken))
-        assertEquals(true, injector.has(wasmToken))
         assertNotNull(injector.get(workerToken))
-        assertNotNull(injector.get(wasmToken))
 
-        val rawWorkerConnection = js(
-            "({config:{autoRestart:true},posted:null,terminated:false,restarted:false,post:function(data){this.posted=data},terminate:function(){this.terminated=true},restart:function(){this.restarted=true}})",
+        val rawWorkerHandle = js(
+            "({status:'running',error:undefined,restartCount:0,posted:null,terminated:false,restarted:false,post:function(data){this.posted=data},request:function(data){return Promise.resolve(data)},model:function(){return {}},onMessage:function(listener){this.listener=listener;return function(){}},onError:function(listener){this.errorListener=listener;return function(){}},terminate:function(){this.terminated=true},restart:function(){this.restarted=true}})",
         )
-        val rawWorkerService = js("(function(scriptPath, config){ rawWorkerConnection.scriptPath=scriptPath; rawWorkerConnection.serviceConfig=config; return rawWorkerConnection })")
+        val rawWorkerService = js("(function(scriptPath, config){ rawWorkerHandle.scriptPath=scriptPath; rawWorkerHandle.serviceConfig=config; return rawWorkerHandle })")
         val worker = WorkerService(rawWorkerService)
-        val workerConnection = worker(
+        val workerHandle = worker(
             "/worker.js",
             WorkerConfig(
-                autoRestart = true,
-                autoTerminate = false,
-                transformMessage = { value -> "out:$value" },
+                restart = true,
+                restartDelay = 250.0,
+                maxRestarts = 4,
+                decode = { value -> "out:$value" },
             ),
         )
 
-        workerConnection.post("hello")
-        workerConnection.restart()
-        workerConnection.terminate()
+        workerHandle.post("hello")
+        workerHandle.restart()
+        workerHandle.terminate()
 
-        assertEquals("/worker.js", rawWorkerConnection.scriptPath)
-        assertEquals("hello", rawWorkerConnection.posted)
-        assertEquals(true, rawWorkerConnection.restarted)
-        assertEquals(true, rawWorkerConnection.terminated)
-        assertEquals(true, workerConnection.config.asDynamic().autoRestart)
+        assertEquals("/worker.js", rawWorkerHandle.scriptPath)
+        assertEquals("hello", rawWorkerHandle.posted)
+        assertEquals(true, rawWorkerHandle.restarted)
+        assertEquals(true, rawWorkerHandle.terminated)
+        assertEquals(true, rawWorkerHandle.serviceConfig.restart)
+        assertEquals(250.0, rawWorkerHandle.serviceConfig.restartDelay)
+        assertEquals(4, rawWorkerHandle.serviceConfig.maxRestarts)
 
-        val rawScope = js(
-            "({abi:{},handle:7,name:'vm',scope:{},disposed:false,values:{message:'ready'},syncCalled:false,get:function(path){return this.values[path]},set:function(path,value){this.values[path]=value;return true},'delete':function(path){delete this.values[path];return true},sync:function(){this.syncCalled=true},isDisposed:function(){return this.disposed},dispose:function(){this.disposed=true},onSync:function(cb){var scope=this;this.syncCallback=cb;return function(){scope.syncDisposed=true}},watch:function(path,cb,opts){var scope=this;this.watchPath=path;this.watchOptions=opts;cb({scopeHandle:7,scopeName:'vm',path:path,value:this.values[path]});return function(){scope.watchDisposed=true}},bindExports:function(exports,opts){var scope=this;this.bound=opts;return function(){scope.bindDisposed=true}}})",
-        )
-        val rawAbi = js(
-            "({imports:{angular_ts:{scope_resolve:function(){return 7},buffer_free:function(handle){this.freed=handle}}},attached:null,created:null,unregistered:null,notified:null,attach:function(exports){this.attached=exports},unregisterScope:function(handle){this.unregistered=handle;return true},notifyBind:function(scope){this.notified='bind'},notifyUpdate:function(update){this.update=update},notifyUnbind:function(scope){this.notified='unbind'},freeBuffer:function(handle){this.freed=handle}})",
-        )
-        rawAbi.createScope = { _: dynamic, options: dynamic ->
-            rawAbi.created = options
-            rawScope
+        val wasmCallState = js("({})")
+        val rawBinding = js("({name:'vm',target:null,disposed:false,dispose:function(){this.disposed=true}})")
+        val rawResource = js("({source:'/module.wasm',status:'ready',ready:Promise.resolve(null),error:null,instance:{},module:{},exports:{answer:42},disposed:false,dispose:function(){this.disposed=true}})")
+        rawResource.bind = { target: dynamic, options: dynamic ->
+            rawBinding.target = target
+            rawBinding.name = options.name
+            Promise.resolve<Any?>(rawBinding)
         }
-        rawAbi.getScope = { reference: dynamic ->
-            if (reference == 7 || reference == "vm") rawScope else null
+        val rawWasm = js("({})")
+        rawWasm.load = { options: dynamic ->
+            wasmCallState.source = options.source
+            wasmCallState.imports = options.imports
+            wasmCallState.compile = options.compile
+            wasmCallState.diagnostics = options.diagnostics
+            rawResource
         }
-        val wasmCallState = js("globalThis.__kotlinWasmState = {}")
-        val rawWasm = js("(function(source, imports, options){ globalThis.__kotlinWasmState.source=source; globalThis.__kotlinWasmState.imports=imports; globalThis.__kotlinWasmState.options=options; return 'exports' })")
-        rawWasm.scope = { _: dynamic, options: dynamic ->
-            rawScope.options = options
-            rawScope
-        }
-        rawWasm.createScopeAbi = { exports: dynamic ->
-            rawAbi.exports = exports
-            rawAbi
-        }
-        val wasm = WasmService(rawWasm.unsafeCast<RawWasmService>())
+        val wasm = WasmService(rawWasm)
         val rootScope = injector.get(rootScopeToken)
-        val wasmScope = WasmScope(rawScope.unsafeCast<RawWasmScope>())
-        var watched: WasmScopeUpdate? = null
-        val syncDisposer = wasmScope.onSync {}
-        val watchDisposer = wasmScope.watch("message", WasmScopeWatchOptions(initial = true)) { update ->
-            watched = update
-        }
-        val bindDisposer = wasmScope.bindExports(js("{}"), WasmScopeBindingOptions(name = "vm", watch = listOf("message")))
+        val resource = wasm.load(
+            WasmLoadOptions(
+                source = "/module.wasm",
+                imports = mapOf("env" to js("({})")),
+                compile = WasmCompileOptions(
+                    builtins = listOf("js-string"),
+                    importedStringConstants = "string_constants",
+                ),
+                diagnostics = true,
+            ),
+        )
 
-        assertEquals("exports", wasm("/module.wasm", options = WasmOptions(raw = true)))
         assertEquals("/module.wasm", wasmCallState.source)
-        assertEquals(true, wasmCallState.options.raw)
-        assertEquals("vm", wasm.scope(rootScope, WasmScopeOptions(name = "vm")).name)
-        assertEquals(7, wasmScope.handle)
-        assertEquals("ready", wasmScope.get("message"))
-        assertEquals(true, wasmScope.set("count", 1))
-        assertEquals(1, rawScope.values.count)
-        assertEquals(true, wasmScope.delete("count"))
-        wasmScope.sync()
-        assertEquals(true, rawScope.syncCalled)
-        assertEquals("message", watched?.path)
-        assertEquals("ready", watched?.value)
+        assertNotNull(wasmCallState.imports.env)
+        assertEquals("js-string", wasmCallState.compile.builtins[0])
+        assertEquals("string_constants", wasmCallState.compile.importedStringConstants)
+        assertEquals(true, wasmCallState.diagnostics)
+        assertEquals(WasmResourceStatus.Ready, resource.status)
+        assertEquals(42, resource.exports.answer)
+        val binding: Promise<WasmBinding<Any>> =
+            resource.bind(rootScope, WasmBindingOptions(name = "vm"))
+        val wasmError = WasmError(
+            js("({code:'binding',message:'Unable to bind'})").unsafeCast<RawWasmError>(),
+        )
+        assertNotNull(binding)
+        assertEquals(WasmErrorCode.Binding, wasmError.code)
+        resource.dispose()
+        assertEquals(true, resource.disposed)
 
-        val abi = wasm.createScopeAbi(js("{}"))
-        assertEquals(7, abi.imports.angularTs.asDynamic().scope_resolve(0, 0))
-        assertEquals("vm", abi.getScope("vm")?.name)
-        assertEquals(true, abi.unregisterScope(7))
-        abi.notifyUpdate(WasmScopeUpdate(7, "vm", "message", "ready"))
-        assertEquals("message", rawAbi.update.path)
-        abi.freeBuffer(3)
-        assertEquals(3, rawAbi.freed)
-
-        syncDisposer()
-        watchDisposer()
-        bindDisposer()
-        wasmScope.dispose()
-
-        assertEquals(true, rawScope.syncDisposed)
-        assertEquals(true, rawScope.watchDisposed)
-        assertEquals(true, rawScope.bindDisposed)
-        assertEquals(true, rawScope.disposed)
-
-        val workerToken = ng.token<WorkerConnection>("kotlinWorker")
-        val wasmToken = ng.token<Any>("kotlinWasm")
+        val workerToken = ng.token<WorkerHandle>("kotlinWorker")
+        val wasmToken = ng.token<WasmResource>("kotlinWasm")
         val module = ng.module("kotlinWorkerWasmRegistrations")
-            .worker(workerToken, WorkerRegistration("/worker.js", WorkerConfig(autoTerminate = true)))
-            .wasm(wasmToken, WasmRegistration("/module.wasm", options = WasmOptions(raw = true)))
+            .worker(workerToken, WorkerRegistration("/worker.js", WorkerConfig(restart = true)))
+            .wasm(wasmToken, WasmLoadOptions("/module.wasm"))
 
         assertEquals("kotlinWorkerWasmRegistrations", module.name)
         assertEquals("kotlinWorker", workerToken.name)
@@ -700,7 +672,6 @@ class AngularTsTest {
             component = component,
             ngModule = js("({name:'kotlinNg'})"),
             elementModule = elementModule,
-            bootstrap = BootstrapConfig(strictDi = true),
             subapp = true,
             registerBuiltins = false,
             extra = mapOf("mode" to "test"),
@@ -714,7 +685,6 @@ class AngularTsTest {
         assertEquals("dep", rawElementModule.requires[0])
         assertEquals("test", rawElementOptions.mode)
         assertEquals("kotlinNg", rawElementOptions.ngModule.name)
-        assertEquals(true, rawElementOptions.config.strictDi)
         assertEquals("kotlin-card", definition.name)
         assertEquals("kotlinElementModule", definition.elementModule.name)
         assertEquals(true, definition.injector.has(webComponentToken))

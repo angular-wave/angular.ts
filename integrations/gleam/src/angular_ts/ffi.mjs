@@ -34,12 +34,24 @@ export function call_method1(target, method, arg1) {
   return target[method](arg1);
 }
 
+export function call_method0(target, method) {
+  return target[method]();
+}
+
 export function call_method2(target, method, arg1, arg2) {
   return target[method](arg1, arg2);
 }
 
 export function call_method3(target, method, arg1, arg2, arg3) {
   return target[method](arg1, arg2, arg3);
+}
+
+export function call_function0(target) {
+  return target();
+}
+
+export function call_function2(target, arg1, arg2) {
+  return target(arg1, arg2);
 }
 
 export function annotated_array(tokens, factory) {
@@ -50,8 +62,8 @@ export function angular_module(name, requires) {
   return getAngular().module(name, requires);
 }
 
-export function angular_bootstrap(root, modules, config) {
-  return getAngular().bootstrap(root, modules, config);
+export function angular_bootstrap(root, modules) {
+  return getAngular().bootstrap(root, modules);
 }
 
 export function document_body() {

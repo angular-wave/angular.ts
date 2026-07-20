@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectWasmAbiConformance } from "../../abi-conformance.ts";
 
 test("Rust scope bridge propagates browser scope updates into Wasm", async ({
   page,
@@ -38,6 +39,7 @@ test("Rust scope bridge propagates browser scope updates into Wasm", async ({
 
   expect(bootstrapRequests.length).toBeGreaterThan(0);
   expect(wasmRequests.length).toBeGreaterThan(0);
+  await expectWasmAbiConformance(page);
 
   await expect(page.locator("#scope-count")).toHaveText("Count: 0");
   await expect(page.locator("#scope-seen")).toHaveText("Seen by Rust: 0");

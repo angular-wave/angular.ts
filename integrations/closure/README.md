@@ -9,7 +9,7 @@ generated externs are also shipped with the core package:
 
 - `externs/angular.js` describes the public AngularTS API and mirrors
   the public `ng` namespace with documented structural Closure externs.
-- The root `make build` target validates that file and copies it to
+- The root `make release-build` target validates that file and copies it to
   `dist/externs/angular.js`, which is exported from npm as
   `@angular-wave/angular.ts/externs/angular.js`.
 - `demo/app.js` registers the Closure-compiled todo app with AngularTS.
@@ -35,6 +35,16 @@ Supported direction:
 
 - Closure compiles user application code.
 - AngularTS is loaded as a prebuilt external global.
+
+## WASM Scope And App Models
+
+Closure externs may describe `WasmScope` because it is part of the public
+namespace. That type is the view-scope ABI only. Closure and ClojureScript
+facades should use it for DOM/root-scoped controller or component state.
+App-owned state belongs to `app.model(...)` and should synchronize with
+external runtimes through host-side AngularTS services or `model.$sync(...)`
+targets. Do not add model handles or model watch imports unless the shared WASM
+ABI adds that surface.
 
 ## Commands
 

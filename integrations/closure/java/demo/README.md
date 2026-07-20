@@ -8,6 +8,15 @@ The build runs J2CL with Closure Compiler `ADVANCED_OPTIMIZATIONS` and an
 explicit application entry point. The page loads the optimized bundle and calls
 `j2clTodoMain()` to register the AngularTS module.
 
+The Java code does not inject or mutate `$scope`. `TodoController` owns the
+domain state and actions, while `App.native.js` adapts that controller into an
+AngularTS `app.model("todoModel", ...)` service. The registered `TodoCtrl`
+returns that model, so the page can use `TodoCtrl as $ctrl`, `ng-model`, and
+normal event directives without any Java-side template synchronization helper.
+
+Native JS facade properties that AngularTS templates read must stay quoted so
+Closure `ADVANCED_OPTIMIZATIONS` does not rename them.
+
 Build the bindings and demo from the repository root:
 
 ```bash

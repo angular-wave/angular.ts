@@ -3,6 +3,7 @@ package org.angular.ts.demo.j2cl;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -10,20 +11,23 @@ import jsinterop.base.JsPropertyMap;
 /** AngularTS controller implemented in Java and compiled with J2CL. */
 @JsType(namespace = JsPackage.GLOBAL, name = "J2clTodoController")
 public final class TodoController {
-  private final JsPropertyMap<Object> scope;
   private double nextId = 3;
-  private String greeting = "J2CL Todo App";
-  private String newTodo = "";
-  private double remainingCount = 2;
-  private Todo[] tasks = {
+  @JsProperty
+  public String greeting = "J2CL Todo App";
+  @JsProperty
+  public String newTodo = "";
+  @JsProperty
+  public double remainingCount = 2;
+  @JsProperty
+  public Todo[] tasks = {
     new Todo(1, "Learn AngularTS", false),
     new Todo(2, "Compile the todo app with J2CL", false)
   };
 
   @JsConstructor
-  public TodoController(Object scope) {
-    this.scope = Js.asPropertyMap(scope);
-    syncTemplateState();
+  public TodoController() {
+    publishActions();
+    publishState();
   }
 
   private void addTodo(String task) {
@@ -39,20 +43,20 @@ public final class TodoController {
     tasks = nextTasks;
     newTodo = "";
     syncRemaining();
-    syncTemplateState();
+    publishState();
   }
 
   private void toggleTodo(Todo todo) {
-    todo.setDone(!todo.isDone());
+    todo.setDone(!todo.done);
     syncRemaining();
-    syncTemplateState();
+    publishState();
   }
 
   private void archiveTodos() {
     int activeCount = 0;
 
     for (Todo todo : tasks) {
-      if (!todo.isDone()) {
+      if (!todo.done) {
         activeCount++;
       }
     }
@@ -61,21 +65,21 @@ public final class TodoController {
     int cursor = 0;
 
     for (Todo todo : tasks) {
-      if (!todo.isDone()) {
+      if (!todo.done) {
         active[cursor++] = todo;
       }
     }
 
     tasks = active;
     syncRemaining();
-    syncTemplateState();
+    publishState();
   }
 
   private void syncRemaining() {
     int remaining = 0;
 
     for (Todo todo : tasks) {
-      if (!todo.isDone()) {
+      if (!todo.done) {
         remaining++;
       }
     }
@@ -83,14 +87,19 @@ public final class TodoController {
     remainingCount = remaining;
   }
 
-  private void syncTemplateState() {
-    scope.set("greeting", greeting);
-    scope.set("newTodo", newTodo);
-    scope.set("remainingCount", remainingCount);
-    scope.set("tasks", tasks);
-    scope.set("add", (AddFn) this::addTodo);
-    scope.set("toggle", (ToggleFn) this::toggleTodo);
-    scope.set("archive", (ArchiveFn) this::archiveTodos);
+  private void publishState() {
+    JsPropertyMap<Object> self = Js.asPropertyMap(this);
+    self.set("greeting", greeting);
+    self.set("newTodo", newTodo);
+    self.set("remainingCount", remainingCount);
+    self.set("tasks", tasks);
+  }
+
+  private void publishActions() {
+    JsPropertyMap<Object> self = Js.asPropertyMap(this);
+    self.set("add", (AddFn) this::addTodo);
+    self.set("toggle", (ToggleFn) this::toggleTodo);
+    self.set("archive", (ArchiveFn) this::archiveTodos);
   }
 
   @JsFunction

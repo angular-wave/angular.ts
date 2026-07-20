@@ -8,9 +8,7 @@ import angular.ts.generated.CompileService as RawCompileService
 import angular.ts.generated.ControllerService as RawControllerService
 import angular.ts.generated.CookieService as RawCookieService
 import angular.ts.generated.ExceptionHandlerService as RawExceptionHandlerService
-import angular.ts.generated.FilterProvider as RawFilterProvider
 import angular.ts.generated.FilterService as RawFilterService
-import angular.ts.generated.HttpParamSerializerProvider as RawHttpParamSerializerProvider
 import angular.ts.generated.HttpParamSerializerService as RawHttpParamSerializerService
 import angular.ts.generated.HttpService as RawHttpService
 import angular.ts.generated.InjectorService as RawInjectorService
@@ -18,7 +16,6 @@ import angular.ts.generated.InterpolateService as RawInterpolateService
 import angular.ts.generated.LocationService as RawLocationService
 import angular.ts.generated.LogService as RawLogService
 import angular.ts.generated.ParseService as RawParseService
-import angular.ts.generated.ProvideService as RawProvideService
 import angular.ts.generated.RestFactory as RawRestFactory
 import angular.ts.generated.Scope as RawScope
 import angular.ts.generated.SseService as RawSseService
@@ -26,15 +23,14 @@ import angular.ts.generated.StateRegistryService as RawStateRegistryService
 import angular.ts.generated.StateService as RawStateService
 import angular.ts.generated.TemplateCacheService as RawTemplateCacheService
 import angular.ts.generated.TemplateRequestService as RawTemplateRequestService
-import angular.ts.generated.TransitionService as RawTransitionService
-import angular.ts.generated.WasmService as RawWasmService
+import angular.ts.generated.TransitionsService as RawTransitionsService
 import angular.ts.generated.WebComponentService as RawWebComponentService
 import angular.ts.generated.WebSocketService as RawWebSocketService
 import angular.ts.generated.WebTransportService as RawWebTransportService
 import org.w3c.dom.Element
 
-public val angularToken: Token<AngularService> =
-    Token("\$angular") { value -> AngularService(value.unsafeCast<RawAngular>()) }
+public val angularToken: Token<Angular> =
+    Token("\$angular") { value -> Angular(value.unsafeCast<RawAngular>()) }
 
 public val anchorScrollToken: Token<AnchorScrollService> =
     Token("\$anchorScroll") { value -> AnchorScrollService(value.unsafeCast<RawAnchorScrollService>()) }
@@ -78,7 +74,9 @@ public val httpParamSerializerToken: Token<HttpParamSerializerService> =
     }
 
 public val injectorToken: Token<Injector> =
-    Token("\$injector") { value -> Injector(value.unsafeCast<RawInjectorService>()) }
+    Token("\$injector") { value ->
+        Injector(value.unsafeCast<RawInjectorService<Any?>>())
+    }
 
 public val interpolateToken: Token<InterpolateService> =
     Token("\$interpolate") { value -> InterpolateService(value.unsafeCast<RawInterpolateService>()) }
@@ -96,7 +94,7 @@ public val restToken: Token<RestFactory> =
     Token("\$rest") { value -> RestFactory(value.unsafeCast<RawRestFactory>()) }
 
 public val stateToken: Token<StateService> =
-    Token("\$state") { value -> StateService(value.unsafeCast<RawStateService>()) }
+    Token("\$state") { value -> StateService(value.unsafeCast<RawStateService<Any?>>()) }
 
 public val stateRegistryToken: Token<StateRegistryService> =
     Token("\$stateRegistry") { value -> StateRegistryService(value.unsafeCast<RawStateRegistryService>()) }
@@ -104,17 +102,14 @@ public val stateRegistryToken: Token<StateRegistryService> =
 public val sseToken: Token<SseService> =
     Token("\$sse") { value -> SseService(value.unsafeCast<RawSseService>()) }
 
-public val provideToken: Token<ProvideService> =
-    Token("\$provide") { value -> ProvideService(value.unsafeCast<RawProvideService>()) }
-
 public val templateCacheToken: Token<TemplateCacheService> =
     Token("\$templateCache") { value -> TemplateCacheService(value.unsafeCast<RawTemplateCacheService>()) }
 
 public val templateRequestToken: Token<TemplateRequestService> =
     Token("\$templateRequest") { value -> TemplateRequestService(value.unsafeCast<RawTemplateRequestService>()) }
 
-public val transitionsToken: Token<TransitionService> =
-    Token("\$transitions") { value -> TransitionService(value.unsafeCast<RawTransitionService>()) }
+public val transitionsToken: Token<TransitionsService> =
+    Token("\$transitions") { value -> TransitionsService(value.unsafeCast<RawTransitionsService>()) }
 
 public val websocketToken: Token<WebSocketService> =
     Token("\$websocket") { value -> WebSocketService(value.unsafeCast<RawWebSocketService>()) }
@@ -129,48 +124,4 @@ public val workerToken: Token<WorkerService> =
     Token("\$worker") { value -> WorkerService(value) }
 
 public val wasmToken: Token<WasmService> =
-    Token("\$wasm") { value -> WasmService(value.unsafeCast<RawWasmService>()) }
-
-public val filterProviderToken: Token<FilterProvider> =
-    Token("\$filterProvider") { value -> FilterProvider(value.unsafeCast<RawFilterProvider>()) }
-
-public val animateProviderToken: Token<AnimateProvider> =
-    Token("\$animateProvider") { value -> AnimateProvider(value) }
-
-public val httpProviderToken: Token<HttpProvider> =
-    Token("\$httpProvider") { value -> HttpProvider(value) }
-
-public val httpParamSerializerProviderToken: Token<HttpParamSerializerProvider> =
-    Token("\$httpParamSerializerProvider") { value ->
-        HttpParamSerializerProvider(value.unsafeCast<RawHttpParamSerializerProvider>())
-    }
-
-public val restProviderToken: Token<RestProvider> =
-    Token("\$restProvider") { value -> RestProvider(value) }
-
-public val sseProviderToken: Token<SseProvider> =
-    Token("\$sseProvider") { value -> SseProvider(value) }
-
-public val stateProviderToken: Token<StateService> =
-    Token("\$stateProvider") { value -> StateService(value.unsafeCast<RawStateService>()) }
-
-public val stateRegistryProviderToken: Token<StateRegistryService> =
-    Token("\$stateRegistryProvider") { value -> StateRegistryService(value.unsafeCast<RawStateRegistryService>()) }
-
-public val transitionsProviderToken: Token<TransitionService> =
-    Token("\$transitionsProvider") { value -> TransitionService(value.unsafeCast<RawTransitionService>()) }
-
-public val websocketProviderToken: Token<WebSocketProvider> =
-    Token("\$websocketProvider") { value -> WebSocketProvider(value) }
-
-public val webTransportProviderToken: Token<WebTransportProvider> =
-    Token("\$webTransportProvider") { value -> WebTransportProvider(value) }
-
-public val webComponentProviderToken: Token<WebComponentProvider> =
-    Token("\$webComponentProvider") { value -> WebComponentProvider(value) }
-
-public val workerProviderToken: Token<WorkerProvider> =
-    Token("\$workerProvider") { value -> WorkerProvider(value) }
-
-public val wasmProviderToken: Token<WasmProvider> =
-    Token("\$wasmProvider") { value -> WasmProvider(value) }
+    Token("\$wasm") { value -> WasmService(value) }

@@ -149,21 +149,25 @@ function collectNamespaceMetadata() {
 
 function collectReferencedTypeNames() {
   const names = new Set();
-  const program = createNamespaceProgram();
-  const checker = program.getTypeChecker();
-  const sourceFile = program.getSourceFile(namespacePath);
 
-  visit(sourceFile);
-  return names;
+  for (const filePath of dtsFiles(typesRoot)) {
+    const source = fs.readFileSync(filePath, "utf8");
 
-  function visit(node) {
-    if (ts.isTypeReferenceNode(node)) {
-      const symbol = checker.getSymbolAtLocation(node.typeName);
-      if (symbol) names.add(symbol.getName());
+    for (const match of source.matchAll(/\b[A-Za-z_][A-Za-z0-9_]*\b/g)) {
+      names.add(match[0]);
     }
-
-    ts.forEachChild(node, visit);
   }
+
+  return names;
+}
+
+function dtsFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const filePath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) return dtsFiles(filePath);
+    return filePath.endsWith(".d.ts") ? [filePath] : [];
+  });
 }
 
 function createNamespaceProgram() {

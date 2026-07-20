@@ -1,8 +1,8 @@
+import * as __wbg_star0 from '../.angular-ts/abi.js';
+
 let wasm;
 
-const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
-
-if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
+let WASM_VECTOR_LEN = 0;
 
 let cachedUint8ArrayMemory0 = null;
 
@@ -12,63 +12,6 @@ function getUint8ArrayMemory0() {
     }
     return cachedUint8ArrayMemory0;
 }
-
-function getStringFromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
-}
-
-const heap = new Array(128).fill(undefined);
-
-heap.push(undefined, null, true, false);
-
-let heap_next = heap.length;
-
-function addHeapObject(obj) {
-    if (heap_next === heap.length) heap.push(heap.length + 1);
-    const idx = heap_next;
-    heap_next = heap[idx];
-
-    heap[idx] = obj;
-    return idx;
-}
-
-function handleError(f, args) {
-    try {
-        return f.apply(this, args);
-    } catch (e) {
-        wasm.__wbindgen_exn_store(addHeapObject(e));
-    }
-}
-
-function getObject(idx) { return heap[idx]; }
-
-function isLikeNone(x) {
-    return x === undefined || x === null;
-}
-
-let cachedDataViewMemory0 = null;
-
-function getDataViewMemory0() {
-    if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer.detached === true || (cachedDataViewMemory0.buffer.detached === undefined && cachedDataViewMemory0.buffer !== wasm.memory.buffer)) {
-        cachedDataViewMemory0 = new DataView(wasm.memory.buffer);
-    }
-    return cachedDataViewMemory0;
-}
-
-function dropObject(idx) {
-    if (idx < 132) return;
-    heap[idx] = heap_next;
-    heap_next = idx;
-}
-
-function takeObject(idx) {
-    const ret = getObject(idx);
-    dropObject(idx);
-    return ret;
-}
-
-let WASM_VECTOR_LEN = 0;
 
 const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available') } } );
 
@@ -123,22 +66,120 @@ function passStringToWasm0(arg, malloc, realloc) {
     WASM_VECTOR_LEN = offset;
     return ptr;
 }
+
+let cachedDataViewMemory0 = null;
+
+function getDataViewMemory0() {
+    if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer.detached === true || (cachedDataViewMemory0.buffer.detached === undefined && cachedDataViewMemory0.buffer !== wasm.memory.buffer)) {
+        cachedDataViewMemory0 = new DataView(wasm.memory.buffer);
+    }
+    return cachedDataViewMemory0;
+}
+
+function addToExternrefTable0(obj) {
+    const idx = wasm.__externref_table_alloc();
+    wasm.__wbindgen_export_4.set(idx, obj);
+    return idx;
+}
+
+function handleError(f, args) {
+    try {
+        return f.apply(this, args);
+    } catch (e) {
+        const idx = addToExternrefTable0(e);
+        wasm.__wbindgen_exn_store(idx);
+    }
+}
+
+const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+
+if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
+
+function getStringFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
+}
+
+function debugString(val) {
+    // primitive types
+    const type = typeof val;
+    if (type == 'number' || type == 'boolean' || val == null) {
+        return  `${val}`;
+    }
+    if (type == 'string') {
+        return `"${val}"`;
+    }
+    if (type == 'symbol') {
+        const description = val.description;
+        if (description == null) {
+            return 'Symbol';
+        } else {
+            return `Symbol(${description})`;
+        }
+    }
+    if (type == 'function') {
+        const name = val.name;
+        if (typeof name == 'string' && name.length > 0) {
+            return `Function(${name})`;
+        } else {
+            return 'Function';
+        }
+    }
+    // objects
+    if (Array.isArray(val)) {
+        const length = val.length;
+        let debug = '[';
+        if (length > 0) {
+            debug += debugString(val[0]);
+        }
+        for(let i = 1; i < length; i++) {
+            debug += ', ' + debugString(val[i]);
+        }
+        debug += ']';
+        return debug;
+    }
+    // Test for built-in
+    const builtInMatches = /\[object ([^\]]+)\]/.exec(toString.call(val));
+    let className;
+    if (builtInMatches && builtInMatches.length > 1) {
+        className = builtInMatches[1];
+    } else {
+        // Failed to match the standard '[object ClassName]'
+        return toString.call(val);
+    }
+    if (className == 'Object') {
+        // we're a user defined class or Object
+        // JSON.stringify avoids problems with cycles, and is generally much
+        // easier than looping through ownProperties of `val`.
+        try {
+            return 'Object(' + JSON.stringify(val) + ')';
+        } catch (_) {
+            return 'Object';
+        }
+    }
+    // errors
+    if (val instanceof Error) {
+        return `${val.name}: ${val.message}\n${val.stack}`;
+    }
+    // TODO we could test for more things here, like `Set`s and `Map`s.
+    return className;
+}
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
 /**
  * @returns {string}
  */
-export function __ng_manifest() {
+export function __ng_component_ScopeProbe_bridgeMetadata() {
     let deferred1_0;
     let deferred1_1;
     try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__ng_manifest(retptr);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        deferred1_0 = r0;
-        deferred1_1 = r1;
-        return getStringFromWasm0(r0, r1);
+        const ret = wasm.__ng_component_ScopeProbe_bridgeMetadata();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
@@ -150,15 +191,27 @@ export function __ng_component_ScopeProbe_fieldBridgeMetadata() {
     let deferred1_0;
     let deferred1_1;
     try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__ng_component_ScopeProbe_fieldBridgeMetadata(retptr);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        deferred1_0 = r0;
-        deferred1_1 = r1;
-        return getStringFromWasm0(r0, r1);
+        const ret = wasm.__ng_component_ScopeProbe_fieldBridgeMetadata();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * @returns {string}
+ */
+export function __ng_manifest() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.__ng_manifest();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
@@ -168,24 +221,11 @@ function _assertClass(instance, klass) {
         throw new Error(`expected instance of ${klass.name}`);
     }
 }
-/**
- * @returns {string}
- */
-export function __ng_component_ScopeProbe_bridgeMetadata() {
-    let deferred1_0;
-    let deferred1_1;
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__ng_component_ScopeProbe_bridgeMetadata(retptr);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        deferred1_0 = r0;
-        deferred1_1 = r1;
-        return getStringFromWasm0(r0, r1);
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-    }
+
+function takeFromExternrefTable0(idx) {
+    const value = wasm.__wbindgen_export_4.get(idx);
+    wasm.__externref_table_dealloc(idx);
+    return value;
 }
 
 const WasmScopeFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -240,7 +280,10 @@ export class WasmScope {
         const ptr1 = passStringToWasm0(prefix, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         const ret = wasm.wasmscope_named(ptr0, len0, ptr1, len1);
-        return WasmScope.__wrap(ret);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return WasmScope.__wrap(ret[0]);
     }
 }
 
@@ -294,15 +337,11 @@ export class __ng_component_ScopeProbe {
         let deferred1_0;
         let deferred1_1;
         try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.__wbg_get___ng_component_scopeprobe_source(retptr, this.__wbg_ptr);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            deferred1_0 = r0;
-            deferred1_1 = r1;
-            return getStringFromWasm0(r0, r1);
+            const ret = wasm.__wbg_get___ng_component_scopeprobe_source(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
         } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
             wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
         }
     }
@@ -315,11 +354,17 @@ export class __ng_component_ScopeProbe {
         wasm.__wbg_set___ng_component_scopeprobe_source(this.__wbg_ptr, ptr0, len0);
     }
     /**
-     * @param {WasmScope} _scope
+     * @param {number} count
      */
-    constructor(_scope) {
-        _assertClass(_scope, WasmScope);
-        var ptr0 = _scope.__destroy_into_raw();
+    applyCountFromScope(count) {
+        wasm.__ng_component_scopeprobe_applyCountFromScope(this.__wbg_ptr, count);
+    }
+    /**
+     * @param {WasmScope} scope
+     */
+    constructor(scope) {
+        _assertClass(scope, WasmScope);
+        var ptr0 = scope.__destroy_into_raw();
         const ret = wasm.__ng_component_scopeprobe_new(ptr0);
         this.__wbg_ptr = ret >>> 0;
         __ng_component_ScopeProbeFinalization.register(this, this.__wbg_ptr, this);
@@ -327,12 +372,6 @@ export class __ng_component_ScopeProbe {
     }
     increment() {
         wasm.__ng_component_scopeprobe_increment(this.__wbg_ptr);
-    }
-    /**
-     * @param {any} value
-     */
-    applyCountFromScope(value) {
-        wasm.__ng_component_scopeprobe_applyCountFromScope(this.__wbg_ptr, addHeapObject(value));
     }
 }
 
@@ -370,30 +409,99 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
+    imports.wbg.__wbg_String_8f0eb39a4a4c2f66 = function(arg0, arg1) {
+        const ret = String(arg1);
+        const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+        getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+    };
+    imports.wbg.__wbg_from_2a5d3e218e67aa85 = function(arg0) {
+        const ret = Array.from(arg0);
+        return ret;
+    };
+    imports.wbg.__wbg_get_67b2ba62fc30de12 = function() { return handleError(function (arg0, arg1) {
+        const ret = Reflect.get(arg0, arg1);
+        return ret;
+    }, arguments) };
+    imports.wbg.__wbg_get_b9b93047fe3cf45b = function(arg0, arg1) {
+        const ret = arg0[arg1 >>> 0];
+        return ret;
+    };
+    imports.wbg.__wbg_isArray_a1eab7e0d067391b = function(arg0) {
+        const ret = Array.isArray(arg0);
+        return ret;
+    };
+    imports.wbg.__wbg_keys_5c77a08ddc2fb8a6 = function(arg0) {
+        const ret = Object.keys(arg0);
+        return ret;
+    };
+    imports.wbg.__wbg_length_e2d2a49132c1b256 = function(arg0) {
+        const ret = arg0.length;
+        return ret;
+    };
+    imports.wbg.__wbg_new_405e22f390576ce2 = function() {
+        const ret = new Object();
+        return ret;
+    };
+    imports.wbg.__wbg_new_78feb108b6472713 = function() {
+        const ret = new Array();
+        return ret;
+    };
     imports.wbg.__wbg_parse_def2e24ef1252aff = function() { return handleError(function (arg0, arg1) {
         const ret = JSON.parse(getStringFromWasm0(arg0, arg1));
-        return addHeapObject(ret);
+        return ret;
     }, arguments) };
-    imports.wbg.__wbindgen_number_get = function(arg0, arg1) {
-        const obj = getObject(arg1);
-        const ret = typeof(obj) === 'number' ? obj : undefined;
-        getDataViewMemory0().setFloat64(arg0 + 8 * 1, isLikeNone(ret) ? 0 : ret, true);
-        getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
+    imports.wbg.__wbg_set_bb8cecf6a62b9f46 = function() { return handleError(function (arg0, arg1, arg2) {
+        const ret = Reflect.set(arg0, arg1, arg2);
+        return ret;
+    }, arguments) };
+    imports.wbg.__wbg_stringify_f7ed6987935b4a24 = function() { return handleError(function (arg0) {
+        const ret = JSON.stringify(arg0);
+        return ret;
+    }, arguments) };
+    imports.wbg.__wbindgen_debug_string = function(arg0, arg1) {
+        const ret = debugString(arg1);
+        const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+        getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
     };
-    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-        takeObject(arg0);
+    imports.wbg.__wbindgen_init_externref_table = function() {
+        const table = wasm.__wbindgen_export_4;
+        const offset = table.grow(4);
+        table.set(0, undefined);
+        table.set(offset + 0, undefined);
+        table.set(offset + 1, null);
+        table.set(offset + 2, true);
+        table.set(offset + 3, false);
+        ;
+    };
+    imports.wbg.__wbindgen_is_object = function(arg0) {
+        const val = arg0;
+        const ret = typeof(val) === 'object' && val !== null;
+        return ret;
+    };
+    imports.wbg.__wbindgen_number_new = function(arg0) {
+        const ret = arg0;
+        return ret;
     };
     imports.wbg.__wbindgen_string_get = function(arg0, arg1) {
-        const obj = getObject(arg1);
+        const obj = arg1;
         const ret = typeof(obj) === 'string' ? obj : undefined;
         var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len1 = WASM_VECTOR_LEN;
         getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
         getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
     };
+    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
+        const ret = getStringFromWasm0(arg0, arg1);
+        return ret;
+    };
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
+    imports['angular_ts'] = __wbg_star0;
 
     return imports;
 }
@@ -409,7 +517,7 @@ function __wbg_finalize_init(instance, module) {
     cachedUint8ArrayMemory0 = null;
 
 
-
+    wasm.__wbindgen_start();
     return wasm;
 }
 

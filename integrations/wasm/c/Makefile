@@ -1,7 +1,7 @@
 .PHONY: check fmt test typecheck wasm-build js-check browser-test clean
 
 CC ?= cc
-CFLAGS ?= -std=c11 -Wall -Wextra -Werror -Iinclude
+CFLAGS ?= -std=c11 -Wall -Wextra -Werror -Iinclude -I../contracts/generated
 ZIG ?= $(shell if [ -x /snap/zig/current/zig ]; then printf '/snap/zig/current/zig'; elif command -v zig >/dev/null 2>&1; then command -v zig; else printf zig; fi)
 ZIG_LIB_DIR ?= $(shell if [ -d /snap/zig/current/lib ]; then printf '/snap/zig/current/lib'; fi)
 ZIG_GLOBAL_CACHE_DIR ?= /tmp/angular-ts-zig-global-cache
@@ -34,11 +34,12 @@ wasm-build:
 	$(ZIG) cc -target wasm32-freestanding -D__wasm__ -Iinclude -nostdlib \
 		-fno-sanitize=undefined \
 		-Wl,--no-entry \
+		-Wl,--export=ng_abi_version \
 		-Wl,--export=ng_abi_alloc \
 		-Wl,--export=ng_abi_free \
 		-Wl,--export=ng_scope_on_bind \
 		-Wl,--export=ng_scope_on_unbind \
-		-Wl,--export=ng_scope_on_update \
+		-Wl,--export=ng_scope_on_transaction \
 		-Wl,--export=todo_bind \
 		-Wl,--export=todo_add \
 		-Wl,--export=todo_toggle \
@@ -56,7 +57,7 @@ browser-test: wasm-build
 example: $(BUILD_DIR)/todo_example
 	./$(BUILD_DIR)/todo_example
 
-$(BUILD_DIR)/wasm_test: src/angular_ts_wasm.c tests/wasm_test.c include/angular_ts_wasm.h
+$(BUILD_DIR)/wasm_test: src/angular_ts_wasm.c tests/wasm_test.c include/angular_ts_wasm.h ../contracts/generated/player_contract.h
 	mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) src/angular_ts_wasm.c tests/wasm_test.c -o $@
 

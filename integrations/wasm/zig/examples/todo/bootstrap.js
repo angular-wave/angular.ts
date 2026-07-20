@@ -1,55 +1,50 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
+import { wasmModule } from "@angular-wave/angular.ts/runtime/wasm";
 
 const moduleName = "zigWasmTodo";
 const scopeName = "zigTodo:main";
 const wasmURL = new URL("./main.wasm", import.meta.url);
+const installedWasmModule = wasmModule(angular);
 
-const scopeAbi = new WasmScopeAbi();
-const result = await WebAssembly.instantiateStreaming(fetch(wasmURL), {
-  angular_ts: scopeAbi.imports.angular_ts,
-});
-const exports = result.instance.exports;
-
-scopeAbi.attach(exports);
-
-const writeString = (value) => {
-  const encoded = new TextEncoder().encode(value);
-  const ptr = exports.ng_abi_alloc(encoded.byteLength);
-  if (!ptr) {
-    throw new Error("Zig Wasm allocation failed");
-  }
-
-  new Uint8Array(exports.memory.buffer, ptr, encoded.byteLength).set(encoded);
-  return { ptr, len: encoded.byteLength };
-};
-
-const callWithString = (fn, value) => {
-  const bytes = writeString(value);
-  try {
-    fn(bytes.ptr, bytes.len);
-  } finally {
-    exports.ng_abi_free(bytes.ptr, bytes.len);
+const runCommand = (name, command, ...args) => {
+  if (command(...args) !== 1) {
+    throw new Error(`Zig Wasm command '${name}' failed`);
   }
 };
 
-const app = angular.module(moduleName, []);
+const app = angular
+  .module(moduleName, [installedWasmModule.name])
+  .wasm("zigTodoGuest", { source: wasmURL });
 
 app.controller("zigTodoController", [
   "$scope",
-  ($scope) => {
-    const scope = scopeAbi.createScope($scope, { name: scopeName });
+  "zigTodoGuest",
+  ($scope, guest) => {
+    globalThis.__angularTsWasmConformance = {
+      abi: guest._abi,
+      get exports() {
+        return guest.exports;
+      },
+      ready: guest.ready,
+    };
+    const ready = guest
+      .bind($scope, { name: scopeName })
+      .then(() => runCommand("bind", guest.exports.todo_bind));
 
-    $scope.add = (title) => callWithString(exports.todo_add, title || "");
-    $scope.toggle = (index) => exports.todo_toggle(index);
-    $scope.archive = () => exports.todo_archive_completed();
+    $scope.add = () =>
+      void ready.then(() => runCommand("add", guest.exports.todo_add));
+    $scope.toggle = (index) =>
+      void ready.then(() =>
+        runCommand("toggle", guest.exports.todo_toggle, index),
+      );
+    $scope.archive = () =>
+      void ready.then(() =>
+        runCommand("archive", guest.exports.todo_archive_completed),
+      );
 
     $scope.$on("$destroy", () => {
-      exports.todo_unbind();
-      scopeAbi.unbind(scope.name);
+      if (guest.status === "ready") guest.exports.todo_unbind();
     });
-
-    exports.todo_bind();
   },
 ]);
 

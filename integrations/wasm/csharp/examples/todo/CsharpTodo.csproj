@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AngularTs.Wasm.Todo</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <WasmEnableThreads>false</WasmEnableThreads>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../src/AngularTsWasm.cs" Link="AngularTsWasm.cs" />
+  </ItemGroup>
+</Project>

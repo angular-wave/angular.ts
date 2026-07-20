@@ -23,11 +23,11 @@ Directive link callback parity must follow the current attrs-free link shape:
 Go targets feature parity with the completed Rust/Wasm app-authoring surface.
 The current covered app-authoring surface includes the shared Wasm scope ABI,
 restricted scope helpers, module/component/controller/service metadata, `$http`,
-diagnostics/events, template request/cache, storage/cookie, router/state,
-realtime WebSocket/SSE, core REST facades, and the machine data/config/runtime
-facade. `MachineProvider` is covered as a config-free provider facade because
-the current machine API keeps all behavior in per-machine `MachineConfig`
-values.
+diagnostics/events, template request/cache, storage/cookie, router state
+declarations, realtime WebSocket/SSE, core REST facades, and the machine
+data/config/runtime facade. Machine provider objects are no longer part of the
+public `ng` namespace; Go parity tracks `MachineConfig`, machine snapshots, and
+runtime machine APIs instead.
 
 Forms and validation remain the next useful application-level gap. Provider/
 config-time APIs, compile/link internals, browser object aliases, animation,
@@ -48,153 +48,115 @@ reference example makes one necessary.
 | ng type | Go status |
 | --- | --- |
 | `Angular` | deferred |
+| `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | deferred |
+| `AriaConfig` | deferred |
 | `ClassMap` | deferred |
 | `ClassValue` | deferred |
 | `Component` | covered |
 | `Controller` | covered |
+| `DocumentService` | alias |
 | `Directive` | deferred |
 | `DirectiveRestrict` | deferred |
 | `DirectiveFactory` | deferred |
+| `ElementService` | alias |
+| `InjectionTokenMap` | deferred |
 | `NgModule` | covered |
-| `PublicLinkFn` | deferred |
-| `PubSubProvider` | deferred |
+| `LinkFn` | deferred |
+| `Model` | deferred |
+| `ModelChange` | deferred |
+| `ModelRestoreOptions` | deferred |
+| `ModelSyncFailureMode` | deferred |
+| `ModelSyncOptions` | deferred |
+| `ModelSyncTarget` | deferred |
 | `Scope` | covered |
-| `ScopeService` | covered |
+| `ScopeService` | alias |
+| `RootScopeService` | alias |
+| `RootElementService` | alias |
 | `TranscludeFn` | deferred |
 | `AnnotatedFactory` | deferred |
 | `ControllerConstructor` | covered |
 | `Expression` | deferred |
 | `Injectable` | covered |
-| `InjectionTokens` | covered |
-| `InvocationDetail` | covered |
 | `ListenerFn` | covered |
 | `Machine` | covered |
+| `MachineContract` | deferred |
 | `MachineConfig` | covered |
-| `MachineEventMap` | covered |
-| `MachineGuard` | covered |
-| `MachineHooks` | covered |
-| `MachineMode` | covered |
-| `MachineModeHooks` | covered |
-| `MachineNoEvents` | covered |
+| `MachineSendResult` | covered |
+| `MachineSendStatus` | covered |
 | `MachineSnapshot` | covered |
-| `MachineTransition` | covered |
-| `MachineTransitionContext` | covered |
-| `MachineTransitionDefinition` | covered |
-| `MachineTransitionDescriptor` | covered |
-| `MachineTransitionHook` | covered |
-| `MachineTransitionMap` | covered |
-| `MachineTransitionResult` | covered |
 | `Workflow` | deferred |
 | `WorkflowCommand` | deferred |
+| `WorkflowCommandContract` | deferred |
 | `WorkflowCommandContext` | deferred |
-| `WorkflowCommandMap` | deferred |
-| `WorkflowCommandOptions` | deferred |
-| `WorkflowConcurrencyPolicy` | deferred |
-| `WorkflowCommandResult` | deferred |
-| `WorkflowConfig` | deferred |
-| `WorkflowDiagnostic` | deferred |
-| `WorkflowHistoryEntry` | deferred |
-| `WorkflowMode` | deferred |
-| `WorkflowNoCommands` | deferred |
+| `WorkflowCommandDefinition` | deferred |
+| `WorkflowContract` | deferred |
+| `WorkflowResult` | deferred |
 | `WorkflowSnapshot` | deferred |
-| `WorkflowSnapshotMigration` | deferred |
-| `WorkflowStatus` | deferred |
+| `WorkflowSupervisor` | deferred |
+| `WorkflowSupervisorConfig` | deferred |
+| `WorkflowSupervisorPersistence` | deferred |
+| `WorkflowSupervisorPersistenceConfig` | deferred |
+| `WorkflowSupervisorSnapshot` | deferred |
+| `Policy` | deferred |
+| `PolicyContext` | deferred |
+| `PolicyDecision` | deferred |
+| `SecurityConfig` | deferred |
+| `SecurityCredentialsConfig` | deferred |
+| `ServiceWorkerPostOptions` | deferred |
+| `TransitionRouteContract` | deferred |
 | `ScopeEvent` | covered |
-| `ServiceProvider` | deferred |
 | `Validator` | deferred |
+| `WindowService` | alias |
 
 ## Providers
 
 | ng type | Go status |
 | --- | --- |
-| `AnchorScrollProvider` | deferred |
-| `AngularProvider` | deferred |
-| `AngularServiceProvider` | deferred |
-| `AnimateProvider` | deferred |
-| `AriaProvider` | deferred |
-| `CompileLifecycleProvider` | deferred |
-| `CompileProvider` | deferred |
-| `ControllerProvider` | deferred |
-| `CookieProvider` | deferred |
-| `EventBusProvider` | deferred |
-| `ExceptionHandlerProvider` | deferred |
-| `FilterProvider` | deferred |
-| `HttpParamSerializerProvider` | deferred |
-| `HttpProvider` | deferred |
-| `InterpolateProvider` | deferred |
-| `LocationProvider` | deferred |
-| `LogProvider` | deferred |
-| `MachineProvider` | covered |
-| `WorkflowProvider` | deferred |
-| `ParseProvider` | deferred |
-| `RestProvider` | deferred |
-| `RootScopeProvider` | deferred |
-| `RouterProvider` | deferred |
-| `SceDelegateProvider` | deferred |
-| `SceProvider` | deferred |
-| `SseProvider` | deferred |
-| `StateProvider` | deferred |
-| `StateRegistryProvider` | deferred |
-| `StreamProvider` | deferred |
-| `TemplateCacheProvider` | deferred |
-| `TemplateFactoryProvider` | deferred |
-| `TemplateRequestProvider` | deferred |
-| `TransitionProvider` | deferred |
-| `TransitionsProvider` | deferred |
-| `TransitionService` | deferred |
-| `ViewProvider` | deferred |
-| `WasmProvider` | deferred |
-| `WebComponentProvider` | deferred |
-| `WebSocketProvider` | deferred |
-| `WebTransportProvider` | deferred |
-| `WorkerProvider` | deferred |
+| `ProviderDefinition` | deferred |
 
 ## Services
 
 | ng type | Go status |
 | --- | --- |
 | `AnchorScrollService` | deferred |
-| `AngularService` | deferred |
 | `AnimateService` | deferred |
 | `AriaService` | deferred |
-| `CompileLifecycleService` | deferred |
 | `CompileService` | deferred |
 | `ControllerService` | deferred |
 | `CookieService` | covered |
-| `DocumentService` | unsafe |
-| `ElementService` | unsafe |
 | `EventBusService` | covered |
 | `ExceptionHandlerService` | covered |
 | `FilterService` | deferred |
 | `HttpParamSerializerService` | deferred |
 | `HttpService` | covered |
 | `InjectorService` | deferred |
+| `InterpolateConfig` | deferred |
 | `InterpolateService` | deferred |
 | `LocationService` | deferred |
+| `LogBeaconConfig` | deferred |
+| `LogBeaconSerializer` | deferred |
+| `LogEntry` | covered |
+| `LogLevel` | covered |
 | `LogService` | covered |
 | `MachineService` | covered |
+| `SecurityPolicy` | deferred |
 | `WorkflowService` | deferred |
 | `ParseService` | deferred |
-| `ProvideService` | deferred |
-| `PubSubService` | covered |
-| `RootElementService` | unsafe |
-| `RootScopeService` | covered |
+| `EventBusConfig` | deferred |
+| `EventDeliveryPolicy` | deferred |
+| `EventDeliveryPolicyContext` | deferred |
 | `SceDelegateService` | deferred |
 | `SceService` | deferred |
-| `StateRegistryService` | covered |
-| `StateService` | covered |
 | `StreamService` | deferred |
 | `TemplateCacheService` | covered |
-| `TemplateFactoryService` | deferred |
 | `TemplateRequestService` | covered |
 | `TransitionsService` | deferred |
-| `ViewService` | deferred |
 | `WebComponentService` | deferred |
 | `WebSocketService` | covered |
 | `WebTransportService` | deferred |
-| `WindowService` | unsafe |
-| `WorkerService` | deferred |
+| `WorkerService` | covered |
+| `ServiceWorkerService` | deferred |
 
 ## HTTP And REST
 
@@ -203,16 +165,16 @@ reference example makes one necessary.
 | `CachedRestBackendOptions` | deferred |
 | `EntityClass` | deferred |
 | `HttpMethod` | covered |
-| `HttpPromise` | deferred |
-| `HttpProviderDefaults` | deferred |
+| `HttpDefaults` | deferred |
 | `HttpResponse` | covered |
 | `HttpResponseStatus` | covered |
-| `RequestConfig` | covered |
-| `RequestShortcutConfig` | covered |
+| `HttpRequestConfig` | covered |
+| `HttpRequestOptions` | covered |
 | `RestBackend` | covered |
+| `RestCachePolicy` | deferred |
+| `RestCachePolicyContext` | deferred |
 | `RestCacheStore` | deferred |
 | `RestCacheStrategy` | deferred |
-| `RestDefinition` | covered |
 | `RestFactory` | covered |
 | `RestOptions` | covered |
 | `RestRequest` | covered |
@@ -225,12 +187,9 @@ reference example makes one necessary.
 | ng type | Go status |
 | --- | --- |
 | `CurrencyFilterOptions` | deferred |
-| `DateFilterOptions` | deferred |
 | `EntryFilterItem` | deferred |
 | `FilterFactory` | deferred |
 | `FilterFn` | deferred |
-| `NumberFilterOptions` | deferred |
-| `RelativeTimeFilterOptions` | deferred |
 
 ## Animation
 
@@ -244,15 +203,23 @@ reference example makes one necessary.
 | `AnimationPreset` | deferred |
 | `AnimationPresetHandler` | deferred |
 | `AnimationResult` | deferred |
-| `NativeAnimationOptions` | deferred |
 
 ## Router
 
 | ng type | Go status |
 | --- | --- |
+| `ParamsOf` | deferred |
+| `ResolvesOf` | deferred |
+| `RouterConfig` | deferred |
+| `RouterModule` | deferred |
+| `RouterModuleDeclaration` | deferred |
+| `RoutesOf` | deferred |
 | `StateDeclaration` | covered |
-| `StateResolveArray` | covered |
-| `StateResolveObject` | covered |
+| `StatePolicyDeclaration` | deferred |
+| `RouteContract` | deferred |
+| `RouteMap` | deferred |
+| `StateRegistryService` | deferred |
+| `StateService` | deferred |
 | `Transition` | covered |
 
 ## Realtime And Connections
@@ -265,39 +232,45 @@ reference example makes one necessary.
 | `RealtimeProtocolMessage` | covered |
 | `SseConfig` | covered |
 | `SseConnection` | covered |
-| `SseProtocolEventDetail` | deferred |
-| `SseProtocolMessage` | deferred |
 | `SseService` | covered |
-| `SwapModeType` | covered |
+| `SwapMode` | covered |
 | `WebSocketConfig` | covered |
 | `WebSocketConnection` | covered |
 | `WebTransportBufferInput` | deferred |
-| `WebTransportCertificateHash` | deferred |
 | `WebTransportConfig` | deferred |
 | `WebTransportConnection` | deferred |
 | `WebTransportDatagramEvent` | deferred |
-| `WebTransportOptions` | deferred |
 | `WebTransportReconnectEvent` | deferred |
 | `WebTransportRetryDelay` | deferred |
-| `NativeWebTransport` | deferred |
+
+## Service Workers
+
+| ng type | Go status |
+| --- | --- |
+| `ServiceWorkerConfig` | deferred |
+| `ServiceWorkerErrorCode` | deferred |
+| `ServiceWorkerMessageEvent` | deferred |
+| `ServiceWorkerMessageTarget` | deferred |
+| `ServiceWorkerRegistrationState` | deferred |
+| `ServiceWorkerRequestOptions` | deferred |
+| `ServiceWorkerUpdateState` | deferred |
 
 ## Wasm ABI
 
 | ng type | Go status |
 | --- | --- |
-| `WasmAbiExports` | covered |
-| `WasmInstantiationResult` | not-applicable |
-| `WasmOptions` | not-applicable |
-| `WasmScope` | covered |
-| `WasmScopeAbi` | not-applicable |
-| `WasmScopeAbiImportObject` | not-applicable |
-| `WasmScopeAbiImports` | covered |
-| `WasmScopeBindingOptions` | covered |
-| `WasmScopeOptions` | not-applicable |
-| `WasmScopeReference` | covered |
-| `WasmScopeUpdate` | covered |
-| `WasmScopeWatchOptions` | covered |
+| `WasmBinding` | covered |
+| `WasmBindingOptions` | covered |
+| `WasmCompileOptions` | not-applicable |
+| `WasmError` | not-applicable |
+| `WasmErrorCode` | not-applicable |
+| `WasmErrorStage` | not-applicable |
+| `WasmLoadOptions` | not-applicable |
+| `WasmResource` | not-applicable |
+| `WasmResourceStatus` | not-applicable |
 | `WasmService` | not-applicable |
+| `WasmSource` | not-applicable |
+| `WasmTarget` | covered |
 
 ## Web Components
 
@@ -311,6 +284,7 @@ reference example makes one necessary.
 | `ScopeElement` | deferred |
 | `ScopeElementConstructor` | deferred |
 | `WebComponentContext` | deferred |
+| `WebComponentConfig` | deferred |
 | `WebComponentInput` | deferred |
 | `WebComponentInputConfig` | deferred |
 | `WebComponentInputs` | deferred |
@@ -322,12 +296,22 @@ reference example makes one necessary.
 | `CookieOptions` | covered |
 | `CookieStoreOptions` | covered |
 | `ErrorHandlingConfig` | deferred |
+| `HtmlCanvasRuntimeSupport` | deferred |
+| `HtmlCanvasService` | deferred |
 | `InterpolationFunction` | deferred |
 | `NgModelController` | deferred |
+| `HtmlCanvasConfig` | deferred |
 | `StorageBackend` | covered |
 | `StorageType` | covered |
-| `WorkerConfig` | deferred |
-| `WorkerConnection` | deferred |
+| `WorkerConfig` | covered |
+| `WorkerError` | covered |
+| `WorkerErrorCode` | covered |
+| `WorkerHandle` | covered |
+| `WorkerModelMessage` | covered |
+| `WorkerRequest` | covered |
+| `WorkerRequestOptions` | covered |
+| `WorkerResponse` | covered |
+| `WorkerStatus` | covered |
 
 ## Parity Rules
 

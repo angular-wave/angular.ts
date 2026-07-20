@@ -21,7 +21,7 @@ private external object AngularElementRuntime {
     ): RawAngularElementDefinition
 }
 
-public typealias AngularElementConfigure = (NgModule, AngularService) -> Unit
+public typealias AngularElementConfigure = (NgModule, Angular) -> Unit
 
 public data class AngularElementModuleOptions public constructor(
     public val name: String? = null,
@@ -33,7 +33,6 @@ public data class AngularElementOptions<TState : Any> public constructor(
     public val component: AppComponent<TState>,
     public val ngModule: Any? = null,
     public val elementModule: AngularElementModuleOptions = AngularElementModuleOptions(),
-    public val bootstrap: BootstrapConfig = BootstrapConfig(),
     public val subapp: Boolean? = null,
     public val registerBuiltins: Boolean? = null,
     public val extra: Map<String, Any?> = emptyMap(),
@@ -42,8 +41,8 @@ public data class AngularElementOptions<TState : Any> public constructor(
 public class AngularElementDefinition internal constructor(
     internal val raw: RawAngularElementDefinition,
 ) {
-    public val angular: AngularService
-        get() = AngularService(raw.angular.unsafeCast<RawAngular>())
+    public val angular: Angular
+        get() = Angular(raw.angular.unsafeCast<RawAngular>())
 
     public val ngModule: NgModule
         get() = NgModule(raw.ngModule.unsafeCast<RawNgModule>())
@@ -52,7 +51,7 @@ public class AngularElementDefinition internal constructor(
         get() = NgModule(raw.elementModule.unsafeCast<RawNgModule>())
 
     public val injector: Injector
-        get() = Injector(raw.injector.unsafeCast<RawInjectorService>())
+        get() = Injector(raw.injector.unsafeCast<RawInjectorService<Any?>>())
 
     public val element: Any?
         get() = raw.element
@@ -87,7 +86,7 @@ internal fun AngularElementModuleOptions.toJs(): dynamic {
         raw.configure = { module: dynamic, angular: dynamic ->
             configure.invoke(
                 NgModule(module.unsafeCast<RawNgModule>()),
-                AngularService(angular.unsafeCast<RawAngular>()),
+                Angular(angular.unsafeCast<RawAngular>()),
             )
         }
     }
@@ -103,7 +102,6 @@ internal fun <TState : Any> AngularElementOptions<TState>.toJs(): dynamic {
     if (registerBuiltins != null) raw.registerBuiltins = registerBuiltins
     raw.elementModule = elementModule.toJs()
     raw.component = component.toJs()
-    raw.config = bootstrap.toJs()
 
     return raw
 }

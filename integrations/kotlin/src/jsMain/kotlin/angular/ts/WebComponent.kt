@@ -50,7 +50,7 @@ public class WebComponentContext<TState : Any> internal constructor(
         get() = Scope(raw.scope.unsafeCast<RawScope>())
 
     public val injector: Injector
-        get() = Injector(raw.injector.unsafeCast<RawInjectorService>())
+        get() = Injector(raw.injector.unsafeCast<RawInjectorService<Any?>>())
 
     public val root: Any?
         get() = raw.root
@@ -159,10 +159,6 @@ public class WebComponentService internal constructor(
     ): Scope<TState> =
         Scope(raw.createElementScope(host, initialState, options.toJs()).unsafeCast<RawScope>())
 }
-
-public class WebComponentProvider internal constructor(
-    internal val raw: Any,
-)
 
 internal fun <TState : Any> AppComponent<TState>.toJs(): dynamic {
     val raw = js("{}")

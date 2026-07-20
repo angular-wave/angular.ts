@@ -23,95 +23,31 @@ pub type DirectiveFactory
 
 pub type NgModule
 
-pub type PublicLinkFn
+pub type RouterModule(a)
 
-pub type PubSubProvider
+pub type LinkFn
 
 pub type Scope
 
-pub type ScopeService
-
 pub type TranscludeFn
 
-pub type AnchorScrollProvider
+pub type AriaConfig
 
-pub type AngularProvider
+pub type InterpolateConfig
 
-pub type AngularServiceProvider
+pub type AngularService
 
-pub type AnimateProvider
+pub type ScopeService
 
-pub type AriaProvider
+pub type RootScopeService
 
-pub type CompileLifecycleProvider
+pub type ElementService
 
-pub type CompileProvider
+pub type RootElementService
 
-pub type ControllerProvider
+pub type DocumentService
 
-pub type CookieProvider
-
-pub type EventBusProvider
-
-pub type FilterProvider
-
-pub type ExceptionHandlerProvider
-
-pub type HttpParamSerializerProvider
-
-pub type HttpProvider
-
-pub type InterpolateProvider
-
-pub type LocationProvider
-
-pub type LogProvider
-
-pub type MachineProvider
-
-pub type ParseProvider
-
-pub type RestProvider
-
-pub type RootScopeProvider
-
-pub type RouterProvider
-
-pub type SceDelegateProvider
-
-pub type SceProvider
-
-pub type SseProvider
-
-pub type StateProvider
-
-pub type StateRegistryProvider
-
-pub type StreamProvider
-
-pub type TemplateCacheProvider
-
-pub type TemplateFactoryProvider
-
-pub type TemplateRequestProvider
-
-pub type TransitionProvider
-
-pub type TransitionsProvider
-
-pub type TransitionService
-
-pub type ViewProvider
-
-pub type WasmProvider
-
-pub type WebComponentProvider
-
-pub type WebSocketProvider
-
-pub type WebTransportProvider
-
-pub type WorkerProvider
+pub type WindowService
 
 pub type AnchorScrollService
 
@@ -127,17 +63,19 @@ pub type AriaService
 
 pub type CompileService
 
-pub type CompileLifecycleService
-
 pub type ControllerService
 
 pub type CookieService
 
-pub type ElementService
-
 pub type EventBusService
 
 pub type ExceptionHandlerService
+
+pub type HtmlCanvasConfig
+
+pub type HtmlCanvasRuntimeSupport
+
+pub type HtmlCanvasService
 
 pub type FilterFn
 
@@ -147,23 +85,39 @@ pub type FilterService
 
 pub type EntryFilterItem
 
-pub type DateFilterOptions
-
-pub type NumberFilterOptions
-
 pub type CurrencyFilterOptions
-
-pub type RelativeTimeFilterOptions
 
 pub type HttpParamSerializerService
 
 pub type HttpService
 
-pub type InjectorService
+pub type InjectorService(a)
+
+pub type InjectionTokenMap
+
+pub type Model(a)
+
+pub type ModelChange
+
+pub type ModelRestoreOptions
+
+pub type ModelSyncFailureMode
+
+pub type ModelSyncOptions
+
+pub type ModelSyncTarget(a)
 
 pub type InterpolateService
 
 pub type LocationService
+
+pub type LogBeaconConfig
+
+pub type LogBeaconSerializer
+
+pub type LogEntry
+
+pub type LogLevel
 
 pub type LogService
 
@@ -173,17 +127,17 @@ pub type WorkflowService
 
 pub type ParseService
 
-pub type ProvideService
+pub type Policy(a, b)
 
-pub type PubSubService
+pub type PolicyContext(a)
 
-pub type RootElementService
+pub type PolicyDecision(a)
 
-pub type RootScopeService
+pub type EventBusConfig
 
-pub type StateService
+pub type EventDeliveryPolicy
 
-pub type StateRegistryService
+pub type EventDeliveryPolicyContext
 
 pub type SceService
 
@@ -195,35 +149,33 @@ pub type SseConfig
 
 pub type SseConnection
 
+pub type SecurityPolicy
+
+pub type SecurityConfig
+
+pub type SecurityCredentialsConfig
+
+pub type StateRegistryService
+
+pub type ServiceWorkerService
+
 pub type RealtimeProtocolEventDetail(a, b)
 
 pub type RealtimeProtocolMessage
 
-pub type SseProtocolEventDetail(a)
-
-pub type SseProtocolMessage
-
-pub type SwapModeType
+pub type SwapMode
 
 pub type TemplateCacheService
-
-pub type TemplateFactoryService
 
 pub type TemplateRequestService
 
 pub type TransitionsService
 
-pub type ViewService
-
 pub type WorkerService
-
-pub type AngularService
 
 pub type AnnotatedFactory(a)
 
 pub type AnimationOptions
-
-pub type NativeAnimationOptions
 
 pub type AnimationPhase
 
@@ -245,8 +197,6 @@ pub type CookieOptions
 
 pub type CookieStoreOptions
 
-pub type DocumentService
-
 pub type EntityClass(a)
 
 pub type ErrorHandlingConfig
@@ -255,9 +205,7 @@ pub type Expression
 
 pub type HttpMethod
 
-pub type HttpPromise(a)
-
-pub type HttpProviderDefaults
+pub type HttpDefaults
 
 pub type HttpResponse(a)
 
@@ -265,89 +213,63 @@ pub type HttpResponseStatus
 
 pub type Injectable(a)
 
-pub type InjectionTokens
+pub type ProviderDefinition
 
 pub type InterpolationFunction
 
-pub type InvocationDetail
-
 pub type ListenerFn
 
-pub type MachineEventMap
+pub type Machine(a)
 
-pub type MachineNoEvents
+pub type MachineContract
 
-pub type Machine(a, b)
-
-pub type MachineConfig(a, b)
-
-pub type MachineGuard(a, b, c)
-
-pub type MachineHooks(a, b)
-
-pub type MachineMode
-
-pub type MachineModeHooks(a, b)
+pub type MachineConfig(a)
 
 pub type MachineSnapshot(a)
 
-pub type MachineTransition(a, b, c)
+pub type MachineSendResult(a)
 
-pub type MachineTransitionDefinition(a, b, c)
+pub type MachineSendStatus
 
-pub type MachineTransitionDescriptor(a, b, c)
+pub type Workflow(a)
 
-pub type MachineTransitionContext(a, b, c)
+pub type WorkflowContract
 
-pub type MachineTransitionHook(a, b)
+pub type WorkflowCommand(a, b)
 
-pub type MachineTransitionMap(a, b)
+pub type WorkflowCommandContract
 
-pub type MachineTransitionResult
+pub type WorkflowCommandContext(a, b)
 
-pub type Workflow(a, b, c)
+pub type WorkflowCommandDefinition(a, b)
 
-pub type WorkflowCommand(a, b, c, d, e, f)
-
-pub type WorkflowCommandContext(a, b, c, d, e)
-
-pub type WorkflowCommandMap(a, b)
-
-pub type WorkflowCommandOptions
-
-pub type WorkflowConcurrencyPolicy
-
-pub type WorkflowCommandResult(a)
-
-pub type WorkflowConfig(a, b, c)
-
-pub type WorkflowDiagnostic
-
-pub type WorkflowHistoryEntry
-
-pub type WorkflowMode
-
-pub type WorkflowNoCommands
-
-pub type WorkflowProvider
+pub type WorkflowResult(a)
 
 pub type WorkflowSnapshot(a)
 
-pub type WorkflowSnapshotMigration(a)
+pub type WorkflowSupervisor(a)
 
-pub type WorkflowStatus
+pub type WorkflowSupervisorConfig(a)
+
+pub type WorkflowSupervisorPersistenceConfig
+
+pub type WorkflowSupervisorPersistence(a)
+
+pub type WorkflowSupervisorSnapshot(a)
 
 pub type NgModelController
 
-pub type RequestConfig
+pub type HttpRequestConfig
 
-pub type RequestShortcutConfig
-
-pub type RestDefinition(a)
+pub type HttpRequestOptions
 
 pub type RestFactory
 
 pub type RestBackend
+
+pub type RestCachePolicy
+
+pub type RestCachePolicyContext
 
 pub type RestCacheStore
 
@@ -367,13 +289,25 @@ pub type RestService(a, b)
 
 pub type ScopeEvent
 
-pub type ServiceProvider
+pub type RouterModuleDeclaration
+
+pub type RouterConfig
+
+pub type RouteContract
+
+pub type RouteMap
+
+pub type RoutesOf(a, b)
+
+pub type ParamsOf(a, b)
+
+pub type ResolvesOf(a, b)
+
+pub type StateService(a)
 
 pub type StateDeclaration
 
-pub type StateResolveArray
-
-pub type StateResolveObject
+pub type StatePolicyDeclaration
 
 pub type StorageBackend
 
@@ -383,9 +317,27 @@ pub type ConnectionConfig
 
 pub type ConnectionEvent
 
+pub type ServiceWorkerConfig
+
+pub type ServiceWorkerErrorCode
+
+pub type ServiceWorkerMessageEvent(a)
+
+pub type ServiceWorkerMessageTarget
+
+pub type ServiceWorkerPostOptions
+
+pub type ServiceWorkerRegistrationState
+
+pub type ServiceWorkerRequestOptions
+
+pub type ServiceWorkerUpdateState
+
 pub type StreamService
 
-pub type Transition
+pub type Transition(a, b)
+
+pub type TransitionRouteContract(a)
 
 pub type Validator
 
@@ -398,6 +350,8 @@ pub type ScopeElement(a)
 pub type ScopeElementConstructor(a)
 
 pub type WebComponentContext(a)
+
+pub type WebComponentConfig
 
 pub type WebComponentInput
 
@@ -413,11 +367,7 @@ pub type WebSocketConnection
 
 pub type WebSocketService
 
-pub type NativeWebTransport
-
 pub type WebTransportBufferInput
-
-pub type WebTransportCertificateHash
 
 pub type WebTransportConfig
 
@@ -425,42 +375,50 @@ pub type WebTransportConnection
 
 pub type WebTransportDatagramEvent(a)
 
-pub type WebTransportOptions
-
 pub type WebTransportReconnectEvent
 
 pub type WebTransportRetryDelay
 
 pub type WebTransportService
 
-pub type WindowService
+pub type WorkerConfig(a)
 
-pub type WorkerConfig
+pub type WorkerError
 
-pub type WorkerConnection
+pub type WorkerErrorCode
 
-pub type WasmAbiExports
+pub type WorkerHandle(a, b)
 
-pub type WasmInstantiationResult
+pub type WorkerModelMessage(a)
 
-pub type WasmOptions
+pub type WorkerRequest(a)
 
-pub type WasmScope
+pub type WorkerRequestOptions
 
-pub type WasmScopeAbi
+pub type WorkerResponse(a)
 
-pub type WasmScopeAbiImportObject
+pub type WorkerStatus
 
-pub type WasmScopeAbiImports
+pub type WasmBinding(a)
 
-pub type WasmScopeBindingOptions
+pub type WasmBindingOptions
 
-pub type WasmScopeOptions
+pub type WasmCompileOptions
 
-pub type WasmScopeReference
+pub type WasmError
 
-pub type WasmScopeUpdate
+pub type WasmErrorCode
 
-pub type WasmScopeWatchOptions
+pub type WasmErrorStage
+
+pub type WasmLoadOptions
+
+pub type WasmResource(a)
+
+pub type WasmResourceStatus
 
 pub type WasmService
+
+pub type WasmSource
+
+pub type WasmTarget

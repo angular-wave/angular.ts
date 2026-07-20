@@ -6,6 +6,7 @@ AngularTS Wasm scope ABI.
 The package does not define a Go-specific scope protocol. It calls the shared
 `angular_ts` imports documented in `../ABI.md` and exports the standard guest
 allocation and scope callback symbols.
+Every adapter reports ABI version `2` through `ng_abi_version` before binding.
 
 Standard Go Wasm uses `wasm_exec.js` and `syscall/js` for browser startup. The
 browser todo proof uses `GoWasmScopeAbi`, a small adapter over host
@@ -20,10 +21,10 @@ parity tracking, and browser tests for Go-owned state flowing through
 
 ## Current Surface
 
-- `Scope` targets a numeric host scope handle.
-- `NamedScope` targets a stable AngularTS scope name.
-- `Scope.Get` / `NamedScope.Get` decode JSON-compatible scope values.
-- `Scope.Set` / `NamedScope.Set` encode JSON-compatible scope values.
+- `Scope` targets a numeric host scope handle; `ResolveScope` resolves a stable
+  AngularTS name once.
+- `Scope.Get` decodes JSON-compatible scope values.
+- `Scope.Set` encodes JSON-compatible scope values.
 - `Delete`, `Sync`, `Unbind`, `Watch`, and `Watch.Unwatch` map to the shared
   host ABI.
 - `Update.Decode` decodes watched scope update payloads.
@@ -49,10 +50,32 @@ parity tracking, and browser tests for Go-owned state flowing through
   `$rootScope`, `$eventBus`, template request/cache, storage/cookie,
   router/state, WebSocket/SSE realtime, core `$rest` resource APIs, and
   `$machine` state-machine facades.
+- `$worker` exposes managed `WorkerHandle` lifecycle, correlated requests,
+  model synchronization channels, typed restart configuration, and native
+  message/error subscriptions in browser Wasm builds.
 - `NG_NAMESPACE_PARITY.md` tracks every published `ng` namespace type and
   `make parity` checks it against `@types/namespace.d.ts`.
 
 See `PLAN.md` for the Rust feature parity checklist.
+
+## Scope ABI And App Models
+
+Go `WasmScope` support is for controller/component view scopes. The todo proof
+keeps Go state authoritative and projects template-visible fields through the
+scope ABI.
+
+Do not use the scope ABI as a substitute for app-owned AngularTS models. Shared
+or durable app state should stay in `app.model(...)` and synchronize with Go
+Wasm through a host-side AngularTS service or `model.$sync(...)` target. The Go
+binding should not add model handles, model path writes, or model watch imports
+until the shared ABI explicitly grows that surface.
+
+Current rule:
+
+- `WasmScope`: view-local DOM/controller state;
+- `app.model(...)` plus `$sync()`: state that survives root destruction,
+  coordinates multiple roots, or synchronizes with storage, workers, engines,
+  machines, workflows, or network services.
 
 ## Validation
 

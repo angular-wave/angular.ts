@@ -62,6 +62,15 @@ object, use `angular.ts.unsafe.UnsafeInterop` and keep that usage localized.
 The parity checks fail on undocumented unsupported namespace entries, so unsafe
 interop is an explicit escape hatch rather than hidden coverage.
 
+## WASM Scope And App Models
+
+Generated Kotlin `WasmScope` facades represent the shared view-scope ABI. They
+should be used for DOM/root-scoped controller or component state. App-owned
+state belongs to `app.model(...)`; durable or shared state should synchronize
+with external runtimes through host-side AngularTS services or
+`model.$sync(...)` targets. Kotlin should not add model handles or model watch
+imports unless the shared WASM ABI adds that surface.
+
 ## Release Checklist
 
 Before listing Kotlin support in release notes:

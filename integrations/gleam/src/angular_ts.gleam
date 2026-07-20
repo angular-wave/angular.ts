@@ -1,4 +1,3 @@
-import angular_ts/bootstrap
 import angular_ts/cookie
 import angular_ts/filters
 import angular_ts/http
@@ -8,15 +7,15 @@ import angular_ts/namespace
 import angular_ts/runtime
 import angular_ts/storage
 import angular_ts/token as token_module
+import angular_ts/wasm
+import angular_ts/worker
+import gleam/dynamic.{type Dynamic}
 
 pub type Element =
-  namespace.RootElementService
+  runtime.Element
 
 pub type Injector =
-  namespace.InjectorService
-
-pub type BootstrapConfig =
-  bootstrap.BootstrapConfig
+  namespace.InjectorService(Dynamic)
 
 pub type NgModule =
   module.NgModule
@@ -30,11 +29,11 @@ pub type Injectable(value) =
 pub type HttpMethod =
   http.HttpMethod
 
-pub type RequestConfig =
-  http.RequestConfig
+pub type HttpRequestConfig =
+  http.HttpRequestConfig
 
-pub type RequestShortcutConfig =
-  http.RequestShortcutConfig
+pub type HttpRequestOptions =
+  http.HttpRequestOptions
 
 pub type CookieOptions =
   cookie.CookieOptions
@@ -62,6 +61,66 @@ pub type RelativeTimeFilterOptions =
 
 pub type EntryFilterItem(key, value) =
   filters.EntryFilterItem(key, value)
+
+pub type WasmBinding =
+  wasm.WasmBinding
+
+pub type WasmBindingOptions =
+  wasm.WasmBindingOptions
+
+pub type WasmError =
+  wasm.WasmError
+
+pub type WasmErrorCode =
+  wasm.WasmErrorCode
+
+pub type WasmLoadOptions =
+  wasm.WasmLoadOptions
+
+pub type WasmResource =
+  wasm.WasmResource
+
+pub type WasmResourceStatus =
+  wasm.WasmResourceStatus
+
+pub type WasmService =
+  wasm.WasmService
+
+pub type WasmSource =
+  wasm.WasmSource
+
+pub type WasmTarget =
+  wasm.WasmTarget
+
+pub type WorkerConfig(receive) =
+  worker.WorkerConfig(receive)
+
+pub type WorkerHandle(send, receive) =
+  worker.WorkerHandle(send, receive)
+
+pub type WorkerError =
+  worker.WorkerError
+
+pub type WorkerErrorCode =
+  worker.WorkerErrorCode
+
+pub type WorkerStatus =
+  worker.WorkerStatus
+
+pub type WorkerRequest(payload) =
+  worker.WorkerRequest(payload)
+
+pub type WorkerResponse(result) =
+  worker.WorkerResponse(result)
+
+pub type WorkerModelMessage(model) =
+  worker.WorkerModelMessage(model)
+
+pub type WorkerRequestOptions =
+  worker.WorkerRequestOptions
+
+pub type WorkerService =
+  worker.WorkerService
 
 pub fn token(name: String) -> Token(value) {
   token_module.new(name)
@@ -94,14 +153,10 @@ pub fn module_with_requires(name: String, requires: List(String)) -> NgModule {
   runtime.module_with_requires(name, requires)
 }
 
-pub fn bootstrap(
-  root: Element,
-  modules: List(String),
-  config: BootstrapConfig,
-) -> Injector {
-  runtime.bootstrap(root, modules, config)
+pub fn bootstrap(root: Element, modules: List(String)) -> Injector {
+  runtime.bootstrap(root, modules)
 }
 
 pub fn bootstrap_body(app: NgModule) -> Injector {
-  runtime.bootstrap_body([module.name(app)], bootstrap.default_config())
+  runtime.bootstrap_body([module.name(app)])
 }

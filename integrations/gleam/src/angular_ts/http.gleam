@@ -28,8 +28,8 @@ pub type HttpResponseType {
   Text
 }
 
-pub opaque type RequestShortcutConfig {
-  RequestShortcutConfig(
+pub opaque type HttpRequestOptions {
+  HttpRequestOptions(
     params: Option(Dynamic),
     data: Option(Dynamic),
     timeout: Option(Int),
@@ -41,11 +41,11 @@ pub opaque type RequestShortcutConfig {
   )
 }
 
-pub opaque type RequestConfig {
-  RequestConfig(
+pub opaque type HttpRequestConfig {
+  HttpRequestConfig(
     method: HttpMethod,
     url: String,
-    shortcut: RequestShortcutConfig,
+    shortcut: HttpRequestOptions,
   )
 }
 
@@ -81,8 +81,8 @@ pub fn response_type_name(response_type: HttpResponseType) -> String {
   }
 }
 
-pub fn shortcut_config() -> RequestShortcutConfig {
-  RequestShortcutConfig(
+pub fn shortcut_config() -> HttpRequestOptions {
+  HttpRequestOptions(
     params: None,
     data: None,
     timeout: None,
@@ -95,73 +95,73 @@ pub fn shortcut_config() -> RequestShortcutConfig {
 }
 
 pub fn with_params(
-  config: RequestShortcutConfig,
+  config: HttpRequestOptions,
   params: Dynamic,
-) -> RequestShortcutConfig {
-  RequestShortcutConfig(..config, params: Some(params))
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, params: Some(params))
 }
 
 pub fn with_data(
-  config: RequestShortcutConfig,
+  config: HttpRequestOptions,
   data: Dynamic,
-) -> RequestShortcutConfig {
-  RequestShortcutConfig(..config, data: Some(data))
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, data: Some(data))
 }
 
 pub fn with_timeout(
-  config: RequestShortcutConfig,
+  config: HttpRequestOptions,
   milliseconds: Int,
-) -> RequestShortcutConfig {
-  RequestShortcutConfig(..config, timeout: Some(milliseconds))
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, timeout: Some(milliseconds))
 }
 
 pub fn with_response_type(
-  config: RequestShortcutConfig,
+  config: HttpRequestOptions,
   response_type: HttpResponseType,
-) -> RequestShortcutConfig {
-  RequestShortcutConfig(..config, response_type: Some(response_type))
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, response_type: Some(response_type))
 }
 
 pub fn with_credentials(
-  config: RequestShortcutConfig,
+  config: HttpRequestOptions,
   enabled: Bool,
-) -> RequestShortcutConfig {
-  RequestShortcutConfig(..config, with_credentials: Some(enabled))
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, with_credentials: Some(enabled))
 }
 
 pub fn with_xsrf_header_name(
-  config: RequestShortcutConfig,
+  config: HttpRequestOptions,
   name: String,
-) -> RequestShortcutConfig {
-  RequestShortcutConfig(..config, xsrf_header_name: Some(name))
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, xsrf_header_name: Some(name))
 }
 
 pub fn with_xsrf_cookie_name(
-  config: RequestShortcutConfig,
+  config: HttpRequestOptions,
   name: String,
-) -> RequestShortcutConfig {
-  RequestShortcutConfig(..config, xsrf_cookie_name: Some(name))
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, xsrf_cookie_name: Some(name))
 }
 
 pub fn with_param_serializer(
-  config: RequestShortcutConfig,
+  config: HttpRequestOptions,
   token: String,
-) -> RequestShortcutConfig {
-  RequestShortcutConfig(..config, param_serializer: Some(token))
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, param_serializer: Some(token))
 }
 
-pub fn request(method: HttpMethod, url: String) -> RequestConfig {
-  RequestConfig(method: method, url: url, shortcut: shortcut_config())
+pub fn request(method: HttpMethod, url: String) -> HttpRequestConfig {
+  HttpRequestConfig(method: method, url: url, shortcut: shortcut_config())
 }
 
 pub fn with_shortcut_config(
-  request: RequestConfig,
-  shortcut: RequestShortcutConfig,
-) -> RequestConfig {
-  RequestConfig(..request, shortcut: shortcut)
+  request: HttpRequestConfig,
+  shortcut: HttpRequestOptions,
+) -> HttpRequestConfig {
+  HttpRequestConfig(..request, shortcut: shortcut)
 }
 
-pub fn to_js_shortcut_config(config: RequestShortcutConfig) -> Dynamic {
+pub fn to_js_shortcut_config(config: HttpRequestOptions) -> Dynamic {
   let object = unsafe.empty_object()
 
   case config.params {
@@ -212,7 +212,7 @@ pub fn to_js_shortcut_config(config: RequestShortcutConfig) -> Dynamic {
   }
 }
 
-pub fn to_js_request_config(config: RequestConfig) -> Dynamic {
+pub fn to_js_request_config(config: HttpRequestConfig) -> Dynamic {
   let object = to_js_shortcut_config(config.shortcut)
 
   unsafe.set_string(object, "method", method_name(config.method))

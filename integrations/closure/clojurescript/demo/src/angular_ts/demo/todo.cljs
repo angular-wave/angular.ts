@@ -25,7 +25,8 @@
           (let [value (string/trim (str (or (gobj/get this "newTodo") "")))]
             (when-not (string/blank? value)
               (let [^js/Array tasks (gobj/get this "tasks")]
-                (.push tasks (make-todo (swap! next-id inc) value false))
+                (gobj/set this "tasks"
+                  (.concat tasks #js [(make-todo (swap! next-id inc) value false)]))
                 (gobj/set this "newTodo" "")))))))
     (gobj/set state "setDone"
       (fn [^js/Object todo ^boolean done?]
@@ -34,11 +35,8 @@
       (fn []
         (this-as this
           (let [^js/Array tasks (gobj/get this "tasks")]
-            (loop [index (dec (.-length tasks))]
-              (when (>= index 0)
-                (when (done? (aget tasks index))
-                  (.splice tasks index 1))
-                (recur (dec index))))))))
+            (gobj/set this "tasks"
+              (.filter tasks (fn [todo] (not (done? todo)))))))))
 	    state))
 
 (defonce registered?

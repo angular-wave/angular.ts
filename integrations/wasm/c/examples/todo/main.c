@@ -9,7 +9,17 @@
 #define TODO_EXPORT(name)
 #endif
 
-enum { kMaxItems = 8, kMaxTask = 64, kJsonSize = 1024 };
+enum {
+  kMaxItems = 8,
+  kMaxTask = 64,
+  kJsonSize = 1024,
+  kTransactionSize = 1536
+};
+
+static const ng_json_field_t TODO_ITEMS = NG_JSON_FIELD("items");
+static const ng_u32_field_t TODO_REMAINING_COUNT =
+    NG_U32_FIELD("remainingCount");
+static const ng_string_field_t TODO_NEW_TODO = NG_STRING_FIELD("newTodo");
 
 typedef struct {
   char task[kMaxTask];
@@ -18,21 +28,11 @@ typedef struct {
 
 typedef struct {
   ng_scope_ref_t scope;
-  ng_watch_handle_t watch;
+  ng_watch_t watch;
   todo_item_t items[kMaxItems];
   size_t item_count;
   char new_todo[kMaxTask];
 } todo_app_t;
-
-static todo_app_t *current_app;
-
-static size_t text_len(const char *value) {
-  size_t len = 0;
-  while (value[len] != '\0') {
-    ++len;
-  }
-  return len;
-}
 
 static bool text_equal(const char *left, const char *right) {
   size_t index = 0;
@@ -71,20 +71,6 @@ static void copy_text(char *target, size_t target_size, const char *source) {
     ++index;
   }
   target[index] = '\0';
-}
-
-static bool bytes_equal(ng_bytes_t bytes, const char *value) {
-  size_t value_len = text_len(value);
-  if (bytes.len != value_len) {
-    return false;
-  }
-
-  for (size_t index = 0; index < value_len; ++index) {
-    if (bytes.ptr[index] != (uint8_t)value[index]) {
-      return false;
-    }
-  }
-  return true;
 }
 
 static void decode_flat_json_string(ng_bytes_t value, char *target,
@@ -192,58 +178,73 @@ static void todo_items_json(const todo_app_t *app, char *out, size_t capacity) {
   append_text(out, capacity, offset, "]");
 }
 
-static void todo_sync(const todo_app_t *app) {
+static bool todo_sync(const todo_app_t *app) {
   char json[kJsonSize];
   char number[32];
+  uint8_t transaction[kTransactionSize];
+  ng_update_t update;
 
   todo_items_json(app, json, sizeof(json));
-  ng_scope_set_json(app->scope, ng_bytes_from_cstr("items"),
-                    ng_bytes_from_cstr(json));
-
-  write_size(number, sizeof(number), todo_remaining_count(app));
-  ng_scope_set_json(app->scope, ng_bytes_from_cstr("remainingCount"),
-                    ng_bytes_from_cstr(number));
-
-  append_json_string(json, sizeof(json), 0, app->new_todo);
-  ng_scope_set_json(app->scope, ng_bytes_from_cstr("newTodo"),
-                    ng_bytes_from_cstr(json));
-
-  ng_scope_sync_ref(app->scope);
-}
-
-static void todo_on_update(ng_scope_update_t update) {
-  if (current_app == NULL || !bytes_equal(update.path, "newTodo")) {
-    return;
+  if (!ng_update_begin(&update, app->scope, transaction,
+                       sizeof(transaction)) ||
+      !ng_update_set_json(&update, TODO_ITEMS.base,
+                          ng_bytes_from_cstr(json))) {
+    return false;
   }
 
-  decode_flat_json_string(update.value_json, current_app->new_todo,
-                          sizeof(current_app->new_todo));
+  write_size(number, sizeof(number), todo_remaining_count(app));
+  if (!ng_update_set_json(&update, TODO_REMAINING_COUNT.base,
+                          ng_bytes_from_cstr(number))) {
+    return false;
+  }
+
+  append_json_string(json, sizeof(json), 0, app->new_todo);
+  if (!ng_update_set_json(&update, TODO_NEW_TODO.base,
+                          ng_bytes_from_cstr(json))) {
+    return false;
+  }
+
+  ng_write_options_t options = {
+      ng_bytes_from_cstr("c:todo"),
+      NG_ECHO_DEFAULT,
+  };
+  return ng_update_commit(&update, options);
 }
 
-static void todo_app_bind(todo_app_t *app, const char *scope_name) {
+static void todo_on_new_todo(void *context,
+                             const ng_scope_update_t *update) {
+  todo_app_t *app = (todo_app_t *)context;
+  if (update->deleted) {
+    app->new_todo[0] = '\0';
+    return;
+  }
+  decode_flat_json_string(update->value_json, app->new_todo,
+                          sizeof(app->new_todo));
+}
+
+static bool todo_app_bind(todo_app_t *app, const char *scope_name) {
   zero_bytes(app, sizeof(*app));
   app->scope = ng_scope_ref_from_name(ng_bytes_from_cstr(scope_name));
-  current_app = app;
-  ng_set_scope_update_callback(todo_on_update);
-
-  app->watch = ng_scope_watch_path(app->scope, ng_bytes_from_cstr("newTodo"));
+  if (!ng_scope_observe(app->scope, TODO_NEW_TODO.base,
+                        NG_WATCH_OPTIONS_DEFAULT, app, todo_on_new_todo,
+                        &app->watch)) {
+    return false;
+  }
   app->item_count = 2;
   copy_text(app->items[0].task, sizeof(app->items[0].task), "Learn AngularTS");
   copy_text(app->items[1].task, sizeof(app->items[1].task),
             "Build a C Wasm app");
 
-  todo_sync(app);
+  return todo_sync(app);
 }
 
-static void todo_app_unbind(todo_app_t *app) {
-  ng_scope_unwatch_handle(app->watch);
-  ng_set_scope_update_callback(NULL);
-  current_app = NULL;
+static bool todo_app_unbind(todo_app_t *app) {
+  return !ng_watch_active(&app->watch) || ng_watch_cancel(&app->watch);
 }
 
-static void todo_app_add(todo_app_t *app, const char *title) {
+static bool todo_app_add(todo_app_t *app, const char *title) {
   if (title[0] == '\0' || app->item_count >= kMaxItems) {
-    return;
+    return false;
   }
 
   copy_text(app->items[app->item_count].task,
@@ -251,19 +252,19 @@ static void todo_app_add(todo_app_t *app, const char *title) {
   app->items[app->item_count].done = false;
   ++app->item_count;
   app->new_todo[0] = '\0';
-  todo_sync(app);
+  return todo_sync(app);
 }
 
-static void todo_app_toggle(todo_app_t *app, size_t index) {
+static bool todo_app_toggle(todo_app_t *app, size_t index) {
   if (index >= app->item_count) {
-    return;
+    return false;
   }
 
   app->items[index].done = !app->items[index].done;
-  todo_sync(app);
+  return todo_sync(app);
 }
 
-static void todo_app_archive_completed(todo_app_t *app) {
+static bool todo_app_archive_completed(todo_app_t *app) {
   size_t write = 0;
   for (size_t read = 0; read < app->item_count; ++read) {
     if (!app->items[read].done) {
@@ -274,64 +275,69 @@ static void todo_app_archive_completed(todo_app_t *app) {
     }
   }
   app->item_count = write;
-  todo_sync(app);
+  return todo_sync(app);
 }
 
 static todo_app_t app;
 
 TODO_EXPORT(todo_bind)
-void todo_bind(void) { todo_app_bind(&app, "cTodo:main"); }
+uint32_t todo_bind(void) { return todo_app_bind(&app, "cTodo:main"); }
 
 TODO_EXPORT(todo_add)
-void todo_add(const uint8_t *title_ptr, uint32_t title_len) {
+uint32_t todo_add(const uint8_t *title_ptr, uint32_t title_len) {
   char title[kMaxTask];
   if (title_len >= sizeof(title)) {
     title_len = sizeof(title) - 1;
   }
   copy_bytes(title, title_ptr, title_len);
   title[title_len] = '\0';
-  todo_app_add(&app, title);
+  return todo_app_add(&app, title);
 }
 
 TODO_EXPORT(todo_toggle)
-void todo_toggle(uint32_t index) { todo_app_toggle(&app, index); }
+uint32_t todo_toggle(uint32_t index) { return todo_app_toggle(&app, index); }
 
 TODO_EXPORT(todo_archive_completed)
-void todo_archive_completed(void) { todo_app_archive_completed(&app); }
+uint32_t todo_archive_completed(void) {
+  return todo_app_archive_completed(&app);
+}
 
 TODO_EXPORT(todo_unbind)
-void todo_unbind(void) { todo_app_unbind(&app); }
+uint32_t todo_unbind(void) { return todo_app_unbind(&app); }
 
 int main(void) {
-  todo_bind();
-  if (app.item_count != 2 || todo_remaining_count(&app) != 2) {
+  if (!todo_bind() || app.item_count != 2 || todo_remaining_count(&app) != 2) {
     return 1;
   }
 
-  ng_scope_on_update(12, (const uint8_t *)"newTodo", 7,
-                     (const uint8_t *)"\"Review C bridge\"", 17);
+  ng_scope_on_transaction(
+      12,
+      (const uint8_t *)"{\"set\":{\"newTodo\":\"Review C bridge\"}}",
+      37);
   if (!text_equal(app.new_todo, "Review C bridge")) {
     return 1;
   }
 
-  todo_add((const uint8_t *)"Review C bridge", 15);
-  if (app.item_count != 3 || todo_remaining_count(&app) != 3 ||
+  if (!todo_add((const uint8_t *)"Review C bridge", 15) ||
+      app.item_count != 3 || todo_remaining_count(&app) != 3 ||
       app.new_todo[0] != '\0') {
     return 1;
   }
 
-  todo_toggle(0);
-  if (!app.items[0].done || todo_remaining_count(&app) != 2) {
+  if (!todo_toggle(0) || !app.items[0].done ||
+      todo_remaining_count(&app) != 2) {
     return 1;
   }
 
-  todo_archive_completed();
-  if (app.item_count != 2 || todo_remaining_count(&app) != 2 ||
+  if (!todo_archive_completed() || app.item_count != 2 ||
+      todo_remaining_count(&app) != 2 ||
       !text_equal(app.items[0].task, "Build a C Wasm app")) {
     return 1;
   }
 
-  todo_unbind();
+  if (!todo_unbind()) {
+    return 1;
+  }
 
   return 0;
 }

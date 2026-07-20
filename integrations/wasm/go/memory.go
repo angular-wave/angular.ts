@@ -4,6 +4,11 @@ import "unsafe"
 
 var allocations = map[uint32][]byte{}
 
+//export ng_abi_version
+func ngABIVersion() uint32 {
+	return 1
+}
+
 //export ng_abi_alloc
 func ngABIAlloc(size uint32) uint32 {
 	if size == 0 {

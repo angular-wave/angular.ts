@@ -1,4 +1,4 @@
-.PHONY: all deps format format-check test root-types generate generate-check parity check runtime-build example-build runtime-test release-check publish-local demo clean
+.PHONY: all deps sync-local-runtime format format-check test root-types generate generate-check parity check runtime-build example-build runtime-test release-check publish-local demo clean
 
 GRADLE ?= ./gradlew
 NODE ?= node
@@ -8,6 +8,10 @@ all: check
 
 deps:
 	$(GRADLE) kotlinNpmInstall
+	$(NODE) tool/sync_local_runtime.mjs
+
+sync-local-runtime:
+	$(NODE) tool/sync_local_runtime.mjs
 
 format:
 	$(GRADLE) formatKotlin
@@ -31,9 +35,12 @@ generate-check: root-types
 parity: root-types
 	$(NODE) tool/check_ng_namespace_parity.mjs
 	$(NODE) tool/check_ng_namespace_members.mjs
+	$(NODE) tool/check_typed_mappings.mjs
+	$(NODE) tool/check_raw_wrapper_delegates.mjs
+	$(NODE) tool/check_package_boundaries.mjs
 
 runtime-build:
-	$(MAKE) -C ../.. build
+	$(MAKE) -C ../.. release-build
 
 example-build:
 	$(GRADLE) :examples:basic_app:jsBrowserProductionWebpack
@@ -46,7 +53,7 @@ check: generate-check format-check test parity runtime-test
 
 release-check: check
 	$(MAKE) -C ../dart check
-	$(MAKE) -C ../.. build
+	$(MAKE) -C ../.. release-build
 
 publish-local:
 	$(GRADLE) publishToMavenLocal

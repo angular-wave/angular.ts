@@ -20,6 +20,7 @@ parity: deps
 	$(DART) run tool/check_ng_namespace_parity.dart
 	node tool/check_ng_namespace_members.mjs
 	node tool/check_manual_overrides.mjs
+	node tool/check_override_coverage.mjs
 
 generated-base-check:
 	node tool/check_generated_base_usage.mjs
@@ -43,7 +44,7 @@ format-check: deps
 check: generate-check format-check analyze test parity generated-base-check runtime-test
 
 runtime-build:
-	$(MAKE) -C ../.. build
+	$(MAKE) -C ../.. release-build
 
 runtime-test: runtime-build example-build
 	$(PLAYWRIGHT) test --config playwright.config.ts

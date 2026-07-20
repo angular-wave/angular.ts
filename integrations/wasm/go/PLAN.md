@@ -28,18 +28,12 @@ package should call the same `angular_ts` imports:
 ```text
 scope_resolve
 scope_get
-scope_get_named
 scope_set
-scope_set_named
 scope_delete
-scope_delete_named
 scope_sync
-scope_sync_named
 scope_watch
-scope_watch_named
 scope_unwatch
 scope_unbind
-scope_unbind_named
 buffer_ptr
 buffer_len
 buffer_free
@@ -52,7 +46,7 @@ ng_abi_alloc
 ng_abi_free
 ng_scope_on_bind
 ng_scope_on_unbind
-ng_scope_on_update
+ng_scope_on_transaction
 ```
 
 Standard Go browser Wasm does not currently expose arbitrary guest exports as
@@ -143,7 +137,7 @@ same required surface:
 - Restricted scope/lifecycle facade: `Scope` and `RootScopeService`.
 - Go authoring metadata: `Component`, `Controller`, `ControllerConstructor`,
   `NgModule`, `Injectable`, and `InjectionTokens`.
-- HTTP facade: `HttpService`, `RequestConfig`, `RequestShortcutConfig`,
+- HTTP facade: `HttpService`, `HttpRequestConfig`, `HttpRequestOptions`,
   `HttpMethod`, `HttpResponse`, and `HttpResponseStatus`.
 - Diagnostics and events: `LogService`, `ExceptionHandlerService`,
   `PubSubService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`.
@@ -151,12 +145,12 @@ same required surface:
 - Persistence: `StorageBackend`, `StorageType`, `CookieService`,
   `CookieOptions`, and `CookieStoreOptions`.
 
-Deferred Go parity follows the Rust deferred list: providers other than
-config-free marker facades such as `MachineProvider`, compile/link directive
-internals with attrs-free directive link callbacks, transclusion, browser
-object escape hatches, animation, workers, web components,
-parse/interpolate/filter/SCE/location, forms, REST cache/revalidation helpers,
-and WebTransport unless a Go reference example needs them.
+Deferred Go parity follows the Rust deferred list: provider/config-time
+internals, compile/link directive internals with attrs-free directive link
+callbacks, transclusion, browser object escape hatches, animation, workers, web
+components, parse/interpolate/filter/SCE/location, forms, REST
+cache/revalidation helpers, and WebTransport unless a Go reference example
+needs them. Provider-shaped namespace aliases are not a parity target.
 
 ## Code Generation Direction
 
@@ -199,7 +193,7 @@ metadata, scope refresh, and scope watch routing.
 - [x] Declare/import the `angular_ts` host ABI functions.
 - [x] Export `ng_abi_alloc` and `ng_abi_free`.
 - [x] Add string and JSON pointer/length helpers.
-- [x] Add `Scope`, `NamedScope`, `Watch`, and `Update` wrappers.
+- [x] Add `Scope`, `Watch`, and `Update`; resolve names once into handles.
 
 ### Phase B - Todo Proof
 
@@ -270,13 +264,11 @@ metadata, scope refresh, and scope watch routing.
 - [x] Add Playwright coverage for generated Go registration and lifecycle
       behavior.
 - [x] Add browser coverage for UI-to-Go and Go-to-DOM state propagation.
-- [ ] Run `make check` and `make browser-test` as the local completion gate.
+- [x] Run `make check` and `make browser-test` as the local completion gate.
   - [x] `make check`
-  - [ ] `make browser-test`
-    - Blocked in the current sandbox because Playwright's configured web
-      server cannot bind local TCP/UDP sockets.
-    - `PW_SKIP_WEB_SERVER=1` allows the same Playwright test to run against an
-      already-running `PW_BASE_URL` without starting `make serve`.
+  - [x] `make browser-test`
+    - Verified after fixing top-level `WasmScope.set()` reactivity and
+      restarting the dev server so the Go demo loaded rebuilt package exports.
 - [x] Document remaining deferred parity with reasons.
 
 ## Non-Goals

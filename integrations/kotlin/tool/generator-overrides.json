@@ -3,6 +3,11 @@
   "manual": [],
   "renames": {},
   "returnTypes": {},
-  "types": {},
+  "types": {
+    "Element": "org.w3c.dom.Element",
+    "Event": "org.w3c.dom.events.Event",
+    "HTMLElement": "org.w3c.dom.HTMLElement",
+    "Node": "org.w3c.dom.Node"
+  },
   "unsupported": []
 }

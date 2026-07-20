@@ -4,7 +4,7 @@ import angular_ts/unsafe
 import gleam/dynamic.{type Dynamic}
 
 pub type Injector =
-  namespace.InjectorService
+  namespace.InjectorService(Dynamic)
 
 pub fn get(injector: Injector, token: Token(value)) -> Dynamic {
   unsafe.call_method1(

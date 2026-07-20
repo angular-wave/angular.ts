@@ -2,6 +2,7 @@ package org.angular.ts.demo.j2cl;
 
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -9,28 +10,27 @@ import jsinterop.base.JsPropertyMap;
 /** Todo item exposed to AngularTS templates from J2CL-generated JavaScript. */
 @JsType(namespace = JsPackage.GLOBAL, name = "J2clTodo")
 public final class Todo {
-  private final double id;
-  private final String task;
-  private boolean done;
+  @JsProperty
+  public final double id;
+  @JsProperty
+  public final String task;
+  @JsProperty
+  public boolean done;
 
   @JsConstructor
   public Todo(double id, String task, boolean done) {
     this.id = id;
     this.task = task;
     this.done = done;
-    syncTemplateState();
-  }
-
-  boolean isDone() {
-    return done;
+    publishState();
   }
 
   void setDone(boolean done) {
     this.done = done;
-    syncTemplateState();
+    publishState();
   }
 
-  private void syncTemplateState() {
+  private void publishState() {
     JsPropertyMap<Object> self = Js.asPropertyMap(this);
     self.set("id", id);
     self.set("task", task);

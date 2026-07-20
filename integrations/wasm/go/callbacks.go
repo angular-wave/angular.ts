@@ -1,5 +1,7 @@
 package angularwasm
 
+import "encoding/json"
+
 type watchCallback struct {
 	scopeHandle uint32
 	path        string
@@ -37,18 +39,36 @@ func ngScopeOnUnbind(scopeHandle uint32) {
 	}
 }
 
-//export ng_scope_on_update
-func ngScopeOnUpdate(scopeHandle uint32, pathPtr uint32, pathLen uint32, valuePtr uint32, valueLen uint32) {
-	path := string(bytesFromHost(pathPtr, pathLen))
-	payload := bytesFromHost(valuePtr, valueLen)
+//export ng_scope_on_transaction
+func ngScopeOnTransaction(scopeHandle uint32, transactionPtr uint32, transactionLen uint32) {
+	var transaction struct {
+		Set    map[string]json.RawMessage `json:"set"`
+		Delete []string                   `json:"delete"`
+	}
+	if err := json.Unmarshal(bytesFromHost(transactionPtr, transactionLen), &transaction); err != nil {
+		return
+	}
 
 	for _, callback := range watchCallbacks {
-		if callback.scopeHandle == scopeHandle && callback.path == path {
+		if callback.scopeHandle != scopeHandle {
+			continue
+		}
+		if payload, ok := transaction.Set[callback.path]; ok {
 			callback.fn(Update{
 				ScopeHandle: scopeHandle,
-				Path:        path,
+				Path:        callback.path,
 				JSON:        payload,
 			})
+		}
+		for _, path := range transaction.Delete {
+			if path == callback.path {
+				callback.fn(Update{
+					ScopeHandle: scopeHandle,
+					Path:        path,
+					JSON:        []byte("null"),
+					Deleted:     true,
+				})
+			}
 		}
 	}
 }

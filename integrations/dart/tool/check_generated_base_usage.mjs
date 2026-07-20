@@ -19,7 +19,7 @@ for (const file of dartFiles(libSrc)) {
   const source = readFileSync(file, "utf8");
 
   for (const match of source.matchAll(
-    /(?:final|base|sealed|abstract)?\s*class\s+([A-Za-z0-9_]+)\s+extends\s+AngularTsJsFacade/g
+    /(?:final|base|sealed|abstract)?\s*class\s+([A-Za-z0-9_]+)(?:<[^>{}]+>)?\s+extends\s+AngularTsJsFacade/g
   )) {
     const className = match[1];
 

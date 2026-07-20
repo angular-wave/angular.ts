@@ -29,20 +29,21 @@ func WrapWebSocketService(value js.Value) WebSocketService { return WebSocketSer
 func WrapSseService(value js.Value) SseService             { return SseService{value: value} }
 func WrapRestFactory(value js.Value) RestFactory           { return RestFactory{value: value} }
 func WrapMachineService(value js.Value) MachineService     { return MachineService{value: value} }
+func WrapWorkerService(value js.Value) WorkerService       { return WorkerService{value: value} }
 
 func (s RootScopeService) NewChild() js.Value { return s.value.Call("$new") }
 
 func (s HttpService) Get(url string) js.Value { return s.value.Call("get", url) }
-func (s HttpService) GetWith(url string, config RequestShortcutConfig) js.Value {
+func (s HttpService) GetWith(url string, config HttpRequestOptions) js.Value {
 	return s.value.Call("get", url, requestShortcutToJS(config))
 }
 func (s HttpService) Post(url string, body any) js.Value {
 	return s.value.Call("post", url, toJS(body))
 }
-func (s HttpService) PostWith(url string, body any, config RequestShortcutConfig) js.Value {
+func (s HttpService) PostWith(url string, body any, config HttpRequestOptions) js.Value {
 	return s.value.Call("post", url, toJS(body), requestShortcutToJS(config))
 }
-func (s HttpService) Request(config RequestConfig) js.Value {
+func (s HttpService) Request(config HttpRequestConfig) js.Value {
 	return s.value.Invoke(requestConfigToJS(config))
 }
 
@@ -116,10 +117,10 @@ func (s StateService) Href(state string, params any) string {
 	return result.String()
 }
 
-func (s StateService) Is(state string) bool       { return s.value.Call("is", state).Bool() }
-func (s StateService) Includes(state string) bool { return s.value.Call("includes", state).Bool() }
-func (s StateService) Reload() js.Value           { return s.value.Call("reload") }
-func (s StateService) Get(state string) js.Value  { return s.value.Call("get", state) }
+func (s StateService) Matches(state string, params any, exact bool) bool {
+	return s.value.Call("matches", state, toJS(params), toJS(map[string]any{"exact": exact})).Bool()
+}
+func (s StateService) Get(state string) js.Value { return s.value.Call("get", state) }
 
 // Register adds a state declaration to $stateRegistry.
 func (s StateRegistryService) Register(state StateDeclaration) js.Value {
@@ -147,12 +148,12 @@ func (t Transition) Abort()             { t.value.Call("abort") }
 // Open creates a managed WebSocket connection.
 func (s WebSocketService) Open(url string, config WebSocketConfig) WebSocketConnection {
 	return WebSocketConnection{
-		value: s.value.Invoke(url, stringSliceToJS(config.Protocols), config.toJS()),
+		value: s.value.Invoke(url, config.toJS()),
 	}
 }
 
-func (c WebSocketConnection) Connect() { c.value.Call("connect") }
-func (c WebSocketConnection) Close()   { c.value.Call("close") }
+func (c WebSocketConnection) Reconnect() { c.value.Call("reconnect") }
+func (c WebSocketConnection) Close()     { c.value.Call("close") }
 func (c WebSocketConnection) Send(value any) {
 	c.value.Call("send", toJS(value))
 }
@@ -162,8 +163,8 @@ func (s SseService) Open(url string, config SseConfig) SseConnection {
 	return SseConnection{value: s.value.Invoke(url, config.toJS())}
 }
 
-func (c SseConnection) Connect() { c.value.Call("connect") }
-func (c SseConnection) Close()   { c.value.Call("close") }
+func (c SseConnection) Reconnect() { c.value.Call("reconnect") }
+func (c SseConnection) Close()     { c.value.Call("close") }
 
 // Resource creates a REST resource client.
 func (f RestFactory) Resource(baseURL string, options RestOptions) RestService {
@@ -200,6 +201,73 @@ func (s RestService) Delete(id any) js.Value {
 // CreateFromJS creates an AngularTS machine from a JavaScript-compatible config.
 func (s MachineService) CreateFromJS(config any) js.Value {
 	return s.value.Invoke(toJS(config))
+}
+
+// Start creates a managed WorkerHandle.
+func (s WorkerService) Start(scriptPath string, config WorkerConfig) WorkerHandle {
+	return WorkerHandle{value: s.value.Invoke(scriptPath, config.toJS())}
+}
+
+// Status returns the current managed worker lifecycle state.
+func (h WorkerHandle) Status() WorkerStatus {
+	return WorkerStatus(h.value.Get("status").String())
+}
+
+// RestartCount returns the number of completed worker restarts.
+func (h WorkerHandle) RestartCount() int { return h.value.Get("restartCount").Int() }
+
+// Post sends a structured-clone-compatible value.
+func (h WorkerHandle) Post(message any) { h.value.Call("post", workerValue(message)) }
+
+// PostWithTransfer sends a value and transfers ownership of native objects.
+func (h WorkerHandle) PostWithTransfer(message any, transfer []js.Value) {
+	array := js.Global().Get("Array").New()
+	for _, value := range transfer {
+		array.Call("push", value)
+	}
+	h.value.Call("post", workerValue(message), array)
+}
+
+// Request starts a correlated request and returns its JavaScript Promise.
+func (h WorkerHandle) Request(message any, options WorkerRequestOptions) js.Value {
+	return h.value.Call("request", workerValue(message), options.toJS())
+}
+
+// Model returns a model synchronization target for a worker channel.
+func (h WorkerHandle) Model(channel string) js.Value { return h.value.Call("model", channel) }
+
+// OnMessage subscribes to decoded worker messages and returns the disposer.
+func (h WorkerHandle) OnMessage(listener js.Func) js.Value {
+	return h.value.Call("onMessage", listener)
+}
+
+// OnError subscribes to managed WorkerError values and returns the disposer.
+func (h WorkerHandle) OnError(listener js.Func) js.Value {
+	return h.value.Call("onError", listener)
+}
+
+// Restart replaces the current native worker immediately.
+func (h WorkerHandle) Restart() { h.value.Call("restart") }
+
+// Terminate permanently stops the managed worker.
+func (h WorkerHandle) Terminate() { h.value.Call("terminate") }
+
+// WithDecoder installs a browser message decoder.
+func (c WorkerConfig) WithDecoder(decoder js.Func) WorkerConfig {
+	c.decode = decoder.Value
+	return c
+}
+
+// WithSignal attaches an AbortSignal to a correlated request.
+func (c WorkerRequestOptions) WithSignal(signal js.Value) WorkerRequestOptions {
+	c.signal = signal
+	return c
+}
+
+// WithTransfer attaches transferable values to a correlated request.
+func (c WorkerRequestOptions) WithTransfer(transfer ...js.Value) WorkerRequestOptions {
+	c.transfer = append([]jsValue(nil), transfer...)
+	return c
 }
 
 func (s StateDeclaration) toJS() js.Value {
@@ -241,6 +309,53 @@ func (c SseConfig) toJS() js.Value {
 	return toJS(value)
 }
 
+func (c WorkerConfig) toJS() js.Value {
+	value := map[string]any{
+		"type":    string(c.Type),
+		"restart": c.Restart,
+	}
+	if c.Name != "" {
+		value["name"] = c.Name
+	}
+	if c.Credentials != "" {
+		value["credentials"] = string(c.Credentials)
+	}
+	if c.Restart {
+		value["restartDelay"] = c.RestartDelayMS
+		value["maxRestarts"] = c.MaxRestarts
+	}
+	config := toJS(value)
+	if c.decode.Truthy() {
+		config.Set("decode", c.decode)
+	}
+	return config
+}
+
+func (c WorkerRequestOptions) toJS() js.Value {
+	options := js.Global().Get("Object").New()
+	if c.TimeoutMS > 0 {
+		options.Set("timeout", c.TimeoutMS)
+	}
+	if c.signal.Truthy() {
+		options.Set("signal", c.signal)
+	}
+	if len(c.transfer) > 0 {
+		transfer := js.Global().Get("Array").New()
+		for _, value := range c.transfer {
+			transfer.Call("push", value)
+		}
+		options.Set("transfer", transfer)
+	}
+	return options
+}
+
+func workerValue(value any) js.Value {
+	if native, ok := value.(js.Value); ok {
+		return native
+	}
+	return toJS(value)
+}
+
 func connectionConfigToMap(c ConnectionConfig) map[string]any {
 	value := map[string]any{}
 	if c.RetryDelayMS > 0 {
@@ -258,7 +373,7 @@ func connectionConfigToMap(c ConnectionConfig) map[string]any {
 	return value
 }
 
-func requestShortcutToJS(config RequestShortcutConfig) js.Value {
+func requestShortcutToJS(config HttpRequestOptions) js.Value {
 	value := map[string]any{}
 	if len(config.Headers) > 0 {
 		value["headers"] = config.Headers
@@ -278,7 +393,7 @@ func requestShortcutToJS(config RequestShortcutConfig) js.Value {
 	return toJS(value)
 }
 
-func requestConfigToJS(config RequestConfig) js.Value {
+func requestConfigToJS(config HttpRequestConfig) js.Value {
 	value := map[string]any{
 		"method": string(config.Method),
 		"url":    config.URL,
@@ -327,12 +442,4 @@ func toJS(value any) js.Value {
 		return js.Undefined()
 	}
 	return js.Global().Get("JSON").Call("parse", string(encoded))
-}
-
-func stringSliceToJS(values []string) js.Value {
-	array := js.Global().Get("Array").New()
-	for _, value := range values {
-		array.Call("push", value)
-	}
-	return array
 }

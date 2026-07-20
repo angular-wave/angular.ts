@@ -23,8 +23,8 @@ const (
 	HttpAbort    HttpResponseStatus = "abort"
 )
 
-// RequestShortcutConfig captures options accepted by AngularTS HTTP shortcut methods.
-type RequestShortcutConfig struct {
+// HttpRequestOptions captures options accepted by AngularTS HTTP shortcut methods.
+type HttpRequestOptions struct {
 	Headers      map[string]string
 	Params       map[string]string
 	TimeoutMS    int
@@ -33,12 +33,12 @@ type RequestShortcutConfig struct {
 }
 
 // NewRequestShortcutConfig creates empty HTTP shortcut options.
-func NewRequestShortcutConfig() RequestShortcutConfig {
-	return RequestShortcutConfig{}
+func NewRequestShortcutConfig() HttpRequestOptions {
+	return HttpRequestOptions{}
 }
 
 // WithHeader sets one request header.
-func (c RequestShortcutConfig) WithHeader(name string, value string) RequestShortcutConfig {
+func (c HttpRequestOptions) WithHeader(name string, value string) HttpRequestOptions {
 	if c.Headers == nil {
 		c.Headers = map[string]string{}
 	}
@@ -47,7 +47,7 @@ func (c RequestShortcutConfig) WithHeader(name string, value string) RequestShor
 }
 
 // WithParam sets one query parameter.
-func (c RequestShortcutConfig) WithParam(name string, value string) RequestShortcutConfig {
+func (c HttpRequestOptions) WithParam(name string, value string) HttpRequestOptions {
 	if c.Params == nil {
 		c.Params = map[string]string{}
 	}
@@ -56,42 +56,42 @@ func (c RequestShortcutConfig) WithParam(name string, value string) RequestShort
 }
 
 // WithTimeout sets a millisecond request timeout.
-func (c RequestShortcutConfig) WithTimeout(timeoutMS int) RequestShortcutConfig {
+func (c HttpRequestOptions) WithTimeout(timeoutMS int) HttpRequestOptions {
 	c.TimeoutMS = timeoutMS
 	return c
 }
 
 // WithResponseType sets the response body reader hint.
-func (c RequestShortcutConfig) WithResponseType(responseType string) RequestShortcutConfig {
+func (c HttpRequestOptions) WithResponseType(responseType string) HttpRequestOptions {
 	c.ResponseType = responseType
 	return c
 }
 
 // WithCredentials sets whether cross-site requests include credentials.
-func (c RequestShortcutConfig) WithCredentials(withCredentials bool) RequestShortcutConfig {
+func (c HttpRequestOptions) WithCredentials(withCredentials bool) HttpRequestOptions {
 	c.Credentials = &withCredentials
 	return c
 }
 
-// RequestConfig is a minimal AngularTS $http request config.
-type RequestConfig struct {
+// HttpRequestConfig is a minimal AngularTS $http request config.
+type HttpRequestConfig struct {
 	Method HttpMethod
 	URL    string
-	RequestShortcutConfig
+	HttpRequestOptions
 }
 
 // NewRequestConfig creates a request config for method and URL.
-func NewRequestConfig(method HttpMethod, url string) RequestConfig {
-	return RequestConfig{Method: method, URL: url}
+func NewRequestConfig(method HttpMethod, url string) HttpRequestConfig {
+	return HttpRequestConfig{Method: method, URL: url}
 }
 
 // GetRequest creates a GET request config.
-func GetRequest(url string) RequestConfig {
+func GetRequest(url string) HttpRequestConfig {
 	return NewRequestConfig(HttpGet, url)
 }
 
 // PostRequest creates a POST request config.
-func PostRequest(url string) RequestConfig {
+func PostRequest(url string) HttpRequestConfig {
 	return NewRequestConfig(HttpPost, url)
 }
 
@@ -101,6 +101,136 @@ type HttpResponse[T any] struct {
 	Status     int
 	StatusText string
 	XHRStatus  HttpResponseStatus
+}
+
+// WorkerType selects the browser Worker script mode.
+type WorkerType string
+
+const (
+	WorkerModule  WorkerType = "module"
+	WorkerClassic WorkerType = "classic"
+)
+
+// WorkerCredentials controls credentials for module Worker scripts.
+type WorkerCredentials string
+
+const (
+	WorkerCredentialsOmit       WorkerCredentials = "omit"
+	WorkerCredentialsSameOrigin WorkerCredentials = "same-origin"
+	WorkerCredentialsInclude    WorkerCredentials = "include"
+)
+
+// WorkerStatus is the lifecycle state exposed by a managed WorkerHandle.
+type WorkerStatus string
+
+const (
+	WorkerRunning    WorkerStatus = "running"
+	WorkerRestarting WorkerStatus = "restarting"
+	WorkerFailed     WorkerStatus = "error"
+	WorkerTerminated WorkerStatus = "terminated"
+)
+
+// WorkerErrorCode identifies a managed worker failure category.
+type WorkerErrorCode string
+
+const (
+	WorkerRuntimeError        WorkerErrorCode = "runtime"
+	WorkerMessageError        WorkerErrorCode = "message"
+	WorkerDecodeError         WorkerErrorCode = "decode"
+	WorkerRequestError        WorkerErrorCode = "request"
+	WorkerRequestTimeoutError WorkerErrorCode = "request-timeout"
+	WorkerRequestAbortedError WorkerErrorCode = "request-aborted"
+	WorkerTerminatedError     WorkerErrorCode = "terminated"
+)
+
+// WorkerError is portable metadata from an AngularTS WorkerError.
+type WorkerError struct {
+	Code    WorkerErrorCode
+	Message string
+	Cause   any
+}
+
+// WorkerConfig configures one managed browser Worker.
+type WorkerConfig struct {
+	Type           WorkerType
+	Name           string
+	Credentials    WorkerCredentials
+	Restart        bool
+	RestartDelayMS int
+	MaxRestarts    int
+	decode         jsValue
+}
+
+// NewWorkerConfig creates module Worker options with automatic restart disabled.
+func NewWorkerConfig() WorkerConfig {
+	return WorkerConfig{Type: WorkerModule}
+}
+
+// Classic selects a classic Worker script.
+func (c WorkerConfig) Classic() WorkerConfig {
+	c.Type = WorkerClassic
+	return c
+}
+
+// WithName assigns the native Worker name.
+func (c WorkerConfig) WithName(name string) WorkerConfig {
+	c.Name = name
+	return c
+}
+
+// WithCredentials assigns the native Worker credentials mode.
+func (c WorkerConfig) WithCredentials(credentials WorkerCredentials) WorkerConfig {
+	c.Credentials = credentials
+	return c
+}
+
+// WithRestart enables bounded automatic restart with exponential backoff.
+func (c WorkerConfig) WithRestart(delayMS int, maxRestarts int) WorkerConfig {
+	c.Restart = true
+	c.RestartDelayMS = delayMS
+	c.MaxRestarts = maxRestarts
+	return c
+}
+
+// WorkerRequestOptions configures one correlated WorkerHandle request.
+type WorkerRequestOptions struct {
+	TimeoutMS int
+	signal    jsValue
+	transfer  []jsValue
+}
+
+// NewWorkerRequestOptions creates request options using the framework timeout.
+func NewWorkerRequestOptions() WorkerRequestOptions { return WorkerRequestOptions{} }
+
+// WithTimeout sets a request timeout in milliseconds.
+func (c WorkerRequestOptions) WithTimeout(timeoutMS int) WorkerRequestOptions {
+	c.TimeoutMS = timeoutMS
+	return c
+}
+
+// WorkerRequest is the correlated request envelope understood by AngularTS workers.
+type WorkerRequest[T any] struct {
+	Type    string
+	ID      string
+	Payload T
+}
+
+// WorkerResponse is the correlated response envelope returned by AngularTS workers.
+type WorkerResponse[T any] struct {
+	Type   string
+	ID     string
+	OK     bool
+	Result T
+	Error  any
+}
+
+// WorkerModelMessage is the shared model-channel protocol envelope.
+type WorkerModelMessage[T any] struct {
+	Type     string
+	Channel  string
+	Snapshot T
+	Change   any
+	Options  any
 }
 
 // StorageType is a persistent storage backend selector.
@@ -120,204 +250,207 @@ type StorageBackend interface {
 	Remove(key string)
 }
 
-// MachineMode is a mode name used by AngularTS $machine.
-type MachineMode string
+// MachineState is a state name used by AngularTS $machine.
+type MachineState string
 
 // MachineEventMap is event metadata keyed by event type.
 type MachineEventMap map[string]any
 
-// MachineTransitionResult is returned by a machine transition.
-type MachineTransitionResult struct {
-	Mode MachineMode
-}
-
-// NextMode creates a transition result that moves to mode.
-func NextMode(mode MachineMode) MachineTransitionResult {
-	return MachineTransitionResult{Mode: mode}
-}
-
-// Stay keeps the current mode after transition effects have run.
-func Stay() MachineTransitionResult {
-	return MachineTransitionResult{}
-}
-
-// MachineTransition mutates data and optionally returns the next mode.
-type MachineTransition[TData any, TPayload any] func(data *TData, payload TPayload, machine *Machine[TData, TPayload]) MachineTransitionResult
-
-// MachineGuard decides whether a transition may run.
-type MachineGuard[TData any, TPayload any] func(data *TData, payload TPayload, machine *Machine[TData, TPayload]) bool
-
-// MachineTransitionDescriptor stores a guarded transition target.
-type MachineTransitionDescriptor[TData any, TPayload any] struct {
-	Guard  MachineGuard[TData, TPayload]
-	Target MachineTransition[TData, TPayload]
-}
-
-// NewMachineTransitionDescriptor creates a guarded transition descriptor.
-func NewMachineTransitionDescriptor[TData any, TPayload any](guard MachineGuard[TData, TPayload], target MachineTransition[TData, TPayload]) MachineTransitionDescriptor[TData, TPayload] {
-	return MachineTransitionDescriptor[TData, TPayload]{Guard: guard, Target: target}
-}
-
-// Definition converts the descriptor into a transition definition.
-func (d MachineTransitionDescriptor[TData, TPayload]) Definition() MachineTransitionDefinition[TData, TPayload] {
-	return MachineTransitionDefinition[TData, TPayload]{Guard: d.Guard, Target: d.Target}
-}
-
-// MachineTransitionDefinition stores a bare or guarded transition target.
-type MachineTransitionDefinition[TData any, TPayload any] struct {
-	Guard  MachineGuard[TData, TPayload]
-	Target MachineTransition[TData, TPayload]
-}
-
-// NewMachineTransitionDefinition creates a transition definition from a bare transition.
-func NewMachineTransitionDefinition[TData any, TPayload any](target MachineTransition[TData, TPayload]) MachineTransitionDefinition[TData, TPayload] {
-	return MachineTransitionDefinition[TData, TPayload]{Target: target}
-}
-
-// CanRun reports whether the definition has a target and its guard passes.
-func (d MachineTransitionDefinition[TData, TPayload]) CanRun(data *TData, payload TPayload, machine *Machine[TData, TPayload]) bool {
-	return d.Target != nil && (d.Guard == nil || d.Guard(data, payload, machine))
-}
-
-// MachineTransitionMap is keyed by current mode and event type.
-type MachineTransitionMap[TData any, TPayload any] map[MachineMode]map[string]MachineTransitionDefinition[TData, TPayload]
-
-// MachineTransitionContext is passed to machine hooks.
-type MachineTransitionContext[TData any, TPayload any] struct {
+// MachineEventTransitionContext is passed to state-tree transition callbacks.
+type MachineEventTransitionContext[TData any, TPayload any] struct {
 	Type    string
-	From    MachineMode
-	To      MachineMode
+	From    MachineState
+	To      MachineState
 	Payload TPayload
 	Data    *TData
 	Machine *Machine[TData, TPayload]
 }
 
-// MachineTransitionHook observes a handled transition.
-type MachineTransitionHook[TData any, TPayload any] func(MachineTransitionContext[TData, TPayload])
+// MachineEventTransitionGuard decides whether a state-tree transition may run.
+type MachineEventTransitionGuard[TData any, TPayload any] func(MachineEventTransitionContext[TData, TPayload]) bool
 
-// MachineModeHooks stores mode-specific hooks.
-type MachineModeHooks[TData any, TPayload any] map[MachineMode]MachineTransitionHook[TData, TPayload]
+// MachineEventTransitionUpdate mutates data for a state-tree transition.
+type MachineEventTransitionUpdate[TData any, TPayload any] func(*MachineEventTransitionContext[TData, TPayload])
+
+// MachineEventTransitionHook observes a state-tree transition.
+type MachineEventTransitionHook[TData any, TPayload any] func(MachineEventTransitionContext[TData, TPayload])
+
+// MachineStateHooks stores state-specific hooks.
+type MachineStateHooks[TData any, TPayload any] map[MachineState]MachineEventTransitionHook[TData, TPayload]
 
 // MachineHooks stores optional machine transition hooks.
 type MachineHooks[TData any, TPayload any] struct {
-	Enter      MachineModeHooks[TData, TPayload]
-	Exit       MachineModeHooks[TData, TPayload]
-	Transition MachineTransitionHook[TData, TPayload]
+	Enter      MachineStateHooks[TData, TPayload]
+	Exit       MachineStateHooks[TData, TPayload]
+	Transition MachineEventTransitionHook[TData, TPayload]
 }
 
-// MachineConfig configures a Go-authored machine.
-type MachineConfig[TData any, TPayload any] struct {
-	Initial     MachineMode
-	Data        TData
-	Transitions MachineTransitionMap[TData, TPayload]
-	Hooks       MachineHooks[TData, TPayload]
+// MachineEventTransitionConfig configures one state-tree event transition.
+type MachineEventTransitionConfig[TData any, TPayload any] struct {
+	To     MachineState
+	Guard  MachineEventTransitionGuard[TData, TPayload]
+	Before MachineEventTransitionHook[TData, TPayload]
+	Update MachineEventTransitionUpdate[TData, TPayload]
+	After  MachineEventTransitionHook[TData, TPayload]
+	Denied MachineEventTransitionHook[TData, TPayload]
 }
 
-// WithTransition adds a transition for mode and event type.
-func (c MachineConfig[TData, TPayload]) WithTransition(mode MachineMode, eventType string, transition MachineTransition[TData, TPayload]) MachineConfig[TData, TPayload] {
-	return c.WithTransitionDefinition(mode, eventType, NewMachineTransitionDefinition(transition))
+// CanRun reports whether the transition is configured and its guard passes.
+func (c MachineEventTransitionConfig[TData, TPayload]) CanRun(context MachineEventTransitionContext[TData, TPayload]) bool {
+	return (c.To != "" || c.Update != nil) && (c.Guard == nil || c.Guard(context))
 }
 
-// WithGuardedTransition adds a guarded transition for mode and event type.
-func (c MachineConfig[TData, TPayload]) WithGuardedTransition(mode MachineMode, eventType string, guard MachineGuard[TData, TPayload], transition MachineTransition[TData, TPayload]) MachineConfig[TData, TPayload] {
-	return c.WithTransitionDefinition(mode, eventType, NewMachineTransitionDescriptor(guard, transition).Definition())
+// MachineStateTransitionMap is keyed by event type for one state.
+type MachineStateTransitionMap[TData any, TPayload any] map[string]MachineEventTransitionConfig[TData, TPayload]
+
+// MachineStateDefinition stores the event transitions for one state.
+type MachineStateDefinition[TData any, TPayload any] struct {
+	On MachineStateTransitionMap[TData, TPayload]
 }
 
-// WithTransitionDefinition adds a bare or guarded transition definition.
-func (c MachineConfig[TData, TPayload]) WithTransitionDefinition(mode MachineMode, eventType string, definition MachineTransitionDefinition[TData, TPayload]) MachineConfig[TData, TPayload] {
-	if c.Transitions == nil {
-		c.Transitions = MachineTransitionMap[TData, TPayload]{}
+// MachineStateMap is keyed by machine state.
+type MachineStateMap[TData any, TPayload any] map[MachineState]MachineStateDefinition[TData, TPayload]
+
+// MachineStateConfig configures a Go-authored state-tree machine.
+type MachineStateConfig[TData any, TPayload any] struct {
+	Initial MachineState
+	Data    TData
+	States  MachineStateMap[TData, TPayload]
+	Hooks   MachineHooks[TData, TPayload]
+}
+
+// WithEvent adds an explicit event transition for state and event type.
+func (c MachineStateConfig[TData, TPayload]) WithEvent(stateName MachineState, eventType string, transition MachineEventTransitionConfig[TData, TPayload]) MachineStateConfig[TData, TPayload] {
+	if c.States == nil {
+		c.States = MachineStateMap[TData, TPayload]{}
 	}
-	if c.Transitions[mode] == nil {
-		c.Transitions[mode] = map[string]MachineTransitionDefinition[TData, TPayload]{}
+	definition := c.States[stateName]
+	if definition.On == nil {
+		definition.On = MachineStateTransitionMap[TData, TPayload]{}
 	}
-	c.Transitions[mode][eventType] = definition
+	definition.On[eventType] = transition
+	c.States[stateName] = definition
+	if transition.To != "" {
+		if _, ok := c.States[transition.To]; !ok {
+			c.States[transition.To] = MachineStateDefinition[TData, TPayload]{}
+		}
+	}
 	return c
 }
 
-// MachineSnapshot captures a machine's current mode and data.
+// WithRoute adds a state transition that changes state without data updates.
+func (c MachineStateConfig[TData, TPayload]) WithRoute(stateName MachineState, eventType string, to MachineState) MachineStateConfig[TData, TPayload] {
+	return c.WithEvent(stateName, eventType, MachineEventTransitionConfig[TData, TPayload]{To: to})
+}
+
+// WithUpdate adds a same-state transition that updates data.
+func (c MachineStateConfig[TData, TPayload]) WithUpdate(stateName MachineState, eventType string, update MachineEventTransitionUpdate[TData, TPayload]) MachineStateConfig[TData, TPayload] {
+	return c.WithEvent(stateName, eventType, MachineEventTransitionConfig[TData, TPayload]{Update: update})
+}
+
+// MachineSnapshot captures a machine's current state and data.
 type MachineSnapshot[TData any] struct {
-	Current MachineMode
-	Data    TData
+	State MachineState
+	Data  TData
 }
 
 // Machine is a small Go-native runtime matching AngularTS $machine semantics.
 type Machine[TData any, TPayload any] struct {
-	Current     MachineMode
-	Data        TData
-	Transitions MachineTransitionMap[TData, TPayload]
-	Hooks       MachineHooks[TData, TPayload]
+	State  MachineState
+	Data   TData
+	States MachineStateMap[TData, TPayload]
+	Hooks  MachineHooks[TData, TPayload]
 }
 
-// MachineProvider is the config-free provider facade for AngularTS $machine.
-type MachineProvider struct{}
-
-// ProviderName returns the AngularTS config-time provider token.
-func (MachineProvider) ProviderName() string { return "$machineProvider" }
-
-// ServiceName returns the runtime service token produced by this provider.
-func (MachineProvider) ServiceName() string { return "$machine" }
-
-// NewMachine creates a machine from config.
-func NewMachine[TData any, TPayload any](config MachineConfig[TData, TPayload]) *Machine[TData, TPayload] {
+// NewMachine creates a machine from state-tree config.
+func NewMachine[TData any, TPayload any](config MachineStateConfig[TData, TPayload]) *Machine[TData, TPayload] {
 	return &Machine[TData, TPayload]{
-		Current:     config.Initial,
-		Data:        config.Data,
-		Transitions: config.Transitions,
-		Hooks:       config.Hooks,
+		State:  config.Initial,
+		Data:   config.Data,
+		States: config.States,
+		Hooks:  config.Hooks,
 	}
 }
 
-// Can reports whether the current mode handles eventType.
+// Can reports whether the current state handles eventType.
 func (m *Machine[TData, TPayload]) Can(eventType string) bool {
-	transitions := m.Transitions[m.Current]
-	if transitions == nil {
+	state, ok := m.States[m.State]
+	if !ok || state.On == nil {
 		return false
 	}
-	definition, ok := transitions[eventType]
-	return ok && definition.Target != nil
+	transition, ok := state.On[eventType]
+	return ok && (transition.To != "" || transition.Update != nil)
 }
 
-// CanWithPayload reports whether the current mode handles eventType and its guard accepts payload.
+// CanWithPayload reports whether the current state handles eventType and its guard accepts payload.
 func (m *Machine[TData, TPayload]) CanWithPayload(eventType string, payload TPayload) bool {
-	transitions := m.Transitions[m.Current]
-	if transitions == nil {
+	state, ok := m.States[m.State]
+	if !ok || state.On == nil {
 		return false
 	}
-	definition, ok := transitions[eventType]
-	return ok && definition.CanRun(&m.Data, payload, m)
+	transition, ok := state.On[eventType]
+	if !ok {
+		return false
+	}
+	context := MachineEventTransitionContext[TData, TPayload]{
+		Type:    eventType,
+		From:    m.State,
+		To:      transition.To,
+		Payload: payload,
+		Data:    &m.Data,
+		Machine: m,
+	}
+	return transition.CanRun(context)
 }
 
-// Matches reports whether the machine is in mode.
-func (m *Machine[TData, TPayload]) Matches(mode MachineMode) bool {
-	return m.Current == mode
+// Matches reports whether the machine is in state.
+func (m *Machine[TData, TPayload]) Matches(state MachineState) bool {
+	return m.State == state
 }
 
 // Send runs a transition. It returns true when a handler exists and ran.
 func (m *Machine[TData, TPayload]) Send(eventType string, payload TPayload) bool {
-	transitions := m.Transitions[m.Current]
-	if transitions == nil {
+	state, ok := m.States[m.State]
+	if !ok || state.On == nil {
 		return false
 	}
-	definition, ok := transitions[eventType]
-	if !ok || !definition.CanRun(&m.Data, payload, m) {
+	transition, ok := state.On[eventType]
+	if !ok {
 		return false
 	}
 
-	from := m.Current
-	result := definition.Target(&m.Data, payload, m)
-	to := from
-	if result.Mode != "" {
-		to = result.Mode
-	}
-
-	context := MachineTransitionContext[TData, TPayload]{
+	from := m.State
+	context := MachineEventTransitionContext[TData, TPayload]{
 		Type:    eventType,
 		From:    from,
-		To:      to,
+		To:      transition.To,
 		Payload: payload,
 		Data:    &m.Data,
 		Machine: m,
+	}
+	if context.To == "" {
+		context.To = from
+	}
+
+	if !transition.CanRun(context) {
+		if transition.Denied != nil {
+			transition.Denied(context)
+		}
+		return false
+	}
+
+	if transition.Before != nil {
+		transition.Before(context)
+	}
+
+	if transition.Update != nil {
+		transition.Update(&context)
+	}
+
+	to := context.To
+	if to == "" {
+		to = from
+		context.To = to
 	}
 
 	if from != to && m.Hooks.Exit != nil {
@@ -326,7 +459,7 @@ func (m *Machine[TData, TPayload]) Send(eventType string, payload TPayload) bool
 		}
 	}
 
-	m.Current = to
+	m.State = to
 
 	if from != to && m.Hooks.Enter != nil {
 		if hook := m.Hooks.Enter[to]; hook != nil {
@@ -341,14 +474,14 @@ func (m *Machine[TData, TPayload]) Send(eventType string, payload TPayload) bool
 	return true
 }
 
-// Snapshot returns the current mode and data value.
+// Snapshot returns the current state and data value.
 func (m *Machine[TData, TPayload]) Snapshot() MachineSnapshot[TData] {
-	return MachineSnapshot[TData]{Current: m.Current, Data: m.Data}
+	return MachineSnapshot[TData]{State: m.State, Data: m.Data}
 }
 
-// Restore replaces the current mode and data from snapshot.
+// Restore replaces the current state and data from snapshot.
 func (m *Machine[TData, TPayload]) Restore(snapshot MachineSnapshot[TData]) {
-	m.Current = snapshot.Current
+	m.State = snapshot.State
 	m.Data = snapshot.Data
 }
 
@@ -445,6 +578,12 @@ type RestService struct{ value jsValue }
 // MachineService is the injectable AngularTS $machine facade.
 type MachineService struct{ value jsValue }
 
+// WorkerService is the injectable AngularTS $worker facade.
+type WorkerService struct{ value jsValue }
+
+// WorkerHandle is a managed AngularTS browser Worker facade.
+type WorkerHandle struct{ value jsValue }
+
 func (RootScopeService) TokenName() string        { return "$rootScope" }
 func (HttpService) TokenName() string             { return "$http" }
 func (LogService) TokenName() string              { return "$log" }
@@ -459,6 +598,7 @@ func (WebSocketService) TokenName() string        { return "$websocket" }
 func (SseService) TokenName() string              { return "$sse" }
 func (RestFactory) TokenName() string             { return "$rest" }
 func (MachineService) TokenName() string          { return "$machine" }
+func (WorkerService) TokenName() string           { return "$worker" }
 
 // StateDeclaration is a minimal AngularTS router state declaration.
 type StateDeclaration struct {
@@ -528,19 +668,19 @@ type StateResolveObject map[string]StateResolve
 // StateResolveArray is a Go representation of array-style state resolves.
 type StateResolveArray []StateResolve
 
-// SwapModeType is an AngularTS realtime DOM/content swap mode.
-type SwapModeType string
+// SwapMode is an AngularTS realtime DOM/content swap state.
+type SwapMode string
 
 const (
-	SwapInnerHTML   SwapModeType = "innerHTML"
-	SwapOuterHTML   SwapModeType = "outerHTML"
-	SwapTextContent SwapModeType = "textContent"
-	SwapBeforeBegin SwapModeType = "beforebegin"
-	SwapAfterBegin  SwapModeType = "afterbegin"
-	SwapBeforeEnd   SwapModeType = "beforeend"
-	SwapAfterEnd    SwapModeType = "afterend"
-	SwapDelete      SwapModeType = "delete"
-	SwapNone        SwapModeType = "none"
+	SwapInnerHTML   SwapMode = "innerHTML"
+	SwapOuterHTML   SwapMode = "outerHTML"
+	SwapTextContent SwapMode = "textContent"
+	SwapBeforeBegin SwapMode = "beforebegin"
+	SwapAfterBegin  SwapMode = "afterbegin"
+	SwapBeforeEnd   SwapMode = "beforeend"
+	SwapAfterEnd    SwapMode = "afterend"
+	SwapDelete      SwapMode = "delete"
+	SwapNone        SwapMode = "none"
 )
 
 // ConnectionConfig captures shared realtime connection options.
@@ -584,7 +724,7 @@ type RealtimeProtocolMessage struct {
 	Data   any
 	HTML   any
 	Target string
-	Swap   SwapModeType
+	Swap   SwapMode
 }
 
 // RealtimeProtocolEventDetail is realtime protocol event detail metadata.
@@ -637,12 +777,6 @@ func (c SseConfig) WithParam(name string, value string) SseConfig {
 	}
 	c.Params[name] = value
 	return c
-}
-
-// RestDefinition describes a REST resource.
-type RestDefinition struct {
-	Name string
-	URL  string
 }
 
 // RestOptions captures backend-specific REST options.

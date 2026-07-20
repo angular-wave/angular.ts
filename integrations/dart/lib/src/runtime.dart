@@ -3,7 +3,6 @@ import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart';
 
-import 'bootstrap.dart';
 import 'injector.dart';
 import 'module.dart';
 import 'scope.dart';
@@ -36,29 +35,23 @@ final class AngularTsRuntime {
   }
 
   /// The bootstrap.
-  Injector bootstrap(
-    Element root,
-    List<String> modules, {
-    BootstrapConfig config = const BootstrapConfig(),
-  }) {
+  Injector bootstrap(Element root, List<String> modules) {
     final value = unsafe.callMethod(
       _runtime,
       'bootstrap',
       root as JSAny,
       unsafe.strings(modules),
-      unsafe.object(config.toMap()),
     );
 
     return Injector(value as JSObject);
   }
 
   /// The injector.
-  Injector injector(List<String> modules, {bool strictDi = false}) {
+  Injector injector(List<String> modules) {
     final value = unsafe.callMethod(
       _runtime,
       'injector',
       unsafe.strings(modules),
-      strictDi.toJS,
     );
 
     return Injector(value as JSObject);
@@ -128,17 +121,13 @@ NgModule module(String name, [List<String> requires = const []]) {
 }
 
 /// The bootstrap.
-Injector bootstrap(
-  Element root,
-  List<String> modules, {
-  BootstrapConfig config = const BootstrapConfig(),
-}) {
-  return AngularTsRuntime.global().bootstrap(root, modules, config: config);
+Injector bootstrap(Element root, List<String> modules) {
+  return AngularTsRuntime.global().bootstrap(root, modules);
 }
 
 /// The injector.
-Injector injector(List<String> modules, {bool strictDi = false}) {
-  return AngularTsRuntime.global().injector(modules, strictDi: strictDi);
+Injector injector(List<String> modules) {
+  return AngularTsRuntime.global().injector(modules);
 }
 
 /// The init.

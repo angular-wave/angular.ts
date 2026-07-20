@@ -74,10 +74,10 @@ typedef AnimationLifecycleCallback = void Function(
   AnimationContext context,
 );
 
-/// Represents native animation options.
-final class NativeAnimationOptions implements unsafe.JsConvertible {
-  /// Creates a native animation options.
-  const NativeAnimationOptions({
+/// Represents animation options.
+final class AnimationOptions implements unsafe.JsConvertible {
+  /// Creates animation options.
+  const AnimationOptions({
     this.animation,
     this.keyframes,
     this.enter,
@@ -221,9 +221,6 @@ final class NativeAnimationOptions implements unsafe.JsConvertible {
   JSAny? toJsValue() => unsafe.object(toMap());
 }
 
-/// Signature for animation options.
-typedef AnimationOptions = NativeAnimationOptions;
-
 /// Signature for animation result.
 typedef AnimationResult = Object?;
 
@@ -231,7 +228,7 @@ typedef AnimationResult = Object?;
 typedef AnimationPresetHandler = AnimationResult Function(
   Element element,
   AnimationContext context,
-  NativeAnimationOptions options,
+  AnimationOptions options,
 );
 
 /// Represents animation preset.
@@ -270,7 +267,7 @@ final class AnimationPreset implements unsafe.JsConvertible {
   final Object? animate;
 
   /// The options.
-  final NativeAnimationOptions? options;
+  final AnimationOptions? options;
 
   /// The to map.
   Map<String, Object?> toMap() => {

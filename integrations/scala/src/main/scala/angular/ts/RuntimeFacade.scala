@@ -12,11 +12,6 @@ private[ts] object RuntimeAngular extends js.Object:
     js.native
   def bootstrap(element: dom.Element, modules: js.Array[String]): RuntimeInjector =
     js.native
-  def bootstrap(
-      element: dom.Element,
-      modules: js.Array[String],
-      config: js.Object,
-  ): RuntimeInjector = js.native
 
 @js.native
 private[ts] trait RuntimeNgModule extends js.Object:
@@ -52,9 +47,7 @@ private[ts] trait RuntimeNgModule extends js.Object:
   ): RuntimeNgModule = js.native
   def wasm(
       name: String,
-      src: String,
-      imports: js.Any,
-      opts: js.Any,
+      config: js.Object,
   ): RuntimeNgModule = js.native
   def rest(
       name: String,

@@ -21,21 +21,20 @@ The C binding must call the same `angular_ts` imports:
 ```text
 scope_resolve
 scope_get
-scope_get_named
 scope_set
-scope_set_named
+scope_apply
+scope_get_binary
+scope_set_binary
 scope_delete
-scope_delete_named
 scope_sync
-scope_sync_named
 scope_watch
-scope_watch_named
 scope_unwatch
 scope_unbind
-scope_unbind_named
 buffer_ptr
 buffer_len
 buffer_free
+error_code
+error_clear
 ```
 
 Future directive bindings must use attrs-free link callbacks:
@@ -50,10 +49,10 @@ ng_abi_alloc
 ng_abi_free
 ng_scope_on_bind
 ng_scope_on_unbind
-ng_scope_on_update
+ng_scope_on_transaction
 ```
 
-## Initial Header Shape
+## Public Header Shape
 
 The C package should expose a small header:
 
@@ -69,15 +68,14 @@ typedef struct {
 
 typedef struct {
   ng_scope_handle_t handle;
-  ng_bytes_t name;
 } ng_scope_ref_t;
 
-ng_buffer_handle_t ng_scope_get_json(ng_scope_ref_t scope, ng_bytes_t path);
-bool ng_scope_set_json(ng_scope_ref_t scope, ng_bytes_t path, ng_bytes_t json);
-bool ng_scope_delete_path(ng_scope_ref_t scope, ng_bytes_t path);
-bool ng_scope_sync_ref(ng_scope_ref_t scope);
-ng_watch_handle_t ng_scope_watch_path(ng_scope_ref_t scope, ng_bytes_t path);
-bool ng_scope_unbind_ref(ng_scope_ref_t scope);
+bool ng_scope_read_json(ng_scope_ref_t scope, ng_field_t field,
+                        ng_result_t *result);
+bool ng_update_commit(ng_update_t *update, ng_write_options_t options);
+bool ng_scope_observe(ng_scope_ref_t scope, ng_field_t field,
+                      ng_watch_options_t options, void *context,
+                      ng_scope_observer_t callback, ng_watch_t *watch);
 ```
 
 The C layer should not own a JSON library. It should operate on JSON byte
@@ -93,12 +91,14 @@ ranges and let applications choose their parser.
 - [x] Add byte-slice and handle types.
 - [x] Add helper functions for handle and name-targeted scopes.
 - [x] Add result-buffer ownership helpers.
+- [x] Generate distinct typed field descriptors from shared contracts.
+- [x] Surface local validation failures through the shared ABI error codes.
 
 ### Phase B - Todo Proof
 
 - [x] Create a C todo example.
-- [x] Use `ng_scope_set_json` to update real AngularTS scope state.
-- [x] Use `ng_scope_watch_path` to receive UI-originated scope updates.
+- [x] Commit related scope fields through one caller-buffered transaction.
+- [x] Receive UI-originated updates through a scoped observer callback.
 - [x] Add a bootstrap adapter that binds AngularTS `WasmScope`.
 
 ### Phase C - Browser Validation
@@ -108,10 +108,14 @@ ranges and let applications choose their parser.
 - [x] Verify add, toggle, archive, input clearing, and UI-to-Wasm propagation.
 - [x] Verify result buffers are freed.
 
-Local `make browser-test` is blocked in the current sandbox because the shared
-Playwright web server cannot bind local TCP/UDP sockets. The target builds the
-C Wasm artifact before reaching that environment failure. Set
-`PW_SKIP_WEB_SERVER=1` to run against an already-running `PW_BASE_URL`.
+### Phase D - Ergonomic Facade
+
+- [x] Add typed fields without introducing a C JSON dependency.
+- [x] Add owned JSON and binary read results.
+- [x] Add allocation-free atomic update construction.
+- [x] Add per-watch context, routing, initial delivery, and cancellation.
+- [x] Remove transaction parsing and global callback state from the todo app.
+- [x] Cover failure codes, ownership, transaction encoding, and watch lifecycle.
 
 ## Non-Goals
 

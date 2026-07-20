@@ -15,7 +15,11 @@ integration.
 
 The first slice includes typed tokens, injectable factories, component config
 builders, module registration wrappers, bootstrap helpers, and a generated
-Gleam namespace inventory.
+Gleam namespace inventory. The `angular_ts/worker` facade exposes typed worker
+configuration, named module registration, managed lifecycle operations,
+correlated requests, model synchronization channels, and message/error
+subscriptions without requiring application code to call JavaScript methods
+through `Dynamic`.
 
 ## Local Checks
 

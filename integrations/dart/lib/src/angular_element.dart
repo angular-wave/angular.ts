@@ -2,7 +2,6 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart';
 
-import 'bootstrap.dart';
 import 'module.dart';
 import 'services.dart';
 import 'unsafe.dart' as unsafe;
@@ -11,7 +10,7 @@ import 'web_component.dart';
 /// Hook used to configure the module that owns a standalone custom element.
 typedef AngularElementConfigure = void Function(
   NgModule module,
-  AngularService angular,
+  Angular angular,
 );
 
 /// Configuration for the AngularTS module that owns a custom element.
@@ -39,7 +38,7 @@ final class AngularElementModuleOptions {
       if (requires.isNotEmpty) 'requires': requires,
       if (configure != null)
         'configure': unsafe.JsValue(((JSObject module, JSObject angular) {
-          configure!(NgModule(name ?? '', module), AngularService(angular));
+          configure!(NgModule(name ?? '', module), Angular(angular));
         }).toJS),
     });
   }
@@ -52,7 +51,6 @@ final class AngularElementOptions<TScope> {
     required this.component,
     this.ngModule,
     this.elementModule = const AngularElementModuleOptions(),
-    this.bootstrap = const BootstrapConfig(),
     this.subapp,
     this.registerBuiltins,
     this.extra = const {},
@@ -66,9 +64,6 @@ final class AngularElementOptions<TScope> {
 
   /// Application module that registers the custom element.
   final AngularElementModuleOptions elementModule;
-
-  /// Bootstrap/runtime options forwarded to AngularTS.
-  final BootstrapConfig bootstrap;
 
   /// Whether this runtime is a sub-application.
   final bool? subapp;
@@ -88,7 +83,6 @@ final class AngularElementOptions<TScope> {
       if (registerBuiltins != null) 'registerBuiltins': registerBuiltins,
       'elementModule': unsafe.JsValue(elementModule.toJsObject()),
       'component': unsafe.JsValue(component.toJsObject()),
-      'config': bootstrap.toMap(),
     });
   }
 }
@@ -106,7 +100,7 @@ final class AngularElementDefinition {
   });
 
   /// AngularTS runtime instance that owns the element injector.
-  final AngularService angular;
+  final Angular angular;
 
   /// Custom runtime `ng` module.
   final NgModule ngModule;
@@ -128,7 +122,7 @@ final class AngularElementDefinition {
     final name = unsafe.getProperty(raw, 'name') as JSString;
 
     return AngularElementDefinition(
-      angular: AngularService(unsafe.getProperty(raw, 'angular') as JSObject),
+      angular: Angular(unsafe.getProperty(raw, 'angular') as JSObject),
       ngModule: NgModule('', unsafe.getProperty(raw, 'ngModule') as JSObject),
       elementModule: NgModule(
         '',

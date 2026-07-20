@@ -21,6 +21,9 @@ pub fn set_bool(target: Dynamic, key: String, value: Bool) -> Dynamic
 @external(javascript, "./ffi.mjs", "call_method1")
 pub fn call_method1(target: Dynamic, method: String, arg1: Dynamic) -> Dynamic
 
+@external(javascript, "./ffi.mjs", "call_method0")
+pub fn call_method0(target: Dynamic, method: String) -> Dynamic
+
 @external(javascript, "./ffi.mjs", "call_method2")
 pub fn call_method2(
   target: Dynamic,
@@ -37,3 +40,9 @@ pub fn call_method3(
   arg2: Dynamic,
   arg3: Dynamic,
 ) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "call_function0")
+pub fn call_function0(target: Dynamic) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "call_function2")
+pub fn call_function2(target: Dynamic, arg1: Dynamic, arg2: Dynamic) -> Dynamic

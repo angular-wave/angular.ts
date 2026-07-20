@@ -76,16 +76,16 @@ but the plan must not let the todo app become the only definition of parity.
 
 Required before the Rust feature-complete gate:
 
-- `WasmScope`, `WasmScopeAbiImports`, `WasmAbiExports`,
-  `WasmScopeUpdate`, `WasmScopeWatchOptions`, `WasmScopeBindingOptions`, and
+- `WasmScope`, `WasmScopeAbiImports`, `WasmAbiExports`, `Field`,
+  `BinaryField`, `ScopeUpdate`, `WatchOptions`, `WriteOptions`, and
   `WasmScopeReference`;
 - a restricted `Scope` facade for app state and watched paths, with direct
   mutation through `WasmScope` rather than event bus or scope sync;
 - `RootScopeService` as a lifecycle and sync facade;
 - Rust authoring metadata for `Component`, `Controller`,
   `ControllerConstructor`, `NgModule`, `Injectable`, and `InjectionTokens`;
-- `$http` coverage for `HttpService`, `RequestConfig`,
-  `RequestShortcutConfig`, `HttpMethod`, `HttpResponse<T>`, and
+- `$http` coverage for `HttpService`, `HttpRequestConfig`,
+  `HttpRequestOptions`, `HttpMethod`, `HttpResponse<T>`, and
   `HttpResponseStatus`;
 - diagnostics and event support for `LogService`, `ExceptionHandlerService`,
   `PubSubService`, `ListenerFn`, `ScopeEvent`, and `InvocationDetail`;
@@ -102,11 +102,12 @@ Implemented Rust API expansion priorities after the required Rust surface:
 2. realtime facades for `ConnectionConfig`, `ConnectionEvent`,
    `WebSocketService`, `WebSocketConfig`, `WebSocketConnection`, `SseService`,
    `SseConfig`, `SseConnection`, `RealtimeProtocolMessage`,
-   `RealtimeProtocolEventDetail`, and `SwapModeType`;
+   `RealtimeProtocolEventDetail`, and `SwapMode`;
 3. core REST facades for `RestFactory`, `RestService`, `RestRequest`,
-   `RestResponse`, `RestDefinition`, `RestOptions`, and `RestBackend`.
-4. machine facades for `MachineService`, `Machine`, `MachineConfig`,
-   `MachineSnapshot`, transition maps, transition results, and hooks.
+   `RestResponse`, `RestOptions`, and `RestBackend`.
+4. machine facades for `MachineService`, `Machine`, `MachineStateConfig`,
+   `MachineSnapshot`, state-tree transition maps, transition configs, and
+   hooks.
 
 REST cache/revalidation helper types remain deferred until a Rust app needs
 cache policy control beyond the core `$rest` resource facade.
@@ -118,12 +119,12 @@ Next Rust API expansion priority:
 
 Deferred from the Rust feature-complete gate:
 
-- provider and config-time APIs such as `*Provider`, `ProvideService`, and
-  `AngularServiceProvider`, except config-free marker facades such as
-  `MachineProvider` when the runtime service is otherwise covered;
+- provider and config-time internals such as `*Provider` and
+  `AngularServiceProvider`; provider-shaped namespace aliases and
+  `ProvideService` are not a parity target;
 - compile/link/transclusion directive internals such as `CompileService`,
   `Directive`, `DirectiveFactory`, `AnnotatedDirectiveFactory`,
-  `PublicLinkFn`/`DirectiveLinkFn` with attrs-free link callbacks,
+  `LinkFn`/`DirectiveLinkFn` with attrs-free link callbacks,
   `TranscludeFn` for compile/template/controller APIs;
 - browser object aliases such as `DocumentService`, `WindowService`, and
   `RootElementService`, except as explicit unsafe host handles;
@@ -499,7 +500,7 @@ registration, bridge exports, scope refresh, and UI-to-Rust update routing.
   template methods. Remaining todo boilerplate is the small handwritten
   `refresh()` recomputation for derived fields.
 - Scope update examples no longer rely on conventional `bindScopeUpdates` and
-  `unbindScopeUpdates` method names, and the exported `ng_scope_on_update`
+  `unbindScopeUpdates` method names, and the exported `ng_scope_on_transaction`
   dispatcher now lives in the shared Rust facade. Individual watched path routes
   are declared with Rust macro metadata instead of manual `WasmScope::watch_with`
   calls.
@@ -661,7 +662,7 @@ Initial docs should explain:
 - [x] Add generated `$onInit` and `$onDestroy`.
 - [x] Bind component scopes through the shared `WasmScope` ABI.
 - [x] Propagate UI-originated scope updates to Rust through
-      `scope_watch` / `ng_scope_on_update`.
+      `scope_watch` / `ng_scope_on_transaction`.
 
 ### Phase 5: Example and Browser Test
 
@@ -720,10 +721,10 @@ Initial docs should explain:
       of manifest strings.
 - [x] Generate scope update bind and unbind lifecycle metadata instead of
       relying on `bindScopeUpdates` / `unbindScopeUpdates` method names.
-- [x] Move `ng_scope_on_update` dispatch into the shared Rust `WasmScope`
+- [x] Move `ng_scope_on_transaction` dispatch into the shared Rust `WasmScope`
       facade so examples do not own ABI callback exports or controller maps.
 - [x] Generate watched path routing metadata so examples do not need to call
-      `WasmScope::watch_with` manually for each UI-originated update.
+      `WasmScope::observe` manually for each UI-originated update.
 - [x] Add an authoring ergonomics acceptance test proving the Rust todo source
       avoids raw bridge export glue and repetitive scope synchronization.
 - [x] Add template file loading.
@@ -733,7 +734,7 @@ Initial docs should explain:
       `spawn_local`, raw controller pointers, or explicit scope syncing.
 - [x] Decode AngularTS `HttpResponse<T>` into typed Rust data with
       `serde-wasm-bindgen`.
-- [x] Add a Rust `RequestConfig` builder for method, URL, headers, params, and
+- [x] Add a Rust `HttpRequestConfig` builder for method, URL, headers, params, and
       timeout.
 - [x] Cover a real Rust/Wasm `$http` call through the Go test server in
       Playwright.
@@ -744,9 +745,9 @@ Initial docs should explain:
       decision.
 - [x] Promote required namespace porting entries from deferred parity decisions
       to tested Rust APIs.
-- [x] Add Rust `WasmScopeUpdate`, `WasmScopeWatchOptions`,
-      `WasmScopeBindingOptions`, and `WasmScopeReference` facade coverage.
-- [x] Add `RequestShortcutConfig` coverage and tests for `$http` shortcut
+- [x] Add typed Rust `Field`, `BinaryField`, `ScopeUpdate`, `WatchOptions`,
+      `WriteOptions`, and `WasmScopeReference` facade coverage.
+- [x] Add `HttpRequestOptions` coverage and tests for `$http` shortcut
       calls.
 - [x] Add typed diagnostics and event facade coverage for `ListenerFn`,
       `ScopeEvent`, and `InvocationDetail`.
@@ -769,11 +770,11 @@ satisfied, including the required namespace porting surface above. Existing
 non-Rust files are planning/reference material until then.
 
 - [x] Resume Go Wasm binding implementation after Rust feature completion.
-- [ ] Start AssemblyScript binding implementation.
-- [ ] Start C# binding implementation.
-- [ ] Start Zig binding implementation.
-- [ ] Start C++ binding implementation.
-- [ ] Start C binding implementation.
+- [x] Start AssemblyScript binding implementation.
+- [x] Start C# binding implementation.
+- [x] Start Zig binding implementation.
+- [x] Start C++ binding implementation.
+- [x] Start C binding implementation.
 
 ## MVP Decisions
 

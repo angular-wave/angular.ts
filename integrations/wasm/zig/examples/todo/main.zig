@@ -20,6 +20,17 @@ const Todo = struct {
     }
 };
 
+const TodoView = struct {
+    task: []const u8,
+    done: bool,
+};
+
+const Fields = struct {
+    const items = angular.Field([]const TodoView).init("items");
+    const remaining_count = angular.Field(usize).init("remainingCount");
+    const new_todo = angular.Field([]const u8).init("newTodo");
+};
+
 const TodoApp = struct {
     scope: angular.Scope = angular.Scope.fromHandle(0),
     watch: angular.Watch = .{ .handle = 0 },
@@ -28,10 +39,13 @@ const TodoApp = struct {
     new_todo: [max_task]u8 = undefined,
     new_todo_len: usize = 0,
 
-    fn bind(self: *TodoApp, scope_name: []const u8) void {
-        self.scope = angular.Scope.named(scope_name);
-        self.watch = self.scope.watch("newTodo");
-        angular.setScopeUpdateCallback(&onScopeUpdate);
+    fn bind(self: *TodoApp, scope_name: []const u8) !void {
+        self.scope = try angular.Scope.resolve(scope_name);
+        self.watch = try self.scope.observe(
+            Fields.new_todo,
+            self,
+            &TodoApp.receiveNewTodo,
+        );
 
         self.item_count = 2;
         self.items[0].setTask("Learn AngularTS");
@@ -40,15 +54,15 @@ const TodoApp = struct {
         self.items[1].done = false;
         self.new_todo_len = 0;
 
-        self.sync();
+        try self.publish();
     }
 
     fn unbind(self: *TodoApp) void {
-        _ = self.watch.unwatch();
-        angular.setScopeUpdateCallback(null);
+        self.watch.deinit();
     }
 
-    fn add(self: *TodoApp, title: []const u8) void {
+    fn add(self: *TodoApp) !void {
+        const title = self.newTodoText();
         if (title.len == 0 or self.item_count >= self.items.len) {
             return;
         }
@@ -57,19 +71,19 @@ const TodoApp = struct {
         self.items[self.item_count].done = false;
         self.item_count += 1;
         self.new_todo_len = 0;
-        self.sync();
+        try self.publish();
     }
 
-    fn toggle(self: *TodoApp, index: usize) void {
+    fn toggle(self: *TodoApp, index: usize) !void {
         if (index >= self.item_count) {
             return;
         }
 
         self.items[index].done = !self.items[index].done;
-        self.sync();
+        try self.publish();
     }
 
-    fn archiveCompleted(self: *TodoApp) void {
+    fn archiveCompleted(self: *TodoApp) !void {
         var write: usize = 0;
         var read: usize = 0;
         while (read < self.item_count) : (read += 1) {
@@ -82,7 +96,7 @@ const TodoApp = struct {
         }
 
         self.item_count = write;
-        self.sync();
+        try self.publish();
     }
 
     fn remainingCount(self: *const TodoApp) usize {
@@ -111,93 +125,51 @@ const TodoApp = struct {
         return self.new_todo[0..self.new_todo_len];
     }
 
-    fn sync(self: *const TodoApp) void {
-        var json: [1024]u8 = undefined;
-        const items_json = self.itemsJson(&json) catch return;
-        _ = self.scope.set("items", items_json);
-
-        var number: [32]u8 = undefined;
-        const remaining = std.fmt.bufPrint(&number, "{d}", .{self.remainingCount()}) catch return;
-        _ = self.scope.set("remainingCount", remaining);
-
-        const title_json = quoteJson(&json, self.new_todo[0..self.new_todo_len]) catch return;
-        _ = self.scope.set("newTodo", title_json);
-
-        _ = self.scope.sync();
-    }
-
-    fn itemsJson(self: *const TodoApp, buffer: []u8) ![]const u8 {
-        var writer: std.Io.Writer = .fixed(buffer);
-
-        try writer.writeAll("[");
+    fn publish(self: *const TodoApp) !void {
+        var items: [max_items]TodoView = undefined;
         var index: usize = 0;
         while (index < self.item_count) : (index += 1) {
-            if (index != 0) {
-                try writer.writeAll(",");
-            }
-            try writer.writeAll("{\"task\":");
-            try writeJsonString(&writer, self.items[index].taskText());
-            try writer.writeAll(",\"done\":");
-            try writer.writeAll(if (self.items[index].done) "true" else "false");
-            try writer.writeAll("}");
+            items[index] = .{
+                .task = self.items[index].taskText(),
+                .done = self.items[index].done,
+            };
         }
-        try writer.writeAll("]");
 
-        return writer.buffered();
+        try self.scope.update(.{
+            Fields.items.set(items[0..self.item_count]),
+            Fields.remaining_count.set(self.remainingCount()),
+            Fields.new_todo.set(self.newTodoText()),
+        });
+    }
+
+    fn receiveNewTodo(self: *TodoApp, value: ?[]const u8) void {
+        const title = value orelse "";
+        const size = @min(title.len, self.new_todo.len);
+        @memcpy(self.new_todo[0..size], title[0..size]);
+        self.new_todo_len = size;
     }
 };
 
 var app = TodoApp{};
 
-fn onScopeUpdate(update: angular.WasmScopeUpdate) void {
-    if (!std.mem.eql(u8, update.path, "newTodo")) {
-        return;
-    }
-
-    const value = decodeFlatJsonString(update.value_json);
-    const size = @min(value.len, app.new_todo.len);
-    @memcpy(app.new_todo[0..size], value[0..size]);
-    app.new_todo_len = size;
+export fn todo_bind() u32 {
+    app.bind("zigTodo:main") catch return 0;
+    return 1;
 }
 
-fn decodeFlatJsonString(value: []const u8) []const u8 {
-    if (value.len >= 2 and value[0] == '"' and value[value.len - 1] == '"') {
-        return value[1 .. value.len - 1];
-    }
-    return value;
+export fn todo_add() u32 {
+    app.add() catch return 0;
+    return 1;
 }
 
-fn quoteJson(buffer: []u8, value: []const u8) ![]const u8 {
-    var writer: std.Io.Writer = .fixed(buffer);
-    try writeJsonString(&writer, value);
-    return writer.buffered();
+export fn todo_toggle(index: usize) u32 {
+    app.toggle(index) catch return 0;
+    return 1;
 }
 
-fn writeJsonString(writer: *std.Io.Writer, value: []const u8) !void {
-    try writer.writeAll("\"");
-    for (value) |byte| {
-        if (byte == '"' or byte == '\\') {
-            try writer.writeByte('\\');
-        }
-        try writer.writeByte(byte);
-    }
-    try writer.writeAll("\"");
-}
-
-export fn todo_bind() void {
-    app.bind("zigTodo:main");
-}
-
-export fn todo_add(title_ptr: [*]const u8, title_len: usize) void {
-    app.add(title_ptr[0..title_len]);
-}
-
-export fn todo_toggle(index: usize) void {
-    app.toggle(index);
-}
-
-export fn todo_archive_completed() void {
-    app.archiveCompleted();
+export fn todo_archive_completed() u32 {
+    app.archiveCompleted() catch return 0;
+    return 1;
 }
 
 export fn todo_unbind() void {
@@ -233,32 +205,30 @@ export fn todo_new_todo_len() usize {
 }
 
 test "todo workflow updates Zig-owned state" {
-    todo_bind();
+    angular.testing.resetHost();
+    angular.testing.configureHost(12, 24);
+    try std.testing.expectEqual(@as(u32, 1), todo_bind());
     try std.testing.expectEqual(@as(usize, 2), todo_item_count());
     try std.testing.expectEqual(@as(usize, 2), todo_remaining_count());
 
-    const path_value = "newTodo";
-    const json_value = "\"Review Zig bridge\"";
-    angular.ng_scope_on_update(
+    const transaction = "{\"set\":{\"newTodo\":\"Review Zig bridge\"}}";
+    angular.ng_scope_on_transaction(
         12,
-        @intFromPtr(path_value.ptr),
-        path_value.len,
-        @intFromPtr(json_value.ptr),
-        json_value.len,
+        @intFromPtr(transaction.ptr),
+        transaction.len,
     );
     try std.testing.expectEqualStrings("Review Zig bridge", app.newTodoText());
 
-    const title = "Review Zig bridge";
-    todo_add(title.ptr, title.len);
+    try std.testing.expectEqual(@as(u32, 1), todo_add());
     try std.testing.expectEqual(@as(usize, 3), todo_item_count());
     try std.testing.expectEqual(@as(usize, 3), todo_remaining_count());
     try std.testing.expectEqual(@as(usize, 0), todo_new_todo_len());
 
-    todo_toggle(0);
+    try std.testing.expectEqual(@as(u32, 1), todo_toggle(0));
     try std.testing.expect(todo_done(0));
     try std.testing.expectEqual(@as(usize, 2), todo_remaining_count());
 
-    todo_archive_completed();
+    try std.testing.expectEqual(@as(u32, 1), todo_archive_completed());
     try std.testing.expectEqual(@as(usize, 2), todo_item_count());
     try std.testing.expectEqual(@as(usize, 2), todo_remaining_count());
     try std.testing.expectEqualStrings("Build a Zig Wasm app", app.taskText(0));

@@ -7,7 +7,7 @@ import angular.ts.generated.WebSocketService as RawWebSocketService
 import angular.ts.generated.WebTransportConnection as RawWebTransportConnection
 import angular.ts.generated.WebTransportService as RawWebTransportService
 
-public enum class SwapModeType(
+public enum class SwapMode(
     public val raw: String,
 ) {
     InnerHTML("innerHTML"),
@@ -56,7 +56,7 @@ public data class RealtimeProtocolMessage public constructor(
     public val data: Any? = null,
     public val html: Any? = null,
     public val target: String? = null,
-    public val swap: SwapModeType? = null,
+    public val swap: SwapMode? = null,
 ) {
     internal companion object {
         internal fun fromJs(raw: dynamic): RealtimeProtocolMessage =
@@ -77,10 +77,6 @@ public data class RealtimeProtocolEventDetail<T, TSource> public constructor(
     public val error: Any? = null,
 )
 
-public typealias SseProtocolMessage = RealtimeProtocolMessage
-
-public typealias SseProtocolEventDetail<T> = RealtimeProtocolEventDetail<T, SseConnection>
-
 public data class SseConfig public constructor(
     public val connection: ConnectionConfig = ConnectionConfig(),
     public val onOpen: ((Any?) -> Unit)? = null,
@@ -96,7 +92,6 @@ public data class SseConfig public constructor(
     public val transformMessage: ((Any?) -> Any?)? = null,
     public val withCredentials: Boolean? = null,
     public val params: Map<String, Any?>? = null,
-    public val headers: Map<String, String>? = null,
 )
 
 public class SseConnection internal constructor(
@@ -106,8 +101,8 @@ public class SseConnection internal constructor(
         raw.close()
     }
 
-    public fun connect() {
-        raw.connect()
+    public fun reconnect() {
+        raw.reconnect()
     }
 }
 
@@ -120,10 +115,6 @@ public class SseService internal constructor(
     ): SseConnection =
         SseConnection(raw(url, config.toJs()).unsafeCast<RawSseConnection>())
 }
-
-public class SseProvider internal constructor(
-    internal val raw: dynamic,
-)
 
 public data class WebSocketConfig public constructor(
     public val connection: ConnectionConfig = ConnectionConfig(),
@@ -145,8 +136,8 @@ public data class WebSocketConfig public constructor(
 public class WebSocketConnection internal constructor(
     internal val raw: RawWebSocketConnection,
 ) {
-    public fun connect() {
-        raw.connect()
+    public fun reconnect() {
+        raw.reconnect()
     }
 
     public fun send(data: Any?) {
@@ -163,18 +154,12 @@ public class WebSocketService internal constructor(
 ) {
     public operator fun invoke(
         url: String,
-        protocols: List<String> = emptyList(),
         config: WebSocketConfig = WebSocketConfig(),
     ): WebSocketConnection =
         WebSocketConnection(
-            raw(url, protocols.toTypedArray(), config.toJs())
-                .unsafeCast<RawWebSocketConnection>(),
+            raw(url, config.toJs()).unsafeCast<RawWebSocketConnection>(),
         )
 }
-
-public class WebSocketProvider internal constructor(
-    internal val raw: dynamic,
-)
 
 public typealias WebTransportBufferInput = Any?
 
@@ -287,10 +272,6 @@ public class WebTransportService internal constructor(
         WebTransportConnection(raw(url, config.toJs()).unsafeCast<RawWebTransportConnection>())
 }
 
-public class WebTransportProvider internal constructor(
-    internal val raw: dynamic,
-)
-
 public data class SseRegistration public constructor(
     public val url: String,
     public val config: SseConfig = SseConfig(),
@@ -298,7 +279,6 @@ public data class SseRegistration public constructor(
 
 public data class WebSocketRegistration public constructor(
     public val url: String,
-    public val protocols: List<String> = emptyList(),
     public val config: WebSocketConfig = WebSocketConfig(),
 )
 
@@ -326,8 +306,6 @@ internal fun SseConfig.toJs(): dynamic {
     if (transformMessage != null) raw.transformMessage = transformMessage
     if (withCredentials != null) raw.withCredentials = withCredentials
     if (params != null) raw.params = params.toJsRecord()
-    if (headers != null) raw.headers = headers.toJsRecord()
-
     return raw
 }
 
@@ -469,10 +447,10 @@ private fun writeConnectionOverrides(
     }
 }
 
-private fun swapModeType(value: Any?): SwapModeType? {
+private fun swapModeType(value: Any?): SwapMode? {
     val raw = value.unsafeCast<String?>()
 
-    return SwapModeType.values().firstOrNull { mode -> mode.raw == raw }
+    return SwapMode.values().firstOrNull { mode -> mode.raw == raw }
 }
 
 @Suppress("UNUSED_VARIABLE")

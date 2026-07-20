@@ -5,7 +5,7 @@ This package is the C++ binding for the shared AngularTS `WasmScope` ABI.
 Phase A provides a header-only facade in `include/angular_ts/wasm.hpp`:
 
 - `angular_ts` host import declarations with wasm import attributes.
-- `ng_abi_alloc` and `ng_abi_free` guest exports.
+- `ng_abi_version`, `ng_abi_alloc`, and `ng_abi_free` guest exports.
 - Scope lifecycle exports for bind, unbind, and watched updates.
 - `Bytes`, `ScopeRef`, `ScopeUpdate`, `Scope`, `Watch`, and `ResultBuffer`.
 - RAII ownership for result buffers and watch handles.
@@ -18,6 +18,18 @@ authoritative and uses `Scope::SetJson` plus `Scope::WatchPath` as the only
 AngularTS scope boundary. Its `bootstrap.js` file is the browser adapter that
 instantiates the Wasm module, binds an AngularTS `WasmScope`, and routes UI
 commands into the exported C++ functions.
+
+## Scope ABI And App Models
+
+C++ `Scope` wraps the shared `WasmScope` ABI for view-scope integration. It is
+the right boundary for C++ code that owns a controller/component interaction and
+needs to project JSON-compatible values into the DOM.
+
+Do not route app-owned AngularTS model state through C++ scope helpers just to
+make it persistent or shared. Use `app.model(...)` and a host-side
+`model.$sync(...)` target around the C++ runtime, passing plain snapshots across
+that boundary. The C++ binding should not add model handles, model path writes,
+or model watch imports unless the shared ABI adds that surface later.
 
 ## Parity Scope
 

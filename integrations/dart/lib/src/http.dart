@@ -136,9 +136,9 @@ final class HttpRequestConfigHeaders {
 }
 
 /// Represents http provider defaults.
-final class HttpProviderDefaults {
+final class HttpDefaults {
   /// Creates a http provider defaults.
-  const HttpProviderDefaults({
+  const HttpDefaults({
     this.cache,
     this.transformRequest,
     this.transformResponse,
@@ -187,10 +187,10 @@ final class HttpProviderDefaults {
 }
 
 /// Represents request shortcut config.
-final class RequestShortcutConfig implements unsafe.JsConvertible {
+final class HttpRequestOptions implements unsafe.JsConvertible {
   /// Creates a request shortcut config.
-  const RequestShortcutConfig({
-    this.defaults = const HttpProviderDefaults(),
+  const HttpRequestOptions({
+    this.defaults = const HttpDefaults(),
     this.cache,
     this.transformRequest,
     this.transformResponse,
@@ -206,7 +206,7 @@ final class RequestShortcutConfig implements unsafe.JsConvertible {
   });
 
   /// The defaults.
-  final HttpProviderDefaults defaults;
+  final HttpDefaults defaults;
 
   /// The cache.
   final Object? cache;
@@ -266,12 +266,12 @@ final class RequestShortcutConfig implements unsafe.JsConvertible {
 }
 
 /// Represents request config.
-final class RequestConfig implements unsafe.JsConvertible {
+final class HttpRequestConfig implements unsafe.JsConvertible {
   /// Creates a request config.
-  const RequestConfig({
+  const HttpRequestConfig({
     required this.method,
     required this.url,
-    this.shortcut = const RequestShortcutConfig(),
+    this.shortcut = const HttpRequestOptions(),
     this.cache,
     this.transformRequest,
     this.transformResponse,
@@ -295,7 +295,7 @@ final class RequestConfig implements unsafe.JsConvertible {
   final String url;
 
   /// The shortcut.
-  final RequestShortcutConfig shortcut;
+  final HttpRequestOptions shortcut;
 
   /// The cache.
   final Object? cache;
@@ -389,7 +389,7 @@ final class HttpResponse<T> {
   final HttpHeaders headers;
 
   /// The config.
-  final RequestConfig config;
+  final HttpRequestConfig config;
 
   /// The status text.
   final String statusText;
@@ -397,9 +397,6 @@ final class HttpResponse<T> {
   /// The xhr status.
   final HttpResponseStatus xhrStatus;
 }
-
-/// Signature for http promise.
-typedef HttpPromise<T> = Future<HttpResponse<T>>;
 
 /// Represents http interceptor.
 final class HttpInterceptor {
@@ -412,7 +409,7 @@ final class HttpInterceptor {
   });
 
   /// Callback for function.
-  final Object? Function(RequestConfig config)? request;
+  final Object? Function(HttpRequestConfig config)? request;
 
   /// Callback for function.
   final Object? Function(Object? rejection)? requestError;

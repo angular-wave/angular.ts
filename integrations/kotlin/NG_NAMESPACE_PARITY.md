@@ -36,153 +36,126 @@ part of the Kotlin public facade.
 | ng type | Kotlin status |
 | --- | --- |
 | `Angular` | generated |
+| `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | generated |
+| `AriaConfig` | generated |
 | `ClassMap` | generated |
 | `ClassValue` | generated |
 | `Component` | generated |
 | `Controller` | generated |
+| `DocumentService` | alias |
 | `Directive` | generated |
 | `DirectiveRestrict` | generated |
 | `DirectiveFactory` | generated |
+| `ElementService` | alias |
+| `InjectionTokenMap` | generated |
 | `NgModule` | generated |
-| `PublicLinkFn` | generated |
+| `LinkFn` | generated |
+| `Model` | generated |
+| `ModelChange` | generated |
+| `ModelRestoreOptions` | generated |
+| `ModelSyncFailureMode` | generated |
+| `ModelSyncOptions` | generated |
+| `ModelSyncTarget` | generated |
+| `RootElementService` | alias |
+| `RootScopeService` | alias |
 | `Scope` | generated |
-| `ScopeService` | generated |
+| `ScopeService` | alias |
 | `TranscludeFn` | generated |
 | `AnnotatedFactory` | generated |
 | `ControllerConstructor` | generated |
 | `Expression` | alias |
 | `Injectable` | generated |
-| `InjectionTokens` | generated |
-| `InvocationDetail` | generated |
 | `ListenerFn` | generated |
 | `Machine` | generated |
+| `MachineContract` | generated |
 | `MachineConfig` | generated |
-| `MachineEventMap` | generated |
-| `MachineGuard` | generated |
-| `MachineHooks` | generated |
-| `MachineMode` | alias |
-| `MachineModeHooks` | generated |
-| `MachineNoEvents` | generated |
+| `MachineSendResult` | generated |
+| `MachineSendStatus` | generated |
 | `MachineSnapshot` | generated |
-| `MachineTransition` | generated |
-| `MachineTransitionDefinition` | generated |
-| `MachineTransitionDescriptor` | generated |
-| `MachineTransitionContext` | generated |
-| `MachineTransitionHook` | generated |
-| `MachineTransitionMap` | review |
-| `MachineTransitionResult` | review |
 | `Workflow` | generated |
 | `WorkflowCommand` | generated |
+| `WorkflowCommandContract` | generated |
 | `WorkflowCommandContext` | generated |
-| `WorkflowCommandMap` | generated |
-| `WorkflowCommandOptions` | generated |
-| `WorkflowConcurrencyPolicy` | generated |
-| `WorkflowCommandResult` | generated |
-| `WorkflowConfig` | generated |
-| `WorkflowDiagnostic` | generated |
-| `WorkflowHistoryEntry` | generated |
-| `WorkflowMode` | generated |
-| `WorkflowNoCommands` | generated |
+| `WorkflowCommandDefinition` | generated |
+| `WorkflowContract` | generated |
+| `WorkflowResult` | generated |
 | `WorkflowSnapshot` | generated |
-| `WorkflowSnapshotMigration` | generated |
-| `WorkflowStatus` | generated |
+| `WorkflowSupervisorPersistence` | generated |
+| `WorkflowSupervisorPersistenceConfig` | generated |
+| `Policy` | generated |
+| `PolicyContext` | generated |
+| `PolicyDecision` | generated |
+| `SecurityConfig` | generated |
+| `SecurityCredentialsConfig` | generated |
+| `TransitionRouteContract` | generated |
 | `ScopeEvent` | generated |
-| `ServiceProvider` | generated |
 | `Validator` | generated |
+| `WindowService` | alias |
 
 ## Providers
 
 | ng type | Kotlin status |
 | --- | --- |
-| `AnchorScrollProvider` | generated |
-| `AngularProvider` | generated |
-| `AngularServiceProvider` | generated |
-| `AnimateProvider` | generated |
-| `AriaProvider` | generated |
-| `CompileLifecycleProvider` | generated |
-| `CompileProvider` | generated |
-| `ControllerProvider` | generated |
-| `CookieProvider` | generated |
-| `EventBusProvider` | generated |
-| `ExceptionHandlerProvider` | generated |
-| `FilterProvider` | generated |
-| `HttpParamSerializerProvider` | generated |
-| `HttpProvider` | generated |
-| `InterpolateProvider` | generated |
-| `LocationProvider` | generated |
-| `LogProvider` | generated |
-| `MachineProvider` | generated |
-| `WorkflowProvider` | generated |
-| `ParseProvider` | generated |
-| `PubSubProvider` | generated |
-| `RestProvider` | generated |
-| `RootScopeProvider` | generated |
-| `RouterProvider` | generated |
-| `SceDelegateProvider` | generated |
-| `SceProvider` | generated |
-| `SseProvider` | generated |
-| `StateProvider` | generated |
-| `StateRegistryProvider` | generated |
-| `StreamProvider` | generated |
-| `TemplateCacheProvider` | generated |
-| `TemplateFactoryProvider` | generated |
-| `TemplateRequestProvider` | generated |
-| `TransitionProvider` | generated |
-| `TransitionsProvider` | generated |
-| `TransitionService` | generated |
-| `ViewProvider` | generated |
-| `WasmProvider` | generated |
-| `WebComponentProvider` | generated |
-| `WebSocketProvider` | generated |
-| `WebTransportProvider` | generated |
-| `WorkerProvider` | generated |
+| `ProviderDefinition` | review |
+
+## Workflow Helpers
+
+| ng type | Kotlin status |
+| --- | --- |
+| `WorkflowSupervisor` | generated |
+| `WorkflowSupervisorConfig` | generated |
+| `WorkflowSupervisorSnapshot` | generated |
 
 ## Services
 
 | ng type | Kotlin status |
 | --- | --- |
 | `AnchorScrollService` | generated |
-| `AngularService` | generated |
 | `AnimateService` | generated |
 | `AriaService` | generated |
-| `CompileLifecycleService` | generated |
 | `CompileService` | generated |
 | `ControllerService` | generated |
 | `CookieService` | generated |
-| `DocumentService` | alias |
-| `ElementService` | alias |
 | `EventBusService` | generated |
 | `ExceptionHandlerService` | generated |
 | `FilterService` | generated |
 | `HttpParamSerializerService` | generated |
 | `HttpService` | generated |
 | `InjectorService` | generated |
+| `InterpolateConfig` | generated |
 | `InterpolateService` | generated |
 | `LocationService` | generated |
 | `LogService` | generated |
+| `LogBeaconConfig` | generated |
+| `LogBeaconSerializer` | generated |
+| `LogEntry` | generated |
+| `LogLevel` | generated |
 | `MachineService` | generated |
+| `SecurityPolicy` | generated |
 | `WorkflowService` | generated |
 | `ParseService` | generated |
-| `ProvideService` | generated |
-| `PubSubService` | generated |
-| `RootElementService` | alias |
-| `RootScopeService` | generated |
+| `EventBusConfig` | generated |
+| `ServiceWorkerConfig` | generated |
+| `ServiceWorkerErrorCode` | generated |
+| `ServiceWorkerMessageEvent` | generated |
+| `ServiceWorkerMessageTarget` | generated |
+| `ServiceWorkerPostOptions` | generated |
+| `ServiceWorkerRegistrationState` | generated |
+| `ServiceWorkerRequestOptions` | generated |
+| `ServiceWorkerService` | generated |
+| `ServiceWorkerUpdateState` | generated |
 | `SceDelegateService` | generated |
 | `SceService` | generated |
-| `StateRegistryService` | generated |
-| `StateService` | generated |
 | `StreamService` | generated |
 | `TemplateCacheService` | generated |
-| `TemplateFactoryService` | generated |
 | `TemplateRequestService` | generated |
 | `TransitionsService` | generated |
-| `ViewService` | generated |
 | `WebComponentService` | generated |
 | `WebSocketService` | generated |
 | `WebTransportService` | generated |
-| `WindowService` | alias |
 | `WorkerService` | generated |
+| `WorkerStatus` | generated |
 
 ## HTTP And REST
 
@@ -191,16 +164,16 @@ part of the Kotlin public facade.
 | `CachedRestBackendOptions` | generated |
 | `EntityClass` | generated |
 | `HttpMethod` | generated |
-| `HttpPromise` | generated |
-| `HttpProviderDefaults` | generated |
+| `HttpDefaults` | generated |
 | `HttpResponse` | generated |
 | `HttpResponseStatus` | generated |
-| `RequestConfig` | generated |
-| `RequestShortcutConfig` | generated |
+| `HttpRequestConfig` | generated |
+| `HttpRequestOptions` | generated |
 | `RestBackend` | generated |
+| `RestCachePolicy` | generated |
+| `RestCachePolicyContext` | generated |
 | `RestCacheStore` | generated |
 | `RestCacheStrategy` | generated |
-| `RestDefinition` | generated |
 | `RestFactory` | generated |
 | `RestOptions` | generated |
 | `RestRequest` | generated |
@@ -213,12 +186,9 @@ part of the Kotlin public facade.
 | ng type | Kotlin status |
 | --- | --- |
 | `CurrencyFilterOptions` | generated |
-| `DateFilterOptions` | generated |
 | `EntryFilterItem` | generated |
 | `FilterFactory` | generated |
 | `FilterFn` | generated |
-| `NumberFilterOptions` | generated |
-| `RelativeTimeFilterOptions` | generated |
 
 ## Animation
 
@@ -232,15 +202,23 @@ part of the Kotlin public facade.
 | `AnimationPreset` | generated |
 | `AnimationPresetHandler` | generated |
 | `AnimationResult` | generated |
-| `NativeAnimationOptions` | generated |
 
 ## Router
 
 | ng type | Kotlin status |
 | --- | --- |
+| `ParamsOf` | generated |
+| `ResolvesOf` | generated |
+| `RouterModule` | generated |
+| `RoutesOf` | generated |
 | `StateDeclaration` | generated |
-| `StateResolveArray` | generated |
-| `StateResolveObject` | generated |
+| `RouterConfig` | generated |
+| `RouterModuleDeclaration` | generated |
+| `StatePolicyDeclaration` | generated |
+| `RouteContract` | generated |
+| `RouteMap` | generated |
+| `StateRegistryService` | generated |
+| `StateService` | generated |
 | `Transition` | generated |
 
 ## Realtime And Connections
@@ -249,43 +227,39 @@ part of the Kotlin public facade.
 | --- | --- |
 | `ConnectionConfig` | generated |
 | `ConnectionEvent` | generated |
+| `EventDeliveryPolicy` | generated |
+| `EventDeliveryPolicyContext` | generated |
 | `RealtimeProtocolEventDetail` | generated |
 | `RealtimeProtocolMessage` | generated |
 | `SseConfig` | generated |
 | `SseConnection` | generated |
-| `SseProtocolEventDetail` | generated |
-| `SseProtocolMessage` | generated |
 | `SseService` | generated |
-| `SwapModeType` | generated |
+| `SwapMode` | generated |
 | `WebSocketConfig` | generated |
 | `WebSocketConnection` | generated |
 | `WebTransportBufferInput` | generated |
-| `WebTransportCertificateHash` | generated |
 | `WebTransportConfig` | generated |
 | `WebTransportConnection` | generated |
 | `WebTransportDatagramEvent` | generated |
-| `WebTransportOptions` | generated |
 | `WebTransportReconnectEvent` | generated |
 | `WebTransportRetryDelay` | generated |
-| `NativeWebTransport` | generated |
 
 ## Wasm
 
 | ng type | Kotlin status |
 | --- | --- |
-| `WasmAbiExports` | generated |
-| `WasmInstantiationResult` | generated |
-| `WasmOptions` | generated |
-| `WasmScope` | generated |
-| `WasmScopeAbi` | generated |
-| `WasmScopeAbiImportObject` | generated |
-| `WasmScopeAbiImports` | generated |
-| `WasmScopeBindingOptions` | generated |
-| `WasmScopeOptions` | generated |
-| `WasmScopeReference` | generated |
-| `WasmScopeUpdate` | generated |
-| `WasmScopeWatchOptions` | generated |
+| `WasmBinding` | generated |
+| `WasmBindingOptions` | generated |
+| `WasmCompileOptions` | generated |
+| `WasmError` | generated |
+| `WasmErrorCode` | generated |
+| `WasmErrorStage` | generated |
+| `WasmLoadOptions` | generated |
+| `WasmResource` | generated |
+| `WasmResourceStatus` | generated |
 | `WasmService` | generated |
+| `WasmSource` | generated |
+| `WasmTarget` | generated |
 
 ## Web Components
 
@@ -299,6 +273,7 @@ part of the Kotlin public facade.
 | `ScopeElement` | generated |
 | `ScopeElementConstructor` | generated |
 | `WebComponentContext` | generated |
+| `WebComponentConfig` | generated |
 | `WebComponentInput` | generated |
 | `WebComponentInputConfig` | generated |
 | `WebComponentInputs` | generated |
@@ -312,10 +287,19 @@ part of the Kotlin public facade.
 | `ErrorHandlingConfig` | generated |
 | `InterpolationFunction` | generated |
 | `NgModelController` | generated |
+| `HtmlCanvasConfig` | generated |
+| `HtmlCanvasRuntimeSupport` | generated |
+| `HtmlCanvasService` | generated |
 | `StorageBackend` | generated |
 | `StorageType` | generated |
 | `WorkerConfig` | generated |
-| `WorkerConnection` | generated |
+| `WorkerError` | generated |
+| `WorkerErrorCode` | generated |
+| `WorkerHandle` | generated |
+| `WorkerModelMessage` | generated |
+| `WorkerRequest` | generated |
+| `WorkerRequestOptions` | generated |
+| `WorkerResponse` | generated |
 
 ## Parity Rules
 

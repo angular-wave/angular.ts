@@ -28,21 +28,21 @@
     <main
       class="demo-shell"
       data-j2cl-app
-      ng-controller="TodoCtrl"
+      ng-controller="TodoCtrl as $ctrl"
     >
       <section class="demo-hero">
-        <h1>{{ greeting }}</h1>
+        <h1>{{ $ctrl.greeting }}</h1>
         <p j2cl-badge></p>
       </section>
 
       <section class="demo-content">
-        <form ng-submit="add(newTodo)">
+        <form ng-submit="$ctrl.add($ctrl.newTodo)">
           <input
             aria-label="New todo"
             id="j2cl-new-todo"
             name="todo"
             type="text"
-            ng-input="newTodo = $event.target.value"
+            ng-model="$ctrl.newTodo"
             ng-required="true"
             placeholder="What needs doing?"
           />
@@ -50,11 +50,11 @@
         </form>
 
         <p id="j2cl-remaining" class="demo-note">
-          {{ remainingCount }} of {{ tasks.length }} remaining
+          {{ $ctrl.remainingCount }} of {{ $ctrl.tasks.length }} remaining
         </p>
 
         <div class="demo-actions">
-          <button type="button" ng-click="archive()">
+          <button type="button" ng-click="$ctrl.archive()">
             Archive completed
           </button>
         </div>
@@ -63,7 +63,7 @@
           <article
             class="event-card todo-row"
             ng-class="{ 'is-done': todo.done }"
-            ng-repeat="todo in tasks"
+            ng-repeat="todo in $ctrl.tasks"
             data-index="id"
           >
             <strong>{{ todo.task }}</strong>
@@ -74,7 +74,7 @@
               <input
                 type="checkbox"
                 ng-checked="todo.done"
-                ng-click="toggle(todo)"
+                ng-click="$ctrl.toggle(todo)"
               />
             </label>
           </article>

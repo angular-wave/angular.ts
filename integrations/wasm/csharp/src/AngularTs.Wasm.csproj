@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AngularTs.Wasm</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <AngularTsWasmRuntimeIdentifier Condition="'$(AngularTsWasmRuntimeIdentifier)' == ''">browser-wasm</AngularTsWasmRuntimeIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AngularTsWasmBuild)' == 'true'">
+    <RuntimeIdentifier>$(AngularTsWasmRuntimeIdentifier)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+</Project>

@@ -1,11 +1,16 @@
 import { angular } from "@angular-wave/angular.ts";
-import { WasmScopeAbi } from "@angular-wave/angular.ts/services/wasm";
+import { WasmAbi } from "@angular-wave/angular.ts/services/wasm";
 import init, * as app from "../pkg/angular_ts_rust_scope_bridge.js";
 
-const scopeAbi = new WasmScopeAbi();
+const scopeAbi = WasmAbi.create();
 globalThis.__angularTsWasmScopeAbi = scopeAbi;
 const wasmExports = await init();
 scopeAbi.attach(wasmExports);
+globalThis.__angularTsWasmConformance = {
+  abi: scopeAbi,
+  exports: wasmExports,
+  ready: Promise.resolve(),
+};
 
 const requireExport = (name) => {
   const value = app[name];

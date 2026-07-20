@@ -148,7 +148,7 @@ AngularTS JavaScript registration glue.
 Initial package API:
 
 - `ng.module(name: String, requires: Seq[String] = Seq.empty): NgModule`
-- `ng.bootstrap(root: Element, modules: Seq[String], config: BootstrapConfig)`
+- `ng.bootstrap(root: Element, modules: Seq[String])`
 - `ng.token[A](name: String): Token[A]`
 - `NgModule.component[A](name: String, options: Component[A])`
 - `NgModule.directive[A](name: String, options: Directive[A])`

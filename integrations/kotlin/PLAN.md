@@ -40,6 +40,11 @@ not for API shape. Kotlin should reuse the Dart strategy where it is useful:
 - checked generated output freshness;
 - explicit unsafe interop package.
 
+Generated WASM scope facades are view-scope facades only. Kotlin should keep
+`WasmScope` tied to DOM/root-scoped state and use `app.model(...)` plus
+host-side `model.$sync(...)` targets for app-owned state that coordinates with
+external runtimes.
+
 ## Non-Negotiable API Rules
 
 - Public Kotlin APIs prefer typed wrappers, value classes, sealed interfaces,
@@ -62,7 +67,6 @@ integrations/kotlin/
   Makefile
   README.md
   NG_NAMESPACE_PARITY.md
-  KOTLIN_BINDING_GENERATION_ROADMAP.md
   src/jsMain/kotlin/angular/ts/
     AngularTS.kt
     Bootstrap.kt
@@ -243,7 +247,6 @@ integrations/kotlin/tool/generate_kotlin_bindings.mjs
 integrations/kotlin/tool/check_generated_bindings.mjs
 integrations/kotlin/tool/generator-overrides.json
 integrations/kotlin/src/jsMain/kotlin/angular/ts/generated/NgFacades.kt
-integrations/kotlin/KOTLIN_BINDING_GENERATION_ROADMAP.md
 ```
 
 Generator requirements:
@@ -403,14 +406,15 @@ Done when:
 
 ## Phase 5: Built-In Service Facades
 
-Goal: expose Kotlin equivalents for the public `ng` service/provider surface.
+Goal: expose Kotlin equivalents for the public `ng` runtime, declaration,
+config, and service surface.
 
 Status: `[x]`
 
 Implement in this order:
 
-1. [x] Core services and providers:
-   `Angular`, `NgModule`, `InjectorService`, `ProvideService`, `Scope`,
+1. [x] Core runtime services:
+   `Angular`, `NgModule`, `InjectorService`, `Scope`,
    `RootScopeService`, `CompileService`, `ControllerService`,
    `ParseService`, `InterpolateService`,
    `ExceptionHandlerService`, `LogService`.
@@ -418,12 +422,12 @@ Implement in this order:
    `AnchorScrollService`, `AriaService`, `CookieService`, `LocationService`,
    `TemplateCacheService`, `TemplateRequestService`, `StorageBackend`.
 3. [x] Filters:
-   `FilterService`, `FilterProvider`, `FilterFn`, filter option records.
+   `FilterService`, `FilterFn`, filter option records.
 4. [x] HTTP and REST:
-   `HttpService`, `HttpPromise`, `HttpResponse`, `RequestConfig`,
+   `HttpService`, `Promise<HttpResponse<T>>`, `HttpRequestConfig`,
    `RestService`, `RestRequest`, `RestResponse`, cache options.
 5. [x] Router:
-   `StateService`, `StateRegistryService`, `TransitionService`, `Transition`,
+   `StateService`, `StateRegistryService`, `TransitionsService`, `Transition`,
    `StateDeclaration`, resolve shapes.
 6. [x] Realtime:
    `SseService`, `WebSocketService`, `WebTransportService`,
@@ -431,7 +435,7 @@ Implement in this order:
 7. [x] Animation:
    `AnimateService`, `AnimationHandle`, presets, phases, result/context types.
 8. [x] Worker and wasm:
-   `WorkerConfig`, `WorkerConnection`, `WasmService`, wasm ABI/config types.
+   `WorkerConfig`, `WorkerHandle`, `WasmService`, wasm ABI/config types.
 
 Tasks for each group:
 

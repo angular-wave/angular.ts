@@ -35,6 +35,345 @@ impl StorageType {
     }
 }
 
+/// Native browser Worker script mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorkerType {
+    Module,
+    Classic,
+}
+
+impl WorkerType {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Module => "module",
+            Self::Classic => "classic",
+        }
+    }
+}
+
+/// Native browser Worker credentials mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorkerCredentials {
+    Omit,
+    SameOrigin,
+    Include,
+}
+
+impl WorkerCredentials {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Omit => "omit",
+            Self::SameOrigin => "same-origin",
+            Self::Include => "include",
+        }
+    }
+}
+
+/// Managed AngularTS worker lifecycle state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorkerStatus {
+    Running,
+    Restarting,
+    Error,
+    Terminated,
+}
+
+impl WorkerStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Running => "running",
+            Self::Restarting => "restarting",
+            Self::Error => "error",
+            Self::Terminated => "terminated",
+        }
+    }
+
+    pub fn from_angular(value: &str) -> Option<Self> {
+        match value {
+            "running" => Some(Self::Running),
+            "restarting" => Some(Self::Restarting),
+            "error" => Some(Self::Error),
+            "terminated" => Some(Self::Terminated),
+            _ => None,
+        }
+    }
+}
+
+/// Managed AngularTS worker error category.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorkerErrorCode {
+    Runtime,
+    Message,
+    Decode,
+    Request,
+    RequestTimeout,
+    RequestAborted,
+    Terminated,
+}
+
+impl WorkerErrorCode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Runtime => "runtime",
+            Self::Message => "message",
+            Self::Decode => "decode",
+            Self::Request => "request",
+            Self::RequestTimeout => "request-timeout",
+            Self::RequestAborted => "request-aborted",
+            Self::Terminated => "terminated",
+        }
+    }
+}
+
+/// Portable metadata from an AngularTS `WorkerError`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkerError {
+    code: WorkerErrorCode,
+    message: String,
+}
+
+impl WorkerError {
+    pub fn new(code: WorkerErrorCode, message: impl Into<String>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+        }
+    }
+
+    pub const fn code(&self) -> WorkerErrorCode {
+        self.code
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+}
+
+/// Typed configuration for one managed browser worker.
+#[derive(Clone)]
+pub struct WorkerConfig {
+    worker_type: WorkerType,
+    name: Option<String>,
+    credentials: Option<WorkerCredentials>,
+    restart: bool,
+    restart_delay: Option<u32>,
+    max_restarts: Option<u32>,
+    #[cfg(target_arch = "wasm32")]
+    decoder: Option<js_sys::Function>,
+}
+
+impl Default for WorkerConfig {
+    fn default() -> Self {
+        Self {
+            worker_type: WorkerType::Module,
+            name: None,
+            credentials: None,
+            restart: false,
+            restart_delay: None,
+            max_restarts: None,
+            #[cfg(target_arch = "wasm32")]
+            decoder: None,
+        }
+    }
+}
+
+impl WorkerConfig {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub const fn worker_type(&self) -> WorkerType {
+        self.worker_type
+    }
+
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    pub const fn credentials(&self) -> Option<WorkerCredentials> {
+        self.credentials
+    }
+
+    pub const fn restart_enabled(&self) -> bool {
+        self.restart
+    }
+
+    pub const fn restart_delay(&self) -> Option<u32> {
+        self.restart_delay
+    }
+
+    pub const fn max_restarts(&self) -> Option<u32> {
+        self.max_restarts
+    }
+
+    pub const fn classic(mut self) -> Self {
+        self.worker_type = WorkerType::Classic;
+        self
+    }
+
+    pub fn named(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    pub const fn with_credentials(mut self, credentials: WorkerCredentials) -> Self {
+        self.credentials = Some(credentials);
+        self
+    }
+
+    pub const fn with_restart(mut self, delay_ms: u32, max_restarts: u32) -> Self {
+        self.restart = true;
+        self.restart_delay = Some(delay_ms);
+        self.max_restarts = Some(max_restarts);
+        self
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn decode(mut self, decoder: js_sys::Function) -> Self {
+        self.decoder = Some(decoder);
+        self
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Object, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let config = Object::new();
+        Reflect::set(
+            &config,
+            &JsValue::from_str("type"),
+            &JsValue::from_str(self.worker_type.as_str()),
+        )?;
+        Reflect::set(
+            &config,
+            &JsValue::from_str("restart"),
+            &JsValue::from_bool(self.restart),
+        )?;
+        if let Some(name) = &self.name {
+            Reflect::set(
+                &config,
+                &JsValue::from_str("name"),
+                &JsValue::from_str(name),
+            )?;
+        }
+        if let Some(credentials) = self.credentials {
+            Reflect::set(
+                &config,
+                &JsValue::from_str("credentials"),
+                &JsValue::from_str(credentials.as_str()),
+            )?;
+        }
+        if let Some(delay) = self.restart_delay {
+            Reflect::set(
+                &config,
+                &JsValue::from_str("restartDelay"),
+                &JsValue::from_f64(delay as f64),
+            )?;
+        }
+        if let Some(maximum) = self.max_restarts {
+            Reflect::set(
+                &config,
+                &JsValue::from_str("maxRestarts"),
+                &JsValue::from_f64(maximum as f64),
+            )?;
+        }
+        if let Some(decoder) = &self.decoder {
+            Reflect::set(&config, &JsValue::from_str("decode"), decoder)?;
+        }
+        Ok(config.into())
+    }
+}
+
+/// Options for one correlated worker request.
+#[derive(Clone, Default)]
+pub struct WorkerRequestOptions {
+    timeout: Option<u32>,
+    #[cfg(target_arch = "wasm32")]
+    signal: Option<wasm_bindgen::JsValue>,
+    #[cfg(target_arch = "wasm32")]
+    transfer: Vec<wasm_bindgen::JsValue>,
+}
+
+impl WorkerRequestOptions {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub const fn timeout(&self) -> Option<u32> {
+        self.timeout
+    }
+
+    pub const fn with_timeout(mut self, timeout_ms: u32) -> Self {
+        self.timeout = Some(timeout_ms);
+        self
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn with_signal(mut self, signal: wasm_bindgen::JsValue) -> Self {
+        self.signal = Some(signal);
+        self
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn with_transfer(mut self, value: wasm_bindgen::JsValue) -> Self {
+        self.transfer.push(value);
+        self
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        use js_sys::{Array, Object, Reflect};
+        use wasm_bindgen::JsValue;
+
+        let options = Object::new();
+        if let Some(timeout) = self.timeout {
+            Reflect::set(
+                &options,
+                &JsValue::from_str("timeout"),
+                &JsValue::from_f64(timeout as f64),
+            )?;
+        }
+        if let Some(signal) = &self.signal {
+            Reflect::set(&options, &JsValue::from_str("signal"), signal)?;
+        }
+        if !self.transfer.is_empty() {
+            let transfer = Array::new();
+            for value in &self.transfer {
+                transfer.push(value);
+            }
+            Reflect::set(&options, &JsValue::from_str("transfer"), &transfer)?;
+        }
+        Ok(options.into())
+    }
+}
+
+/// Correlated request envelope understood by AngularTS workers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkerRequest<T> {
+    pub message_type: String,
+    pub id: String,
+    pub payload: T,
+}
+
+/// Correlated response envelope returned by AngularTS workers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkerResponse<T> {
+    pub message_type: String,
+    pub id: String,
+    pub ok: bool,
+    pub result: Option<T>,
+    pub error: Option<String>,
+}
+
+/// Shared worker model-channel protocol envelope.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkerModelMessage<T> {
+    pub message_type: String,
+    pub channel: String,
+    pub snapshot: Option<T>,
+}
+
 /// Rust trait equivalent of the public AngularTS `StorageBackend` interface.
 pub trait StorageBackend {
     /// Reads a stored serialized value.
@@ -47,158 +386,21 @@ pub trait StorageBackend {
     fn remove(&mut self, key: &str);
 }
 
-/// Machine mode name used by AngularTS `$machine`.
-pub type MachineMode = String;
+/// Machine state name used by AngularTS `$machine`.
+pub type MachineState = String;
 
 /// Event name to payload metadata map for Rust-authored machine declarations.
 pub type MachineEventMap = BTreeMap<String, String>;
 
-/// Result returned by a Rust machine transition.
+/// Guard callback for a Rust-authored state-tree transition.
+pub type MachineEventTransitionGuard<TData, TPayload = ()> = fn(&TData, &TPayload) -> bool;
+
+/// Update callback for a Rust-authored state-tree transition.
+pub type MachineEventTransitionUpdate<TData, TPayload = ()> = fn(&mut TData, &TPayload);
+
+/// Context passed to Rust machine transition hooks.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MachineTransitionResult {
-    /// Transition to the supplied mode.
-    Mode(MachineMode),
-    /// Keep the current mode after running transition effects.
-    Stay,
-}
-
-impl MachineTransitionResult {
-    /// Creates a transition result that moves to `mode`.
-    pub fn mode(mode: impl Into<String>) -> Self {
-        let mode = mode.into();
-
-        if mode.is_empty() {
-            Self::Stay
-        } else {
-            Self::Mode(mode)
-        }
-    }
-}
-
-impl From<&str> for MachineTransitionResult {
-    fn from(mode: &str) -> Self {
-        Self::mode(mode)
-    }
-}
-
-impl From<String> for MachineTransitionResult {
-    fn from(mode: String) -> Self {
-        Self::mode(mode)
-    }
-}
-
-/// Transition callback for a Rust-authored machine.
-pub type MachineTransition<TData, TPayload = ()> =
-    fn(&mut TData, &TPayload) -> MachineTransitionResult;
-
-/// Guard callback for a Rust-authored machine transition.
-pub type MachineGuard<TData, TPayload = ()> = fn(&TData, &TPayload) -> bool;
-
-/// Guarded transition descriptor for a Rust-authored machine.
-pub struct MachineTransitionDescriptor<TData, TPayload = ()> {
-    guard: Option<MachineGuard<TData, TPayload>>,
-    target: MachineTransition<TData, TPayload>,
-}
-
-impl<TData, TPayload> Copy for MachineTransitionDescriptor<TData, TPayload> {}
-
-impl<TData, TPayload> Clone for MachineTransitionDescriptor<TData, TPayload> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<TData, TPayload> MachineTransitionDescriptor<TData, TPayload> {
-    /// Creates a descriptor for `target` without a guard.
-    pub const fn new(target: MachineTransition<TData, TPayload>) -> Self {
-        Self {
-            guard: None,
-            target,
-        }
-    }
-
-    /// Creates a descriptor for `target` with `guard`.
-    pub const fn guarded(
-        guard: MachineGuard<TData, TPayload>,
-        target: MachineTransition<TData, TPayload>,
-    ) -> Self {
-        Self {
-            guard: Some(guard),
-            target,
-        }
-    }
-
-    /// Optional guard callback.
-    pub const fn guard(&self) -> Option<MachineGuard<TData, TPayload>> {
-        self.guard
-    }
-
-    /// Transition target callback.
-    pub const fn target(&self) -> MachineTransition<TData, TPayload> {
-        self.target
-    }
-}
-
-/// Bare or guarded transition definition for a Rust-authored machine.
-pub enum MachineTransitionDefinition<TData, TPayload = ()> {
-    /// Function shorthand transition.
-    Transition(MachineTransition<TData, TPayload>),
-    /// Descriptor with an optional guard and target transition.
-    Descriptor(MachineTransitionDescriptor<TData, TPayload>),
-}
-
-impl<TData, TPayload> Copy for MachineTransitionDefinition<TData, TPayload> {}
-
-impl<TData, TPayload> Clone for MachineTransitionDefinition<TData, TPayload> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<TData, TPayload> MachineTransitionDefinition<TData, TPayload> {
-    /// Returns whether the transition can run for the supplied data and payload.
-    pub fn can_run(&self, data: &TData, payload: &TPayload) -> bool {
-        match self {
-            Self::Transition(_) => true,
-            Self::Descriptor(descriptor) => match descriptor.guard {
-                Some(guard) => guard(data, payload),
-                None => true,
-            },
-        }
-    }
-
-    /// Transition target callback.
-    pub const fn target(&self) -> MachineTransition<TData, TPayload> {
-        match self {
-            Self::Transition(target) => *target,
-            Self::Descriptor(descriptor) => descriptor.target,
-        }
-    }
-}
-
-impl<TData, TPayload> From<MachineTransition<TData, TPayload>>
-    for MachineTransitionDefinition<TData, TPayload>
-{
-    fn from(transition: MachineTransition<TData, TPayload>) -> Self {
-        Self::Transition(transition)
-    }
-}
-
-impl<TData, TPayload> From<MachineTransitionDescriptor<TData, TPayload>>
-    for MachineTransitionDefinition<TData, TPayload>
-{
-    fn from(descriptor: MachineTransitionDescriptor<TData, TPayload>) -> Self {
-        Self::Descriptor(descriptor)
-    }
-}
-
-/// Transition table keyed by current mode and event type.
-pub type MachineTransitionMap<TData, TPayload = ()> =
-    BTreeMap<MachineMode, BTreeMap<String, MachineTransitionDefinition<TData, TPayload>>>;
-
-/// Context passed to Rust machine hooks.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MachineTransitionContext<'a, TData, TPayload = ()> {
+pub struct MachineEventTransitionContext<'a, TData, TPayload = ()> {
     event_type: &'a str,
     from: &'a str,
     to: &'a str,
@@ -206,7 +408,7 @@ pub struct MachineTransitionContext<'a, TData, TPayload = ()> {
     data: &'a TData,
 }
 
-impl<'a, TData, TPayload> MachineTransitionContext<'a, TData, TPayload> {
+impl<'a, TData, TPayload> MachineEventTransitionContext<'a, TData, TPayload> {
     /// Creates a transition context.
     pub const fn new(
         event_type: &'a str,
@@ -229,12 +431,12 @@ impl<'a, TData, TPayload> MachineTransitionContext<'a, TData, TPayload> {
         self.event_type
     }
 
-    /// Mode before the transition.
+    /// State before the transition.
     pub const fn from(&self) -> &str {
         self.from
     }
 
-    /// Mode after the transition.
+    /// State after the transition.
     pub const fn to(&self) -> &str {
         self.to
     }
@@ -250,20 +452,154 @@ impl<'a, TData, TPayload> MachineTransitionContext<'a, TData, TPayload> {
     }
 }
 
-/// Hook callback for a Rust-authored machine transition.
-pub type MachineTransitionHook<TData, TPayload = ()> =
-    for<'a> fn(&MachineTransitionContext<'a, TData, TPayload>);
+/// Hook callback for a Rust-authored machine event transition.
+pub type MachineEventTransitionHook<TData, TPayload = ()> =
+    for<'a> fn(&MachineEventTransitionContext<'a, TData, TPayload>);
 
-/// Mode-specific hook map keyed by mode.
-pub type MachineModeHooks<TData, TPayload = ()> =
-    BTreeMap<MachineMode, MachineTransitionHook<TData, TPayload>>;
+/// State-tree event transition config for a Rust-authored machine.
+pub struct MachineEventTransitionConfig<TData, TPayload = ()> {
+    to: Option<MachineState>,
+    guard: Option<MachineEventTransitionGuard<TData, TPayload>>,
+    update: Option<MachineEventTransitionUpdate<TData, TPayload>>,
+}
+
+impl<TData, TPayload> Clone for MachineEventTransitionConfig<TData, TPayload> {
+    fn clone(&self) -> Self {
+        Self {
+            to: self.to.clone(),
+            guard: self.guard,
+            update: self.update,
+        }
+    }
+}
+
+impl<TData, TPayload> MachineEventTransitionConfig<TData, TPayload> {
+    /// Creates an empty transition config.
+    pub const fn new() -> Self {
+        Self {
+            to: None,
+            guard: None,
+            update: None,
+        }
+    }
+
+    /// Creates a transition that routes to `state`.
+    pub fn to(state: impl Into<String>) -> Self {
+        Self::new().with_to(state)
+    }
+
+    /// Creates a same-state update transition.
+    pub const fn update(update: MachineEventTransitionUpdate<TData, TPayload>) -> Self {
+        Self {
+            to: None,
+            guard: None,
+            update: Some(update),
+        }
+    }
+
+    /// Sets the explicit target state.
+    pub fn with_to(mut self, state: impl Into<String>) -> Self {
+        let state = state.into();
+
+        if !state.is_empty() {
+            self.to = Some(state);
+        }
+
+        self
+    }
+
+    /// Sets the guard callback.
+    pub const fn with_guard(mut self, guard: MachineEventTransitionGuard<TData, TPayload>) -> Self {
+        self.guard = Some(guard);
+        self
+    }
+
+    /// Sets the update callback.
+    pub const fn with_update(
+        mut self,
+        update: MachineEventTransitionUpdate<TData, TPayload>,
+    ) -> Self {
+        self.update = Some(update);
+        self
+    }
+
+    /// Explicit target state, when configured.
+    pub fn target(&self) -> Option<&str> {
+        self.to.as_deref()
+    }
+
+    /// Returns whether the transition is configured and its guard accepts payload.
+    pub fn can_run(&self, data: &TData, payload: &TPayload) -> bool {
+        (self.to.is_some() || self.update.is_some())
+            && self.guard.is_none_or(|guard| guard(data, payload))
+    }
+
+    /// Update callback, when configured.
+    pub const fn update_callback(&self) -> Option<MachineEventTransitionUpdate<TData, TPayload>> {
+        self.update
+    }
+}
+
+impl<TData, TPayload> Default for MachineEventTransitionConfig<TData, TPayload> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// State-tree transition table keyed by event type.
+pub type MachineStateTransitionMap<TData, TPayload = ()> =
+    BTreeMap<String, MachineEventTransitionConfig<TData, TPayload>>;
+
+/// State-tree node for a Rust-authored machine.
+#[derive(Clone)]
+pub struct MachineStateDefinition<TData, TPayload = ()> {
+    on: MachineStateTransitionMap<TData, TPayload>,
+}
+
+impl<TData, TPayload> Default for MachineStateDefinition<TData, TPayload> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<TData, TPayload> MachineStateDefinition<TData, TPayload> {
+    /// Creates an empty state definition.
+    pub fn new() -> Self {
+        Self {
+            on: BTreeMap::new(),
+        }
+    }
+
+    /// Adds an event transition.
+    pub fn on(
+        mut self,
+        event_type: impl Into<String>,
+        transition: MachineEventTransitionConfig<TData, TPayload>,
+    ) -> Self {
+        self.on.insert(event_type.into(), transition);
+        self
+    }
+
+    /// Event transition map.
+    pub const fn events(&self) -> &MachineStateTransitionMap<TData, TPayload> {
+        &self.on
+    }
+}
+
+/// State-tree map keyed by machine state.
+pub type MachineStateMap<TData, TPayload = ()> =
+    BTreeMap<MachineState, MachineStateDefinition<TData, TPayload>>;
+
+/// State-specific hook map keyed by state.
+pub type MachineStateHooks<TData, TPayload = ()> =
+    BTreeMap<MachineState, MachineEventTransitionHook<TData, TPayload>>;
 
 /// Hook callbacks for a Rust-authored machine.
 #[derive(Clone, Default)]
 pub struct MachineHooks<TData, TPayload = ()> {
-    enter: MachineModeHooks<TData, TPayload>,
-    exit: MachineModeHooks<TData, TPayload>,
-    transition: Option<MachineTransitionHook<TData, TPayload>>,
+    enter: MachineStateHooks<TData, TPayload>,
+    exit: MachineStateHooks<TData, TPayload>,
+    transition: Option<MachineEventTransitionHook<TData, TPayload>>,
 }
 
 impl<TData, TPayload> MachineHooks<TData, TPayload> {
@@ -276,69 +612,72 @@ impl<TData, TPayload> MachineHooks<TData, TPayload> {
         }
     }
 
-    /// Registers an enter hook for `mode`.
+    /// Registers an enter hook for `state`.
     pub fn on_enter(
         mut self,
-        mode: impl Into<String>,
-        hook: MachineTransitionHook<TData, TPayload>,
+        state: impl Into<String>,
+        hook: MachineEventTransitionHook<TData, TPayload>,
     ) -> Self {
-        self.enter.insert(mode.into(), hook);
+        self.enter.insert(state.into(), hook);
         self
     }
 
-    /// Registers an exit hook for `mode`.
+    /// Registers an exit hook for `state`.
     pub fn on_exit(
         mut self,
-        mode: impl Into<String>,
-        hook: MachineTransitionHook<TData, TPayload>,
+        state: impl Into<String>,
+        hook: MachineEventTransitionHook<TData, TPayload>,
     ) -> Self {
-        self.exit.insert(mode.into(), hook);
+        self.exit.insert(state.into(), hook);
         self
     }
 
     /// Registers a hook that runs after every handled transition.
-    pub const fn on_transition(mut self, hook: MachineTransitionHook<TData, TPayload>) -> Self {
+    pub const fn on_transition(
+        mut self,
+        hook: MachineEventTransitionHook<TData, TPayload>,
+    ) -> Self {
         self.transition = Some(hook);
         self
     }
 
     /// Enter hooks.
-    pub const fn enter(&self) -> &MachineModeHooks<TData, TPayload> {
+    pub const fn enter(&self) -> &MachineStateHooks<TData, TPayload> {
         &self.enter
     }
 
     /// Exit hooks.
-    pub const fn exit(&self) -> &MachineModeHooks<TData, TPayload> {
+    pub const fn exit(&self) -> &MachineStateHooks<TData, TPayload> {
         &self.exit
     }
 
     /// Transition hook, when configured.
-    pub const fn transition(&self) -> Option<MachineTransitionHook<TData, TPayload>> {
+    pub const fn transition(&self) -> Option<MachineEventTransitionHook<TData, TPayload>> {
         self.transition
     }
 }
 
-/// Config for a Rust-authored machine.
+/// State-tree config for a Rust-authored machine.
 #[derive(Clone)]
-pub struct MachineConfig<TData, TPayload = ()> {
-    initial: MachineMode,
+pub struct MachineStateConfig<TData, TPayload = ()> {
+    initial: MachineState,
     data: TData,
-    transitions: MachineTransitionMap<TData, TPayload>,
+    states: MachineStateMap<TData, TPayload>,
     hooks: MachineHooks<TData, TPayload>,
 }
 
-impl<TData, TPayload> MachineConfig<TData, TPayload> {
-    /// Creates a machine config with initial mode and data.
+impl<TData, TPayload> MachineStateConfig<TData, TPayload> {
+    /// Creates a machine config with initial state and data.
     pub fn new(initial: impl Into<String>, data: TData) -> Self {
         Self {
             initial: initial.into(),
             data,
-            transitions: BTreeMap::new(),
+            states: BTreeMap::new(),
             hooks: MachineHooks::new(),
         }
     }
 
-    /// Initial mode.
+    /// Initial state.
     pub fn initial(&self) -> &str {
         &self.initial
     }
@@ -348,9 +687,9 @@ impl<TData, TPayload> MachineConfig<TData, TPayload> {
         &self.data
     }
 
-    /// Transition table.
-    pub const fn transitions(&self) -> &MachineTransitionMap<TData, TPayload> {
-        &self.transitions
+    /// State tree.
+    pub const fn states(&self) -> &MachineStateMap<TData, TPayload> {
+        &self.states
     }
 
     /// Hook config.
@@ -358,47 +697,57 @@ impl<TData, TPayload> MachineConfig<TData, TPayload> {
         &self.hooks
     }
 
-    /// Adds a transition for a mode and event type.
-    pub fn transition(
-        self,
-        mode: impl Into<String>,
-        event_type: impl Into<String>,
-        transition: MachineTransition<TData, TPayload>,
-    ) -> Self {
-        self.transition_definition(
-            mode,
-            event_type,
-            MachineTransitionDefinition::Transition(transition),
-        )
-    }
-
-    /// Adds a guarded transition for a mode and event type.
-    pub fn guarded_transition(
-        self,
-        mode: impl Into<String>,
-        event_type: impl Into<String>,
-        guard: MachineGuard<TData, TPayload>,
-        transition: MachineTransition<TData, TPayload>,
-    ) -> Self {
-        self.transition_definition(
-            mode,
-            event_type,
-            MachineTransitionDescriptor::guarded(guard, transition),
-        )
-    }
-
-    /// Adds a bare or guarded transition definition for a mode and event type.
-    pub fn transition_definition(
+    /// Adds a state definition.
+    pub fn state(
         mut self,
-        mode: impl Into<String>,
-        event_type: impl Into<String>,
-        definition: impl Into<MachineTransitionDefinition<TData, TPayload>>,
+        state_name: impl Into<String>,
+        definition: MachineStateDefinition<TData, TPayload>,
     ) -> Self {
-        self.transitions
-            .entry(mode.into())
-            .or_default()
-            .insert(event_type.into(), definition.into());
+        self.states.insert(state_name.into(), definition);
         self
+    }
+
+    /// Adds an event transition for a state and event type.
+    pub fn event(
+        mut self,
+        state: impl Into<String>,
+        event_type: impl Into<String>,
+        transition: MachineEventTransitionConfig<TData, TPayload>,
+    ) -> Self {
+        let state = state.into();
+        if let Some(target) = transition.to.clone() {
+            self.states.entry(target).or_default();
+        }
+        self.states
+            .entry(state)
+            .or_default()
+            .on
+            .insert(event_type.into(), transition);
+        self
+    }
+
+    /// Adds a state-changing transition.
+    pub fn route(
+        self,
+        state: impl Into<String>,
+        event_type: impl Into<String>,
+        to: impl Into<String>,
+    ) -> Self {
+        self.event(state, event_type, MachineEventTransitionConfig::to(to))
+    }
+
+    /// Adds a same-state update transition.
+    pub fn update(
+        self,
+        state: impl Into<String>,
+        event_type: impl Into<String>,
+        update: MachineEventTransitionUpdate<TData, TPayload>,
+    ) -> Self {
+        self.event(
+            state,
+            event_type,
+            MachineEventTransitionConfig::update(update),
+        )
     }
 
     /// Replaces machine hooks.
@@ -408,25 +757,25 @@ impl<TData, TPayload> MachineConfig<TData, TPayload> {
     }
 }
 
-/// Serializable snapshot for a machine's current mode and data.
+/// Serializable snapshot for a machine's active state and data.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MachineSnapshot<TData> {
-    current: MachineMode,
+    state: MachineState,
     data: TData,
 }
 
 impl<TData> MachineSnapshot<TData> {
     /// Creates a machine snapshot.
-    pub fn new(current: impl Into<String>, data: TData) -> Self {
+    pub fn new(state: impl Into<String>, data: TData) -> Self {
         Self {
-            current: current.into(),
+            state: state.into(),
             data,
         }
     }
 
-    /// Snapshot mode.
-    pub fn current(&self) -> &str {
-        &self.current
+    /// Snapshot state.
+    pub fn state(&self) -> &str {
+        &self.state
     }
 
     /// Snapshot data.
@@ -442,26 +791,26 @@ impl<TData> MachineSnapshot<TData> {
 
 /// Small Rust-native machine runtime matching AngularTS `$machine` semantics.
 pub struct Machine<TData, TPayload = ()> {
-    current: MachineMode,
+    state: MachineState,
     data: TData,
-    transitions: MachineTransitionMap<TData, TPayload>,
+    states: MachineStateMap<TData, TPayload>,
     hooks: MachineHooks<TData, TPayload>,
 }
 
 impl<TData, TPayload> Machine<TData, TPayload> {
     /// Creates a machine from config.
-    pub fn new(config: MachineConfig<TData, TPayload>) -> Self {
+    pub fn new(config: MachineStateConfig<TData, TPayload>) -> Self {
         Self {
-            current: config.initial,
+            state: config.initial,
             data: config.data,
-            transitions: config.transitions,
+            states: config.states,
             hooks: config.hooks,
         }
     }
 
-    /// Current mode.
-    pub fn current(&self) -> &str {
-        &self.current
+    /// Current state.
+    pub fn state(&self) -> &str {
+        &self.state
     }
 
     /// Machine data.
@@ -474,49 +823,54 @@ impl<TData, TPayload> Machine<TData, TPayload> {
         &mut self.data
     }
 
-    /// Returns whether the current mode has a handler for `event_type`.
+    /// Returns whether the active state has a handler for `event_type`.
     pub fn can(&self, event_type: &str) -> bool {
-        self.transitions
-            .get(&self.current)
-            .is_some_and(|transitions| transitions.contains_key(event_type))
+        self.states
+            .get(&self.state)
+            .is_some_and(|state| state.on.contains_key(event_type))
     }
 
-    /// Returns whether the current mode has a handler whose guard accepts `payload`.
+    /// Returns whether the active state has a handler whose guard accepts `payload`.
     pub fn can_with_payload(&self, event_type: &str, payload: &TPayload) -> bool {
-        self.transitions
-            .get(&self.current)
-            .and_then(|transitions| transitions.get(event_type))
-            .is_some_and(|definition| definition.can_run(&self.data, payload))
+        self.states
+            .get(&self.state)
+            .and_then(|state| state.on.get(event_type))
+            .is_some_and(|transition| transition.can_run(&self.data, payload))
     }
 
-    /// Returns whether the machine is currently in `mode`.
-    pub fn matches(&self, mode: &str) -> bool {
-        self.current == mode
+    /// Returns whether the machine is currently in `state`.
+    pub fn matches(&self, state: &str) -> bool {
+        self.state == state
     }
 
     /// Sends an event to the machine. Returns true when a handler ran.
     pub fn send(&mut self, event_type: &str, payload: TPayload) -> bool {
-        let Some(definition) = self
-            .transitions
-            .get(&self.current)
-            .and_then(|transitions| transitions.get(event_type))
-            .copied()
+        let Some(transition) = self
+            .states
+            .get(&self.state)
+            .and_then(|state| state.on.get(event_type))
+            .cloned()
         else {
             return false;
         };
 
-        if !definition.can_run(&self.data, &payload) {
+        if !transition.can_run(&self.data, &payload) {
             return false;
         }
 
-        let from = self.current.clone();
-        let transition = definition.target();
-        let result = transition(&mut self.data, &payload);
-        let to = match result {
-            MachineTransitionResult::Mode(mode) if !mode.is_empty() => mode,
-            _ => from.clone(),
-        };
-        let context = MachineTransitionContext::new(event_type, &from, &to, &payload, &self.data);
+        let from = self.state.clone();
+
+        if let Some(update) = transition.update_callback() {
+            update(&mut self.data, &payload);
+        }
+
+        let to = transition
+            .target()
+            .filter(|state| !state.is_empty())
+            .map(ToOwned::to_owned)
+            .unwrap_or_else(|| from.clone());
+        let context =
+            MachineEventTransitionContext::new(event_type, &from, &to, &payload, &self.data);
 
         if from != to {
             if let Some(hook) = self.hooks.exit.get(&from) {
@@ -524,7 +878,7 @@ impl<TData, TPayload> Machine<TData, TPayload> {
             }
         }
 
-        self.current = to.clone();
+        self.state = to.clone();
 
         if from != to {
             if let Some(hook) = self.hooks.enter.get(&to) {
@@ -541,40 +895,15 @@ impl<TData, TPayload> Machine<TData, TPayload> {
 }
 
 impl<TData: Clone, TPayload> Machine<TData, TPayload> {
-    /// Captures the current mode and cloned data.
+    /// Captures the active state and cloned data.
     pub fn snapshot(&self) -> MachineSnapshot<TData> {
-        MachineSnapshot::new(self.current.clone(), self.data.clone())
+        MachineSnapshot::new(self.state.clone(), self.data.clone())
     }
 
-    /// Restores the current mode and data from a snapshot.
+    /// Restores the active state and data from a snapshot.
     pub fn restore(&mut self, snapshot: MachineSnapshot<TData>) {
-        self.current = snapshot.current;
+        self.state = snapshot.state;
         self.data = snapshot.data;
-    }
-}
-
-/// Config-free provider facade for AngularTS `$machine`.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct MachineProvider;
-
-impl MachineProvider {
-    /// Provider token used during AngularTS config-time injection.
-    pub const PROVIDER_TOKEN_NAME: &'static str = "$machineProvider";
-
-    /// Runtime service token produced by this provider.
-    pub const SERVICE_TOKEN_NAME: &'static str = "$machine";
-
-    /// Creates a provider facade.
-    pub const fn new() -> Self {
-        Self
-    }
-
-    /// Creates a Rust-native machine from config.
-    pub fn create<TData, TPayload>(
-        &self,
-        config: MachineConfig<TData, TPayload>,
-    ) -> Machine<TData, TPayload> {
-        Machine::new(config)
     }
 }
 
@@ -1013,7 +1342,7 @@ pub type StateResolveArray = Vec<StateResolve>;
 
 /// Realtime DOM/content swap modes understood by AngularTS realtime directives.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SwapModeType {
+pub enum SwapMode {
     InnerHtml,
     OuterHtml,
     TextContent,
@@ -1025,7 +1354,7 @@ pub enum SwapModeType {
     None,
 }
 
-impl SwapModeType {
+impl SwapMode {
     /// Returns the swap string used by AngularTS realtime protocol messages.
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -1193,7 +1522,7 @@ impl<T> ConnectionEvent<T> {
 pub struct RealtimeProtocolMessage {
     html: Option<String>,
     target: Option<String>,
-    swap: Option<SwapModeType>,
+    swap: Option<SwapMode>,
 }
 
 impl RealtimeProtocolMessage {
@@ -1213,7 +1542,7 @@ impl RealtimeProtocolMessage {
     }
 
     /// Swap mode override.
-    pub const fn swap(&self) -> Option<SwapModeType> {
+    pub const fn swap(&self) -> Option<SwapMode> {
         self.swap
     }
 
@@ -1230,7 +1559,7 @@ impl RealtimeProtocolMessage {
     }
 
     /// Sets the swap mode override.
-    pub const fn with_swap(mut self, swap: SwapModeType) -> Self {
+    pub const fn with_swap(mut self, swap: SwapMode) -> Self {
         self.swap = Some(swap);
         self
     }
@@ -1480,7 +1809,7 @@ impl HttpResponseStatus {
 
 /// Rust representation of options accepted by AngularTS `$http` shortcut methods.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct RequestShortcutConfig {
+pub struct HttpRequestOptions {
     headers: Vec<(String, String)>,
     params: Vec<(String, String)>,
     timeout: Option<u32>,
@@ -1488,7 +1817,7 @@ pub struct RequestShortcutConfig {
     with_credentials: Option<bool>,
 }
 
-impl RequestShortcutConfig {
+impl HttpRequestOptions {
     /// Creates an empty shortcut request config.
     pub fn new() -> Self {
         Self::default()
@@ -1615,19 +1944,19 @@ impl RequestShortcutConfig {
 
 /// Minimal Rust representation of an AngularTS `$http` request config.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestConfig {
+pub struct HttpRequestConfig {
     method: HttpMethod,
     url: String,
-    shortcut: RequestShortcutConfig,
+    shortcut: HttpRequestOptions,
 }
 
-impl RequestConfig {
+impl HttpRequestConfig {
     /// Creates a request config for the given HTTP method and URL.
     pub fn new(method: HttpMethod, url: impl Into<String>) -> Self {
         Self {
             method,
             url: url.into(),
-            shortcut: RequestShortcutConfig::new(),
+            shortcut: HttpRequestOptions::new(),
         }
     }
 
@@ -1707,7 +2036,7 @@ impl RequestConfig {
     }
 
     /// Shortcut-method options embedded in this full request config.
-    pub const fn shortcut(&self) -> &RequestShortcutConfig {
+    pub const fn shortcut(&self) -> &HttpRequestOptions {
         &self.shortcut
     }
 
@@ -1796,33 +2125,6 @@ impl<T> HttpResponse<T> {
         T: serde::de::DeserializeOwned,
     {
         decode_http_response(value)
-    }
-}
-
-/// REST resource definition registered with AngularTS.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RestDefinition {
-    name: String,
-    url: String,
-}
-
-impl RestDefinition {
-    /// Creates a named REST resource definition.
-    pub fn new(name: impl Into<String>, url: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            url: url.into(),
-        }
-    }
-
-    /// Resource name.
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    /// Base URL or URI template.
-    pub fn url(&self) -> &str {
-        &self.url
     }
 }
 
@@ -2083,7 +2385,7 @@ where
 
 #[cfg(not(target_arch = "wasm32"))]
 mod host {
-    use super::{CookieOptions, Machine, MachineConfig, Service};
+    use super::{CookieOptions, Machine, MachineStateConfig, Service};
     use std::collections::HashMap;
 
     #[derive(Debug, Clone, Copy)]
@@ -2130,6 +2432,12 @@ mod host {
 
     #[derive(Debug, Clone, Copy)]
     pub struct MachineService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct WorkerService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct WorkerHandle;
 
     #[derive(Debug, Clone, Default)]
     pub struct CookieService {
@@ -2272,11 +2580,16 @@ mod host {
         const EXPORT_NAME: &'static str = "__ng_service_MachineService";
     }
 
+    impl Service for WorkerService {
+        const TOKEN_NAME: &'static str = "$worker";
+        const EXPORT_NAME: &'static str = "__ng_service_WorkerService";
+    }
+
     impl MachineService {
         /// Creates a Rust-native machine from config.
         pub fn create<TData, TPayload>(
             &self,
-            config: MachineConfig<TData, TPayload>,
+            config: MachineStateConfig<TData, TPayload>,
         ) -> Machine<TData, TPayload> {
             Machine::new(config)
         }
@@ -2301,8 +2614,9 @@ mod host {
 #[cfg(target_arch = "wasm32")]
 mod browser {
     use super::{
-        decode_http_response, HttpResponse, RequestConfig, RequestShortcutConfig, RestOptions,
-        Service, SseConfig, StateDeclaration, WebSocketConfig,
+        decode_http_response, HttpRequestConfig, HttpRequestOptions, HttpResponse, RestOptions,
+        Service, SseConfig, StateDeclaration, WebSocketConfig, WorkerConfig, WorkerRequestOptions,
+        WorkerStatus,
     };
     use js_sys::{Array, Function, Promise, Reflect};
     use serde::{de::DeserializeOwned, Serialize};
@@ -2388,14 +2702,14 @@ mod browser {
         pub fn debug(this: &LogService, value: &JsValue);
 
         /// Browser `$rootScope` service facade.
-        #[wasm_bindgen(typescript_type = "ng.RootScopeService")]
+        #[wasm_bindgen(typescript_type = "ng.Scope")]
         pub type RootScopeService;
 
         #[wasm_bindgen(method, js_name = "$new")]
         pub fn new_child(this: &RootScopeService) -> JsValue;
 
         /// Browser `$eventBus` service facade.
-        #[wasm_bindgen(typescript_type = "ng.PubSubService")]
+        #[wasm_bindgen(typescript_type = "ng.EventBusService")]
         pub type EventBusService;
 
         #[wasm_bindgen(method, js_name = publish)]
@@ -2439,14 +2753,8 @@ mod browser {
         #[wasm_bindgen(method, js_name = href)]
         pub fn href_with_params(this: &StateService, state: &str, params: &JsValue) -> JsValue;
 
-        #[wasm_bindgen(method, js_name = is)]
-        pub fn is_state(this: &StateService, state: &str) -> JsValue;
-
-        #[wasm_bindgen(method, js_name = includes)]
-        pub fn includes(this: &StateService, state: &str) -> JsValue;
-
-        #[wasm_bindgen(method, js_name = reload)]
-        pub fn reload(this: &StateService) -> Promise;
+        #[wasm_bindgen(method, js_name = matches)]
+        pub fn matches(this: &StateService, state: &str) -> bool;
 
         #[wasm_bindgen(method, js_name = get)]
         pub fn get_state(this: &StateService, state: &str) -> JsValue;
@@ -2509,8 +2817,8 @@ mod browser {
         #[wasm_bindgen(typescript_type = "ng.WebSocketConnection")]
         pub type WebSocketConnection;
 
-        #[wasm_bindgen(method, js_name = connect)]
-        pub fn websocket_connect(this: &WebSocketConnection);
+        #[wasm_bindgen(method, js_name = reconnect)]
+        pub fn websocket_reconnect(this: &WebSocketConnection);
 
         #[wasm_bindgen(method, js_name = send)]
         pub fn websocket_send(this: &WebSocketConnection, data: &JsValue);
@@ -2526,11 +2834,50 @@ mod browser {
         #[wasm_bindgen(typescript_type = "ng.SseConnection")]
         pub type SseConnection;
 
-        #[wasm_bindgen(method, js_name = connect)]
-        pub fn sse_connect(this: &SseConnection);
+        #[wasm_bindgen(method, js_name = reconnect)]
+        pub fn sse_reconnect(this: &SseConnection);
 
         #[wasm_bindgen(method, js_name = close)]
         pub fn sse_close(this: &SseConnection);
+
+        /// Browser `$worker` service facade.
+        #[wasm_bindgen(typescript_type = "ng.WorkerService")]
+        pub type WorkerService;
+
+        /// Managed browser worker facade.
+        #[wasm_bindgen(typescript_type = "ng.WorkerHandle<unknown, unknown>")]
+        pub type WorkerHandle;
+
+        #[wasm_bindgen(method, getter, js_name = status)]
+        pub fn worker_status(this: &WorkerHandle) -> String;
+
+        #[wasm_bindgen(method, getter, js_name = restartCount)]
+        pub fn worker_restart_count(this: &WorkerHandle) -> u32;
+
+        #[wasm_bindgen(method, js_name = post)]
+        pub fn worker_post(this: &WorkerHandle, message: &JsValue);
+
+        #[wasm_bindgen(method, js_name = post)]
+        pub fn worker_post_with_transfer(this: &WorkerHandle, message: &JsValue, transfer: &Array);
+
+        #[wasm_bindgen(method, js_name = request)]
+        pub fn worker_request(this: &WorkerHandle, message: &JsValue, options: &JsValue)
+            -> Promise;
+
+        #[wasm_bindgen(method, js_name = model)]
+        pub fn worker_model(this: &WorkerHandle, channel: &str) -> JsValue;
+
+        #[wasm_bindgen(method, js_name = onMessage)]
+        pub fn worker_on_message(this: &WorkerHandle, listener: &Function) -> Function;
+
+        #[wasm_bindgen(method, js_name = onError)]
+        pub fn worker_on_error(this: &WorkerHandle, listener: &Function) -> Function;
+
+        #[wasm_bindgen(method, js_name = restart)]
+        pub fn worker_restart(this: &WorkerHandle);
+
+        #[wasm_bindgen(method, js_name = terminate)]
+        pub fn worker_terminate(this: &WorkerHandle);
 
         /// Browser `$rest` factory facade.
         #[wasm_bindgen(typescript_type = "ng.RestFactory")]
@@ -2607,9 +2954,7 @@ mod browser {
         pub type MachineService;
 
         /// Browser AngularTS machine facade.
-        #[wasm_bindgen(
-            typescript_type = "ng.Machine<Record<string, unknown>, Record<string, unknown>>"
-        )]
+        #[wasm_bindgen(typescript_type = "ng.Machine")]
         pub type BrowserMachine;
     }
 
@@ -2630,7 +2975,7 @@ mod browser {
         /// Sends a full `$http` request config and decodes the response body.
         fn request_json<T>(
             &self,
-            config: &RequestConfig,
+            config: &HttpRequestConfig,
         ) -> Pin<Box<dyn Future<Output = Result<HttpResponse<T>, JsValue>> + '_>>
         where
             T: DeserializeOwned + 'static;
@@ -2647,7 +2992,7 @@ mod browser {
         fn get_json_with<T>(
             &self,
             url: &str,
-            config: &RequestShortcutConfig,
+            config: &HttpRequestOptions,
         ) -> Pin<Box<dyn Future<Output = Result<HttpResponse<T>, JsValue>> + '_>>
         where
             T: DeserializeOwned + 'static;
@@ -2667,7 +3012,7 @@ mod browser {
             &self,
             url: &str,
             body: &B,
-            config: &RequestShortcutConfig,
+            config: &HttpRequestOptions,
         ) -> Pin<Box<dyn Future<Output = Result<HttpResponse<T>, JsValue>> + '_>>
         where
             T: DeserializeOwned + 'static,
@@ -2677,7 +3022,7 @@ mod browser {
     impl HttpServiceExt for JsValue {
         fn request_json<T>(
             &self,
-            config: &RequestConfig,
+            config: &HttpRequestConfig,
         ) -> Pin<Box<dyn Future<Output = Result<HttpResponse<T>, JsValue>> + '_>>
         where
             T: DeserializeOwned + 'static,
@@ -2718,7 +3063,7 @@ mod browser {
         fn get_json_with<T>(
             &self,
             url: &str,
-            config: &RequestShortcutConfig,
+            config: &HttpRequestOptions,
         ) -> Pin<Box<dyn Future<Output = Result<HttpResponse<T>, JsValue>> + '_>>
         where
             T: DeserializeOwned + 'static,
@@ -2761,7 +3106,7 @@ mod browser {
             &self,
             url: &str,
             body: &B,
-            config: &RequestShortcutConfig,
+            config: &HttpRequestOptions,
         ) -> Pin<Box<dyn Future<Output = Result<HttpResponse<T>, JsValue>> + '_>>
         where
             T: DeserializeOwned + 'static,
@@ -2832,7 +3177,7 @@ mod browser {
         /// Sends a full `$http` request config and decodes the response body.
         pub async fn request_json<T>(
             &self,
-            config: &RequestConfig,
+            config: &HttpRequestConfig,
         ) -> Result<HttpResponse<T>, JsValue>
         where
             T: DeserializeOwned,
@@ -2860,7 +3205,7 @@ mod browser {
         pub async fn get_json_with<T>(
             &self,
             url: &str,
-            config: &RequestShortcutConfig,
+            config: &HttpRequestOptions,
         ) -> Result<HttpResponse<T>, JsValue>
         where
             T: DeserializeOwned,
@@ -2886,7 +3231,7 @@ mod browser {
             &self,
             url: &str,
             body: &B,
-            config: &RequestShortcutConfig,
+            config: &HttpRequestOptions,
         ) -> Result<HttpResponse<T>, JsValue>
         where
             T: DeserializeOwned,
@@ -2915,16 +3260,10 @@ mod browser {
             config: &WebSocketConfig,
         ) -> Result<WebSocketConnection, JsValue> {
             let service: &Function = self.unchecked_ref();
-            let protocols = Array::new();
-
-            for protocol in config.protocols() {
-                protocols.push(&JsValue::from_str(protocol));
-            }
-
             let value = Reflect::apply(
                 service,
                 &JsValue::UNDEFINED,
-                &Array::of3(&JsValue::from_str(url), &protocols, &config.to_js_value()?),
+                &Array::of2(&JsValue::from_str(url), &config.to_js_value()?),
             )?;
 
             value.dyn_into::<WebSocketConnection>()
@@ -2955,6 +3294,61 @@ mod browser {
             )?;
 
             value.dyn_into::<SseConnection>()
+        }
+    }
+
+    impl WorkerService {
+        /// Starts a managed worker using typed Rust configuration.
+        pub fn start(
+            &self,
+            script_path: &str,
+            config: &WorkerConfig,
+        ) -> Result<WorkerHandle, JsValue> {
+            let service: &Function = self.unchecked_ref();
+            let value = Reflect::apply(
+                service,
+                &JsValue::UNDEFINED,
+                &Array::of2(&JsValue::from_str(script_path), &config.to_js_value()?),
+            )?;
+
+            value.dyn_into::<WorkerHandle>()
+        }
+    }
+
+    impl WorkerHandle {
+        /// Returns the managed worker lifecycle state.
+        pub fn status(&self) -> Option<WorkerStatus> {
+            WorkerStatus::from_angular(&self.worker_status())
+        }
+
+        /// Posts a serializable structured-clone message.
+        pub fn post_json<T>(&self, message: &T) -> Result<(), JsValue>
+        where
+            T: Serialize,
+        {
+            let message = serde_wasm_bindgen::to_value(message)
+                .map_err(|error| JsValue::from_str(&error.to_string()))?;
+            self.worker_post(&message);
+            Ok(())
+        }
+
+        /// Runs a correlated request and decodes its result.
+        pub async fn request_json<TSend, TReceive>(
+            &self,
+            message: &TSend,
+            options: &WorkerRequestOptions,
+        ) -> Result<TReceive, JsValue>
+        where
+            TSend: Serialize,
+            TReceive: DeserializeOwned,
+        {
+            let message = serde_wasm_bindgen::to_value(message)
+                .map_err(|error| JsValue::from_str(&error.to_string()))?;
+            let result =
+                JsFuture::from(self.worker_request(&message, &options.to_js_value()?)).await?;
+
+            serde_wasm_bindgen::from_value(result)
+                .map_err(|error| JsValue::from_str(&error.to_string()))
         }
     }
 
@@ -3107,6 +3501,11 @@ mod browser {
         const EXPORT_NAME: &'static str = "__ng_service_MachineService";
     }
 
+    impl Service for WorkerService {
+        const TOKEN_NAME: &'static str = "$worker";
+        const EXPORT_NAME: &'static str = "__ng_service_WorkerService";
+    }
+
     impl Service for CookieService {
         const TOKEN_NAME: &'static str = "$cookie";
         const EXPORT_NAME: &'static str = "__ng_service_CookieService";
@@ -3128,18 +3527,16 @@ pub use browser::{
     CookieService, EventBusService, ExceptionHandlerService, HttpService, HttpServiceExt,
     LogService, MachineService, RestFactory, RestService, RootScopeService, SseConnection,
     SseService, StateRegistryService, StateService, TemplateCacheService, TemplateRequestService,
-    TemplateRequestServiceExt, Transition, WebSocketConnection, WebSocketService,
+    TemplateRequestServiceExt, Transition, WebSocketConnection, WebSocketService, WorkerHandle,
+    WorkerService,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use host::{
     CookieService, EventBusService, ExceptionHandlerService, HttpService, LogService,
     MachineService, RestFactory, RestService, RootScopeService, SseConnection, SseService,
     StateRegistryService, StateService, TemplateCacheService, TemplateRequestService, Transition,
-    WebSocketConnection, WebSocketService,
+    WebSocketConnection, WebSocketService, WorkerHandle, WorkerService,
 };
-
-/// Public `ng.PubSubService` facade. `$eventBus` uses this runtime shape.
-pub type PubSubService = EventBusService;
 
 #[cfg(test)]
 mod tests {
@@ -3158,22 +3555,60 @@ mod tests {
         assert_eq!(SseService::TOKEN_NAME, "$sse");
         assert_eq!(RestFactory::TOKEN_NAME, "$rest");
         assert_eq!(MachineService::TOKEN_NAME, "$machine");
-        assert_eq!(MachineProvider::PROVIDER_TOKEN_NAME, "$machineProvider");
-        assert_eq!(MachineProvider::SERVICE_TOKEN_NAME, "$machine");
+        assert_eq!(WorkerService::TOKEN_NAME, "$worker");
         assert_eq!(CookieService::TOKEN_NAME, "$cookie");
         assert_eq!(TemplateCacheService::TOKEN_NAME, "$templateCache");
         assert_eq!(TemplateRequestService::TOKEN_NAME, "$templateRequest");
     }
 
     #[test]
+    fn worker_facades_preserve_restart_and_protocol_metadata() {
+        let config = WorkerConfig::new()
+            .classic()
+            .named("physics")
+            .with_credentials(WorkerCredentials::SameOrigin)
+            .with_restart(250, 4);
+        let options = WorkerRequestOptions::new().with_timeout(1_500);
+        let request = WorkerRequest {
+            message_type: "angular-ts:worker:request".to_string(),
+            id: "worker-1".to_string(),
+            payload: "step".to_string(),
+        };
+        let response = WorkerResponse {
+            message_type: "angular-ts:worker:response".to_string(),
+            id: request.id.clone(),
+            ok: true,
+            result: Some(2),
+            error: None,
+        };
+        let message = WorkerModelMessage {
+            message_type: "angular-ts:worker:model:snapshot".to_string(),
+            channel: "player".to_string(),
+            snapshot: Some(3),
+        };
+
+        assert_eq!(config.worker_type(), WorkerType::Classic);
+        assert_eq!(config.name(), Some("physics"));
+        assert_eq!(config.credentials(), Some(WorkerCredentials::SameOrigin));
+        assert!(config.restart_enabled());
+        assert_eq!(config.restart_delay(), Some(250));
+        assert_eq!(config.max_restarts(), Some(4));
+        assert_eq!(options.timeout(), Some(1_500));
+        assert_eq!(response.result, Some(2));
+        assert_eq!(message.snapshot, Some(3));
+        assert_eq!(WorkerStatus::Restarting.as_str(), "restarting");
+        assert_eq!(WorkerErrorCode::RequestTimeout.as_str(), "request-timeout");
+    }
+
+    #[test]
     fn http_request_config_preserves_method_and_url() {
-        let get = RequestConfig::get("/api/todos")
+        let get = HttpRequestConfig::get("/api/todos")
             .header("Accept", "application/json")
             .param("owner", "Rust")
             .timeout_ms(1500)
             .response_type("json")
             .with_credentials(true);
-        let post = RequestConfig::post("/api/todos");
+        let post = HttpRequestConfig::post("/api/todos");
 
         assert_eq!(get.method(), HttpMethod::Get);
         assert_eq!(get.method().as_str(), "GET");
@@ -3192,7 +3627,7 @@ mod tests {
 
     #[test]
     fn http_shortcut_config_preserves_options() {
-        let config = RequestShortcutConfig::new()
+        let config = HttpRequestOptions::new()
             .header("Accept", "application/json")
             .header("Accept", "text/plain")
             .param("owner", "Rust")
@@ -3343,7 +3778,7 @@ mod tests {
         let message = RealtimeProtocolMessage::new()
             .with_html("<li>Saved</li>")
             .with_target("#feed")
-            .with_swap(SwapModeType::BeforeEnd);
+            .with_swap(SwapMode::BeforeEnd);
         let event = ConnectionEvent::new("message", "payload");
 
         assert_eq!(connection.retry_delay(), Some(250));
@@ -3353,21 +3788,20 @@ mod tests {
         assert_eq!(websocket.protocols(), &["json.v1".to_string()]);
         assert!(sse.with_credentials_value());
         assert_eq!(sse.params(), &[("room".to_string(), "main".to_string())]);
-        assert_eq!(SwapModeType::BeforeEnd.as_str(), "beforeend");
+        assert_eq!(SwapMode::BeforeEnd.as_str(), "beforeend");
         assert_eq!(
-            SwapModeType::from_angular("textContent"),
-            Some(SwapModeType::TextContent)
+            SwapMode::from_angular("textContent"),
+            Some(SwapMode::TextContent)
         );
         assert_eq!(message.html(), Some("<li>Saved</li>"));
         assert_eq!(message.target(), Some("#feed"));
-        assert_eq!(message.swap(), Some(SwapModeType::BeforeEnd));
+        assert_eq!(message.swap(), Some(SwapMode::BeforeEnd));
         assert_eq!(event.event_type(), "message");
         assert_eq!(event.data(), &"payload");
     }
 
     #[test]
     fn rest_facades_preserve_request_and_response_metadata() {
-        let definition = RestDefinition::new("todos", "/api/todos");
         let options = RestOptions::new().option("cache", "network-first");
         let request = RestRequest::new(HttpMethod::Get, "/api/todos/1")
             .with_collection_url("/api/todos")
@@ -3378,8 +3812,6 @@ mod tests {
             .with_source("network")
             .with_stale(false);
 
-        assert_eq!(definition.name(), "todos");
-        assert_eq!(definition.url(), "/api/todos");
         assert_eq!(
             options.values(),
             &[("cache".to_string(), "network-first".to_string())]
@@ -3405,15 +3837,13 @@ mod tests {
         last_player: Option<String>,
     }
 
-    fn start_session(data: &mut SessionData, payload: &String) -> MachineTransitionResult {
+    fn start_session(data: &mut SessionData, payload: &String) {
         data.starts += 1;
         data.last_player = Some(payload.clone());
-        MachineTransitionResult::mode("active")
     }
 
-    fn refresh_session(data: &mut SessionData, payload: &String) -> MachineTransitionResult {
+    fn refresh_session(data: &mut SessionData, payload: &String) {
         data.last_player = Some(payload.clone());
-        MachineTransitionResult::Stay
     }
 
     fn allow_named_session(data: &SessionData, payload: &String) -> bool {
@@ -3421,27 +3851,27 @@ mod tests {
     }
 
     #[test]
-    fn machine_facade_runs_transitions_hooks_and_snapshots() {
+    fn machine_facade_runs_state_tree_hooks_and_snapshots() {
         use std::sync::atomic::{AtomicUsize, Ordering};
 
         static ENTER_COUNT: AtomicUsize = AtomicUsize::new(0);
         static EXIT_COUNT: AtomicUsize = AtomicUsize::new(0);
         static TRANSITION_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-        fn record_enter(context: &MachineTransitionContext<'_, SessionData, String>) {
+        fn record_enter(context: &MachineEventTransitionContext<'_, SessionData, String>) {
             assert_eq!(context.from(), "idle");
             assert_eq!(context.to(), "active");
             assert_eq!(context.data().starts, 1);
             ENTER_COUNT.fetch_add(1, Ordering::SeqCst);
         }
 
-        fn record_exit(context: &MachineTransitionContext<'_, SessionData, String>) {
+        fn record_exit(context: &MachineEventTransitionContext<'_, SessionData, String>) {
             assert_eq!(context.event_type(), "start");
             assert_eq!(context.payload(), "ada");
             EXIT_COUNT.fetch_add(1, Ordering::SeqCst);
         }
 
-        fn record_transition(context: &MachineTransitionContext<'_, SessionData, String>) {
+        fn record_transition(context: &MachineEventTransitionContext<'_, SessionData, String>) {
             assert!(!context.to().is_empty());
             TRANSITION_COUNT.fetch_add(1, Ordering::SeqCst);
         }
@@ -3450,23 +3880,26 @@ mod tests {
         EXIT_COUNT.store(0, Ordering::SeqCst);
         TRANSITION_COUNT.store(0, Ordering::SeqCst);
 
-        let config = MachineConfig::new(
+        let config = MachineStateConfig::new(
             "idle",
             SessionData {
                 starts: 0,
                 last_player: None,
             },
         )
-        .transition("idle", "start", start_session)
-        .transition("active", "refresh", refresh_session)
+        .event(
+            "idle",
+            "start",
+            MachineEventTransitionConfig::to("active").with_update(start_session),
+        )
+        .update("active", "refresh", refresh_session)
         .with_hooks(
             MachineHooks::new()
                 .on_exit("idle", record_exit)
                 .on_enter("active", record_enter)
                 .on_transition(record_transition),
         );
-        let provider = MachineProvider::new();
-        let mut machine = provider.create(config);
+        let mut machine = Machine::new(config);
 
         assert!(machine.matches("idle"));
         assert!(machine.can("start"));
@@ -3490,52 +3923,42 @@ mod tests {
         machine.data_mut().starts = 99;
         machine.restore(snapshot);
 
-        assert_eq!(machine.current(), "active");
+        assert_eq!(machine.state(), "active");
         assert_eq!(machine.data().starts, 1);
         assert_eq!(machine.data().last_player.as_deref(), Some("grace"));
         assert!(!machine.send("missing", "nobody".to_string()));
     }
 
     #[test]
-    fn machine_facade_supports_guarded_transition_definitions() {
-        let descriptor: MachineTransitionDescriptor<SessionData, String> =
-            MachineTransitionDescriptor::guarded(allow_named_session, start_session);
-        let definition: MachineTransitionDefinition<SessionData, String> = descriptor.into();
+    fn machine_facade_supports_guarded_state_tree_transitions() {
+        let transition = MachineEventTransitionConfig::to("active")
+            .with_guard(allow_named_session)
+            .with_update(start_session);
 
-        assert!(definition.can_run(
+        assert!(transition.can_run(
             &SessionData {
                 starts: 0,
                 last_player: None,
             },
             &"ada".to_string(),
         ));
-        assert!(!definition.can_run(
+        assert!(!transition.can_run(
             &SessionData {
                 starts: 0,
                 last_player: None,
             },
             &"blocked".to_string(),
         ));
-        assert!(descriptor.guard().is_some());
-        assert_eq!(
-            descriptor.target()(
-                &mut SessionData {
-                    starts: 0,
-                    last_player: None,
-                },
-                &"grace".to_string(),
-            ),
-            MachineTransitionResult::mode("active"),
-        );
+        assert_eq!(transition.target(), Some("active"));
 
-        let config = MachineConfig::new(
+        let config = MachineStateConfig::new(
             "idle",
             SessionData {
                 starts: 0,
                 last_player: None,
             },
         )
-        .transition_definition("idle", "start", definition);
+        .event("idle", "start", transition);
         let mut machine = Machine::new(config);
 
         assert!(machine.can("start"));

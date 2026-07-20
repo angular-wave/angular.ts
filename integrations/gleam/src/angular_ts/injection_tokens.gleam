@@ -6,16 +6,17 @@
 import angular_ts/namespace
 import angular_ts/token.{type Token}
 import angular_ts/unsafe as js
+import angular_ts/wasm
 
 pub fn angular() -> Token(namespace.AngularService) {
   token.new("$angular")
 }
 
-pub fn scope() -> Token(namespace.Scope) {
+pub fn scope() -> Token(namespace.ScopeService) {
   token.new("$scope")
 }
 
-pub fn element() -> Token(namespace.RootElementService) {
+pub fn element() -> Token(namespace.ElementService) {
   token.new("$element")
 }
 
@@ -35,10 +36,6 @@ pub fn compile() -> Token(namespace.CompileService) {
   token.new("$compile")
 }
 
-pub fn compile_lifecycle() -> Token(js.JsValue) {
-  token.new("$compileLifecycle")
-}
-
 pub fn cookie() -> Token(namespace.CookieService) {
   token.new("$cookie")
 }
@@ -51,7 +48,7 @@ pub fn document() -> Token(namespace.DocumentService) {
   token.new("$document")
 }
 
-pub fn event_bus() -> Token(namespace.PubSubService) {
+pub fn event_bus() -> Token(namespace.EventBusService) {
   token.new("$eventBus")
 }
 
@@ -61,6 +58,10 @@ pub fn exception_handler() -> Token(namespace.ExceptionHandlerService) {
 
 pub fn filter() -> Token(namespace.FilterService) {
   token.new("$filter")
+}
+
+pub fn html_canvas() -> Token(namespace.HtmlCanvasService) {
+  token.new("$htmlCanvas")
 }
 
 pub fn http() -> Token(namespace.HttpService) {
@@ -111,7 +112,15 @@ pub fn sce_delegate() -> Token(namespace.SceDelegateService) {
   token.new("$sceDelegate")
 }
 
-pub fn state() -> Token(namespace.StateService) {
+pub fn security() -> Token(namespace.SecurityPolicy) {
+  token.new("$security")
+}
+
+pub fn service_worker() -> Token(namespace.ServiceWorkerService) {
+  token.new("$serviceWorker")
+}
+
+pub fn state() -> Token(namespace.StateService(js.JsValue)) {
   token.new("$state")
 }
 
@@ -119,7 +128,7 @@ pub fn state_registry() -> Token(namespace.StateRegistryService) {
   token.new("$stateRegistry")
 }
 
-pub fn stream() -> Token(js.JsValue) {
+pub fn stream() -> Token(namespace.StreamService) {
   token.new("$stream")
 }
 
@@ -131,31 +140,23 @@ pub fn template_cache() -> Token(namespace.TemplateCacheService) {
   token.new("$templateCache")
 }
 
-pub fn template_factory() -> Token(js.JsValue) {
-  token.new("$templateFactory")
-}
-
 pub fn template_request() -> Token(namespace.TemplateRequestService) {
   token.new("$templateRequest")
 }
 
-pub fn transitions() -> Token(namespace.TransitionService) {
+pub fn transitions() -> Token(namespace.TransitionsService) {
   token.new("$transitions")
-}
-
-pub fn view() -> Token(js.JsValue) {
-  token.new("$view")
 }
 
 pub fn window() -> Token(namespace.WindowService) {
   token.new("$window")
 }
 
-pub fn web_component() -> Token(js.JsValue) {
+pub fn web_component() -> Token(namespace.WebComponentService) {
   token.new("$webComponent")
 }
 
-pub fn web_transport() -> Token(js.JsValue) {
+pub fn web_transport() -> Token(namespace.WebTransportService) {
   token.new("$webTransport")
 }
 
@@ -163,160 +164,18 @@ pub fn websocket() -> Token(namespace.WebSocketService) {
   token.new("$websocket")
 }
 
-pub fn worker() -> Token(namespace.WorkerConnection) {
+pub fn worker() -> Token(namespace.WorkerService) {
   token.new("$worker")
 }
 
-pub fn wasm() -> Token(namespace.WasmService) {
+pub fn wasm() -> Token(wasm.WasmService) {
   token.new("$wasm")
 }
 
-pub fn provide() -> Token(namespace.ProvideService) {
-  token.new("$provide")
+pub fn workflow() -> Token(namespace.WorkflowService) {
+  token.new("$workflow")
 }
 
-pub fn injector() -> Token(namespace.InjectorService) {
+pub fn injector() -> Token(namespace.InjectorService(js.JsValue)) {
   token.new("$injector")
-}
-
-pub fn angular_provider() -> Token(namespace.AngularServiceProvider) {
-  token.new("$angularProvider")
-}
-
-pub fn anchor_scroll_provider() -> Token(namespace.AnchorScrollProvider) {
-  token.new("$anchorScrollProvider")
-}
-
-pub fn compile_provider() -> Token(js.JsValue) {
-  token.new("$compileProvider")
-}
-
-pub fn animate_provider() -> Token(namespace.AnimateProvider) {
-  token.new("$animateProvider")
-}
-
-pub fn aria_provider() -> Token(namespace.AriaService) {
-  token.new("$ariaProvider")
-}
-
-pub fn cookie_provider() -> Token(namespace.CookieService) {
-  token.new("$cookieProvider")
-}
-
-pub fn event_bus_provider() -> Token(namespace.PubSubProvider) {
-  token.new("$eventBusProvider")
-}
-
-pub fn exception_handler_provider() -> Token(namespace.ExceptionHandlerProvider) {
-  token.new("$exceptionHandlerProvider")
-}
-
-pub fn filter_provider() -> Token(namespace.FilterProvider) {
-  token.new("$filterProvider")
-}
-
-pub fn http_provider() -> Token(js.JsValue) {
-  token.new("$httpProvider")
-}
-
-pub fn http_param_serializer_provider() -> Token(
-  namespace.HttpParamSerializerProvider,
-) {
-  token.new("$httpParamSerializerProvider")
-}
-
-pub fn interpolate_provider() -> Token(namespace.InterpolateProvider) {
-  token.new("$interpolateProvider")
-}
-
-pub fn location_provider() -> Token(namespace.LocationProvider) {
-  token.new("$locationProvider")
-}
-
-pub fn log_provider() -> Token(js.JsValue) {
-  token.new("$logProvider")
-}
-
-pub fn machine_provider() -> Token(namespace.MachineProvider) {
-  token.new("$machineProvider")
-}
-
-pub fn parse_provider() -> Token(js.JsValue) {
-  token.new("$parseProvider")
-}
-
-pub fn rest_provider() -> Token(js.JsValue) {
-  token.new("$restProvider")
-}
-
-pub fn root_scope_provider() -> Token(js.JsValue) {
-  token.new("$rootScopeProvider")
-}
-
-pub fn sce_provider() -> Token(namespace.SceProvider) {
-  token.new("$sceProvider")
-}
-
-pub fn sce_delegate_provider() -> Token(namespace.SceDelegateProvider) {
-  token.new("$sceDelegateProvider")
-}
-
-pub fn sse_provider() -> Token(namespace.SseService) {
-  token.new("$sseProvider")
-}
-
-pub fn state_provider() -> Token(namespace.StateService) {
-  token.new("$stateProvider")
-}
-
-pub fn state_registry_provider() -> Token(namespace.StateRegistryService) {
-  token.new("$stateRegistryProvider")
-}
-
-pub fn stream_provider() -> Token(js.JsValue) {
-  token.new("$streamProvider")
-}
-
-pub fn template_cache_provider() -> Token(js.JsValue) {
-  token.new("$templateCacheProvider")
-}
-
-pub fn template_factory_provider() -> Token(js.JsValue) {
-  token.new("$templateFactoryProvider")
-}
-
-pub fn template_request_provider() -> Token(js.JsValue) {
-  token.new("$templateRequestProvider")
-}
-
-pub fn transitions_provider() -> Token(namespace.TransitionService) {
-  token.new("$transitionsProvider")
-}
-
-pub fn view_provider() -> Token(js.JsValue) {
-  token.new("$viewProvider")
-}
-
-pub fn web_component_provider() -> Token(js.JsValue) {
-  token.new("$webComponentProvider")
-}
-
-pub fn web_transport_provider() -> Token(js.JsValue) {
-  token.new("$webTransportProvider")
-}
-
-pub fn websocket_provider() -> Token(namespace.WebSocketService) {
-  token.new("$websocketProvider")
-}
-
-pub fn worker_provider() -> Token(namespace.WorkerConnection) {
-  token.new("$workerProvider")
-}
-
-pub fn wasm_provider() -> Token(namespace.WasmService) {
-  token.new("$wasmProvider")
-}
-
-pub fn controller_provider() -> Token(namespace.ControllerService) {
-  token.new("$controllerProvider")
 }

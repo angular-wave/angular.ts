@@ -44,7 +44,7 @@ public typealias AnimationLifecycleCallback = (
     context: AnimationContext,
 ) -> Unit
 
-public data class NativeAnimationOptions public constructor(
+public data class AnimationOptions public constructor(
     public val animation: String? = null,
     public val keyframes: Any? = null,
     public val enter: Any? = null,
@@ -74,14 +74,12 @@ public data class NativeAnimationOptions public constructor(
     public val timeline: Any? = null,
 )
 
-public typealias AnimationOptions = NativeAnimationOptions
-
 public typealias AnimationResult = Any?
 
 public typealias AnimationPresetHandler = (
     element: Element,
     context: AnimationContext,
-    options: NativeAnimationOptions,
+    options: AnimationOptions,
 ) -> AnimationResult
 
 public data class AnimationPreset public constructor(
@@ -92,7 +90,7 @@ public data class AnimationPreset public constructor(
     public val removeClass: Any? = null,
     public val setClass: Any? = null,
     public val animate: Any? = null,
-    public val options: NativeAnimationOptions? = null,
+    public val options: AnimationOptions? = null,
 )
 
 public class AnimationHandle internal constructor(
@@ -108,7 +106,7 @@ public class AnimationHandle internal constructor(
         onFulfilled: (() -> Any?)? = null,
         onRejected: ((Any?) -> Any?)? = null,
     ): Any? =
-        raw.then(onFulfilled ?: {}, onRejected ?: {})
+        raw.then({ onFulfilled?.invoke() }, { reason -> onRejected?.invoke(reason) })
 
     public fun done(callback: (Boolean) -> Unit) {
         raw.done(callback)
@@ -157,7 +155,7 @@ public class AnimateService internal constructor(
         element: Element,
         parent: Any? = undefined,
         after: Any? = undefined,
-        options: NativeAnimationOptions = NativeAnimationOptions(),
+        options: AnimationOptions = AnimationOptions(),
     ): AnimationHandle =
         AnimationHandle(raw.enter(element, parent, after, options.toJs()).unsafeCast<RawAnimationHandle>())
 
@@ -165,27 +163,27 @@ public class AnimateService internal constructor(
         element: Element,
         parent: Any?,
         after: Any? = undefined,
-        options: NativeAnimationOptions = NativeAnimationOptions(),
+        options: AnimationOptions = AnimationOptions(),
     ): AnimationHandle =
         AnimationHandle(raw.move(element, parent, after, options.toJs()).unsafeCast<RawAnimationHandle>())
 
     public fun leave(
         element: Element,
-        options: NativeAnimationOptions = NativeAnimationOptions(),
+        options: AnimationOptions = AnimationOptions(),
     ): AnimationHandle =
         AnimationHandle(raw.leave(element, options.toJs()).unsafeCast<RawAnimationHandle>())
 
     public fun addClass(
         element: Element,
         className: String,
-        options: NativeAnimationOptions = NativeAnimationOptions(),
+        options: AnimationOptions = AnimationOptions(),
     ): AnimationHandle =
         AnimationHandle(raw.addClass(element, className, options.toJs()).unsafeCast<RawAnimationHandle>())
 
     public fun removeClass(
         element: Element,
         className: String,
-        options: NativeAnimationOptions = NativeAnimationOptions(),
+        options: AnimationOptions = AnimationOptions(),
     ): AnimationHandle =
         AnimationHandle(raw.removeClass(element, className, options.toJs()).unsafeCast<RawAnimationHandle>())
 
@@ -193,7 +191,7 @@ public class AnimateService internal constructor(
         element: Element,
         add: String,
         remove: String,
-        options: NativeAnimationOptions = NativeAnimationOptions(),
+        options: AnimationOptions = AnimationOptions(),
     ): AnimationHandle =
         AnimationHandle(raw.setClass(element, add, remove, options.toJs()).unsafeCast<RawAnimationHandle>())
 
@@ -202,7 +200,7 @@ public class AnimateService internal constructor(
         from: Map<String, Any?>,
         to: Map<String, Any?> = emptyMap(),
         className: String = "",
-        options: NativeAnimationOptions = NativeAnimationOptions(),
+        options: AnimationOptions = AnimationOptions(),
     ): AnimationHandle =
         AnimationHandle(
             raw.animate(element, from.toJsRecord(), to.toJsRecord(), className, options.toJs())
@@ -210,7 +208,7 @@ public class AnimateService internal constructor(
         )
 }
 
-internal fun NativeAnimationOptions.toJs(): dynamic {
+internal fun AnimationOptions.toJs(): dynamic {
     val raw = js("{}")
 
     if (animation != null) raw.animation = animation

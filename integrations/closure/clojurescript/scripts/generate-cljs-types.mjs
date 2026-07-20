@@ -8,9 +8,9 @@ const cljsRoot = resolve(integrationRoot, "clojurescript");
 const externsPath = resolve(integrationRoot, "externs/angular.js");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
-const expectedTypeTagCount = 231;
-const expectedStrictWrapperCount = 258;
-const expectedStrictPropertyReaderCount = 426;
+const expectedTypeTagCount = 210;
+const expectedStrictWrapperCount = 224;
+const expectedStrictPropertyReaderCount = 447;
 const strictWrapperParamTagOverrides = new Map([
   ["NgModule.machine.config", "js/Object"],
   ["NgModule.workflow.config", "js/Object"],
@@ -20,6 +20,11 @@ const strictWrapperParamTagOverrides = new Map([
   ["NgModule.websocket.protocols", "js/Object"],
   ["NgModule.websocket.config", "js/Object"],
   ["NgModule.webTransport.config", "js/Object"],
+  ["Machine.restore.snapshot", "js/Object"],
+  ["WasmResource.bind.target", "js/ng.Scope"],
+]);
+const strictPropertyTagOverrides = new Map([
+  ["WasmBinding.target", "js/ng.Scope"],
 ]);
 
 const source = readFileSync(externsPath, "utf8");
@@ -359,7 +364,9 @@ function collectPrototypeProperties(ownerNames) {
 
     if (!typeExpression) continue;
 
-    const propertyTag = closureTypeToCljsTag(typeExpression);
+    const propertyTag =
+      closureTypeToCljsTag(typeExpression) ||
+      strictPropertyTagOverrides.get(`${owner}.${property}`);
 
     if (!propertyTag) continue;
 
@@ -452,9 +459,9 @@ function renderPrototypePropertyReader(property) {
 for (const typeName of [
   "Angular",
   "Directive",
+  "EventBusService",
   "Injectable",
   "NgModule",
-  "PubSubService",
 ]) {
   assertExtern(new RegExp(`\\bng\\.${typeName}\\b`), `ng.${typeName}`);
 }
@@ -469,8 +476,8 @@ assertExtern(
   "ng.NgModule.prototype.directive",
 );
 assertExtern(
-  /\bng\.PubSubService\.prototype\.publish\s*=\s*function\b/,
-  "ng.PubSubService.prototype.publish",
+  /\bng\.EventBusService\.prototype\.publish\s*=\s*function\b/,
+  "ng.EventBusService.prototype.publish",
 );
 
 const typeNames = collectExternTypes();
@@ -609,13 +616,13 @@ ${generatedProperties.map(renderPrototypePropertyReader).join("\n\n")}
   (ng-module-directive ng-module name directive-factory))
 
 (defn publish
-  "Strict convenience wrapper for ng.PubSubService.prototype.publish."
-  (^boolean [^js/ng.PubSubService event-bus ^string topic]
-   (pub-sub-service-publish event-bus topic))
-  (^boolean [^js/ng.PubSubService event-bus ^string topic value]
-   (pub-sub-service-publish event-bus topic value))
-  (^boolean [^js/ng.PubSubService event-bus ^string topic value extra]
-   (pub-sub-service-publish event-bus topic value extra)))
+  "Strict convenience wrapper for ng.EventBusService.prototype.publish."
+  (^boolean [^js/ng.EventBusService event-bus ^string topic]
+   (event-bus-service-publish event-bus topic))
+  (^boolean [^js/ng.EventBusService event-bus ^string topic value]
+   (event-bus-service-publish event-bus topic value))
+  (^boolean [^js/ng.EventBusService event-bus ^string topic value extra]
+   (event-bus-service-publish event-bus topic value extra)))
 `;
 
 if (checkMode) {

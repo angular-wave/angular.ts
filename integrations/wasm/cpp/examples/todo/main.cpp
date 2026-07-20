@@ -49,7 +49,7 @@ class TodoApp {
  public:
   void Bind(std::string_view scope_name) {
     current_app_ = this;
-    angular_ts::SetScopeUpdateCallback(&TodoApp::OnScopeUpdate);
+    angular_ts::SetScopeTransactionCallback(&TodoApp::OnScopeTransaction);
 
     scope_ = angular_ts::Scope::FromName(scope_name);
     watch_ = scope_.WatchPath("newTodo");
@@ -62,7 +62,7 @@ class TodoApp {
 
   void Unbind() {
     watch_.Unwatch();
-    angular_ts::SetScopeUpdateCallback(nullptr);
+    angular_ts::SetScopeTransactionCallback(nullptr);
     current_app_ = nullptr;
   }
 
@@ -115,12 +115,25 @@ class TodoApp {
   std::string_view NewTodo() const { return new_todo_; }
 
  private:
-  static void OnScopeUpdate(angular_ts::ScopeUpdate update) {
-    if (current_app_ == nullptr || update.path != "newTodo") {
+  static void OnScopeTransaction(angular_ts::ScopeTransaction transaction) {
+    if (current_app_ == nullptr) {
       return;
     }
 
-    current_app_->new_todo_ = DecodeFlatJsonString(update.value_json);
+    constexpr std::string_view key = "\"newTodo\":";
+    const std::size_t key_position = transaction.transaction_json.find(key);
+    if (key_position == std::string_view::npos) {
+      return;
+    }
+    const std::size_t value_start = key_position + key.size();
+    const std::size_t value_end =
+        transaction.transaction_json.find('"', value_start + 1);
+    if (value_end == std::string_view::npos) {
+      return;
+    }
+    current_app_->new_todo_ = DecodeFlatJsonString(
+        transaction.transaction_json.substr(value_start,
+                                            value_end - value_start + 1));
   }
 
   std::string ItemsJson() const {
@@ -187,13 +200,11 @@ int main() {
     return 1;
   }
 
-  const std::string_view path = "newTodo";
-  const std::string_view value = "\"Review C++ bridge\"";
-  ng_scope_on_update(
-      12, reinterpret_cast<const std::uint8_t*>(path.data()),
-      static_cast<std::uint32_t>(path.size()),
-      reinterpret_cast<const std::uint8_t*>(value.data()),
-      static_cast<std::uint32_t>(value.size()));
+  const std::string_view transaction =
+      "{\"set\":{\"newTodo\":\"Review C++ bridge\"}}";
+  ng_scope_on_transaction(
+      12, reinterpret_cast<const std::uint8_t*>(transaction.data()),
+      static_cast<std::uint32_t>(transaction.size()));
   if (app.NewTodo() != "Review C++ bridge") {
     return 1;
   }

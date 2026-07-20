@@ -1,7 +1,179 @@
-//! Portable Rust types for the AngularTS Wasm scope ABI.
+//! Portable Rust types for typed AngularTS scope authoring from Wasm.
 //!
-//! These types mirror the public `ng` namespace Wasm scope declarations without
-//! requiring a browser or `wasm32` target. Runtime calls live in `wasm.rs`.
+//! The field, update, and options types do not require a browser or `wasm32`
+//! target. Runtime calls live in `wasm.rs`.
+
+use std::{fmt, marker::PhantomData};
+
+/// A typed path in an AngularTS model or scope.
+///
+/// Generated contracts expose fields as constants, so the value type travels
+/// with the path through reads, writes, deletes, and observers.
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Field<T> {
+    path: &'static str,
+    marker: PhantomData<fn() -> T>,
+}
+
+impl<T> Field<T> {
+    /// Creates a typed field for one stable scope path.
+    pub const fn new(path: &'static str) -> Self {
+        Self {
+            path,
+            marker: PhantomData,
+        }
+    }
+
+    /// Returns the underlying AngularTS scope path.
+    pub const fn path(self) -> &'static str {
+        self.path
+    }
+}
+
+impl<T> Clone for Field<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for Field<T> {}
+
+/// A byte-array path in an AngularTS model or scope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BinaryField {
+    path: &'static str,
+    optional: bool,
+}
+
+impl BinaryField {
+    /// Creates a required binary field.
+    pub const fn new(path: &'static str) -> Self {
+        Self {
+            path,
+            optional: false,
+        }
+    }
+
+    /// Creates an optional binary field.
+    pub const fn optional(path: &'static str) -> Self {
+        Self {
+            path,
+            optional: true,
+        }
+    }
+
+    /// Returns the underlying AngularTS scope path.
+    pub const fn path(self) -> &'static str {
+        self.path
+    }
+
+    /// Returns whether the contract permits the field to be absent.
+    pub const fn is_optional(self) -> bool {
+        self.optional
+    }
+}
+
+/// Machine-readable error reported by the AngularTS Wasm ABI.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AbiError {
+    /// The ABI has been disposed.
+    Disposed,
+    /// A scope, watch, or buffer handle is invalid.
+    InvalidHandle,
+    /// A guest pointer or memory range is invalid.
+    InvalidPointer,
+    /// A payload length is invalid or exceeds its limit.
+    InvalidLength,
+    /// A JSON payload could not be decoded.
+    InvalidJson,
+    /// A scope path is unsafe.
+    UnsafePath,
+    /// A host resource limit was exceeded.
+    LimitExceeded,
+    /// A transaction or write-options payload is invalid.
+    InvalidTransaction,
+    /// A value is not supported by the requested operation.
+    UnsupportedValue,
+    /// The host operation failed.
+    OperationFailed,
+    /// A newer host returned an error code unknown to this crate.
+    Unknown(u32),
+}
+
+impl AbiError {
+    /// Converts the numeric ABI error code into a Rust value.
+    pub const fn from_code(code: u32) -> Option<Self> {
+        match code {
+            0 => None,
+            1 => Some(Self::Disposed),
+            2 => Some(Self::InvalidHandle),
+            3 => Some(Self::InvalidPointer),
+            4 => Some(Self::InvalidLength),
+            5 => Some(Self::InvalidJson),
+            6 => Some(Self::UnsafePath),
+            7 => Some(Self::LimitExceeded),
+            8 => Some(Self::InvalidTransaction),
+            9 => Some(Self::UnsupportedValue),
+            10 => Some(Self::OperationFailed),
+            code => Some(Self::Unknown(code)),
+        }
+    }
+
+    /// Returns the numeric ABI error code.
+    pub const fn code(self) -> u32 {
+        match self {
+            Self::Disposed => 1,
+            Self::InvalidHandle => 2,
+            Self::InvalidPointer => 3,
+            Self::InvalidLength => 4,
+            Self::InvalidJson => 5,
+            Self::UnsafePath => 6,
+            Self::LimitExceeded => 7,
+            Self::InvalidTransaction => 8,
+            Self::UnsupportedValue => 9,
+            Self::OperationFailed => 10,
+            Self::Unknown(code) => code,
+        }
+    }
+}
+
+/// Failure returned by the ergonomic Rust scope API.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WasmError {
+    /// The wrapper does not target a live host scope.
+    InvalidScope,
+    /// No bound AngularTS scope has the requested stable name.
+    ScopeNotFound(String),
+    /// The supplied scope path is empty.
+    InvalidPath,
+    /// The host ABI rejected the operation.
+    Abi(AbiError),
+    /// Rust could not serialize a value for the host.
+    Encode(String),
+    /// Rust could not deserialize a host value.
+    Decode(String),
+}
+
+impl fmt::Display for WasmError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidScope => formatter.write_str("invalid AngularTS Wasm scope"),
+            Self::ScopeNotFound(name) => {
+                write!(formatter, "AngularTS Wasm scope '{name}' is not bound")
+            }
+            Self::InvalidPath => formatter.write_str("AngularTS Wasm scope path cannot be empty"),
+            Self::Abi(error) => write!(formatter, "AngularTS Wasm ABI error {}", error.code()),
+            Self::Encode(message) => {
+                write!(formatter, "could not encode Wasm scope value: {message}")
+            }
+            Self::Decode(message) => {
+                write!(formatter, "could not decode Wasm scope value: {message}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for WasmError {}
 
 /// Logical reference to one AngularTS `WasmScope`.
 ///
@@ -84,19 +256,31 @@ impl From<&str> for WasmScopeReference {
 
 /// Scope update delivered from AngularTS to a Wasm client callback.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WasmScopeUpdate<T> {
+pub struct ScopeUpdate<T> {
     scope: WasmScopeReference,
     path: String,
-    value: T,
+    value: Option<T>,
+    origin: Option<String>,
 }
 
-impl<T> WasmScopeUpdate<T> {
+impl<T> ScopeUpdate<T> {
     /// Creates an update for a scope reference, changed path, and current value.
     pub fn new(scope: impl Into<WasmScopeReference>, path: impl Into<String>, value: T) -> Self {
         Self {
             scope: scope.into(),
             path: path.into(),
-            value,
+            value: Some(value),
+            origin: None,
+        }
+    }
+
+    /// Creates a deletion update with no current value.
+    pub fn deletion(scope: impl Into<WasmScopeReference>, path: impl Into<String>) -> Self {
+        Self {
+            scope: scope.into(),
+            path: path.into(),
+            value: None,
+            origin: None,
         }
     }
 
@@ -131,32 +315,65 @@ impl<T> WasmScopeUpdate<T> {
     }
 
     /// Returns the current value at the changed scope path.
-    pub const fn value(&self) -> &T {
-        &self.value
+    pub const fn value(&self) -> Option<&T> {
+        self.value.as_ref()
+    }
+
+    /// Returns whether this update removed the path.
+    pub const fn deleted(&self) -> bool {
+        self.value.is_none()
+    }
+
+    /// Returns the stable source identifier supplied by the writer.
+    pub fn origin(&self) -> Option<&str> {
+        self.origin.as_deref()
+    }
+
+    /// Attaches the writer's stable source identifier.
+    pub fn with_origin(mut self, origin: Option<String>) -> Self {
+        self.origin = origin;
+        self
     }
 
     /// Consumes the update and returns its value.
-    pub fn into_value(self) -> T {
+    pub fn into_value(self) -> Option<T> {
         self.value
     }
 
     /// Maps the update value while preserving the scope reference and path.
-    pub fn map<U>(self, mapper: impl FnOnce(T) -> U) -> WasmScopeUpdate<U> {
-        WasmScopeUpdate {
+    pub fn map<U>(self, mapper: impl FnOnce(T) -> U) -> ScopeUpdate<U> {
+        ScopeUpdate {
             scope: self.scope,
             path: self.path,
-            value: mapper(self.value),
+            value: self.value.map(mapper),
+            origin: self.origin,
         }
+    }
+
+    /// Fallibly maps a set value while preserving deletion and metadata.
+    pub fn try_map<U, E>(
+        self,
+        mapper: impl FnOnce(T) -> Result<U, E>,
+    ) -> Result<ScopeUpdate<U>, E> {
+        Ok(ScopeUpdate {
+            scope: self.scope,
+            path: self.path,
+            value: match self.value {
+                Some(value) => Some(mapper(value)?),
+                None => None,
+            },
+            origin: self.origin,
+        })
     }
 }
 
 /// Options for registering one scope watch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct WasmScopeWatchOptions {
+pub struct WatchOptions {
     initial: bool,
 }
 
-impl WasmScopeWatchOptions {
+impl WatchOptions {
     /// Creates watch options with default behavior.
     pub const fn new() -> Self {
         Self { initial: false }
@@ -174,60 +391,41 @@ impl WasmScopeWatchOptions {
     }
 }
 
-/// Options for binding an AngularTS scope to Wasm lifecycle callbacks.
+/// Origin and echo behavior for one scope write.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct WasmScopeBindingOptions {
-    name: Option<String>,
-    watch: Vec<String>,
-    initial: bool,
+pub struct WriteOptions {
+    origin: Option<String>,
+    echo: Option<bool>,
 }
 
-impl WasmScopeBindingOptions {
-    /// Creates binding options with default behavior.
-    pub fn new() -> Self {
-        Self::default()
+impl WriteOptions {
+    /// Creates write options with host defaults.
+    pub const fn new() -> Self {
+        Self {
+            origin: None,
+            echo: None,
+        }
     }
 
-    /// Returns the stable scope name override.
-    pub fn name(&self) -> Option<&str> {
-        self.name.as_deref()
+    /// Returns the stable source identifier used to prevent synchronization loops.
+    pub fn origin(&self) -> Option<&str> {
+        self.origin.as_deref()
     }
 
-    /// Returns watched paths that should emit scope update callbacks.
-    pub fn watch(&self) -> &[String] {
-        &self.watch
+    /// Returns the explicit echo behavior, when supplied.
+    pub const fn echo(&self) -> Option<bool> {
+        self.echo
     }
 
-    /// Returns whether watched paths should emit their current values on bind.
-    pub const fn initial(&self) -> bool {
-        self.initial
-    }
-
-    /// Sets a stable scope name override.
-    pub fn with_name(mut self, name: impl Into<String>) -> Self {
-        self.name = Some(name.into());
+    /// Sets the stable source identifier.
+    pub fn with_origin(mut self, origin: impl Into<String>) -> Self {
+        self.origin = Some(origin.into());
         self
     }
 
-    /// Adds a watched scope path.
-    pub fn with_watch(mut self, path: impl Into<String>) -> Self {
-        self.watch.push(path.into());
-        self
-    }
-
-    /// Replaces the watched scope paths.
-    pub fn with_watches<I, S>(mut self, paths: I) -> Self
-    where
-        I: IntoIterator<Item = S>,
-        S: Into<String>,
-    {
-        self.watch = paths.into_iter().map(Into::into).collect();
-        self
-    }
-
-    /// Sets whether watched paths should emit their current values on bind.
-    pub const fn with_initial(mut self, initial: bool) -> Self {
-        self.initial = initial;
+    /// Sets whether guest observers receive this write.
+    pub const fn with_echo(mut self, echo: bool) -> Self {
+        self.echo = Some(echo);
         self
     }
 }
@@ -250,11 +448,13 @@ mod tests {
         assert!(name.is_valid());
         assert_eq!(both.handle(), Some(7));
         assert_eq!(both.name(), Some("todoList:item"));
+        assert!(!WasmScopeReference::from_handle(0).is_valid());
+        assert!(!WasmScopeReference::from_name("").is_valid());
     }
 
     #[test]
     fn wasm_scope_update_preserves_scope_path_and_value() {
-        let update = WasmScopeUpdate::new(
+        let update = ScopeUpdate::new(
             WasmScopeReference::from_handle_and_name(3, "counter"),
             "count",
             10,
@@ -263,25 +463,51 @@ mod tests {
         assert_eq!(update.scope_handle(), Some(3));
         assert_eq!(update.scope_name(), Some("counter"));
         assert_eq!(update.path(), "count");
-        assert_eq!(update.value(), &10);
-        assert_eq!(update.map(|count| count + 1).into_value(), 11);
+        assert_eq!(update.value(), Some(&10));
+        let update = update
+            .with_origin(Some("socket".to_string()))
+            .map(|count| count + 1);
+        assert_eq!(update.value(), Some(&11));
+        assert!(!update.deleted());
+        assert_eq!(update.origin(), Some("socket"));
+
+        let deleted = ScopeUpdate::<i32>::deletion(3, "count")
+            .try_map::<String, ()>(|count| Ok(count.to_string()))
+            .unwrap();
+        assert!(deleted.deleted());
+        assert_eq!(deleted.value(), None);
     }
 
     #[test]
-    fn wasm_scope_options_are_builder_friendly() {
-        let watch = WasmScopeWatchOptions::new().with_initial(true);
-        let binding = WasmScopeBindingOptions::new()
-            .with_name("todoList:main")
-            .with_watch("title")
-            .with_watches(["items", "remainingCount"])
-            .with_initial(true);
-
+    fn watch_options_are_builder_friendly() {
+        let watch = WatchOptions::new().with_initial(true);
         assert!(watch.initial());
-        assert_eq!(binding.name(), Some("todoList:main"));
+
+        let write = WriteOptions::new().with_origin("physics").with_echo(false);
+        assert_eq!(write.origin(), Some("physics"));
+        assert_eq!(write.echo(), Some(false));
+    }
+
+    #[test]
+    fn typed_fields_carry_paths_and_binary_optionality() {
+        const COUNT: Field<u32> = Field::new("count");
+        const FRAME: BinaryField = BinaryField::optional("frame");
+
+        assert_eq!(COUNT.path(), "count");
+        assert_eq!(FRAME.path(), "frame");
+        assert!(FRAME.is_optional());
+    }
+
+    #[test]
+    fn abi_errors_round_trip_known_and_future_codes() {
+        for code in 1..=10 {
+            assert_eq!(AbiError::from_code(code).map(AbiError::code), Some(code));
+        }
+        assert_eq!(AbiError::from_code(0), None);
+        assert_eq!(AbiError::from_code(77), Some(AbiError::Unknown(77)));
         assert_eq!(
-            binding.watch(),
-            &["items".to_string(), "remainingCount".to_string()]
+            WasmError::ScopeNotFound("player:main".to_string()).to_string(),
+            "AngularTS Wasm scope 'player:main' is not bound"
         );
-        assert!(binding.initial());
     }
 }

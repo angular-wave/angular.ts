@@ -107,6 +107,20 @@ JSAny? callMethod(
   return target.callMethod(method.toJS);
 }
 
+/// Calls a JavaScript function with up to four arguments.
+JSAny? callFunction(JSFunction function, List<JSAny?> args) {
+  return switch (args.length) {
+    0 => function.callAsFunction(null),
+    1 => function.callAsFunction(null, args[0]),
+    2 => function.callAsFunction(null, args[0], args[1]),
+    3 => function.callAsFunction(null, args[0], args[1], args[2]),
+    4 => function.callAsFunction(null, args[0], args[1], args[2], args[3]),
+    _ => throw UnsupportedError(
+        'JavaScript function calls support up to 4 arguments',
+      ),
+  };
+}
+
 /// Calls a method with exactly one argument, including `null`.
 JSAny? callMethod1(JSObject target, String method, JSAny? arg1) {
   return target.callMethodVarArgs(method.toJS, [arg1]);
@@ -151,4 +165,13 @@ JSAny? callMethod5(
   JSAny? arg5,
 ) {
   return target.callMethodVarArgs(method.toJS, [arg1, arg2, arg3, arg4, arg5]);
+}
+
+/// Calls a method with an explicit argument list.
+JSAny? callMethodVarArgs(
+  JSObject target,
+  String method,
+  List<JSAny?> args,
+) {
+  return target.callMethodVarArgs(method.toJS, args);
 }
