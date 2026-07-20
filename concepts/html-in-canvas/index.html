@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AngularTS + HTML-in-Canvas</title>
+    <script type="module" src="./app.js"></script>
+    <style>
+      body {
+        color: #111827;
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      main {
+        display: grid;
+        gap: 18px;
+        max-width: 760px;
+      }
+
+      canvas {
+        background: #101828;
+        border: 1px solid #374151;
+        display: block;
+        max-width: 100%;
+      }
+
+      .panel {
+        background: #f9fafb;
+        border: 1px solid #d1d5db;
+        box-sizing: border-box;
+        color: #111827;
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+        width: 360px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+      }
+
+      button {
+        justify-self: start;
+      }
+
+      .status {
+        color: #4b5563;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body ng-app="htmlCanvasConcept" ng-controller="DemoCtrl as demo">
+    <main>
+      <h1>HTML-in-Canvas</h1>
+
+      <p class="status">
+        Native support: {{ demo.supported ? "available" : "unavailable" }}.
+        Launches: {{ demo.panel.launches }}.
+      </p>
+
+      <canvas
+        ng-if="demo.supported"
+        ng-html-canvas
+        width="638"
+        height="318"
+        layoutsubtree="true"
+      >
+        <form
+          ng-html-canvas-source
+          class="panel"
+          ng-submit="demo.launch()"
+          x="24"
+          y="18"
+        >
+          <label>
+            Ship Name
+            <input type="text" ng-model="demo.panel.shipName" />
+          </label>
+
+          <label>
+            Shield Strength
+            <input
+              type="range"
+              min="0"
+              max="100"
+              ng-model="demo.panel.shield"
+            />
+          </label>
+
+          <label>
+            <span>
+              <input type="checkbox" ng-model="demo.panel.hyperdrive" />
+              Engage Hyperdrive
+            </span>
+          </label>
+
+          <button type="submit">Launch</button>
+        </form>
+      </canvas>
+
+      <p class="status" ng-if="!demo.supported">
+        This browser does not expose the native HTML-in-Canvas primitives yet.
+        AngularTS does not provide a fallback renderer for this concept.
+      </p>
+    </main>
+  </body>
+</html>

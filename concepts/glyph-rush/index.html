@@ -1,0 +1,465 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AngularTS Glyph Rush</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 16% 16%, rgba(20, 184, 166, 0.22), transparent 24%),
+          radial-gradient(circle at 86% 18%, rgba(245, 158, 11, 0.2), transparent 22%),
+          linear-gradient(135deg, #09111f 0%, #111827 52%, #18110a 100%);
+        color: #f8fafc;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        margin: 0;
+        min-height: 100vh;
+      }
+
+      main {
+        display: grid;
+        gap: 18px;
+        margin: 0 auto;
+        max-width: 1120px;
+        padding: 24px;
+      }
+
+      header {
+        align-items: end;
+        display: flex;
+        gap: 18px;
+        justify-content: space-between;
+      }
+
+      h1 {
+        font-size: clamp(2.2rem, 6vw, 5rem);
+        line-height: 0.92;
+        margin: 0;
+      }
+
+      p {
+        color: #cbd5e1;
+        line-height: 1.5;
+        margin: 8px 0 0;
+        max-width: 680px;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      button {
+        background: #22d3ee;
+        border: 0;
+        border-radius: 7px;
+        color: #082f49;
+        cursor: pointer;
+        font-weight: 800;
+        min-height: 38px;
+        padding: 9px 14px;
+      }
+
+      button.secondary {
+        background: #fbbf24;
+        color: #422006;
+      }
+
+      button.ghost {
+        background: rgba(248, 250, 252, 0.12);
+        border: 1px solid rgba(226, 232, 240, 0.38);
+        color: #f8fafc;
+      }
+
+      .hud {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .hud div,
+      .message {
+        background: rgba(15, 23, 42, 0.74);
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .hud span {
+        color: #bae6fd;
+        display: block;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+      }
+
+      .hud strong {
+        display: block;
+        font-size: 1.45rem;
+        margin-top: 4px;
+      }
+
+      .arena {
+        background:
+          linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+          rgba(2, 6, 23, 0.72);
+        background-size: 28px 28px;
+        border: 1px solid rgba(148, 163, 184, 0.36);
+        border-radius: 8px;
+        box-shadow: 0 24px 90px rgba(0, 0, 0, 0.42);
+        min-height: 640px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .search-page {
+        left: 50%;
+        max-width: 720px;
+        position: absolute;
+        top: 54%;
+        transform: translate(-50%, -50%);
+        width: min(72vw, 720px);
+      }
+
+      .search-bar {
+        align-items: center;
+        background: #f8fafc;
+        border-radius: 999px;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32);
+        color: #0f172a;
+        display: flex;
+        gap: 10px;
+        margin: 0 auto 16px;
+        max-width: 560px;
+        min-height: 48px;
+        padding: 0 18px;
+      }
+
+      .search-bar strong {
+        color: #0f766e;
+      }
+
+      .result-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .result-card {
+        background: rgba(248, 250, 252, 0.94);
+        border: 1px solid rgba(203, 213, 225, 0.9);
+        border-radius: 8px;
+        color: #111827;
+        min-height: 104px;
+        overflow: hidden;
+        padding: 14px 16px;
+        position: relative;
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .result-card.warning {
+        border-color: #f59e0b;
+      }
+
+      .result-card.danger {
+        border-color: #ef4444;
+        transform: rotate(-0.4deg);
+      }
+
+      .result-card.dead {
+        opacity: 0.28;
+        transform: scale(0.985);
+      }
+
+      .result-card h2 {
+        color: #1d4ed8;
+        font-size: 1.05rem;
+        margin: 0 0 4px;
+      }
+
+      .result-card small {
+        color: #15803d;
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .result-card p {
+        color: #475569;
+        margin: 0;
+      }
+
+      .health {
+        background: #e2e8f0;
+        height: 5px;
+        inset: auto 0 0;
+        position: absolute;
+      }
+
+      .health div {
+        background: linear-gradient(90deg, #22c55e, #22d3ee);
+        height: 100%;
+        width: calc(var(--health, 0) * 1%);
+      }
+
+      .result-card.warning .health div {
+        background: linear-gradient(90deg, #f59e0b, #facc15);
+      }
+
+      .result-card.danger .health div {
+        background: linear-gradient(90deg, #ef4444, #f97316);
+      }
+
+      .glyph {
+        align-items: center;
+        background: #fbbf24;
+        border: 2px solid rgba(255, 255, 255, 0.82);
+        border-radius: 999px;
+        box-shadow:
+          0 10px 22px rgba(251, 191, 36, 0.35),
+          inset 0 -4px 8px rgba(120, 53, 15, 0.32);
+        color: #7c2d12;
+        display: flex;
+        font-size: 0.9rem;
+        font-weight: 900;
+        height: 23px;
+        justify-content: center;
+        left: calc(var(--x, 0) * 1%);
+        line-height: 1;
+        position: absolute;
+        top: calc(var(--y, 0) * 1%);
+        transform: translate(-50%, -50%) rotate(var(--angle, 0deg))
+          scale(var(--squash, 1));
+        transform-origin: 50% 62%;
+        width: 23px;
+        z-index: 4;
+      }
+
+      .glyph.biting {
+        animation: bite 110ms infinite alternate;
+      }
+
+      .glyph.red {
+        background: #ef4444;
+        box-shadow:
+          0 10px 22px rgba(239, 68, 68, 0.36),
+          inset 0 -4px 8px rgba(127, 29, 29, 0.34);
+        color: #450a0a;
+      }
+
+      .glyph span {
+        pointer-events: none;
+      }
+
+      .burst,
+      .gg-letter {
+        color: #fde68a;
+        font-weight: 900;
+        left: calc(var(--x, 0) * 1%);
+        position: absolute;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+        top: calc(var(--y, 0) * 1%);
+        transform: translate(-50%, -50%);
+        z-index: 5;
+      }
+
+      .gg-letter {
+        align-items: center;
+        background: #fbbf24;
+        border: 2px solid rgba(255, 255, 255, 0.82);
+        border-radius: 999px;
+        color: #7c2d12;
+        display: flex;
+        font-size: 0.9rem;
+        height: 22px;
+        justify-content: center;
+        text-shadow: none;
+        width: 22px;
+        z-index: 8;
+      }
+
+      .gg-letter.red {
+        background: #ef4444;
+        color: #450a0a;
+      }
+
+      .overlay {
+        align-items: center;
+        background: rgba(2, 6, 23, 0.42);
+        display: grid;
+        inset: 0;
+        justify-items: center;
+        position: absolute;
+        text-align: center;
+        z-index: 6;
+      }
+
+      .overlay div {
+        display: grid;
+        gap: 12px;
+      }
+
+      .overlay strong {
+        color: #fbbf24;
+        font-size: clamp(4rem, 14vw, 10rem);
+        line-height: 0.85;
+      }
+
+      .message {
+        color: #e0f2fe;
+      }
+
+      @keyframes bite {
+        from {
+          transform: translate(-50%, -50%) rotate(var(--angle, 0deg))
+            scale(1.08, 0.9);
+        }
+
+        to {
+          transform: translate(-50%, -50%) rotate(var(--angle, 0deg))
+            scale(1.18, 0.82);
+        }
+      }
+
+      @media (max-width: 780px) {
+        header {
+          align-items: stretch;
+          display: grid;
+        }
+
+        .controls {
+          justify-content: start;
+        }
+
+        .hud {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .arena {
+          min-height: 720px;
+        }
+
+        .search-page {
+          width: calc(100% - 28px);
+        }
+      }
+    </style>
+  </head>
+  <body ng-app="glyphRushConcept" ng-controller="GlyphRushCtrl as rush">
+    <main>
+      <header>
+        <div>
+          <h1>Glyph Rush</h1>
+          <p>
+            Defend the reactive page. Glyphs rush in from the edges, chew
+            through result cards, and every tap updates the AngularTS model.
+          </p>
+        </div>
+        <div class="controls">
+          <button type="button" ng-click="rush.start()">
+            {{ rush.game.running && rush.game.paused ? "Resume" : "Start" }}
+          </button>
+          <button type="button" class="secondary" ng-click="rush.pause()">
+            {{ rush.game.paused ? "Resume" : "Pause" }}
+          </button>
+          <button type="button" class="ghost" ng-click="rush.reset()">
+            Reset
+          </button>
+        </div>
+      </header>
+
+      <section class="hud" aria-label="Game status">
+        <div>
+          <span>Score</span>
+          <strong>{{ rush.game.score }}</strong>
+        </div>
+        <div>
+          <span>Wave</span>
+          <strong>{{ rush.game.wave }}</strong>
+        </div>
+        <div>
+          <span>Integrity</span>
+          <strong>{{ rush.game.integrity }}%</strong>
+        </div>
+        <div>
+          <span>APM</span>
+          <strong>{{ rush.game.apm }}</strong>
+        </div>
+        <div>
+          <span>Attackers</span>
+          <strong>{{ rush.game.enemies.length }}</strong>
+        </div>
+      </section>
+
+      <section class="arena" aria-label="Glyph Rush arena">
+        <div class="search-page">
+          <div class="search-bar">
+            <strong>AngularTS</strong>
+            <span>indestructible reactive apps</span>
+          </div>
+
+          <div class="result-list">
+            <article
+              class="result-card {{ rush.cardClass(card) }}"
+              ng-repeat="card in rush.game.cards"
+            >
+              <h2>{{ card.title }}</h2>
+              <small>{{ card.url }}</small>
+              <p>{{ card.text }}</p>
+              <div class="health" style="--health: {{ card.health }}">
+                <div></div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="glyph"
+          ng-class="{ biting: enemy.biting, red: enemy.color === 'red' }"
+          ng-repeat="enemy in rush.game.enemies"
+          ng-click="rush.hit(enemy.id)"
+          style="--x: {{ enemy.x }}; --y: {{ enemy.y }}; --angle: {{ enemy.angle }}deg; --squash: {{ enemy.biting ? 1.12 : 1 }}"
+          title="Tap to clear {{ enemy.glyph }}"
+        >
+          <span>{{ enemy.glyph }}</span>
+        </button>
+
+        <div
+          class="gg-letter"
+          ng-class="{ red: letter.color === 'red' }"
+          ng-repeat="letter in rush.game.ggLetters"
+          style="--x: {{ letter.x }}; --y: {{ letter.y }}"
+        >
+          {{ letter.glyph }}
+        </div>
+
+        <div
+          class="burst"
+          ng-repeat="burst in rush.game.bursts"
+          style="--x: {{ burst.x }}; --y: {{ burst.y }}"
+        >
+          {{ burst.text }}
+        </div>
+
+        <div class="overlay" ng-if="rush.game.gameOver">
+          <div>
+            <button type="button" ng-click="rush.start()">Play Again</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="message">{{ rush.game.message }}</div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AngularTS Shared WASM Module Worker</title>
+    <script type="module" src="./app.js"></script>
+    <style>
+      body {
+        color: #202124;
+        font-family: system-ui, sans-serif;
+        margin: 32px;
+        max-width: 520px;
+      }
+
+      fieldset {
+        border: 1px solid #bdc1c6;
+        padding: 20px;
+      }
+
+      label {
+        display: inline-grid;
+        gap: 6px;
+        margin-right: 12px;
+      }
+
+      input {
+        padding: 6px 8px;
+        width: 96px;
+      }
+
+      button {
+        margin-top: 16px;
+        padding: 7px 14px;
+      }
+
+      dl {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: 160px 1fr;
+      }
+
+      dd {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body ng-app="wasmWorkerConcept" ng-controller="DemoCtrl as demo">
+    <fieldset>
+      <legend>Shared WebAssembly Module</legend>
+      <div>
+        <button
+          ng-click="demo.run()"
+          ng-disabled="demo.model.status !== 'ready'"
+        >
+          Increment in worker guest
+        </button>
+      </div>
+    </fieldset>
+
+    <dl>
+      <dt>Status</dt>
+      <dd data-testid="status">{{ demo.model.status }}</dd>
+      <dt>Module shared</dt>
+      <dd data-testid="module-shared">{{ demo.model.moduleShared }}</dd>
+      <dt>WASM memory shared</dt>
+      <dd data-testid="memory-shared">{{ demo.model.sharedMemory }}</dd>
+      <dt>Shared atomic value</dt>
+      <dd data-testid="shared-value">{{ demo.model.sharedValue }}</dd>
+      <dt>Main guest increment</dt>
+      <dd data-testid="main-result">{{ demo.model.mainResult }}</dd>
+      <dt>Worker guest increment</dt>
+      <dd data-testid="worker-result">{{ demo.model.result }}</dd>
+    </dl>
+  </body>
+</html>

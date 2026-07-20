@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + MapLibre GL</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      #map-view {
+        border: 1px solid #ddd;
+        height: 360px;
+        margin-top: 16px;
+        width: 640px;
+      }
+    </style>
+  </head>
+  <body ng-app="mapLibreConcept" ng-controller="DemoCtrl as demo">
+    <button ng-click="demo.flyToLondon()">London</button>
+    <button ng-click="demo.flyToNewYork()">New York</button>
+    <button ng-click="demo.zoomIn()">Zoom In</button>
+    <button ng-click="demo.zoomOut()">Zoom Out</button>
+
+    <label>
+      Marker color
+      <input type="color" ng-model="demo.map.markerColor" />
+    </label>
+
+    <p>
+      Center:
+      {{ demo.map.center.lng.toFixed(4) }},
+      {{ demo.map.center.lat.toFixed(4) }},
+      Zoom: {{ demo.map.zoom.toFixed(1) }},
+      Marker:
+      {{ demo.map.marker.lng.toFixed(4) }},
+      {{ demo.map.marker.lat.toFixed(4) }}
+    </p>
+
+    <div id="map-view"></div>
+  </body>
+</html>

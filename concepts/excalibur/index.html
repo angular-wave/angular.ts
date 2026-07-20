@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + Excalibur</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      #excalibur-view {
+        border: 1px solid #ddd;
+        height: 260px;
+        margin-top: 16px;
+        width: 420px;
+      }
+    </style>
+  </head>
+  <body ng-app="excaliburConcept" ng-controller="DemoCtrl as demo">
+    <button ng-click="demo.boost()">Boost</button>
+    <button ng-click="demo.stop()">Stop</button>
+
+    <label>
+      Color
+      <input type="color" ng-model="demo.player.color" />
+    </label>
+
+    <p>
+      X: {{ demo.player.x.toFixed(0) }},
+      Speed: {{ demo.player.speed.toFixed(1) }},
+      Running: {{ demo.player.running ? 'yes' : 'no' }}
+    </p>
+
+    <div id="excalibur-view">
+      <canvas id="excalibur-canvas" width="420" height="260"></canvas>
+    </div>
+  </body>
+</html>

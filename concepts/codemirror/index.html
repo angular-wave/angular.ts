@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + CodeMirror</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      .layout {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: minmax(460px, 1fr) 260px;
+        margin-top: 16px;
+      }
+
+      #editor-runtime {
+        border: 1px solid #d1d5db;
+        min-height: 260px;
+      }
+
+      #editor-runtime .cm-editor {
+        min-height: 260px;
+      }
+
+      dl {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: auto 1fr;
+        margin: 0;
+      }
+
+      dd {
+        margin: 0;
+      }
+
+      pre {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        max-height: 140px;
+        overflow: auto;
+        padding: 8px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body ng-app="codemirrorConcept" ng-controller="DemoCtrl as demo">
+    <button ng-click="demo.insertLog()">Insert Log</button>
+    <button ng-click="demo.save()">Save</button>
+    <button ng-click="demo.reset()">Reset</button>
+    <button ng-click="demo.rename()">Rename</button>
+
+    <div class="layout">
+      <section>
+        <h1>{{ demo.editor.title }}</h1>
+        <div id="editor-runtime"></div>
+      </section>
+
+      <aside>
+        <dl>
+          <dt>Status</dt>
+          <dd data-testid="status">{{ demo.editor.status }}</dd>
+          <dt>Cursor</dt>
+          <dd data-testid="cursor">
+            {{ demo.editor.cursorLine }}:{{ demo.editor.cursorColumn }}
+          </dd>
+          <dt>Changes</dt>
+          <dd data-testid="changes">{{ demo.editor.changeCount }}</dd>
+          <dt>Dirty</dt>
+          <dd data-testid="dirty">
+            {{ demo.editor.text === demo.editor.savedText ? 'no' : 'yes' }}
+          </dd>
+        </dl>
+
+        <h2>Model text</h2>
+        <pre data-testid="model-text">{{ demo.editor.text }}</pre>
+      </aside>
+    </div>
+  </body>
+</html>

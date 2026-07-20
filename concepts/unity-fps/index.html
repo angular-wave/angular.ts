@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + Unity FPS</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      .layout {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: minmax(520px, 1fr) 260px;
+        margin-top: 16px;
+      }
+
+      .unity-frame {
+        background: #111827;
+        border: 1px solid #d1d5db;
+        min-height: 360px;
+        position: relative;
+      }
+
+      canvas {
+        display: block;
+        height: 360px;
+        width: 100%;
+      }
+
+      .mock-fps {
+        align-items: center;
+        color: white;
+        display: flex;
+        height: 360px;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .mock-fps::before {
+        background:
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.08) 1px,
+            transparent 1px
+          ),
+          linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+        background-size: 36px 36px;
+        content: "";
+        inset: 0;
+        position: absolute;
+        transform: perspective(380px) rotateX(58deg) translateY(90px);
+        transform-origin: bottom;
+      }
+
+      .crosshair {
+        border: 1px solid white;
+        height: 18px;
+        position: absolute;
+        width: 18px;
+      }
+
+      .unity-crosshair {
+        border: 1px solid white;
+        height: 18px;
+        left: 50%;
+        pointer-events: none;
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 18px;
+      }
+
+      .target {
+        background: #ef4444;
+        border-radius: 999px;
+        height: 42px;
+        position: absolute;
+        right: 28%;
+        top: 34%;
+        width: 42px;
+      }
+
+      dl {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: auto 1fr;
+        margin: 0;
+      }
+
+      dd {
+        margin: 0;
+      }
+
+      pre {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        max-height: 120px;
+        overflow: auto;
+        padding: 8px;
+      }
+    </style>
+  </head>
+  <body ng-app="unityFpsConcept" ng-controller="DemoCtrl as demo">
+    <button ng-click="demo.togglePaused()">
+      {{ demo.session.paused ? 'Resume' : 'Pause' }}
+    </button>
+    <button ng-click="demo.reload()">Reload</button>
+    <button ng-click="demo.shoot()">Shoot</button>
+    <button ng-click="demo.heal()">Heal</button>
+
+    <label>
+      Sensitivity
+      <input
+        type="range"
+        min="0.4"
+        max="2"
+        step="0.1"
+        ng-model="demo.settings.sensitivity"
+      />
+    </label>
+    <button ng-click="demo.updateSensitivity()">Apply Sensitivity</button>
+
+    <div class="layout">
+      <section class="unity-frame">
+        <canvas id="unity-canvas" width="960" height="540"></canvas>
+        <div
+          class="unity-crosshair"
+          ng-if="demo.session.runtime === 'unity'"
+        ></div>
+        <div
+          class="mock-fps"
+          ng-if="demo.session.runtime === 'mock'"
+          ng-click="demo.fireMock()"
+        >
+          <div class="target"></div>
+          <div class="crosshair"></div>
+        </div>
+      </section>
+
+      <aside>
+        <dl>
+          <dt>Runtime</dt>
+          <dd data-testid="runtime">{{ demo.session.runtime }}</dd>
+          <dt>Status</dt>
+          <dd data-testid="status">{{ demo.session.status }}</dd>
+          <dt>Health</dt>
+          <dd>{{ demo.player.health }}</dd>
+          <dt>Ammo</dt>
+          <dd>{{ demo.player.ammo }} / {{ demo.player.reserve }}</dd>
+          <dt>Targets</dt>
+          <dd>{{ demo.player.targetsDestroyed }}</dd>
+          <dt>Paused</dt>
+          <dd data-testid="paused">{{ demo.session.paused ? 'yes' : 'no' }}</dd>
+          <dt>Sync Writes</dt>
+          <dd data-testid="sync-writes">{{ demo.telemetry.writes }}</dd>
+          <dt>Sync Version</dt>
+          <dd data-testid="sync-version">
+            {{ demo.telemetry.lastSnapshotVersion }}
+          </dd>
+          <dt>Sync Keys</dt>
+          <dd data-testid="sync-keys">
+            {{ demo.telemetry.lastKeys.join(', ') || 'none' }}
+          </dd>
+        </dl>
+
+        <h2>Events</h2>
+        <pre data-testid="events">{{ demo.eventLog.items.join('\n') }}</pre>
+      </aside>
+    </div>
+  </body>
+</html>

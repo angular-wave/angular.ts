@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + Virtual Grid</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      input {
+        width: 180px;
+      }
+
+      .layout {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: minmax(520px, 1fr) 280px;
+        margin-top: 16px;
+      }
+
+      #grid-runtime {
+        border: 1px solid #d1d5db;
+      }
+
+      .grid-viewport {
+        height: 280px;
+        overflow: auto;
+        position: relative;
+      }
+
+      .grid-spacer {
+        width: 1px;
+      }
+
+      .grid-rows {
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+
+      .grid-row {
+        align-items: center;
+        background: white;
+        border: 0;
+        border-bottom: 1px solid #e5e7eb;
+        cursor: pointer;
+        display: grid;
+        font: inherit;
+        grid-template-columns: 64px 1fr 92px 92px;
+        height: 34px;
+        padding: 0 10px;
+        text-align: left;
+        width: 100%;
+      }
+
+      .grid-row:hover,
+      .grid-row.selected {
+        background: #eef2ff;
+      }
+
+      dl {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: auto 1fr;
+        margin: 0;
+      }
+
+      dd {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body ng-app="virtualGridConcept" ng-controller="DemoCtrl as demo">
+    <label>
+      Filter
+      <input
+        type="text"
+        placeholder="Filter accounts"
+        ng-model="demo.grid.filter"
+      />
+    </label>
+    <button ng-click="demo.applyFilter()">Apply Filter</button>
+    <button ng-click="demo.clearFilter()">Clear</button>
+    <button ng-click="demo.selectFirst()">Select First</button>
+
+    <div class="layout">
+      <section>
+        <h1>Accounts</h1>
+        <div id="grid-runtime"></div>
+      </section>
+
+      <aside>
+        <dl>
+          <dt>Status</dt>
+          <dd data-testid="grid-status">{{ demo.grid.status }}</dd>
+          <dt>Visible</dt>
+          <dd data-testid="grid-visible">
+            {{ demo.grid.visibleStart }} + {{ demo.grid.visibleCount }}
+          </dd>
+          <dt>Selected</dt>
+          <dd data-testid="grid-selected">{{ demo.grid.selectedName }}</dd>
+          <dt>Region</dt>
+          <dd data-testid="grid-region">{{ demo.grid.selectedRegion }}</dd>
+        </dl>
+      </aside>
+    </div>
+  </body>
+</html>

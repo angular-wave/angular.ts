@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + D3</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      svg {
+        border: 1px solid #ddd;
+        display: block;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body ng-app="d3Concept" ng-controller="DemoCtrl as demo">
+    <button ng-click="demo.randomize()">Randomize</button>
+    <button ng-click="demo.selectNext()">Select Next</button>
+
+    <label>
+      Color
+      <input type="color" ng-model="demo.chart.color" />
+    </label>
+
+    <p>
+      Selected:
+      <span data-testid="selected-label">
+        {{ demo.chart.labels[demo.chart.selectedIndex] }}
+        ({{ demo.chart.values[demo.chart.selectedIndex] }})
+      </span>
+    </p>
+
+    <svg id="d3-view" width="640" height="300"></svg>
+  </body>
+</html>

@@ -1,0 +1,295 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AngularTS Runtime Concepts</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      body {
+        color: #111827;
+        margin: 0;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 980px;
+        padding: 32px 24px 56px;
+      }
+
+      h1 {
+        font-size: 32px;
+        line-height: 1.15;
+        margin: 0 0 12px;
+      }
+
+      h2 {
+        border-top: 1px solid #d1d5db;
+        font-size: 18px;
+        margin: 32px 0 12px;
+        padding-top: 20px;
+      }
+
+      p {
+        color: #4b5563;
+        line-height: 1.6;
+        margin: 0 0 16px;
+        max-width: 780px;
+      }
+
+      ul {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      a {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        color: #0f172a;
+        display: block;
+        padding: 12px 14px;
+        text-decoration: none;
+      }
+
+      a:focus,
+      a:hover {
+        border-color: #2563eb;
+        outline: none;
+      }
+
+      small {
+        color: #6b7280;
+        display: block;
+        line-height: 1.4;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>AngularTS Runtime Concepts</h1>
+      <p>
+        These demos treat the DOM as one runtime among many. AngularTS owns the
+        app model and DOM projection; each external runtime owns its native
+        scheduler, rendering objects, and lifecycle.
+      </p>
+      <p>
+        Run <code>make serve</code>, then open any concept below.
+      </p>
+
+      <h2>Browser Drawing Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./canvas/">
+            Canvas
+            <small>2D canvas state projected from an app model.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./webgl/">
+            WebGL
+            <small>Low-level GPU drawing controlled by AngularTS state.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./webgpu/">
+            WebGPU
+            <small>Capability-gated GPU clear color driven by a model.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./html-in-canvas/">
+            HTML-in-Canvas
+            <small>Native layoutsubtree rendering with AngularTS controls.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./audio-graph/">
+            AudioGraph
+            <small>Web Audio graph controlled by DOM and app model state.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>3D And Rendering Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./three-js/">
+            Three.js
+            <small>Model-driven cube material and rotation speed.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./babylonjs/">
+            BabylonJS
+            <small>Shark scene with DOM controls bound to sharkModel.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./playcanvas/">
+            PlayCanvas
+            <small>3D entity state projected from cubeModel.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Game Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./cockpit-breach/">
+            Cockpit Breach
+            <small>HTML-in-Canvas cockpit game and hackathon demonstrator.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./glyph-rush/">
+            Glyph Rush
+            <small>AngularTS model-driven page defense game.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./phaser/">
+            Phaser
+            <small>Canvas game runtime sharing playerModel with DOM.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./pixijs/">
+            PixiJS
+            <small>2D renderer adapter with model-driven sprite state.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./excalibur/">
+            Excalibur
+            <small>2D game engine actor driven by playerModel.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./unity-fps/">
+            Unity FPS
+            <small>Unity WebGL FPS scene bridged into AngularTS models.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Data Visualization Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./echarts/">
+            ECharts
+            <small>Chart runtime reads model data and writes selection back.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./d3/">
+            D3
+            <small>Low-level SVG chart projection with model-backed selection.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Data Grid Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./virtual-grid/">
+            Virtual Grid
+            <small>Virtualized rows project selection and viewport state into gridModel.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>CAD, Design, And Canvas Object Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./konva/">
+            Konva
+            <small>Draggable canvas object writes position back into shapeModel.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Editor Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./codemirror/">
+            CodeMirror
+            <small>Editor text and cursor projected into documentModel.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Terminal Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./xterm/">
+            xterm.js
+            <small>Terminal input and connection state projected into terminalModel.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Document And PDF Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./pdfjs/">
+            PDF.js
+            <small>PDF page and zoom state coordinated through documentViewerModel.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Map Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./maplibre/">
+            MapLibre GL
+            <small>Map camera and marker state shared through mapModel.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Worker, WASM, And Data Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./worker-compute/">
+            Web Worker Compute
+            <small>Worker results synchronized into computeModel through $sync.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./wasm-worker/">
+            Shared WASM Module Worker
+            <small>One compiled module creates independent main-thread and worker instances.</small>
+          </a>
+        </li>
+        <li>
+          <a href="./sqlite-wasm/">
+            SQLite WASM
+            <small>SQLite query runtime projects rows into databaseModel.</small>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Local-First And Collaboration Runtimes</h2>
+      <ul>
+        <li>
+          <a href="./yjs/">
+            Yjs
+            <small>CRDT document updates synchronized into documentModel.</small>
+          </a>
+        </li>
+      </ul>
+    </main>
+  </body>
+</html>

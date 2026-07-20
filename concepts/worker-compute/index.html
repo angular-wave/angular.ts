@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + Web Worker</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      input[type="number"] {
+        width: 120px;
+      }
+
+      dl {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: auto 1fr;
+        margin-top: 16px;
+        max-width: 360px;
+      }
+
+      dd {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body ng-app="workerComputeConcept" ng-controller="DemoCtrl as demo">
+    <label>
+      Input
+      <input type="number" ng-model="demo.compute.input" />
+    </label>
+    <label>
+      Iterations
+      <input type="number" ng-model="demo.compute.iterations" />
+    </label>
+    <button ng-click="demo.run()">Run</button>
+    <button ng-click="demo.reset()">Reset</button>
+
+    <dl>
+      <dt>Status</dt>
+      <dd data-testid="worker-status">{{ demo.compute.status }}</dd>
+      <dt>Progress</dt>
+      <dd data-testid="worker-progress">{{ demo.compute.progress }}%</dd>
+      <dt>Result</dt>
+      <dd data-testid="worker-result">{{ demo.compute.result }}</dd>
+      <dt>Run</dt>
+      <dd data-testid="worker-run">{{ demo.compute.runId }}</dd>
+    </dl>
+  </body>
+</html>

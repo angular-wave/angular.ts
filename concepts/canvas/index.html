@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + Canvas</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      canvas {
+        border: 1px solid #ddd;
+        display: block;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body ng-app="canvasConcept" ng-controller="DemoCtrl as demo">
+    <label>
+      X
+      <input type="range" min="20" max="380" ng-model="demo.sprite.x" />
+    </label>
+
+    <label>
+      Y
+      <input type="range" min="20" max="220" ng-model="demo.sprite.y" />
+    </label>
+
+    <label>
+      Color
+      <input type="color" ng-model="demo.sprite.color" />
+    </label>
+
+    <canvas id="canvas-view" width="420" height="260"></canvas>
+  </body>
+</html>
+

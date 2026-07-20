@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + Yjs</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      textarea {
+        display: block;
+        font: inherit;
+        height: 96px;
+        margin-top: 8px;
+        width: 520px;
+      }
+
+      pre {
+        background: #f3f4f6;
+        border: 1px solid #ddd;
+        padding: 12px;
+        width: 496px;
+      }
+    </style>
+  </head>
+  <body ng-app="yjsConcept" ng-controller="DemoCtrl as demo">
+    <label>
+      Local document
+      <textarea ng-model="demo.document.localText"></textarea>
+    </label>
+
+    <button ng-click="demo.remoteAppend()">Remote Append</button>
+    <button ng-click="demo.reset()">Reset</button>
+
+    <p>
+      Status: {{ demo.document.status }}, Updates: {{ demo.document.updateCount
+      }}, Local length: {{ demo.document.localText.length }}, Remote length: {{
+      demo.document.remoteText.length }}
+    </p>
+
+    <strong>Remote projection</strong>
+    <pre data-testid="remote-text">{{ demo.document.remoteText }}</pre>
+  </body>
+</html>

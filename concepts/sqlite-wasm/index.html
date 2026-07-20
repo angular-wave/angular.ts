@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + SQLite WASM</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      input[type="text"] {
+        width: 180px;
+      }
+
+      table {
+        border-collapse: collapse;
+        margin-top: 16px;
+      }
+
+      td,
+      th {
+        border: 1px solid #ddd;
+        padding: 6px 10px;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body ng-app="sqliteConcept" ng-controller="DemoCtrl as demo">
+    <label>
+      Filter
+      <input
+        type="text"
+        placeholder="Filter tasks"
+        ng-model="demo.database.filter"
+      />
+    </label>
+    <button ng-click="demo.applyFilter()">Apply Filter</button>
+    <button ng-click="demo.addTask()">Add Task</button>
+    <button ng-click="demo.toggleDone()">Toggle Selected</button>
+    <button ng-click="demo.exportSnapshot()">Export Snapshot</button>
+
+    <p>
+      Status: {{ demo.database.status }}, Rows: {{ demo.database.rows.length }},
+      Selected: {{ demo.database.selected ? demo.database.selected.title :
+      'none' }}
+    </p>
+    <p>
+      Snapshot: v{{ demo.database.lastSnapshotVersion || 0 }}
+      <span ng-if="demo.database.lastSnapshotKeys">
+        ({{ demo.database.lastSnapshotKeys }})
+      </span>
+      · SQLite bytes: {{ demo.database.snapshotBytes || 0 }}
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Done</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          ng-repeat="row in demo.database.rows"
+          ng-click="demo.select(row)"
+          style="cursor: pointer"
+        >
+          <td>{{ row.title }}</td>
+          <td>{{ row.done ? 'yes' : 'no' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

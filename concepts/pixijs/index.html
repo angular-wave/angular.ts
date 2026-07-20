@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS App Model + PixiJS</title>
+    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script src="https://pixijs.download/release/pixi.min.js"></script>
+    <script src="./app.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 24px;
+      }
+
+      button,
+      label {
+        margin-right: 8px;
+      }
+
+      #pixi-view {
+        border: 1px solid #ddd;
+        height: 260px;
+        margin-top: 16px;
+        width: 420px;
+      }
+    </style>
+  </head>
+  <body ng-app="pixiConcept" ng-controller="DemoCtrl as demo">
+    <button ng-click="demo.move(-24, 0)">Left</button>
+    <button ng-click="demo.move(24, 0)">Right</button>
+    <button ng-click="demo.move(0, -24)">Up</button>
+    <button ng-click="demo.move(0, 24)">Down</button>
+    <button ng-click="demo.togglePulse()">
+      {{ demo.sprite.pulsing ? 'Pause Pulse' : 'Pulse' }}
+    </button>
+
+    <label>
+      Color
+      <input type="color" ng-model="demo.sprite.color" />
+    </label>
+
+    <p>
+      Position: {{ demo.sprite.x }}, {{ demo.sprite.y }},
+      Pulse: {{ demo.sprite.pulsing ? 'on' : 'off' }}
+    </p>
+
+    <div id="pixi-view"></div>
+  </body>
+</html>
