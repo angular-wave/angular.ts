@@ -174,8 +174,17 @@ const files = [
       "actions/setup-dotnet@v5",
       "dotnet-version: \"8.0.x\"",
       "dotnet workload install wasm-tools",
+      "working-directory: integrations/wasm/csharp",
       "make -C integrations/wasm/csharp ci-check",
       "csharp-wasm-playwright-report",
+    ],
+  },
+  {
+    path: "../global.json",
+    fragments: [
+      '"version": "8.0.100"',
+      '"rollForward": "latestFeature"',
+      '"allowPrerelease": false',
     ],
   },
 ];
