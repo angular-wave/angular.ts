@@ -1,5 +1,5 @@
-import { angular } from "/dist/angular-ts.esm.js";
-import { wasmModule } from "/dist/runtime/wasm.js";
+import { angular } from "../../src/index.ts";
+import { wasmModule } from "../../src/runtime/wasm.ts";
 
 const installedWasmModule = wasmModule(angular);
 

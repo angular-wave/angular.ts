@@ -1,8 +1,11 @@
 <!doctype html>
 <html>
   <head>
-    <script src="/dist/angular-ts.umd.min.js"></script>
-    <script src="./settings-sync.js"></script>
+    <script
+      type="module"
+      src="/utils/source-bootstrap.js"
+      data-angular-ts-entry="./settings-sync.js"
+    ></script>
   </head>
   <body ng-app="settingsSyncDemo" ng-controller="SettingsCtrl as settings">
     <label>

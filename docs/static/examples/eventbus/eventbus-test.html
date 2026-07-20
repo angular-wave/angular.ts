@@ -1,13 +1,15 @@
 <!doctype html>
 <html>
   <head>
-    <script src="/dist/angular-ts.umd.min.js"></script>
+    <script
+      type="module"
+      src="/utils/source-bootstrap.js"
+      data-angular-ts-entry="./eventbus.js"
+    ></script>
   </head>
   <body>
     <div ng-app="demo">
       <div ng-include="'./eventbus.html'"></div>
     </div>
-
-    <script src="./eventbus.js"></script>
   </body>
 </html>

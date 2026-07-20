@@ -2,8 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <script src="/dist/angular-ts.umd.min.js"></script>
-    <script src="./service-worker.js"></script>
+    <script
+      type="module"
+      src="/utils/source-bootstrap.js"
+      data-angular-ts-entry="./service-worker.js"
+    ></script>
   </head>
   <body ng-app="serviceWorkerDemo">
     <section ng-controller="ServiceWorkerCtrl">
