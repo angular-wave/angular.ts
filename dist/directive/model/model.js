@@ -51,8 +51,8 @@ function observeModelAttr(scope, element, normalizedName, callback) {
  *  The validation function that is provided is expected to return a promise when it is run during the model validation process
  *
  * @property $viewChangeListeners Array of functions to execute whenever
- *     a change to {@link ngModel.NgModelController#$viewValue `$viewValue`} has caused a change
- *     to {@link ngModel.NgModelController#$modelValue `$modelValue`}.
+ *     a change to {@link NgModelController.$viewValue `$viewValue`} has caused a change
+ *     to {@link NgModelController.$modelValue `$modelValue`}.
  *     It is called with no arguments, and its return value is ignored.
  *     This can be used in place of additional $watches against the model value.
  *
@@ -530,7 +530,7 @@ class NgModelController {
             div:nth-child(1) {
               padding-right: 30px;
             }
-  
+     *
           </file>
      * </example>
      */
@@ -546,7 +546,7 @@ class NgModelController {
      * Runs each of the registered validators (first synchronous validators and then
      * asynchronous validators).
      * If the validity changes to invalid, the model will be set to `undefined`,
-     * unless {@link ngModelOptions `ngModelOptions.allowInvalid`} is `true`.
+     * unless `ngModelOptions.allowInvalid` is `true`.
      * If the validity changes to valid, it will set the model to the last available valid
      * `$modelValue`, i.e. either the last parsed value or the last value set from the scope.
      */
@@ -782,21 +782,21 @@ class NgModelController {
      * Update the view value.
      *
      * This method should be called when a control wants to change the view value; typically,
-     * this is done from within a DOM event handler. For example, the {@link ng.directive:input input}
-     * directive calls it when the value of the input changes and {@link ng.directive:select select}
+     * this is done from within a DOM event handler. For example, the `input`
+     * directive calls it when the value of the input changes and `select`
      * calls it when an option is selected.
      *
      * When `$setViewValue` is called, the new `value` will be staged for committing through the `$parsers`
-     * and `$validators` pipelines. If there are no special {@link ngModelOptions} specified then the staged
+     * and `$validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged
      * value is sent directly for processing through the `$parsers` pipeline. After this, the `$validators` and
      * `$asyncValidators` are called and the value is applied to `$modelValue`.
      * Finally, the value is set to the **expression** specified in the `ng-model` attribute and
      * all the registered change listeners, in the `$viewChangeListeners` list are called.
      *
-     * In case the {@link ng.directive:ngModelOptions ngModelOptions} directive is used with `updateOn`
+     * In case the `ngModelOptions` directive is used with `updateOn`
      * and the `default` trigger is not listed, all those actions will remain pending until one of the
      * `updateOn` events is triggered on the DOM element.
-     * All these actions will be debounced if the {@link ng.directive:ngModelOptions ngModelOptions}
+     * All these actions will be debounced if the `ngModelOptions`
      * directive is used with a custom debounce for this particular event.
      * Note that a `$digest` is only triggered once the `updateOn` events are fired, or if `debounce`
      * is specified, once the timer runs out.
@@ -878,12 +878,12 @@ class NgModelController {
      * new `ModelOptions` object will inherit from the previous one overriding
      * or inheriting settings that are defined in the given parameter.
      *
-     * See {@link ngModelOptions} for information about what options can be specified
+     * See `ngModelOptions` for information about what options can be specified
      * and how model option inheritance works.
      *
      * <div class="alert alert-warning">
      * **Note:** this function only affects the options set on the `ngModelController`,
-     * and not the options on the {@link ngModelOptions} directive from which they might have been
+     * and not the options on the `ngModelOptions` directive from which they might have been
      * obtained initially.
      * </div>
      *
@@ -902,16 +902,16 @@ class NgModelController {
     }
     /**
      * Runs the model -> view pipeline on the current
-     * {@link ngModel.NgModelController#$modelValue $modelValue}.
+     * {@link NgModelController.$modelValue $modelValue}.
      *
      * The following actions are performed by this method:
      *
-     * - the `$modelValue` is run through the {@link ngModel.NgModelController#$formatters $formatters}
-     * and the result is set to the {@link ngModel.NgModelController#$viewValue $viewValue}
+     * - the `$modelValue` is run through the {@link NgModelController.$formatters $formatters}
+     * and the result is set to the {@link NgModelController.$viewValue $viewValue}
      * - the `ng-empty` or `ng-not-empty` class is set on the element
      * - if the `$viewValue` has changed:
-     *   - {@link ngModel.NgModelController#$render $render} is called on the control
-     *   - the {@link ngModel.NgModelController#$validators $validators} are run and
+     *   - {@link NgModelController.$render $render} is called on the control
+     *   - the {@link NgModelController.$validators $validators} are run and
      *   the validation status is set.
      *
      * This method is called by ngModel internally when the bound scope value changes.
@@ -963,14 +963,14 @@ class NgModelController {
             controller: function($element, $scope) {
               let that = this;
               let ngModel;
-  
+     *
               that.$postLink = function() {
                 ngModel = $element.querySelectorAll('input').controller('ngModel');
-  
+     *
                 ngModel.$formatters.push(function(value) {
                   return (value && value.name) || value;
                 });
-  
+     *
                 ngModel.$parsers.push(function(value) {
                   let match = value;
                   for (let i = 0; i < that.items.length; i++) {
@@ -979,11 +979,11 @@ class NgModelController {
                       break;
                     }
                   }
-  
+     *
                   return match;
                 });
               };
-  
+     *
               that.selectItem = function(item) {
                 ngModel.$setViewValue(item);
                 ngModel.$processModelValue();
@@ -1135,9 +1135,8 @@ function ngModelDirective() {
         // so that we can set the NgModelOptions in NgModelController
         // before anyone else uses it.
         priority: 1,
-        compile: 
-        /** @param  element  */
-        (element) => {
+        /** Compiles an `ngModel` control and installs its pre-link behavior. */
+        compile: (element) => {
             // Setup initial state of the control
             element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);
             return {

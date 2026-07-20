@@ -1,7 +1,7 @@
 import { _injector } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 import { getNormalizedAttr, removeElement, domInsert } from '../../shared/dom.js';
-import { values, assertDefined } from '../../shared/utils.js';
+import { shouldHandleViewRetentionPause, values, assertDefined } from '../../shared/utils.js';
 
 class NgSwitchController {
     constructor() {
@@ -26,9 +26,12 @@ function ngSwitchDirective($injector) {
             const watchExpr = fallbackWhenEmpty(ngSwitchExpr, getNormalizedAttr(element, "on") ?? "");
             let selectedTranscludes;
             const selectedElements = [];
+            let retainedScopePaused = false;
+            let queuedSwitchValue;
+            let hasQueuedSwitchValue = false;
             const previousLeaveAnimations = new Set();
             const selectedScopes = [];
-            scope.$watch(watchExpr, (value) => {
+            function applySwitchValue(value) {
                 let i;
                 let ii;
                 let hasLeaveAnimation = false;
@@ -102,6 +105,39 @@ function ngSwitchDirective($injector) {
                         });
                     });
                 }
+            }
+            function applyOrQueueSwitch(value) {
+                if (retainedScopePaused) {
+                    queuedSwitchValue = value;
+                    hasQueuedSwitchValue = true;
+                    return;
+                }
+                applySwitchValue(value);
+            }
+            function onPause(_event, ...args) {
+                if (!shouldHandleViewRetentionPause(args, "schedulers")) {
+                    return;
+                }
+                retainedScopePaused = true;
+            }
+            function onResume(_event, ...args) {
+                if (!shouldHandleViewRetentionPause(args, "schedulers")) {
+                    return;
+                }
+                retainedScopePaused = false;
+                if (hasQueuedSwitchValue) {
+                    const nextValue = queuedSwitchValue;
+                    queuedSwitchValue = undefined;
+                    hasQueuedSwitchValue = false;
+                    applySwitchValue(nextValue);
+                }
+            }
+            const removePauseHandler = scope.$on("$viewRetentionPause", onPause);
+            const removeResumeHandler = scope.$on("$viewRetentionResume", onResume);
+            scope.$watch(watchExpr, applyOrQueueSwitch);
+            scope.$on("$destroy", () => {
+                removePauseHandler();
+                removeResumeHandler();
             });
         },
     };

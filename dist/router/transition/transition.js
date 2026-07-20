@@ -61,10 +61,8 @@ function collectPathParams(path) {
 /**
  * Represents a transition between two states.
  *
- * When navigating to a state, we are transitioning **from** the current state **to** the new state.
- *
- * This object contains all contextual information about the to/from states, parameters, resolves.
- * It has information about all states being entered and exited as a result of the transition.
+ * A transition contains the source and destination states, parameters,
+ * resolves, and the states entered or exited during navigation.
  */
 class Transition {
     /**
@@ -81,6 +79,7 @@ class Transition {
      * @internal
      */
     constructor(fromPath, targetState, transitionService, routerState) {
+        var _a;
         this._routerState = routerState;
         this._transitionService = transitionService;
         this._deferred = createDeferredPromise();
@@ -88,7 +87,7 @@ class Transition {
          * This promise is resolved or rejected based on the outcome of the Transition.
          *
          * When the transition is successful, the promise is resolved
-         * When the transition is unsuccessful, the promise is rejected with the [[Rejection]] or javascript error
+         * When the transition is unsuccessful, the promise is rejected with a router error object
          */
         this.promise = this._deferred.promise;
         this._targetState = targetState;
@@ -96,7 +95,8 @@ class Transition {
             throw new Error(targetState.error());
         }
         // current() is assumed to come from targetState.options, but provide a naive implementation otherwise.
-        this._options = assign({ current: () => this }, targetState.options());
+        this._options = assign({}, targetState._options);
+        (_a = this._options).current ?? (_a.current = () => this);
         this.$id = transitionService._transitionCount++;
         const toPath = buildToPath(fromPath, targetState);
         this._treeChanges = treeChanges(fromPath, toPath, this._options.reloadState);
@@ -150,10 +150,6 @@ class Transition {
     to() {
         return this.$to().self;
     }
-    /**
-     * @param {string} pathname
-     * @returns {RawParams}
-     */
     params(pathname = "to") {
         const path = this._treeChanges[pathname] ?? [];
         return Object.freeze(collectPathParams(path));
@@ -227,7 +223,7 @@ class Transition {
         const params = matching(redirectEnteringNodes, originalEnteringNodes, nonDynamicParams);
         // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
         const matchingEnteringNodes = [];
-        const { reloadState } = targetState.options();
+        const { reloadState } = targetState._options;
         params.forEach((node) => {
             if (!nodeIsReloading(node, reloadState)) {
                 matchingEnteringNodes.push(node);
@@ -363,7 +359,7 @@ class Transition {
      * If the transition is invalid (and could not be run), returns the reason the transition is invalid.
      * If the transition was valid and ran, but was not successful, returns the reason the transition failed.
      *
-     * @returns a transition rejection explaining why the transition is invalid, or the reason the transition failed.
+     * @internal
      */
     error() {
         const state = this.$to();

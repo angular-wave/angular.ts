@@ -1,4 +1,5 @@
 import { keys, isString } from '../../shared/utils.js';
+import { getStateDeclarationSource } from './state-object.js';
 
 class StateMatcher {
     /** @param {StateStore} states */
@@ -26,10 +27,24 @@ class StateMatcher {
             name = this.resolvePath(name, base);
         const state = this._states[name];
         if (state &&
-            (isStr || state === stateOrName || state.self === stateOrName)) {
+            (isStr ||
+                state === stateOrName ||
+                state.self === stateOrName ||
+                getStateDeclarationSource(state.self) === stateOrName)) {
             return state;
         }
-        else if (isStr && matchGlob) {
+        else if (!isStr) {
+            const stateNames = keys(this._states);
+            for (let index = 0; index < stateNames.length; index++) {
+                const candidate = this._states[stateNames[index]];
+                if (candidate === stateOrName ||
+                    candidate.self === stateOrName ||
+                    getStateDeclarationSource(candidate.self) === stateOrName) {
+                    return candidate;
+                }
+            }
+        }
+        else if (matchGlob) {
             const stateNames = keys(this._states);
             let match;
             let duplicateNames;

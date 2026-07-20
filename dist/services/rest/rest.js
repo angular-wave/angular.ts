@@ -1,7 +1,7 @@
-import { _http } from '../../injection-tokens.js';
-import { isDefined, isString, isArray, isNullOrUndefined } from '../../shared/utils.js';
+import { isDefined, isString, isNullOrUndefined, isArray } from '../../shared/utils.js';
 import { expandUriTemplate } from './rfc.js';
 import { HttpRestBackend } from './http-rest-backend.js';
+import { normalizePolicyDecision } from '../../core/policy/policy.js';
 
 /**
  * Create a deterministic cache key for a REST request.
@@ -25,10 +25,14 @@ function stableSerialize(value) {
     }
     return value === undefined ? "undefined" : JSON.stringify(value);
 }
+const DEFAULT_REST_CACHE_STRATEGY = "network-first";
+function createStaticRestCachePolicy(strategy) {
+    return () => strategy;
+}
 /**
  * Composes a network backend with an async cache store.
  *
- * `GET` requests use the configured {@link RestCacheStrategy}. Write requests
+ * `GET` requests use the configured {@link RestCachePolicy}. Write requests
  * are sent to the network backend first, then matching cached collection and
  * entity entries are invalidated after successful writes.
  */
@@ -40,7 +44,9 @@ class CachedRestBackend {
     constructor(options) {
         this._network = options.network;
         this._cache = options.cache;
-        this._strategy = options.strategy;
+        this._policy =
+            options.policy ??
+                createStaticRestCachePolicy(options.strategy ?? DEFAULT_REST_CACHE_STRATEGY);
         this._onRevalidate = options.onRevalidate;
     }
     /**
@@ -56,48 +62,57 @@ class CachedRestBackend {
             await this._invalidate(request);
             return response;
         }
-        switch (this._strategy) {
+        const cacheKey = createRestCacheKey(request);
+        const decision = await this._policy({
+            operation: "rest.cache",
+            method: request.method,
+            url: request.url,
+            collectionUrl: request.collectionUrl,
+            id: request.id,
+            params: request.params,
+            options: request.options,
+            cacheKey,
+        });
+        const strategy = normalizePolicyDecision(decision).type;
+        switch (strategy) {
             case "cache-first":
-                return this._cacheFirst(request);
+                return this._cacheFirst(request, cacheKey);
             case "network-first":
-                return this._networkFirst(request);
+                return this._networkFirst(request, cacheKey);
             case "stale-while-revalidate":
-                return this._staleWhileRevalidate(request);
+                return this._staleWhileRevalidate(request, cacheKey);
         }
-        throw new Error(`Unsupported REST cache strategy: ${String(this._strategy)}`);
+        throw new Error(`Unsupported REST cache strategy: ${String(strategy)}`);
     }
-    async _cacheFirst(request) {
-        const key = createRestCacheKey(request);
-        const cached = await this._cache.get(key);
+    async _cacheFirst(request, cacheKey) {
+        const cached = await this._cache.get(cacheKey);
         if (isDefined(cached)) {
             return { ...cached, source: "cache" };
         }
-        return this._fetchAndCache(request, key);
+        return this._fetchAndCache(request, cacheKey);
     }
-    async _networkFirst(request) {
-        const key = createRestCacheKey(request);
+    async _networkFirst(request, cacheKey) {
         try {
-            return await this._fetchAndCache(request, key);
+            return await this._fetchAndCache(request, cacheKey);
         }
         catch (error) {
-            const cached = await this._cache.get(key);
+            const cached = await this._cache.get(cacheKey);
             if (isDefined(cached)) {
                 return { ...cached, source: "cache", stale: true };
             }
             throw error;
         }
     }
-    async _staleWhileRevalidate(request) {
-        const key = createRestCacheKey(request);
-        const cached = await this._cache.get(key);
+    async _staleWhileRevalidate(request, cacheKey) {
+        const cached = await this._cache.get(cacheKey);
         if (isDefined(cached)) {
-            void this._fetchAndCache(request, key).then((response) => {
-                this._onRevalidate?.({ key, request, response });
+            void this._fetchAndCache(request, cacheKey).then((response) => {
+                this._onRevalidate?.({ key: cacheKey, request, response });
                 return undefined;
             }, () => undefined);
             return { ...cached, source: "cache", stale: true };
         }
-        return this._fetchAndCache(request, key);
+        return this._fetchAndCache(request, cacheKey);
     }
     async _fetchAndCache(request, key) {
         const response = await this._network.request(request);
@@ -137,20 +152,10 @@ class RestService {
         this._entityClass = entityClass;
         this._options = options;
     }
-    /**
-     * Expand an RFC 6570 URI template with the provided parameters.
-     *
-     * @param template - URI template such as `/api/{org}/repos/{repo}`.
-     * @param params - Values used for URI template expansion.
-     * @returns The expanded URL.
-     */
-    buildUrl(template, params) {
-        return expandUriTemplate(template, params);
-    }
     /** @internal */
     _mapEntity(data) {
-        if (!data)
-            return data;
+        if (isNullOrUndefined(data))
+            return null;
         return this._entityClass ? new this._entityClass(data) : data;
     }
     /**
@@ -160,11 +165,13 @@ class RestService {
      * `$http` as query params. Non-array responses resolve to an empty array.
      */
     async list(params = {}) {
-        const url = this.buildUrl(this._baseUrl, params);
+        const url = expandUriTemplate(this._baseUrl, params);
         const resp = await this._request("GET", url, null, params, url);
         if (!isArray(resp.data))
             return [];
-        return resp.data.map((data) => this._mapEntity(data));
+        return resp.data
+            .map((data) => this._mapEntity(data))
+            .filter((data) => data !== null);
     }
     /**
      * Fetch one resource by ID using `GET`.
@@ -177,10 +184,10 @@ class RestService {
     async get(id, params = {}) {
         if (isNullOrUndefined(id))
             throw new Error(`badarg:id ${String(id)}`);
-        const url = this.buildUrl(`${this._baseUrl}/${String(id)}`, params);
-        const collectionUrl = this.buildUrl(this._baseUrl, params);
+        const url = expandUriTemplate(`${this._baseUrl}/${String(id)}`, params);
+        const collectionUrl = expandUriTemplate(this._baseUrl, params);
         const resp = await this._request("GET", url, null, params, collectionUrl, id);
-        return this._mapEntity(resp.data) ?? null;
+        return this._mapEntity(resp.data);
     }
     /**
      * Create a resource using `POST`.
@@ -207,32 +214,21 @@ class RestService {
         if (isNullOrUndefined(id))
             throw new Error(`badarg:id ${String(id)}`);
         const url = `${this._baseUrl}/${String(id)}`;
-        try {
-            const resp = await this._request("PUT", url, item, {}, this._baseUrl, id);
-            return this._mapEntity(resp.data) ?? null;
-        }
-        catch {
-            return null;
-        }
+        const resp = await this._request("PUT", url, item, {}, this._baseUrl, id);
+        return this._mapEntity(resp.data);
     }
     /**
      * Delete a resource by ID.
      *
      * @param id - Resource identifier appended to the base URL.
-     * @returns `true` when the request succeeds, otherwise `false`.
+     * @returns A promise that fulfills when the request succeeds.
      * @throws Error when `id` is null or undefined.
      */
     async delete(id) {
         if (isNullOrUndefined(id))
             throw new Error(`badarg:id ${String(id)}`);
         const url = `${this._baseUrl}/${String(id)}`;
-        try {
-            await this._request("DELETE", url, null, {}, this._baseUrl, id);
-            return true;
-        }
-        catch {
-            return false;
-        }
+        await this._request("DELETE", url, null, {}, this._baseUrl, id);
     }
     /** @internal */
     async _request(method, url, data = null, params = {}, collectionUrl, id) {
@@ -248,26 +244,13 @@ class RestService {
     }
 }
 RestService.$nonscope = true;
-class RestProvider {
-    constructor() {
-        this.$get = [
-            _http,
-            ($http) => {
-                return (baseUrl, entityClass, options = {}) => {
-                    const { backend, ...requestOptions } = options;
-                    return new RestService(backend ?? new HttpRestBackend($http), baseUrl, entityClass, requestOptions);
-                };
-            },
-        ];
-    }
-    /**
-     * Accept a REST resource definition during provider configuration.
-     *
-     * Named injectable resources are registered by {@link NgModule.rest}; the
-     * provider exposes the runtime `$rest` factory.
-     */
-    rest(name, url, entityClass, options = {}) {
-    }
+/** @internal */
+function createRestFactory($http, defaults = {}) {
+    return (baseUrl, entityClass, options = {}) => {
+        const mergedOptions = { ...defaults, ...options };
+        const { backend, ...requestOptions } = mergedOptions;
+        return new RestService(backend ?? new HttpRestBackend($http), baseUrl, entityClass, requestOptions);
+    };
 }
 
-export { CachedRestBackend, HttpRestBackend, RestProvider, RestService, createRestCacheKey };
+export { CachedRestBackend, HttpRestBackend, RestService, createRestCacheKey, createRestFactory };

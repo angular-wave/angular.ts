@@ -81,20 +81,20 @@ function getType(cfg, urlType, location, id, paramTypes) {
         : assertDefined(paramTypes[cfg.type]);
 }
 /**
- * returns false, true, or the squash value to indicate the "default parameter url squash policy".
+ * Returns false, true, or the replacement value for an optional URL parameter.
  * @param {ParamDeclaration} config
  * @param {boolean} isOptional
- * @param {boolean | string} defaultPolicy
+ * @param {boolean | string} defaultSquash
  */
-function getSquashPolicy(config, isOptional, defaultPolicy) {
+function resolveSquash(config, isOptional, defaultSquash) {
     const { squash } = config;
     if (!isOptional || squash === false)
         return false;
     if (!isDefined(squash))
-        return defaultPolicy;
+        return defaultSquash;
     if (squash === true || isString(squash))
         return squash;
-    throw new Error(`Invalid squash policy: '${String(squash)}'. Valid policies: false, true, or arbitrary string`);
+    throw new Error(`Invalid squash value: '${String(squash)}'. Expected false, true, or a replacement string.`);
 }
 /**
  * @param {ParamDeclaration} config
@@ -155,7 +155,7 @@ class Param {
         const isOptional = config.value !== undefined || location === DefType._SEARCH;
         const dynamic = !!config.dynamic;
         const raw = !!config.raw;
-        const squash = getSquashPolicy(config, isOptional, urlConfig._getDefaultSquashPolicy());
+        const squash = resolveSquash(config, isOptional, urlConfig._getDefaultSquash());
         const replace = getReplace(config, arrayMode, isOptional, squash);
         const inherit = isDefined(config.inherit) ? config.inherit : type.inherit;
         this.isOptional = isOptional;
@@ -182,7 +182,7 @@ class Param {
      * default value, which may be the result of an injectable function.
      * @param {undefined} [value]
      */
-    value(value) {
+    value(value, source = "model") {
         for (let i = 0; i < this.replace.length; i++) {
             const tuple = this.replace[i];
             if (tuple.from === value) {
@@ -192,7 +192,9 @@ class Param {
         }
         return isUndefined(value)
             ? this._getDefaultValue()
-            : this.type.$normalize(value);
+            : source === "url"
+                ? this.type.decode(value)
+                : this.type.$normalize(value);
     }
     /** @internal */
     _getDefaultValue() {
@@ -227,7 +229,7 @@ class Param {
         if (!this.type.is(normalized))
             return false;
         // The value was of the correct type, but when encoded, did not match the ParamType's regexp
-        const encoded = normalized; // this.type.encode(normalized);
+        const encoded = this.type.encode(normalized);
         return !(isString(encoded) && !this.type.pattern.exec(encoded));
     }
     toString() {

@@ -8,8 +8,8 @@ import { isDefined, isNull } from '../shared/utils.js';
  * @internal
  */
 class RouterUrlRuntime {
-    constructor($locationProvider) {
-        this._locationProvider = $locationProvider;
+    constructor(locationConfig) {
+        this._locationConfig = locationConfig;
     }
     /** @internal */
     _init($location) {
@@ -63,9 +63,10 @@ class RouterUrlRuntime {
         let url = urlMatcher._format(params);
         if (isNull(url))
             return null;
-        const isHtml5 = this._locationProvider.html5ModeConf.enabled;
+        const html5Mode = this._locationConfig.html5Mode;
+        const isHtml5 = typeof html5Mode === "boolean" ? html5Mode : (html5Mode?.enabled ?? true);
         if (!isHtml5) {
-            url = `#${this._locationProvider.hashPrefixConf}${url}`;
+            url = `#${this._locationConfig.hashPrefix ?? "!"}${url}`;
         }
         url = appendBasePath(url, isHtml5, options.absolute, this._getBaseHref());
         if (!options.absolute || !url) {

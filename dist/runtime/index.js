@@ -1,23 +1,25 @@
 import { AngularRuntime } from '../angular-runtime.js';
-import { registerCustomNgModule } from './custom-ng.js';
-export { coreProviders } from './custom-ng.js';
+import { registerComposedNgModule } from './custom-ng.js';
 
-/**
- * Creates an AngularTS runtime with no built-in modules.
- */
-function createAngularBare(options = {}) {
+function createBareRuntime(options = {}) {
     return new AngularRuntime({
         registerBuiltins: false,
         ...options,
     });
 }
 /**
- * Creates an AngularTS runtime with a custom `ng` module.
+ * Creates a tree-shakable AngularTS runtime from the requested composition.
  */
-function createAngularCustom(options = {}) {
-    const angular = createAngularBare(options);
-    registerCustomNgModule(angular, options.ngModule);
+function createAngular(options = {}) {
+    const { modules = [], subapp, ...moduleOptions } = options;
+    const angular = createBareRuntime({ subapp });
+    const moduleNames = modules.map((registerModule) => registerModule(angular).name);
+    const requires = Array.from(new Set([...moduleNames, ...(moduleOptions.requires ?? [])]));
+    registerComposedNgModule(angular, {
+        ...moduleOptions,
+        requires,
+    });
     return angular;
 }
 
-export { AngularRuntime, createAngularBare, createAngularCustom, registerCustomNgModule };
+export { AngularRuntime, createAngular };

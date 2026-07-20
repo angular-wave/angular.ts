@@ -1,6 +1,7 @@
 import { _templateRequest, _anchorScroll, _injector, _exceptionHandler, _parse, _compile } from '../../injection-tokens.js';
-import { isInstanceOf, isDefined } from '../../shared/utils.js';
-import { getNormalizedAttr, removeElement } from '../../shared/dom.js';
+import { assertDefined, isInstanceOf, isDefined } from '../../shared/utils.js';
+import { getNormalizedAttr } from '../../shared/dom.js';
+import { getCompiledFragmentRecordFromNodes } from '../../core/compile/incremental-fragment.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 
 ngIncludeDirective.$inject = [
@@ -45,29 +46,42 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                 let changeCounter = 0;
                 let currentScope;
                 let previousElement;
+                let previousFragment;
                 let currentElement;
+                let currentFragment;
                 const cleanupLastIncludeContent = () => {
                     if (previousElement) {
-                        removeElement(previousElement);
+                        if (previousFragment && !previousFragment.disposed) {
+                            previousFragment.dispose();
+                        }
                         previousElement = null;
+                        previousFragment = null;
                     }
                     if (currentScope) {
                         currentScope.$destroy();
                         currentScope = null;
                     }
                     if (currentElement) {
+                        const leavingFragment = currentFragment;
                         const animate = getAnimateForNode(getAnimate, currentElement);
                         if (animate) {
                             animate.leave(currentElement).done((response) => {
-                                if (response)
+                                if (response) {
+                                    leavingFragment?.dispose();
                                     previousElement = null;
+                                    previousFragment = null;
+                                }
                             });
                         }
                         else {
-                            removeElement(currentElement);
+                            if (leavingFragment && !leavingFragment.disposed) {
+                                leavingFragment.dispose();
+                            }
                         }
                         previousElement = currentElement;
+                        previousFragment = currentFragment;
                         currentElement = null;
+                        currentFragment = null;
                     }
                 };
                 scope.$watch(srcExp, (src) => {
@@ -108,6 +122,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             });
                             currentScope = newScope;
                             currentElement = clone;
+                            currentFragment = assertDefined(getCompiledFragmentRecordFromNodes(clone));
                             currentScope.$emit("$includeContentLoaded", src);
                             onloadFn?.(scope);
                             return undefined;

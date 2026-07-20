@@ -1,20 +1,13 @@
-import { _injector, _filter } from '../../injection-tokens.js';
-import { isFunction, deProxy, nullObject } from '../../shared/utils.js';
+import { _filter } from '../../injection-tokens.js';
+import { nullObject, isFunction, deProxy } from '../../shared/utils.js';
 import { validateRequired } from '../../shared/validate.js';
 import { Lexer } from './lexer/lexer.js';
 import { Parser } from './parser/parser.js';
 
 const lexer = new Lexer();
-class ParseProvider {
-    constructor() {
-        const cache = nullObject();
-        this.$get = [
-            _injector,
-            ($injector) => createParseService($injector, cache),
-        ];
-    }
-}
-function createParseService($injector, cache) {
+/** @internal */
+function createParseService($injector) {
+    const cache = nullObject();
     const parser = new Parser(lexer, createLazyFilter($injector));
     return (exp, interceptorFn) => {
         const parsedExpression = getParsedExpression(parser, cache, normalizeExpression(exp));
@@ -59,4 +52,4 @@ function addInterceptor(parsedExpression, interceptorFn) {
     return fn;
 }
 
-export { ParseProvider };
+export { createParseService };

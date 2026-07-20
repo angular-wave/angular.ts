@@ -1,7 +1,17 @@
 import { stringify } from '../../shared/strings.js';
-import { isInstanceOf, isArray, isString, isUndefined } from '../../shared/utils.js';
+import { isInstanceOf, isArray, isString, isUndefined, assertDefined } from '../../shared/utils.js';
 import { Resolvable } from './resolvable.js';
 
+/** @internal */
+function createResolveInvocationLocals(context) {
+    const locals = {};
+    context.getTokens().forEach((token) => {
+        if (isString(token)) {
+            locals[token] = assertDefined(context.getResolvable(token)).data;
+        }
+    });
+    return locals;
+}
 async function resolveToken(resolvable, context, trans) {
     return {
         token: resolvable.token,
@@ -171,4 +181,4 @@ class ResolveContext {
     }
 }
 
-export { ResolveContext };
+export { ResolveContext, createResolveInvocationLocals };

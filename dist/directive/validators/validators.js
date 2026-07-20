@@ -92,9 +92,8 @@ const requiredDirective = [
     ($parse) => ({
         restrict: "A",
         require: "?ngModel",
-        link: 
         /** Wires required-state observation into the ngModel validator set. */
-        (scope, elm, ctrl) => {
+        link: (scope, elm, ctrl) => {
             if (!ctrl)
                 return;
             const ngRequired = readValidatorAttr(elm, "ngRequired");
@@ -133,10 +132,8 @@ const requiredDirective = [
                 });
             }
             else {
-                observeValidatorAttr(scope, elm, "required", (newVal) => {
-                    setRequiredValue(elm instanceof Element
-                        ? hasNormalizedAttr(elm, "required")
-                        : newVal);
+                observeValidatorAttr(scope, elm, "required", () => {
+                    setRequiredValue(hasNormalizedAttr(elm, "required"));
                 });
             }
         },
@@ -285,9 +282,8 @@ const maxlengthDirective = [
     ($parse) => ({
         restrict: "A",
         require: "?ngModel",
-        link: 
         /** Watches maxlength changes and keeps the validator in sync. */
-        (scope, elm, ctrl) => {
+        link: (scope, elm, ctrl) => {
             if (!ctrl)
                 return;
             const maxlengthAttr = readValidatorAttr(elm, "maxlength");

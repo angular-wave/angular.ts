@@ -7,7 +7,8 @@
  *
  * By default, `$exceptionHandler` simply rethrows the exception. This ensures fail-fast
  * behavior, making errors visible immediately in development and in unit tests.
- * Applications may override this service to introduce custom error handling.
+ * Applications may configure or decorate this service to introduce custom
+ * error handling.
  *
  * ### Example: Custom `$exceptionHandler`
  *
@@ -39,28 +40,46 @@
  *
  * @see {@link ng.ExceptionHandlerService} ExceptionHandlerService
  */
-/**
- * Provider for the `$exceptionHandler` service.
- *
- * The default implementation rethrows exceptions, enabling strict fail-fast behavior.
- * Applications may replace the handler via by setting `errorHandler`property or by providing their own
- * `$exceptionHandler` factory.
- */
-class ExceptionHandlerProvider {
-    /**
-     * Creates the provider with the default rethrowing exception handler.
-     */
-    constructor() {
-        this.handler = (exception) => {
-            throw exception;
-        };
+function rethrowException(exception) {
+    throw exception;
+}
+/** @internal */
+function createExceptionHandlerRuntimeState() {
+    const state = {
+        handler: rethrowException,
+        service: undefined,
+        destroyed: false,
+    };
+    state.service = (exception) => {
+        if (state.destroyed) {
+            throw new Error("Exception handler runtime has already been disposed.");
+        }
+        return state.handler(exception);
+    };
+    return state;
+}
+/** @internal */
+function applyExceptionHandlerConfiguration(state, config) {
+    if (state.destroyed) {
+        throw new Error("Exception handler runtime has already been disposed.");
     }
-    /**
-     * Returns the currently configured exception handler wrapper.
-     */
-    $get() {
-        return (exception) => this.handler(exception);
+    if (config.handler !== undefined) {
+        state.handler = config.handler;
     }
 }
+/** @internal */
+function createExceptionHandlerService(state) {
+    if (state.destroyed) {
+        throw new Error("Exception handler runtime has already been disposed.");
+    }
+    return state.service;
+}
+/** @internal */
+function destroyExceptionHandlerRuntimeState(state) {
+    if (state.destroyed)
+        return;
+    state.destroyed = true;
+    state.handler = rethrowException;
+}
 
-export { ExceptionHandlerProvider };
+export { applyExceptionHandlerConfiguration, createExceptionHandlerRuntimeState, createExceptionHandlerService, destroyExceptionHandlerRuntimeState };

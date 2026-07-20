@@ -64,14 +64,14 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
             const expression = getNormalizedAttr(element, directiveName);
             if (!isString(expression))
                 return () => undefined;
-            const eventPolicy = readEventPolicy(element);
+            const eventBehavior = readEventBehavior(element);
             const fn = $parse(expression);
             return (scope, element) => {
                 const handler = (event) => {
-                    if (eventPolicy._prevent) {
+                    if (eventBehavior._prevent) {
                         event.preventDefault();
                     }
-                    if (eventPolicy._stop) {
+                    if (eventBehavior._stop) {
                         event.stopPropagation();
                     }
                     try {
@@ -84,15 +84,15 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
                         scheduleEventAfterRender(scope, element);
                     }
                 };
-                if (eventPolicy._listenerOptions) {
-                    element.addEventListener(eventName, handler, eventPolicy._listenerOptions);
+                if (eventBehavior._listenerOptions) {
+                    element.addEventListener(eventName, handler, eventBehavior._listenerOptions);
                 }
                 else {
                     element.addEventListener(eventName, handler);
                 }
                 scope.$on("$destroy", () => {
-                    if (eventPolicy._listenerOptions) {
-                        element.removeEventListener(eventName, handler, eventPolicy._listenerOptions);
+                    if (eventBehavior._listenerOptions) {
+                        element.removeEventListener(eventName, handler, eventBehavior._listenerOptions);
                     }
                     else {
                         element.removeEventListener(eventName, handler);
@@ -102,7 +102,7 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
         },
     };
 }
-function readEventPolicy(element) {
+function readEventBehavior(element) {
     const prevent = hasNormalizedAttr(element, "eventPrevent");
     const stop = hasNormalizedAttr(element, "eventStop");
     const capture = hasNormalizedAttr(element, "eventCapture");

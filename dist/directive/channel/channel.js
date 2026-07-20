@@ -19,7 +19,7 @@ function ngChannelDirective($eventBus) {
                 return;
             }
             const hasTemplateContent = element.childNodes.length > 0;
-            const unsubscribe = $eventBus.subscribe(channel, (value) => {
+            $eventBus.subscribe(channel, (value) => {
                 if (hasTemplateContent) {
                     if (isObject(value)) {
                         scope.$merge(value);
@@ -28,8 +28,7 @@ function ngChannelDirective($eventBus) {
                 else {
                     element.innerHTML = isString(value) ? value : JSON.stringify(value);
                 }
-            });
-            scope.$on("$destroy", () => unsubscribe());
+            }, scope);
         },
     };
 }

@@ -1,7 +1,32 @@
-import { _log } from '../../injection-tokens.js';
 import { isRealtimeProtocolMessage } from '../../directive/realtime/protocol.js';
 import { isFunction, isString, isInstanceOf, isNumber } from '../../shared/utils.js';
 
+/** @internal */
+function createWebTransportRuntimeConfiguration() {
+    return {
+        defaults: {},
+        connections: new Set(),
+        destroyed: false,
+    };
+}
+/** @internal */
+function applyWebTransportConfiguration(configuration, config) {
+    if (config.defaults !== undefined) {
+        configuration.defaults = {
+            ...configuration.defaults,
+            ...config.defaults,
+        };
+    }
+}
+/** @internal */
+function destroyWebTransportRuntimeConfiguration(configuration) {
+    if (configuration.destroyed)
+        return;
+    configuration.destroyed = true;
+    for (const connection of configuration.connections)
+        connection.close();
+    configuration.connections.clear();
+}
 class ManagedWebTransportConnection {
     constructor(url, TransportCtor, transportOptions, config, log) {
         this._encoder = new TextEncoder();
@@ -35,8 +60,7 @@ class ManagedWebTransportConnection {
     async sendStream(data) {
         await this.transport.ready;
         const stream = await this.transport.createUnidirectionalStream();
-        const writable = "writable" in stream ? stream.writable : stream;
-        const writer = writable.getWriter();
+        const writer = stream.getWriter();
         try {
             await writer.write(this._toBytes(data));
             await writer.close();
@@ -50,6 +74,8 @@ class ManagedWebTransportConnection {
         return this.transport.createBidirectionalStream();
     }
     close(closeInfo) {
+        if (this._closing || this._closedSettled)
+            return;
         this._closing = true;
         this._clearReconnectTimer();
         try {
@@ -226,47 +252,44 @@ class ManagedWebTransportConnection {
     }
 }
 ManagedWebTransportConnection.$nonscope = true;
-/** Provider for the `$webTransport` service. */
-class WebTransportProvider {
-    constructor() {
-        /** Default options merged into every `$webTransport` call. */
-        this.defaults = {};
-        /**
-         * Returns a factory that opens browser-native WebTransport sessions.
-         */
-        this.$get = [
-            _log,
-            (log) => {
-                return (url, config = {}) => {
-                    validateWebTransportUrl(url);
-                    const WebTransportCtor = globalThis.WebTransport;
-                    if (!isFunction(WebTransportCtor)) {
-                        throw new Error("WebTransport API is not available in this browser");
-                    }
-                    const mergedConfig = { ...this.defaults, ...config };
-                    const { onOpen, onClose, onError, onDatagram, onProtocolMessage, transformDatagram, reconnect, retryDelay, maxRetries, onReconnect, ...transportOptions } = mergedConfig;
-                    return new ManagedWebTransportConnection(url, WebTransportCtor, transportOptions, {
-                        onOpen,
-                        onClose,
-                        onError,
-                        onDatagram,
-                        onProtocolMessage,
-                        transformDatagram,
-                        reconnect,
-                        retryDelay,
-                        maxRetries,
-                        onReconnect,
-                    }, log);
-                };
-            },
-        ];
-    }
+/** @internal */
+function createWebTransportService(log, configuration, getWebTransportConstructor, baseUrl) {
+    return (url, config = {}) => {
+        if (configuration.destroyed) {
+            throw new Error("Cannot create a WebTransport connection after runtime teardown");
+        }
+        validateWebTransportUrl(url, baseUrl);
+        const WebTransportCtor = getWebTransportConstructor();
+        if (!isFunction(WebTransportCtor)) {
+            throw new Error("WebTransport API is not available in this browser");
+        }
+        const mergedConfig = { ...configuration.defaults, ...config };
+        const { onOpen, onClose, onError, onDatagram, onProtocolMessage, transformDatagram, reconnect, retryDelay, maxRetries, onReconnect, ...transportOptions } = mergedConfig;
+        const connection = new ManagedWebTransportConnection(url, WebTransportCtor, transportOptions, {
+            onOpen,
+            onClose,
+            onError,
+            onDatagram,
+            onProtocolMessage,
+            transformDatagram,
+            reconnect,
+            retryDelay,
+            maxRetries,
+            onReconnect,
+        }, log);
+        const release = () => {
+            configuration.connections.delete(connection);
+        };
+        configuration.connections.add(connection);
+        void connection.closed.then(release, release);
+        return connection;
+    };
 }
-function validateWebTransportUrl(url) {
+function validateWebTransportUrl(url, baseUrl) {
     if (!isString(url) || !url) {
         throw new Error("WebTransport URL required");
     }
-    const parsed = new URL(url, window.location.href);
+    const parsed = new URL(url, baseUrl);
     if (parsed.protocol !== "https:") {
         throw new Error("WebTransport URL must use https");
     }
@@ -275,4 +298,4 @@ function validateWebTransportUrl(url) {
     }
 }
 
-export { WebTransportProvider };
+export { applyWebTransportConfiguration, createWebTransportRuntimeConfiguration, createWebTransportService, destroyWebTransportRuntimeConfiguration };

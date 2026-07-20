@@ -1,9 +1,9 @@
-import { _routerProvider, _exceptionHandlerProvider } from '../../injection-tokens.js';
 import { Transition } from './transition.js';
 import { registerHook } from './hook-registry.js';
 import { defineCoreTransitionEvents } from './transition-events.js';
 import { treeChangesCleanup, registerRuntimeTransitionHooks, registerCoreTransitionHooks } from './transition-hooks.js';
 
+/** @internal */
 const defaultTransOpts = {
     location: true,
     relative: undefined,
@@ -15,23 +15,17 @@ const defaultTransOpts = {
 /**
  * Central registry and factory for transition events, hooks, and transition instances.
  */
-class TransitionProvider {
-    constructor(routerState, $exceptionHandler) {
+class TransitionRuntime {
+    constructor(routerState, $exceptionHandler, securityPolicy) {
         this._transitionCount = 0;
         this._eventTypes = [];
         this._registeredHooks = {};
         this._routerState = routerState;
+        this._security = securityPolicy;
         defineCoreTransitionEvents(this);
         this._registerCoreTransitionHooks();
-        this._exceptionHandler = $exceptionHandler.handler;
+        this._exceptionHandler = $exceptionHandler;
         routerState._successfulTransitionCleanup = treeChangesCleanup;
-    }
-    /**
-     * Wires runtime services into the transition service and registers the
-     * hooks that depend on state/url/view services.
-     */
-    $get() {
-        return this;
     }
     /** @internal */
     _initRuntimeHooks(stateService, viewService) {
@@ -147,6 +141,5 @@ class TransitionProvider {
         registerCoreTransitionHooks(this);
     }
 }
-TransitionProvider.$inject = [_routerProvider, _exceptionHandlerProvider];
 
-export { TransitionProvider, defaultTransOpts };
+export { TransitionRuntime, defaultTransOpts };

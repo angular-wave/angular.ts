@@ -221,7 +221,7 @@ function createHttpDirective(method, attrName) {
                             const html = res.data;
                             if (Http._OK <= res.status &&
                                 res.status <= Http._MultipleChoices - 1) {
-                                const success = readAttr("success");
+                                const success = readAttr("onSuccess");
                                 if (isDefined(success)) {
                                     $parse(success)(scope, { $res: html });
                                 }
@@ -232,7 +232,7 @@ function createHttpDirective(method, attrName) {
                             }
                             else if (Http._BadRequest <= res.status &&
                                 res.status <= Http._ErrorMax) {
-                                const error = readAttr("error");
+                                const error = readAttr("onError");
                                 if (isDefined(error)) {
                                     $parse(error)(scope, { $res: html });
                                 }
@@ -245,15 +245,6 @@ function createHttpDirective(method, attrName) {
                                 handleStreamResponse(html, swap).catch((error) => {
                                     $log.error(`${attrName}: stream error`, error);
                                 });
-                            }
-                            else if (isObject(html)) {
-                                const target = readAttr("target");
-                                if (target) {
-                                    $parse(target)._assign?.(scope, html);
-                                }
-                                else {
-                                    scope.$merge(html);
-                                }
                             }
                             else if (isString(html)) {
                                 handleSwapResponse(html, swap);

@@ -2,15 +2,6 @@ import { isDefined, isString, isNullOrUndefined, isInstanceOf, isNumber, nullObj
 import { validateIsString, validateRequired, BADARG } from '../../shared/validate.js';
 
 /**
- * Service provider that creates a {@link CookieService $cookie} service.
- */
-class CookieProvider {
-    constructor() {
-        this.$get = () => new CookieService(this.defaults);
-        this.defaults = {};
-    }
-}
-/**
  *
  * High-level API for reading, writing, serializing, and removing browser
  * cookies through the injectable `$cookie` service.
@@ -199,4 +190,4 @@ function describeOptionValue(value) {
     return Object.prototype.toString.call(value);
 }
 
-export { CookieProvider, CookieService };
+export { CookieService };

@@ -1,7 +1,22 @@
 import { PREFIX_REGEXP, SPECIAL_CHARS_REGEXP } from './constants.js';
 import { NodeType } from './node.js';
 
-const isProxySymbol = Symbol("isProxy");
+const isProxySymbol = Symbol.for("@angular-wave/angular.ts/isProxy");
+function shouldHandleViewRetentionPause(args, mode = "schedulers") {
+    if (!args.length) {
+        return true;
+    }
+    const maybePayload = args.find((arg) => isObject(arg) &&
+        typeof arg._pause !== "undefined") ?? args[0];
+    if (!isObject(maybePayload)) {
+        return true;
+    }
+    const maybeMode = maybePayload._pause;
+    if (typeof maybeMode === "undefined") {
+        return true;
+    }
+    return maybeMode === mode;
+}
 /**
  * Returns whether a value is one of this scope proxy objects.
  */
@@ -1149,23 +1164,51 @@ async function wait(timeout = 0) {
 function startsWith(str, search) {
     return str.startsWith(search);
 }
-/**
- * Loads and instantiates a WebAssembly module.
- * Tries streaming first, then falls back.
+/** @internal
+ * Loads and compiles a WebAssembly module.
+ * Tries streaming first, then falls back for response type failures.
  */
-async function instantiateWasm(src, imports = {}) {
-    const res = await fetch(src);
-    if (!res.ok)
-        throw new Error("fetch failed");
-    try {
-        const { instance, module } = await WebAssembly.instantiateStreaming(res.clone(), imports);
-        return { instance, exports: instance.exports, module };
+async function compileWasm(source, signal, options) {
+    if (source instanceof WebAssembly.Module) {
+        return source;
     }
-    catch {
-        /* empty */
+    if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
+        const compile = WebAssembly.compile;
+        return compile(source, options);
     }
-    const bytes = await res.arrayBuffer();
-    const { instance, module } = await WebAssembly.instantiate(bytes, imports);
+    const response = source instanceof Response
+        ? source.clone()
+        : await fetch(source instanceof Request ? source.clone() : source, {
+            signal,
+        });
+    if (!response.ok) {
+        const status = response.status
+            ? ` (${String(response.status)}${response.statusText ? ` ${response.statusText}` : ""})`
+            : "";
+        throw new Error(`WebAssembly fetch failed${status}`);
+    }
+    if (typeof WebAssembly.compileStreaming === "function") {
+        try {
+            const compileStreaming = WebAssembly.compileStreaming;
+            return await compileStreaming(response.clone(), options);
+        }
+        catch (error) {
+            // A TypeError commonly means the server supplied an invalid Wasm MIME
+            // type. Compilation, linking, and start-function failures must not be
+            // retried because instantiation can have observable side effects.
+            if (!(error instanceof TypeError)) {
+                throw error;
+            }
+        }
+    }
+    const bytes = await response.arrayBuffer();
+    const compile = WebAssembly.compile;
+    return compile(bytes, options);
+}
+/** @internal Loads, compiles, and instantiates a WebAssembly module. */
+async function instantiateWasm(source, imports = {}, signal, options) {
+    const module = await compileWasm(source, signal, options);
+    const instance = await WebAssembly.instantiate(module, imports);
     return { instance, exports: instance.exports, module };
 }
 /**
@@ -1186,4 +1229,4 @@ function nullObject() {
     return createObject(null);
 }
 
-export { AngularTSError, arrayFrom, arrayRemove, assert, assertArg, assertArgFn, assertDefined, assertNotHasOwnProperty, assign, baseExtend, bind, callBackAfterFirst, callBackOnce, callFunction, concat, createErrorFactory, createObject, deProxy, deleteProperty, directiveNormalize, encodeUriQuery, encodeUriSegment, entries, equals, errorHandlingConfig, extend, fromJson, getHashKey, getNodeName, hasAnimate, hasCustomToString, hasOwn, hashKey, includes, inherit, instantiateWasm, isArray, isArrayLike, isArrowFunction, isBlob, isBoolean, isDate, isDefined, isError, isFile, isFormData, isFunction, isInstanceOf, isNull, isNullOrUndefined, isNumber, isNumberNaN, isObject, isObjectEmpty, isPromiseLike, isProxy, isProxySymbol, isRegExp, isScope, isString, isUndefined, isValidObjectMaxDepth, isWindow, keys, lowercase, mergeClasses, nextUid, ngAttrPrefixes, notNullOrUndefined, nullObject, parseKeyValue, setHashKey, shallowCopy, simpleCompare, sliceArgs, snakeCase, startsWith, stringify, toDebugString, toJson, toKeyValue, trim, tryDecodeURIComponent, uppercase, values, wait };
+export { AngularTSError, arrayFrom, arrayRemove, assert, assertArg, assertArgFn, assertDefined, assertNotHasOwnProperty, assign, baseExtend, bind, callBackAfterFirst, callBackOnce, callFunction, compileWasm, concat, createErrorFactory, createObject, deProxy, deleteProperty, directiveNormalize, encodeUriQuery, encodeUriSegment, entries, equals, errorHandlingConfig, extend, fromJson, getHashKey, getNodeName, hasAnimate, hasCustomToString, hasOwn, hashKey, includes, inherit, instantiateWasm, isArray, isArrayLike, isArrowFunction, isBlob, isBoolean, isDate, isDefined, isError, isFile, isFormData, isFunction, isInstanceOf, isNull, isNullOrUndefined, isNumber, isNumberNaN, isObject, isObjectEmpty, isPromiseLike, isProxy, isProxySymbol, isRegExp, isScope, isString, isUndefined, isValidObjectMaxDepth, isWindow, keys, lowercase, mergeClasses, nextUid, ngAttrPrefixes, notNullOrUndefined, nullObject, parseKeyValue, setHashKey, shallowCopy, shouldHandleViewRetentionPause, simpleCompare, sliceArgs, snakeCase, startsWith, stringify, toDebugString, toJson, toKeyValue, trim, tryDecodeURIComponent, uppercase, values, wait };

@@ -1,12 +1,22 @@
 import { Glob } from '../glob/glob.js';
 import { isFunction, isObject, assign, keys, hasOwn } from '../../shared/utils.js';
 
+const stateDeclarationSources = new WeakMap();
+/** @internal */
+function setStateDeclarationSource(flattened, source) {
+    stateDeclarationSources.set(flattened, source);
+}
+/** @internal */
+function getStateDeclarationSource(declaration) {
+    return stateDeclarationSources.get(declaration);
+}
 /**
  * Internal representation of a ng-router state.
  *
  * Instances of this class are created when a [[StateDeclaration]] is registered with the [[StateRegistry]].
  *
- * A registered [[StateDeclaration]] is augmented with a getter ([[StateDeclaration._state]]) which returns the corresponding [[StateObject]] object.
+ * A registered declaration is internally augmented with a getter that returns
+ * the corresponding [[StateObject]] object.
  *
  * This class prototypally inherits from the corresponding [[StateDeclaration]].
  * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
@@ -41,14 +51,17 @@ class StateObject {
      *
      * Compares the identity of the state against the passed value, which is either an object
      * reference to the actual `State` instance, the original definition object passed to
-     * `$stateProvider.state()`, or the fully-qualified name.
+     * `app.router()`, or the fully-qualified name.
      *
      * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
-     *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
+     *        into `app.router()`, (c) the fully-qualified name of a state as a string.
      * @returns Returns `true` if `ref` matches the current `State` instance.
      */
     is(ref) {
-        return this === ref || this.self === ref || this._pathName() === ref;
+        return (this === ref ||
+            this.self === ref ||
+            getStateDeclarationSource(this.self) === ref ||
+            this._pathName() === ref);
     }
     /**
      * @deprecated this does not properly handle dot notation
@@ -125,4 +138,4 @@ class StateObject {
     }
 }
 
-export { StateObject };
+export { StateObject, getStateDeclarationSource, setStateDeclarationSource };

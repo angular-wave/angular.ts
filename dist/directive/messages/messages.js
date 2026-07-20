@@ -1,5 +1,5 @@
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
-import { _injector, _parse, _templateRequest, _compile } from '../../injection-tokens.js';
+import { _element, _scope, _injector, _parse, _templateRequest, _compile } from '../../injection-tokens.js';
 import { isString, values, entries, assertDefined, deleteProperty, isInstanceOf, isArray, hasOwn } from '../../shared/utils.js';
 import { getNormalizedAttr, createNodelistFromHTML, removeElement } from '../../shared/dom.js';
 
@@ -155,8 +155,12 @@ function ngMessagesDirective($injector, $parse) {
     return {
         require: "ngMessages",
         restrict: "AE",
-        controller: ($element, $scope) => new NgMessageCtrl($element, $scope, getNormalizedAttr($element, "ngMessages") ??
-            getNormalizedAttr($element, "for"), getNormalizedAttr($element, "multiple"), getNormalizedAttr($element, "ngMessagesMultiple"), getAnimate, $parse),
+        controller: [
+            _element,
+            _scope,
+            ($element, $scope) => new NgMessageCtrl($element, $scope, getNormalizedAttr($element, "ngMessages") ??
+                getNormalizedAttr($element, "for"), getNormalizedAttr($element, "multiple"), getNormalizedAttr($element, "ngMessagesMultiple"), getAnimate, $parse),
+        ],
     };
 }
 /**
@@ -189,12 +193,12 @@ function ngMessagesIncludeDirective($templateRequest, $compile) {
                 getNormalizedAttr(element, "src") ??
                 "";
             void $templateRequest(src).then((html) => {
-                if ($scope._destroyed)
+                if (isDestroyedScope($scope))
                     return undefined;
                 if (isString(html) && !html.trim()) ;
                 else {
                     // Non-empty template - compile and link
-                    $compile(createNodelistFromHTML(html))($scope, insertCompiledMessageTemplate(element));
+                    $compile(createNodelistFromHTML(html))($scope, insertCompiledMessageTemplate(element, $scope));
                     ngMessagesCtrl.reRender();
                 }
                 return undefined;
@@ -202,9 +206,12 @@ function ngMessagesIncludeDirective($templateRequest, $compile) {
         },
     };
 }
-function insertCompiledMessageTemplate(anchor) {
+function isDestroyedScope(scope) {
+    return scope._destroyed || scope.$root.$handler._destroyed;
+}
+function insertCompiledMessageTemplate(anchor, scope) {
     return (contents) => {
-        if (!contents) {
+        if (!contents || isDestroyedScope(scope)) {
             return;
         }
         const nodes = isInstanceOf(contents, Node)

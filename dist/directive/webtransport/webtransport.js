@@ -203,10 +203,8 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                 }
             }
             async function readIncomingStreams(nextConnection) {
-                const streams = nextConnection.transport.incomingUnidirectionalStreams;
-                if (!streams) {
-                    throw new Error("WebTransport incoming unidirectional streams are not available");
-                }
+                const streams = nextConnection.transport
+                    .incomingUnidirectionalStreams;
                 streamReader = streams.getReader();
                 try {
                     for (;;) {

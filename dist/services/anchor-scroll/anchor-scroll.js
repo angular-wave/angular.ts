@@ -1,124 +1,159 @@
-import { _location, _rootScope } from '../../injection-tokens.js';
 import { isInstanceOf, isString, isNumber, getNodeName, isFunction } from '../../shared/utils.js';
 import { urlResolve } from '../../shared/url-utils/url-utils.js';
 
-class AnchorScrollProvider {
-    constructor() {
-        this.$get = [
-            _location,
-            _rootScope,
-            /** Creates the runtime anchor-scroll service. */
-            ($location, $rootScope) => {
-                // Helper function to get first anchor from a NodeList
-                // (using `Array#some()` instead of `angular#forEach()` since it's more performant
-                //  and working in all supported browsers.)
-                /** Returns the first anchor element from a queried node list. */
-                function getFirstAnchor(list) {
-                    for (let i = 0; i < list.length; i++) {
-                        const el = list[i];
-                        if (getNodeName(el) === "a") {
-                            return el;
-                        }
-                    }
-                    return undefined;
-                }
-                function getYOffset() {
-                    // Figure out a better way to configure this other than bolting on a property onto a function
-                    let offset = scroll.yOffset;
-                    if (isFunction(offset)) {
-                        offset = offset();
-                    }
-                    else if (isInstanceOf(offset, Element)) {
-                        const style = window.getComputedStyle(offset);
-                        if (style.position !== "fixed") {
-                            offset = 0;
-                        }
-                        else {
-                            offset = offset.getBoundingClientRect().bottom;
-                        }
-                    }
-                    else if (!isNumber(offset)) {
-                        offset = 0;
-                    }
-                    return offset;
-                }
-                /** Scrolls to a specific element or to the top of the page. */
-                function scrollTo(elem) {
-                    if (elem) {
-                        const rect = elem.getBoundingClientRect();
-                        elem.scrollIntoView();
-                        const offset = getYOffset();
-                        if (offset) {
-                            // `offset` is how many pixels we want the element to appear below the top of the viewport.
-                            //
-                            // `scrollIntoView()` does not always align the element at the top (e.g. near the bottom
-                            // of the page). Therefore, we measure the element’s actual position after scrolling and
-                            // only adjust by the difference needed to reach the desired offset.
-                            window.scrollBy(0, rect.top - offset);
-                        }
-                    }
-                    else {
-                        window.scrollTo(0, 0);
-                    }
-                }
-                const scroll = (hashOrElement) => {
-                    // Direct element scrolling
-                    if (isInstanceOf(hashOrElement, HTMLElement)) {
-                        scrollTo(hashOrElement);
-                        return;
-                    }
-                    // Allow numeric hashes
-                    const hash = isString(hashOrElement)
-                        ? hashOrElement
-                        : isNumber(hashOrElement)
-                            ? hashOrElement.toString()
-                            : $location.getHash();
-                    let elm;
-                    // empty hash, scroll to the top of the page
-                    if (!hash) {
-                        scrollTo();
-                    }
-                    // element with given id
-                    else if ((elm = document.getElementById(hash)))
-                        scrollTo(elm);
-                    // first anchor with given name :-D
-                    else if ((elm = getFirstAnchor(document.getElementsByName(hash))))
-                        scrollTo(elm);
-                    // no element and hash === 'top', scroll to the top of the page
-                    else if (hash === "top")
-                        scrollTo();
-                };
-                // does not scroll when user clicks on anchor link that is currently on
-                // (no url change, no $location.getHash() change), browser native does scroll
-                if (this.autoScrollingEnabled) {
-                    $rootScope.$on("$locationChangeSuccess", (_e, newVal, oldVal) => {
-                        const newUrl = urlResolve(newVal);
-                        const ordUrl = urlResolve(oldVal);
-                        if (newUrl.hash === ordUrl.hash && newUrl.hash === "")
-                            return;
-                        const action = () => {
-                            scroll(newUrl.hash);
-                        };
-                        if (document.readyState === "complete") {
-                            // Force the action to be run async for consistent behavior
-                            // from the action's point of view
-                            // i.e. it will definitely run after the current event stack.
-                            queueMicrotask(() => {
-                                action();
-                            });
-                        }
-                        else {
-                            window.addEventListener("load", () => {
-                                action();
-                            });
-                        }
-                    });
-                }
-                return scroll;
-            },
-        ];
-        this.autoScrollingEnabled = true;
+/** @internal */
+function createAnchorScrollRuntimeState() {
+    return {
+        autoScrollingEnabled: true,
+        destroyed: false,
+        instances: new Set(),
+    };
+}
+/** @internal */
+function applyAnchorScrollConfiguration(state, config) {
+    if (state.destroyed) {
+        throw new Error("Anchor-scroll runtime has already been disposed.");
     }
+    if (config.autoScrolling === undefined)
+        return;
+    const enabled = config.autoScrolling;
+    state.autoScrollingEnabled = enabled;
+    state.instances.forEach((instance) => {
+        instance.setAutoScrolling(enabled);
+    });
+}
+/** @internal */
+function createAnchorScrollService(state, $location, $rootScope, runtimeDocument, runtimeWindow) {
+    if (state.destroyed) {
+        throw new Error("Anchor-scroll runtime has already been disposed.");
+    }
+    let destroyed = false;
+    let removeLocationListener;
+    let removeDestroyListener;
+    const pendingLoadListeners = new Set();
+    function getFirstAnchor(list) {
+        for (let i = 0; i < list.length; i++) {
+            const element = list[i];
+            if (getNodeName(element) === "a") {
+                return element;
+            }
+        }
+        return undefined;
+    }
+    function getYOffset() {
+        let offset = scroll.yOffset;
+        if (isFunction(offset)) {
+            offset = offset();
+        }
+        else if (isInstanceOf(offset, runtimeWindow.Element)) {
+            const style = runtimeWindow.getComputedStyle(offset);
+            offset =
+                style.position === "fixed" ? offset.getBoundingClientRect().bottom : 0;
+        }
+        else if (!isNumber(offset)) {
+            offset = 0;
+        }
+        return offset;
+    }
+    function scrollTo(element) {
+        if (!element) {
+            runtimeWindow.scrollTo(0, 0);
+            return;
+        }
+        const rect = element.getBoundingClientRect();
+        element.scrollIntoView();
+        const offset = getYOffset();
+        if (offset)
+            runtimeWindow.scrollBy(0, rect.top - offset);
+    }
+    const scroll = (hashOrElement) => {
+        if (isInstanceOf(hashOrElement, runtimeWindow.HTMLElement)) {
+            scrollTo(hashOrElement);
+            return;
+        }
+        const hash = isString(hashOrElement)
+            ? hashOrElement
+            : isNumber(hashOrElement)
+                ? hashOrElement.toString()
+                : $location.getHash();
+        let element;
+        if (!hash) {
+            scrollTo();
+        }
+        else if ((element = runtimeDocument.getElementById(hash) ?? undefined)) {
+            scrollTo(element);
+        }
+        else if ((element = getFirstAnchor(runtimeDocument.getElementsByName(hash)))) {
+            scrollTo(element);
+        }
+        else if (hash === "top") {
+            scrollTo();
+        }
+    };
+    function clearPendingLoadListeners() {
+        pendingLoadListeners.forEach((listener) => {
+            runtimeWindow.removeEventListener("load", listener);
+        });
+        pendingLoadListeners.clear();
+    }
+    function scheduleScroll(hash) {
+        if (runtimeDocument.readyState === "complete") {
+            runtimeWindow.queueMicrotask(() => {
+                if (!destroyed)
+                    scroll(hash);
+            });
+            return;
+        }
+        const listener = () => {
+            pendingLoadListeners.delete(listener);
+            if (!destroyed)
+                scroll(hash);
+        };
+        pendingLoadListeners.add(listener);
+        runtimeWindow.addEventListener("load", listener, { once: true });
+    }
+    const instance = {
+        setAutoScrolling(enabled) {
+            removeLocationListener?.();
+            removeLocationListener = undefined;
+            clearPendingLoadListeners();
+            if (!enabled || destroyed)
+                return;
+            removeLocationListener = $rootScope.$on("$locationChangeSuccess", (_event, newValue, oldValue) => {
+                const newUrl = urlResolve(newValue);
+                const oldUrl = urlResolve(oldValue);
+                if (newUrl.hash === oldUrl.hash && newUrl.hash === "")
+                    return;
+                scheduleScroll(newUrl.hash);
+            });
+        },
+        destroy() {
+            if (destroyed)
+                return;
+            destroyed = true;
+            removeLocationListener?.();
+            removeLocationListener = undefined;
+            removeDestroyListener?.();
+            removeDestroyListener = undefined;
+            clearPendingLoadListeners();
+            state.instances.delete(instance);
+        },
+    };
+    state.instances.add(instance);
+    instance.setAutoScrolling(state.autoScrollingEnabled);
+    removeDestroyListener = $rootScope.$on("$destroy", () => {
+        instance.destroy();
+    });
+    return scroll;
+}
+/** @internal */
+function destroyAnchorScrollRuntimeState(state) {
+    if (state.destroyed)
+        return;
+    state.destroyed = true;
+    [...state.instances].forEach((instance) => {
+        instance.destroy();
+    });
 }
 
-export { AnchorScrollProvider };
+export { applyAnchorScrollConfiguration, createAnchorScrollRuntimeState, createAnchorScrollService, destroyAnchorScrollRuntimeState };

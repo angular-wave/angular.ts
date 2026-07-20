@@ -1,13 +1,14 @@
-import { _workflow, _machine, _compileLifecycle, _router, _provide, _compile, _angular, _window, _document, _filter } from './injection-tokens.js';
-import { AnimateProvider } from './animations/animate.js';
-import { CompileLifecycleProvider, CompileProvider } from './core/compile/compile.js';
-import { ControllerProvider } from './core/controller/controller.js';
-import { FilterProvider } from './core/filter/filter.js';
-import { InterpolateProvider } from './core/interpolate/interpolate.js';
-import { MachineProvider } from './services/machine/machine.js';
-import { WorkflowProvider } from './services/workflow/workflow.js';
-import { ParseProvider } from './core/parse/parse.js';
-import { RootScopeProvider } from './core/scope/scope.js';
+import { _injector, _templateCache, _http, _security, _rootScope, _rootElement, _exceptionHandler, _sce, _cookie, _stream, _log, _location, _document, _window, _parse, _workflow, _machine, _filter, _sceDelegate, _state, _worker, _webTransport, _websocket, _webComponent, _sse, _serviceWorker, _eventBus, _compile, _angular, _interpolate, _controller } from './injection-tokens.js';
+import { createAnimateService } from './animations/animate.js';
+import { createControllerService } from './core/controller/controller.js';
+import { createFilterRegistration } from './core/filter/filter.js';
+import { applyInterpolateConfiguration, createInterpolateService } from './core/interpolate/interpolate.js';
+import { createMachineService } from './services/machine/machine.js';
+import { createWorkflowService } from './services/workflow/workflow.js';
+import { createParseService } from './core/parse/parse.js';
+import { requireAppRoot } from './core/app-context/app-context.js';
+import { registerRuntimeProviders } from './core/composition/runtime-composition.js';
+import { createRootScopeService } from './core/scope/scope.js';
 import { valuesFilter, keysFilter, entriesFilter } from './filters/collection.js';
 import { asyncFilter } from './filters/async.js';
 import { dateFilter } from './filters/date.js';
@@ -17,7 +18,7 @@ import { limitToFilter } from './filters/limit-to.js';
 import { percentFilter, numberFilter, currencyFilter } from './filters/number.js';
 import { orderByFilter } from './filters/order-by.js';
 import { relativeTimeFilter } from './filters/relative-time.js';
-import { ngValueAriaDirective, ngRequiredAriaDirective, ngReadonlyAriaDirective, ngModelAriaDirective, ngMessagesAriaDirective, ngShowAriaDirective, ngHideAriaDirective, ngDisabledAriaDirective, ngDblclickAriaDirective, ngClickAriaDirective, ngCheckedAriaDirective, AriaProvider } from './directive/aria/aria.js';
+import { ngValueAriaDirective, ngRequiredAriaDirective, ngReadonlyAriaDirective, ngModelAriaDirective, ngMessagesAriaDirective, ngShowAriaDirective, ngHideAriaDirective, ngDisabledAriaDirective, ngDblclickAriaDirective, ngClickAriaDirective, ngCheckedAriaDirective, applyAriaConfiguration, destroyAriaRuntimeState, createAriaService, createAriaRuntimeState } from './directive/aria/aria.js';
 import { ngAttributeAliasDirectives } from './directive/attrs/attrs.js';
 import { ngBindTemplateDirective, ngBindHtmlDirective, ngBindDirective } from './directive/bind/bind.js';
 import { ngChannelDirective } from './directive/channel/channel.js';
@@ -53,35 +54,29 @@ import { ngSwitchDefaultDirective, ngSwitchWhenDirective, ngSwitchDirective } fr
 import { ngTranscludeDirective } from './directive/transclude/transclude.js';
 import { maxlengthDirective, minlengthDirective, requiredDirective, patternDirective } from './directive/validators/validators.js';
 import { ngViewportDirective } from './directive/viewport/viewport.js';
-import { ngWasmDirective } from './directive/wasm/wasm.js';
 import { ngWebTransportDirective } from './directive/webtransport/webtransport.js';
 import { ngWorkerDirective } from './directive/worker/worker.js';
-import { StateRefDynamicDirective, StateRefActiveDirective, StateRefDirective } from './router/directives/state-directives.js';
+import { StateRefActiveDirective, StateRefDynamicDirective } from './router/directives/state-directives.js';
 import { ViewDirective, ViewDirectiveContentGuard } from './router/directives/view-directive.js';
-import { RouterProvider } from './router/router.js';
-import { StateProvider } from './router/state/state-service.js';
-import { StateRegistryProvider } from './router/state/state-registry.js';
-import { TemplateFactoryProvider } from './router/router/template-factory.js';
-import { TransitionProvider } from './router/transition/transition-service.js';
-import { ViewService } from './router/view/view.js';
-import { AnchorScrollProvider } from './services/anchor-scroll/anchor-scroll.js';
-import { CookieProvider } from './services/cookie/cookie.js';
-import { ExceptionHandlerProvider } from './services/exception/exception.js';
-import { HttpParamSerializerProvider, HttpProvider } from './services/http/http.js';
-import { LocationProvider } from './services/location/location.js';
-import { LogProvider } from './services/log/log.js';
-import { PubSubProvider } from './services/pubsub/pubsub.js';
-import { RestProvider } from './services/rest/rest.js';
-import { SceDelegateProvider, SceProvider } from './services/sce/sce.js';
-import { SseProvider } from './services/sse/sse.js';
-import { StreamProvider } from './services/stream/readable-stream.js';
-import { TemplateCacheProvider } from './services/template-cache/template-cache.js';
-import { TemplateRequestProvider } from './services/template-request/template-request.js';
-import { WebComponentProvider } from './services/web-component/web-component.js';
-import { WebTransportProvider } from './services/webtransport/webtransport.js';
-import { WebSocketProvider } from './services/websocket/websocket.js';
-import { WorkerProvider } from './services/worker/worker.js';
-import { WasmProvider } from './services/wasm/wasm.js';
+import { routerRuntimeRegistration } from './router/composition/router-runtime.js';
+import { applyAnchorScrollConfiguration, destroyAnchorScrollRuntimeState, createAnchorScrollService, createAnchorScrollRuntimeState } from './services/anchor-scroll/anchor-scroll.js';
+import { CookieService } from './services/cookie/cookie.js';
+import { applyExceptionHandlerConfiguration, createExceptionHandlerService } from './services/exception/exception.js';
+import { createHttpParamSerializer, createHttpRuntimeConfiguration, applyHttpConfiguration, createHttpService } from './services/http/http.js';
+import { createLocationRuntimeState, applyLocationConfiguration } from './services/location/location.js';
+import { applyLogConfiguration, createLogService, createLogRuntimeConfiguration } from './services/log/log.js';
+import { applyEventBusConfiguration, destroyEventBusRuntimeState, createEventBusService, createEventBusRuntimeState } from './services/event-bus/event-bus.js';
+import { createRestFactory } from './services/rest/rest.js';
+import { applySecurityConfiguration, createSecurityPolicy, createSecurityRuntimeConfiguration } from './services/security/security.js';
+import { applyServiceWorkerConfiguration, createServiceWorkerService, destroyServiceWorkerService, createServiceWorkerRuntimeConfiguration } from './services/service-worker/service-worker.js';
+import { SceDelegateConfiguration, SceConfiguration } from './services/sce/sce.js';
+import { applySseConfiguration, destroySseRuntimeConfiguration, createSseService, createSseRuntimeConfiguration } from './services/sse/sse.js';
+import { createStreamService } from './services/stream/readable-stream.js';
+import { applyTemplateRequestConfig, createTemplateRequestService, createTemplateRequestHttpOptions } from './services/template-request/template-request.js';
+import { applyWebComponentConfiguration, destroyWebComponentRuntimeState, createWebComponentService, createWebComponentRuntimeState } from './services/web-component/web-component.js';
+import { applyWebTransportConfiguration, destroyWebTransportRuntimeConfiguration, createWebTransportService, createWebTransportRuntimeConfiguration } from './services/webtransport/webtransport.js';
+import { applyWebSocketConfiguration, destroyWebSocketRuntimeConfiguration, createWebSocketService, createWebSocketRuntimeConfiguration } from './services/websocket/websocket.js';
+import { destroyWorkerRuntimeState, createWorkerService, createWorkerRuntimeState } from './services/worker/worker.js';
 import { entries } from './shared/utils.js';
 export { getNormalizedAttr, getNormalizedAttrName, hasNormalizedAttr } from './shared/dom.js';
 
@@ -91,36 +86,101 @@ export { getNormalizedAttr, getNormalizedAttrName, hasNormalizedAttr } from './s
  * Custom runtimes almost always want these values, even when they do not include
  * browser I/O, router, animation, or platform integration services.
  */
-function registerRuntimeHostValues(angular, $provide) {
-    $provide.provider(_angular, class {
-        constructor() {
-            this.$get = () => angular;
-        }
-    });
-    $provide.value(_window, window);
-    $provide.value(_document, document);
+function registerRuntimeHostValues(angular, registry) {
+    const runtime = angular;
+    const { platform } = runtime._composition;
+    registry.value(_angular, angular);
+    registry.value(_window, platform.window);
+    registry.value(_document, platform.document);
+    return runtime._composition;
 }
-/** Registers built-in filters against the already-registered `$filter` provider. */
-function registerBuiltInFilters($filterProvider) {
+/** Registers built-in filters against the runtime-owned filter registry. */
+function registerBuiltInFilters(filterRegistry) {
     const filterEntries = entries(ngBuiltInFilters);
     filterEntries.forEach(([name, factory]) => {
-        $filterProvider.register(name, factory);
+        filterRegistry.register(name, factory);
     });
 }
 /** Providers required by scopes, expressions, controllers, and compile. */
-const ngCoreProviders = {
-    [_compileLifecycle]: CompileLifecycleProvider,
-    $controller: ControllerProvider,
-    $exceptionHandler: ExceptionHandlerProvider,
-    $interpolate: InterpolateProvider,
-    [_machine]: MachineProvider,
-    $parse: ParseProvider,
-    $rootScope: RootScopeProvider,
-    [_workflow]: WorkflowProvider,
+const controllerRuntimeRegistration = {
+    _register(registry, name, context) {
+        return registry.factory(name, [
+            _injector,
+            ($injector) => createControllerService(context.runtime.controllerRegistry, $injector),
+        ]);
+    },
 };
-/** Legacy expression filters. Omit this group for runtimes that do not use pipe filters. */
+const exceptionHandlerRuntimeRegistration = {
+    _register(registry, name, context) {
+        const state = context.runtime.exceptionHandlerState;
+        context.runtime.configRegistry.register(name, (value) => {
+            applyExceptionHandlerConfiguration(state, value);
+        });
+        return registry.factory(name, () => createExceptionHandlerService(state));
+    },
+};
+const interpolateRuntimeRegistration = {
+    _register(registry, name, context) {
+        const state = context.runtime.interpolateState;
+        context.runtime.configRegistry.register(name, (value) => {
+            applyInterpolateConfiguration(state, value);
+        });
+        return registry.factory(name, [
+            _parse,
+            _sce,
+            ($parse, $sce) => createInterpolateService(state, $parse, $sce),
+        ]);
+    },
+};
+const parseRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, [
+            _injector,
+            ($injector) => createParseService($injector),
+        ]);
+    },
+};
+const rootScopeRuntimeRegistration = {
+    _register(registry, name, context) {
+        return registry.factory(name, [
+            _exceptionHandler,
+            _parse,
+            ($exceptionHandler, $parse) => createRootScopeService(context.runtime.appContext, $exceptionHandler, $parse),
+        ]);
+    },
+};
+const ngCoreProviders = {
+    $controller: controllerRuntimeRegistration,
+    $exceptionHandler: exceptionHandlerRuntimeRegistration,
+    $interpolate: interpolateRuntimeRegistration,
+    $parse: parseRuntimeRegistration,
+    $rootScope: rootScopeRuntimeRegistration,
+};
+/** Reactive state and command orchestration providers for full app runtimes. */
+const machineRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, createMachineService);
+    },
+};
+const workflowRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, createWorkflowService);
+    },
+};
+const ngOrchestrationProviders = {
+    [_machine]: machineRuntimeRegistration,
+    [_workflow]: workflowRuntimeRegistration,
+};
+const filterRuntimeRegistration = {
+    _register(registry, name, context) {
+        const filterRegistry = context.runtime.filterRegistry;
+        filterRegistry.attach(registry);
+        return registry.factory(name, createFilterRegistration(filterRegistry));
+    },
+};
+/** Expression filters. Omit this group for runtimes that do not use pipe filters. */
 const ngFilterProviders = {
-    $filter: FilterProvider,
+    [_filter]: filterRuntimeRegistration,
 };
 /** Built-in filters included by the default full `ng` runtime. */
 const ngBuiltInFilters = {
@@ -139,46 +199,386 @@ const ngBuiltInFilters = {
     values: valuesFilter,
 };
 /** Browser services that are useful in normal apps but optional for small runtimes. */
+const anchorScrollRuntimeRegistration = {
+    _register(registry, name, context) {
+        const state = createAnchorScrollRuntimeState();
+        context.runtime.configRegistry.register(name, (value) => {
+            applyAnchorScrollConfiguration(state, value);
+        });
+        context.platform.addDisposer(() => {
+            destroyAnchorScrollRuntimeState(state);
+        });
+        return registry.factory(name, [
+            _location,
+            _rootScope,
+            _document,
+            _window,
+            ($location, $rootScope, $document, $window) => createAnchorScrollService(state, $location, $rootScope, $document, $window),
+        ]);
+    },
+};
+const cookieRuntimeRegistration = {
+    _register(registry, name, context) {
+        let defaults = {};
+        context.runtime.configRegistry.register(name, (value) => {
+            const config = value;
+            if (config.defaults !== undefined) {
+                defaults = {
+                    ...defaults,
+                    ...config.defaults,
+                };
+            }
+        });
+        return registry.factory(name, () => new CookieService(defaults));
+    },
+};
+const templateCacheRuntimeRegistration = {
+    _register(registry, name, context) {
+        let cache = new Map();
+        context.runtime.configRegistry.register(name, (value) => {
+            const config = value;
+            if (config.cache !== undefined)
+                cache = config.cache;
+        });
+        return registry.factory(name, () => cache);
+    },
+};
+const templateRequestRuntimeRegistration = {
+    _register(registry, name, context) {
+        let httpOptions = createTemplateRequestHttpOptions();
+        context.runtime.configRegistry.register(name, (value) => {
+            const config = value;
+            httpOptions = applyTemplateRequestConfig(httpOptions, config);
+        });
+        return registry.factory(name, [
+            _templateCache,
+            _http,
+            ($templateCache, $http) => createTemplateRequestService($templateCache, $http, httpOptions),
+        ]);
+    },
+};
+const httpParamSerializerRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, createHttpParamSerializer);
+    },
+};
+const httpRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = createHttpRuntimeConfiguration();
+        context.runtime.configRegistry.register(name, (value) => {
+            applyHttpConfiguration(configuration, value);
+        });
+        return registry.factory(name, [
+            _injector,
+            _sce,
+            _cookie,
+            _security,
+            _stream,
+            ($injector, $sce, $cookie, $security, $stream) => createHttpService($injector, $sce, $cookie, $security, $stream, configuration),
+        ]);
+    },
+};
+const ariaRuntimeRegistration = {
+    _register(registry, name, context) {
+        const state = createAriaRuntimeState();
+        context.runtime.configRegistry.register(name, (value) => {
+            applyAriaConfiguration(state, value);
+        });
+        context.platform.addDisposer(() => {
+            destroyAriaRuntimeState(state);
+        });
+        return registry.factory(name, [
+            _log,
+            ($log) => createAriaService(state, $log),
+        ]);
+    },
+};
+const locationRuntimeRegistration = {
+    _register(registry, name, context) {
+        const state = createLocationRuntimeState(context.platform.window);
+        context.runtime.configRegistry.register(name, (value) => {
+            applyLocationConfiguration(state, value);
+        });
+        context.platform.addDisposer(() => {
+            state.destroy();
+        });
+        registry.factory(name, [
+            _rootScope,
+            _rootElement,
+            _exceptionHandler,
+            ($rootScope, $rootElement, $exceptionHandler) => state.createService($rootScope, $rootElement, $exceptionHandler),
+        ]);
+        return state;
+    },
+};
+const logRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = createLogRuntimeConfiguration();
+        const securityPolicy = context.providers.get(_security);
+        context.runtime.configRegistry.register(name, (value) => {
+            applyLogConfiguration(configuration, value);
+        });
+        return registry.factory(name, [
+            _injector,
+            ($injector) => {
+                const navigator = context.platform.window.navigator;
+                return createLogService(configuration, context.platform.console, {
+                    authorizeBeacon: securityPolicy
+                        ? (securityContext) => securityPolicy.check(securityContext)
+                        : undefined,
+                    resolveSerializer: (serializerName) => $injector.get(serializerName),
+                    sendBeacon: typeof navigator.sendBeacon === "function"
+                        ? (url, data) => navigator.sendBeacon(url, data)
+                        : undefined,
+                });
+            },
+        ]);
+    },
+};
 const ngBrowserProviders = {
-    $anchorScroll: AnchorScrollProvider,
-    $aria: AriaProvider,
-    $cookie: CookieProvider,
-    $http: HttpProvider,
-    $httpParamSerializer: HttpParamSerializerProvider,
-    $location: LocationProvider,
-    $log: LogProvider,
-    $templateCache: TemplateCacheProvider,
-    $templateRequest: TemplateRequestProvider,
+    $anchorScroll: anchorScrollRuntimeRegistration,
+    $aria: ariaRuntimeRegistration,
+    $cookie: cookieRuntimeRegistration,
+    $http: httpRuntimeRegistration,
+    $httpParamSerializer: httpParamSerializerRuntimeRegistration,
+    $location: locationRuntimeRegistration,
+    $log: logRuntimeRegistration,
+    $templateCache: templateCacheRuntimeRegistration,
+    $templateRequest: templateRequestRuntimeRegistration,
 };
 /** Strict contextual escaping providers. */
-const ngSecurityProviders = {
-    $sce: SceProvider,
-    $sceDelegate: SceDelegateProvider,
+const sceRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = new SceConfiguration();
+        context.runtime.configRegistry.register(name, (value) => {
+            const config = value;
+            if (config.enabled !== undefined) {
+                configuration.enabled(config.enabled);
+            }
+        });
+        return registry.factory(name, [
+            _parse,
+            _sceDelegate,
+            ($parse, $sceDelegate) => configuration.createService($parse, $sceDelegate),
+        ]);
+    },
 };
-/** Native animation provider. */
+const sceDelegateRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = new SceDelegateConfiguration();
+        context.runtime.configRegistry.register(name, (value) => {
+            const config = value;
+            if (config.trustedResourceUrlList !== undefined) {
+                configuration.trustedResourceUrlList(config.trustedResourceUrlList);
+            }
+            if (config.bannedResourceUrlList !== undefined) {
+                configuration.bannedResourceUrlList(config.bannedResourceUrlList);
+            }
+            if (config.aHrefSanitizationTrustedUrlList !== undefined) {
+                configuration.aHrefSanitizationTrustedUrlList(config.aHrefSanitizationTrustedUrlList);
+            }
+            if (config.imgSrcSanitizationTrustedUrlList !== undefined) {
+                configuration.imgSrcSanitizationTrustedUrlList(config.imgSrcSanitizationTrustedUrlList);
+            }
+        });
+        return registry.factory(name, [
+            _injector,
+            _window,
+            _exceptionHandler,
+            ($injector, $window, $exceptionHandler) => configuration.createService($injector, $window, $exceptionHandler),
+        ]);
+    },
+};
+const securityRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = createSecurityRuntimeConfiguration();
+        const policy = createSecurityPolicy(configuration, () => context.platform.window.location.href);
+        context.runtime.configRegistry.register(name, (value) => {
+            applySecurityConfiguration(configuration, value);
+        });
+        registry.value(name, policy);
+        return policy;
+    },
+};
+const ngSecurityProviders = {
+    $security: securityRuntimeRegistration,
+    $sce: sceRuntimeRegistration,
+    $sceDelegate: sceDelegateRuntimeRegistration,
+};
+/** Native animation service composition. */
+const animateRuntimeRegistration = {
+    _register(registry, name, context) {
+        return registry.factory(name, [
+            _injector,
+            ($injector) => createAnimateService(context.runtime.animationRegistry, $injector),
+        ]);
+    },
+};
 const ngAnimationProviders = {
-    $animate: AnimateProvider,
+    $animate: animateRuntimeRegistration,
 };
 /** State-router providers. Omit this group for custom-element or widget runtimes without routing. */
 const ngRouterProviders = {
-    [_router]: RouterProvider,
-    $view: ViewService,
-    $transitions: TransitionProvider,
-    $templateFactory: TemplateFactoryProvider,
-    $stateRegistry: StateRegistryProvider,
-    $state: StateProvider,
+    [_state]: routerRuntimeRegistration,
+};
+const streamRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, createStreamService);
+    },
+};
+const eventBusRuntimeRegistration = {
+    _register(registry, name, context) {
+        const state = createEventBusRuntimeState();
+        context.runtime.configRegistry.register(name, (value) => {
+            applyEventBusConfiguration(state, value);
+        });
+        context.runtime.addDisposer(() => {
+            destroyEventBusRuntimeState(state);
+        });
+        return registry.factory(name, [
+            _exceptionHandler,
+            _angular,
+            ($exceptionHandler, angular) => {
+                const host = angular;
+                const service = createEventBusService(state, $exceptionHandler, host.$eventBus);
+                host.$eventBus = service;
+                return service;
+            },
+        ]);
+    },
+};
+const restRuntimeRegistration = {
+    _register(registry, name, context) {
+        let defaults = {};
+        context.runtime.configRegistry.register(name, (value) => {
+            const config = value;
+            if (config.defaults !== undefined) {
+                defaults = { ...defaults, ...config.defaults };
+            }
+        });
+        return registry.factory(name, [
+            _http,
+            ($http) => createRestFactory($http, defaults),
+        ]);
+    },
+};
+const websocketRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = createWebSocketRuntimeConfiguration();
+        const runtimeWindow = context.platform.window;
+        context.runtime.configRegistry.register(name, (value) => {
+            applyWebSocketConfiguration(configuration, value);
+        });
+        context.platform.addDisposer(() => {
+            destroyWebSocketRuntimeConfiguration(configuration);
+        });
+        return registry.factory(name, [
+            _log,
+            ($log) => createWebSocketService($log, configuration, runtimeWindow.WebSocket),
+        ]);
+    },
+};
+const sseRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = createSseRuntimeConfiguration();
+        const runtimeWindow = context.platform.window;
+        context.runtime.configRegistry.register(name, (value) => {
+            applySseConfiguration(configuration, value);
+        });
+        context.platform.addDisposer(() => {
+            destroySseRuntimeConfiguration(configuration);
+        });
+        return registry.factory(name, [
+            _log,
+            ($log) => createSseService($log, configuration, () => runtimeWindow.EventSource),
+        ]);
+    },
+};
+const webTransportRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = createWebTransportRuntimeConfiguration();
+        const runtimeWindow = context.platform.window;
+        context.runtime.configRegistry.register(name, (value) => {
+            applyWebTransportConfiguration(configuration, value);
+        });
+        context.platform.addDisposer(() => {
+            destroyWebTransportRuntimeConfiguration(configuration);
+        });
+        return registry.factory(name, [
+            _log,
+            ($log) => createWebTransportService($log, configuration, () => runtimeWindow.WebTransport, runtimeWindow.location.href),
+        ]);
+    },
+};
+const workerRuntimeRegistration = {
+    _register(registry, name, context) {
+        const state = createWorkerRuntimeState();
+        const runtimeWindow = context.platform.window;
+        context.platform.addDisposer(() => {
+            destroyWorkerRuntimeState(state);
+        });
+        return registry.factory(name, [
+            _log,
+            _security,
+            ($log, $security) => createWorkerService($log, state, () => runtimeWindow.Worker, $security),
+        ]);
+    },
+};
+const webComponentRuntimeRegistration = {
+    _register(registry, name, context) {
+        const state = createWebComponentRuntimeState();
+        context.runtime.configRegistry.register(name, (value) => {
+            applyWebComponentConfiguration(state, value);
+        });
+        context.platform.addDisposer(() => {
+            destroyWebComponentRuntimeState(state);
+        });
+        return registry.factory(name, [
+            _injector,
+            _rootScope,
+            _compile,
+            ($injector, $rootScope, $compile) => createWebComponentService($injector, $rootScope, $compile, state),
+        ]);
+    },
+};
+const serviceWorkerRuntimeRegistration = {
+    _register(registry, name, context) {
+        const configuration = createServiceWorkerRuntimeConfiguration();
+        let service;
+        let destroyed = false;
+        context.runtime.configRegistry.register(name, (value) => {
+            const command = value;
+            applyServiceWorkerConfiguration(configuration, command.scriptUrl, command.config);
+        });
+        context.platform.addDisposer(() => {
+            destroyed = true;
+            if (service)
+                destroyServiceWorkerService(service);
+        });
+        return registry.factory(name, [
+            _log,
+            _exceptionHandler,
+            _security,
+            (log, err, security) => {
+                service = createServiceWorkerService(context.platform.window.navigator.serviceWorker, { log, err, configuration, security });
+                if (destroyed)
+                    destroyServiceWorkerService(service);
+                return service;
+            },
+        ]);
+    },
 };
 /** Network, messaging, persistence, and worker-style integration providers. */
 const ngIntegrationProviders = {
-    $eventBus: PubSubProvider,
-    $rest: RestProvider,
-    $sse: SseProvider,
-    $stream: StreamProvider,
-    $wasm: WasmProvider,
-    $webComponent: WebComponentProvider,
-    $websocket: WebSocketProvider,
-    $webTransport: WebTransportProvider,
-    $worker: WorkerProvider,
+    [_eventBus]: eventBusRuntimeRegistration,
+    $rest: restRuntimeRegistration,
+    [_serviceWorker]: serviceWorkerRuntimeRegistration,
+    [_sse]: sseRuntimeRegistration,
+    $stream: streamRuntimeRegistration,
+    [_webComponent]: webComponentRuntimeRegistration,
+    [_websocket]: websocketRuntimeRegistration,
+    [_webTransport]: webTransportRuntimeRegistration,
+    [_worker]: workerRuntimeRegistration,
 };
 /** Element, form, and script directives for normal HTML integration. */
 const ngElementDirectives = {
@@ -240,7 +640,7 @@ const ngFormDirectives = {
     ngMaxlength: maxlengthDirective,
     maxlength: maxlengthDirective,
 };
-/** HTTP, streaming, WebAssembly, WebTransport, and Worker directives. */
+/** HTTP, streaming, WebTransport, and Worker directives. */
 const ngIntegrationDirectives = {
     ngChannel: ngChannelDirective,
     ngDelete: ngDeleteDirective,
@@ -249,7 +649,6 @@ const ngIntegrationDirectives = {
     ngPut: ngPutDirective,
     ngSse: ngSseDirective,
     ngViewport: ngViewportDirective,
-    ngWasm: ngWasmDirective,
     ngWebTransport: ngWebTransportDirective,
     ngWorker: ngWorkerDirective,
 };
@@ -269,10 +668,9 @@ const ngAriaDirectives = {
 };
 /** State-router directives. */
 const ngRouterDirectives = {
-    ngSref: StateRefDirective,
-    ngSrefActive: StateRefActiveDirective,
-    ngSrefActiveEq: StateRefActiveDirective,
     ngState: StateRefDynamicDirective,
+    ngStateActive: StateRefActiveDirective,
+    ngStateActiveExact: StateRefActiveDirective,
     ngView: ViewDirective,
 };
 /** Fill/transclusion directives that intentionally register after their base directive. */
@@ -283,9 +681,10 @@ const ngFillDirectives = {
 /** Provider groups included by the default full `ng` runtime. */
 const ngDefaultProviderGroups = [
     ngCoreProviders,
+    ngOrchestrationProviders,
     ngFilterProviders,
-    ngBrowserProviders,
     ngSecurityProviders,
+    ngBrowserProviders,
     ngAnimationProviders,
     ngRouterProviders,
     ngIntegrationProviders,
@@ -310,42 +709,33 @@ const ngDefaultDirectiveGroups = [
  * router integrations that make up the default AngularTS runtime.
  */
 function registerNgModule(angular) {
-    const ngModule = angular.module("ng", [], [
-        _provide,
-        ($provide) => {
-            registerRuntimeHostValues(angular, $provide);
-            const $compileProvider = $provide.provider(_compile, CompileProvider);
-            ngDefaultDirectiveGroups.forEach((directives) => {
-                $compileProvider.directive(directives);
-            });
-            let $filterProvider;
-            ngDefaultProviderGroups.forEach((providers) => {
-                entries(providers).forEach(([name, provider]) => {
-                    const registeredProvider = $provide.provider(name, provider);
-                    if (name === _filter) {
-                        $filterProvider = registeredProvider;
-                    }
-                });
-            });
-            if ($filterProvider) {
-                registerBuiltInFilters($filterProvider);
-            }
-        },
-    ]);
-    registerRouterAliases(ngModule);
+    const runtime = angular;
+    const compileRegistry = runtime._composition.compileRegistry;
+    const ngModule = angular.module("ng", []);
+    ngModule._registerProviders((registry) => {
+        const composition = registerRuntimeHostValues(angular, registry);
+        registry.factory(_compile, [
+            _injector,
+            _interpolate,
+            _sce,
+            _exceptionHandler,
+            _parse,
+            _controller,
+            _rootScope,
+            ($injector, $interpolate, $sce, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, $sce, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
+        ]);
+        const registeredProviders = new Map();
+        ngDefaultProviderGroups.forEach((providers) => {
+            registerRuntimeProviders(registry, providers, composition, registeredProviders);
+        });
+        registerBuiltInFilters(composition.filterRegistry);
+    });
+    ngDefaultDirectiveGroups.forEach((directives) => {
+        entries(directives).forEach(([name, directive]) => {
+            ngModule.directive(name, directive);
+        });
+    });
     return ngModule;
 }
-/**
- * Router compatibility aliases layered on top of the router provider group.
- */
-function registerRouterAliases(ngModule) {
-    return ngModule.factory("$stateParams", [
-        _router,
-        /**
-         * Exposes the router's current parameter bag as `$stateParams`.
-         */
-        (state) => state._params,
-    ]);
-}
 
-export { AnchorScrollProvider, AnimateProvider, AriaProvider, CompileLifecycleProvider, CompileProvider, ControllerProvider, CookieProvider, ExceptionHandlerProvider, FilterProvider, HttpParamSerializerProvider, HttpProvider, InterpolateProvider, LocationProvider, LogProvider, MachineProvider, ParseProvider, PubSubProvider, RestProvider, RootScopeProvider, RouterProvider, SceDelegateProvider, SceProvider, SseProvider, StateProvider, StateRefActiveDirective, StateRefDirective, StateRefDynamicDirective, StateRegistryProvider, StreamProvider, TemplateCacheProvider, TemplateFactoryProvider, TemplateRequestProvider, TransitionProvider, ViewDirective, ViewDirectiveContentGuard, ViewService, WasmProvider, WebComponentProvider, WebSocketProvider, WebTransportProvider, WorkerProvider, WorkflowProvider, asyncFilter, classDirective, currencyFilter, dateFilter, entriesFilter, filterFilter, formDirective, inputDirective, jsonFilter, keysFilter, limitToFilter, maxlengthDirective, minlengthDirective, ngAnimationProviders, ngAriaDirectives, ngAttributeAliasDirectives, ngBindDirective, ngBindHtmlDirective, ngBindTemplateDirective, ngBindingDirectives, ngBrowserProviders, ngBuiltInFilters, ngChannelDirective, ngCheckedAriaDirective, ngClickAriaDirective, ngCloakDirective, ngControllerDirective, ngCoreProviders, ngDblclickAriaDirective, ngDefaultDirectiveGroups, ngDefaultProviderGroups, ngDeleteDirective, ngDisabledAriaDirective, ngElDirective, ngElementDirectives, ngEventDirectives, ngFillDirectives, ngFilterProviders, ngFormDirective, ngFormDirectives, ngGetDirective, ngHideAriaDirective, ngHideDirective, ngIfDirective, ngIncludeDirective, ngIncludeFillContentDirective, ngInitDirective, ngInjectDirective, ngIntegrationDirectives, ngIntegrationProviders, ngListenerDirective, ngMessageDefaultDirective, ngMessageDirective, ngMessageExpDirective, ngMessagesAriaDirective, ngMessagesDirective, ngMessagesIncludeDirective, ngModelAriaDirective, ngModelDirective, ngModelOptionsDirective, ngNonBindableDirective, ngOptionsDirective, ngPointerCaptureDirective, ngPostDirective, ngPutDirective, ngReadonlyAriaDirective, ngRefDirective, ngRepeatDirective, ngRequiredAriaDirective, ngRouterDirectives, ngRouterProviders, ngScopeDirective, ngSecurityProviders, ngSetterDirective, ngShowAriaDirective, ngShowDirective, ngSseDirective, ngStyleDirective, ngSwitchDefaultDirective, ngSwitchDirective, ngSwitchWhenDirective, ngTemplateDirectives, ngTranscludeDirective, ngValueAriaDirective, ngViewportDirective, ngWasmDirective, ngWebTransportDirective, ngWorkerDirective, numberFilter, optionDirective, orderByFilter, patternDirective, percentFilter, registerNgModule, registerRouterAliases, relativeTimeFilter, requiredDirective, scriptDirective, selectDirective, valuesFilter };
+export { StateRefActiveDirective, StateRefDynamicDirective, ViewDirective, ViewDirectiveContentGuard, asyncFilter, classDirective, currencyFilter, dateFilter, entriesFilter, filterFilter, formDirective, inputDirective, jsonFilter, keysFilter, limitToFilter, maxlengthDirective, minlengthDirective, ngAnimationProviders, ngAriaDirectives, ngAttributeAliasDirectives, ngBindDirective, ngBindHtmlDirective, ngBindTemplateDirective, ngBindingDirectives, ngBrowserProviders, ngBuiltInFilters, ngChannelDirective, ngCheckedAriaDirective, ngClickAriaDirective, ngCloakDirective, ngControllerDirective, ngCoreProviders, ngDblclickAriaDirective, ngDefaultDirectiveGroups, ngDefaultProviderGroups, ngDeleteDirective, ngDisabledAriaDirective, ngElDirective, ngElementDirectives, ngEventDirectives, ngFillDirectives, ngFilterProviders, ngFormDirective, ngFormDirectives, ngGetDirective, ngHideAriaDirective, ngHideDirective, ngIfDirective, ngIncludeDirective, ngIncludeFillContentDirective, ngInitDirective, ngInjectDirective, ngIntegrationDirectives, ngIntegrationProviders, ngListenerDirective, ngMessageDefaultDirective, ngMessageDirective, ngMessageExpDirective, ngMessagesAriaDirective, ngMessagesDirective, ngMessagesIncludeDirective, ngModelAriaDirective, ngModelDirective, ngModelOptionsDirective, ngNonBindableDirective, ngOptionsDirective, ngOrchestrationProviders, ngPointerCaptureDirective, ngPostDirective, ngPutDirective, ngReadonlyAriaDirective, ngRefDirective, ngRepeatDirective, ngRequiredAriaDirective, ngRouterDirectives, ngRouterProviders, ngScopeDirective, ngSecurityProviders, ngSetterDirective, ngShowAriaDirective, ngShowDirective, ngSseDirective, ngStyleDirective, ngSwitchDefaultDirective, ngSwitchDirective, ngSwitchWhenDirective, ngTemplateDirectives, ngTranscludeDirective, ngValueAriaDirective, ngViewportDirective, ngWebTransportDirective, ngWorkerDirective, numberFilter, optionDirective, orderByFilter, patternDirective, percentFilter, registerNgModule, relativeTimeFilter, requiredDirective, scriptDirective, selectDirective, valuesFilter };

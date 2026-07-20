@@ -1,16 +1,15 @@
 import { isInstanceOf, isDefined, fromJson } from '../../shared/utils.js';
 
-class StreamProvider {
-    constructor() {
-        this.$get = () => ({
-            isReadableStream,
-            consumeText,
-            readText,
-            readLines,
-            consumeJsonLines,
-            readJsonLines,
-        });
-    }
+/** @internal Creates the dependency-free `$stream` service. */
+function createStreamService() {
+    return {
+        isReadableStream,
+        consumeText,
+        readText,
+        readLines,
+        consumeJsonLines,
+        readJsonLines,
+    };
 }
 function isReadableStream(value) {
     return (typeof ReadableStream !== "undefined" && isInstanceOf(value, ReadableStream));
@@ -113,4 +112,4 @@ async function consumeLines(stream, options = {}) {
     }
 }
 
-export { StreamProvider };
+export { createStreamService };

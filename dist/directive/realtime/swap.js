@@ -1,11 +1,31 @@
 import { getNormalizedAttr, emptyElement, removeElement, createDocumentFragment } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
+import { getCompiledFragmentRecord, replaceCompiledFragmentNodes } from '../../core/compile/incremental-fragment.js';
 import { stringify, isInstanceOf, arrayFrom, isFunction, isArray, assertDefined } from '../../shared/utils.js';
 
 /** Creates a per-directive realtime DOM swap handler. */
 function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element, logPrefix, }) {
     let content;
+    let destroyed = false;
+    const ownedFragments = new Set();
+    const activeAnimations = new Set();
+    const placeholders = new Set();
+    scope.$on("$destroy", () => {
+        destroyed = true;
+        activeAnimations.forEach((animation) => {
+            animation.cancel();
+        });
+        activeAnimations.clear();
+        placeholders.forEach((placeholder) => {
+            placeholder.parentNode?.removeChild(placeholder);
+        });
+        placeholders.clear();
+        disposeFragments(ownedFragments);
+        content = undefined;
+    });
     return (html, swap, options = {}) => {
+        if (destroyed)
+            return false;
         const animationEnabled = !!getNormalizedAttr(element, "animate");
         const animate = animationEnabled ? getAnimate() : undefined;
         let nodes = [];
@@ -16,35 +36,54 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
             nodes = isInstanceOf(compiled, DocumentFragment)
                 ? arrayFrom(compiled.childNodes)
                 : [compiled];
+            trackFragments(ownedFragments, nodes);
         }
-        const targetSelector = options.targetSelector ?? getNormalizedAttr(element, "target");
+        const targetSelector = options.targetSelector ??
+            element.getAttribute("data-target") ??
+            undefined;
         const target = targetSelector
             ? document.querySelector(targetSelector)
             : element;
         if (!target) {
+            disposeNodeFragments(nodes);
             $log.warn(`${logPrefix}: target "${String(targetSelector)}" not found`);
             return false;
         }
         const applySwap = () => {
+            if (destroyed) {
+                disposeNodeFragments(nodes);
+                return false;
+            }
             switch (swap) {
                 case "outerHTML": {
                     const parent = target.parentNode;
-                    if (!parent)
+                    if (!parent) {
+                        disposeNodeFragments(nodes);
                         return false;
+                    }
                     const frag = createDocumentFragment();
                     nodes.forEach((x) => {
                         frag.appendChild(x);
                     });
                     if (!animationEnabled) {
                         parent.replaceChild(frag, target);
+                        disposeNodeFragment(target);
+                        disposeChildFragments(target);
                         break;
                     }
                     const placeholder = document.createElement("span");
+                    const outgoingFragments = collectNodeTreeFragments(target);
                     placeholder.style.display = "none";
                     parent.insertBefore(placeholder, target.nextSibling);
-                    assertDefined(animate)
-                        .leave(target)
-                        .done(() => {
+                    placeholders.add(placeholder);
+                    trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                        if (!completed || destroyed) {
+                            placeholder.remove();
+                            placeholders.delete(placeholder);
+                            disposeNodeFragments(nodes);
+                            return;
+                        }
+                        disposeFragments(outgoingFragments);
                         const insertedNodes = arrayFrom(frag.childNodes);
                         for (const x of insertedNodes) {
                             if (x.nodeType === NodeType._ELEMENT_NODE) {
@@ -55,6 +94,8 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                             }
                         }
                         content = insertedNodes;
+                        placeholder.remove();
+                        placeholders.delete(placeholder);
                     });
                     break;
                 }
@@ -64,26 +105,34 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                         if (!parent)
                             return false;
                         const placeholder = document.createComment("ng-text-swap");
+                        const outgoingFragments = collectChildFragments(target);
                         parent.insertBefore(placeholder, target);
-                        assertDefined(animate)
-                            .leave(target)
-                            .done(() => {
-                            target.textContent = stringify(html);
-                            assertDefined(animate)
-                                .enter(target, parent, placeholder)
-                                .done(() => {
+                        placeholders.add(placeholder);
+                        trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                            if (!completed || destroyed) {
                                 placeholder.remove();
+                                placeholders.delete(placeholder);
+                                return;
+                            }
+                            disposeFragments(outgoingFragments);
+                            target.textContent = stringify(html);
+                            trackAnimation(assertDefined(animate).enter(target, parent, placeholder), () => {
+                                placeholder.remove();
+                                placeholders.delete(placeholder);
                             });
                         });
                     }
                     else {
+                        disposeChildFragments(target);
                         target.textContent = stringify(html);
                     }
                     break;
                 case "beforebegin": {
                     const parent = target.parentNode;
-                    if (!parent)
+                    if (!parent) {
+                        disposeNodeFragments(nodes);
                         return false;
+                    }
                     nodes.forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
                             assertDefined(animate).enter(node, parent, target);
@@ -119,8 +168,10 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                 }
                 case "afterend": {
                     const parent = target.parentNode;
-                    if (!parent)
+                    if (!parent) {
+                        disposeNodeFragments(nodes);
                         return false;
+                    }
                     const { nextSibling } = target;
                     [...nodes].reverse().forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
@@ -134,13 +185,16 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                 }
                 case "delete":
                     if (animationEnabled) {
-                        assertDefined(animate)
-                            .leave(target)
-                            .done(() => {
-                            removeElement(target);
+                        const outgoingFragments = collectNodeTreeFragments(target);
+                        trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                            if (!completed || destroyed)
+                                return;
+                            disposeFragments(outgoingFragments);
                         });
                     }
                     else {
+                        disposeNodeFragment(target);
+                        disposeChildFragments(target);
                         removeElement(target);
                     }
                     break;
@@ -152,9 +206,13 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                         if (content &&
                             !isArray(content) &&
                             content.nodeType !== NodeType._TEXT_NODE) {
-                            assertDefined(animate)
-                                .leave(content)
-                                .done(() => {
+                            const outgoingFragments = collectNodeTreeFragments(content);
+                            trackAnimation(assertDefined(animate).leave(content), (completed) => {
+                                if (!completed || destroyed) {
+                                    disposeNodeFragments(nodes);
+                                    return;
+                                }
+                                disposeFragments(outgoingFragments);
                                 content = nodes[0];
                                 assertDefined(animate).enter(nodes[0], target);
                             });
@@ -171,8 +229,17 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                         }
                     }
                     else {
-                        emptyElement(target);
-                        target.replaceChildren(...nodes);
+                        const replacementFragment = getSingleCompiledFragment(nodes);
+                        if (replacementFragment) {
+                            replaceCompiledFragmentNodes(target, replacementFragment);
+                            ownedFragments.add(replacementFragment);
+                        }
+                        else {
+                            disposeChildFragments(target);
+                            emptyElement(target);
+                            target.replaceChildren(...nodes);
+                            trackFragments(ownedFragments, nodes);
+                        }
                     }
                     break;
             }
@@ -187,6 +254,72 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
         }
         return applySwap();
     };
+    function trackAnimation(animation, complete) {
+        activeAnimations.add(animation);
+        animation.done((completed) => {
+            activeAnimations.delete(animation);
+            complete(completed);
+        });
+    }
+}
+function getSingleCompiledFragment(nodes) {
+    let fragment;
+    for (const node of nodes) {
+        const nodeFragment = getCompiledFragmentRecord(node);
+        if (!nodeFragment) {
+            return undefined;
+        }
+        fragment ?? (fragment = nodeFragment);
+        if (fragment !== nodeFragment) {
+            return undefined;
+        }
+    }
+    return fragment;
+}
+function trackFragments(fragments, nodes) {
+    for (const node of nodes) {
+        const fragment = getCompiledFragmentRecord(node);
+        if (fragment && !fragment.disposed) {
+            fragments.add(fragment);
+        }
+    }
+}
+function disposeFragments(fragments) {
+    const current = Array.from(fragments);
+    fragments.clear();
+    for (const fragment of current) {
+        fragment.dispose();
+    }
+}
+function disposeNodeFragment(node) {
+    const fragment = getCompiledFragmentRecord(node);
+    if (fragment && !fragment.disposed) {
+        fragment.dispose();
+    }
+}
+function disposeNodeFragments(nodes) {
+    const fragments = new Set();
+    trackFragments(fragments, nodes);
+    disposeFragments(fragments);
+}
+function disposeChildFragments(target) {
+    disposeFragments(collectChildFragments(target));
+}
+function collectNodeTreeFragments(node) {
+    const fragments = new Set();
+    const fragment = getCompiledFragmentRecord(node);
+    if (fragment && !fragment.disposed) {
+        fragments.add(fragment);
+    }
+    if (node instanceof Element) {
+        trackFragments(fragments, Array.from(node.childNodes));
+    }
+    return fragments;
+}
+function collectChildFragments(target) {
+    const fragments = new Set();
+    trackFragments(fragments, Array.from(target.childNodes));
+    return fragments;
 }
 function shouldUseViewTransition(attrValue, target, animationEnabled) {
     if (animationEnabled)

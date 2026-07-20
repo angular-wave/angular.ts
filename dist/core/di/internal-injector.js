@@ -8,21 +8,11 @@ const defaultLoadNewModules = () => {
     /* empty */
 };
 class AbstractInjector {
-    /**
-     * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
-     */
-    constructor(strictDi) {
+    constructor() {
         this._cache = {};
-        this.strictDi = strictDi;
         this._path = [];
         this._modules = {};
     }
-    /**
-     * Get a service by name.
-     *
-     * @param {string} serviceName
-     * @returns {any}
-     */
     get(serviceName) {
         if (hasOwn(this._cache, serviceName)) {
             if (this._cache[serviceName] === true) {
@@ -53,7 +43,7 @@ class AbstractInjector {
      */
     _injectionArgs(fn, locals, serviceName) {
         const args = [];
-        const $inject = annotate(fn, this.strictDi, serviceName);
+        const $inject = annotate(fn, serviceName);
         $inject.forEach((key) => {
             if (!isString(key)) {
                 throw $injectorError("itkn", "Incorrect injection token! Expected service name as string, got {0}", key);
@@ -65,15 +55,6 @@ class AbstractInjector {
         });
         return args;
     }
-    /**
-     * Invoke a function with optional context and locals.
-     *
-     * @param {Function|String|ng.AnnotatedFactory<any>} fn
-     * @param {*} [self]
-     * @param {Object} [locals]
-     * @param {string} [serviceName]
-     * @returns {*}
-     */
     invoke(fn, self, locals, serviceName) {
         if (isString(locals)) {
             serviceName = locals;
@@ -91,12 +72,6 @@ class AbstractInjector {
             return callFunction(fn, self, ...args);
         }
     }
-    /**
-     * Instantiate a type constructor with optional locals.
-     * @param {Function|ng.AnnotatedFactory<any>} type
-     * @param {*} [locals]
-     * @param {string} [serviceName]
-     */
     instantiate(type, locals, serviceName) {
         // Check if type is annotated and use just the given function at n-1 as parameter
         // e.g. someModule.factory('greeter', ['$window', function(renamed$window) {}]);
@@ -122,10 +97,9 @@ class AbstractInjector {
 class ProviderInjector extends AbstractInjector {
     /**
      * @param {ProviderCache} cache
-     * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
      */
-    constructor(cache, strictDi) {
-        super(strictDi);
+    constructor(cache) {
+        super();
         this._cache = cache;
     }
     /**
@@ -146,10 +120,9 @@ class ProviderInjector extends AbstractInjector {
 class InjectorService extends AbstractInjector {
     /**
      * @param {ProviderInjector} providerInjector
-     * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
      */
-    constructor(providerInjector, strictDi) {
-        super(strictDi);
+    constructor(providerInjector) {
+        super();
         this.loadNewModules = defaultLoadNewModules;
         this._providerInjector = providerInjector;
         this._modules = providerInjector._modules;

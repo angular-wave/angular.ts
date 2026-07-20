@@ -22,7 +22,7 @@ class NgModelOptionsController {
 NgModelOptionsController.$nonscope = true;
 NgModelOptionsController.$inject = [_element, _scope, _parse];
 /**
- * A container for the options set by the {@link ngModelOptions} directive
+ * A container for the options set by the `ng-model-options` directive.
  */
 class ModelOptions {
     constructor(options) {

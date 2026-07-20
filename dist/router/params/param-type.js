@@ -1,4 +1,4 @@
-import { assign, isNullOrUndefined, hasCustomToString, isArray, isDefined } from '../../shared/utils.js';
+import { isArray, isDefined, assign, isNullOrUndefined, hasCustomToString } from '../../shared/utils.js';
 
 const emptyParamTypeDefinition = {};
 function valToString(val) {
@@ -158,4 +158,4 @@ class ArrayParamType extends ParamType {
     }
 }
 
-export { ParamType };
+export { ArrayParamType, ParamType };

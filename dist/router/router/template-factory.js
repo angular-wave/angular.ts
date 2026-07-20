@@ -1,7 +1,5 @@
-import { _templateRequest, _injector } from '../../injection-tokens.js';
-import { isDefined, isString, isFunction, isNullOrUndefined, isArray, isObject, keys } from '../../shared/utils.js';
+import { isDefined, isString, isFunction, isNullOrUndefined, isArray, keys } from '../../shared/utils.js';
 import { annotate } from '../../core/di/di.js';
-import { DirectiveSuffix } from '../../core/compile/compile.js';
 import { kebobString } from '../../shared/strings.js';
 
 const DEFAULT_TEMPLATE = "<ng-view></ng-view>";
@@ -24,20 +22,11 @@ function componentElementName(camelCase) {
 /**
  * Resolves route templates and components from state view declarations.
  */
-class TemplateFactoryProvider {
-    constructor() {
-        /**
-         * Wires template request and injector services into the factory.
-         */
-        this.$get = [
-            _templateRequest,
-            _injector,
-            ($templateRequest, $injector) => {
-                this._templateRequest = $templateRequest;
-                this._injector = $injector;
-                return this;
-            },
-        ];
+class TemplateFactoryService {
+    constructor(compileRegistry, $templateRequest, $injector) {
+        this._compileRegistry = compileRegistry;
+        this._templateRequest = $templateRequest;
+        this._injector = $injector;
     }
     /**
      * Resolves a state's view config into either concrete template HTML or a component name.
@@ -46,7 +35,7 @@ class TemplateFactoryProvider {
     async _fromConfig(config, params) {
         const { template, templateUrl, component } = config;
         if (isDefined(template)) {
-            return asTemplate(TemplateFactoryProvider._fromString(template, params));
+            return asTemplate(TemplateFactoryService._fromString(template, params));
         }
         if (isDefined(templateUrl)) {
             return asTemplate(this._fromUrl(templateUrl, params));
@@ -82,7 +71,7 @@ class TemplateFactoryProvider {
     /** @internal */
     _makeComponentTemplate(ngView, context, component, bindings) {
         bindings = bindings ?? {};
-        const componentBindings = getComponentBindings(this._injector, component);
+        const componentBindings = getComponentBindings(this._compileRegistry, component);
         const attrs = [];
         componentBindings.forEach((binding) => {
             attrs.push(componentAttributeTemplate(ngView, context, bindings, binding));
@@ -92,9 +81,6 @@ class TemplateFactoryProvider {
     }
     /** @internal */
     _getTemplateRequest() {
-        if (!this._templateRequest) {
-            throw new Error("$templateRequest is not available");
-        }
         return this._templateRequest;
     }
 }
@@ -123,28 +109,18 @@ function componentAttributeTemplate(ngView, context, bindings, input) {
 /**
  * Reads the binding declarations for a named component directive.
  */
-function getComponentBindings($injector, name) {
-    const cmpDefs = $injector?.get(name + DirectiveSuffix);
-    if (!cmpDefs?.length) {
+function getComponentBindings(compileRegistry, name) {
+    const componentBindings = compileRegistry.getComponentBindings(name);
+    if (!componentBindings?.length) {
         throw new Error(`Unable to find component named '${name}'`);
     }
     const bindings = [];
-    cmpDefs.forEach((def) => {
-        const defBindings = getBindings(def);
-        defBindings.forEach((binding) => {
+    componentBindings.forEach((definition) => {
+        scopeBindings(definition).forEach((binding) => {
             bindings.push(binding);
         });
     });
     return bindings;
-}
-function getBindings(def) {
-    const componentBindings = def.bindToController;
-    if (isObject(componentBindings) &&
-        isObject(def.scope) &&
-        !keys(def.scope).length) {
-        return scopeBindings(componentBindings);
-    }
-    return [];
 }
 function scopeBindings(bindingsObj) {
     const bindingKeys = keys(bindingsObj);
@@ -158,4 +134,4 @@ function scopeBindings(bindingsObj) {
     return bindings;
 }
 
-export { TemplateFactoryProvider };
+export { TemplateFactoryService };

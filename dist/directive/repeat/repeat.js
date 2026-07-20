@@ -4,6 +4,7 @@ import { getNormalizedAttr, hasNormalizedAttr, getBlockNodes, removeElement, rem
 import { getArrayMutationMeta } from '../../core/scope/scope.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { NodeType } from '../../shared/node.js';
+import { getCompiledFragmentRecord } from '../../core/compile/incremental-fragment.js';
 
 const NG_REMOVED = "$$NG_REMOVED";
 const ngRepeatError = createErrorFactory("ngRepeat");
@@ -199,18 +200,6 @@ function ngRepeatDirective($injector) {
             return false;
         }
         return isFunction(value[Symbol.iterator]);
-    }
-    function removeBlockNodes(nodes) {
-        for (let i = 0; i < nodes.length; i++) {
-            const node = nodes[i];
-            if (node.nodeType === NodeType._ELEMENT_NODE) {
-                removeElement(node);
-            }
-            else {
-                removeElementData(node);
-                node.parentNode?.removeChild(node);
-            }
-        }
     }
     function removeNodeRange(firstNode, lastNode) {
         let node = firstNode;
@@ -462,6 +451,7 @@ function ngRepeatDirective($injector) {
                         previousNode = endNode;
                     }
                     blockToLink._clone = normalizedClone;
+                    blockToLink._fragment = getCompiledFragmentRecord(cloneNodes[0]);
                     blockToLink._value = valueToLink;
                     blockMap[blockToLink._id] = blockToLink;
                 }
@@ -671,6 +661,9 @@ function ngRepeatDirective($injector) {
                                 lastBlockOrder[i]._scope?.$destroy();
                             }
                             removeNodeRangeFast(firstNode, lastNode);
+                            for (let i = 0; i < lastBlockOrder.length; i++) {
+                                lastBlockOrder[i]._fragment?.dispose();
+                            }
                             lastBlockMap = nullObject();
                             lastBlockOrder = [];
                         }
@@ -688,11 +681,17 @@ function ngRepeatDirective($injector) {
                             ? blockStart
                             : undefined;
                         if (hasAnimate && elementsToRemove) {
-                            getAnimate().leave(elementsToRemove);
+                            const leavingFragment = block._fragment;
+                            getAnimate()
+                                .leave(elementsToRemove)
+                                .done((completed) => {
+                                if (completed)
+                                    leavingFragment?.dispose();
+                            });
                         }
                         else {
                             block._scope?.$destroy();
-                            removeBlockNodes(blockNodes);
+                            assertDefined(block._fragment).dispose();
                         }
                         if (blockNodes.length && blockNodes[0].parentNode) {
                             for (let i = 0, j = blockNodes.length; i < j; i++) {

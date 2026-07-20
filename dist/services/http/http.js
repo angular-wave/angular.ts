@@ -1,6 +1,6 @@
-import { _httpParamSerializer, _injector, _sce, _cookie, _stream } from '../../injection-tokens.js';
+import { _httpParamSerializer } from '../../injection-tokens.js';
 import { urlIsAllowedOriginFactory, trimEmptyHash } from '../../shared/url-utils/url-utils.js';
-import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isObject, isFile, isBlob, isFormData, toJson, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isNumber, isPromiseLike, isDate, deProxy, hasOwn, lowercase, deleteProperty, createErrorFactory, isInstanceOf, stringify, assertDefined, trim, nullObject } from '../../shared/utils.js';
+import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isNumber, isPromiseLike, isObject, isDate, toJson, isFile, isBlob, isFormData, hasOwn, lowercase, deleteProperty, createErrorFactory, isInstanceOf, stringify, deProxy, assertDefined, trim, nullObject } from '../../shared/utils.js';
 
 const APPLICATION_JSON = "application/json";
 function withResolvers() {
@@ -15,6 +15,18 @@ function withResolvers() {
         resolve: assertDefined(resolve),
         reject: assertDefined(reject),
     };
+}
+/** @internal */
+function mergeHttpHeaderDefaults(current, next) {
+    const merged = { ...(current ?? {}) };
+    for (const [key, value] of Object.entries(next)) {
+        const existing = merged[key];
+        merged[key] =
+            isObject(existing) && !isFunction(existing) && isObject(value)
+                ? Object.assign({}, existing, value)
+                : value;
+    }
+    return merged;
 }
 /** Error used when `$http` receives a non-success response. */
 class HttpError extends Error {
@@ -68,37 +80,34 @@ function serializeValue(v) {
  * * `{'foo': {'bar':'baz'}}` results in `foo=%7B%22bar%22%3A%22baz%22%7D` (stringified and encoded representation of an object)
  *
  * Note that serializer will sort the request parameters alphabetically.
+ *
+ * @internal
  */
-function HttpParamSerializerProvider() {
-    /**
-     * Returns the runtime query-parameter serializer.
-     */
-    this.$get = () => {
-        return (params) => {
-            if (!params)
-                return "";
-            const parts = [];
-            keys(params)
-                .sort()
-                .forEach((key) => {
-                const value = params[key];
-                if (isNullOrUndefined(value) || isFunction(value))
-                    return;
-                if (isArray(value)) {
-                    value.forEach((v) => {
-                        if (isNullOrUndefined(v) || isFunction(v))
-                            return;
-                        const serializedValue = serializeValue(v);
-                        parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializedValue))}`);
-                    });
-                }
-                else {
-                    const sanitizedValue = value;
-                    parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializeValue(sanitizedValue)))}`);
-                }
-            });
-            return parts.join("&");
-        };
+function createHttpParamSerializer() {
+    return (params) => {
+        if (!params)
+            return "";
+        const parts = [];
+        keys(params)
+            .sort()
+            .forEach((key) => {
+            const value = params[key];
+            if (isNullOrUndefined(value) || isFunction(value))
+                return;
+            if (isArray(value)) {
+                value.forEach((v) => {
+                    if (isNullOrUndefined(v) || isFunction(v))
+                        return;
+                    const serializedValue = serializeValue(v);
+                    parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializedValue))}`);
+                });
+            }
+            else {
+                const sanitizedValue = value;
+                parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializeValue(sanitizedValue)))}`);
+            }
+        });
+        return parts.join("&");
     };
 }
 /** Applies the default response transform, including JSON parsing. */
@@ -240,15 +249,15 @@ function deProxyHttpPayload(value, seen = new WeakMap()) {
     }
     return output;
 }
-/** Configures the default behavior of the `$http` service. */
-function HttpProvider() {
+/** @internal */
+function createHttpRuntimeConfiguration() {
     /**
      * Default values applied to all `$http` requests unless a request overrides them.
      *
      * This includes cache behavior, default headers, request/response transforms, XSRF names,
      * credentials defaults, and parameter serialization.
      */
-    const defaults = (this.defaults = {
+    const defaults = {
         // transform incoming response data
         transformResponse: [defaultHttpResponseTransform],
         // transform outgoing request data
@@ -274,7 +283,7 @@ function HttpProvider() {
         xsrfCookieName: "XSRF-TOKEN",
         xsrfHeaderName: "X-XSRF-TOKEN",
         paramSerializer: _httpParamSerializer,
-    });
+    };
     /**
      * Array containing service factories for all synchronous or asynchronous `$http`
      * pre-processing of request or postprocessing of responses.
@@ -284,7 +293,7 @@ function HttpProvider() {
      *
      * See the `$http` service documentation for detailed interceptor behavior.
      */
-    this.interceptors = [];
+    const interceptors = [];
     /**
      * Array containing URLs whose origins are trusted to receive the XSRF token. See the
      * See the `$http` service documentation for XSRF security considerations.
@@ -306,12 +315,14 @@ function HttpProvider() {
      *
      * ```js
      * // App served from `https://example.com/`.
-     * angular.
-     *   module('xsrfTrustedOriginsExample', []).
-     *   config(['$httpProvider', function($httpProvider) {
-     *     $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
-     *   }]).
-     *   run(['$http', function($http) {
+     * angular
+     *   .module('xsrfTrustedOriginsExample', [])
+     *   .config({
+     *     $http: {
+     *       xsrfTrustedOrigins: ['https://api.example.com'],
+     *     },
+     *   })
+     *   .run(['$http', function($http) {
      *     // The XSRF token will be sent.
      *     $http.get('https://api.example.com/preferences').then(...);
      *
@@ -321,326 +332,386 @@ function HttpProvider() {
      * ```
      *
      */
-    this.xsrfTrustedOrigins = [];
-    this.$get = [
-        _injector,
-        _sce,
-        _cookie,
-        _stream,
-        /** Creates the runtime `$http` service. */
-        ($injector, $sce, $cookie, $stream) => {
-            const defaultCache = new Map();
-            /**
-             * Resolves the configured default param serializer to a callable function.
-             */
-            defaults.paramSerializer = isString(defaults.paramSerializer)
-                ? $injector.get(defaults.paramSerializer)
-                : defaults.paramSerializer;
-            /**
-             * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
-             * The reversal lets request interceptors wrap the server request in the expected order.
-             */
-            const reversedInterceptors = [];
-            this.interceptors.forEach((interceptorFactory) => {
-                const interceptor = isString(interceptorFactory)
-                    ? $injector.get(interceptorFactory)
-                    : $injector.invoke(interceptorFactory);
-                reversedInterceptors.unshift(interceptor);
+    const xsrfTrustedOrigins = [];
+    return { defaults, interceptors, xsrfTrustedOrigins };
+}
+/** @internal */
+function applyHttpConfiguration(configuration, config) {
+    const configuredDefaults = config.defaults;
+    if (configuredDefaults !== undefined) {
+        const headers = configuredDefaults.headers;
+        const currentHeaders = configuration.defaults.headers;
+        Object.assign(configuration.defaults, configuredDefaults);
+        if (headers !== undefined) {
+            configuration.defaults.headers = mergeHttpHeaderDefaults(currentHeaders, headers);
+        }
+    }
+    if (config.interceptors !== undefined) {
+        configuration.interceptors.push(...config.interceptors);
+    }
+    if (config.xsrfTrustedOrigins !== undefined) {
+        configuration.xsrfTrustedOrigins.push(...config.xsrfTrustedOrigins);
+    }
+}
+/** @internal */
+function createHttpService($injector, $sce, $cookie, $security, $stream, configuration) {
+    const { defaults, interceptors, xsrfTrustedOrigins } = configuration;
+    const defaultCache = new Map();
+    /**
+     * Resolves the configured default param serializer to a callable function.
+     */
+    if (isString(defaults.paramSerializer)) {
+        defaults.paramSerializer = $injector.get(defaults.paramSerializer);
+    }
+    /**
+     * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
+     * The reversal lets request interceptors wrap the server request in the expected order.
+     */
+    const reversedInterceptors = [];
+    interceptors.forEach((interceptorFactory) => {
+        const interceptor = isString(interceptorFactory)
+            ? $injector.get(interceptorFactory)
+            : $injector.invoke(interceptorFactory);
+        reversedInterceptors.unshift(interceptor);
+    });
+    /**
+     * Creates the origin check used for XSRF header inclusion.
+     */
+    const urlIsAllowedOrigin = urlIsAllowedOriginFactory(xsrfTrustedOrigins);
+    /**
+     * Issues an HTTP request using the provider defaults and configured interceptors.
+     */
+    const $http = async function (requestConfig) {
+        if (!isObject(requestConfig)) {
+            throw $httpError("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
+        }
+        if (!isString($sce.valueOf(requestConfig.url))) {
+            throw $httpError("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
+        }
+        const hasCustomResponseTransform = hasOwn(requestConfig, "transformResponse");
+        const config = extend({
+            method: "get",
+            transformRequest: defaults.transformRequest,
+            transformResponse: defaults.transformResponse,
+            paramSerializer: defaults.paramSerializer,
+        }, requestConfig);
+        if (config.responseType === "stream" && !hasCustomResponseTransform) {
+            config.transformResponse = [];
+        }
+        config.headers = mergeHeaders(requestConfig);
+        config.method = uppercase(config.method);
+        config.paramSerializer = isString(config.paramSerializer)
+            ? $injector.get(config.paramSerializer)
+            : config.paramSerializer;
+        const requestInterceptors = [];
+        const responseInterceptors = [];
+        let promise = Promise.resolve(config);
+        // apply interceptors
+        reversedInterceptors.forEach((interceptor) => {
+            if (interceptor.request || interceptor.requestError) {
+                requestInterceptors.unshift(interceptor.request?.bind(interceptor), interceptor.requestError?.bind(interceptor));
+            }
+            if (interceptor.response || interceptor.responseError) {
+                responseInterceptors.push(interceptor.response?.bind(interceptor), interceptor.responseError?.bind(interceptor));
+            }
+        });
+        promise = chainInterceptors(promise, requestInterceptors);
+        promise = promise.then(async (value) => serverRequest(value));
+        promise = chainInterceptors(promise, responseInterceptors);
+        return promise;
+        /** Applies a list of interceptor success/error pairs to a promise chain. */
+        async function chainInterceptors(promiseParam, interceptors) {
+            for (let i = 0, ii = interceptors.length; i < ii;) {
+                const thenFn = interceptors[i++];
+                const rejectFn = interceptors[i++];
+                promiseParam = promiseParam.then(thenFn, rejectFn);
+            }
+            interceptors.length = 0;
+            return promiseParam;
+        }
+        /** Resolves any header factory functions against the current request configuration. */
+        function executeHeaderFns(headers, configParam) {
+            const processedHeaders = {};
+            entries(headers).forEach(([header, headerFn]) => {
+                if (isFunction(headerFn)) {
+                    const headerContent = headerFn(configParam);
+                    if (!isNullOrUndefined(headerContent)) {
+                        processedHeaders[header] = stringify(headerContent);
+                    }
+                }
+                else if (!isNullOrUndefined(headerFn)) {
+                    processedHeaders[header] = String(headerFn);
+                }
             });
-            /**
-             * Creates the origin check used for XSRF header inclusion.
-             */
-            const urlIsAllowedOrigin = urlIsAllowedOriginFactory(this.xsrfTrustedOrigins);
-            /**
-             * Issues an HTTP request using the provider defaults and configured interceptors.
-             */
-            const $http = async function (requestConfig) {
-                if (!isObject(requestConfig)) {
-                    throw $httpError("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
+            return processedHeaders;
+        }
+        /** Merges provider defaults with request-specific headers for a single request. */
+        function mergeHeaders(configParam) {
+            let defHeaders = defaults.headers ?? {};
+            const reqHeaders = extend({}, configParam.headers ?? {});
+            defHeaders = extend({}, defHeaders.common ?? {}, defHeaders[lowercase(configParam.method)] ?? {});
+            keys(defHeaders).forEach((defHeaderName) => {
+                const lowercaseDefHeaderName = lowercase(defHeaderName);
+                const hasMatchingHeader = keys(reqHeaders).some((reqHeaderName) => {
+                    return lowercase(reqHeaderName) === lowercaseDefHeaderName;
+                });
+                if (!hasMatchingHeader) {
+                    reqHeaders[defHeaderName] = defHeaders[defHeaderName];
                 }
-                if (!isString($sce.valueOf(requestConfig.url))) {
-                    throw $httpError("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
-                }
-                const hasCustomResponseTransform = hasOwn(requestConfig, "transformResponse");
-                const config = extend({
-                    method: "get",
-                    transformRequest: defaults.transformRequest,
-                    transformResponse: defaults.transformResponse,
-                    paramSerializer: defaults.paramSerializer,
-                }, requestConfig);
-                if (config.responseType === "stream" && !hasCustomResponseTransform) {
-                    config.transformResponse = [];
-                }
-                config.headers = mergeHeaders(requestConfig);
-                config.method = uppercase(config.method);
-                config.paramSerializer = isString(config.paramSerializer)
-                    ? $injector.get(config.paramSerializer)
-                    : config.paramSerializer;
-                const requestInterceptors = [];
-                const responseInterceptors = [];
-                let promise = Promise.resolve(config);
-                // apply interceptors
-                reversedInterceptors.forEach((interceptor) => {
-                    if (interceptor.request || interceptor.requestError) {
-                        requestInterceptors.unshift(interceptor.request?.bind(interceptor), interceptor.requestError?.bind(interceptor));
-                    }
-                    if (interceptor.response || interceptor.responseError) {
-                        responseInterceptors.push(interceptor.response?.bind(interceptor), interceptor.responseError?.bind(interceptor));
+            });
+            // execute if header value is a function for merged headers
+            return executeHeaderFns(reqHeaders, shallowCopy(configParam));
+        }
+        /** Executes the request pipeline and attaches response transforms. */
+        async function serverRequest(configParam) {
+            const headers = configParam.headers ?? {};
+            const securityHeaders = headers;
+            configParam.headers = headers;
+            const reqData = transformData(configParam.data, headersGetter(headers), undefined, configParam.transformRequest ?? []);
+            // strip content-type if data is undefined
+            if (isUndefined(reqData)) {
+                keys(headers).forEach((header) => {
+                    if (lowercase(header) === "content-type") {
+                        deleteProperty(headers, header);
                     }
                 });
-                promise = chainInterceptors(promise, requestInterceptors);
-                promise = promise.then(async (value) => serverRequest(value));
-                promise = chainInterceptors(promise, responseInterceptors);
-                return promise;
-                /** Applies a list of interceptor success/error pairs to a promise chain. */
-                async function chainInterceptors(promiseParam, interceptors) {
-                    for (let i = 0, ii = interceptors.length; i < ii;) {
-                        const thenFn = interceptors[i++];
-                        const rejectFn = interceptors[i++];
-                        promiseParam = promiseParam.then(thenFn, rejectFn);
-                    }
-                    interceptors.length = 0;
-                    return promiseParam;
-                }
-                /** Resolves any header factory functions against the current request configuration. */
-                function executeHeaderFns(headers, configParam) {
-                    const processedHeaders = {};
-                    entries(headers).forEach(([header, headerFn]) => {
-                        if (isFunction(headerFn)) {
-                            const headerContent = headerFn(configParam);
-                            if (!isNullOrUndefined(headerContent)) {
-                                processedHeaders[header] = stringify(headerContent);
-                            }
-                        }
-                        else if (!isNullOrUndefined(headerFn)) {
-                            processedHeaders[header] = String(headerFn);
-                        }
-                    });
-                    return processedHeaders;
-                }
-                /** Merges provider defaults with request-specific headers for a single request. */
-                function mergeHeaders(configParam) {
-                    let defHeaders = defaults.headers ?? {};
-                    const reqHeaders = extend({}, configParam.headers ?? {});
-                    defHeaders = extend({}, defHeaders.common ?? {}, defHeaders[lowercase(configParam.method)] ?? {});
-                    keys(defHeaders).forEach((defHeaderName) => {
-                        const lowercaseDefHeaderName = lowercase(defHeaderName);
-                        const hasMatchingHeader = keys(reqHeaders).some((reqHeaderName) => {
-                            return lowercase(reqHeaderName) === lowercaseDefHeaderName;
-                        });
-                        if (!hasMatchingHeader) {
-                            reqHeaders[defHeaderName] = defHeaders[defHeaderName];
-                        }
-                    });
-                    // execute if header value is a function for merged headers
-                    return executeHeaderFns(reqHeaders, shallowCopy(configParam));
-                }
-                /** Executes the request pipeline and attaches response transforms. */
-                async function serverRequest(configParam) {
-                    const headers = configParam.headers ?? {};
-                    configParam.headers = headers;
-                    const reqData = transformData(configParam.data, headersGetter(headers), undefined, configParam.transformRequest ?? []);
-                    // strip content-type if data is undefined
-                    if (isUndefined(reqData)) {
-                        keys(headers).forEach((header) => {
-                            if (lowercase(header) === "content-type") {
-                                deleteProperty(headers, header);
-                            }
-                        });
-                    }
-                    const providerDefaults = defaults;
-                    if (isUndefined(configParam.withCredentials) &&
-                        !isUndefined(providerDefaults.withCredentials)) {
-                        configParam.withCredentials = providerDefaults.withCredentials;
-                    }
-                    // send request
-                    return sendReq(configParam, reqData).then(transformResponse, transformResponse);
-                }
-                /** Applies response transforms and rejects responses outside the success range. */
-                async function transformResponse(response) {
-                    const httpResponse = response;
-                    // make a copy since the response must be cacheable
-                    const resp = extend({}, httpResponse);
-                    resp.data = transformData(httpResponse.data, httpResponse.headers, httpResponse.status, config.transformResponse ?? []);
-                    return isSuccess(httpResponse.status)
-                        ? resp
-                        : Promise.reject(new HttpError(resp));
-                }
+            }
+            const providerDefaults = defaults;
+            if (isUndefined(configParam.withCredentials) &&
+                !isUndefined(providerDefaults.withCredentials)) {
+                configParam.withCredentials = providerDefaults.withCredentials;
+            }
+            const securityContext = {
+                operation: "request",
+                transport: "http",
+                method: configParam.method,
+                url: configParam.url,
+                credentials: configParam.withCredentials ? "include" : "same-origin",
+                headers: securityHeaders,
+                hasBody: !isUndefined(reqData),
             };
-            $http.pendingRequests = [];
-            $http.get = createShortMethod("GET");
-            $http.delete = createShortMethod("DELETE");
-            $http.head = createShortMethod("HEAD");
-            $http.post = createShortMethodWithData("POST");
-            $http.put = createShortMethodWithData("PUT");
-            $http.patch = createShortMethodWithData("PATCH");
-            /**
-             * Exposes the runtime equivalent of `$httpProvider.defaults`.
-             * It allows configuration of default headers, `withCredentials`, and request/response transforms.
-             *
-             * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
-             */
-            $http.defaults = defaults;
-            return $http;
-            /** Creates one shorthand method for requests that do not send a request body. */
-            function createShortMethod(method) {
-                return async function (url, config) {
-                    return $http(extend({}, config ?? {}, {
-                        method,
-                        url,
-                    }));
+            const securityDecision = $security.check(securityContext);
+            if (securityDecision.type === "deny") {
+                const rejectedResponse = {
+                    data: securityDecision,
+                    status: securityDecision.status ?? 403,
+                    headers: headersGetter({}),
+                    config: configParam,
+                    statusText: securityDecision.reason ?? "Request denied by security policy",
+                    xhrStatus: "error",
                 };
+                return Promise.reject(new HttpError(rejectedResponse));
             }
-            /** Creates one shorthand method for requests that send a request body. */
-            function createShortMethodWithData(method) {
-                return async function (url, data, config) {
-                    return $http(extend({}, config ?? {}, {
-                        method,
-                        url,
-                        data,
-                    }));
+            if (securityDecision.type === "redirect") {
+                const rejectedResponse = {
+                    data: securityDecision,
+                    status: 302,
+                    headers: headersGetter({}),
+                    config: configParam,
+                    statusText: securityDecision.reason ?? "Request redirected by security policy",
+                    xhrStatus: "error",
                 };
+                return Promise.reject(new HttpError(rejectedResponse));
             }
-            /** Sends the request through the low-level HTTP backend and cache layer. */
-            async function sendReq(config, reqData) {
-                const { promise, resolve, reject } = withResolvers();
-                let cache;
-                let cachedResp;
-                const reqHeaders = config.headers ?? {};
-                config.headers = reqHeaders;
-                let { url } = config;
-                if (!isString(url)) {
-                    // If it is not a string then the URL must be a $sce trusted object
-                    url = String($sce.valueOf(url));
-                }
-                const paramSerializer = config.paramSerializer;
-                url = buildUrl(url, paramSerializer(config.params));
-                $http.pendingRequests.push(config);
-                void promise.then(removePendingReq, removePendingReq).catch(() => {
-                    return undefined;
+            applySecurityCredentials(configParam, securityDecision.credentials);
+            // send request
+            return sendReq(configParam, reqData).then(transformResponse, transformResponse);
+        }
+        function applySecurityCredentials(configParam, credentials) {
+            if (!credentials) {
+                return;
+            }
+            const headers = configParam.headers;
+            if (credentials.headers) {
+                entries(credentials.headers).forEach(([header, value]) => {
+                    headers[header] = value;
                 });
-                if ((config.cache || defaults.cache) &&
-                    config.cache !== false &&
-                    config.method === "GET") {
-                    const providerDefaults = defaults;
-                    cache = isObject(config.cache)
-                        ? config.cache
-                        : isObject(providerDefaults.cache)
-                            ? providerDefaults.cache
-                            : defaultCache;
+            }
+            if (credentials.withCredentials !== undefined) {
+                configParam.withCredentials = credentials.withCredentials;
+            }
+        }
+        /** Applies response transforms and rejects responses outside the success range. */
+        async function transformResponse(response) {
+            const httpResponse = response;
+            // make a copy since the response must be cacheable
+            const resp = extend({}, httpResponse);
+            resp.data = transformData(httpResponse.data, httpResponse.headers, httpResponse.status, config.transformResponse ?? []);
+            return isSuccess(httpResponse.status)
+                ? resp
+                : Promise.reject(new HttpError(resp));
+        }
+    };
+    $http.pendingRequests = [];
+    $http.get = createShortMethod("GET");
+    $http.delete = createShortMethod("DELETE");
+    $http.head = createShortMethod("HEAD");
+    $http.post = createShortMethodWithData("POST");
+    $http.put = createShortMethodWithData("PUT");
+    $http.patch = createShortMethodWithData("PATCH");
+    /**
+     * Exposes the live configured HTTP defaults.
+     * It allows configuration of default headers, `withCredentials`, and request/response transforms.
+     *
+     * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
+     */
+    $http.defaults = defaults;
+    return $http;
+    /** Creates one shorthand method for requests that do not send a request body. */
+    function createShortMethod(method) {
+        return async function (url, config) {
+            return $http(extend({}, config ?? {}, {
+                method,
+                url,
+            }));
+        };
+    }
+    /** Creates one shorthand method for requests that send a request body. */
+    function createShortMethodWithData(method) {
+        return async function (url, data, config) {
+            return $http(extend({}, config ?? {}, {
+                method,
+                url,
+                data,
+            }));
+        };
+    }
+    /** Sends the request through the low-level HTTP backend and cache layer. */
+    async function sendReq(config, reqData) {
+        const { promise, resolve, reject } = withResolvers();
+        let cache;
+        let cachedResp;
+        const reqHeaders = assertDefined(config.headers);
+        config.headers = reqHeaders;
+        let { url } = config;
+        if (!isString(url)) {
+            // If it is not a string then the URL must be a $sce trusted object
+            url = String($sce.valueOf(url));
+        }
+        const paramSerializer = config.paramSerializer;
+        url = buildUrl(url, paramSerializer(config.params));
+        $http.pendingRequests.push(config);
+        void promise.then(removePendingReq, removePendingReq);
+        if ((config.cache || defaults.cache) &&
+            config.cache !== false &&
+            config.method === "GET") {
+            const providerDefaults = defaults;
+            cache = isObject(config.cache)
+                ? config.cache
+                : isObject(providerDefaults.cache)
+                    ? providerDefaults.cache
+                    : defaultCache;
+        }
+        if (cache) {
+            cachedResp = cache.get(url);
+            if (isDefined(cachedResp)) {
+                if (isPromiseLike(cachedResp)) {
+                    // cached request has already been sent, but there is no response yet
+                    void Promise.resolve(cachedResp)
+                        .then(resolvePromiseWithResult, resolvePromiseWithResult)
+                        .catch(reject);
                 }
-                if (cache) {
-                    cachedResp = cache.get(url);
-                    if (isDefined(cachedResp)) {
-                        if (isPromiseLike(cachedResp)) {
-                            // cached request has already been sent, but there is no response yet
-                            void Promise.resolve(cachedResp)
-                                .then(resolvePromiseWithResult, resolvePromiseWithResult)
-                                .catch(() => undefined);
-                        }
-                        else {
-                            // serving from cache
-                            if (isArray(cachedResp)) {
-                                resolvePromise(cachedResp[1], cachedResp[0], shallowCopy(cachedResp[2]), cachedResp[3], cachedResp[4]);
-                            }
-                            else {
-                                resolvePromise(cachedResp, Http._OK, {}, "OK", "complete");
-                            }
-                        }
+                else {
+                    // serving from cache
+                    if (isArray(cachedResp)) {
+                        resolvePromise(cachedResp[1], cachedResp[0], shallowCopy(cachedResp[2]), cachedResp[3], cachedResp[4]);
                     }
                     else {
-                        // put the promise for the non-transformed response into cache as a placeholder
-                        cache.set(url, promise);
+                        resolvePromise(cachedResp, Http._OK, {}, "OK", "complete");
                     }
                 }
-                // if we won't have the response in cache, set the xsrf headers and
-                // send the request to the backend
-                if (isUndefined(cachedResp)) {
-                    const xsrfCookieName = config.xsrfCookieName ?? defaults.xsrfCookieName;
-                    const xsrfValue = xsrfCookieName && urlIsAllowedOrigin(config.url)
-                        ? $cookie.getAll()[xsrfCookieName]
-                        : undefined;
-                    if (xsrfValue) {
-                        const xsrfHeaderName = config.xsrfHeaderName ?? defaults.xsrfHeaderName;
-                        if (xsrfHeaderName) {
-                            reqHeaders[xsrfHeaderName] = xsrfValue;
+            }
+            else {
+                // put the promise for the non-transformed response into cache as a placeholder
+                cache.set(url, promise);
+            }
+        }
+        // if we won't have the response in cache, set the xsrf headers and
+        // send the request to the backend
+        if (isUndefined(cachedResp)) {
+            const xsrfCookieName = config.xsrfCookieName ?? defaults.xsrfCookieName;
+            const xsrfValue = xsrfCookieName && urlIsAllowedOrigin(config.url)
+                ? $cookie.getAll()[xsrfCookieName]
+                : undefined;
+            if (xsrfValue) {
+                const xsrfHeaderName = config.xsrfHeaderName ?? defaults.xsrfHeaderName;
+                if (xsrfHeaderName) {
+                    reqHeaders[xsrfHeaderName] = xsrfValue;
+                }
+            }
+            http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createEventHandlers(config.eventHandlers), createEventHandlers(config.uploadEventHandlers), $stream);
+        }
+        return promise;
+        /** Wraps raw transport event handlers with function/object listener support. */
+        function createEventHandlers(eventHandlers) {
+            if (eventHandlers) {
+                const handlers = {};
+                entries(eventHandlers).forEach(([key, eventHandler]) => {
+                    handlers[key] = function (event) {
+                        if (isFunction(eventHandler)) {
+                            eventHandler(event);
                         }
-                    }
-                    http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createEventHandlers(config.eventHandlers), createEventHandlers(config.uploadEventHandlers), $stream);
-                }
-                return promise;
-                /** Wraps raw transport event handlers with function/object listener support. */
-                function createEventHandlers(eventHandlers) {
-                    if (eventHandlers) {
-                        const handlers = {};
-                        entries(eventHandlers).forEach(([key, eventHandler]) => {
-                            handlers[key] = function (event) {
-                                if (isFunction(eventHandler)) {
-                                    eventHandler(event);
-                                }
-                                else if (typeof eventHandler === "object") {
-                                    eventHandler.handleEvent(event);
-                                }
-                            };
-                        });
-                        return handlers;
-                    }
-                    else {
-                        return {};
-                    }
-                }
-                /** Handles low-level transport completion, updates cache state, and settles the raw `$http` promise. */
-                function done(status, response, headersString, statusText, xhrStatus) {
-                    if (cache) {
-                        if (isSuccess(status)) {
-                            cache.set(url, [
-                                status,
-                                response,
-                                parseHeaders(headersString ?? ""),
-                                statusText,
-                                xhrStatus,
-                            ]);
+                        else if (typeof eventHandler === "object") {
+                            eventHandler.handleEvent(event);
                         }
-                        else {
-                            // remove promise from the cache
-                            cache.delete(url);
-                        }
-                    }
-                    resolvePromise(response, status, headersString, statusText, xhrStatus);
-                }
-                /** Resolves or rejects the raw `$http` promise from a low-level transport callback payload. */
-                function resolvePromise(response, status, headers, statusText, xhrStatus) {
-                    // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
-                    status = status >= -1 ? status : 0;
-                    (isSuccess(status) ? resolve : reject)({
-                        data: response,
+                    };
+                });
+                return handlers;
+            }
+            else {
+                return {};
+            }
+        }
+        /** Handles low-level transport completion, updates cache state, and settles the raw `$http` promise. */
+        function done(status, response, headersString, statusText, xhrStatus) {
+            if (cache) {
+                if (isSuccess(status)) {
+                    cache.set(url, [
                         status,
-                        headers: headersGetter(headers ?? ""),
-                        config,
+                        response,
+                        parseHeaders(headersString),
                         statusText,
                         xhrStatus,
-                    });
+                    ]);
                 }
-                /** Settles the raw `$http` promise from a cached or intercepted response object. */
-                function resolvePromiseWithResult(result) {
-                    resolvePromise(result.data, result.status, shallowCopy(result.headers()), result.statusText, result.xhrStatus);
-                }
-                /** Removes the finished request config from `$http.pendingRequests`. */
-                function removePendingReq() {
-                    const idx = $http.pendingRequests.indexOf(config);
-                    if (idx !== -1)
-                        $http.pendingRequests.splice(idx, 1);
+                else {
+                    // remove promise from the cache
+                    cache.delete(url);
                 }
             }
-            /** Appends a serialized query string to a URL when request parameters are present. */
-            function buildUrl(url, serializedParams) {
-                if (serializedParams.length > 0) {
-                    url += (!url.includes("?") ? "?" : "&") + serializedParams;
-                }
-                return url;
-            }
-        },
-    ];
+            resolvePromise(response, status, headersString, statusText, xhrStatus);
+        }
+        /** Resolves or rejects the raw `$http` promise from a low-level transport callback payload. */
+        function resolvePromise(response, status, headers, statusText, xhrStatus) {
+            // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
+            status = status >= -1 ? status : 0;
+            (isSuccess(status) ? resolve : reject)({
+                data: response,
+                status,
+                headers: headersGetter(headers ?? ""),
+                config,
+                statusText,
+                xhrStatus,
+            });
+        }
+        /** Settles the raw `$http` promise from a cached or intercepted response object. */
+        function resolvePromiseWithResult(result) {
+            resolvePromise(result.data, result.status, shallowCopy(result.headers()), result.statusText, result.xhrStatus);
+        }
+        /** Removes the finished request config from `$http.pendingRequests`. */
+        function removePendingReq() {
+            const idx = $http.pendingRequests.indexOf(config);
+            if (idx !== -1)
+                $http.pendingRequests.splice(idx, 1);
+        }
+    }
+    /** Appends a serialized query string to a URL when request parameters are present. */
+    function buildUrl(url, serializedParams) {
+        if (serializedParams.length > 0) {
+            url += (!url.includes("?") ? "?" : "&") + serializedParams;
+        }
+        return url;
+    }
 }
 /**
  * Sends a low-level fetch request using AngularTS-compatible callback and timeout semantics.
@@ -805,4 +876,4 @@ function notifyEvent(eventName, eventHandlers) {
     }
 }
 
-export { Http, HttpError, HttpParamSerializerProvider, HttpProvider, defaultHttpResponseTransform, http };
+export { Http, HttpError, applyHttpConfiguration, createHttpParamSerializer, createHttpRuntimeConfiguration, createHttpService, defaultHttpResponseTransform, http, mergeHttpHeaderDefaults };

@@ -1,14 +1,14 @@
-import { _parse, _rootElement, _rootScope, _compile, _injector, _scope } from './injection-tokens.js';
+import { _parse, _rootScope, _rootElement, _compile, _injector, _scope } from './injection-tokens.js';
 import { errorHandlingConfig, values, assertNotHasOwnProperty, hasOwn, isString, isInstanceOf, isArray, ngAttrPrefixes, createErrorFactory, isObject } from './shared/utils.js';
 import { getController, getInjector, getScope, getNormalizedAttr, getNormalizedAttrName, hasNormalizedAttr, getInheritedData, setCacheData } from './shared/dom.js';
 import { createInjector } from './core/di/injector.js';
 import { NgModule } from './core/di/ng-module/ng-module.js';
 import { validateIsString } from './shared/validate.js';
+import { createCoreRuntime } from './core/composition/runtime-composition.js';
 
 const ngError = createErrorFactory("ng");
 const $injectorError = createErrorFactory("$injector");
 const rootScopeCleanupByElement = new WeakMap();
-const moduleRegistry = {};
 let builtinNgModuleRegistrar;
 let runtimeInjectionTokens;
 /**
@@ -33,7 +33,8 @@ class AngularRuntime extends EventTarget {
     /**
      * Creates the Angular runtime singleton or a sub-application instance.
      *
-     * @param subapp when `true`, skips assigning the instance to `window.angular`
+     * @param options runtime construction options. Passing `true` creates a
+     * sub-application and skips assigning the instance to `window.angular`.
      */
     constructor(options = false) {
         super();
@@ -41,6 +42,7 @@ class AngularRuntime extends EventTarget {
         this.subapps = [];
         /** @internal */
         this._bootsrappedModules = [];
+        this._injectorCreated = false;
         /** AngularTS version string replaced at build time. */
         this.version = "[VI]{version}[/VI]";
         /** Retrieve the controller instance cached on a compiled DOM element. */
@@ -61,6 +63,16 @@ class AngularRuntime extends EventTarget {
         this.$t = {};
         const runtimeOptions = normalizeRuntimeOptions(options);
         this._subapp = runtimeOptions.subapp;
+        const hostRuntime = runtimeOptions.subapp
+            ? window.angular
+            : undefined;
+        this._composition = createCoreRuntime({
+            appContext: hostRuntime?._composition?.appContext ?? hostRuntime?._appContext,
+            document,
+            window,
+        });
+        this._appContext = this._composition.appContext;
+        this._moduleRegistry = hostRuntime?._moduleRegistry ?? {};
         if (runtimeInjectionTokens) {
             values(runtimeInjectionTokens).forEach((token) => {
                 this.$t[token] = token;
@@ -69,7 +81,7 @@ class AngularRuntime extends EventTarget {
         if (!runtimeOptions.subapp) {
             window.angular = this;
         }
-        if (runtimeOptions.registerBuiltins) {
+        if (runtimeOptions.registerBuiltins && !hostRuntime?._moduleRegistry) {
             this.registerNgModule();
         }
     }
@@ -82,60 +94,16 @@ class AngularRuntime extends EventTarget {
         }
         return builtinNgModuleRegistrar(this);
     }
-    /**
-     * The `angular.module` is a global place for creating, registering and retrieving AngularTS
-     * modules.
-     * All modules (AngularTS core or 3rd party) that should be available to an application must be
-     * registered using this mechanism.
-     *
-     * Passing one argument retrieves an existing ng.NgModule,
-     * whereas passing more than one argument creates a new ng.NgModule
-     *
-     * # Module
-     *
-     * A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information.
-     * `angular.module` is used to configure the auto.$injector `$injector`.
-     *
-     * ```js
-     * // Create a new module
-     * let myModule = angular.module('myModule', []);
-     *
-     * // register a new service
-     * myModule.value('appName', 'MyCoolApp');
-     *
-     * // configure existing services inside initialization blocks.
-     * myModule.config(['$locationProvider', function($locationProvider) {
-     *   // Configure existing providers
-     *   $locationProvider.hashPrefix('!');
-     * }]);
-     * ```
-     *
-     * Then you can create an injector and load your modules like this:
-     *
-     * ```js
-     * let injector = angular.injector(['ng', 'myModule'])
-     * ```
-     *
-     * However it's more likely that you'll use the `ng-app` directive or
-     * `bootstrap()` to simplify this process.
-     *
-     * @param name The name of the module to create or retrieve.
-     * @param requires If specified then new module is being created. If
-     * unspecified then the module is being retrieved for further configuration.
-     * @param configFn Optional configuration function for the module that gets
-     * passed to `NgModule.config()`.
-     * @returns A newly registered module.
-     */
     module(name, requires, configFn) {
         assertNotHasOwnProperty(name, "module");
-        if (requires && hasOwn(moduleRegistry, name)) {
-            moduleRegistry[name] = null;
+        if (requires && hasOwn(this._moduleRegistry, name)) {
+            this._moduleRegistry[name] = null;
         }
-        return ensure(moduleRegistry, name, () => {
+        return ensure(this._moduleRegistry, name, () => {
             if (!requires) {
                 throw $injectorError("nomod", "Module '{0}' is not available. Possibly misspelled or not loaded", name);
             }
-            return new NgModule(name, requires, configFn);
+            return new NgModule(name, requires, configFn, this._composition.animationRegistry, this._composition.controllerRegistry, this._composition.filterRegistry, this._composition.compileRegistry, this._composition.appContext, this._composition.configRegistry);
         });
     }
     /**
@@ -244,10 +212,9 @@ class AngularRuntime extends EventTarget {
      *     Each item in the array should be the name of a predefined module or a (DI annotated)
      *     function that will be invoked by the injector as a `config` block.
      *     See `angular.module()`.
-     * `config` controls bootstrap behavior such as `strictDi`.
      * @returns The created injector instance for this application.
      */
-    bootstrap(element, modules, config = { strictDi: false }) {
+    bootstrap(element, modules) {
         if (isInstanceOf(element, Element) || isInstanceOf(element, Document)) {
             rootScopeCleanupByElement.get(element)?.();
         }
@@ -258,23 +225,26 @@ class AngularRuntime extends EventTarget {
         if (isArray(modules)) {
             this._bootsrappedModules = modules;
         }
-        this._bootsrappedModules.unshift([
-            "$provide",
-            ($provide) => {
-                $provide.value(_rootElement, element);
-            },
-        ]);
         this._bootsrappedModules.unshift("ng");
-        const injector = createInjector(this._bootsrappedModules, config.strictDi);
+        const injector = createInjector(this._bootsrappedModules, (registry) => {
+            registry.value(_rootElement, element);
+        }, (name) => this.module(name));
         injector.invoke([
             _rootScope,
             _rootElement,
             _compile,
             _injector,
             (scope, el, compile, $injector) => {
+                const appContext = this._composition.appContext;
+                this._appContext = appContext;
                 this.$rootScope = scope;
                 this.$injector = $injector;
+                this._injectorCreated = true;
                 const rootElement = el;
+                appContext.attachRoot(scope, {
+                    injector: $injector,
+                    rootElement,
+                });
                 rootScopeCleanupByElement.set(rootElement, () => {
                     const existingScope = getInheritedData(rootElement, _scope);
                     if (existingScope?.$handler && !existingScope.$handler._destroyed) {
@@ -290,19 +260,6 @@ class AngularRuntime extends EventTarget {
                 setCacheData(el, _injector, $injector);
                 const compileFn = compile(el);
                 compileFn(scope);
-                if (!hasOwn($injector, "strictDi")) {
-                    try {
-                        $injector.invoke(() => {
-                            /* empty */
-                        });
-                    }
-                    catch (error) {
-                        const errorStr = isInstanceOf(error, Error)
-                            ? error.toString()
-                            : String(error);
-                        $injector.strictDi = !!/strict mode/.exec(errorStr);
-                    }
-                }
                 scope.$on("$destroy", () => {
                     if (rootScopeCleanupByElement.get(rootElement)) {
                         rootScopeCleanupByElement.delete(rootElement);
@@ -316,11 +273,15 @@ class AngularRuntime extends EventTarget {
      * Create a standalone injector without bootstrapping the DOM.
      *
      * @param modules - Module names or config functions to load.
-     * @param strictDi - Require explicit dependency annotations.
      * @returns The created injector.
      */
-    injector(modules, strictDi) {
-        this.$injector = createInjector(modules, strictDi);
+    injector(modules) {
+        if (this._injectorCreated) {
+            this.$injector.loadNewModules(modules);
+            return this.$injector;
+        }
+        this.$injector = createInjector(modules, undefined, (name) => this.module(name));
+        this._injectorCreated = true;
         return this.$injector;
     }
     /**
@@ -352,20 +313,14 @@ class AngularRuntime extends EventTarget {
             });
         });
         appElements.forEach((app) => {
-            const strictDi = app._element.hasAttribute("strict-di") ||
-                app._element.hasAttribute("data-strict-di");
             if (multimode) {
                 const RuntimeCtor = this.constructor;
                 const submodule = new RuntimeCtor(true);
                 this.subapps.push(submodule);
-                submodule.bootstrap(app._element, app._module ? [app._module] : [], {
-                    strictDi,
-                });
+                submodule.bootstrap(app._element, app._module ? [app._module] : []);
             }
             else {
-                this.bootstrap(app._element, app._module ? [app._module] : [], {
-                    strictDi,
-                });
+                this.bootstrap(app._element, app._module ? [app._module] : []);
             }
             multimode = true;
         });

@@ -45,11 +45,11 @@ class TargetState {
      * Note: Do not construct a `TargetState` manually.
      * To create a `TargetState`, use the [[StateService.target]] factory method.
      *
-     * @param {StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
+     * @param {StateRegistryRuntime} _stateRegistry The StateRegistry to use to look up the _definition
      * @param {StateOrName} _identifier An identifier for a state.
      *    Either a fully-qualified state name, or the object used to define the state.
      * @param {RawParams} _params Parameters for the target state
-     * @param {TransitionOptions} _options Transition options.
+     * @param {InternalTransitionOptions} _options Transition options.
      *
      * @internal
      */
@@ -140,7 +140,7 @@ class TargetState {
      * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
      */
     withOptions(options, replace = false) {
-        const newOpts = replace ? options : assign({}, this._options, options);
+        const newOpts = (replace ? options : assign({}, this._options, options));
         return new TargetState(this._stateRegistry, this._identifier, this._params, newOpts);
     }
 }

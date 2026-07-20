@@ -1,6 +1,6 @@
-import { assign, createObject, isString, isInstanceOf, assertDefined, isArray, hasOwn, isDefined, keys, isFunction } from '../../shared/utils.js';
+import { assign, createObject, isString, hasOwn, isInstanceOf, assertDefined, isArray, isDefined, keys, isFunction } from '../../shared/utils.js';
 import { stringify } from '../../shared/strings.js';
-import { ResolveContext } from '../resolve/resolve-context.js';
+import { ResolveContext, createResolveInvocationLocals } from '../resolve/resolve-context.js';
 import { Resolvable } from '../resolve/resolvable.js';
 import { annotate } from '../../core/di/di.js';
 import { normalizeNgViewTarget } from './view-target.js';
@@ -149,22 +149,12 @@ function viewsBuilder(state, registrar) {
     });
     return views;
 }
-function getResolveLocals(ctx) {
-    const tokens = ctx.getTokens();
-    const locals = {};
-    tokens.forEach((key) => {
-        if (isString(key)) {
-            locals[key] = assertDefined(ctx.getResolvable(key)).data;
-        }
-    });
-    return locals;
-}
-function valueToResolvable(token, value, strictDi) {
+function valueToResolvable(token, value) {
     if (isArray(value)) {
         return new Resolvable(token, value[value.length - 1], value.slice(0, -1));
     }
     if (isFunction(value)) {
-        return new Resolvable(token, value, annotate(value, strictDi));
+        return new Resolvable(token, value, annotate(value));
     }
     throw new Error(`Invalid resolve value: ${stringify({ token, val: value })}`);
 }
@@ -213,9 +203,8 @@ function literalToResolvable(literal) {
  *   { token: "myBazResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
  * @param {ng.StateObject & ng.StateDeclaration} state
- * @param {boolean | undefined} strictDi
  */
-function resolvablesBuilder(state, strictDi) {
+function resolvablesBuilder(state) {
     const decl = state.resolve;
     const resolvables = [];
     if (isArray(decl)) {
@@ -227,7 +216,7 @@ function resolvablesBuilder(state, strictDi) {
     const resolveObj = decl ?? {};
     const resolveKeys = keys(resolveObj);
     resolveKeys.forEach((token) => {
-        resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
+        resolvables.push(valueToResolvable(token, resolveObj[token]));
     });
     return resolvables;
 }
@@ -240,10 +229,11 @@ function invokeStateLifecycleHook(trans, state, hookName, pathname) {
     const $injector = assertDefined(hookContext._$injector);
     const resolveContext = new ResolveContext(trans._treeChanges[pathname], $injector);
     const subContext = resolveContext.subContext(stateObject);
-    const locals = assign(getResolveLocals(subContext), {
+    const locals = {
+        ...createResolveInvocationLocals(subContext),
         $state$: state,
         $transition$: trans,
-    });
+    };
     return $injector.invoke(hook, hookContext, locals);
 }
 function invokeOnEnterHook(trans, state) {
@@ -268,24 +258,24 @@ function invokeOnExitHook(trans, state) {
 class StateBuilder {
     /**
      * @param {StateMatcher} matcher
-     * @param {RouterProvider} routerState
+     * @param {RouterRuntimeState} routerState
      */
-    constructor(matcher, routerState, compileProvider) {
+    constructor(matcher, routerState, compileRegistry) {
         this._matcher = matcher;
         this._$injector = undefined;
         this._paramFactory = routerState._paramFactory;
         this._routerState = routerState;
-        this._compileProvider = compileProvider;
+        this._compileRegistry = compileRegistry;
         this._registeredRouteComponents = new Set();
     }
     /** @internal */
     _registerRouteComponent(stateName, viewName, component) {
         const name = routeComponentName(stateName, viewName);
         if (!this._registeredRouteComponents.has(name)) {
-            if (!this._compileProvider) {
-                throw new Error(`State '${stateName}' cannot register inline component '${viewName}' before the compile provider is available`);
+            if (!this._compileRegistry) {
+                throw new Error(`State '${stateName}' cannot register inline component '${viewName}' before the compile registry is available`);
             }
-            this._compileProvider.component(name, assign({}, component, { replace: true }));
+            this._compileRegistry.component(name, assign({}, component, { replace: true }));
             this._registeredRouteComponents.add(name);
         }
         return name;
@@ -309,6 +299,7 @@ class StateBuilder {
     /** @internal */
     _build(state) {
         const { _matcher: matcher, _routerState: routerState } = this;
+        assertNavigationPolicy(state.self);
         const parent = StateBuilder._parentName(state);
         if (parent && !matcher.find(parent, undefined, false)) {
             return null;
@@ -318,7 +309,7 @@ class StateBuilder {
             : (matcher.find(parent) ?? matcher.find(""));
         state._url =
             buildUrl(state, routerState, matcher.find("")) ?? undefined;
-        state.resolvables = resolvablesBuilder(state, this._$injector?.strictDi);
+        state.resolvables = resolvablesBuilder(state);
         this._assignStateHook(state, "onExit", "_onExit", invokeOnExitHook);
         this._assignStateHook(state, "onRetain", "_onRetain", invokeOnRetainHook);
         this._assignStateHook(state, "onEnter", "_onEnter", invokeOnEnterHook);
@@ -373,6 +364,20 @@ class StateBuilder {
             ? state.parent
             : state.parent.name;
         return parentName ? `${parentName}.${name}` : name;
+    }
+}
+function assertNavigationPolicy(state) {
+    const navigation = state.policy?.navigation;
+    if (navigation?.public !== true)
+        return;
+    const conflictingKeys = [
+        "authenticated",
+        "permissions",
+        "redirectTo",
+        "reason",
+    ].filter((key) => hasOwn(navigation, key));
+    if (conflictingKeys.length) {
+        throw new Error(`State '${state.name}' public navigation policy cannot declare: ${conflictingKeys.join(", ")}`);
     }
 }
 /**
