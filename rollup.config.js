@@ -83,7 +83,15 @@ function cssMinifyPlugin() {
   };
 }
 
-const basePlugins = [resolve(), commonjs(), versionInjector()];
+const basePlugins = [
+  resolve(),
+  commonjs(),
+  versionInjector({
+    injectInComments: {
+      tag: "Version: {version}",
+    },
+  }),
+];
 const modulePlugins = [resolve(), commonjs()];
 
 export default [

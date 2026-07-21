@@ -1,4 +1,4 @@
-/* Version: 0.31.0 - July 21, 2026 01:05:14 */
+/* Version: 0.31.0 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :

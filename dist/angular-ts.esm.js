@@ -1,4 +1,4 @@
-/* Version: 0.31.0 - July 21, 2026 01:05:20 */
+/* Version: 0.31.0 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.

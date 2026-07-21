@@ -47,6 +47,7 @@ release-build: build
 	@mkdir -p "$(BUILD_DIR)/externs"
 	@cp "$(CLOSURE_EXTERNS)" "$(DIST_CLOSURE_EXTERNS)"
 	@node -e 'const fs=require("fs"); const pkg=JSON.parse(fs.readFileSync("package.json","utf8")); const file="$(DIST_CLOSURE_EXTERNS)"; fs.writeFileSync(file, fs.readFileSync(file,"utf8").replaceAll("[VI]{version}[/VI]", pkg.version));'
+	@$(MAKE) gzip
 
 size:
 	@$(MAKE) release-build >/dev/null
@@ -58,7 +59,7 @@ size:
 	@echo "Current gzip:           $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
 
 $(GZ_JS): $(MIN_JS)
-	@gzip -9 -c $< > $@
+	@gzip -9 -n -c $< > $@
 
 gzip: $(GZ_JS)
 	@echo "Created gzipped file: $(GZ_JS)"
@@ -190,7 +191,6 @@ prepare-release: release-notes-check
 	@$(MAKE) release-build
 	@$(MAKE) types
 	@$(MAKE) version
-	@$(MAKE) gzip
 	@$(MAKE) size-html
 
 PLAYWRIGHT_TEST := npx playwright test
