@@ -52,7 +52,7 @@ function extractNamespaceTypes(sourceText) {
     }
 
     if (inNgNamespace && ts.isTypeAliasDeclaration(node)) {
-      types.push(node.name.escapedText.toString());
+      types.push(node.name.escapedText);
       return;
     }
 
