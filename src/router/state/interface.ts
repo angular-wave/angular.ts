@@ -504,8 +504,8 @@ export interface ViewDeclarationCommon {
    * ```js
    * app.router('foo', {
    *   resolve: {
-   *     foo: function(FooService) { return FooService.get(); },
-   *     bar: function(BarService) { return BarService.get(); }
+   *     foo: ['FooService', function(FooService) { return FooService.get(); }],
+   *     bar: ['BarService', function(BarService) { return BarService.get(); }]
    *   },
    *   component: 'Baz',
    *   // The component's `baz` binding gets data from the `bar` resolve
@@ -831,9 +831,9 @@ export interface RouterModuleDeclaration extends StateDeclaration {
  *   url: '/folders',
  *   component: FoldersComponent,
  *   resolve: {
- *     allfolders: function(FolderService) {
+ *     allfolders: ['FolderService', function(FolderService) {
  *       return FolderService.list();
- *     }
+ *     }]
  *   },
  * }
  *

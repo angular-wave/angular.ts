@@ -74,9 +74,9 @@ angular
     name: 'contacts.detail',
     url: '/:contactId',
     resolve: {
-      contact: function ($transition$, ContactService) {
+      contact: ['$transition$', 'ContactService', function ($transition$, ContactService) {
         return ContactService.get($transition$.params().contactId);
-      },
+      }],
     },
     templateUrl: 'contact-detail.html',
     controller: 'ContactDetailCtrl',
@@ -108,11 +108,11 @@ Place `ng-view` where you want the active state's template to render. An unnamed
 Use `$state.go()` in controllers or services to perform programmatic navigation.
 
 ```javascript
-angular.module('app').controller('ContactsCtrl', function ($state) {
+angular.module('app').controller('ContactsCtrl', ["$state", function ($state) {
   this.viewContact = function (contactId) {
     $state.go('contacts.detail', { contactId: contactId });
   };
-});
+}]);
 ```
 
 ## The ng-view directive

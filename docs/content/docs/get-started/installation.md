@@ -77,9 +77,9 @@ the type namespace in your project:
 ```typescript
 const myModule: ng.NgModule = angular.module('myApp', []);
 
-myModule.controller('MyController', function ($scope: ng.Scope) {
+myModule.controller('MyController', ["$scope", function ($scope: ng.Scope) {
   $scope.message = 'Hello, AngularTS';
-});
+}]);
 ```
 
 > **Info:** The `ng` namespace provides types for scopes, injectors, services,

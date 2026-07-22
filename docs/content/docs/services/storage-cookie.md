@@ -130,13 +130,13 @@ class PreferencesStorage {
 Listen for storage changes from other tabs through `$window`.
 
 ```typescript
-angular.module("demo").run(($window, $rootScope) => {
+angular.module("demo").run(["$window", "$rootScope", ($window, $rootScope) => {
   $window.addEventListener("storage", (event: StorageEvent) => {
     if (event.key === "theme") {
       $rootScope.$broadcast("themeChanged", event.newValue);
     }
   });
-});
+}]);
 ```
 
 The browser only fires `storage` events in other same-origin tabs or windows, not in the tab that made the change.

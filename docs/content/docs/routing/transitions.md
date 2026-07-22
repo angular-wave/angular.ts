@@ -188,7 +188,7 @@ This pattern intercepts any transition to a state with a navigation policy and
 redirects unauthenticated users to the login page.
 
 ```javascript
-  .run(function ($transitions, $state, AuthService) {
+  .run(['$transitions', '$state', 'AuthService', function ($transitions, $state, AuthService) {
 
     $transitions.onBefore(
       {
@@ -206,7 +206,7 @@ redirects unauthenticated users to the login page.
       }
     );
 
-  });
+  }]);
 ```
 
 Mark states that require authentication:
@@ -228,7 +228,7 @@ Mark states that require authentication:
 Show a spinner while any transition is in progress:
 
 ```javascript
-  .run(function ($transitions, $rootScope) {
+  .run(['$transitions', '$rootScope', function ($transitions, $rootScope) {
 
     $transitions.onStart({}, function () {
       $rootScope.isLoading = true;
@@ -242,7 +242,7 @@ Show a spinner while any transition is in progress:
       $rootScope.isLoading = false;
     });
 
-  });
+  }]);
 ```
 
 ### Analytics tracking
@@ -250,7 +250,7 @@ Show a spinner while any transition is in progress:
 Fire a page-view event after every successful navigation:
 
 ```javascript
-  .run(function ($transitions, AnalyticsService) {
+  .run(['$transitions', 'AnalyticsService', function ($transitions, AnalyticsService) {
 
     $transitions.onSuccess({}, function (transition) {
       var toState = transition.to();
@@ -261,7 +261,7 @@ Fire a page-view event after every successful navigation:
       });
     });
 
-  });
+  }]);
 ```
 
 ### Scroll reset
@@ -269,13 +269,13 @@ Fire a page-view event after every successful navigation:
 Scroll to the top of the page on each navigation:
 
 ```javascript
-  .run(function ($transitions) {
+  .run(['$transitions', function ($transitions) {
 
     $transitions.onSuccess({}, function () {
       window.scrollTo(0, 0);
     });
 
-  });
+  }]);
 ```
 
 ### Async guard with redirect on failure

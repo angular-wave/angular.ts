@@ -17,13 +17,13 @@ environments.
 ##### **Example\***
 
 ```js
-angular.module('demo').controller('MyController', ($log) => {
+angular.module('demo').controller('MyController', ["$log", ($log) => {
   $log.log('log');
   $log.info('info');
   $log.warn('warn!');
   $log.error('error');
   $log.debug('debug');
-});
+}]);
 ```
 
 To reveal the location of the calls to `$log` in the JavaScript console, you can
@@ -139,7 +139,7 @@ console and a backend endpoint.
 ```js
 angular
   .module('demo')
-  .decorator('$log', ($delegate, $http, $exceptionHandler) => {
+  .decorator('$log', ["$delegate", "$http", "$exceptionHandler", ($delegate, $http, $exceptionHandler) => {
     const originalError = $delegate.error;
     $delegate.error = () => {
       originalError.apply($delegate, arguments);
@@ -147,7 +147,7 @@ angular
       $http.post('/api/log/error', { message: errorMessage });
     };
     return $delegate;
-  });
+  }]);
 ```
 
 ### Overriding `console`
@@ -162,7 +162,7 @@ both console and a backend endpoint.
 ##### **Example\***
 
 ```js
-angular.module('demo').run(($http) => {
+angular.module('demo').run(["$http", ($http) => {
   /**
    * Decorate console.error to log error messages to the server.
    */
@@ -192,7 +192,7 @@ angular.module('demo').run(($http) => {
   window.addEventListener('unhandledrejection', (e) => {
     window.console.error(e.reason || e);
   });
-});
+}]);
 ```
 
 Combining both `$log` decoration and `console.log` overriding provides a robust

@@ -63,11 +63,11 @@ A string literal containing one or more `{{ expression }}` placeholders. The ent
 ```
 
 ```javascript
-  .controller('ArticleCtrl', function($scope) {
+  .controller('ArticleCtrl', ['$scope', function($scope) {
     $scope.article = {
       body: '<p>Hello <strong>world</strong></p>'
     };
-  });
+  }]);
 ```
 
 > **Warning:** `ng-bind-html` sets `innerHTML` directly. Always sanitise content on the server before placing it in scope. Avoid interpolating raw user input with this directive.

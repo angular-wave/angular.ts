@@ -403,9 +403,9 @@ export class AngularRuntime extends EventTarget {
    * <script src="angular.js"></script>
    * <script>
    *   let app = angular.module('demo', [])
-   *   .controller('WelcomeController', function($scope) {
+   *   .controller('WelcomeController', ['$scope', function($scope) {
    *       $scope.greeting = 'Welcome!';
-   *   });
+   *   }]);
    *   angular.bootstrap(document, ['demo']);
    * </script>
    * </body>

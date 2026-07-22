@@ -505,11 +505,11 @@ describe("utility functions", () => {
       expect(mergeClasses(undefined, ["btn", "", null, undefined])).toBe("btn");
     });
 
-    it("should handle single argument arrays correctly", () => {
+    it("should merge array arguments", () => {
       expect(mergeClasses(["btn"], ["active"])).toBe("btn active");
     });
 
-    it("should handle single argument arrays correctly", () => {
+    it("should trim class names supplied in arrays", () => {
       expect(mergeClasses(["btn  ", "  test"], ["  active"])).toBe(
         "btn test active",
       );

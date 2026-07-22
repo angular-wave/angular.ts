@@ -26,7 +26,7 @@ The smallest complete game needs only a state tree and a score. Assign the
 machine to a controller property and let the template call `send()` directly:
 
 ```js
-app.controller('TapGameCtrl', function ($machine) {
+app.controller('TapGameCtrl', ["$machine", function ($machine) {
   this.game = $machine({
     initial: 'ready',
     data: {
@@ -66,7 +66,7 @@ app.controller('TapGameCtrl', function ($machine) {
       },
     },
   });
-});
+}]);
 ```
 
 ```html
@@ -106,7 +106,7 @@ owner that should keep the flow alive.
 Controller-owned machines are enough for local UI flow data:
 
 ```js
-app.controller('SessionCtrl', function ($machine) {
+app.controller('SessionCtrl', ["$machine", function ($machine) {
   this.session = $machine({
     initial: 'setup',
     data: { roomId: '' },
@@ -124,7 +124,7 @@ app.controller('SessionCtrl', function ($machine) {
       waiting: {},
     },
   });
-});
+}]);
 ```
 
 AppContext models can own machines that must survive DOM root destruction:
@@ -159,7 +159,7 @@ app.model('sessionRuntime', [
 Runtime adapters and game loops can keep the same machine outside the DOM:
 
 ```js
-app.controller('GameCtrl', function ($machine) {
+app.controller('GameCtrl', ["$machine", function ($machine) {
   const game = $machine({
     initial: 'playing',
     data: { frame: 0 },
@@ -182,13 +182,13 @@ app.controller('GameCtrl', function ($machine) {
     game.send('tick');
     requestAnimationFrame(tick);
   });
-});
+}]);
 ```
 
 Workflows can own a machine when command execution needs a local flow gate:
 
 ```js
-app.factory('sessionWorkflowMachine', function ($machine) {
+app.factory('sessionWorkflowMachine', ["$machine", function ($machine) {
   return $machine({
     initial: 'idle',
     data: { token: '' },
@@ -213,7 +213,7 @@ app.factory('sessionWorkflowMachine', function ($machine) {
       ready: {},
     },
   });
-});
+}]);
 ```
 
 ## Register a Named Machine
@@ -241,9 +241,9 @@ app.machine('sessionMachine', {
   },
 });
 
-app.controller('SessionCtrl', function (sessionMachine) {
+app.controller('SessionCtrl', ["sessionMachine", function (sessionMachine) {
   this.session = sessionMachine;
-});
+}]);
 ```
 
 You can also provide a resolvable config factory so it can read injectables at
@@ -446,7 +446,7 @@ A machine is also useful for local wizard flow where the UI should only expose
 legal next actions:
 
 ```js
-app.controller('SessionWizardCtrl', function ($machine) {
+app.controller('SessionWizardCtrl', ["$machine", function ($machine) {
   this.wizard = $machine({
     initial: 'profile',
     data: {
@@ -490,7 +490,7 @@ app.controller('SessionWizardCtrl', function ($machine) {
       complete: {},
     },
   });
-});
+}]);
 ```
 
 Static `to` keeps the flow inspectable: `next`, `back`, and `submit` declare
@@ -505,7 +505,7 @@ or draw. Once the machine reaches `xWon`, `oWon`, or `draw`, there is no `move`
 transition for that state, so further moves return `false`.
 
 ```js
-app.controller('GameCtrl', function ($machine) {
+app.controller('GameCtrl', ["$machine", function ($machine) {
   const wins = [
     [0, 1, 2],
     [3, 4, 5],
@@ -603,7 +603,7 @@ app.controller('GameCtrl', function ($machine) {
       draw: {},
     },
   });
-});
+}]);
 ```
 
 ```html
@@ -635,7 +635,7 @@ move. The hook runs after `state` has been updated, so the snapshot contains
 the terminal state when the move ends the game.
 
 ```js
-app.controller('GameCtrl', function ($machine) {
+app.controller('GameCtrl', ["$machine", function ($machine) {
   const storageKey = 'tic-tac-toe';
 
   this.game = $machine({
@@ -679,7 +679,7 @@ app.controller('GameCtrl', function ($machine) {
   if (saved) {
     this.game.restore(JSON.parse(saved));
   }
-});
+}]);
 ```
 
 `restore()` does not run hooks, so loading the saved game will not immediately

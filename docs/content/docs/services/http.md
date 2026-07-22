@@ -94,9 +94,9 @@ angular.module('app', []).config({
 Runtime defaults are available through `$http.defaults`:
 
 ```ts
-angular.module('app').run(($http) => {
+angular.module('app').run(["$http", ($http) => {
   $http.defaults.headers.common['X-App-Version'] = '2.1.0';
-});
+}]);
 ```
 
 ## Interceptors

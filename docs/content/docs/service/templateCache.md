@@ -45,9 +45,9 @@ Adding via the `$templateCache` service:
 #### Example
 
 ```js
-const myApp = angular.module('myApp', []).run(($templateCache) => {
+const myApp = angular.module('myApp', []).run(["$templateCache", ($templateCache) => {
   $templateCache.set('templateId.html', 'This is the content of the template');
-});
+}]);
 ```
 
 To retrieve the template, simply use it in your component:
@@ -69,10 +69,10 @@ or get it via the `$templateCache` service:
 ```js
 myApp.controller(
   'Test',
-  class {
+  ["$templateCache", class {
     constructor($templateCache) {
       const tmp = $templateCache.get('templateId.html');
     }
-  },
+  }],
 );
 ```

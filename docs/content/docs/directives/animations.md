@@ -178,7 +178,7 @@ Accepts `"on"`, `"true"`, or an empty attribute to enable child animations. Any 
 ```
 
 ```javascript
-  .controller('TaskCtrl', function($scope) {
+  .controller('TaskCtrl', ['$scope', function($scope) {
     $scope.tasks = [
       { id: 1, title: 'Design wireframes' },
       { id: 2, title: 'Write tests' },
@@ -189,7 +189,7 @@ Accepts `"on"`, `"true"`, or an empty attribute to enable child animations. Any 
       const idx = $scope.tasks.indexOf(task);
       if (idx !== -1) $scope.tasks.splice(idx, 1);
     };
-  });
+  }]);
 ```
 
 ***

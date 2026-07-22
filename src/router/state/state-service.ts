@@ -717,11 +717,11 @@ export class StateRuntime {
    * ```js
    * let app = angular.module('app', []);
    *
-   * app.controller('ctrl', function ($scope, $state) {
+   * app.controller('ctrl', ['$scope', '$state', function ($scope, $state) {
    *   $scope.changeState = function () {
    *     $state.go('contact.detail');
    *   };
-   * });
+   * }]);
    * ```
    *
    * @param {StateOrName} to Absolute state name, state object, or relative state path (relative to current state).

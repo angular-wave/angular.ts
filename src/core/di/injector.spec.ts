@@ -642,7 +642,7 @@ describe("annotate", () => {
   });
 });
 
-describe("provider", () => {
+describe("module provider registration", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("allows registering a provider and uses its $get", () => {
@@ -789,19 +789,6 @@ describe("provider", () => {
     expect(injector.get("instance")).toEqual(original);
   });
 
-  it("notifies the user about a circular dependency", () => {
-    const module = angular.module("myModule", []);
-
-    module.provider("a", { $get: annotated(["b"], (b) => undefined) });
-    module.provider("b", { $get: annotated(["c"], (c) => undefined) });
-    module.provider("c", { $get: annotated(["a"], (a) => undefined) });
-    const injector = createInjector(["myModule"]);
-
-    expect(() => {
-      injector.get("a");
-    }).toThrowError(/Circular dependency found/);
-  });
-
   it("cleans up the circular marker when instantiation fails", () => {
     const module = angular.module("myModule", []);
 
@@ -820,7 +807,7 @@ describe("provider", () => {
     }).toThrow("Failing instantiation!");
   });
 
-  it("notifies the user about a circular dependency", () => {
+  it("reports the complete circular dependency path", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", { $get: annotated(["b"], (b) => undefined) });
@@ -1733,7 +1720,7 @@ describe("module", () => {
   });
 });
 
-describe("provider registry", () => {
+describe("reserved provider names", () => {
   it('should throw an exception if we try to register a service called "hasOwnProperty"', () => {
     createInjector([], (registry) => {
       expect(() => {
@@ -1845,7 +1832,7 @@ describe("service", () => {
   });
 });
 
-describe("provider", () => {
+describe("provider registration forms", () => {
   it("should configure a provider object", () => {
     expect(
       createInjector([], (registry) => {

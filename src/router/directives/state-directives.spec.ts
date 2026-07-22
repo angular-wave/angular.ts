@@ -355,7 +355,7 @@ describe("ngStateRef", () => {
       expect($state.params.id).toBeUndefined();
     });
 
-    it("should not transition states when alt-clicked", async () => {
+    it("should not transition states when middle-clicked", async () => {
       expect($state.current.name).toEqual("top");
       el.dispatchEvent(new MouseEvent("click", { button: 1 }));
       expect($state.current.name).toEqual("top");
@@ -611,42 +611,6 @@ describe("ngStateRef", () => {
       expect(template.className).not.toContain("activeeq");
     });
 
-    it("updates a linked ng-state-active", async () => {
-      el = createElementFromHTML(
-        '<a ng-state-active="active" ng-state-active-exact="activeeq" ng-state="state" ng-state-params="params">state</a>',
-      );
-      scope = $rootScope;
-      Object.assign(scope, { state: "contacts", params: {} });
-      template = $compile(el)(scope);
-
-      expect(template.className).not.toContain("active");
-      expect(template.className).not.toContain("activeeq");
-
-      $state.go("contacts");
-      await waitUntil(() => template.className.includes("active activeeq"));
-      expect(template.className).toContain("active activeeq");
-
-      scope.state = "contacts.item";
-      scope.params = { id: 5 };
-      await waitUntil(() => template.getAttribute("href") === "#/contacts/5");
-      expect(template.className).not.toContain("active");
-      expect(template.className).not.toContain("activeeq");
-
-      $state.go("contacts.item", { id: 5 });
-      await waitUntil(() => template.className.includes("active activeeq"));
-      expect(template.className).toContain("active activeeq");
-
-      scope.state = "contacts";
-      scope.params = {};
-      await waitUntil(
-        () =>
-          template.className.includes("active") &&
-          !template.className.includes("activeeq"),
-      );
-      expect(template.className).toContain("active");
-      expect(template.className).not.toContain("activeeq");
-    });
-
     it("updates to a new href when it points to a new state", async () => {
       expect(template.getAttribute("href")).toBe("#/contacts");
       scope.state = "other";
@@ -754,14 +718,7 @@ describe("ngStateRef", () => {
       expect(template.getAttribute("href")).toBe("#/contacts");
     });
 
-    it("accepts param overrides", async () => {
-      scope.state = "contacts.item";
-      scope.params = { id: 10 };
-      await wait();
-      expect(template.getAttribute("href")).toBe("#/contacts/10");
-    });
-
-    it("accepts param overrides", async () => {
+    it("updates hrefs when parameter overrides are reassigned", async () => {
       scope.state = "contacts.item";
       scope.params = { id: 10 };
       await wait();

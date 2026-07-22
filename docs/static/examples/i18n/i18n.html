@@ -40,7 +40,7 @@
         }
         window.angular
           .module('i18n', [])
-          .directive('ngTranslate', ($rootScope) => {
+          .directive('ngTranslate', ["$rootScope", ($rootScope) => {
             return {
               link(scope, el) {
                 const translation = getKeyFromTranslation(
@@ -52,19 +52,21 @@
                 });
               },
             };
-          })
+          }])
           .filter('translate', () => {
             return (x, y) => {
               i18next.changeLanguage(y);
               return i18next.t(x);
             };
           })
-          .filter('translatesimple', ($rootScope) => {
+          .filter('translatesimple', ["$rootScope", ($rootScope) => {
             return (x) => {
               i18next.changeLanguage($rootScope.lang);
               return i18next.t(x);
             };
-          });
+          }]);
+
+        window.angular.init(document);
       });
     </script>
     <style>

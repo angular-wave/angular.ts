@@ -16,9 +16,9 @@ Attaches a controller function to a section of the DOM, creating a new child sco
 ```
 
 ```javascript
-  .controller('TodoController', function($scope) {
+  .controller('TodoController', ['$scope', function($scope) {
     $scope.title = 'My Todos';
-  });
+  }]);
 ```
 ### `ng-scope`
 

@@ -1366,7 +1366,7 @@ export class NgModelController {
      </file>
      <file name="app.js">
       angular.module('inputExample', [])
-        .controller('inputController', function($scope) {
+        .controller('inputController', ['$scope', function($scope) {
           $scope.items = [
             {name: 'Apricot', id: 443},
             {name: 'Clementine', id: 972},
@@ -1374,14 +1374,14 @@ export class NgModelController {
             {name: 'Jackfruit', id: 982},
             {name: 'Strawberry', id: 863}
           ];
-        })
+        }])
         .component('basicAutocomplete', {
           bindings: {
             items: '<',
             onSelect: '&'
           },
           templateUrl: 'autocomplete.html',
-          controller: function($element, $scope) {
+          controller: ['$element', '$scope', function($element, $scope) {
             let that = this;
             let ngModel;
    *
@@ -1410,7 +1410,7 @@ export class NgModelController {
               ngModel.$processModelValue();
               that.onSelect({item: item});
             };
-          }
+          }]
         });
      </file>
      <file name="autocomplete.html">

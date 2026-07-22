@@ -119,14 +119,14 @@ $stateRegistry.register({
 Listen on `$rootScope` for URL-level events when you need a broad guard.
 
 ```typescript
-angular.module("demo").run(($rootScope, $state, authService) => {
+angular.module("demo").run(["$rootScope", "$state", "authService", ($rootScope, $state, authService) => {
   $rootScope.$on("$locationChangeStart", (event, newUrl) => {
     if (newUrl.includes("/admin") && !authService.isAuthenticated()) {
       event.preventDefault();
       $state.go("login", { returnUrl: newUrl });
     }
   });
-});
+}]);
 ```
 
 For state-level lifecycle work, prefer transition hooks.

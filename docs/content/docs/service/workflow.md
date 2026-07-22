@@ -54,7 +54,7 @@ app.workflow('checkout', {
 Inject the named workflow and request the command:
 
 ```js
-app.controller('CheckoutCtrl', function (checkout) {
+app.controller('CheckoutCtrl', ["checkout", function (checkout) {
   this.checkout = checkout;
 
   this.submit = async (order) => {
@@ -64,7 +64,7 @@ app.controller('CheckoutCtrl', function (checkout) {
       console.error(result.diagnostics);
     }
   };
-});
+}]);
 ```
 
 Templates observe workflow state and data directly:
@@ -317,9 +317,9 @@ app.workflowSupervisor('checkoutProcesses', {
 ```
 
 ```js
-app.controller('AdminCtrl', function (checkoutProcesses) {
+app.controller('AdminCtrl', ["checkoutProcesses", function (checkoutProcesses) {
   this.checkout = checkoutProcesses.workflow('checkout');
-});
+}]);
 ```
 
 Supervisors can also use a persistence adapter:

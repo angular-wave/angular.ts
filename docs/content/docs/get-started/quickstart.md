@@ -59,7 +59,7 @@ Controllers attach behavior to a region of the DOM. They receive a `$scope` obje
 ```javascript
 const app = angular.module("myApp", []);
 
-app.controller("CounterController", function ($scope) {
+app.controller("CounterController", ["$scope", function ($scope) {
   $scope.count = 0;
 
   $scope.increment = function () {
@@ -71,7 +71,7 @@ app.controller("CounterController", function ($scope) {
       $scope.count--;
     }
   };
-});
+}]);
 ```
 
 Attach the controller to a DOM element with `ng-controller`:
@@ -165,7 +165,7 @@ The following example demonstrates a more complete application using a named mod
     </div>
 
     <script>
-      angular.module("todoApp", []).controller("TodoController", function ($scope) {
+      angular.module("todoApp", []).controller("TodoController", ["$scope", function ($scope) {
         $scope.todos = [
           { text: "Learn AngularTS", done: true },
           { text: "Build something", done: false },
@@ -195,7 +195,7 @@ The following example demonstrates a more complete application using a named mod
             return !t.done;
           });
         };
-      });
+      }]);
     </script>
   </body>
 </html>
@@ -231,7 +231,7 @@ interface TodoScope extends ng.Scope {
 
 angular.module("todoApp", []).controller(
   "TodoController",
-  function ($scope: TodoScope) {
+  ["$scope", function ($scope: TodoScope) {
     $scope.todos = [{ text: "Learn AngularTS", done: false }];
     $scope.newTodo = "";
 
@@ -245,7 +245,7 @@ angular.module("todoApp", []).controller(
     $scope.remaining = function () {
       return $scope.todos.filter((t) => !t.done).length;
     };
-  }
+  }]
 );
 ```
 

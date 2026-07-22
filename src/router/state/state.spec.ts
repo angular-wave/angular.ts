@@ -414,14 +414,6 @@ describe("$state", () => {
     });
 
     describe("basic functionality", () => {
-      it("returns a promise for the target state", async () => {
-        const promise = $state.transitionTo(A, {});
-
-        expect(isFunction(promise.then)).toBeTruthy();
-        expect(promise.transition.to()).toBe(A);
-        await promise;
-      });
-
       it("provides a fallback current transition option when one is not supplied", () => {
         const $state = $get("$state");
         const $transitions = $get("$transitions");

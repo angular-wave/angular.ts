@@ -48,13 +48,13 @@ angular
 Register states at runtime when a feature is loaded after bootstrap.
 
 ```javascript
-angular.module('demo').run(($stateRegistry) => {
+angular.module('demo').run(["$stateRegistry", ($stateRegistry) => {
   $stateRegistry.register({
     name: 'settings',
     url: '/settings',
     component: 'settingsPage',
   });
-});
+}]);
 ```
 
 Runtime registration requires the parent state to exist first. If the parent is
@@ -103,7 +103,7 @@ angular
     abstract: true,
     template: '<admin-layout ng-view></admin-layout>',
     resolve: {
-      currentUser: (AuthService) => AuthService.currentUser(),
+      currentUser: ['AuthService', (AuthService) => AuthService.currentUser()],
     },
     data: { requiresAuth: true },
   })
@@ -155,8 +155,12 @@ angular.module('demo', []).router({
   name: 'contacts.detail',
   url: '/:contactId',
   resolve: {
-    contact: ($transition$, ContactService) =>
-      ContactService.get($transition$.params().contactId),
+    contact: [
+      '$transition$',
+      'ContactService',
+      ($transition$, ContactService) =>
+        ContactService.get($transition$.params().contactId),
+    ],
     contactHistory: [
       'contact',
       'HistoryService',
@@ -164,10 +168,15 @@ angular.module('demo', []).router({
     ],
   },
   templateUrl: 'contact-detail.html',
-  controller($scope, contact, contactHistory) {
-    $scope.contact = contact;
-    $scope.history = contactHistory;
-  },
+  controller: [
+    '$scope',
+    'contact',
+    'contactHistory',
+    function ($scope, contact, contactHistory) {
+      $scope.contact = contact;
+      $scope.history = contactHistory;
+    },
+  ],
 });
 ```
 
@@ -435,25 +444,25 @@ angular.module('retentionDemo', []).router({
       name: 'tabA',
       template:
         '<button ng-click="count = count + 1">Tab A: {{count}}</button>',
-      controller: function ($scope) {
+      controller: ['$scope', function ($scope) {
         $scope.count = 0;
-      },
+      }],
     },
     {
       name: 'tabB',
       template:
         '<button ng-click="count = count + 1">Tab B: {{count}}</button>',
-      controller: function ($scope) {
+      controller: ['$scope', function ($scope) {
         $scope.count = 0;
-      },
+      }],
     },
     {
       name: 'tabC',
       template:
         '<button ng-click="count = count + 1">Tab C: {{count}}</button>',
-      controller: function ($scope) {
+      controller: ['$scope', function ($scope) {
         $scope.count = 0;
-      },
+      }],
     },
   ],
 });

@@ -1129,7 +1129,7 @@ describe("parser", () => {
       expect(scope.models.contact.email).toEqual("demo@example.com");
     });
 
-    it("should create objects when finding a null", () => {
+    it("creates an object for a null member receiver", () => {
       const fn = $parse("foo.bar");
 
       const scope = { foo: null };
@@ -1138,7 +1138,7 @@ describe("parser", () => {
       expect(scope.foo.bar).toEqual(123);
     });
 
-    it("should create objects when finding a null", () => {
+    it("creates an object for a null computed-member receiver", () => {
       const fn = $parse('foo["bar"]');
 
       const scope = { foo: null };
@@ -1147,7 +1147,7 @@ describe("parser", () => {
       expect(scope.foo.bar).toEqual(123);
     });
 
-    it("should create objects when finding a null", () => {
+    it("creates nested objects for a null member receiver", () => {
       const fn = $parse("foo.bar.baz");
 
       const scope = { foo: null };
@@ -2047,7 +2047,7 @@ describe("parser", () => {
       });
 
       [0, false, "", NaN].forEach((falsyValue) => {
-        it("should not overwrite $prop scope properties when assigning", () => {
+        it(`does not overwrite ${String(falsyValue) || "empty string"} scope properties when assigning`, () => {
           let scope;
 
           scope = { a: falsyValue, c: falsyValue };

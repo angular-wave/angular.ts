@@ -1578,7 +1578,7 @@ describe("select", () => {
         ["a"],
         NaN,
       ].forEach((prop) => {
-        it("should set the option attribute and select it for value $prop", async () => {
+        it(`sets and selects an option for ${String(prop)}`, async () => {
           scope.option1 = prop;
           scope.option2 = "red";
           scope.selected = "NOMATCH";
@@ -1626,7 +1626,7 @@ describe("select", () => {
         ["a"],
         NaN,
       ].forEach((prop) => {
-        it("should update the option attribute and select it for value $prop", async () => {
+        it(`updates and selects an option for ${String(prop)}`, async () => {
           scope.option = prop;
           scope.option2 = "red";
           scope.selected = "NOMATCH";
@@ -1843,7 +1843,7 @@ describe("select", () => {
           }
         }
 
-        it("should keep single-select repeated options stable for $prop", async () => {
+        it(`keeps single-select repeated ${prop} options stable`, async () => {
           scope.options = [{ name: "A" }, { name: "B" }, { name: "C" }];
           scope.obj = {};
 
@@ -1856,7 +1856,7 @@ describe("select", () => {
           ).toBeGreaterThanOrEqual(3);
         });
 
-        it("should keep multi-select repeated options stable for $prop", async () => {
+        it(`keeps multi-select repeated ${prop} options stable`, async () => {
           scope.options = [{ name: "A" }, { name: "B" }, { name: "C" }];
           scope.obj = {};
 

@@ -11,6 +11,59 @@ const COVERAGE_TEMP_DIR = fileURLToPath(
   new URL("./.coverage/tmp/", import.meta.url),
 );
 let coverageArtifactId = 0;
+
+function installJasmineReporterBridge() {
+  const bridgeWindow = /** @type {Window & {
+   *   __angularTsJasmineBridge?: JasmineBridgeState,
+   * }} */ (window);
+  const bridge = /** @type {JasmineBridgeState} */ ({
+    status: "loading",
+    specs: [],
+    suites: [],
+    runDetails: null,
+  });
+
+  bridgeWindow.__angularTsJasmineBridge = bridge;
+
+  Object.defineProperty(window, "jasmine", {
+    configurable: true,
+    get() {
+      return undefined;
+    },
+    set(jasmineApi) {
+      Object.defineProperty(window, "jasmine", {
+        configurable: true,
+        enumerable: true,
+        value: jasmineApi,
+        writable: true,
+      });
+
+      if (!jasmineApi || typeof jasmineApi.getEnv !== "function") {
+        bridge.status = "unavailable";
+        return;
+      }
+
+      jasmineApi.getEnv().addReporter({
+        jasmineStarted() {
+          bridge.status = "started";
+          bridge.specs.length = 0;
+          bridge.suites.length = 0;
+          bridge.runDetails = null;
+        },
+        specDone(result) {
+          bridge.specs.push(result);
+        },
+        suiteDone(result) {
+          bridge.suites.push(result);
+        },
+        jasmineDone(runDetails) {
+          bridge.runDetails = runDetails;
+          bridge.status = "done";
+        },
+      });
+    },
+  });
+}
 /**
  * Runs a Jasmine HTML runner from an existing Playwright test and reports
  * explicit spec failures when the suite finishes.
@@ -88,11 +141,16 @@ export async function runJasminePage(page, url, options = {}) {
       consoleErrors.push(message.text());
     }
   });
+  await page.addInitScript(installJasmineReporterBridge);
   await page.goto(url);
   try {
-    const completedPredicate = () =>
-      typeof window.jsApiReporter?.status === "function" &&
-      window.jsApiReporter.status() === "done";
+    const completedPredicate = () => {
+      const bridgeWindow = /** @type {Window & {
+       *   __angularTsJasmineBridge?: JasmineBridgeState,
+       * }} */ (window);
+
+      return bridgeWindow.__angularTsJasmineBridge?.status === "done";
+    };
 
     try {
       await page.waitForFunction(completedPredicate, { timeout });
@@ -144,38 +202,19 @@ export async function withPageCoverage(page, label, action) {
  */
 async function collectJasmineDiagnostics(page) {
   return page.evaluate(() => {
-    const reporter = window.jsApiReporter;
-    const readPagedResults = (methodName, count) => {
-      if (!reporter || typeof reporter[methodName] !== "function") {
-        return [];
-      }
-
-      const pageSize = Math.max(1, count);
-      const results = reporter[methodName](0, pageSize);
-
-      return Array.isArray(results) ? results : [];
-    };
+    const bridgeWindow = /** @type {Window & {
+     *   __angularTsJasmineBridge?: JasmineBridgeState,
+     * }} */ (window);
+    const reporter = bridgeWindow.__angularTsJasmineBridge;
     const overallText =
       document.querySelector(".jasmine-overall-result")?.textContent?.trim() ||
       "";
-    const status =
-      typeof reporter?.status === "function" ? reporter.status() : null;
-    const allSpecs =
-      typeof reporter?.specs === "function" ? reporter.specs() : reporter?.specs;
-    const allSuites =
-      typeof reporter?.suites === "function"
-        ? reporter.suites()
-        : reporter?.suites;
-    const specCount = Array.isArray(allSpecs) ? allSpecs.length : 0;
-    const suiteCount =
-      allSuites && typeof allSuites === "object"
-        ? Object.keys(allSuites).length
-        : 0;
-    const specs = readPagedResults("specResults", specCount);
-    const suites = readPagedResults("suiteResults", suiteCount);
+    const status = reporter?.status ?? null;
+    const specs = Array.isArray(reporter?.specs) ? reporter.specs : [];
+    const suites = Array.isArray(reporter?.suites) ? reporter.suites : [];
     const runDetails =
       reporter && typeof reporter.runDetails === "object"
-        ? reporter.runDetails
+        ? (reporter.runDetails ?? {})
         : {};
     const failedSpecs = specs
       .filter((spec) => spec.status === "failed")
@@ -356,6 +395,28 @@ function sanitizeCoverageLabel(label) {
       .slice(0, 80) || "page"
   );
 }
+/**
+ * @typedef {{
+ *   fullName: string,
+ *   status: string,
+ *   failedExpectations?: Array<{ message?: string }>,
+ *   passedExpectations?: unknown[],
+ * }} JasmineBridgeResult
+ */
+/**
+ * @typedef {{
+ *   overallStatus?: string,
+ *   failedExpectations?: Array<{ message?: string }>,
+ * }} JasmineBridgeRunDetails
+ */
+/**
+ * @typedef {{
+ *   status: string,
+ *   specs: JasmineBridgeResult[],
+ *   suites: JasmineBridgeResult[],
+ *   runDetails: JasmineBridgeRunDetails | null,
+ * }} JasmineBridgeState
+ */
 /**
  * @typedef {{
  *   failedSpecs: Array<{

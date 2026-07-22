@@ -22,13 +22,13 @@ A plain `<form>` element is enhanced by AngularTS into a `FormController`. Give 
 ```
 
 ```javascript
-  .controller('RegistrationCtrl', function($scope) {
+  .controller('RegistrationCtrl', ['$scope', function($scope) {
     $scope.register = function() {
       if ($scope.registrationForm.$valid) {
         // submit logic
       }
     };
-  });
+  }]);
 ```
 ### FormController state properties
 
@@ -459,7 +459,7 @@ The following example demonstrates a registration form with multiple input types
 ```
 
 ```javascript
-  .controller('RegistrationCtrl', function($scope) {
+  .controller('RegistrationCtrl', ['$scope', function($scope) {
     $scope.form = {};
 
     $scope.submitRegistration = function() {
@@ -470,5 +470,5 @@ The following example demonstrates a registration form with multiple input types
         console.log('Registering:', $scope.form);
       }
     };
-  });
+  }]);
 ```

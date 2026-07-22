@@ -393,12 +393,12 @@ When loading states asynchronously, register them before enabling navigation
 links or calling `$state.go()` for URL-driven destinations:
 
 ```javascript
-angular.module('app').run(function ($stateRegistry, $state) {
+angular.module('app').run(["$stateRegistry", "$state", function ($stateRegistry, $state) {
     fetch('/api/states')
       .then(r => r.json())
       .then(function (states) {
         states.forEach(s => $stateRegistry.register(s));
         $state.go('home');
       });
-});
+}]);
 ```

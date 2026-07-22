@@ -1911,7 +1911,7 @@ describe("Scope", () => {
     });
 
     describe("array expressions", () => {
-      it("adds watches for array expressions", async () => {
+      it("registers a watcher for an array member expression", async () => {
         expect(scope.$$watchersCount).toBe(0);
         scope.$watch("foo[0]", () => {
           /* empty */
@@ -1921,7 +1921,7 @@ describe("Scope", () => {
         expect(scope.$$watchersCount).toBe(1);
       });
 
-      it("adds watches for array expressions", async () => {
+      it("reacts to array member changes", async () => {
         expect(scope.$$watchersCount).toBe(0);
         let res;
 
@@ -4475,7 +4475,7 @@ describe("Scope", () => {
       expect(scope._children).toEqual([childA]);
     });
 
-    it("should clean up all watchers for child", async () => {
+    it("cleans up child watchers when the child is destroyed", async () => {
       const scope = createScope();
 
       scope.$watch("test", () => {
@@ -5025,7 +5025,7 @@ describe("Scope", () => {
       });
     });
 
-    it("should clean up all watchers for child", () => {
+    it("cleans up all watchers when the scope is destroyed", () => {
       const scope = createScope();
 
       scope.$watch("a", () => {

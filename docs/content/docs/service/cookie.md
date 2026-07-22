@@ -21,7 +21,7 @@ cookies in AngularTS applications. It allows you to:
 angular.module('app').controller(
   'UserCtrl',
   /** @param {ng.CookieService} $cookie */
-  function ($cookie) {
+  ["$cookie", function ($cookie) {
     // Write cookie
     $cookie.put('session_id', 'abc123');
 
@@ -36,7 +36,7 @@ angular.module('app').controller(
 
     // Remove cookie
     $cookie.remove('session_id');
-  },
+  }],
 );
 ```
 
