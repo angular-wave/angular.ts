@@ -1,9 +1,17 @@
 import { defineConfig } from "vite";
 import istanbul from "vite-plugin-istanbul";
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const coverageEnabled = process.env.PW_COVERAGE === "1";
 const port = Number(process.env.PORT || 4000);
+const jasmineCore = createRequire(import.meta.url)("jasmine-core");
+const jasmineAssets = new Set([
+  ...jasmineCore.files.bootFiles,
+  ...jasmineCore.files.cssFiles,
+  ...jasmineCore.files.jsFiles,
+]);
 const sourcePackageAliases = [
   {
     find: /^@angular-wave\/angular\.ts\/services\/wasm$/,
@@ -35,6 +43,30 @@ const wasmWorkerIsolation = {
     });
   },
 };
+const jasmineCoreAssets = {
+  name: "jasmine-core-assets",
+  configureServer(server) {
+    server.middlewares.use(async (request, response, next) => {
+      const match = request.url?.match(/^\/jasmine\/([^/?]+)(?:[?#].*)?$/);
+      const asset = match?.[1];
+
+      if (!asset || !jasmineAssets.has(asset)) {
+        next();
+        return;
+      }
+
+      try {
+        response.setHeader(
+          "Content-Type",
+          asset.endsWith(".css") ? "text/css" : "text/javascript",
+        );
+        response.end(await readFile(`${jasmineCore.files.path}/${asset}`));
+      } catch (error) {
+        next(error);
+      }
+    });
+  },
+};
 export default defineConfig({
   resolve: {
     alias: sourcePackageAliases,
@@ -52,6 +84,7 @@ export default defineConfig({
         ]
       : []),
     wasmWorkerIsolation,
+    jasmineCoreAssets,
   ],
   server: {
     port,

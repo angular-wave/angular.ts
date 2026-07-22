@@ -29,7 +29,7 @@
         window.angular
           .module("todo", [])
           .service("Greeter", Greeter)
-          .controller("DemoCtrl", Demo);
+          .controller("DemoCtrl", ["Greeter", Demo]);
 
         window.angular.bootstrap(document, ["todo"]);  
       });
