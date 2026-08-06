@@ -41,6 +41,12 @@ import type {
   SecurityPolicy,
   SecurityRequestCredentials,
 } from "../security/security.ts";
+import {
+  executeCacheStrategy,
+  isCacheStrategy,
+  type CacheStore,
+  type CacheStrategy,
+} from "../cache/cache.ts";
 
 const APPLICATION_JSON = "application/json";
 
@@ -129,11 +135,13 @@ export type HttpHeaderValue =
 
 export type HttpHeaderType = Record<string, HttpHeaderValue>;
 
-export interface HttpCacheLike {
-  get(key: string): unknown;
-  set(key: string, value: unknown): void;
-  delete(key: string): void;
+/** Strategy-aware cache configuration accepted by `$http`. */
+export interface HttpCacheConfig {
+  strategy?: CacheStrategy;
+  store?: CacheStore<HttpResponse<unknown>>;
 }
+
+export type HttpCacheOption = boolean | CacheStrategy | HttpCacheConfig;
 
 /**
  * Default request settings configured through `app.config({ $http })` and
@@ -147,7 +155,7 @@ export interface HttpCacheLike {
  */
 export interface HttpDefaults {
   /** Cache used for cacheable requests. `true` enables the default cache. */
-  cache?: boolean | HttpCacheLike;
+  cache?: HttpCacheOption;
   /** Request body transform pipeline. */
   transformRequest?:
     | HttpRequestTransformer
@@ -799,6 +807,7 @@ export function createHttpService(
 ): HttpService {
   const { defaults, interceptors, xsrfTrustedOrigins } = configuration;
   const defaultCache = new Map<string, unknown>();
+  const strategyCache = new Map<string, HttpResponse<unknown>>();
 
   /**
    * Resolves the configured default param serializer to a callable function.
@@ -1079,7 +1088,7 @@ export function createHttpService(
       applySecurityCredentials(configParam, securityDecision.credentials);
 
       // send request
-      return sendReq(configParam, reqData).then(
+      return sendReqWithCacheStrategy(configParam, reqData).then(
         transformResponse,
         transformResponse,
       );
@@ -1160,6 +1169,58 @@ export function createHttpService(
 
   return $http;
 
+  /** Applies strategy-aware caching before falling back to the legacy cache path. */
+  async function sendReqWithCacheStrategy(
+    config: HttpRequestConfig,
+    reqData: unknown,
+  ): Promise<HttpResponse<unknown>> {
+    const option = config.cache ?? defaults.cache;
+
+    if (config.method !== "GET" || option === false || option === undefined) {
+      return sendReq(config, reqData);
+    }
+
+    let strategy: CacheStrategy | undefined;
+    let store: CacheStore<HttpResponse<unknown>> | undefined;
+
+    if (isCacheStrategy(option)) {
+      strategy = option;
+      store = strategyCache;
+    } else if (
+      isObject(option) &&
+      (hasOwn(option, "strategy") || hasOwn(option, "store"))
+    ) {
+      const cacheConfig = option;
+
+      strategy = cacheConfig.strategy ?? "cache-first";
+      store = cacheConfig.store ?? strategyCache;
+    } else if (isObject(option)) {
+      throw new Error(
+        "$http cache objects must use the { strategy, store } configuration shape.",
+      );
+    }
+
+    if (!strategy || !store) {
+      return sendReq(config, reqData);
+    }
+
+    const paramSerializer = config.paramSerializer as HttpParamSerializer;
+    const url = buildUrl(
+      String($sce.valueOf(config.url)),
+      paramSerializer(config.params),
+    );
+    const result = await executeCacheStrategy<HttpResponse<unknown>>({
+      strategy,
+      store,
+      key: url,
+      load: () => sendReq({ ...config, cache: false }, reqData),
+    });
+
+    const response: HttpResponse<unknown> = { ...result.value, config };
+
+    return response;
+  }
+
   /** Creates one shorthand method for requests that do not send a request body. */
   function createShortMethod(method: HttpMethod): HttpService["get"] {
     return async function <T>(
@@ -1196,7 +1257,7 @@ export function createHttpService(
   async function sendReq(config: HttpRequestConfig, reqData: unknown) {
     const { promise, resolve, reject } = withResolvers();
 
-    let cache: HttpCacheLike | undefined;
+    let cache: Map<string, unknown> | undefined;
 
     let cachedResp: unknown;
 
@@ -1223,13 +1284,7 @@ export function createHttpService(
       config.cache !== false &&
       config.method === "GET"
     ) {
-      const providerDefaults = defaults;
-
-      cache = isObject(config.cache)
-        ? (config.cache as typeof cache)
-        : isObject(providerDefaults.cache)
-          ? (providerDefaults.cache as typeof cache)
-          : defaultCache;
+      cache = defaultCache;
     }
 
     if (cache) {

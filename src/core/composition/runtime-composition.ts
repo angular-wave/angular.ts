@@ -1,6 +1,6 @@
 import { AppContext } from "../app-context/app-context.ts";
 import { CompileLifecycle, CompileRegistry } from "../compile/compile.ts";
-import { AnimationRegistry } from "../../animations/animate.ts";
+import type { AnimationRegistry } from "../../animations/animate.ts";
 import { ControllerRegistry } from "../controller/controller.ts";
 import { FilterRegistry } from "../filter/filter.ts";
 import {
@@ -93,7 +93,7 @@ export class RuntimeConfigRegistry {
 
 export interface RuntimeComposition {
   /** @internal */
-  readonly animationRegistry: AnimationRegistry;
+  readonly animationRegistry: AnimationRegistry | undefined;
   readonly appContext: AppContext;
   readonly compileLifecycle: CompileLifecycle;
   readonly compileRegistry: CompileRegistry;
@@ -109,6 +109,8 @@ export interface RuntimeComposition {
   readonly configRegistry: RuntimeConfigRegistry;
   readonly platform: PlatformRuntimeComposition;
   readonly destroyed: boolean;
+  /** @internal */
+  _installAnimationRegistry(registry: AnimationRegistry): void;
   addDisposer(disposer: () => void): () => void;
   destroy(): void;
 }
@@ -196,7 +198,7 @@ export function createCoreRuntime(
 ): RuntimeComposition {
   const ownsAppContext = !dependencies.appContext;
   const appContext = dependencies.appContext ?? new AppContext();
-  const animationRegistry = new AnimationRegistry();
+  let animationRegistry: AnimationRegistry | undefined;
   const compileLifecycle = new CompileLifecycle();
   const compileRegistry = new CompileRegistry(compileLifecycle);
   const controllerRegistry = new ControllerRegistry();
@@ -217,13 +219,9 @@ export function createCoreRuntime(
     }
 
     disposers.length = 0;
-  };
-
-  const removeAppContextDestroyHook = appContext.onDestroy(finishDestroy);
-
-  disposers.push(() => {
     platform.destroy();
-    animationRegistry.destroy();
+    animationRegistry?.destroy();
+    animationRegistry = undefined;
     controllerRegistry.destroy();
     destroyExceptionHandlerRuntimeState(exceptionHandlerState);
     filterRegistry.destroy();
@@ -231,10 +229,14 @@ export function createCoreRuntime(
     configRegistry.clear();
     compileRegistry.destroy();
     compileLifecycle.destroy();
-  });
+  };
+
+  const removeAppContextDestroyHook = appContext.onDestroy(finishDestroy);
 
   return {
-    animationRegistry,
+    get animationRegistry() {
+      return animationRegistry;
+    },
     appContext,
     compileLifecycle,
     compileRegistry,
@@ -246,6 +248,21 @@ export function createCoreRuntime(
     platform,
     get destroyed() {
       return destroyed;
+    },
+    _installAnimationRegistry(registry) {
+      if (destroyed) {
+        registry.destroy();
+        throw new Error(
+          "Cannot install animation support on a destroyed runtime.",
+        );
+      }
+
+      if (animationRegistry && animationRegistry !== registry) {
+        registry.destroy();
+        throw new Error("Animation support is already installed.");
+      }
+
+      animationRegistry = registry;
     },
     addDisposer(disposer) {
       if (destroyed) {

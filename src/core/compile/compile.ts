@@ -45,6 +45,7 @@ import {
   isArray,
   isFunction,
   isScope,
+  isString,
   createErrorFactory,
   shouldHandleViewRetentionPause,
   keys,
@@ -1246,11 +1247,15 @@ export interface CompileControllerLocals {
   $transclude: ng.TranscludeFn;
 }
 
-export type ControllerInstanceRef = (() => unknown) & {
+export type ControllerInstanceRef = ((
+  instanceOverride?: ControllerLifecycleInstance,
+) => unknown) & {
   /** @internal */
   _instance: ControllerLifecycleInstance;
   /** @internal */
   _bindingInfo?: DirectiveBindingInfo;
+  /** @internal */
+  _scope: Scope;
 };
 
 export type ElementControllers = Partial<Record<string, ControllerInstanceRef>>;
@@ -5125,11 +5130,32 @@ export class CompileRegistry {
             const bindings = assertDefined(controllerDirective._bindings)
               ._bindToController as IsolateBindingMap | undefined;
 
-            const controllerInstance = controller();
-
-            controller._instance = controllerScope.$new(
-              controllerInstance as Scope,
+            const reactiveControllerInstance = controllerScope.$new(
+              controller._instance as Scope,
             ) as ControllerLifecycleInstance;
+
+            const controllerInstance = controller(
+              reactiveControllerInstance,
+            ) as ControllerLifecycleInstance;
+
+            if (controllerInstance === reactiveControllerInstance) {
+              controller._instance = reactiveControllerInstance;
+            } else {
+              reactiveControllerInstance.$destroy();
+              controller._instance = controllerScope.$new(
+                controllerInstance as Scope,
+              ) as ControllerLifecycleInstance;
+            }
+
+            const controllerIdentifier =
+              controllerDirective.controllerAs ??
+              (controllerInstance as UnknownRecord).$controllerIdentifier;
+
+            if (isString(controllerIdentifier)) {
+              (controller._scope as UnknownRecord)[controllerIdentifier] =
+                controller._instance;
+            }
+
             setCacheData(
               elementNode,
               `$${controllerDirective.name}Controller`,
@@ -6694,6 +6720,8 @@ export class CompileRegistry {
               true,
               directive.controllerAs,
             ) as ControllerInstanceRef;
+
+            controllerInstance._scope = locals.$scope;
 
             // For directives with element transclusion the element is a comment.
             // In this case .data will not attach any data.

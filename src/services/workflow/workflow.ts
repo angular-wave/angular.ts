@@ -545,6 +545,12 @@ export function defineWorkflow(
   return config.data === undefined ? { ...config, data: {} } : config;
 }
 
+export type WorkflowSupervisorService = <
+  TWorkflows extends WorkflowSupervisorWorkflowMap,
+>(
+  config: WorkflowSupervisorConfig<TWorkflows>,
+) => WorkflowSupervisor<TWorkflows>;
+
 export function createWorkflowSupervisor<
   TWorkflows extends WorkflowSupervisorWorkflowMap,
 >(

@@ -285,6 +285,15 @@ export type {
   ServiceWorkerUpdateState,
 } from "./services/service-worker/service-worker.ts";
 export { ServiceWorkerError } from "./services/service-worker/service-worker.ts";
+
+export {
+  executeCacheStrategy,
+  isCacheStrategy,
+  type CacheExecutionOptions,
+  type CacheExecutionResult,
+  type CacheStore,
+  type CacheStrategy,
+} from "./services/cache/cache.ts";
 export type {
   HtmlCanvasActiveConfig,
   HtmlCanvasConfig,

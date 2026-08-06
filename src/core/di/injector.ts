@@ -1,4 +1,4 @@
-import { _cookie, _injector } from "../../injection-tokens.ts";
+import { _cookie, _injector, _storage } from "../../injection-tokens.ts";
 import {
   assert,
   assertArgFn,
@@ -18,7 +18,7 @@ import {
   providerSuffix,
   ProviderInjector,
 } from "./internal-injector.ts";
-import { createPersistentProxy } from "../../services/storage/storage.ts";
+import type { createPersistentProxy } from "../../services/storage/storage.ts";
 import { validateArray } from "../../shared/validate.ts";
 import type {
   Constructor,
@@ -40,6 +40,7 @@ const $injectorError = createErrorFactory(_injector);
 const appliedRuntimeCommands = new WeakSet<object>();
 
 type Dynamic = ReturnType<typeof JSON.parse>;
+type StorageService = typeof createPersistentProxy;
 
 export type InjectableFunction = (...args: Dynamic[]) => unknown;
 
@@ -252,12 +253,13 @@ export function createInjector(
     return provider(name, {
       $get: [
         _injector,
-        ($injector: InjectorService) => {
+        _storage,
+        ($injector: InjectorService, $storage: StorageService) => {
           switch (type) {
             case "session": {
               const instance: unknown = $injector.instantiate(ctor);
 
-              return createPersistentProxy(
+              return $storage(
                 instance as Record<PropertyKey, unknown>,
                 name,
                 sessionStorage,
@@ -266,7 +268,7 @@ export function createInjector(
             case "local": {
               const instance: unknown = $injector.instantiate(ctor);
 
-              return createPersistentProxy(
+              return $storage(
                 instance as Record<PropertyKey, unknown>,
                 name,
                 localStorage,
@@ -283,7 +285,7 @@ export function createInjector(
 
               const cookieOpts = backendOrConfig?.cookie ?? {};
 
-              return createPersistentProxy(
+              return $storage(
                 instance as Record<PropertyKey, unknown>,
                 name,
                 {
@@ -336,7 +338,7 @@ export function createInjector(
                 backend = localStorage;
               }
 
-              return createPersistentProxy(
+              return $storage(
                 instance as Record<PropertyKey, unknown>,
                 name,
                 backend,

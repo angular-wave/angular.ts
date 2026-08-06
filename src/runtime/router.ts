@@ -173,6 +173,7 @@ export const routerModule: RuntimeModule = (angular) => {
       _rootScope,
       _injector,
       _location,
+      _rootElement,
       _stateRegistry,
       (
         compile: ng.CompileService,
@@ -180,6 +181,7 @@ export const routerModule: RuntimeModule = (angular) => {
         rootScope: ng.Scope,
         injector: ng.InjectorService,
         $location: ng.LocationService,
+        rootElement: HTMLElement,
         stateRegistry: StateRegistryRuntime,
       ) => {
         const templateFactory = router.createTemplateFactory(
@@ -200,6 +202,7 @@ export const routerModule: RuntimeModule = (angular) => {
           stateRegistry,
           rootScope,
           viewService,
+          rootElement,
         );
       },
     ])

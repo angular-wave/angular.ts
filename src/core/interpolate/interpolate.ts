@@ -30,7 +30,12 @@ export interface InterpolationFunction {
 }
 
 interface WatchableContext {
-  $watch: (expression: string, listener: () => void) => unknown;
+  $watch: (
+    expression: string,
+    listener: () => void,
+    lazy?: boolean,
+    directLeaf?: boolean,
+  ) => unknown;
 }
 
 function getWatchableContext(context: unknown): WatchableContext | undefined {
@@ -272,9 +277,16 @@ export function createInterpolateService(
               const watchable = getWatchableContext(context);
 
               if (watchable) {
-                callFunction(watchable.$watch, watchable, watchProp, () => {
-                  cb(compute(context));
-                });
+                callFunction(
+                  watchable.$watch,
+                  watchable,
+                  watchProp,
+                  () => {
+                    cb(compute(context));
+                  },
+                  false,
+                  true,
+                );
               }
             }
 
@@ -324,15 +336,24 @@ export function createInterpolateService(
               const watchable = getWatchableContext(context);
 
               if (watchable) {
-                callFunction(watchable.$watch, watchable, watchProp, () => {
-                  const watchedValues = new Array<unknown>(expressions.length);
+                callFunction(
+                  watchable.$watch,
+                  watchable,
+                  watchProp,
+                  () => {
+                    const watchedValues = new Array<unknown>(
+                      expressions.length,
+                    );
 
-                  for (let j = 0; j < expressions.length; j++) {
-                    watchedValues[j] = parseFns[j](context);
-                  }
+                    for (let j = 0; j < expressions.length; j++) {
+                      watchedValues[j] = parseFns[j](context);
+                    }
 
-                  cb(compute(watchedValues));
-                });
+                    cb(compute(watchedValues));
+                  },
+                  false,
+                  true,
+                );
               }
             }
 

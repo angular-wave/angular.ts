@@ -12,6 +12,7 @@ import {
   _controller,
   _injector,
   _location,
+  _rootElement,
   _rootScope,
   _security,
   _stateRegistry,
@@ -27,6 +28,7 @@ import { RouterRuntimeState, type RouterConfig } from "../router.ts";
 import { StateRegistryRuntime } from "../state/state-registry.ts";
 import { StateRuntime } from "../state/state-service.ts";
 import type { LazyStateLoader, StateDeclaration } from "../state/interface.ts";
+import { setStateDeclarationSource } from "../state/state-object.ts";
 import { TemplateFactoryService } from "../router/template-factory.ts";
 import { TransitionRuntime } from "../transition/transition-service.ts";
 import { ViewService, type ViewServiceDependencies } from "../view/view.ts";
@@ -66,7 +68,11 @@ export const routerRuntimeConfigKey = "$router" as const;
 /** @internal */
 export type RouterRuntimeCommand =
   | { type: "config"; config: RouterConfig }
-  | { type: "state"; definition: StateDeclaration }
+  | {
+      type: "state";
+      definition: StateDeclaration;
+      source?: StateDeclaration;
+    }
   | { type: "lazy"; prefix: string; loader: LazyStateLoader };
 
 /** @internal */
@@ -79,6 +85,9 @@ export function applyRouterRuntimeCommand(
       runtime.routerState.config(command.config);
       break;
     case "state":
+      if (command.source) {
+        setStateDeclarationSource(command.definition, command.source);
+      }
       runtime.stateService.state(command.definition);
       break;
     case "lazy":
@@ -160,6 +169,7 @@ export function createRouterRuntime(
       if (destroyed) return;
 
       destroyed = true;
+      stateService._destroyRuntime();
       viewService?.destroy();
     },
   };
@@ -210,6 +220,7 @@ export const routerRuntimeRegistration: RuntimeRegistrationRecipe = {
       _rootScope,
       _injector,
       _location,
+      _rootElement,
       _stateRegistry,
       (
         templateRequest: ng.TemplateRequestService,
@@ -218,6 +229,7 @@ export const routerRuntimeRegistration: RuntimeRegistrationRecipe = {
         rootScope: ng.Scope,
         injector: ng.InjectorService,
         location: ng.LocationService,
+        rootElement: HTMLElement,
         stateRegistry: StateRegistryRuntime,
       ) => {
         const templateFactory = routerRuntime.createTemplateFactory(
@@ -238,6 +250,7 @@ export const routerRuntimeRegistration: RuntimeRegistrationRecipe = {
           stateRegistry,
           rootScope,
           viewService,
+          rootElement,
         );
       },
     ]);

@@ -1,7 +1,16 @@
 import type { RuntimeModule } from "../angular-runtime.ts";
-import { _machine, _workflow } from "../injection-tokens.ts";
+import {
+  _machine,
+  _workflow,
+  _workflowSupervisor,
+} from "../injection-tokens.ts";
 import { createMachineService } from "../services/machine/machine.ts";
-import { createWorkflowService } from "../services/workflow/workflow.ts";
+import {
+  createWorkflowService,
+  createWorkflowSupervisor,
+  type WorkflowService,
+  type WorkflowSupervisorService,
+} from "../services/workflow/workflow.ts";
 
 /**
  * Registers the optional machine and workflow services as an AngularTS module.
@@ -14,4 +23,10 @@ export const orchestrationModule: RuntimeModule = (angular) =>
   angular
     .module("ng.orchestration", [])
     .factory(_machine, createMachineService)
-    .factory(_workflow, createWorkflowService);
+    .factory(_workflow, createWorkflowService)
+    .factory(_workflowSupervisor, [
+      _workflow,
+      ($workflow: WorkflowService): WorkflowSupervisorService =>
+        (config) =>
+          createWorkflowSupervisor($workflow, config),
+    ]);

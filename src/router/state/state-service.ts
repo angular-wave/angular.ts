@@ -11,6 +11,9 @@ import {
 } from "../../shared/utils.ts";
 import { isInjectable } from "../../core/di/injectable.ts";
 import { PathNode } from "../path/path-node.ts";
+import { buildPath } from "../path/path-utils.ts";
+import { hasNormalizedAttr } from "../../shared/dom.ts";
+import { _serviceWorker } from "../../injection-tokens.ts";
 import {
   defaultTransOpts,
   type TransitionRuntime,
@@ -47,10 +50,11 @@ import type {
   TransitionPromise,
   StateErrorBoundaryPolicy,
   StateTransitionErrorPolicyContext,
+  ViewDeclarationCommon,
 } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
 import type { StateRegistryRuntime } from "./state-registry.ts";
-import type { RouterRuntimeState } from "../router.ts";
+import { _getRouterPrefetchDelay, type RouterRuntimeState } from "../router.ts";
 
 const stateRuntimeError = createErrorFactory("$state");
 
@@ -105,6 +109,10 @@ export class StateRuntime {
   _policyDiagnostics: StateTransitionPolicyDiagnostic[];
   /** @internal */
   _viewService!: ViewService;
+  /** @internal */
+  _prefetches: Map<string, Promise<void>>;
+  /** @internal */
+  _prefetchRootDisposer: (() => void) | undefined;
 
   /** @internal */
   _getRegistry(): StateRegistryRuntime {
@@ -146,6 +154,8 @@ export class StateRuntime {
     this._$injector = undefined;
     this._lazyStates = [];
     this._policyDiagnostics = [];
+    this._prefetches = new Map();
+    this._prefetchRootDisposer = undefined;
 
     this._defaultErrorHandler = exceptionHandler;
   }
@@ -162,6 +172,7 @@ export class StateRuntime {
     $stateRegistry: StateRegistryRuntime,
     $rootScope: ng.Scope,
     viewService: ViewService,
+    $rootElement?: HTMLElement,
   ): this {
     this._routerState._initRuntime($location, $injector);
     this._stateRegistry = $stateRegistry;
@@ -173,8 +184,222 @@ export class StateRuntime {
     this._transitionService._initRuntimeHooks(this, viewService);
     this._$injector = $injector;
     this._routerState._injector = $injector;
+    this._prefetchRootDisposer?.();
+    this._prefetchRootDisposer = $rootElement
+      ? this._bindPrefetchRoot($rootElement)
+      : undefined;
 
     return this;
+  }
+
+  /** @internal */
+  _destroyRuntime(): void {
+    this._prefetchRootDisposer?.();
+    this._prefetchRootDisposer = undefined;
+    this._prefetches.clear();
+  }
+
+  /** @internal */
+  _bindPrefetchRoot($rootElement: HTMLElement): () => void {
+    const timers = new Map<HTMLAnchorElement, number>();
+
+    const findAnchor = (event: Event): HTMLAnchorElement | undefined => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) return undefined;
+
+      const anchor = target.closest("a[href]");
+
+      if (
+        !(anchor instanceof HTMLAnchorElement) ||
+        !$rootElement.contains(anchor) ||
+        hasNormalizedAttr(anchor, "ngState")
+      ) {
+        return undefined;
+      }
+
+      return anchor;
+    };
+
+    const cancel = (anchor: HTMLAnchorElement): void => {
+      const timer = timers.get(anchor);
+
+      if (timer !== undefined) {
+        clearTimeout(timer);
+        timers.delete(anchor);
+      }
+    };
+
+    const enter = ((event: Event) => {
+      const anchor = findAnchor(event);
+
+      if (
+        !anchor ||
+        anchor.contains((event as MouseEvent).relatedTarget as Node)
+      ) {
+        return;
+      }
+
+      const delay = _getRouterPrefetchDelay(anchor, this._routerState);
+
+      if (delay === undefined) return;
+
+      cancel(anchor);
+      timers.set(
+        anchor,
+        window.setTimeout(() => {
+          timers.delete(anchor);
+          void this._prefetchHref(anchor.href).catch(() => undefined);
+        }, delay),
+      );
+    }) as EventListener;
+
+    const leave = ((event: Event) => {
+      const anchor = findAnchor(event);
+
+      if (
+        anchor &&
+        !anchor.contains((event as MouseEvent).relatedTarget as Node)
+      ) {
+        cancel(anchor);
+      }
+    }) as EventListener;
+
+    $rootElement.addEventListener("pointerover", enter);
+    $rootElement.addEventListener("pointerout", leave);
+    $rootElement.addEventListener("focusin", enter);
+    $rootElement.addEventListener("focusout", leave);
+
+    return () => {
+      $rootElement.removeEventListener("pointerover", enter);
+      $rootElement.removeEventListener("pointerout", leave);
+      $rootElement.removeEventListener("focusin", enter);
+      $rootElement.removeEventListener("focusout", leave);
+      timers.forEach((timer) => {
+        clearTimeout(timer);
+      });
+      timers.clear();
+    };
+  }
+
+  /** @internal */
+  async _prefetchHref(href: string): Promise<void> {
+    const parts = this._routerState._urlRuntime._parseHref(href);
+
+    if (!parts) return;
+
+    const match = this._routerState._routeTable._match(
+      parts.path,
+      parts.search,
+      parts.hash,
+    );
+
+    if (match) {
+      await this.prefetch(match.state, match.match, { inherit: true });
+    }
+  }
+
+  /** @internal */
+  async _prefetchTarget(
+    stateOrName: StateOrName,
+    params: RawParams,
+    options: TransitionOptions,
+  ): Promise<void> {
+    let target = this.target(stateOrName, params, options);
+
+    if (!target.valid()) {
+      const lazy = this._findLazyState(target);
+
+      if (lazy) {
+        lazy.promise ??= this._loadLazyRegistration(lazy, target);
+        await lazy.promise;
+        target = this.target(stateOrName, params, options);
+      }
+    }
+
+    if (!target.valid()) {
+      throw new Error(String(target.error()));
+    }
+
+    const templateFactory = this._viewService._templateFactory;
+
+    const templateLoads: Promise<unknown>[] = [];
+
+    buildPath(target).forEach((node) => {
+      Object.values(node.state._views ?? {}).forEach((view) => {
+        templateLoads.push(
+          this._prefetchView(templateFactory, view, target.params()),
+        );
+      });
+    });
+
+    await Promise.all(templateLoads);
+  }
+
+  /** @internal */
+  async _prefetchView(
+    templateFactory: ViewService["_templateFactory"],
+    view: ViewDeclarationCommon,
+    params: RawParams,
+  ): Promise<unknown> {
+    const templateUrl = templateFactory._getTemplateUrl(view, params);
+
+    if (templateUrl && (await this._relayResource(templateUrl))) {
+      return undefined;
+    }
+
+    return templateFactory._fromConfig(view, params);
+  }
+
+  /** @internal */
+  async _relayResource(url: string): Promise<boolean> {
+    const relay = this._routerState._relay;
+    const injector = this._$injector;
+
+    if (!relay || !injector?.has(_serviceWorker)) return false;
+
+    const serviceWorker = injector.get<ng.ServiceWorkerService>(_serviceWorker);
+
+    if (!serviceWorker.controller) return false;
+
+    const cache = isObject(relay) ? (relay.cache ?? true) : true;
+
+    try {
+      const result = await serviceWorker.request<{ ok: boolean }>({
+        type: "angular-router:prefetch",
+        version: 1,
+        url,
+        cache,
+      });
+
+      return result.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Loads lazy state declarations and route templates without navigating.
+   */
+  prefetch(
+    stateOrName: StateOrName,
+    params: RawParams = {},
+    options: TransitionOptions = {},
+  ): Promise<void> {
+    const key = `${diagnosticStateName(stateOrName)}:${JSON.stringify(params)}`;
+    const existing = this._prefetches.get(key);
+
+    if (existing) return existing;
+
+    const promise = this._prefetchTarget(stateOrName, params, options).finally(
+      () => {
+        this._prefetches.delete(key);
+      },
+    );
+
+    this._prefetches.set(key, promise);
+
+    return promise;
   }
 
   /**
@@ -983,6 +1208,21 @@ export type StateService<TRouteMap extends RouteMap = Record<string, never>> = {
     params?: RawParams,
     options?: TransitionOptions,
   ): TransitionPromise;
+
+  /** Prefetch lazy declarations and templates for a typed route. */
+  prefetch<TRouteName extends Extract<keyof TRouteMap, string>>(
+    stateOrName: TRouteName,
+    ...args: RouteParamArgs<TRouteMap, TRouteName, TransitionOptions>
+  ): Promise<void>;
+
+  /** Prefetch lazy declarations and templates without navigating. */
+  prefetch(
+    stateOrName: TRouteMap extends Record<string, never>
+      ? StateOrName
+      : Exclude<StateOrName, string>,
+    params?: RawParams,
+    options?: TransitionOptions,
+  ): Promise<void>;
 
   /** Overload for typed route names and params. */
   href<TRouteName extends Extract<keyof TRouteMap, string>>(

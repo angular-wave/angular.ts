@@ -336,6 +336,19 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     return clone as Node;
   }
 
+  function removeBlockNodes(nodes: Node[]): void {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+
+      if (node.nodeType === NodeType._ELEMENT_NODE) {
+        removeElement(node as Element);
+      } else {
+        removeElementData(node);
+        node.parentNode?.removeChild(node);
+      }
+    }
+  }
+
   function restoreScopedBlocks(
     targetMap: RepeatBlockMap,
     blockOrder: (RepeatBlock | undefined)[],
@@ -403,7 +416,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       removeElementData(descendants[i]);
     }
 
-    let node: Node | null = removedNodes.firstChild;
+    let node: ChildNode | null = removedNodes.firstChild;
 
     while (node) {
       removeElementData(node as Element & Record<string, unknown>);
@@ -1121,9 +1134,6 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
                 removeNodeRangeFast(firstNode, lastNode);
 
-                for (let i = 0; i < lastBlockOrder.length; i++) {
-                  lastBlockOrder[i]._fragment?.dispose();
-                }
                 lastBlockMap = nullObject();
                 lastBlockOrder = [];
               }
@@ -1157,8 +1167,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   });
               } else {
                 block._scope?.$destroy();
-
-                assertDefined(block._fragment).dispose();
+                removeBlockNodes(blockNodes);
               }
 
               if (blockNodes.length && blockNodes[0].parentNode) {

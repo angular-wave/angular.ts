@@ -33,6 +33,7 @@ export const _sce = "$sce" as const;
 export const _sceDelegate = "$sceDelegate" as const;
 export const _state = "$state" as const;
 export const _stateRegistry = "$stateRegistry" as const;
+export const _storage = "$storage" as const;
 export const _security = "$security" as const;
 export const _serviceWorker = "$serviceWorker" as const;
 export const _stream = "$stream" as const;
@@ -47,6 +48,7 @@ export const _websocket = "$websocket" as const;
 export const _worker = "$worker" as const;
 export const _wasm = "$wasm" as const;
 export const _workflow = "$workflow" as const;
+export const _workflowSupervisor = "$workflowSupervisor" as const;
 export const _injector = "$injector" as const;
 
 /**
@@ -84,6 +86,7 @@ export const $injectTokens = {
   _serviceWorker,
   _state,
   _stateRegistry,
+  _storage,
   _stream,
   _sse,
   _templateCache,
@@ -96,5 +99,6 @@ export const $injectTokens = {
   _worker,
   _wasm,
   _workflow,
+  _workflowSupervisor,
   _injector,
 } as const satisfies Readonly<Record<string, string>>;

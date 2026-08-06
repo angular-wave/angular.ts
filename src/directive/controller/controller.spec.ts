@@ -41,6 +41,21 @@ describe("ngController", () => {
     },
   };
 
+  class RowsController {
+    rows = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+    swapRows() {
+      const first = this.rows[0];
+
+      this.rows[0] = this.rows[2];
+      this.rows[2] = first;
+    }
+
+    removeRow() {
+      this.rows.splice(1, 1);
+    }
+  }
+
   beforeEach(() => {
     angular = new Angular();
     window.angular = angular;
@@ -63,7 +78,24 @@ describe("ngController", () => {
         function ($scope) {
           this.mark = "works";
         },
-      ]);
+      ])
+      .controller("RowsController", RowsController)
+      .component("testFunctionCounter", {
+        controller: function () {
+          const $ctrl = this;
+
+          $ctrl.increment = () => {
+            $ctrl.count = $ctrl.count + 1;
+          };
+        },
+        template: `
+          <section ng-cloak>
+            <button ng-init="$ctrl.count = 0" ng-click="$ctrl.increment()">
+              Count is: {{ $ctrl.count }}
+            </button>
+          </section>
+        `,
+      });
 
     const Foo = function ($scope) {
       $scope.mark = "foo";
@@ -117,6 +149,44 @@ describe("ngController", () => {
     )($rootScope);
     await wait();
     expect(element.innerText).toBe("works");
+  });
+
+  it("should observe keyed collection mutations made by controller-as methods", async () => {
+    element = $compile(`
+      <div ng-controller="RowsController as vm">
+        <button data-action="swap" ng-click="vm.swapRows()"></button>
+        <button data-action="remove" ng-click="vm.removeRow()"></button>
+        <span ng-repeat="row in vm.rows">{{row.id}}</span>
+      </div>
+    `)($rootScope);
+    await wait();
+
+    element.querySelector('[data-action="swap"]').click();
+    await wait();
+    expect(
+      Array.from(element.querySelectorAll("span"), (node) => node.innerText),
+    ).toEqual(["3", "2", "1"]);
+
+    element.querySelector('[data-action="remove"]').click();
+    await wait();
+    expect(
+      Array.from(element.querySelectorAll("span"), (node) => node.innerText),
+    ).toEqual(["3", "1"]);
+  });
+
+  it("should observe component controller mutations through an arrow closure", async () => {
+    element = $compile("<test-function-counter></test-function-counter>")(
+      $rootScope,
+    );
+    await wait();
+
+    const button = element.querySelector("button");
+
+    expect(button.innerText.trim()).toBe("Count is: 0");
+
+    button.click();
+    await wait();
+    expect(button.innerText.trim()).toBe("Count is: 1");
   });
 
   it("should allow nested controllers", async () => {

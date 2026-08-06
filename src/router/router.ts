@@ -20,6 +20,7 @@ import type { InternalTransitionOptions } from "./transition/interface.ts";
 import type { StateObject } from "./state/state-object.ts";
 import type { StateRuntime } from "./state/state-service.ts";
 import type { LocationConfig } from "../services/location/location.ts";
+import type { CacheStrategy } from "../services/cache/cache.ts";
 
 export interface RouterScrollOptions {
   behavior?: ScrollBehavior;
@@ -42,6 +43,12 @@ export interface RouterFocusOptions {
 
 export type RouterFocusConfig = boolean | string | RouterFocusOptions;
 
+export type RouterPrefetchConfig = boolean;
+
+export interface RouterRelayConfig {
+  cache?: boolean | CacheStrategy;
+}
+
 export interface RouterConfig {
   strict?: boolean;
   caseInsensitive?: boolean;
@@ -49,6 +56,9 @@ export interface RouterConfig {
   paramTypes?: Record<string, Partial<ParamTypeDefinition>>;
   scroll?: RouterScrollConfig;
   focus?: RouterFocusConfig;
+  prefetch?: RouterPrefetchConfig;
+  prefetchDelay?: number;
+  relay?: boolean | RouterRelayConfig;
   viewTransitions?: boolean;
   loading?: StateTransitionPolicyDeclaration["loading"];
   retry?: StateTransitionPolicyDeclaration["retry"];
@@ -84,6 +94,12 @@ export class RouterRuntimeState {
   _scroll: RouterScrollConfig | undefined;
   /** @internal */
   _focus: RouterFocusConfig | undefined;
+  /** @internal */
+  _prefetch: RouterPrefetchConfig;
+  /** @internal */
+  _prefetchDelay: number;
+  /** @internal */
+  _relay: boolean | RouterRelayConfig;
   /** @internal */
   _viewTransitions: boolean | undefined;
   /** @internal */
@@ -130,6 +146,9 @@ export class RouterRuntimeState {
     this._params = new StateParams();
     this._scroll = undefined;
     this._focus = undefined;
+    this._prefetch = false;
+    this._prefetchDelay = 60;
+    this._relay = false;
     this._viewTransitions = undefined;
     this._loading = undefined;
     this._retry = undefined;
@@ -189,6 +208,18 @@ export class RouterRuntimeState {
 
     if (config.focus !== undefined) {
       this._focus = config.focus;
+    }
+
+    if (config.prefetch !== undefined) {
+      this._prefetch = config.prefetch;
+    }
+
+    if (config.prefetchDelay !== undefined) {
+      this._prefetchDelay = Math.max(0, config.prefetchDelay);
+    }
+
+    if (config.relay !== undefined) {
+      this._relay = config.relay;
     }
 
     if (config.viewTransitions !== undefined) {
@@ -279,4 +310,32 @@ export class RouterRuntimeState {
       assign(globalConfig, config) as UrlMatcherCompileConfig,
     );
   }
+}
+
+/** @internal */
+export function _getRouterPrefetchDelay(
+  element: Element,
+  routerState: RouterRuntimeState,
+): number | undefined {
+  const mode = element.getAttribute("data-prefetch");
+
+  if (mode !== null && mode !== "" && mode !== "true") {
+    return undefined;
+  }
+
+  if (mode === null && !routerState._prefetch) {
+    return undefined;
+  }
+
+  const delayValue = element.getAttribute("data-prefetch-delay");
+
+  if (delayValue !== null && delayValue.trim() !== "") {
+    const delay = Number(delayValue);
+
+    if (Number.isFinite(delay)) {
+      return Math.max(0, delay);
+    }
+  }
+
+  return routerState._prefetchDelay;
 }

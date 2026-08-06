@@ -97,6 +97,14 @@ interface Listener {
   _watchLiteralInput?: boolean;
   /** @internal */
   _dedupeUnchanged?: boolean;
+  /** @internal Allows framework bindings to consume a stable foreign leaf directly. */
+  _directLeaf?: boolean;
+  /** @internal Binding queue epoch used to deduplicate pending leaf writes. */
+  _bindingEpoch?: number;
+  /** @internal Most recent direct binding source handler. */
+  _bindingSourceHandler?: Scope;
+  /** @internal Most recent direct binding source property. */
+  _bindingSourceProperty?: PropertyKey;
   /** @internal */
   _hasLastValue?: boolean;
   /** @internal */
@@ -113,6 +121,7 @@ interface ForeignWatchDescriptor {
   _watchProp: string;
   _watchParentFn: CompiledExpression;
   _key: string;
+  _parent?: unknown;
   _dependency?: ForeignListenerRef;
 }
 
@@ -140,6 +149,8 @@ interface ScheduledListenerTask {
   _listeners: Listener[];
   _target: unknown;
   _filter?: ListenerScheduleFilter;
+  _sourceHandler?: Scope;
+  _sourceProperty?: PropertyKey;
 }
 
 interface ScheduledCallbackTask {
@@ -147,13 +158,63 @@ interface ScheduledCallbackTask {
   _callback: () => void;
 }
 
-type ScheduledTask = ScheduledListenerTask | ScheduledCallbackTask;
+interface ScheduledBindingTask {
+  _kind: "bindings";
+}
+
+type ScheduledTask =
+  | ScheduledListenerTask
+  | ScheduledCallbackTask
+  | ScheduledBindingTask;
+
+const scheduledBindingTask: ScheduledBindingTask = {
+  _kind: "bindings",
+};
+
+const foreignProxyParentPathCache = new Map<
+  string,
+  readonly string[] | undefined
+>();
+
+function getForeignProxyParentPath(
+  watchProp: string,
+): readonly string[] | undefined {
+  if (foreignProxyParentPathCache.has(watchProp)) {
+    return foreignProxyParentPathCache.get(watchProp);
+  }
+
+  const parentExpression = getWatchParentExpression(watchProp);
+
+  if (!parentExpression || parentExpression.includes("[")) {
+    foreignProxyParentPathCache.set(watchProp, undefined);
+
+    return undefined;
+  }
+
+  const parts = parentExpression.split(".");
+
+  if (
+    parts.length < 2 ||
+    parts.some((part) => !/^[$A-Z_a-z][$\w]*$/.test(part))
+  ) {
+    foreignProxyParentPathCache.set(watchProp, undefined);
+
+    return undefined;
+  }
+
+  foreignProxyParentPathCache.set(watchProp, parts);
+
+  return parts;
+}
 
 /**
  * Shared microtask scheduler state for a scope family.
  */
 export interface ScopeListenerScheduler {
   _queue: ScheduledTask[];
+  _bindingQueue: Listener[];
+  _bindingEpoch: number;
+  _bindingsQueued: boolean;
   _index: number;
   _queued: boolean;
   _flushing: boolean;
@@ -171,6 +232,9 @@ export interface ModelChangeTracker {
 export function createScopeListenerScheduler(): ScopeListenerScheduler {
   const scheduler: ScopeListenerScheduler = {
     _queue: [],
+    _bindingQueue: [],
+    _bindingEpoch: 0,
+    _bindingsQueued: false,
     _index: 0,
     _queued: false,
     _flushing: false,
@@ -2381,6 +2445,7 @@ export class Scope {
           : undefined;
 
         const targetHashKey = getHashKey(target);
+        let hasExactPropListeners = false;
 
         if (isDefined(targetHashKey)) {
           const hashedPropListeners = this._watchersByHash
@@ -2389,6 +2454,7 @@ export class Scope {
 
           if (hashedPropListeners) {
             propListeners = hashedPropListeners;
+            hasExactPropListeners = directListeners.length === 0;
           }
         }
 
@@ -2399,34 +2465,42 @@ export class Scope {
         }
 
         if (directListeners.length > 0) {
-          this._scheduleListener(directListeners, (list) => {
-            const scheduled: Listener[] = [];
+          if (hasExactPropListeners) {
+            this._scheduleListener(directListeners, undefined, property);
+          } else {
+            this._scheduleListener(
+              directListeners,
+              (list) => {
+                const scheduled: Listener[] = [];
 
-            for (let i = 0, l = list.length; i < l; i++) {
-              const x = list[i];
+                for (let i = 0, l = list.length; i < l; i++) {
+                  const x = list[i];
 
-              if (!x._watchProp) {
-                scheduled.push(x);
-                continue;
-              }
+                  if (!x._watchProp) {
+                    scheduled.push(x);
+                    continue;
+                  }
 
-              const expectedParent = x._watchParentFn?.(x._originalTarget);
+                  const expectedParent = x._watchParentFn?.(x._originalTarget);
 
-              const expectedParentTarget = unwrapScopeValue(expectedParent);
+                  const expectedParentTarget = unwrapScopeValue(expectedParent);
 
-              if (
-                expectedTarget === expectedParentTarget ||
-                (isArray(expectedParentTarget) &&
-                  expectedTarget === x._originalTarget) ||
-                (x._watchProp.includes("[") &&
-                  expectedTarget === x._originalTarget)
-              ) {
-                scheduled.push(x);
-              }
-            }
+                  if (
+                    expectedTarget === expectedParentTarget ||
+                    (isArray(expectedParentTarget) &&
+                      expectedTarget === x._originalTarget) ||
+                    (x._watchProp.includes("[") &&
+                      expectedTarget === x._originalTarget)
+                  ) {
+                    scheduled.push(x);
+                  }
+                }
 
-            return scheduled;
-          });
+                return scheduled;
+              },
+              property,
+            );
+          }
         }
 
         if (nestedListeners.length > 0) {
@@ -2492,7 +2566,21 @@ export class Scope {
           }
 
           if (scheduled.length > 0) {
-            this._scheduleListener(scheduled);
+            if (seenListenerIds.size > 0) {
+              const uniqueForeignListeners: Listener[] = [];
+
+              for (let i = 0, l = scheduled.length; i < l; i++) {
+                if (!seenListenerIds.has(scheduled[i]._id)) {
+                  uniqueForeignListeners.push(scheduled[i]);
+                }
+              }
+
+              scheduled = uniqueForeignListeners;
+            }
+
+            if (scheduled.length > 0) {
+              this._scheduleListener(scheduled, undefined, property);
+            }
           }
         }
       }
@@ -2501,10 +2589,14 @@ export class Scope {
         const keyList = this._objectListeners.get(target);
 
         if (keyList) {
+          const objectHashKey = getHashKey(target);
+
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
 
-            const listeners = this._watchers.get(key);
+            const listeners = isDefined(objectHashKey)
+              ? this._watchersByHash.get(key)?.get(objectHashKey)
+              : this._watchers.get(key);
 
             if (listeners && this._scheduled !== listeners) {
               this._scheduleListener(listeners);
@@ -3043,21 +3135,28 @@ export class Scope {
 
     for (let i = 0, l = descriptors.length; i < l; i++) {
       const descriptor = descriptors[i];
+      const existing = descriptor._dependency;
+      const parent = descriptor._watchParentFn(listener._originalTarget);
+
+      if (existing && descriptor._parent === parent) {
+        continue;
+      }
+
       const foreignProxy = this._resolveForeignDependencyProxy(
         listener,
         descriptor,
+        parent,
       );
 
       if (!foreignProxy) {
         continue;
       }
 
-      const existing = descriptor._dependency;
-
       if (
         existing?._handler === foreignProxy.$handler &&
         existing._key === descriptor._key
       ) {
+        descriptor._parent = parent;
         continue;
       }
 
@@ -3085,6 +3184,7 @@ export class Scope {
         _key: descriptor._key,
         _id: listener._id,
       };
+      descriptor._parent = parent;
       bound = true;
     }
 
@@ -3113,6 +3213,7 @@ export class Scope {
         listener._id,
       );
       descriptors[i]._dependency = undefined;
+      descriptors[i]._parent = undefined;
     }
   }
 
@@ -3120,9 +3221,8 @@ export class Scope {
   _resolveForeignDependencyProxy(
     listener: Listener,
     descriptor: ForeignWatchDescriptor,
+    potentialProxy: unknown,
   ): ScopeProxy | undefined {
-    const potentialProxy = descriptor._watchParentFn(listener._originalTarget);
-
     if (
       isObject(potentialProxy) &&
       isFunction((potentialProxy as ScopeProxyBindable)[SCOPE_PROXY_BIND])
@@ -3161,22 +3261,10 @@ export class Scope {
     watchProp: string,
     target: ScopeTarget,
   ): ScopeProxy | undefined {
-    const parentExpression = getWatchParentExpression(watchProp);
+    const parts = getForeignProxyParentPath(watchProp);
 
-    if (!parentExpression || parentExpression.includes("[")) {
+    if (!parts) {
       return undefined;
-    }
-
-    const parts = parentExpression.split(".");
-
-    if (parts.length < 2) {
-      return undefined;
-    }
-
-    for (let i = 0, l = parts.length; i < l; i++) {
-      if (!/^[$A-Z_a-z][$\w]*$/.test(parts[i])) {
-        return undefined;
-      }
     }
 
     const rootValue = target[parts[0]];
@@ -3429,12 +3517,31 @@ export class Scope {
           continue;
         }
 
+        if (task._kind === "bindings") {
+          const bindingQueue = scheduler._bindingQueue;
+
+          scheduler._bindingQueue = [];
+          scheduler._bindingsQueued = false;
+          scheduler._bindingEpoch++;
+
+          for (let i = 0, l = bindingQueue.length; i < l; i++) {
+            this._notifyBindingListener(bindingQueue[i]);
+          }
+
+          continue;
+        }
+
         const filteredListeners = task._filter
           ? task._filter(task._listeners)
           : task._listeners;
 
         for (let i = 0, l = filteredListeners.length; i < l; i++) {
-          this._notifyListener(filteredListeners[i], task._target);
+          this._notifyListener(
+            filteredListeners[i],
+            task._target,
+            task._sourceHandler,
+            task._sourceProperty,
+          );
         }
       }
     } finally {
@@ -3498,8 +3605,44 @@ export class Scope {
   _scheduleListener(
     listeners: Listener[],
     filterOrTarget?: ListenerScheduleFilter | Scope,
+    sourceProperty?: PropertyKey,
   ): void {
     const filter = isFunction(filterOrTarget) ? filterOrTarget : undefined;
+
+    if (!filter && sourceProperty !== undefined) {
+      const scheduler = this._listenerScheduler;
+      let genericListeners: Listener[] | undefined;
+
+      for (let i = 0, l = listeners.length; i < l; i++) {
+        const listener = listeners[i];
+
+        if (!listener._directLeaf) {
+          genericListeners ??= [];
+          genericListeners.push(listener);
+
+          continue;
+        }
+
+        listener._bindingSourceHandler = this;
+        listener._bindingSourceProperty = sourceProperty;
+
+        if (listener._bindingEpoch !== scheduler._bindingEpoch) {
+          listener._bindingEpoch = scheduler._bindingEpoch;
+          scheduler._bindingQueue.push(listener);
+        }
+      }
+
+      if (scheduler._bindingQueue.length > 0 && !scheduler._bindingsQueued) {
+        scheduler._bindingsQueued = true;
+        this._enqueueScheduledTask(scheduledBindingTask);
+      }
+
+      if (!genericListeners) {
+        return;
+      }
+
+      listeners = genericListeners;
+    }
 
     const target: unknown = filter
       ? this.$target
@@ -3510,6 +3653,8 @@ export class Scope {
       _listeners: listeners,
       _target: target,
       _filter: filter,
+      _sourceHandler: sourceProperty === undefined ? undefined : this,
+      _sourceProperty: sourceProperty,
     });
   }
 
@@ -3528,7 +3673,12 @@ export class Scope {
    * @returns A function to deregister the watcher, or undefined if no listener function is provided.
    * @throws Error when `watchProp` is not a string expression.
    */
-  $watch(watchProp: string, listenerFn?: ng.ListenerFn, lazy = false) {
+  $watch(
+    watchProp: string,
+    listenerFn?: ng.ListenerFn,
+    lazy = false,
+    directLeaf = false,
+  ) {
     assert(isString(watchProp), "Watched property required");
     watchProp = watchProp.trim();
     const get = this._parse(watchProp);
@@ -3732,6 +3882,8 @@ export class Scope {
           collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
 
           this._bindForeignDependency(listener);
+          listener._directLeaf =
+            directLeaf && listener._foreignWatchDescriptors?.length === 1;
         }
         break;
       }
@@ -4767,16 +4919,129 @@ export class Scope {
   }
 
   /** @internal Resolves the watched value and notifies a single listener. */
-  _notifyListener(listener: Listener, target: unknown): void {
+  _notifyBindingListener(listener: Listener): void {
+    const sourceHandler = listener._bindingSourceHandler;
+    const sourceProperty = listener._bindingSourceProperty;
+
+    listener._bindingSourceHandler = undefined;
+    listener._bindingSourceProperty = undefined;
+
+    if (!sourceHandler || sourceProperty === undefined) {
+      return;
+    }
+
+    try {
+      const value = (
+        sourceHandler.$proxy as unknown as Record<PropertyKey, unknown>
+      )[sourceProperty];
+
+      if (isFunction(value) || isArray(value)) {
+        this._notifyListener(
+          listener,
+          sourceHandler,
+          sourceHandler,
+          sourceProperty,
+        );
+
+        return;
+      }
+
+      listener._listenerFn(value, listener._originalTarget);
+    } catch (err) {
+      this._exceptionHandler(err);
+    }
+  }
+
+  /** @internal Resolves the watched value and notifies a single listener. */
+  _notifyListener(
+    listener: Listener,
+    target: unknown,
+    sourceHandler?: Scope,
+    sourceProperty?: PropertyKey,
+  ): void {
     const { _originalTarget, _listenerFn, _watchFn } = listener;
 
     try {
-      this._bindForeignDependency(listener);
+      let hasDirectForeignSource = false;
+      let hasStableForeignSource = false;
+
+      if (sourceProperty !== undefined) {
+        const descriptors = listener._foreignWatchDescriptors;
+
+        if (descriptors) {
+          for (let i = 0, l = descriptors.length; i < l; i++) {
+            const dependency = descriptors[i]._dependency;
+
+            if (dependency?._key !== sourceProperty) {
+              continue;
+            }
+
+            hasDirectForeignSource = dependency._handler === sourceHandler;
+            hasStableForeignSource =
+              hasDirectForeignSource || dependency._handler.$target === target;
+
+            if (!hasStableForeignSource && isString(sourceProperty)) {
+              const parentPath = getForeignProxyParentPath(
+                descriptors[i]._watchProp,
+              );
+
+              hasStableForeignSource =
+                parentPath !== undefined &&
+                !parentPath.includes(sourceProperty);
+            }
+
+            if (hasStableForeignSource) break;
+          }
+        }
+      }
+
+      if (!hasStableForeignSource) {
+        this._bindForeignDependency(listener);
+      }
+
+      if (
+        hasDirectForeignSource &&
+        listener._directLeaf &&
+        sourceHandler &&
+        sourceProperty !== undefined
+      ) {
+        const value = (
+          sourceHandler.$proxy as unknown as Record<PropertyKey, unknown>
+        )[sourceProperty];
+
+        if (!isFunction(value) && !isArray(value)) {
+          _listenerFn(value, _originalTarget);
+
+          return;
+        }
+      }
 
       let newVal = _watchFn(_originalTarget);
 
       if (isUndefined(newVal) && target !== _originalTarget) {
         newVal = _watchFn(target);
+      }
+
+      if (!isFunction(newVal) && !isArray(newVal)) {
+        const hasForeignDependency = listener._foreignWatchDescriptors?.some(
+          (descriptor) => descriptor._dependency,
+        );
+
+        if (listener._dedupeUnchanged && !hasForeignDependency) {
+          if (
+            listener._hasLastValue &&
+            simpleCompare(listener._lastValue, newVal)
+          ) {
+            return;
+          }
+
+          listener._hasLastValue = true;
+          listener._lastValue = newVal;
+        }
+
+        _listenerFn(newVal, _originalTarget);
+
+        return;
       }
 
       const notify = (value: unknown): void => {
@@ -4807,10 +5072,6 @@ export class Scope {
         newVal = listener._invokeWatchFn
           ? listener._invokeWatchFn(_originalTarget)
           : callFunction(newVal, undefined, _originalTarget);
-      } else if (!isArray(newVal)) {
-        notify(newVal);
-
-        return;
       } else {
         for (let i = 0, l = newVal.length; i < l; i++) {
           if (isFunction(newVal[i])) {

@@ -1,9 +1,4 @@
-import {
-  isArray,
-  isDefined,
-  isNullOrUndefined,
-  isString,
-} from "../../shared/utils.ts";
+import { isArray, isNullOrUndefined, isString } from "../../shared/utils.ts";
 import { expandUriTemplate } from "./rfc.ts";
 import { HttpRestBackend } from "./http-rest-backend.ts";
 import type { HttpMethod, HttpResponse, HttpService } from "../http/http.ts";
@@ -12,6 +7,12 @@ import {
   type Policy,
   type PolicyContext,
 } from "../../core/policy/policy.ts";
+import {
+  executeCacheStrategy,
+  isCacheStrategy,
+  type CacheStore,
+  type CacheStrategy,
+} from "../cache/cache.ts";
 
 export { HttpRestBackend } from "./http-rest-backend.ts";
 
@@ -87,10 +88,7 @@ export interface RestBackend {
  * - `network-first`: fetch network first, falling back to stale cache on error.
  * - `stale-while-revalidate`: return cache immediately and refresh in the background.
  */
-export type RestCacheStrategy =
-  | "cache-first"
-  | "network-first"
-  | "stale-while-revalidate";
+export type RestCacheStrategy = CacheStrategy;
 
 export interface RestCachePolicyContext extends PolicyContext<"rest.cache"> {
   readonly method: HttpMethod;
@@ -274,81 +272,25 @@ export class CachedRestBackend implements RestBackend {
 
     const strategy = normalizePolicyDecision(decision).type;
 
-    switch (strategy) {
-      case "cache-first":
-        return this._cacheFirst(request, cacheKey);
-      case "network-first":
-        return this._networkFirst(request, cacheKey);
-      case "stale-while-revalidate":
-        return this._staleWhileRevalidate(request, cacheKey);
+    if (!isCacheStrategy(strategy)) {
+      throw new Error(`Unsupported REST cache strategy: ${String(strategy)}`);
     }
 
-    throw new Error(`Unsupported REST cache strategy: ${String(strategy)}`);
-  }
+    const result = await executeCacheStrategy({
+      strategy,
+      store: this._cache as unknown as CacheStore<RestResponse<T>>,
+      key: cacheKey,
+      load: async () => this._network.request<T>(request),
+      onRevalidate: (response) => {
+        this._onRevalidate?.({ key: cacheKey, request, response });
+      },
+    });
 
-  private async _cacheFirst<T>(
-    request: RestRequest,
-    cacheKey: string,
-  ): Promise<RestResponse<T>> {
-    const cached = await this._cache.get<T>(cacheKey);
-
-    if (isDefined(cached)) {
-      return { ...cached, source: "cache" };
-    }
-
-    return this._fetchAndCache(request, cacheKey);
-  }
-
-  private async _networkFirst<T>(
-    request: RestRequest,
-    cacheKey: string,
-  ): Promise<RestResponse<T>> {
-    try {
-      return await this._fetchAndCache(request, cacheKey);
-    } catch (error) {
-      const cached = await this._cache.get<T>(cacheKey);
-
-      if (isDefined(cached)) {
-        return { ...cached, source: "cache", stale: true };
-      }
-
-      throw error;
-    }
-  }
-
-  private async _staleWhileRevalidate<T>(
-    request: RestRequest,
-    cacheKey: string,
-  ): Promise<RestResponse<T>> {
-    const cached = await this._cache.get<T>(cacheKey);
-
-    if (isDefined(cached)) {
-      void this._fetchAndCache<T>(request, cacheKey).then(
-        (response) => {
-          this._onRevalidate?.({ key: cacheKey, request, response });
-
-          return undefined;
-        },
-        () => undefined,
-      );
-
-      return { ...cached, source: "cache", stale: true };
-    }
-
-    return this._fetchAndCache(request, cacheKey);
-  }
-
-  private async _fetchAndCache<T>(
-    request: RestRequest,
-    key: string,
-  ): Promise<RestResponse<T>> {
-    const response = await this._network.request<T>(request);
-
-    const networkResponse = { ...response, source: "network" as const };
-
-    await this._cache.set(key, networkResponse);
-
-    return networkResponse;
+    return {
+      ...result.value,
+      source: result.source,
+      ...(result.stale ? { stale: true } : {}),
+    };
   }
 
   private async _invalidate(request: RestRequest): Promise<void> {

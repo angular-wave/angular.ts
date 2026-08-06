@@ -34,6 +34,7 @@ import type { StateOrName } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { StateRegistryRuntime } from "../state/state-registry.ts";
 import type { StateRuntime } from "../state/state-service.ts";
+import { _getRouterPrefetchDelay } from "../router.ts";
 import type {
   InternalTransitionOptions,
   TransitionOptions,
@@ -456,6 +457,56 @@ function bindEvents(
   });
 }
 
+function bindPrefetchEvents(
+  element: HTMLElement,
+  scope: ng.Scope,
+  $state: StateRuntime,
+  rawDef: StateRefDefinition,
+): void {
+  let timer: number | undefined;
+
+  const cancel = (): void => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
+  };
+
+  const schedule = (): void => {
+    const delay = _getRouterPrefetchDelay(element, $state._routerState);
+
+    if (delay === undefined) return;
+
+    cancel();
+    timer = window.setTimeout(() => {
+      timer = undefined;
+
+      if (element.hasAttribute("disabled")) return;
+
+      const target = processedDef($state, element, rawDef);
+
+      if (target._ngState) {
+        void $state
+          .prefetch(target._ngState, target._ngStateParams, target._ngStateOpts)
+          .catch(() => undefined);
+      }
+    }, delay);
+  };
+
+  element.addEventListener("pointerenter", schedule);
+  element.addEventListener("pointerleave", cancel);
+  element.addEventListener("focus", schedule);
+  element.addEventListener("blur", cancel);
+
+  scope.$on("$destroy", () => {
+    cancel();
+    element.removeEventListener("pointerenter", schedule);
+    element.removeEventListener("pointerleave", cancel);
+    element.removeEventListener("focus", schedule);
+    element.removeEventListener("blur", cancel);
+  });
+}
+
 function createKeyboardRouteLinkHook(hookFn: EventListener): EventListener {
   return function (event: Event): void {
     const keyboardEvent = event as KeyboardEvent;
@@ -633,6 +684,7 @@ export function StateRefDynamicDirective(
       update();
       scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
       scope.$on("$destroy", $transitions.onSuccess({}, update));
+      bindPrefetchEvents(element, scope, $state, rawDef);
 
       if (!type._clickable) return;
       applyRouteLinkAriaDefaults($aria, element, type);

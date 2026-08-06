@@ -38,6 +38,7 @@ import {
   _sse,
   _state,
   _stateRegistry,
+  _storage,
   _stream,
   _templateCache,
   _templateRequest,
@@ -48,6 +49,7 @@ import {
   _webTransport,
   _window,
   _workflow,
+  _workflowSupervisor,
   _worker,
 } from "./injection-tokens.ts";
 type Dynamic = ReturnType<typeof JSON.parse>;
@@ -94,6 +96,7 @@ export interface InjectionTokenMap {
   $sse: ng.SseService;
   $state: ng.StateService;
   $stateRegistry: ng.StateRegistryService;
+  $storage: typeof import("./services/storage/storage.ts").createPersistentProxy;
   $stream: ng.StreamService;
   $templateCache: ng.TemplateCacheService;
   $templateRequest: ng.TemplateRequestService;
@@ -104,6 +107,7 @@ export interface InjectionTokenMap {
   $webTransport: ng.WebTransportService;
   $window: ng.WindowService;
   $workflow: ng.WorkflowService;
+  $workflowSupervisor: import("./services/workflow/workflow.ts").WorkflowSupervisorService;
   $worker: ng.WorkerService;
 }
 
@@ -138,6 +142,7 @@ export const PublicInjectionTokens = {
   $serviceWorker: _serviceWorker,
   $state: _state,
   $stateRegistry: _stateRegistry,
+  $storage: _storage,
   $stream: _stream,
   $sse: _sse,
   $templateCache: _templateCache,
@@ -150,6 +155,7 @@ export const PublicInjectionTokens = {
   $worker: _worker,
   $wasm: _wasm,
   $workflow: _workflow,
+  $workflowSupervisor: _workflowSupervisor,
   $injector: _injector,
 } as const;
 

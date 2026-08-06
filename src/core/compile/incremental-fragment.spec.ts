@@ -365,6 +365,39 @@ describe("incremental compiled fragments", () => {
     expect(parent.childFragments).toEqual([]);
   });
 
+  it("retains child scope disposal after attaching a fragment parent", () => {
+    const { root, rootScope } = createRoot();
+    const rowScope = rootScope.$new();
+    const rowNode = document.createElement("tr");
+    const parent = createCompiledFragmentRecord({
+      id: "fragment:repeat-root",
+      root,
+      parentScope: rootScope,
+      linked: true,
+    });
+    const child = createCompiledFragmentRecord({
+      id: "fragment:repeat-row",
+      root,
+      parentScope: rowScope,
+      nodes: [rowNode],
+      linked: true,
+    });
+
+    addCompiledFragmentChild(parent, child);
+
+    expect(parent.childFragments).toEqual([child]);
+
+    rowScope.$destroy();
+
+    expect(child.disposed).toBeTrue();
+    expect(child.root).toBeNull();
+    expect(child.parentScope).toBeNull();
+    expect(child.nodes).toEqual([]);
+    expect(parent.childFragments).toEqual([]);
+
+    parent.dispose();
+  });
+
   it("validates nested fragment ownership", () => {
     const { context, root, rootScope } = createRoot();
     const otherRootScope = createScope() as ng.Scope;

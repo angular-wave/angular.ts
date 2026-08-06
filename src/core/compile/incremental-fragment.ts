@@ -360,7 +360,6 @@ export function addCompiledFragmentChild(
 
   ensureFragmentArray(parent, "childFragments").push(child);
   compiledFragmentParents.set(child, parent);
-  disposeCompiledFragmentScopeLifecycle(child);
 }
 
 export function addCompiledFragmentDisposer(

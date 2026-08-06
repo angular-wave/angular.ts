@@ -47,7 +47,7 @@ export {
   type RealtimeProtocolMessage,
 } from "../realtime/protocol.ts";
 
-type HttpDirectiveMethod = "get" | "delete" | "post" | "put";
+type HttpDirectiveMethod = "get" | "delete" | "patch" | "post" | "put";
 
 type HttpDirectiveElement = HTMLElement & {
   form?: HTMLFormElement | null;
@@ -97,6 +97,8 @@ export const ngGetDirective: ng.DirectiveFactory = defineDirective("get");
 export const ngDeleteDirective: ng.DirectiveFactory = defineDirective("delete");
 
 export const ngPostDirective: ng.DirectiveFactory = defineDirective("post");
+
+export const ngPatchDirective: ng.DirectiveFactory = defineDirective("patch");
 
 export const ngPutDirective: ng.DirectiveFactory = defineDirective("put");
 

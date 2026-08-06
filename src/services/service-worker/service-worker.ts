@@ -4,6 +4,12 @@ import {
   type ScopeProxyBindable,
 } from "../../core/scope/scope.ts";
 import type { SecurityPolicy } from "../security/security.ts";
+import {
+  executeCacheStrategy,
+  isCacheStrategy,
+  type CacheStore,
+  type CacheStrategy,
+} from "../cache/cache.ts";
 
 /**
  * Declarative defaults used when registering an application service worker.
@@ -18,6 +24,156 @@ export interface ServiceWorkerConfig extends RegistrationOptions {
 
   /** Check for an updated worker after registration succeeds. */
   checkForUpdatesOnRegister?: boolean;
+}
+
+export interface ServiceWorkerRouterRelayOptions {
+  cacheName?: string;
+  strategy?: CacheStrategy;
+}
+
+export interface ServiceWorkerRouterRelay {
+  handleMessage(event: MessageEvent<unknown>): void;
+  handleFetch(event: {
+    request: Request;
+    respondWith(response: Promise<Response> | Response): void;
+  }): void;
+}
+
+interface ServiceWorkerRelayScope {
+  caches: CacheStorage;
+  location: Location;
+  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+}
+
+/**
+ * Creates worker-side handlers for router prefetch messages and cached fetches.
+ */
+export function createServiceWorkerRouterRelay(
+  scope: ServiceWorkerRelayScope,
+  options: ServiceWorkerRouterRelayOptions = {},
+): ServiceWorkerRouterRelay {
+  const cacheName = options.cacheName ?? "angular-router-relay-v1";
+  const defaultStrategy = options.strategy ?? "cache-first";
+  const strategies = new Map<string, CacheStrategy>();
+
+  const createStore = (cache: Cache): CacheStore<Response> => ({
+    async get(key) {
+      return cache.match(key);
+    },
+    async set(key, value) {
+      if (!value.headers.get("cache-control")?.includes("no-store")) {
+        await cache.put(key, value.clone());
+      }
+    },
+    async delete(key) {
+      await cache.delete(key);
+    },
+  });
+
+  const load = async (url: string): Promise<Response> => {
+    const response = await scope.fetch(url);
+
+    if (!response.ok) {
+      throw new Error(
+        `Router relay request failed: ${String(response.status)}`,
+      );
+    }
+
+    return response;
+  };
+
+  const prefetch = async (
+    url: string,
+    cacheOption: boolean | CacheStrategy,
+  ): Promise<void> => {
+    const absoluteUrl = new URL(url, scope.location.href);
+
+    if (absoluteUrl.origin !== scope.location.origin) {
+      throw new Error("Router relay accepts only same-origin resources.");
+    }
+
+    if (cacheOption === false) {
+      await load(absoluteUrl.href);
+      return;
+    }
+
+    const strategy = isCacheStrategy(cacheOption)
+      ? cacheOption
+      : defaultStrategy;
+    const cache = await scope.caches.open(cacheName);
+
+    strategies.set(absoluteUrl.href, strategy);
+    await executeCacheStrategy({
+      strategy,
+      store: createStore(cache),
+      key: absoluteUrl.href,
+      load: () => load(absoluteUrl.href),
+    });
+  };
+
+  return {
+    handleMessage(event) {
+      const message = event.data as
+        | {
+            type?: string;
+            version?: number;
+            url?: string;
+            cache?: boolean | CacheStrategy;
+          }
+        | undefined;
+
+      if (
+        message?.type !== "angular-router:prefetch" ||
+        message.version !== 1 ||
+        !message.url ||
+        !event.ports[0]
+      ) {
+        return;
+      }
+
+      const port = event.ports[0];
+
+      void prefetch(message.url, message.cache ?? true).then(
+        () => {
+          port.postMessage({ ok: true });
+          return undefined;
+        },
+        (error: unknown) => {
+          port.postMessage({
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return undefined;
+        },
+      );
+    },
+    handleFetch(event) {
+      const request = event.request;
+      const url = new URL(request.url);
+
+      if (request.method !== "GET" || url.origin !== scope.location.origin) {
+        return;
+      }
+
+      event.respondWith(
+        (async () => {
+          const cache = await scope.caches.open(cacheName);
+          const cached = await cache.match(request);
+
+          if (!cached) return scope.fetch(request);
+
+          return (
+            await executeCacheStrategy({
+              strategy: strategies.get(url.href) ?? defaultStrategy,
+              store: createStore(cache),
+              key: url.href,
+              load: () => load(url.href),
+            })
+          ).value;
+        })(),
+      );
+    },
+  };
 }
 
 /**

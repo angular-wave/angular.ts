@@ -19,13 +19,17 @@
       "import": "./dist/auto.js"
     },
     "./directive/*": {
-      "types": "./@types/directive/*.d.ts",
-      "import": "./dist/directive/*.js"
+      "types": "./@types/directive/*/*.d.ts",
+      "import": "./dist/directive/*/*.js"
     },
     "./externs/angular.js": "./dist/externs/angular.js",
     "./runtime": {
       "types": "./@types/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
+    },
+    "./runtime/animation": {
+      "types": "./@types/runtime/animation.d.ts",
+      "import": "./dist/runtime/animation.js"
     },
     "./runtime/event-bus": {
       "types": "./@types/runtime/event-bus.d.ts",
@@ -38,6 +42,10 @@
     "./runtime/orchestration": {
       "types": "./@types/runtime/orchestration.d.ts",
       "import": "./dist/runtime/orchestration.js"
+    },
+    "./runtime/storage": {
+      "types": "./@types/runtime/storage.d.ts",
+      "import": "./dist/runtime/storage.js"
     },
     "./runtime/workflow-worker": {
       "types": "./@types/runtime/workflow-worker.d.ts",
@@ -64,8 +72,8 @@
       "import": "./dist/runtime/web-component.js"
     },
     "./services/*": {
-      "types": "./@types/services/*.d.ts",
-      "import": "./dist/services/*.js"
+      "types": "./@types/services/*/*.d.ts",
+      "import": "./dist/services/*/*.js"
     },
     "./services/wasm": {
       "types": "./@types/services/wasm/index.d.ts",

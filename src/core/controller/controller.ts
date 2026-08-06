@@ -32,6 +32,12 @@ type ControllerInstance = Record<string, unknown> & {
   constructor?: { $scopename?: string };
 };
 
+type DeferredControllerInitializer = ((
+  instanceOverride?: ControllerInstance,
+) => ControllerInstance) & {
+  _instance: ControllerInstance;
+};
+
 const $controllerError = createErrorFactory("$controller");
 
 const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
@@ -227,7 +233,16 @@ export function createControllerService(
           instance.constructor.$scopename;
       }
 
-      return () => {
+      const initialize = ((instanceOverride?: ControllerInstance) => {
+        if (instanceOverride) {
+          instance = instanceOverride;
+
+          if (identifier) {
+            instance.$controllerIdentifier = identifier;
+            addIdentifier(locals, identifier, instance, exportName);
+          }
+        }
+
         const result = $injector.invoke(
           injectable,
           instance,
@@ -244,8 +259,14 @@ export function createControllerService(
           }
         }
 
+        initialize._instance = instance;
+
         return instance;
-      };
+      }) as DeferredControllerInitializer;
+
+      initialize._instance = instance;
+
+      return initialize;
     }
 
     instance = $injector.instantiate(

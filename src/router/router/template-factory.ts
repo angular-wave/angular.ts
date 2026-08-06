@@ -67,6 +67,8 @@ export class TemplateFactoryService {
   _compileRegistry: CompileRegistry;
   /** @internal */
   _injector: ng.InjectorService;
+  /** @internal */
+  _templatePromises: Map<string, Promise<string>>;
 
   constructor(
     compileRegistry: CompileRegistry,
@@ -76,6 +78,7 @@ export class TemplateFactoryService {
     this._compileRegistry = compileRegistry;
     this._templateRequest = $templateRequest;
     this._injector = $injector;
+    this._templatePromises = new Map();
   }
 
   /**
@@ -132,7 +135,31 @@ export class TemplateFactoryService {
 
     if (isNullOrUndefined(templateUrl)) return null;
 
-    return this._getTemplateRequest()(templateUrl);
+    let promise = this._templatePromises.get(templateUrl);
+
+    if (!promise) {
+      promise = this._getTemplateRequest()(templateUrl).catch(
+        (error: unknown) => {
+          this._templatePromises.delete(templateUrl);
+          throw error;
+        },
+      );
+      this._templatePromises.set(templateUrl, promise);
+    }
+
+    return promise;
+  }
+
+  /** @internal */
+  _getTemplateUrl(
+    config: ViewDeclarationCommon,
+    params: RawParams,
+  ): string | null {
+    const { templateUrl } = config;
+
+    if (!isDefined(templateUrl)) return null;
+
+    return isFunction(templateUrl) ? templateUrl(params) : templateUrl;
   }
 
   /**

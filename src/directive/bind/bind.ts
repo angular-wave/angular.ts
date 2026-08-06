@@ -10,6 +10,15 @@ import {
 } from "../../shared/utils.ts";
 import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
 
+interface DirectBindingScope extends ng.Scope {
+  $watch(
+    expression: string,
+    listener: ng.ListenerFn,
+    lazy?: boolean,
+    directLeaf?: boolean,
+  ): (() => unknown) | undefined;
+}
+
 /** Binds the watched expression as plain text content. */
 export function ngBindDirective(): ng.Directive {
   return {
@@ -18,7 +27,7 @@ export function ngBindDirective(): ng.Directive {
 
       if (!isString(expression)) return;
 
-      scope.$watch(
+      (scope as DirectBindingScope).$watch(
         expression,
         (value: unknown) => {
           const text = stringify(deProxy(value));
@@ -26,6 +35,7 @@ export function ngBindDirective(): ng.Directive {
           element.textContent = isString(text) ? text : "";
         },
         hasNormalizedAttr(element, "lazy"),
+        true,
       );
     },
   };
@@ -86,12 +96,17 @@ export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
       return (
         /** Watches the expression and writes the resulting HTML into the element. */
         (scope: ng.Scope, element: HTMLElement): void => {
-          scope.$watch(expression, (val: unknown) => {
-            const html =
-              isUndefined(val) || isNull(val) ? "" : stringify(deProxy(val));
+          (scope as DirectBindingScope).$watch(
+            expression,
+            (val: unknown) => {
+              const html =
+                isUndefined(val) || isNull(val) ? "" : stringify(deProxy(val));
 
-            element.innerHTML = isString(html) ? html : "";
-          });
+              element.innerHTML = isString(html) ? html : "";
+            },
+            false,
+            true,
+          );
         }
       );
     },

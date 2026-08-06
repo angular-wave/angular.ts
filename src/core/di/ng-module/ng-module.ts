@@ -5,7 +5,7 @@ import {
   isString,
   isObject,
 } from "../../../shared/utils.ts";
-import { AnimationRegistry } from "../../../animations/animate.ts";
+import type { AnimationRegistry } from "../../../animations/animate.ts";
 import { ControllerRegistry } from "../../controller/controller.ts";
 import {
   _anchorScroll,
@@ -44,6 +44,7 @@ import {
   _websocket,
   _worker,
   _workflow,
+  _workflowSupervisor,
 } from "../../../injection-tokens.ts";
 import { isInjectable } from "../injectable.ts";
 import { FilterRegistry } from "../../filter/filter.ts";
@@ -89,7 +90,6 @@ import type {
 } from "../../../router/state/interface.ts";
 import type { RouterConfig } from "../../../router/router.ts";
 import { type RouterRuntimeCommand } from "../../../router/composition/router-runtime.ts";
-import { setStateDeclarationSource } from "../../../router/state/state-object.ts";
 import type {
   WorkerConfig,
   WorkerService,
@@ -109,10 +109,10 @@ import type {
   MachineStateDefinition,
   MachineStateMap,
 } from "../../../services/machine/machine.ts";
-import {
-  createWorkflowSupervisor,
-  type WorkflowContract,
-  type WorkflowSupervisorConfig,
+import type {
+  WorkflowContract,
+  WorkflowSupervisorConfig,
+  WorkflowSupervisorService,
   WorkflowConfig,
   WorkflowService,
 } from "../../../services/workflow/workflow.ts";
@@ -747,7 +747,7 @@ export class NgModule {
   /** @internal */
   _models: Map<string, ModelStateFactory<ModelState>>;
   /** @internal */
-  _animationRegistry: AnimationRegistry;
+  _animationRegistry: AnimationRegistry | undefined;
   /** @internal */
   _controllerRegistry: ControllerRegistry;
   /** @internal */
@@ -770,7 +770,7 @@ export class NgModule {
     name: string,
     requires: string[],
     configFn: ModuleConfigFn | undefined,
-    animationRegistry: AnimationRegistry,
+    animationRegistry: AnimationRegistry | undefined,
     controllerRegistry: ControllerRegistry,
     filterRegistry: FilterRegistry,
     compileRegistry: CompileRegistry,
@@ -795,7 +795,7 @@ export class NgModule {
     this._invokeQueue = [];
     this._configBlocks = [];
     this._runBlocks = [];
-    this._animationRegistry = animationRegistry ?? new AnimationRegistry();
+    this._animationRegistry = animationRegistry;
     this._controllerRegistry = controllerRegistry ?? new ControllerRegistry();
     this._filterRegistry = filterRegistry ?? new FilterRegistry();
     this._compileRegistry =
@@ -1216,8 +1216,16 @@ export class NgModule {
   animation(name: string, animationFactory: NamedInjectable): this {
     validate(isString, name, "name");
     validateRequired(animationFactory, "animationFactory");
+    const animationRegistry = this._animationRegistry;
+
+    if (!animationRegistry) {
+      throw new Error(
+        "Animation support is not installed. Include animationModule in this runtime.",
+      );
+    }
+
     this._invokeQueue.push([
-      this._animationRegistry,
+      animationRegistry,
       "register",
       [name, animationFactory],
     ]);
@@ -1474,13 +1482,15 @@ export class NgModule {
     validate(isDynamicConfig.bind(null, config, isObject), config, "config");
     this._invokeQueue.push(
       registerFactory(name, [
-        _workflow,
+        _workflowSupervisor,
         _injector,
-        ($workflow: WorkflowService, $injector: ng.InjectorService) => {
+        (
+          $workflowSupervisor: WorkflowSupervisorService,
+          $injector: ng.InjectorService,
+        ) => {
           const resolvedConfig = resolveDynamicConfig(config, $injector);
 
-          return createWorkflowSupervisor(
-            $workflow,
+          return $workflowSupervisor(
             cloneWorkflowSupervisorModuleConfig({
               ...resolvedConfig,
               id: resolvedConfig.id ?? name,
@@ -1518,7 +1528,11 @@ export class NgModule {
         "configure",
         [
           routerConfigKey,
-          { type: "state", definition: state } satisfies RouterRuntimeCommand,
+          {
+            type: "state",
+            definition: state.definition,
+            source: state.source,
+          } satisfies RouterRuntimeCommand,
         ],
       ]);
     }
@@ -1845,10 +1859,15 @@ export class NgModule {
   }
 }
 
+interface FlattenedRouterModuleState {
+  definition: StateDeclaration;
+  source?: StateDeclaration;
+}
+
 function flattenRouterModuleDeclaration(
   declaration: RouterModuleInput,
-): StateDeclaration[] {
-  const states: StateDeclaration[] = [];
+): FlattenedRouterModuleState[] {
+  const states: FlattenedRouterModuleState[] = [];
 
   if (isRouterModuleForest(declaration)) {
     for (const route of declaration) {
@@ -1870,7 +1889,7 @@ function isRouterModuleForest(
 function appendRouterModuleDeclaration(
   declaration: RouterModuleDeclaration,
   parentName: string | undefined,
-  states: StateDeclaration[],
+  states: FlattenedRouterModuleState[],
 ): void {
   validate(isObject, declaration, "declaration");
   validate(isString, declaration.name, "name");
@@ -1882,10 +1901,10 @@ function appendRouterModuleDeclaration(
     ? (declaration as StateDeclaration)
     : { ...stateDeclaration, name };
 
-  if (!canUseSource) {
-    setStateDeclarationSource(flattened, declaration);
-  }
-  states.push(flattened);
+  states.push({
+    definition: flattened,
+    source: canUseSource ? undefined : declaration,
+  });
 
   if (children === undefined) {
     return;

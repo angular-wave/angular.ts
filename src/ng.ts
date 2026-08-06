@@ -22,6 +22,7 @@ import {
   _serviceWorker,
   _sse,
   _state,
+  _storage,
   _stream,
   _templateCache,
   _window,
@@ -30,9 +31,13 @@ import {
   _websocket,
   _worker,
   _workflow,
+  _workflowSupervisor,
 } from "./injection-tokens.ts";
 import type { AngularRuntime } from "./angular-runtime.ts";
-import { createAnimateService } from "./animations/animate.ts";
+import {
+  AnimationRegistry,
+  createAnimateService,
+} from "./animations/animate.ts";
 import { createControllerService } from "./core/controller/controller.ts";
 import {
   createFilterRegistration,
@@ -44,7 +49,13 @@ import {
   type InterpolateConfig,
 } from "./core/interpolate/interpolate.ts";
 import { createMachineService } from "./services/machine/machine.ts";
-import { createWorkflowService } from "./services/workflow/workflow.ts";
+import {
+  createWorkflowService,
+  createWorkflowSupervisor,
+  type WorkflowService,
+  type WorkflowSupervisorService,
+} from "./services/workflow/workflow.ts";
+import { createPersistentProxy } from "./services/storage/storage.ts";
 import { createParseService } from "./core/parse/parse.ts";
 import { requireAppRoot } from "./core/app-context/app-context.ts";
 import type {
@@ -110,6 +121,7 @@ import { formDirective, ngFormDirective } from "./directive/form/form.ts";
 import {
   ngDeleteDirective,
   ngGetDirective,
+  ngPatchDirective,
   ngPostDirective,
   ngPutDirective,
   ngSseDirective,
@@ -341,6 +353,7 @@ export { formDirective, ngFormDirective } from "./directive/form/form.ts";
 export {
   ngDeleteDirective,
   ngGetDirective,
+  ngPatchDirective,
   ngPostDirective,
   ngPutDirective,
   ngSseDirective,
@@ -540,9 +553,31 @@ const workflowRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
+const workflowSupervisorRuntimeRegistration: RuntimeRegistrationRecipe = {
+  _register(registry: ProviderRegistry, name: string): unknown {
+    return registry.factory(name, [
+      _workflow,
+      ($workflow: WorkflowService): WorkflowSupervisorService =>
+        (config) =>
+          createWorkflowSupervisor($workflow, config),
+    ]);
+  },
+};
+
 export const ngOrchestrationProviders = {
   [_machine]: machineRuntimeRegistration,
   [_workflow]: workflowRuntimeRegistration,
+  [_workflowSupervisor]: workflowSupervisorRuntimeRegistration,
+} satisfies ProviderGroup;
+
+const storageRuntimeRegistration: RuntimeRegistrationRecipe = {
+  _register(registry: ProviderRegistry, name: string): unknown {
+    return registry.factory(name, () => createPersistentProxy);
+  },
+};
+
+export const ngStorageProviders = {
+  [_storage]: storageRuntimeRegistration,
 } satisfies ProviderGroup;
 
 const filterRuntimeRegistration: RuntimeRegistrationRecipe = {
@@ -876,10 +911,16 @@ export const ngSecurityProviders = {
 /** Native animation service composition. */
 const animateRuntimeRegistration: RuntimeRegistrationRecipe = {
   _register(registry, name, context): unknown {
+    const animationRegistry = context.runtime.animationRegistry;
+
+    if (!animationRegistry) {
+      throw new Error("Animation support is not installed.");
+    }
+
     return registry.factory(name, [
       _injector,
       ($injector: ng.InjectorService) =>
-        createAnimateService(context.runtime.animationRegistry, $injector),
+        createAnimateService(animationRegistry, $injector),
     ]);
   },
 };
@@ -1203,6 +1244,7 @@ export const ngIntegrationDirectives = {
   ngChannel: ngChannelDirective,
   ngDelete: ngDeleteDirective,
   ngGet: ngGetDirective,
+  ngPatch: ngPatchDirective,
   ngPost: ngPostDirective,
   ngPut: ngPutDirective,
   ngSse: ngSseDirective,
@@ -1244,6 +1286,7 @@ export const ngFillDirectives = {
 export const ngDefaultProviderGroups = [
   ngCoreProviders,
   ngOrchestrationProviders,
+  ngStorageProviders,
   ngFilterProviders,
   ngSecurityProviders,
   ngBrowserProviders,
@@ -1276,7 +1319,10 @@ export function registerNgModule(angular: AngularRuntime): ng.NgModule {
   const runtime = angular as ng.Angular & {
     _composition: RuntimeComposition;
   };
-  const compileRegistry = runtime._composition.compileRegistry;
+  const composition = runtime._composition;
+  const compileRegistry = composition.compileRegistry;
+
+  composition._installAnimationRegistry(new AnimationRegistry());
 
   const ngModule = angular.module("ng", []);
 

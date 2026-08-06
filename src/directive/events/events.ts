@@ -9,6 +9,7 @@ import {
   AFTER_RENDER_EVENT_SCHEDULER_KEY,
   type AfterRenderEventScheduler,
 } from "../../core/render/after-render.ts";
+import { addScopeEventListener } from "../../core/render/event-dispatcher.ts";
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
  * AngularTS expressions and are compiled and executed within the current scope.
@@ -136,27 +137,13 @@ export function createEventDirective(
           }
         };
 
-        if (eventBehavior._listenerOptions) {
-          element.addEventListener(
-            eventName,
-            handler,
-            eventBehavior._listenerOptions,
-          );
-        } else {
-          element.addEventListener(eventName, handler);
-        }
-
-        scope.$on("$destroy", () => {
-          if (eventBehavior._listenerOptions) {
-            element.removeEventListener(
-              eventName,
-              handler,
-              eventBehavior._listenerOptions,
-            );
-          } else {
-            element.removeEventListener(eventName, handler);
-          }
-        });
+        addScopeEventListener(
+          scope,
+          element,
+          eventName,
+          handler,
+          eventBehavior._listenerOptions,
+        );
       };
     },
   };
@@ -242,11 +229,7 @@ export function createWindowEventDirective(
           }
         };
 
-        target.addEventListener(eventName, handler);
-
-        scope.$on("$destroy", () => {
-          target.removeEventListener(eventName, handler);
-        });
+        addScopeEventListener(scope, target, eventName, handler);
       };
     },
   };

@@ -119,6 +119,70 @@ export class RouterUrlRuntime {
       url,
     ].join("");
   }
+
+  /** @internal */
+  _parseHref(
+    href: string,
+  ): { path: string; search: RawParams; hash: string } | undefined {
+    const baseUrl = new URL(window.location.href);
+    const url = new URL(href, baseUrl);
+
+    if (url.origin !== baseUrl.origin) return undefined;
+
+    const html5Mode = this._locationConfig.html5Mode;
+    const isHtml5 =
+      typeof html5Mode === "boolean" ? html5Mode : (html5Mode?.enabled ?? true);
+
+    if (!isHtml5) {
+      const hashPrefix = this._locationConfig.hashPrefix ?? "!";
+      const hashUrl = url.hash.slice(1);
+
+      if (!hashUrl.startsWith(hashPrefix)) return undefined;
+
+      const parsed = new URL(hashUrl.slice(hashPrefix.length), baseUrl.origin);
+
+      return {
+        path: decodeURIComponent(parsed.pathname),
+        search: parseSearchParams(parsed.searchParams),
+        hash: decodeURIComponent(parsed.hash.slice(1)),
+      };
+    }
+
+    const basePath = stripLastPathElement(this._getBaseHref()).replace(
+      /\/$/,
+      "",
+    );
+
+    if (
+      basePath &&
+      url.pathname !== basePath &&
+      !url.pathname.startsWith(`${basePath}/`)
+    ) {
+      return undefined;
+    }
+
+    return {
+      path: decodeURIComponent(url.pathname.slice(basePath.length) || "/"),
+      search: parseSearchParams(url.searchParams),
+      hash: decodeURIComponent(url.hash.slice(1)),
+    };
+  }
+}
+
+function parseSearchParams(params: URLSearchParams): RawParams {
+  const result: RawParams = {};
+
+  params.forEach((value, key) => {
+    const current = result[key];
+
+    result[key] = isDefined(current)
+      ? Array.isArray(current)
+        ? (current as unknown[]).concat(value)
+        : [current, value]
+      : value;
+  });
+
+  return result;
 }
 
 function appendBasePath(
