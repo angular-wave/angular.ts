@@ -96,7 +96,7 @@ export interface InjectionTokenMap {
   $sse: ng.SseService;
   $state: ng.StateService;
   $stateRegistry: ng.StateRegistryService;
-  $storage: typeof import("./services/storage/storage.ts").createPersistentProxy;
+  $storage: ng.StorageService;
   $stream: ng.StreamService;
   $templateCache: ng.TemplateCacheService;
   $templateRequest: ng.TemplateRequestService;
@@ -107,7 +107,7 @@ export interface InjectionTokenMap {
   $webTransport: ng.WebTransportService;
   $window: ng.WindowService;
   $workflow: ng.WorkflowService;
-  $workflowSupervisor: import("./services/workflow/workflow.ts").WorkflowSupervisorService;
+  $workflowSupervisor: ng.WorkflowSupervisorService;
   $worker: ng.WorkerService;
 }
 

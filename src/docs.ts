@@ -251,6 +251,7 @@ export type {
   StreamService,
   TextStreamReadOptions,
 } from "./services/stream/readable-stream.ts";
+export type { StorageService } from "./services/storage/storage.ts";
 export type {
   Workflow,
   WorkflowContract,
@@ -270,6 +271,7 @@ export type {
   WorkflowSupervisorDiagnostic,
   WorkflowSupervisorPersistence,
   WorkflowSupervisorPersistenceConfig,
+  WorkflowSupervisorService,
   WorkflowSupervisorSnapshot,
   WorkflowSupervisorStatus,
 } from "./services/workflow/workflow.ts";

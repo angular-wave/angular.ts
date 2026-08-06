@@ -159,7 +159,9 @@ export class TemplateFactoryService {
 
     if (!isDefined(templateUrl)) return null;
 
-    return isFunction(templateUrl) ? templateUrl(params) : templateUrl;
+    return isFunction(templateUrl)
+      ? (templateUrl(params) ?? null)
+      : templateUrl;
   }
 
   /**

@@ -1254,8 +1254,11 @@ export function createHttpService(
   }
 
   /** Sends the request through the low-level HTTP backend and cache layer. */
-  async function sendReq(config: HttpRequestConfig, reqData: unknown) {
-    const { promise, resolve, reject } = withResolvers();
+  async function sendReq(
+    config: HttpRequestConfig,
+    reqData: unknown,
+  ): Promise<HttpResponse<unknown>> {
+    const { promise, resolve, reject } = withResolvers<HttpResponse<unknown>>();
 
     let cache: Map<string, unknown> | undefined;
 

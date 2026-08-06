@@ -77,3 +77,6 @@ export function createPersistentProxy<T extends Record<PropertyKey, unknown>>(
     },
   });
 }
+
+/** Injectable persistent storage proxy factory. */
+export type StorageService = typeof createPersistentProxy;

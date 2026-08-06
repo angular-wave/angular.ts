@@ -7,9 +7,9 @@ export type CacheStrategy =
 /** Synchronous or asynchronous cache store. */
 export interface CacheStore<T = unknown> {
   get(key: string): T | undefined | PromiseLike<T | undefined>;
-  set(key: string, value: T): void | PromiseLike<void>;
-  delete(key: string): void | PromiseLike<void>;
-  deletePrefix?(prefix: string): void | PromiseLike<void>;
+  set(key: string, value: T): unknown;
+  delete(key: string): unknown;
+  deletePrefix?(prefix: string): unknown;
 }
 
 export interface CacheExecutionResult<T> {

@@ -89,6 +89,7 @@ import type {
   WorkflowSupervisorConfig as TWorkflowSupervisorConfig,
   WorkflowSupervisorPersistenceConfig as TWorkflowSupervisorPersistenceConfig,
   WorkflowSupervisorPersistence as TWorkflowSupervisorPersistence,
+  WorkflowSupervisorService as TWorkflowSupervisorService,
   WorkflowSupervisorSnapshot as TWorkflowSupervisorSnapshot,
 } from "./services/workflow/workflow.ts";
 import type {
@@ -183,6 +184,7 @@ import type {
 } from "./animations/animate.ts";
 import type {
   StorageBackend as TStorageBackend,
+  StorageService as TStorageService,
   StorageType as TStorageType,
 } from "./services/storage/storage.ts";
 import type {
@@ -406,7 +408,11 @@ declare global {
 
     export type MachineService = TMachineService;
 
+    export type StorageService = TStorageService;
+
     export type WorkflowService = TWorkflowService;
+
+    export type WorkflowSupervisorService = TWorkflowSupervisorService;
 
     export type ParseService = TParseService;
 

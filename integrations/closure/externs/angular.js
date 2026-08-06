@@ -1056,9 +1056,10 @@ ng.Scope.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.Scope.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.Scope.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -1515,9 +1516,10 @@ ng.ScopeService.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.ScopeService.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.ScopeService.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -1679,9 +1681,10 @@ ng.RootScopeService.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.RootScopeService.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.RootScopeService.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -2747,6 +2750,17 @@ ng.InjectionTokenMap.prototype.$state;
 ng.InjectionTokenMap.prototype.$stateRegistry;
 
 /**
+ * Public InjectionTokenMap.$storage member exposed by the AngularTS namespace contract.
+ * @template T
+ * @param {T} target
+ * @param {string} key
+ * @param {!Object} storage
+ * @param {(!Object|undefined)} options
+ * @return {T}
+ */
+ng.InjectionTokenMap.prototype.$storage = function(target, key, storage, options) {};
+
+/**
  * Public InjectionTokenMap.$stream member exposed by the AngularTS namespace contract.
  * @type {!ng.StreamService}
  */
@@ -2812,6 +2826,14 @@ ng.InjectionTokenMap.prototype.$window;
  * @return {!ng.Workflow<TContract>}
  */
 ng.InjectionTokenMap.prototype.$workflow = function(config) {};
+
+/**
+ * Public InjectionTokenMap.$workflowSupervisor member exposed by the AngularTS namespace contract.
+ * @template TWorkflows
+ * @param {!Object} config
+ * @return {!ng.WorkflowSupervisor<TWorkflows>}
+ */
+ng.InjectionTokenMap.prototype.$workflowSupervisor = function(config) {};
 
 /**
  * Public InjectionTokenMap.$worker member exposed by the AngularTS namespace contract.
@@ -2911,9 +2933,10 @@ ng.Model.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.Model.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.Model.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -3395,10 +3418,22 @@ ng.LogService.prototype.warn = function(var_args) {};
 ng.MachineService;
 
 /**
+ * Creates a proxy that automatically persists an object's state into a storage backend whenever a property is set. The proxy also restores previously serialized state on creation and persists deletions in addition to property assignments.
+ * @typedef {function(?, string, !Object, (!Object|undefined)): ?}
+ */
+ng.StorageService;
+
+/**
  * Public AngularTS WorkflowService contract exposed through the global ng namespace for Closure-annotated applications.
  * @typedef {function(!Object): !ng.Workflow<?>}
  */
 ng.WorkflowService;
+
+/**
+ * Public AngularTS WorkflowSupervisorService contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!Object): !ng.WorkflowSupervisor<?>}
+ */
+ng.WorkflowSupervisorService;
 
 /**
  * Parses a string or expression function into a compiled expression.
@@ -4585,7 +4620,7 @@ ng.HttpDefaults = function() {};
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(!Object|boolean|undefined)}
+ * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpDefaults.prototype.cache;
 
@@ -5705,7 +5740,7 @@ ng.HttpRequestConfig.prototype.responseType;
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(!Object|boolean|undefined)}
+ * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpRequestConfig.prototype.cache;
 
@@ -5783,7 +5818,7 @@ ng.HttpRequestOptions.prototype.responseType;
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(!Object|boolean|undefined)}
+ * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpRequestOptions.prototype.cache;
 
@@ -5953,7 +5988,7 @@ ng.RestCacheStore.prototype.delete = function(key) {};
 ng.RestCacheStore.prototype.deletePrefix = function(prefix) {};
 
 /**
- * Read strategy used by {@link CachedRestBackend} for `GET` requests. - `cache-first`: return cached data when present, otherwise fetch network. - `network-first`: fetch network first, falling back to stale cache on error. - `stale-while-revalidate`: return cache immediately and refresh in the background.
+ * Cache read strategies shared by HTTP, REST, and router transports.
  * @typedef {string}
  */
 ng.RestCacheStrategy;
@@ -6395,6 +6430,24 @@ ng.RouterConfig.prototype.scroll;
 ng.RouterConfig.prototype.focus;
 
 /**
+ * Public RouterConfig.prefetch member exposed by the AngularTS namespace contract.
+ * @type {(boolean|undefined)}
+ */
+ng.RouterConfig.prototype.prefetch;
+
+/**
+ * Public RouterConfig.prefetchDelay member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.RouterConfig.prototype.prefetchDelay;
+
+/**
+ * Public RouterConfig.relay member exposed by the AngularTS namespace contract.
+ * @type {(!Object|boolean|undefined)}
+ */
+ng.RouterConfig.prototype.relay;
+
+/**
  * Public RouterConfig.viewTransitions member exposed by the AngularTS namespace contract.
  * @type {(boolean|undefined)}
  */
@@ -6508,6 +6561,15 @@ ng.StateService.prototype.current;
  * @return {!Object}
  */
 ng.StateService.prototype.go = function(to, var_args) {};
+
+/**
+ * Prefetch lazy declarations and templates for a typed route. Prefetch lazy declarations and templates without navigating.
+ * @template TRouteName
+ * @param {TRouteName} stateOrName
+ * @param {...?} var_args
+ * @return {!Promise<void>}
+ */
+ng.StateService.prototype.prefetch = function(stateOrName, var_args) {};
 
 /**
  * Overload for typed route names and params. Untyped overload used when no route map is supplied.
@@ -8399,9 +8461,10 @@ ng.WasmTarget.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.WasmTarget.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.WasmTarget.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.

@@ -5141,7 +5141,7 @@ export class CompileRegistry {
             if (controllerInstance === reactiveControllerInstance) {
               controller._instance = reactiveControllerInstance;
             } else {
-              reactiveControllerInstance.$destroy();
+              reactiveControllerInstance.$destroy?.();
               controller._instance = controllerScope.$new(
                 controllerInstance as Scope,
               ) as ControllerLifecycleInstance;
