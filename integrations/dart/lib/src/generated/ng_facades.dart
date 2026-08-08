@@ -2483,6 +2483,10 @@ base class GeneratedNgInjectionTokenMap extends GeneratedNgFacade {
   Object? get $stateRegistry =>
       unsafe.jsToDart<Object?>(raw.getProperty('\$stateRegistry'.toJS));
 
+  /// Reads the generated $storage property.
+  Object? get $storage =>
+      unsafe.jsToDart<Object?>(raw.getProperty('\$storage'.toJS));
+
   /// Reads the generated $stream property.
   Object? get $stream =>
       unsafe.jsToDart<Object?>(raw.getProperty('\$stream'.toJS));
@@ -2521,6 +2525,10 @@ base class GeneratedNgInjectionTokenMap extends GeneratedNgFacade {
   /// Reads the generated $workflow property.
   Object? get $workflow =>
       unsafe.jsToDart<Object?>(raw.getProperty('\$workflow'.toJS));
+
+  /// Reads the generated $workflowSupervisor property.
+  Object? get $workflowSupervisor =>
+      unsafe.jsToDart<Object?>(raw.getProperty('\$workflowSupervisor'.toJS));
 
   /// Reads the generated $worker property.
   Object? get $worker =>
@@ -3300,11 +3308,14 @@ base class GeneratedNgModel extends GeneratedNgFacade {
 
   /// Invokes the generated $watch member.
   Object? $watch(String arg0,
-      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
     if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
     if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('\$watch'.toJS, args));
@@ -4613,11 +4624,14 @@ base class GeneratedNgRootScopeService extends GeneratedNgFacade {
 
   /// Invokes the generated $watch member.
   Object? $watch(String arg0,
-      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
     if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
     if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('\$watch'.toJS, args));
@@ -4776,6 +4790,26 @@ base class GeneratedNgRouterConfig extends GeneratedNgFacade {
 
   /// Reads the generated focus property.
   Object? get focus => unsafe.jsToDart<Object?>(raw.getProperty('focus'.toJS));
+
+  /// Reads the generated prefetch property.
+  bool? get prefetch => _toDartBool(raw.getProperty('prefetch'.toJS));
+
+  /// Writes the generated prefetch property.
+  set prefetch(bool? value) {
+    raw.setProperty('prefetch'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated prefetchDelay property.
+  num? get prefetchDelay =>
+      _toDartNumber(raw.getProperty('prefetchDelay'.toJS));
+
+  /// Writes the generated prefetchDelay property.
+  set prefetchDelay(num? value) {
+    raw.setProperty('prefetchDelay'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Reads the generated relay property.
+  Object? get relay => unsafe.jsToDart<Object?>(raw.getProperty('relay'.toJS));
 
   /// Reads the generated viewTransitions property.
   bool? get viewTransitions =>
@@ -5505,11 +5539,14 @@ base class GeneratedNgScope extends GeneratedNgFacade {
 
   /// Invokes the generated $watch member.
   Object? $watch(String arg0,
-      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
     if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
     if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('\$watch'.toJS, args));
@@ -5854,11 +5891,14 @@ base class GeneratedNgScopeService extends GeneratedNgFacade {
 
   /// Invokes the generated $watch member.
   Object? $watch(String arg0,
-      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
     if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
     if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('\$watch'.toJS, args));
@@ -6594,6 +6634,17 @@ base class GeneratedNgStateService extends GeneratedNgFacade {
     return raw.callMethodVarArgs('go'.toJS, args) as JSPromise<JSAny?>;
   }
 
+  /// Invokes the generated prefetch member.
+  JSPromise<JSAny?> prefetch(Object? arg0,
+      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
+    if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+
+    return raw.callMethodVarArgs('prefetch'.toJS, args) as JSPromise<JSAny?>;
+  }
+
   /// Invokes the generated href member.
   String? href(Object? arg0,
       [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
@@ -6666,6 +6717,24 @@ base class GeneratedNgStorageBackend extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(arg0));
 
     unsafe.jsToDart<void>(raw.callMethodVarArgs('remove'.toJS, args));
+  }
+}
+
+/// Generated raw facade for ng.StorageService.
+base class GeneratedNgStorageService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.StorageService.
+  const GeneratedNgStorageService(super.raw);
+
+  /// Invokes the generated call member.
+  Object? call(Object? arg0, String arg1, Object? arg2,
+      [Object? arg3 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+    args.add(unsafe.dartToJs(arg1));
+    args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
   }
 }
 
@@ -7305,11 +7374,14 @@ base class GeneratedNgWasmTarget extends GeneratedNgFacade {
 
   /// Invokes the generated $watch member.
   Object? $watch(String arg0,
-      [Object? arg1 = _undefinedArgument, Object? arg2 = _undefinedArgument]) {
+      [Object? arg1 = _undefinedArgument,
+      Object? arg2 = _undefinedArgument,
+      Object? arg3 = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(arg0));
     if (!identical(arg1, _undefinedArgument)) args.add(unsafe.dartToJs(arg1));
     if (!identical(arg2, _undefinedArgument)) args.add(unsafe.dartToJs(arg2));
+    if (!identical(arg3, _undefinedArgument)) args.add(unsafe.dartToJs(arg3));
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('\$watch'.toJS, args));
@@ -8529,6 +8601,20 @@ base class GeneratedNgWorkflowSupervisorPersistenceConfig
   /// Reads the generated indexedDB property.
   Object? get indexedDB =>
       unsafe.jsToDart<Object?>(raw.getProperty('indexedDB'.toJS));
+}
+
+/// Generated raw facade for ng.WorkflowSupervisorService.
+base class GeneratedNgWorkflowSupervisorService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.WorkflowSupervisorService.
+  const GeneratedNgWorkflowSupervisorService(super.raw);
+
+  /// Invokes the generated call member.
+  Object? call(Object? arg0) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(arg0));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
 }
 
 /// Generated raw facade for ng.WorkflowSupervisorSnapshot.

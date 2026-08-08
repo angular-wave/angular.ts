@@ -2,6 +2,7 @@
 import { AppContext } from "../app-context/app-context.ts";
 import type { ProviderRegistry } from "../di/interface.ts";
 import { applyInterpolateConfiguration } from "../interpolate/interpolate.ts";
+import { AnimationRegistry } from "../../animations/animate.ts";
 import {
   createCoreRuntime,
   createPlatformRuntime,
@@ -157,14 +158,16 @@ describe("RuntimeComposition", () => {
 
   it("owns and clears its animation registry", () => {
     const composition = createCoreRuntime({ document, window });
+    const animationRegistry = new AnimationRegistry();
 
-    composition.animationRegistry.register("owned", {});
+    composition._installAnimationRegistry(animationRegistry);
+    animationRegistry.register("owned", {});
 
-    expect(composition.animationRegistry.has("owned")).toBeTrue();
+    expect(animationRegistry.has("owned")).toBeTrue();
 
     composition.destroy();
 
-    expect(() => composition.animationRegistry.has("owned")).toThrowError(
+    expect(() => animationRegistry.has("owned")).toThrowError(
       "Animation registry has already been disposed.",
     );
   });

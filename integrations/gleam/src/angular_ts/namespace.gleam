@@ -123,7 +123,11 @@ pub type LogService
 
 pub type MachineService
 
+pub type StorageService
+
 pub type WorkflowService
+
+pub type WorkflowSupervisorService
 
 pub type ParseService
 

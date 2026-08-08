@@ -576,7 +576,6 @@ describe("$rest", () => {
       await expectAsync(cache.get(key)).toBeResolvedTo(
         jasmine.objectContaining({
           data: { id: 7 },
-          source: "network",
         }),
       );
     });
@@ -631,7 +630,7 @@ describe("$rest", () => {
         }),
       );
       await expectAsync(cache.get(key)).toBeResolvedTo(
-        jasmine.objectContaining({ data: { id: 7 }, source: "network" }),
+        jasmine.objectContaining({ data: { id: 7 } }),
       );
     });
 
@@ -713,7 +712,6 @@ describe("$rest", () => {
       await expectAsync(cache.get(key)).toBeResolvedTo(
         jasmine.objectContaining({
           data: { id: 7 },
-          source: "network",
         }),
       );
     });
@@ -766,7 +764,6 @@ describe("$rest", () => {
       await expectAsync(cache.get(key)).toBeResolvedTo(
         jasmine.objectContaining({
           data: { id: 7, name: "Fresh" },
-          source: "network",
         }),
       );
     });

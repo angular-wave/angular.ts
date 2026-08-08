@@ -1192,6 +1192,17 @@ describe("Scope", () => {
       expect(child.$root).toEqual(scope.$root);
     });
 
+    it("should use supplied isolate state as the scope target", () => {
+      const state = { own: "value" };
+      const child = scope.$newIsolate(state);
+
+      scope.inherited = "parent";
+
+      expect(Object.hasOwn(child, "own")).toBeTrue();
+      expect(child.own).toBe("value");
+      expect(child.inherited).toBeUndefined();
+    });
+
     it("should attach the child scope to a specified parent", () => {
       const isolated = scope.$newIsolate();
 

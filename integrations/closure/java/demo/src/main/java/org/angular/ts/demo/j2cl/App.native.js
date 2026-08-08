@@ -14,13 +14,16 @@ function createTodoModel(controller) {
     "greeting": controller["greeting"],
     "newTodo": controller["newTodo"],
     "remainingCount": controller["remainingCount"],
-    "tasks": controller["tasks"],
+    "tasks": snapshotTodos(controller),
     "add": function(task) {
       controller["add"](task);
       syncTodoModel(this, controller);
     },
     "toggle": function(todo) {
-      controller["toggle"](todo);
+      const controllerTodo = findTodo(controller, todo["id"]);
+      if (controllerTodo) {
+        controller["toggle"](controllerTodo);
+      }
       syncTodoModel(this, controller);
     },
     "archive": function() {
@@ -33,7 +36,28 @@ function createTodoModel(controller) {
 function syncTodoModel(model, controller) {
   model["newTodo"] = controller["newTodo"];
   model["remainingCount"] = controller["remainingCount"];
-  model["tasks"] = controller["tasks"];
+  model["tasks"] = snapshotTodos(controller);
+}
+
+function snapshotTodos(controller) {
+  return controller["tasks"].map(function(todo) {
+    return {
+      "id": todo["id"],
+      "task": todo["task"],
+      "done": todo["done"],
+    };
+  });
+}
+
+function findTodo(controller, id) {
+  const tasks = controller["tasks"];
+  for (let i = 0; i < tasks.length; i++) {
+    if (tasks[i]["id"] === id) {
+      return tasks[i];
+    }
+  }
+
+  return null;
 }
 
 globalThis["j2clTodoMain"] = function() {

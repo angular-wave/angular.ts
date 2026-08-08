@@ -56,7 +56,6 @@ describe("$templateRequest", () => {
     await expectAsync(request("/template.html")).toBeResolvedTo("template");
 
     expect(http.get).toHaveBeenCalledOnceWith("/template.html", {
-      cache,
       transformResponse: null,
     });
     expect(cache.get("/template.html")).toBe("template");
@@ -73,9 +72,58 @@ describe("$templateRequest", () => {
     await request("/plain-template.html");
 
     expect(http.get).toHaveBeenCalledOnceWith("/plain-template.html", {
-      cache,
       transformResponse: null,
     });
+  });
+
+  it("serves cached templates without calling $http", async () => {
+    const cache = new Map([["/cached.html", "cached template"]]);
+    const http = {
+      defaults: {},
+      get: jasmine.createSpy("get"),
+    };
+    const request = createTemplateRequestService(cache, http, {});
+
+    await expectAsync(request("/cached.html")).toBeResolvedTo(
+      "cached template",
+    );
+    expect(http.get).not.toHaveBeenCalled();
+  });
+
+  it("observes templates cached later in the request turn", async () => {
+    const cache = new Map();
+    const http = {
+      defaults: {},
+      get: jasmine.createSpy("get"),
+    };
+    const request = createTemplateRequestService(cache, http, {});
+    const pending = request("/late-cached.html");
+
+    cache.set("/late-cached.html", "late cached template");
+
+    await expectAsync(pending).toBeResolvedTo("late cached template");
+    expect(http.get).not.toHaveBeenCalled();
+  });
+
+  it("shares an in-flight request for the same template", async () => {
+    const cache = new Map();
+    const response = Promise.withResolvers();
+    const http = {
+      defaults: {},
+      get: jasmine.createSpy("get").and.returnValue(response.promise),
+    };
+    const request = createTemplateRequestService(cache, http, {});
+    const first = request("/pending.html");
+    const second = request("/pending.html");
+
+    await Promise.resolve();
+    expect(http.get).toHaveBeenCalledTimes(1);
+    response.resolve({ data: "pending template" });
+    await expectAsync(Promise.all([first, second])).toBeResolvedTo([
+      "pending template",
+      "pending template",
+    ]);
+    expect(cache.get("/pending.html")).toBe("pending template");
   });
 
   describe("configuration", () => {
@@ -84,51 +132,24 @@ describe("$templateRequest", () => {
         spyOn($http, "get").and.callThrough();
 
         $templateRequest("/public/test.html");
+        await Promise.resolve();
         expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
-          cache: $templateCache,
           transformResponse: [],
           headers: { Accept: "text/html" },
         });
         await wait();
       });
 
-      it("should be configurable", () => {
+      it("should be configurable", async () => {
         function someTransform() {}
 
+        let configuredHttp;
+
         angular.module("test", ["ng"]).config({
           $templateRequest: {
             httpOptions: {
               headers: { Accept: "moo" },
               transformResponse: [someTransform],
-            },
-          },
-        });
-
-        createInjector(["test"]).invoke([
-          "$templateRequest",
-          "$http",
-          "$templateCache",
-          ($templateRequest, $http, $templateCache) => {
-            spyOn($http, "get").and.callThrough();
-
-            $templateRequest("/public/test.html");
-
-            expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
-              cache: $templateCache,
-              transformResponse: [someTransform],
-              headers: { Accept: "moo" },
-            });
-          },
-        ]);
-      });
-
-      it("should be allow you to override the cache", () => {
-        const customCache = new Map();
-
-        angular.module("test", ["ng"]).config({
-          $templateRequest: {
-            httpOptions: {
-              cache: customCache,
             },
           },
         });
@@ -137,17 +158,59 @@ describe("$templateRequest", () => {
           "$templateRequest",
           "$http",
           ($templateRequest, $http) => {
+            configuredHttp = $http;
             spyOn($http, "get").and.callThrough();
 
             $templateRequest("/public/test.html");
-
-            expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
-              cache: customCache,
-              transformResponse: [],
-              headers: { Accept: "text/html" },
-            });
           },
         ]);
+
+        await Promise.resolve();
+        expect(configuredHttp.get).toHaveBeenCalledOnceWith(
+          "/public/test.html",
+          {
+            transformResponse: [someTransform],
+            headers: { Accept: "moo" },
+          },
+        );
+      });
+
+      it("allows an HTTP cache policy override", async () => {
+        const cache = {
+          strategy: "cache-first",
+          store: new Map(),
+        };
+
+        let configuredHttp;
+
+        angular.module("test", ["ng"]).config({
+          $templateRequest: {
+            httpOptions: {
+              cache,
+            },
+          },
+        });
+
+        createInjector(["test"]).invoke([
+          "$templateRequest",
+          "$http",
+          ($templateRequest, $http) => {
+            configuredHttp = $http;
+            spyOn($http, "get").and.callThrough();
+
+            $templateRequest("/public/test.html");
+          },
+        ]);
+
+        await Promise.resolve();
+        expect(configuredHttp.get).toHaveBeenCalledOnceWith(
+          "/public/test.html",
+          {
+            cache,
+            transformResponse: [],
+            headers: { Accept: "text/html" },
+          },
+        );
       });
     });
   });

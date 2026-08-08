@@ -176,7 +176,7 @@ public external interface Scope {
     public fun `$searchByName`(p0: String = definedExternally): dynamic
     public var `$target`: dynamic
     public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally): () -> Unit
+    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
     public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
     public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
@@ -254,7 +254,7 @@ public external interface ScopeService {
     public fun `$searchByName`(p0: String = definedExternally): dynamic
     public var `$target`: dynamic
     public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally): () -> Unit
+    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
     public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
     public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
@@ -279,7 +279,7 @@ public external interface RootScopeService {
     public fun `$searchByName`(p0: String = definedExternally): dynamic
     public var `$target`: dynamic
     public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally): () -> Unit
+    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
     public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
     public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
@@ -482,6 +482,7 @@ public external interface InjectionTokenMap {
     public fun `$sse`(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
     public var `$state`: dynamic
     public var `$stateRegistry`: dynamic
+    public fun `$storage`(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
     public var `$stream`: dynamic
     public var `$templateCache`: dynamic
     public fun `$templateRequest`(p0: String = definedExternally): dynamic
@@ -493,6 +494,7 @@ public external interface InjectionTokenMap {
     public var `$window`: dynamic
     public fun `$worker`(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
     public fun `$workflow`(p0: dynamic = definedExternally): dynamic
+    public fun `$workflowSupervisor`(p0: dynamic = definedExternally): dynamic
 }
 
 public external interface Model<T> {
@@ -517,7 +519,7 @@ public external interface Model<T> {
     public fun `$sync`(p0: dynamic = definedExternally, p1: dynamic = definedExternally): () -> Unit
     public var `$target`: dynamic
     public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally): () -> Unit
+    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
     public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
     public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
@@ -610,7 +612,15 @@ public external interface MachineService {
     public operator fun invoke(p0: dynamic = definedExternally): dynamic
 }
 
+public external interface StorageService {
+    public operator fun invoke(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
+}
+
 public external interface WorkflowService {
+    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+}
+
+public external interface WorkflowSupervisorService {
     public operator fun invoke(p0: dynamic = definedExternally): dynamic
 }
 
@@ -1256,6 +1266,9 @@ public external interface RouterConfig {
     public var focus: dynamic
     public var loading: dynamic
     public var paramTypes: dynamic
+    public var prefetch: Boolean
+    public var prefetchDelay: Double
+    public var relay: dynamic
     public var retention: dynamic
     public var retry: dynamic
     public var scroll: dynamic
@@ -1283,6 +1296,7 @@ public external interface StateService<TRouteMap> {
     public fun href(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): String
     public fun matches(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
     public var params: dynamic
+    public fun prefetch(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun target(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
 }
 
@@ -1692,7 +1706,7 @@ public external interface WasmTarget {
     public fun `$searchByName`(p0: String = definedExternally): dynamic
     public var `$target`: dynamic
     public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally): () -> Unit
+    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
     public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
     public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
     public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean

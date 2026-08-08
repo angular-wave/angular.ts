@@ -67,29 +67,48 @@ export function createTemplateRequestService(
   $http: ng.HttpService,
   httpOptions: ng.HttpRequestOptions,
 ): TemplateRequestService {
-  return async (templateUrl: string): Promise<string> => {
-    let transformResponse = $http.defaults.transformResponse ?? null;
+  const pendingRequests = new Map<string, Promise<string>>();
 
-    if (isArray(transformResponse)) {
-      transformResponse = transformResponse.filter(
-        (transform) => transform !== defaultHttpResponseTransform,
-      );
-    } else if (transformResponse === defaultHttpResponseTransform) {
-      transformResponse = null;
-    }
+  return (templateUrl: string): Promise<string> => {
+    const pendingRequest = pendingRequests.get(templateUrl);
 
-    const config = extend(
-      {
-        cache: $templateCache,
-        transformResponse,
-      },
-      httpOptions,
-    ) as ng.HttpRequestOptions;
+    if (pendingRequest) return pendingRequest;
 
-    return $http.get<string>(templateUrl, config).then((response) => {
-      $templateCache.set(templateUrl, response.data);
+    const request = Promise.resolve()
+      .then(async () => {
+        const cachedTemplate = $templateCache.get(templateUrl);
 
-      return response.data;
-    });
+        if (cachedTemplate !== undefined) return cachedTemplate;
+
+        let transformResponse = $http.defaults.transformResponse ?? null;
+
+        if (isArray(transformResponse)) {
+          transformResponse = transformResponse.filter(
+            (transform) => transform !== defaultHttpResponseTransform,
+          );
+        } else if (transformResponse === defaultHttpResponseTransform) {
+          transformResponse = null;
+        }
+
+        const config = extend(
+          {
+            transformResponse,
+          },
+          httpOptions,
+        ) as ng.HttpRequestOptions;
+
+        const response = await $http.get<string>(templateUrl, config);
+
+        $templateCache.set(templateUrl, response.data);
+
+        return response.data;
+      })
+      .finally(() => {
+        pendingRequests.delete(templateUrl);
+      });
+
+    pendingRequests.set(templateUrl, request);
+
+    return request;
   };
 }

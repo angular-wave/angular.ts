@@ -57,8 +57,6 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
             getCacheData(element, `$${controllerName}Controller`) ?? element;
         }
 
-        refValue = deProxy(refValue);
-
         if (refValue && typeof refValue === "object") {
           try {
             Object.defineProperty(refValue, "$nonscope", {

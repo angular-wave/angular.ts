@@ -4,6 +4,7 @@ import { createElementFromHTML, dealoc, getScope } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { wait, waitUntil } from "../../shared/test-utils.ts";
+import { ngIncludeDirective } from "./include.ts";
 
 const EL = document.getElementById("app");
 
@@ -134,6 +135,56 @@ describe("ngInclude", () => {
       root.remove();
     });
 
+    it("cleans up malformed transclusions that do not produce a compiled fragment", async () => {
+      async function runMalformedTransclusion(withClone) {
+        let watchListener;
+        const childScope = {
+          $destroy: jasmine.createSpy("$destroy"),
+          $emit: jasmine.createSpy("childEmit"),
+        };
+        const scope = {
+          _destroyed: false,
+          $emit: jasmine.createSpy("emit"),
+          $new: () => childScope,
+          $watch(_expression, listener) {
+            watchListener = listener;
+          },
+        };
+        const errors = [];
+        const source = document.createElement("div");
+        const host = document.createElement("div");
+        const marker = document.createElement("div");
+        const clone = withClone ? document.createElement("span") : null;
+
+        source.setAttribute("ng-include", "templateUrl");
+        host.appendChild(marker);
+
+        const directive = ngIncludeDirective(
+          () => Promise.resolve("<span>Included</span>"),
+          () => undefined,
+          { get: () => undefined },
+          (error) => errors.push(error),
+          () => undefined,
+        );
+        const link = directive.compile(source);
+
+        link(scope, marker, { template: null }, (_scope, attach) => {
+          if (clone) attach(clone);
+
+          return clone;
+        });
+        watchListener("templateUrl");
+        await wait();
+
+        expect(childScope.$destroy).toHaveBeenCalledOnceWith();
+        expect(errors).toHaveSize(1);
+        if (clone) expect(clone.isConnected).toBeFalse();
+      }
+
+      await runMalformedTransclusion(true);
+      await runMalformedTransclusion(false);
+    });
+
     it("should trust and use trusted urls", async () => {
       const element = createElementFromHTML(
         '<div><div ng-include="fooUrl">test</div></div>',
@@ -162,7 +213,7 @@ describe("ngInclude", () => {
 
       $rootScope = injector.get("$rootScope");
       $templateCache = injector.get("$templateCache");
-      $templateCache.set("myUrl", [200, "{{name}}", {}]);
+      $templateCache.set("myUrl", "{{name}}");
       $rootScope.name = "misko";
       $rootScope.url = "myUrl";
       await waitUntil(() => body.textContent === "misko");
@@ -180,7 +231,7 @@ describe("ngInclude", () => {
 
       $rootScope = injector.get("$rootScope");
       $templateCache = injector.get("$templateCache");
-      $templateCache.set("myUrl", [200, "{{name}}", {}]);
+      $templateCache.set("myUrl", "{{name}}");
       $rootScope.name = "misko";
       $rootScope.url = "myUrl";
       await waitUntil(() => body.textContent === "misko");

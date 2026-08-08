@@ -3958,6 +3958,7 @@ export class Scope {
 
         for (let i = 0, l = properties.length; i < l; i++) {
           const prop = properties[i];
+          const value = assertDefined(prop._value) as ASTNode;
 
           let currentKey: string | undefined;
 
@@ -3968,8 +3969,8 @@ export class Scope {
             if (!currentKey) {
               collectWatchKeys(prop._key, collectedKeys);
             }
-          } else if (getNodeName(prop._value as ASTNode | undefined)) {
-            currentKey = getNodeName(prop._value as ASTNode | undefined);
+          } else if (getNodeName(value)) {
+            currentKey = getNodeName(value);
           } else {
             const [target] = assertDefined(expr._toWatch);
 
@@ -3983,11 +3984,15 @@ export class Scope {
           if (currentKey) {
             pushUniqueListenerKey(keySet, seenKeys, listener, currentKey);
           }
+
+          collectForeignWatchDescriptors(value, listener, keySet, seenKeys);
         }
 
         for (const collectedKey of collectedKeys) {
           pushUniqueListenerKey(keySet, seenKeys, listener, collectedKey);
         }
+
+        this._bindForeignDependency(listener);
         break;
       }
       case ASTType._Program:
@@ -4100,9 +4105,7 @@ export class Scope {
 
   /** Creates an isolate child scope that does not inherit watchable properties directly. */
   $newIsolate(instance?: ng.Scope): ng.Scope {
-    const child = (
-      instance ? createObject(instance) : nullObject()
-    ) as ng.Scope;
+    const child = instance ?? (nullObject() as ng.Scope);
 
     const proxy = new Proxy(
       child,

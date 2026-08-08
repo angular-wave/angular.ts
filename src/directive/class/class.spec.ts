@@ -181,6 +181,28 @@ describe("ngClass", () => {
     expect(element.classList.contains("B")).toBeTruthy();
   });
 
+  it("should rebind object-literal dependencies when a repeated item is replaced", async () => {
+    element = $compile(
+      '<div><article ng-repeat="todo in tasks" data-index="id" ' +
+        'ng-class="{active: todo.done}">{{ todo.done }}</article></div>',
+    )($rootScope);
+    $rootScope.tasks = [{ id: 1, done: false }];
+
+    await wait();
+
+    const row = element.querySelector("article");
+
+    expect(row.textContent.trim()).toBe("false");
+    expect(row).not.toHaveClass("active");
+
+    $rootScope.tasks = [{ id: 1, done: true }];
+    await wait();
+
+    expect(element.querySelector("article")).toBe(row);
+    expect(row.textContent.trim()).toBe("true");
+    expect(row).toHaveClass("active");
+  });
+
   it("should support precomputed view-model class maps", async () => {
     element = $compile('<button ng-class="tile.classes"></button>')($rootScope);
 

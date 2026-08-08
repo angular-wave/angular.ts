@@ -153,6 +153,7 @@
     "js/ng.StateRegistryService"
     "js/ng.StateService"
     "js/ng.StorageBackend"
+    "js/ng.StorageService"
     "js/ng.StorageType"
     "js/ng.StreamService"
     "js/ng.SwapMode"
@@ -215,6 +216,7 @@
     "js/ng.WorkflowSupervisorConfig"
     "js/ng.WorkflowSupervisorPersistence"
     "js/ng.WorkflowSupervisorPersistenceConfig"
+    "js/ng.WorkflowSupervisorService"
     "js/ng.WorkflowSupervisorSnapshot"})
 
 (comment
@@ -325,7 +327,7 @@
      "js/ng.RestCachePolicy" "Public AngularTS RestCachePolicy contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RestCachePolicyContext" "Public AngularTS RestCachePolicyContext contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RestCacheStore" "Async cache store used by {@link CachedRestBackend}. The interface is deliberately small so implementations can be backed by IndexedDB, the browser Cache API, local storage, memory, or test fixtures."
-     "js/ng.RestCacheStrategy" "Read strategy used by {@link CachedRestBackend} for `GET` requests. - `cache-first`: return cached data when present, otherwise fetch network. - `network-first`: fetch network first, falling back to stale cache on error. - `stale-while-revalidate`: return cache immediately and refresh in the background."
+     "js/ng.RestCacheStrategy" "Cache read strategies shared by HTTP, REST, and router transports."
      "js/ng.RestFactory" "Factory service exposed as `$rest`. Creates a typed {@link RestService} for a base URL, optional entity mapper, and optional backend request defaults."
      "js/ng.RestOptions" "Extra backend options merged into requests made by a REST resource."
      "js/ng.RestRequest" "Normalized request object passed from {@link RestService} to a {@link RestBackend}. Backends receive expanded URLs and already-separated request options, so they can focus on transport, persistence, or cache policy."
@@ -367,6 +369,7 @@
      "js/ng.StateRegistryService" "Public `$stateRegistry` contract for dynamic route registration. Module-owned static routes should normally use [[NgModule.router]]. Use this service when routes must be added or removed at runtime."
      "js/ng.StateService" "Public AngularTS StateService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.StorageBackend" "Public AngularTS StorageBackend contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.StorageService" "Creates a proxy that automatically persists an object's state into a storage backend whenever a property is set. The proxy also restores previously serialized state on creation and persists deletions in addition to property assignments."
      "js/ng.StorageType" "Built-in persistent storage backends understood by `NgModule.store()`."
      "js/ng.StreamService" "Public AngularTS StreamService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SwapMode" "Public AngularTS SwapMode contract exposed through the global ng namespace for Closure-annotated applications."
@@ -429,6 +432,7 @@
      "js/ng.WorkflowSupervisorConfig" "Public AngularTS WorkflowSupervisorConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WorkflowSupervisorPersistence" "Public AngularTS WorkflowSupervisorPersistence contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WorkflowSupervisorPersistenceConfig" "Built-in IndexedDB persistence selected by a workflow supervisor."
+     "js/ng.WorkflowSupervisorService" "Public AngularTS WorkflowSupervisorService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WorkflowSupervisorSnapshot" "Public AngularTS WorkflowSupervisorSnapshot contract exposed through the global ng namespace for Closure-annotated applications."}))
 
 (def strict-wrapper-names
@@ -494,6 +498,7 @@
     "injection-token-map-dollarweb-transport"
     "injection-token-map-dollarwebsocket"
     "injection-token-map-dollarworkflow"
+    "injection-token-map-dollarworkflow-supervisor"
     "injector-service-has"
     "injector-service-load-new-modules"
     "interpolate-service-call"
@@ -917,6 +922,8 @@
     "route-contract-resolves"
     "router-config-case-insensitive"
     "router-config-param-types"
+    "router-config-prefetch"
+    "router-config-prefetch-delay"
     "router-config-retention"
     "router-config-strict"
     "router-config-view-transitions"
@@ -1429,6 +1436,11 @@
   "Public InjectionTokenMap.$workflow member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object}\n\nReturns: {!ng.Workflow<TContract>}"
   ^js/ng.Workflow [^js/ng.InjectionTokenMap target ^js/Object config]
   (.$workflow target config))
+
+(defn injection-token-map-dollarworkflow-supervisor
+  "Public InjectionTokenMap.$workflowSupervisor member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object}\n\nReturns: {!ng.WorkflowSupervisor<TWorkflows>}"
+  ^js/ng.WorkflowSupervisor [^js/ng.InjectionTokenMap target ^js/Object config]
+  (.$workflowSupervisor target config))
 
 (defn injector-service-has
   "Public InjectorService.has member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n\nReturns: {boolean}"
@@ -3619,6 +3631,16 @@
   "Public RouterConfig.paramTypes member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, !Object>|undefined)}"
   ^js/Object [^js/ng.RouterConfig target]
   (.-paramTypes target))
+
+(defn router-config-prefetch
+  "Public RouterConfig.prefetch member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.RouterConfig target]
+  (.-prefetch target))
+
+(defn router-config-prefetch-delay
+  "Public RouterConfig.prefetchDelay member exposed by the AngularTS namespace contract.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.RouterConfig target]
+  (.-prefetchDelay target))
 
 (defn router-config-retention
   "Public RouterConfig.retention member exposed by the AngularTS namespace contract.\n\nType: {(!Object|undefined)}"

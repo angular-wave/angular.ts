@@ -9,6 +9,7 @@ import {
 } from "./ng.ts";
 import { createElementFromHTML, dealoc } from "./shared/dom.ts";
 import { wait } from "./shared/test-utils.ts";
+import { animationModule } from "./runtime/animation.ts";
 
 describe("public", () => {
   let element: Element | undefined;
@@ -52,6 +53,7 @@ describe("public", () => {
 
     const angular = createAngular({
       name: "ngRuntimeEquivalent",
+      modules: [animationModule],
       providers: Object.assign({}, ...ngDefaultProviderGroups),
       directives: ngDefaultDirectiveGroups,
       filters: ngBuiltInFilters,

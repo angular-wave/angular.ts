@@ -138,7 +138,8 @@ export { Http, HttpError } from "./services/http/http.ts";
 export type {
   HttpConfig,
   HttpHeadersGetter,
-  HttpCacheLike,
+  HttpCacheConfig,
+  HttpCacheOption,
   HttpHeaderValue,
   HttpHeaderType,
   HttpInterceptorFactory,

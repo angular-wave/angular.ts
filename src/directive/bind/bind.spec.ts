@@ -256,7 +256,12 @@ describe("ng-bind", () => {
 
       link(scope, element);
 
-      expect(scope.$watch).toHaveBeenCalledWith("html", jasmine.any(Function));
+      expect(scope.$watch).toHaveBeenCalledWith(
+        "html",
+        jasmine.any(Function),
+        false,
+        true,
+      );
       expect(element.innerHTML).toBe("<span>trusted</span>");
     });
 

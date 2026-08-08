@@ -4,7 +4,7 @@ import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { dealoc, createElementFromHTML } from "../../shared/dom.ts";
 import { bind } from "../../shared/utils.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { wait, waitUntil } from "../../shared/test-utils.ts";
 
 describe("ngController", () => {
   let angular;
@@ -204,7 +204,7 @@ describe("ngController", () => {
     expect(element.innerText).toBe("Hello Adam!");
   });
 
-  it("should work with ngInclude on the same element", (done) => {
+  it("should work with ngInclude on the same element", async () => {
     element = createElementFromHTML(
       '<div><div ng-controller="Greeter" ng-include="\'/mock/interpolation\'"></div></div>',
     );
@@ -218,10 +218,8 @@ describe("ngController", () => {
     injector = angular.bootstrap(element, ["myModule"]);
 
     $rootScope = injector.get("$rootScope");
-    setTimeout(() => {
-      expect(element.children[0].innerHTML).toEqual("Vojta");
-      done();
-    }, 500);
+    await waitUntil(() => element.children[0]?.innerHTML === "Vojta");
+    expect(element.children[0].innerHTML).toEqual("Vojta");
   });
 
   it("should only instantiate the controller once with ngInclude on the same element", async () => {
@@ -242,7 +240,7 @@ describe("ngController", () => {
 
     $rootScope.expr = "first";
     $rootScope.expr = "second";
-    await wait();
+    await waitUntil(() => element.textContent === "second");
     expect(count).toBe(1);
   });
 
@@ -263,7 +261,7 @@ describe("ngController", () => {
     injector = angular.bootstrap(element, ["myModule"]);
 
     $rootScope = injector.get("$rootScope");
-    await wait();
+    await waitUntil(() => element.querySelector("[ng-init]") !== null);
     expect(controllerScope.name).toBeUndefined();
   });
 });

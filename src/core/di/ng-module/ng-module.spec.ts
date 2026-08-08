@@ -19,6 +19,7 @@ import {
   _location,
   _machine,
   _workflow,
+  _workflowSupervisor,
   _rest,
   _rootElement,
   _sce,
@@ -35,6 +36,7 @@ import {
   _worker,
 } from "../../../injection-tokens.ts";
 import { routerRuntimeConfigKey } from "../../../router/composition/router-runtime.ts";
+import { AnimationRegistry } from "../../../animations/animate.ts";
 
 function createRuntimeInjector(angular, modules) {
   return createInjector(
@@ -832,9 +834,8 @@ describe("NgModule", () => {
     expect($templateCache).toBe(templateCache);
     expect($templateCache.get("cached.html")).toBe("<p>Cached</p>");
     spyOn($http, "get").and.resolveTo({ data: "<p>Configured</p>" });
-    injector.get("$templateRequest")("configured.html");
+    await injector.get("$templateRequest")("configured.html");
     expect($http.get).toHaveBeenCalledOnceWith("configured.html", {
-      cache: $templateCache,
       transformResponse: [],
       headers: {
         Accept: "text/html",
@@ -1288,31 +1289,9 @@ describe("NgModule", () => {
         ...config,
         data: config.data,
       }));
-    const supervisorWorkflowService = jasmine
-      .createSpy("supervisorWorkflowService")
-      .and.callFake((config) => ({
-        id: config.id,
-        state: config.initial,
-        data: config.data,
-        diagnostics: [],
-        history: [],
-        send: jasmine.createSpy("send").and.returnValue(false),
-        can: jasmine.createSpy("can").and.returnValue(false),
-        matches: jasmine.createSpy("matches").and.returnValue(false),
-        run: jasmine.createSpy("run"),
-        retry: jasmine.createSpy("retry"),
-        repeat: jasmine.createSpy("repeat"),
-        cancel: jasmine.createSpy("cancel").and.returnValue(0),
-        snapshot: jasmine.createSpy("snapshot").and.returnValue({
-          version: 1,
-          id: config.id,
-          state: config.initial,
-          data: config.data,
-          diagnostics: [],
-          history: [],
-        }),
-        restore: jasmine.createSpy("restore"),
-      }));
+    const supervisorService = jasmine
+      .createSpy("supervisorService")
+      .and.callFake((config) => ({ id: config.id, config }));
 
     expect(machineFactory).toEqual([
       _machine,
@@ -1325,17 +1304,14 @@ describe("NgModule", () => {
       jasmine.any(Function),
     ]);
     expect(supervisorFactory).toEqual([
-      _workflow,
+      _workflowSupervisor,
       _injector,
       jasmine.any(Function),
     ]);
 
     const machineResult = machineFactory[2](machineService, injector);
     const workflowResult = workflowFactory[2](workflowService, injector);
-    const supervisorResult = supervisorFactory[2](
-      supervisorWorkflowService,
-      injector,
-    );
+    const supervisorResult = supervisorFactory[2](supervisorService, injector);
 
     expect(injector.invoke).toHaveBeenCalledTimes(3);
     expect(injector.invoke).toHaveBeenCalledWith(resolveMachineConfig);
@@ -1348,12 +1324,11 @@ describe("NgModule", () => {
 
     expect(machineService).toHaveBeenCalledTimes(1);
     expect(workflowService).toHaveBeenCalledTimes(1);
-    expect(supervisorWorkflowService).toHaveBeenCalledTimes(1);
+    expect(supervisorService).toHaveBeenCalledTimes(1);
 
     const machineArgs = machineService.calls.mostRecent().args[0];
     const workflowArgs = workflowService.calls.mostRecent().args[0];
-    const supervisorWorkflowArgs =
-      supervisorWorkflowService.calls.mostRecent().args[0];
+    const supervisorArgs = supervisorService.calls.mostRecent().args[0];
     const resolvedMachine = resolveMachineConfig.calls.mostRecent().returnValue;
     const resolvedWorkflow =
       resolveWorkflowConfig.calls.mostRecent().returnValue;
@@ -1373,8 +1348,12 @@ describe("NgModule", () => {
     });
 
     expect(supervisorResult.id).toBe("docs-supervisor");
-    expect(supervisorWorkflowArgs.data).toEqual(resolveSupervisorBuildData);
-    expect(supervisorWorkflowArgs.data).not.toBe(resolveSupervisorBuildData);
+    expect(supervisorArgs.workflows.build.data).toEqual(
+      resolveSupervisorBuildData,
+    );
+    expect(supervisorArgs.workflows.build.data).not.toBe(
+      resolveSupervisorBuildData,
+    );
   });
 
   it("preserves workflow supervisor array entries and workflow instances", () => {
@@ -1443,42 +1422,28 @@ describe("NgModule", () => {
     const objectRegistration = registrations.find(
       ({ args }) => args[0] === "objectSupervisor",
     );
-    const workflowService = jasmine
-      .createSpy("workflowService")
-      .and.callFake((config) => ({
-        ...config,
-        state: config.initial,
-        diagnostics: [],
-        history: [],
-        can: jasmine.createSpy("can").and.returnValue(false),
-        run: jasmine.createSpy("run"),
-        cancel: jasmine.createSpy("cancel").and.returnValue(0),
-        snapshot: jasmine.createSpy("snapshot").and.returnValue({
-          version: 1,
-          id: config.id,
-          state: config.initial,
-          data: config.data,
-          diagnostics: [],
-          history: [],
-        }),
-        restore: jasmine.createSpy("restore"),
-      }));
+    const supervisorService = jasmine
+      .createSpy("supervisorService")
+      .and.callFake((config) => config);
     const injector = {
       invoke: jasmine.createSpy("invoke").and.callFake((value: any) => value()),
     };
 
-    const arrayResult = arrayRegistration.args[1][2](workflowService, injector);
+    const arrayResult = arrayRegistration.args[1][2](
+      supervisorService,
+      injector,
+    );
     const objectResult = objectRegistration.args[1][2](
-      workflowService,
+      supervisorService,
       injector,
     );
 
-    expect(arrayResult.workflow("build").id).toBe("array-build");
-    expect(objectResult.workflow("existing")).toBe(workflowInstance);
-    expect(objectResult.workflow("config").data).toEqual({
+    expect(arrayResult.workflows).toBe(arrayWorkflows);
+    expect(objectResult.workflows.existing).toBe(workflowInstance);
+    expect(objectResult.workflows.config.data).toEqual({
       step: 2,
     });
-    expect(objectResult.workflow("config").data).not.toBe(
+    expect(objectResult.workflows.config.data).not.toBe(
       objectWorkflows.config.data,
     );
   });
@@ -2606,109 +2571,63 @@ describe("NgModule", () => {
   });
 
   it("stores module router trees as router state config blocks", () => {
-    expect(
-      ngModule.router({
-        name: "admin",
-        url: "/admin",
-        abstract: true,
-        template: "<main ng-view></main>",
-        policy: {
-          navigation: {
-            authenticated: true,
-            redirectTo: "login",
-          },
+    const tree = {
+      name: "admin",
+      url: "/admin",
+      abstract: true,
+      template: "<main ng-view></main>",
+      policy: {
+        navigation: {
+          authenticated: true,
+          redirectTo: "login",
         },
-        children: [
-          {
-            name: "users",
-            url: "/users",
-            template: "<h1>Users</h1>",
-          },
-          {
-            name: "admin.roles",
-            url: "/roles",
-            template: "<h1>Roles</h1>",
-            children: [
-              {
-                name: "detail",
-                url: "/:id",
-                template: "<h1>Role</h1>",
-              },
-            ],
-          },
-        ],
-      }),
-    ).toBe(ngModule);
-
-    expect(ngModule._configBlocks).toEqual([
-      [
-        ngModule._runtimeConfig,
-        "configure",
-        [
-          routerRuntimeConfigKey,
-          {
-            type: "state",
-            definition: {
-              name: "admin",
-              url: "/admin",
-              abstract: true,
-              template: "<main ng-view></main>",
-              policy: {
-                navigation: {
-                  authenticated: true,
-                  redirectTo: "login",
-                },
-              },
-            },
-          },
-        ],
-      ],
-      [
-        ngModule._runtimeConfig,
-        "configure",
-        [
-          routerRuntimeConfigKey,
-          {
-            type: "state",
-            definition: {
-              name: "admin.users",
-              url: "/users",
-              template: "<h1>Users</h1>",
-            },
-          },
-        ],
-      ],
-      [
-        ngModule._runtimeConfig,
-        "configure",
-        [
-          routerRuntimeConfigKey,
-          {
-            type: "state",
-            definition: {
-              name: "admin.roles",
-              url: "/roles",
-              template: "<h1>Roles</h1>",
-            },
-          },
-        ],
-      ],
-      [
-        ngModule._runtimeConfig,
-        "configure",
-        [
-          routerRuntimeConfigKey,
-          {
-            type: "state",
-            definition: {
-              name: "admin.roles.detail",
+      },
+      children: [
+        {
+          name: "users",
+          url: "/users",
+          template: "<h1>Users</h1>",
+        },
+        {
+          name: "admin.roles",
+          url: "/roles",
+          template: "<h1>Roles</h1>",
+          children: [
+            {
+              name: "detail",
               url: "/:id",
               template: "<h1>Role</h1>",
             },
-          },
-        ],
+          ],
+        },
       ],
+    };
+
+    expect(ngModule.router(tree)).toBe(ngModule);
+
+    const commands = ngModule._configBlocks.map((block) => block[2][1]);
+
+    expect(commands.map(({ definition }) => definition.name)).toEqual([
+      "admin",
+      "admin.users",
+      "admin.roles",
+      "admin.roles.detail",
     ]);
+    expect(commands.map(({ source }) => source)).toEqual([
+      tree,
+      tree.children[0],
+      tree.children[1],
+      tree.children[1].children[0],
+    ]);
+    expect(
+      ngModule._configBlocks.every(
+        (block) =>
+          block[0] === ngModule._runtimeConfig &&
+          block[1] === "configure" &&
+          block[2][0] === routerRuntimeConfigKey &&
+          block[2][1].type === "state",
+      ),
+    ).toBeTrue();
   });
 
   it("rejects invalid module router tree children", () => {
@@ -2916,6 +2835,7 @@ describe("NgModule", () => {
   });
 
   it("can store animations", () => {
+    ngModule._animationRegistry = new AnimationRegistry();
     ngModule.animation("aAnimation", a).animation("bAnimation", b);
     expect(ngModule._invokeQueue[0]).toEqual([
       ngModule._animationRegistry,

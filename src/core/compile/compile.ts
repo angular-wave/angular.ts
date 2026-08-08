@@ -5130,7 +5130,7 @@ export class CompileRegistry {
             const bindings = assertDefined(controllerDirective._bindings)
               ._bindToController as IsolateBindingMap | undefined;
 
-            const reactiveControllerInstance = controllerScope.$new(
+            const reactiveControllerInstance = controllerScope.$newIsolate(
               controller._instance as Scope,
             ) as ControllerLifecycleInstance;
 
@@ -5142,7 +5142,7 @@ export class CompileRegistry {
               controller._instance = reactiveControllerInstance;
             } else {
               reactiveControllerInstance.$destroy?.();
-              controller._instance = controllerScope.$new(
+              controller._instance = controllerScope.$newIsolate(
                 controllerInstance as Scope,
               ) as ControllerLifecycleInstance;
             }

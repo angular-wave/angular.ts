@@ -7,7 +7,7 @@ import {
   _templateRequest,
 } from "../../injection-tokens.ts";
 import { assertDefined, isDefined, isInstanceOf } from "../../shared/utils.ts";
-import { getNormalizedAttr } from "../../shared/dom.ts";
+import { getNormalizedAttr, removeElement } from "../../shared/dom.ts";
 import {
   getCompiledFragmentRecordFromNodes,
   type CompiledFragmentRecord,
@@ -95,14 +95,11 @@ export function ngIncludeDirective(
           if (previousElement) {
             if (previousFragment && !previousFragment.disposed) {
               previousFragment.dispose();
+            } else {
+              removeElement(previousElement);
             }
             previousElement = null;
             previousFragment = null;
-          }
-
-          if (currentScope) {
-            currentScope.$destroy();
-            currentScope = null;
           }
 
           if (currentElement) {
@@ -110,6 +107,7 @@ export function ngIncludeDirective(
             const animate = getAnimateForNode(getAnimate, currentElement);
 
             if (animate) {
+              currentScope?.$destroy();
               animate.leave(currentElement).done((response: boolean) => {
                 if (response) {
                   leavingFragment?.dispose();
@@ -120,13 +118,20 @@ export function ngIncludeDirective(
             } else {
               if (leavingFragment && !leavingFragment.disposed) {
                 leavingFragment.dispose();
+              } else {
+                removeElement(currentElement);
               }
+              currentScope?.$destroy();
             }
 
+            currentScope = null;
             previousElement = currentElement;
             previousFragment = currentFragment;
             currentElement = null;
             currentFragment = null;
+          } else if (currentScope) {
+            currentScope.$destroy();
+            currentScope = null;
           }
         };
 

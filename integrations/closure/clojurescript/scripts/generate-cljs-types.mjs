@@ -8,9 +8,9 @@ const cljsRoot = resolve(integrationRoot, "clojurescript");
 const externsPath = resolve(integrationRoot, "externs/angular.js");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
-const expectedTypeTagCount = 210;
-const expectedStrictWrapperCount = 224;
-const expectedStrictPropertyReaderCount = 447;
+const expectedTypeTagCount = 212;
+const expectedStrictWrapperCount = 225;
+const expectedStrictPropertyReaderCount = 449;
 const strictWrapperParamTagOverrides = new Map([
   ["NgModule.machine.config", "js/Object"],
   ["NgModule.workflow.config", "js/Object"],

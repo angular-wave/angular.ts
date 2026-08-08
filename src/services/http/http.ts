@@ -1117,6 +1117,17 @@ export function createHttpService(
 
     /** Applies response transforms and rejects responses outside the success range. */
     async function transformResponse(response: unknown) {
+      if (!isObject(response) || !hasOwn(response, "status")) {
+        const error =
+          response instanceof Error
+            ? response
+            : new Error("$http request pipeline rejected without a response.", {
+                cause: response,
+              });
+
+        return Promise.reject(error);
+      }
+
       const httpResponse = response as HttpResponse<unknown>;
 
       // make a copy since the response must be cacheable

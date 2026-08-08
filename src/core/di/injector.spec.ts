@@ -153,6 +153,37 @@ describe("injector.modules", () => {
     expect(cookie.put).toHaveBeenCalled();
   });
 
+  it("creates stores backed by session and local storage", () => {
+    class Preferences {
+      theme = "dark";
+    }
+
+    sessionStorage.removeItem("sessionPreferences");
+    localStorage.removeItem("localPreferences");
+
+    angular
+      .module("webStorageStores", [])
+      .store("sessionPreferences", Preferences, "session")
+      .store("localPreferences", Preferences, "local");
+
+    const injector = createInjector(["webStorageStores"]);
+    const sessionPreferences = injector.get("sessionPreferences");
+    const localPreferences = injector.get("localPreferences");
+
+    sessionPreferences.theme = "light";
+    localPreferences.theme = "system";
+
+    expect(JSON.parse(sessionStorage.getItem("sessionPreferences"))).toEqual({
+      theme: "light",
+    });
+    expect(JSON.parse(localStorage.getItem("localPreferences"))).toEqual({
+      theme: "system",
+    });
+
+    sessionStorage.removeItem("sessionPreferences");
+    localStorage.removeItem("localPreferences");
+  });
+
   it("loads multiple modules", () => {
     const module1 = angular.module("myModule", []);
 

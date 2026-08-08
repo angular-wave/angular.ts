@@ -4778,34 +4778,34 @@ describe("$compile", () => {
     it("calls $afterRender after structural children and DOM bindings are applied", async () => {
       let snapshot;
 
-      myModule.component("boardGrid", {
+      myModule.component("itemList", {
         controller() {
-          this.tiles = ["alpha", "bravo"];
+          this.items = ["alpha", "bravo"];
           this.ready = true;
-          this.tileWidth = "40px";
-          this.tileHeight = "20px";
+          this.itemWidth = "40px";
+          this.itemHeight = "20px";
           this.$afterRender = () => {
-            const tiles = el.querySelectorAll(".tile");
-            const rect = tiles[0].getBoundingClientRect();
+            const items = el.querySelectorAll(".item");
+            const rect = items[0].getBoundingClientRect();
 
             snapshot = {
-              count: tiles.length,
-              classApplied: tiles[0].classList.contains("ready"),
-              state: tiles[0].getAttribute("data-state"),
+              count: items.length,
+              classApplied: items[0].classList.contains("ready"),
+              state: items[0].getAttribute("data-state"),
               width: rect.width,
               height: rect.height,
             };
           };
         },
         template:
-          '<div class="tile" ng-repeat="tile in $ctrl.tiles" ' +
+          '<div class="item" ng-repeat="item in $ctrl.items" ' +
           'ng-class="{ready: $ctrl.ready}" ' +
-          'ng-style="{width: $ctrl.tileWidth, height: $ctrl.tileHeight}" ' +
-          "data-state=\"{{$ctrl.ready ? 'ready' : 'idle'}}\">{{ tile }}</div>",
+          'ng-style="{width: $ctrl.itemWidth, height: $ctrl.itemHeight}" ' +
+          "data-state=\"{{$ctrl.ready ? 'ready' : 'idle'}}\">{{ item }}</div>",
       });
 
       reloadModules();
-      const el = $("<board-grid></board-grid>");
+      const el = $("<item-list></item-list>");
 
       document.getElementById("app").appendChild(el);
       $compile(el)($rootScope);
@@ -5236,79 +5236,78 @@ describe("$compile", () => {
       expect(events).toEqual(["parent:1", "child:1"]);
     });
 
-    it("propagates one-way component input updates into nested template directives", async () => {
+    it("propagates one-way inputs through nested components into DOM directives", async () => {
       myModule
-        .component("matchView", {
-          bindings: { state: "<" },
+        .component("outerPanel", {
+          bindings: { config: "<" },
           template:
-            '<target-board id="target-board" ' +
-            'hidden="!$ctrl.state.isPlaying" ' +
-            'disabled="!$ctrl.state.canSubmitMove"></target-board>',
+            '<middle-panel hidden="!$ctrl.config.visible" ' +
+            'disabled="!$ctrl.config.enabled"></middle-panel>',
         })
-        .component("targetBoard", {
+        .component("middlePanel", {
           bindings: {
             hidden: "<",
             disabled: "<",
           },
           template:
-            '<board-grid hidden="$ctrl.hidden" ' +
-            'disabled="$ctrl.disabled"></board-grid>',
+            '<inner-panel hidden="$ctrl.hidden" ' +
+            'disabled="$ctrl.disabled"></inner-panel>',
         })
-        .component("boardGrid", {
+        .component("innerPanel", {
           bindings: {
             hidden: "<",
             disabled: "<",
           },
           template:
-            '<section class="board-grid" ng-hide="$ctrl.hidden" ' +
+            '<section class="nested-panel" ng-hide="$ctrl.hidden" ' +
             'ng-class="{disabled: $ctrl.disabled}"></section>',
         });
       reloadModules();
 
-      $rootScope.matchState = {
-        isPlaying: false,
-        canSubmitMove: false,
+      $rootScope.panelConfig = {
+        visible: false,
+        enabled: false,
       };
 
-      const el = $('<match-view state="matchState"></match-view>');
+      const el = $('<outer-panel config="panelConfig"></outer-panel>');
 
       $compile(el)($rootScope);
       await wait();
 
-      const grid = el.querySelector(".board-grid");
+      const panel = el.querySelector(".nested-panel");
 
-      expect(grid.classList.contains("ng-hide")).toBeTrue();
-      expect(grid.classList.contains("disabled")).toBeTrue();
+      expect(panel.classList.contains("ng-hide")).toBeTrue();
+      expect(panel.classList.contains("disabled")).toBeTrue();
 
-      $rootScope.matchState = {
-        isPlaying: true,
-        canSubmitMove: false,
+      $rootScope.panelConfig = {
+        visible: true,
+        enabled: false,
       };
       await wait();
 
-      expect(grid.classList.contains("ng-hide")).toBeFalse();
-      expect(grid.classList.contains("disabled")).toBeTrue();
+      expect(panel.classList.contains("ng-hide")).toBeFalse();
+      expect(panel.classList.contains("disabled")).toBeTrue();
 
-      $rootScope.matchState = {
-        isPlaying: true,
-        canSubmitMove: true,
+      $rootScope.panelConfig = {
+        visible: true,
+        enabled: true,
       };
       await wait();
 
-      expect(grid.classList.contains("ng-hide")).toBeFalse();
-      expect(grid.classList.contains("disabled")).toBeFalse();
+      expect(panel.classList.contains("ng-hide")).toBeFalse();
+      expect(panel.classList.contains("disabled")).toBeFalse();
     });
 
     it("propagates async model service changes through nested component inputs into template directives", async () => {
       myModule
-        .model("gameService", () => ({
+        .model("viewModelService", () => ({
           flag: false,
         }))
         .component("rootComp", {
           controller: [
-            "gameService",
-            function controller(gameService) {
-              this.service = gameService;
+            "viewModelService",
+            function controller(viewModelService) {
+              this.service = viewModelService;
             },
           ],
           template: '<parent-comp flag="$ctrl.service.flag"></parent-comp>',
@@ -5325,7 +5324,7 @@ describe("$compile", () => {
         });
       reloadModules();
 
-      const gameService = injector.get("gameService");
+      const viewModelService = injector.get("viewModelService");
       const el = $("<root-comp></root-comp>");
 
       $compile(el)($rootScope);
@@ -5337,7 +5336,7 @@ describe("$compile", () => {
       expect(target.classList.contains("active")).toBeFalse();
 
       setTimeout(() => {
-        gameService.flag = true;
+        viewModelService.flag = true;
       });
 
       await wait();

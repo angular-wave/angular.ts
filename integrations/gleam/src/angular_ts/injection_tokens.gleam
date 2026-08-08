@@ -128,6 +128,10 @@ pub fn state_registry() -> Token(namespace.StateRegistryService) {
   token.new("$stateRegistry")
 }
 
+pub fn storage() -> Token(js.JsValue) {
+  token.new("$storage")
+}
+
 pub fn stream() -> Token(namespace.StreamService) {
   token.new("$stream")
 }
@@ -174,6 +178,10 @@ pub fn wasm() -> Token(wasm.WasmService) {
 
 pub fn workflow() -> Token(namespace.WorkflowService) {
   token.new("$workflow")
+}
+
+pub fn workflow_supervisor() -> Token(js.JsValue) {
+  token.new("$workflowSupervisor")
 }
 
 pub fn injector() -> Token(namespace.InjectorService(js.JsValue)) {

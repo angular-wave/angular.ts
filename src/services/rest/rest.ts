@@ -282,7 +282,11 @@ export class CachedRestBackend implements RestBackend {
       key: cacheKey,
       load: async () => this._network.request<T>(request),
       onRevalidate: (response) => {
-        this._onRevalidate?.({ key: cacheKey, request, response });
+        this._onRevalidate?.({
+          key: cacheKey,
+          request,
+          response: { ...response, source: "network" },
+        });
       },
     });
 

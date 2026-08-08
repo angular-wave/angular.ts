@@ -159,6 +159,7 @@ Rust reference example makes one necessary.
 | `MachineService` | covered |
 | `EventBusConfig` | deferred |
 | `WorkflowService` | deferred |
+| `WorkflowSupervisorService` | deferred |
 | `ParseService` | deferred |
 | `SceDelegateService` | deferred |
 | `SceService` | deferred |
@@ -318,6 +319,7 @@ Rust reference example makes one necessary.
 | `ServiceWorkerRequestOptions` | deferred |
 | `ServiceWorkerUpdateState` | deferred |
 | `StorageBackend` | covered |
+| `StorageService` | deferred |
 | `StorageType` | covered |
 | `WorkerConfig` | covered |
 | `WorkerError` | covered |

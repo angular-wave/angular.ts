@@ -1,7 +1,7 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { wait, waitUntil } from "../../shared/test-utils.ts";
 import { isString } from "../../shared/utils.ts";
 import { dealoc, getController } from "../../shared/dom.ts";
 
@@ -749,7 +749,7 @@ describe("ngMessages", () => {
       element = $compile(
         '<div ng-messages="data"><div ng-messages-include="/mock/hello"></div></div>',
       )($rootScope);
-      await wait();
+      await waitUntil(() => $templateCache.has("/mock/hello"));
       expect($templateCache.get("/mock/hello")).toBeDefined();
     });
 

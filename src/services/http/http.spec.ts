@@ -1119,19 +1119,26 @@ describe("$http", function () {
   });
 
   it("uses request, configured, and internal caches", async function () {
-    const requestCache = new Map();
+    const requestStore = new Map();
+    const requestCache = {
+      strategy: "cache-first",
+      store: requestStore,
+    };
 
     const first = await $http.get("/mock/hello", { cache: requestCache });
     const second = await $http.get("/mock/hello", { cache: requestCache });
 
     expect(second.data).toBe(first.data);
-    expect(Array.isArray(requestCache.get("/mock/hello"))).toBeTrue();
+    expect(requestStore.get("/mock/hello").data).toBe("Hello");
 
-    const configuredCache = new Map();
+    const configuredStore = new Map();
 
-    $http.defaults.cache = configuredCache;
+    $http.defaults.cache = {
+      strategy: "cache-first",
+      store: configuredStore,
+    };
     await $http.get("/mock/hello");
-    expect(configuredCache.has("/mock/hello")).toBeTrue();
+    expect(configuredStore.has("/mock/hello")).toBeTrue();
 
     $http.defaults.cache = undefined;
     await $http.get("/mock/hello", { cache: true });
@@ -1140,49 +1147,96 @@ describe("$http", function () {
     expect(internallyCached.data).toBe("Hello");
   });
 
-  it("shares pending cached requests and removes failed responses", async function () {
-    const cache = new Map();
-    const first = $http.get("/mock/hello", { cache });
-    const second = $http.get("/mock/hello", { cache });
+  it("stores successful responses and does not cache failures", async function () {
+    const store = new Map();
+    const cache = { strategy: "cache-first", store };
+    const response = await $http.get("/mock/hello", { cache });
 
-    const responses = await Promise.all([first, second]);
-
-    expect(responses.map((item) => item.data)).toEqual(["Hello", "Hello"]);
+    expect(response.data).toBe("Hello");
+    expect(store.get("/mock/hello").data).toBe("Hello");
 
     await expectAsync($http.get("/mock/401", { cache })).toBeRejected();
-    expect(cache.has("/mock/401")).toBeFalse();
+    expect(store.has("/mock/401")).toBeFalse();
   });
 
-  it("serves direct cache values and normalizes invalid cached statuses", async function () {
-    const valueCache = new Map([["/mock/value", "cached"]]);
+  it("serves cached responses and preserves cached error statuses", async function () {
+    const cachedResponse = {
+      data: "cached",
+      status: 200,
+      headers: (headerName) => (headerName ? "" : {}),
+      config: {},
+      statusText: "OK",
+      xhrStatus: "complete",
+    };
+    const valueStore = new Map([["/mock/value", cachedResponse]]);
     const valueResponse = await $http.get("/mock/value", {
-      cache: valueCache,
+      cache: { strategy: "cache-first", store: valueStore },
     });
 
     expect(valueResponse.data).toBe("cached");
     expect(valueResponse.status).toBe(200);
 
-    const statusCache = new Map([
-      ["/mock/status", [-2, "failed", {}, "Invalid", "error"]],
+    const statusStore = new Map([
+      [
+        "/mock/status",
+        {
+          ...cachedResponse,
+          data: "failed",
+          status: 503,
+          statusText: "Unavailable",
+          xhrStatus: "error",
+        },
+      ],
     ]);
 
     await expectAsync(
-      $http.get("/mock/status", { cache: statusCache }),
+      $http.get("/mock/status", {
+        cache: { strategy: "cache-first", store: statusStore },
+      }),
     ).toBeRejectedWith(
       jasmine.objectContaining({
-        status: 0,
+        status: 503,
       }),
     );
   });
 
-  it("rejects when a malformed pending cache entry cannot be resolved", async function () {
+  it("preserves cache-store rejections", async function () {
+    const error = new Error("cache unavailable");
     const pending = Promise.withResolvers();
-    const cache = new Map([["/mock/malformed", pending.promise]]);
-    const request = $http.get("/mock/malformed", { cache });
+    const store = new Map([["/mock/malformed", pending.promise]]);
+    const request = $http.get("/mock/malformed", {
+      cache: { strategy: "cache-first", store },
+    });
 
-    pending.reject(undefined);
+    pending.reject(error);
 
-    await expectAsync(request).toBeRejected();
+    await expectAsync(request).toBeRejectedWith(error);
+  });
+
+  it("normalizes non-error cache-store rejections", async function () {
+    const pending = Promise.withResolvers();
+    const store = new Map([["/mock/primitive-rejection", pending.promise]]);
+    const request = $http.get("/mock/primitive-rejection", {
+      cache: { strategy: "cache-first", store },
+    });
+
+    pending.reject("cache unavailable");
+
+    await expectAsync(request).toBeRejectedWith(
+      jasmine.objectContaining({
+        message: "$http request pipeline rejected without a response.",
+        cause: "cache unavailable",
+      }),
+    );
+  });
+
+  it("rejects legacy cache objects with their configuration error", async function () {
+    await expectAsync(
+      $http.get("/mock/hello", { cache: new Map() }),
+    ).toBeRejectedWithError(
+      Error,
+      "$http cache objects must use the { strategy, store } configuration shape.",
+    );
   });
 
   it("adds XSRF cookies with default and request header names", async function () {

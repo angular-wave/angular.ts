@@ -132,8 +132,10 @@ part of the Kotlin public facade.
 | `LogEntry` | generated |
 | `LogLevel` | generated |
 | `MachineService` | generated |
+| `StorageService` | generated |
 | `SecurityPolicy` | generated |
 | `WorkflowService` | generated |
+| `WorkflowSupervisorService` | generated |
 | `ParseService` | generated |
 | `EventBusConfig` | generated |
 | `ServiceWorkerConfig` | generated |
