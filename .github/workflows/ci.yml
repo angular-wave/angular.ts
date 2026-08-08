@@ -5,6 +5,7 @@ permissions:
 
 on:
   workflow_call:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -299,3 +300,32 @@ jobs:
           path: integrations/wasm/csharp/playwright-report/
           if-no-files-found: ignore
           retention-days: 3
+
+  ci-gate:
+    name: CI Gate
+    if: always()
+    needs:
+      - setup
+      - lint
+      - typescript
+      - package
+      - playwright
+      - kotlin
+      - scala
+      - csharp-wasm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every CI job to pass
+        if: >-
+          needs.setup.result != 'success' ||
+          needs.lint.result != 'success' ||
+          needs.typescript.result != 'success' ||
+          needs.package.result != 'success' ||
+          needs.playwright.result != 'success' ||
+          needs.kotlin.result != 'success' ||
+          needs.scala.result != 'success' ||
+          needs.csharp-wasm.result != 'success'
+        run: exit 1
+
+      - name: Confirm CI completion
+        run: echo "Every required CI job passed."
