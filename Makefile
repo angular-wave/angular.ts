@@ -1,4 +1,4 @@
-.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check internal-composition-check internal-composition-report types generated-check public-namespace-api update-public-namespace-api docs-examples-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
+.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check internal-composition-check internal-composition-report types generated-check public-namespace-api update-public-namespace-api docs-examples-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -189,6 +189,18 @@ prepare-release: release-notes-check
 	@$(MAKE) release-build
 	@$(MAKE) docs-requirement
 	@$(MAKE) size-html
+
+publish-release:
+	@test -z "$$(git status --porcelain)" || \
+		(echo "Refusing to release from a dirty worktree." >&2; exit 1)
+	@git fetch origin master
+	@test "$$(git rev-parse HEAD)" = "$$(git rev-parse origin/master)" || \
+		(echo "Refusing to release: HEAD does not match origin/master." >&2; exit 1)
+	@version="$$(node -p 'require("./package.json").version')"; \
+		tag="v$$version"; \
+		git tag -a "$$tag" -m "Version $$version" && \
+		git show --no-patch "$$tag" && \
+		git push origin "$$tag"
 
 PLAYWRIGHT_TEST := npx playwright test
 

@@ -122,12 +122,12 @@ Create an annotated tag whose name exactly matches the package version with a
 that tag:
 
 ```bash
-RELEASE_VERSION="$(node -p 'require("./package.json").version')"
-RELEASE_TAG="v$RELEASE_VERSION"
-git tag -a "$RELEASE_TAG" -m "Version $RELEASE_VERSION"
-git show --no-patch "$RELEASE_TAG"
-git push origin "$RELEASE_TAG"
+make publish-release
 ```
+
+The command derives the version from `package.json`, requires a clean worktree,
+requires `HEAD` to match `origin/master`, creates and displays the annotated
+tag, and pushes it to trigger the release workflow.
 
 The `Release` workflow then:
 
