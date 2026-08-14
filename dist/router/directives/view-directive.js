@@ -104,7 +104,7 @@ function withResolvers() {
  * app.router('home', {
  *   template: '<my-component user="$resolve.user"></my-component>',
  *   resolve: {
- *     user: function(UserService) { return UserService.fetchUser(); }
+ *     user: ['UserService', function(UserService) { return UserService.fetchUser(); }]
  *   }
  * });
  * ```

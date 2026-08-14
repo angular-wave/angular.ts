@@ -1,7 +1,10 @@
 import { defaults } from '../../shared/common.js';
-import { isString, isObject, isInstanceOf, isDefined, assertDefined, isNullOrUndefined, isArray, createErrorFactory } from '../../shared/utils.js';
+import { isObject, isString, isInstanceOf, isDefined, assertDefined, isNullOrUndefined, isArray, createErrorFactory } from '../../shared/utils.js';
 import { isInjectable } from '../../core/di/injectable.js';
 import { PathNode } from '../path/path-node.js';
+import { buildPath } from '../path/path-utils.js';
+import { hasNormalizedAttr } from '../../shared/dom.js';
+import { _serviceWorker } from '../../injection-tokens.js';
 import { defaultTransOpts } from '../transition/transition-service.js';
 import { Rejection } from '../transition/reject-factory.js';
 import { TargetState } from './target-state.js';
@@ -9,6 +12,7 @@ import { createTransitionErrorPolicyInvocationLocals, createTransitionPolicyInvo
 import { Param } from '../params/param.js';
 import { Glob } from '../glob/glob.js';
 import { getTransitionRetryPolicyFromStateName, transitionToState } from './state-transition.js';
+import { _getRouterPrefetchDelay } from '../router.js';
 
 const stateRuntimeError = createErrorFactory("$state");
 function diagnosticStateName(stateOrName) {
@@ -47,6 +51,8 @@ class StateRuntime {
         this._$injector = undefined;
         this._lazyStates = [];
         this._policyDiagnostics = [];
+        this._prefetches = new Map();
+        this._prefetchRootDisposer = undefined;
         this._defaultErrorHandler = exceptionHandler;
     }
     /** @internal */
@@ -54,7 +60,7 @@ class StateRuntime {
         this._policyDiagnostics.push(diagnostic);
     }
     /** @internal */
-    _initRuntime($injector, $location, $stateRegistry, $rootScope, viewService) {
+    _initRuntime($injector, $location, $stateRegistry, $rootScope, viewService, $rootElement) {
         this._routerState._initRuntime($location, $injector);
         this._stateRegistry = $stateRegistry;
         this._viewService = viewService;
@@ -65,7 +71,154 @@ class StateRuntime {
         this._transitionService._initRuntimeHooks(this, viewService);
         this._$injector = $injector;
         this._routerState._injector = $injector;
+        this._prefetchRootDisposer?.();
+        this._prefetchRootDisposer = $rootElement
+            ? this._bindPrefetchRoot($rootElement)
+            : undefined;
         return this;
+    }
+    /** @internal */
+    _destroyRuntime() {
+        this._prefetchRootDisposer?.();
+        this._prefetchRootDisposer = undefined;
+        this._prefetches.clear();
+    }
+    /** @internal */
+    _bindPrefetchRoot($rootElement) {
+        const timers = new Map();
+        const findAnchor = (event) => {
+            const target = event.target;
+            if (!(target instanceof Element))
+                return undefined;
+            const anchor = target.closest("a[href]");
+            if (!(anchor instanceof HTMLAnchorElement) ||
+                !$rootElement.contains(anchor) ||
+                hasNormalizedAttr(anchor, "ngState")) {
+                return undefined;
+            }
+            return anchor;
+        };
+        const cancel = (anchor) => {
+            const timer = timers.get(anchor);
+            if (timer !== undefined) {
+                clearTimeout(timer);
+                timers.delete(anchor);
+            }
+        };
+        const enter = ((event) => {
+            const anchor = findAnchor(event);
+            if (!anchor ||
+                anchor.contains(event.relatedTarget)) {
+                return;
+            }
+            const delay = _getRouterPrefetchDelay(anchor, this._routerState);
+            if (delay === undefined)
+                return;
+            cancel(anchor);
+            timers.set(anchor, window.setTimeout(() => {
+                timers.delete(anchor);
+                void this._prefetchHref(anchor.href).catch(() => undefined);
+            }, delay));
+        });
+        const leave = ((event) => {
+            const anchor = findAnchor(event);
+            if (anchor &&
+                !anchor.contains(event.relatedTarget)) {
+                cancel(anchor);
+            }
+        });
+        $rootElement.addEventListener("pointerover", enter);
+        $rootElement.addEventListener("pointerout", leave);
+        $rootElement.addEventListener("focusin", enter);
+        $rootElement.addEventListener("focusout", leave);
+        return () => {
+            $rootElement.removeEventListener("pointerover", enter);
+            $rootElement.removeEventListener("pointerout", leave);
+            $rootElement.removeEventListener("focusin", enter);
+            $rootElement.removeEventListener("focusout", leave);
+            timers.forEach((timer) => {
+                clearTimeout(timer);
+            });
+            timers.clear();
+        };
+    }
+    /** @internal */
+    async _prefetchHref(href) {
+        const parts = this._routerState._urlRuntime._parseHref(href);
+        if (!parts)
+            return;
+        const match = this._routerState._routeTable._match(parts.path, parts.search, parts.hash);
+        if (match) {
+            await this.prefetch(match.state, match.match, { inherit: true });
+        }
+    }
+    /** @internal */
+    async _prefetchTarget(stateOrName, params, options) {
+        let target = this.target(stateOrName, params, options);
+        if (!target.valid()) {
+            const lazy = this._findLazyState(target);
+            if (lazy) {
+                lazy.promise ?? (lazy.promise = this._loadLazyRegistration(lazy, target));
+                await lazy.promise;
+                target = this.target(stateOrName, params, options);
+            }
+        }
+        if (!target.valid()) {
+            throw new Error(String(target.error()));
+        }
+        const templateFactory = this._viewService._templateFactory;
+        const templateLoads = [];
+        buildPath(target).forEach((node) => {
+            Object.values(node.state._views ?? {}).forEach((view) => {
+                templateLoads.push(this._prefetchView(templateFactory, view, target.params()));
+            });
+        });
+        await Promise.all(templateLoads);
+    }
+    /** @internal */
+    async _prefetchView(templateFactory, view, params) {
+        const templateUrl = templateFactory._getTemplateUrl(view, params);
+        if (templateUrl && (await this._relayResource(templateUrl))) {
+            return undefined;
+        }
+        return templateFactory._fromConfig(view, params);
+    }
+    /** @internal */
+    async _relayResource(url) {
+        const relay = this._routerState._relay;
+        const injector = this._$injector;
+        if (!relay || !injector?.has(_serviceWorker))
+            return false;
+        const serviceWorker = injector.get(_serviceWorker);
+        if (!serviceWorker.controller)
+            return false;
+        const cache = isObject(relay) ? (relay.cache ?? true) : true;
+        try {
+            const result = await serviceWorker.request({
+                type: "angular-router:prefetch",
+                version: 1,
+                url,
+                cache,
+            });
+            return result.ok;
+        }
+        catch {
+            return false;
+        }
+    }
+    /**
+     * Loads lazy state declarations and route templates without navigating.
+     */
+    prefetch(stateOrName, params = {}, options = {}) {
+        const key = `${diagnosticStateName(stateOrName)}:${JSON.stringify(params)}`;
+        const existing = this._prefetches.get(key);
+        if (existing)
+            return existing;
+        const promise = this._prefetchTarget(stateOrName, params, options).finally(() => {
+            this._prefetches.delete(key);
+        });
+        this._prefetches.set(key, promise);
+        return promise;
     }
     state(nameOrDefinition, definition) {
         const stateDefinition = normalizeStateDeclaration(nameOrDefinition, definition);
@@ -375,11 +528,11 @@ class StateRuntime {
      * ```js
      * let app = angular.module('app', []);
      *
-     * app.controller('ctrl', function ($scope, $state) {
+     * app.controller('ctrl', ['$scope', '$state', function ($scope, $state) {
      *   $scope.changeState = function () {
      *     $state.go('contact.detail');
      *   };
-     * });
+     * }]);
      * ```
      *
      * @param {StateOrName} to Absolute state name, state object, or relative state path (relative to current state).

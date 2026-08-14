@@ -1,12 +1,9 @@
 import { isString, isArray, isDefined, isFunction, isObject } from '../../../shared/utils.js';
-import { AnimationRegistry } from '../../../animations/animate.js';
 import { ControllerRegistry } from '../../controller/controller.js';
-import { _injector, _anchorScroll, _aria, _cookie, _exceptionHandler, _eventBus, _htmlCanvas, _http, _interpolate, _log, _location, _sce, _sceDelegate, _templateCache, _templateRequest, _webComponent, _rest, _security, _sse, _websocket, _webTransport, _serviceWorker, _compile, _animate, _controller, _element, _rootElement, _rootScope, _scope, _state, _stateRegistry, _transitions, _machine, _workflow, _wasm, _worker } from '../../../injection-tokens.js';
+import { _injector, _anchorScroll, _aria, _cookie, _exceptionHandler, _eventBus, _htmlCanvas, _http, _interpolate, _log, _location, _sce, _sceDelegate, _templateCache, _templateRequest, _webComponent, _rest, _security, _sse, _websocket, _webTransport, _serviceWorker, _compile, _animate, _controller, _element, _rootElement, _rootScope, _scope, _state, _stateRegistry, _transitions, _machine, _workflow, _workflowSupervisor, _wasm, _worker } from '../../../injection-tokens.js';
 import { isInjectable } from '../injectable.js';
 import { FilterRegistry } from '../../filter/filter.js';
 import { validate, validateRequired } from '../../../shared/validate.js';
-import { setStateDeclarationSource } from '../../../router/state/state-object.js';
-import { createWorkflowSupervisor } from '../../../services/workflow/workflow.js';
 import { CompileRegistry, CompileLifecycle } from '../../compile/compile.js';
 import { RuntimeConfigRegistry } from '../../composition/runtime-composition.js';
 import { AppContext } from '../../app-context/app-context.js';
@@ -212,7 +209,7 @@ class NgModule {
         this._invokeQueue = [];
         this._configBlocks = [];
         this._runBlocks = [];
-        this._animationRegistry = animationRegistry ?? new AnimationRegistry();
+        this._animationRegistry = animationRegistry;
         this._controllerRegistry = controllerRegistry ?? new ControllerRegistry();
         this._filterRegistry = filterRegistry ?? new FilterRegistry();
         this._compileRegistry =
@@ -546,8 +543,12 @@ class NgModule {
     animation(name, animationFactory) {
         validate(isString, name, "name");
         validateRequired(animationFactory, "animationFactory");
+        const animationRegistry = this._animationRegistry;
+        if (!animationRegistry) {
+            throw new Error("Animation support is not installed. Include animationModule in this runtime.");
+        }
         this._invokeQueue.push([
-            this._animationRegistry,
+            animationRegistry,
             "register",
             [name, animationFactory],
         ]);
@@ -696,11 +697,11 @@ class NgModule {
         validate(isString, name, "name");
         validate(isDynamicConfig.bind(null, config, isObject), config, "config");
         this._invokeQueue.push(registerFactory(name, [
-            _workflow,
+            _workflowSupervisor,
             _injector,
-            ($workflow, $injector) => {
+            ($workflowSupervisor, $injector) => {
                 const resolvedConfig = resolveDynamicConfig(config, $injector);
-                return createWorkflowSupervisor($workflow, cloneWorkflowSupervisorModuleConfig({
+                return $workflowSupervisor(cloneWorkflowSupervisorModuleConfig({
                     ...resolvedConfig,
                     id: resolvedConfig.id ?? name,
                 }));
@@ -716,7 +717,11 @@ class NgModule {
                 "configure",
                 [
                     routerConfigKey,
-                    { type: "state", definition: state },
+                    {
+                        type: "state",
+                        definition: state.definition,
+                        source: state.source,
+                    },
                 ],
             ]);
         }
@@ -976,10 +981,10 @@ function appendRouterModuleDeclaration(declaration, parentName, states) {
     const flattened = canUseSource
         ? declaration
         : { ...stateDeclaration, name };
-    if (!canUseSource) {
-        setStateDeclarationSource(flattened, declaration);
-    }
-    states.push(flattened);
+    states.push({
+        definition: flattened,
+        source: canUseSource ? undefined : declaration,
+    });
     if (children === undefined) {
         return;
     }

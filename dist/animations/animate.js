@@ -1,4 +1,4 @@
-import { isString, createErrorFactory, isFunction, assign, assertDefined } from '../shared/utils.js';
+import { isString, isFunction, assign, assertDefined, createErrorFactory } from '../shared/utils.js';
 import { domInsert, removeElement } from '../shared/dom.js';
 
 const $animateError = createErrorFactory("$animate");

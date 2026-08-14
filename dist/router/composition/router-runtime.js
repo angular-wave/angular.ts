@@ -1,7 +1,8 @@
-import { _transitions, _stateRegistry, _injector, _templateRequest, _compile, _controller, _rootScope, _location, _security } from '../../injection-tokens.js';
+import { _transitions, _stateRegistry, _injector, _templateRequest, _compile, _controller, _rootScope, _location, _rootElement, _security } from '../../injection-tokens.js';
 import { RouterRuntimeState } from '../router.js';
 import { StateRegistryRuntime } from '../state/state-registry.js';
 import { StateRuntime } from '../state/state-service.js';
+import { setStateDeclarationSource } from '../state/state-object.js';
 import { TemplateFactoryService } from '../router/template-factory.js';
 import { TransitionRuntime } from '../transition/transition-service.js';
 import { ViewService } from '../view/view.js';
@@ -15,6 +16,9 @@ function applyRouterRuntimeCommand(runtime, command) {
             runtime.routerState.config(command.config);
             break;
         case "state":
+            if (command.source) {
+                setStateDeclarationSource(command.definition, command.source);
+            }
             runtime.stateService.state(command.definition);
             break;
         case "lazy":
@@ -68,6 +72,7 @@ function createRouterRuntime(dependencies) {
             if (destroyed)
                 return;
             destroyed = true;
+            stateService._destroyRuntime();
             viewService?.destroy();
         },
     };
@@ -103,8 +108,9 @@ const routerRuntimeRegistration = {
             _rootScope,
             _injector,
             _location,
+            _rootElement,
             _stateRegistry,
-            (templateRequest, compile, controller, rootScope, injector, location, stateRegistry) => {
+            (templateRequest, compile, controller, rootScope, injector, location, rootElement, stateRegistry) => {
                 const templateFactory = routerRuntime.createTemplateFactory(templateRequest, injector);
                 const viewService = routerRuntime.createViewService({
                     templateFactory,
@@ -113,7 +119,7 @@ const routerRuntimeRegistration = {
                     rootScope,
                     injector,
                 });
-                return stateService._initRuntime(injector, location, stateRegistry, rootScope, viewService);
+                return stateService._initRuntime(injector, location, stateRegistry, rootScope, viewService, rootElement);
             },
         ]);
         return stateService;

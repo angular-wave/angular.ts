@@ -33,7 +33,6 @@ function ngRefDirective($parse) {
                     refValue =
                         getCacheData(element, `$${controllerName}Controller`) ?? element;
                 }
-                refValue = deProxy(refValue);
                 if (refValue && typeof refValue === "object") {
                     try {
                         Object.defineProperty(refValue, "$nonscope", {

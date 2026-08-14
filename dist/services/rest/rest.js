@@ -1,7 +1,8 @@
-import { isDefined, isString, isNullOrUndefined, isArray } from '../../shared/utils.js';
+import { isString, isNullOrUndefined, isArray } from '../../shared/utils.js';
 import { expandUriTemplate } from './rfc.js';
 import { HttpRestBackend } from './http-rest-backend.js';
 import { normalizePolicyDecision } from '../../core/policy/policy.js';
+import { isCacheStrategy, executeCacheStrategy } from '../cache/cache.js';
 
 /**
  * Create a deterministic cache key for a REST request.
@@ -74,51 +75,27 @@ class CachedRestBackend {
             cacheKey,
         });
         const strategy = normalizePolicyDecision(decision).type;
-        switch (strategy) {
-            case "cache-first":
-                return this._cacheFirst(request, cacheKey);
-            case "network-first":
-                return this._networkFirst(request, cacheKey);
-            case "stale-while-revalidate":
-                return this._staleWhileRevalidate(request, cacheKey);
+        if (!isCacheStrategy(strategy)) {
+            throw new Error(`Unsupported REST cache strategy: ${String(strategy)}`);
         }
-        throw new Error(`Unsupported REST cache strategy: ${String(strategy)}`);
-    }
-    async _cacheFirst(request, cacheKey) {
-        const cached = await this._cache.get(cacheKey);
-        if (isDefined(cached)) {
-            return { ...cached, source: "cache" };
-        }
-        return this._fetchAndCache(request, cacheKey);
-    }
-    async _networkFirst(request, cacheKey) {
-        try {
-            return await this._fetchAndCache(request, cacheKey);
-        }
-        catch (error) {
-            const cached = await this._cache.get(cacheKey);
-            if (isDefined(cached)) {
-                return { ...cached, source: "cache", stale: true };
-            }
-            throw error;
-        }
-    }
-    async _staleWhileRevalidate(request, cacheKey) {
-        const cached = await this._cache.get(cacheKey);
-        if (isDefined(cached)) {
-            void this._fetchAndCache(request, cacheKey).then((response) => {
-                this._onRevalidate?.({ key: cacheKey, request, response });
-                return undefined;
-            }, () => undefined);
-            return { ...cached, source: "cache", stale: true };
-        }
-        return this._fetchAndCache(request, cacheKey);
-    }
-    async _fetchAndCache(request, key) {
-        const response = await this._network.request(request);
-        const networkResponse = { ...response, source: "network" };
-        await this._cache.set(key, networkResponse);
-        return networkResponse;
+        const result = await executeCacheStrategy({
+            strategy,
+            store: this._cache,
+            key: cacheKey,
+            load: async () => this._network.request(request),
+            onRevalidate: (response) => {
+                this._onRevalidate?.({
+                    key: cacheKey,
+                    request,
+                    response: { ...response, source: "network" },
+                });
+            },
+        });
+        return {
+            ...result.value,
+            source: result.source,
+            ...(result.stale ? { stale: true } : {}),
+        };
     }
     async _invalidate(request) {
         await this._cache.deletePrefix(`GET ${request.url}`);

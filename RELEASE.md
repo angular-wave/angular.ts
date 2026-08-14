@@ -48,44 +48,85 @@ Enable immutable GitHub Releases for the repository when available.
 
 ## Prepare a release commit
 
-1. Choose a version that has not been published to npm.
-2. Update `package.json` and `package-lock.json` without creating a tag:
+Start from a clean `master` branch that is synchronized with `origin/master`:
+
+```bash
+git switch master
+git pull --ff-only origin master
+git status --short
+```
+
+1. Update `package.json` and `package-lock.json` without creating a commit or
+   tag:
 
    ```bash
-   npm version 0.31.0 --no-git-tag-version
+   npm version <new-version> --no-git-tag-version
    ```
 
-3. Replace the `Unreleased` heading in `CHANGELOG.md` with the exact version
-   and release date, then write a concise description of user-visible changes:
+2. Confirm that the version recorded in `package.json` has not already been
+   published:
+
+   ```bash
+   npm view "@angular-wave/angular.ts@$(node -p 'require("./package.json").version')" version
+   ```
+
+   npm should report that the version is not present.
+
+3. Add an exact, non-empty version section beneath `Unreleased` in
+   `CHANGELOG.md`. Keep the notes terse and limited to user-visible changes:
 
    ```markdown
-   ## [0.31.0] - 2026-07-19
+   ## [Unreleased]
+
+   ## [x.y.z] - YYYY-MM-DD
 
    - Added a user-visible capability.
    - Removed an obsolete configuration surface.
    ```
 
-   Add a new `## [Unreleased]` section above it for subsequent work. Do not
-   copy pull-request or commit inventories into the changelog.
+   Do not copy pull-request or commit inventories into the changelog. The
+   release workflow extracts this section verbatim for the GitHub Release.
 
-4. Run the local release preparation gate:
+4. Generate and validate the release artifacts:
 
    ```bash
    make prepare-release
+   git diff --check
+   git status --short
    ```
 
-5. Review and commit the version, changelog, generated declarations, distribution files,
-   generated documentation, migration guidance, and release-facing changes.
-6. Merge the release commit to `master` and require its CI run to pass.
+   `make prepare-release` validates the release notes and formatting, then
+   generates version files, distribution bundles, declarations, documentation,
+   integration bindings, and the size report. It does not rerun the test suite;
+   the release commit and tag must pass the repository CI gate.
+
+5. Review all changes. The release commit must include the version and
+   changelog changes as well as generated declarations, distribution files,
+   TypeDoc output, version files, and size output.
+
+6. Commit and push the prepared release:
+
+   ```bash
+   git add -A
+   git commit -m "Release $(node -p 'require("./package.json").version')"
+   git push origin master
+   ```
+
+7. Wait for all required checks on the release commit to pass. Do not create
+   the release tag from an unverified commit.
 
 ## Publish from a tag
 
 Create an annotated tag whose name exactly matches the package version with a
-`v` prefix, then push only that tag:
+`v` prefix. Create it on the verified release commit, inspect it, and push only
+that tag:
 
 ```bash
-git tag -a v0.31.0 -m "AngularTS 0.31.0"
-git push origin v0.31.0
+RELEASE_VERSION="$(node -p 'require("./package.json").version')"
+RELEASE_TAG="v$RELEASE_VERSION"
+git tag -a "$RELEASE_TAG" -m "Version $RELEASE_VERSION"
+git show --no-patch "$RELEASE_TAG"
+git push origin "$RELEASE_TAG"
 ```
 
 The `Release` workflow then:
@@ -102,15 +143,33 @@ The `Release` workflow then:
 7. Publishes the GitHub Release only after npm accepts the package.
 
 Stable versions are published under npm's `latest` tag. SemVer prereleases,
-such as `0.31.0-beta.1`, are published under `next` and marked as prereleases
+such as `x.y.z-beta.1`, are published under `next` and marked as prereleases
 on GitHub.
+
+The workflow authenticates to npm through the configured GitHub OIDC trusted
+publisher. Do not run `npm publish` locally and do not provide an `NPM_TOKEN`.
+Pushing the release commit alone does not publish anything; pushing the matching
+version tag is the release trigger.
+
+## Verify the release
+
+After the workflow succeeds, verify npm and the GitHub Release:
+
+```bash
+RELEASE_VERSION="$(node -p 'require("./package.json").version')"
+npm view "@angular-wave/angular.ts@$RELEASE_VERSION" version dist-tags --json
+```
+
+Confirm that GitHub published the matching `v<version>` tag, attached the npm
+package tarball, and used the curated `CHANGELOG.md` section as its description.
 
 ## Failure handling
 
-Never move or reuse a release tag. If validation fails before npm publication,
-fix the release on a new commit, choose a new version when necessary, and push
-a new tag.
+Never move or reuse a published release tag. If validation fails before npm
+publication, correct the release commit and create a new tag and version when
+necessary.
 
 If npm publication succeeds but finalizing the GitHub Release fails, publish
 the existing draft release manually. The npm version is immutable and must not
-be republished.
+be republished. Any package correction after publication must use a new version,
+usually the next patch version.

@@ -1,8 +1,8 @@
 /**
  * @externs
- * Public externs for AngularTS 0.31.0 applications compiled with Google Closure.
+ * Public externs for AngularTS 0.32.0 applications compiled with Google Closure.
  *
- * Version-pinned to @angular-wave/angular.ts 0.31.0; regenerate
+ * Version-pinned to @angular-wave/angular.ts 0.32.0; regenerate
  * this file when updating the public ng namespace.
  *
  * This file is generated from src/namespace.ts by
@@ -163,7 +163,7 @@ ng.Angular.prototype.emit = function(input) {};
 ng.Angular.prototype.call = function(input) {};
 
 /**
- * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', function($scope) { $scope.greeting = 'Welcome!'; }); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
+ * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
  * @param {(!Document|!HTMLElement|string)} element
  * @param {(!Array<(string|!ng.Injectable)>|undefined)} modules
  * @return {!ng.InjectorService<?>}
@@ -1056,9 +1056,10 @@ ng.Scope.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.Scope.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.Scope.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -1399,7 +1400,7 @@ ng.AngularService.prototype.emit = function(input) {};
 ng.AngularService.prototype.call = function(input) {};
 
 /**
- * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', function($scope) { $scope.greeting = 'Welcome!'; }); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
+ * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
  * @param {(!Document|!HTMLElement|string)} element
  * @param {(!Array<(!Array<function(...?): ?>|function(...?): ?|string)>|undefined)} modules
  * @return {!ng.InjectorService<?>}
@@ -1515,9 +1516,10 @@ ng.ScopeService.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.ScopeService.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.ScopeService.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -1679,9 +1681,10 @@ ng.RootScopeService.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.RootScopeService.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.RootScopeService.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -2747,6 +2750,17 @@ ng.InjectionTokenMap.prototype.$state;
 ng.InjectionTokenMap.prototype.$stateRegistry;
 
 /**
+ * Public InjectionTokenMap.$storage member exposed by the AngularTS namespace contract.
+ * @template T
+ * @param {T} target
+ * @param {string} key
+ * @param {!Object} storage
+ * @param {(!Object|undefined)} options
+ * @return {T}
+ */
+ng.InjectionTokenMap.prototype.$storage = function(target, key, storage, options) {};
+
+/**
  * Public InjectionTokenMap.$stream member exposed by the AngularTS namespace contract.
  * @type {!ng.StreamService}
  */
@@ -2812,6 +2826,14 @@ ng.InjectionTokenMap.prototype.$window;
  * @return {!ng.Workflow<TContract>}
  */
 ng.InjectionTokenMap.prototype.$workflow = function(config) {};
+
+/**
+ * Public InjectionTokenMap.$workflowSupervisor member exposed by the AngularTS namespace contract.
+ * @template TWorkflows
+ * @param {!Object} config
+ * @return {!ng.WorkflowSupervisor<TWorkflows>}
+ */
+ng.InjectionTokenMap.prototype.$workflowSupervisor = function(config) {};
 
 /**
  * Public InjectionTokenMap.$worker member exposed by the AngularTS namespace contract.
@@ -2911,9 +2933,10 @@ ng.Model.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.Model.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.Model.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -3395,10 +3418,22 @@ ng.LogService.prototype.warn = function(var_args) {};
 ng.MachineService;
 
 /**
+ * Creates a proxy that automatically persists an object's state into a storage backend whenever a property is set. The proxy also restores previously serialized state on creation and persists deletions in addition to property assignments.
+ * @typedef {function(?, string, !Object, (!Object|undefined)): ?}
+ */
+ng.StorageService;
+
+/**
  * Public AngularTS WorkflowService contract exposed through the global ng namespace for Closure-annotated applications.
  * @typedef {function(!Object): !ng.Workflow<?>}
  */
 ng.WorkflowService;
+
+/**
+ * Public AngularTS WorkflowSupervisorService contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!Object): !ng.WorkflowSupervisor<?>}
+ */
+ng.WorkflowSupervisorService;
 
 /**
  * Parses a string or expression function into a compiled expression.
@@ -4585,7 +4620,7 @@ ng.HttpDefaults = function() {};
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(!Object|boolean|undefined)}
+ * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpDefaults.prototype.cache;
 
@@ -5705,7 +5740,7 @@ ng.HttpRequestConfig.prototype.responseType;
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(!Object|boolean|undefined)}
+ * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpRequestConfig.prototype.cache;
 
@@ -5783,7 +5818,7 @@ ng.HttpRequestOptions.prototype.responseType;
 
 /**
  * Cache used for cacheable requests. `true` enables the default cache.
- * @type {(!Object|boolean|undefined)}
+ * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpRequestOptions.prototype.cache;
 
@@ -5953,7 +5988,7 @@ ng.RestCacheStore.prototype.delete = function(key) {};
 ng.RestCacheStore.prototype.deletePrefix = function(prefix) {};
 
 /**
- * Read strategy used by {@link CachedRestBackend} for `GET` requests. - `cache-first`: return cached data when present, otherwise fetch network. - `network-first`: fetch network first, falling back to stale cache on error. - `stale-while-revalidate`: return cache immediately and refresh in the background.
+ * Cache read strategies shared by HTTP, REST, and router transports.
  * @typedef {string}
  */
 ng.RestCacheStrategy;
@@ -6329,7 +6364,7 @@ ng.RouterModuleDeclaration.prototype.dynamic;
 ng.RouterModuleDeclaration.prototype.component;
 
 /**
- * An object which maps `resolve`s to [[component]] `bindings`. When using a [[component]] declaration (`component: 'myComponent'`), each input binding for the component is supplied data from a resolve of the same name, by default. You may supply data from a different resolve name by mapping it here. Each key in this object is the name of one of the component's input bindings. Each value is the name of the resolve that should be provided to that binding. Any component bindings that are omitted from this map get the default behavior of mapping to a resolve of the same name. #### Example: ```js app.router('foo', { resolve: { foo: function(FooService) { return FooService.get(); }, bar: function(BarService) { return BarService.get(); } }, component: 'Baz', // The component's `baz` binding gets data from the `bar` resolve // The component's `foo` binding gets data from the `foo` resolve (default behavior) bindings: { baz: 'bar' } }); app.component('Baz', { templateUrl: 'baz.html', controller: 'BazController', bindings: { foo: '<', // foo binding baz: '<' // baz binding } }); ```
+ * An object which maps `resolve`s to [[component]] `bindings`. When using a [[component]] declaration (`component: 'myComponent'`), each input binding for the component is supplied data from a resolve of the same name, by default. You may supply data from a different resolve name by mapping it here. Each key in this object is the name of one of the component's input bindings. Each value is the name of the resolve that should be provided to that binding. Any component bindings that are omitted from this map get the default behavior of mapping to a resolve of the same name. #### Example: ```js app.router('foo', { resolve: { foo: ['FooService', function(FooService) { return FooService.get(); }], bar: ['BarService', function(BarService) { return BarService.get(); }] }, component: 'Baz', // The component's `baz` binding gets data from the `bar` resolve // The component's `foo` binding gets data from the `foo` resolve (default behavior) bindings: { baz: 'bar' } }); app.component('Baz', { templateUrl: 'baz.html', controller: 'BazController', bindings: { foo: '<', // foo binding baz: '<' // baz binding } }); ```
  * @type {(!Object<string, string>|undefined)}
  */
 ng.RouterModuleDeclaration.prototype.bindings;
@@ -6393,6 +6428,24 @@ ng.RouterConfig.prototype.scroll;
  * @type {(!Object|boolean|string|undefined)}
  */
 ng.RouterConfig.prototype.focus;
+
+/**
+ * Public RouterConfig.prefetch member exposed by the AngularTS namespace contract.
+ * @type {(boolean|undefined)}
+ */
+ng.RouterConfig.prototype.prefetch;
+
+/**
+ * Public RouterConfig.prefetchDelay member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.RouterConfig.prototype.prefetchDelay;
+
+/**
+ * Public RouterConfig.relay member exposed by the AngularTS namespace contract.
+ * @type {(!Object|boolean|undefined)}
+ */
+ng.RouterConfig.prototype.relay;
 
 /**
  * Public RouterConfig.viewTransitions member exposed by the AngularTS namespace contract.
@@ -6510,6 +6563,15 @@ ng.StateService.prototype.current;
 ng.StateService.prototype.go = function(to, var_args) {};
 
 /**
+ * Prefetch lazy declarations and templates for a typed route. Prefetch lazy declarations and templates without navigating.
+ * @template TRouteName
+ * @param {TRouteName} stateOrName
+ * @param {...?} var_args
+ * @return {!Promise<void>}
+ */
+ng.StateService.prototype.prefetch = function(stateOrName, var_args) {};
+
+/**
  * Overload for typed route names and params. Untyped overload used when no route map is supplied.
  * @template TRouteName
  * @param {TRouteName} stateOrName
@@ -6543,7 +6605,7 @@ ng.StateService.prototype.get = function() {};
 ng.StateService.prototype.matches = function(stateOrName, params, options) {};
 
 /**
- * The StateDeclaration object is used to define a state or nested state. #### Example: ```js // StateDeclaration object var foldersState = { name: 'folders', url: '/folders', component: FoldersComponent, resolve: { allfolders: function(FolderService) { return FolderService.list(); } }, } registry.register(foldersState); ```
+ * The StateDeclaration object is used to define a state or nested state. #### Example: ```js // StateDeclaration object var foldersState = { name: 'folders', url: '/folders', component: FoldersComponent, resolve: { allfolders: ['FolderService', function(FolderService) { return FolderService.list(); }] }, } registry.register(foldersState); ```
  * @record
  */
 ng.StateDeclaration = function() {};
@@ -6639,7 +6701,7 @@ ng.StateDeclaration.prototype.dynamic;
 ng.StateDeclaration.prototype.component;
 
 /**
- * An object which maps `resolve`s to [[component]] `bindings`. When using a [[component]] declaration (`component: 'myComponent'`), each input binding for the component is supplied data from a resolve of the same name, by default. You may supply data from a different resolve name by mapping it here. Each key in this object is the name of one of the component's input bindings. Each value is the name of the resolve that should be provided to that binding. Any component bindings that are omitted from this map get the default behavior of mapping to a resolve of the same name. #### Example: ```js app.router('foo', { resolve: { foo: function(FooService) { return FooService.get(); }, bar: function(BarService) { return BarService.get(); } }, component: 'Baz', // The component's `baz` binding gets data from the `bar` resolve // The component's `foo` binding gets data from the `foo` resolve (default behavior) bindings: { baz: 'bar' } }); app.component('Baz', { templateUrl: 'baz.html', controller: 'BazController', bindings: { foo: '<', // foo binding baz: '<' // baz binding } }); ```
+ * An object which maps `resolve`s to [[component]] `bindings`. When using a [[component]] declaration (`component: 'myComponent'`), each input binding for the component is supplied data from a resolve of the same name, by default. You may supply data from a different resolve name by mapping it here. Each key in this object is the name of one of the component's input bindings. Each value is the name of the resolve that should be provided to that binding. Any component bindings that are omitted from this map get the default behavior of mapping to a resolve of the same name. #### Example: ```js app.router('foo', { resolve: { foo: ['FooService', function(FooService) { return FooService.get(); }], bar: ['BarService', function(BarService) { return BarService.get(); }] }, component: 'Baz', // The component's `baz` binding gets data from the `bar` resolve // The component's `foo` binding gets data from the `foo` resolve (default behavior) bindings: { baz: 'bar' } }); app.component('Baz', { templateUrl: 'baz.html', controller: 'BazController', bindings: { foo: '<', // foo binding baz: '<' // baz binding } }); ```
  * @type {(!Object<string, string>|undefined)}
  */
 ng.StateDeclaration.prototype.bindings;
@@ -8399,9 +8461,10 @@ ng.WasmTarget.prototype.$batch = function(fn) {};
  * @param {string} watchProp
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
  * @param {(boolean|undefined)} lazy
+ * @param {(boolean|undefined)} directLeaf
  * @return {(function(): void|undefined)}
  */
-ng.WasmTarget.prototype.$watch = function(watchProp, listenerFn, lazy) {};
+ng.WasmTarget.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.

@@ -27,22 +27,35 @@ function applyTemplateRequestConfig(current, config) {
 }
 /** @internal */
 function createTemplateRequestService($templateCache, $http, httpOptions) {
-    return async (templateUrl) => {
-        let transformResponse = $http.defaults.transformResponse ?? null;
-        if (isArray(transformResponse)) {
-            transformResponse = transformResponse.filter((transform) => transform !== defaultHttpResponseTransform);
-        }
-        else if (transformResponse === defaultHttpResponseTransform) {
-            transformResponse = null;
-        }
-        const config = extend({
-            cache: $templateCache,
-            transformResponse,
-        }, httpOptions);
-        return $http.get(templateUrl, config).then((response) => {
+    const pendingRequests = new Map();
+    return (templateUrl) => {
+        const pendingRequest = pendingRequests.get(templateUrl);
+        if (pendingRequest)
+            return pendingRequest;
+        const request = Promise.resolve()
+            .then(async () => {
+            const cachedTemplate = $templateCache.get(templateUrl);
+            if (cachedTemplate !== undefined)
+                return cachedTemplate;
+            let transformResponse = $http.defaults.transformResponse ?? null;
+            if (isArray(transformResponse)) {
+                transformResponse = transformResponse.filter((transform) => transform !== defaultHttpResponseTransform);
+            }
+            else if (transformResponse === defaultHttpResponseTransform) {
+                transformResponse = null;
+            }
+            const config = extend({
+                transformResponse,
+            }, httpOptions);
+            const response = await $http.get(templateUrl, config);
             $templateCache.set(templateUrl, response.data);
             return response.data;
+        })
+            .finally(() => {
+            pendingRequests.delete(templateUrl);
         });
+        pendingRequests.set(templateUrl, request);
+        return request;
     };
 }
 

@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-08-15
+
+- Improved asynchronous reactivity and nested component binding propagation.
+- Improved compiler, incremental compilation, and template loading performance.
+- Added router prefetching with optional Service Worker relay.
+- Unified cache strategies across HTTP and REST.
+- Added `$storage` and `$workflowSupervisor` sevices
+- Added `ng-patch` directive.
+- Enforced explicit dependency injection annotations.
+
 ## [0.31.0] - 2026-07-19
 
 - Added DOM-independent application contexts and injectable reactive models.

@@ -29,6 +29,7 @@ function defineDirective(method, attrOverride) {
 const ngGetDirective = defineDirective("get");
 const ngDeleteDirective = defineDirective("delete");
 const ngPostDirective = defineDirective("post");
+const ngPatchDirective = defineDirective("patch");
 const ngPutDirective = defineDirective("put");
 const ngSseDirective = defineDirective("get", "ngSse");
 /** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
@@ -394,4 +395,4 @@ function createHttpDirective(method, attrName) {
     };
 }
 
-export { createHttpDirective, ngDeleteDirective, ngGetDirective, ngPostDirective, ngPutDirective, ngSseDirective };
+export { createHttpDirective, ngDeleteDirective, ngGetDirective, ngPatchDirective, ngPostDirective, ngPutDirective, ngSseDirective };

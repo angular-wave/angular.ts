@@ -115,7 +115,14 @@ function createControllerService(registry, $injector) {
                 locals.$scope.$scopename =
                     instance.constructor.$scopename;
             }
-            return () => {
+            const initialize = ((instanceOverride) => {
+                if (instanceOverride) {
+                    instance = instanceOverride;
+                    if (identifier) {
+                        instance.$controllerIdentifier = identifier;
+                        addIdentifier(locals, identifier, instance, exportName);
+                    }
+                }
                 const result = $injector.invoke(injectable, instance, locals, constructorName);
                 if (result !== instance && (isObject(result) || isFunction(result))) {
                     instance = result;
@@ -124,8 +131,11 @@ function createControllerService(registry, $injector) {
                         addIdentifier(locals, identifier, instance, exportName);
                     }
                 }
+                initialize._instance = instance;
                 return instance;
-            };
+            });
+            initialize._instance = instance;
+            return initialize;
         }
         instance = $injector.instantiate(injectable, locals, constructorName);
         if (identifier) {

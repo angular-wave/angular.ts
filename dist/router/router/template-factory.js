@@ -27,6 +27,7 @@ class TemplateFactoryService {
         this._compileRegistry = compileRegistry;
         this._templateRequest = $templateRequest;
         this._injector = $injector;
+        this._templatePromises = new Map();
     }
     /**
      * Resolves a state's view config into either concrete template HTML or a component name.
@@ -63,7 +64,24 @@ class TemplateFactoryService {
         const templateUrl = isFunction(url) ? url(params) : url;
         if (isNullOrUndefined(templateUrl))
             return null;
-        return this._getTemplateRequest()(templateUrl);
+        let promise = this._templatePromises.get(templateUrl);
+        if (!promise) {
+            promise = this._getTemplateRequest()(templateUrl).catch((error) => {
+                this._templatePromises.delete(templateUrl);
+                throw error;
+            });
+            this._templatePromises.set(templateUrl, promise);
+        }
+        return promise;
+    }
+    /** @internal */
+    _getTemplateUrl(config, params) {
+        const { templateUrl } = config;
+        if (!isDefined(templateUrl))
+            return null;
+        return isFunction(templateUrl)
+            ? (templateUrl(params) ?? null)
+            : templateUrl;
     }
     /**
      * Builds the HTML for a routed component and binds resolve data to its inputs.

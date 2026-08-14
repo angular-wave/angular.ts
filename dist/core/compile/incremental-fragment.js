@@ -170,7 +170,6 @@ function addCompiledFragmentChild(parent, child) {
     }
     ensureFragmentArray(parent, "childFragments").push(child);
     compiledFragmentParents.set(child, parent);
-    disposeCompiledFragmentScopeLifecycle(child);
 }
 function addCompiledFragmentDisposer(record, disposer) {
     if (record.disposed) {

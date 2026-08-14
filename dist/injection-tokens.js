@@ -33,6 +33,7 @@ const _sce = "$sce";
 const _sceDelegate = "$sceDelegate";
 const _state = "$state";
 const _stateRegistry = "$stateRegistry";
+const _storage = "$storage";
 const _security = "$security";
 const _serviceWorker = "$serviceWorker";
 const _stream = "$stream";
@@ -47,6 +48,7 @@ const _websocket = "$websocket";
 const _worker = "$worker";
 const _wasm = "$wasm";
 const _workflow = "$workflow";
+const _workflowSupervisor = "$workflowSupervisor";
 const _injector = "$injector";
 /**
  * Runtime token registry. Prefer importing individual token constants in source
@@ -83,6 +85,7 @@ const $injectTokens = {
     _serviceWorker,
     _state,
     _stateRegistry,
+    _storage,
     _stream,
     _sse,
     _templateCache,
@@ -95,7 +98,8 @@ const $injectTokens = {
     _worker,
     _wasm,
     _workflow,
+    _workflowSupervisor,
     _injector,
 };
 
-export { $injectTokens, _anchorScroll, _angular, _animate, _aria, _compile, _controller, _cookie, _document, _element, _eventBus, _exceptionHandler, _filter, _htmlCanvas, _http, _httpParamSerializer, _injector, _interpolate, _location, _log, _machine, _parse, _rest, _rootElement, _rootScope, _sce, _sceDelegate, _scope, _security, _serviceWorker, _sse, _state, _stateRegistry, _stream, _templateCache, _templateRequest, _transitions, _wasm, _webComponent, _webTransport, _websocket, _window, _worker, _workflow };
+export { $injectTokens, _anchorScroll, _angular, _animate, _aria, _compile, _controller, _cookie, _document, _element, _eventBus, _exceptionHandler, _filter, _htmlCanvas, _http, _httpParamSerializer, _injector, _interpolate, _location, _log, _machine, _parse, _rest, _rootElement, _rootScope, _sce, _sceDelegate, _scope, _security, _serviceWorker, _sse, _state, _stateRegistry, _storage, _stream, _templateCache, _templateRequest, _transitions, _wasm, _webComponent, _webTransport, _websocket, _window, _worker, _workflow, _workflowSupervisor };

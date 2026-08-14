@@ -2,6 +2,7 @@ import { _scope, _element, _aria, _state, _rootScope, _stateRegistry, _transitio
 import { removeFrom } from '../../shared/common.js';
 import { stringify, assertDefined, isObject, keys, isString, isArray, directiveNormalize, arrayFrom, isNullOrUndefined, assign } from '../../shared/utils.js';
 import { getNormalizedAttr, getInheritedData, setNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
+import { _getRouterPrefetchDelay } from '../router.js';
 
 const noopDeregister = () => undefined;
 const uniqueStrings = (classes) => arrayFrom(new Set(classes));
@@ -255,6 +256,43 @@ function bindEvents(element, scope, hookFn, keyboardHookFn, ngStateOpts) {
         }
     });
 }
+function bindPrefetchEvents(element, scope, $state, rawDef) {
+    let timer;
+    const cancel = () => {
+        if (timer !== undefined) {
+            clearTimeout(timer);
+            timer = undefined;
+        }
+    };
+    const schedule = () => {
+        const delay = _getRouterPrefetchDelay(element, $state._routerState);
+        if (delay === undefined)
+            return;
+        cancel();
+        timer = window.setTimeout(() => {
+            timer = undefined;
+            if (element.hasAttribute("disabled"))
+                return;
+            const target = processedDef($state, element, rawDef);
+            if (target._ngState) {
+                void $state
+                    .prefetch(target._ngState, target._ngStateParams, target._ngStateOpts)
+                    .catch(() => undefined);
+            }
+        }, delay);
+    };
+    element.addEventListener("pointerenter", schedule);
+    element.addEventListener("pointerleave", cancel);
+    element.addEventListener("focus", schedule);
+    element.addEventListener("blur", cancel);
+    scope.$on("$destroy", () => {
+        cancel();
+        element.removeEventListener("pointerenter", schedule);
+        element.removeEventListener("pointerleave", cancel);
+        element.removeEventListener("focus", schedule);
+        element.removeEventListener("blur", cancel);
+    });
+}
 function createKeyboardRouteLinkHook(hookFn) {
     return function (event) {
         const keyboardEvent = event;
@@ -373,6 +411,7 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
             update();
             scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
             scope.$on("$destroy", $transitions.onSuccess({}, update));
+            bindPrefetchEvents(element, scope, $state, rawDef);
             if (!type._clickable)
                 return;
             applyRouteLinkAriaDefaults($aria, element, type);

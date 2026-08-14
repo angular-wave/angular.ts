@@ -1,5 +1,96 @@
 import { SCOPE_PROXY_BIND } from '../../core/scope/scope.js';
+import { executeCacheStrategy, isCacheStrategy } from '../cache/cache.js';
 
+/**
+ * Creates worker-side handlers for router prefetch messages and cached fetches.
+ */
+function createServiceWorkerRouterRelay(scope, options = {}) {
+    const cacheName = options.cacheName ?? "angular-router-relay-v1";
+    const defaultStrategy = options.strategy ?? "cache-first";
+    const strategies = new Map();
+    const createStore = (cache) => ({
+        async get(key) {
+            return cache.match(key);
+        },
+        async set(key, value) {
+            if (!value.headers.get("cache-control")?.includes("no-store")) {
+                await cache.put(key, value.clone());
+            }
+        },
+        async delete(key) {
+            await cache.delete(key);
+        },
+    });
+    const load = async (url) => {
+        const response = await scope.fetch(url);
+        if (!response.ok) {
+            throw new Error(`Router relay request failed: ${String(response.status)}`);
+        }
+        return response;
+    };
+    const prefetch = async (url, cacheOption) => {
+        const absoluteUrl = new URL(url, scope.location.href);
+        if (absoluteUrl.origin !== scope.location.origin) {
+            throw new Error("Router relay accepts only same-origin resources.");
+        }
+        if (cacheOption === false) {
+            await load(absoluteUrl.href);
+            return;
+        }
+        const strategy = isCacheStrategy(cacheOption)
+            ? cacheOption
+            : defaultStrategy;
+        const cache = await scope.caches.open(cacheName);
+        strategies.set(absoluteUrl.href, strategy);
+        await executeCacheStrategy({
+            strategy,
+            store: createStore(cache),
+            key: absoluteUrl.href,
+            load: () => load(absoluteUrl.href),
+        });
+    };
+    return {
+        handleMessage(event) {
+            const message = event.data;
+            if (message?.type !== "angular-router:prefetch" ||
+                message.version !== 1 ||
+                !message.url ||
+                !event.ports[0]) {
+                return;
+            }
+            const port = event.ports[0];
+            void prefetch(message.url, message.cache ?? true).then(() => {
+                port.postMessage({ ok: true });
+                return undefined;
+            }, (error) => {
+                port.postMessage({
+                    ok: false,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+                return undefined;
+            });
+        },
+        handleFetch(event) {
+            const request = event.request;
+            const url = new URL(request.url);
+            if (request.method !== "GET" || url.origin !== scope.location.origin) {
+                return;
+            }
+            event.respondWith((async () => {
+                const cache = await scope.caches.open(cacheName);
+                const cached = await cache.match(request);
+                if (!cached)
+                    return scope.fetch(request);
+                return (await executeCacheStrategy({
+                    strategy: strategies.get(url.href) ?? defaultStrategy,
+                    store: createStore(cache),
+                    key: url.href,
+                    load: () => load(url.href),
+                })).value;
+            })());
+        },
+    };
+}
 /** @internal */
 function createServiceWorkerRuntimeConfiguration() {
     return {
@@ -529,4 +620,4 @@ function createServiceWorkerService(container, options) {
     return service;
 }
 
-export { ServiceWorkerError, applyServiceWorkerConfiguration, createServiceWorkerRuntimeConfiguration, createServiceWorkerService, destroyServiceWorkerService };
+export { ServiceWorkerError, applyServiceWorkerConfiguration, createServiceWorkerRouterRelay, createServiceWorkerRuntimeConfiguration, createServiceWorkerService, destroyServiceWorkerService };

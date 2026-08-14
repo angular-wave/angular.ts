@@ -435,6 +435,116 @@
           <span class="tsd-signature-type">boolean</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-call-signature"
+            href="#prefetch-1"
+            >prefetch</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#prefetchtroutename"
+            >TRouteName</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >stateOrName</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#prefetchtroutename"
+            >TRouteName</a
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-signature-symbol"
+            >...</span
+          ><span class="tsd-kind-parameter">args</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">RouteParamArgs</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#troutemap"
+            >TRouteMap</a
+          ><span class="tsd-signature-symbol">,</span>
+          <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#prefetchtroutename"
+            >TRouteName</a
+          ><span class="tsd-signature-symbol">,</span>
+          <a
+            href="../interfaces/TransitionOptions.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >TransitionOptions</a
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
+            href="#prefetch-2"
+            >prefetch</a
+          ><span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >stateOrName</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#troutemap"
+            >TRouteMap</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <span class="tsd-signature-type">Record</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">,</span>
+          <span class="tsd-signature-type">never</span
+          ><span class="tsd-signature-symbol">&gt;</span><br />            <span
+            class="tsd-signature-symbol"
+            >?</span
+          >
+          <a
+            href="StateOrName.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >StateOrName</a
+          ><br />            <span class="tsd-signature-symbol">:</span>
+          <a
+            href="../interfaces/StateDeclaration.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >StateDeclaration</a
+          >
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">StateObject</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >params</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <a
+            href="RawParams.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >RawParams</a
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-kind-parameter"
+            >options</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <a
+            href="../interfaces/TransitionOptions.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >TransitionOptions</a
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
+          ><span class="tsd-signature-symbol">:</span>
+          <span class="tsd-signature-type">Promise</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-call-signature"
             href="#target-1"
             >target</a
           ><span class="tsd-signature-symbol">(</span><br />        <span
@@ -573,6 +683,15 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>matches</span></a
+                    >
+                    <a href="#prefetch" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>prefetch</span></a
                     >
                     <a href="#target" class="tsd-index-link"
                       ><svg
@@ -1470,6 +1589,292 @@
               </ul>
             </section>
             <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="prefetch">
+                <span>prefetch</span
+                ><a
+                  href="#prefetch"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="prefetch-1">
+                    <span class="tsd-kind-call-signature">prefetch</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#prefetchtroutename"
+                      >TRouteName</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >stateOrName</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#prefetchtroutename"
+                      >TRouteName</a
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-signature-symbol"
+                      >...</span
+                    ><span class="tsd-kind-parameter">args</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">RouteParamArgs</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#troutemap"
+                      >TRouteMap</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#prefetchtroutename"
+                      >TRouteName</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      href="../interfaces/TransitionOptions.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >TransitionOptions</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">Promise</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">void</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><a
+                      href="#prefetch-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Prefetch lazy declarations and templates for a typed
+                        route.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="prefetchtroutename"
+                            ><span class="tsd-kind-type-parameter"
+                              >TRouteName</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">stateOrName</span
+                            >:
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#prefetchtroutename"
+                              >TRouteName</a
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-signature-symbol">...</span
+                            ><span class="tsd-kind-parameter">args</span>:
+                            <span class="tsd-signature-type"
+                              >RouteParamArgs</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#troutemap"
+                              >TRouteMap</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#prefetchtroutename"
+                              >TRouteName</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              href="../interfaces/TransitionOptions.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >TransitionOptions</a
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">Promise</span
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><span class="tsd-signature-type">void</span
+                      ><span class="tsd-signature-symbol">&gt;</span>
+                    </h4>
+                  </div>
+                </li>
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="prefetch-2">
+                    <span class="tsd-kind-call-signature">prefetch</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >stateOrName</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#troutemap"
+                      >TRouteMap</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">Record</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">never</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><br />        <span class="tsd-signature-symbol">?</span>
+                    <a
+                      href="StateOrName.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >StateOrName</a
+                    ><br />        <span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../interfaces/StateDeclaration.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >StateDeclaration</a
+                    >
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">StateObject</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >params</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <a
+                      href="RawParams.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >RawParams</a
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >options</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <a
+                      href="../interfaces/TransitionOptions.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >TransitionOptions</a
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">Promise</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">void</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><a
+                      href="#prefetch-2"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Prefetch lazy declarations and templates without
+                        navigating.
+                      </p>
+                    </div>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">stateOrName</span
+                            >:
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#troutemap"
+                              >TRouteMap</a
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">Record</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">never</span
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><br />    <span class="tsd-signature-symbol"
+                              >?</span
+                            >
+                            <a
+                              href="StateOrName.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >StateOrName</a
+                            ><br />    <span class="tsd-signature-symbol"
+                              >:</span
+                            >
+                            <a
+                              href="../interfaces/StateDeclaration.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >StateDeclaration</a
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >StateObject</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><code class="tsd-tag">Optional</code
+                            ><span class="tsd-kind-parameter">params</span>:
+                            <a
+                              href="RawParams.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >RawParams</a
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><code class="tsd-tag">Optional</code
+                            ><span class="tsd-kind-parameter">options</span>:
+                            <a
+                              href="../interfaces/TransitionOptions.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >TransitionOptions</a
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">Promise</span
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><span class="tsd-signature-type">void</span
+                      ><span class="tsd-signature-symbol">&gt;</span>
+                    </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="target">
                 <span>target</span
                 ><a
@@ -1810,6 +2215,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>matches</span></a
+                  ><a href="#prefetch"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>prefetch</span></a
                   ><a href="#target"
                     ><svg
                       class="tsd-kind-icon"

@@ -1,6 +1,6 @@
-import { _machine, _workflow } from '../injection-tokens.js';
+import { _machine, _workflow, _workflowSupervisor } from '../injection-tokens.js';
 import { createMachineService } from '../services/machine/machine.js';
-import { createWorkflowService } from '../services/workflow/workflow.js';
+import { createWorkflowService, createWorkflowSupervisor } from '../services/workflow/workflow.js';
 
 /**
  * Registers the optional machine and workflow services as an AngularTS module.
@@ -12,6 +12,10 @@ import { createWorkflowService } from '../services/workflow/workflow.js';
 const orchestrationModule = (angular) => angular
     .module("ng.orchestration", [])
     .factory(_machine, createMachineService)
-    .factory(_workflow, createWorkflowService);
+    .factory(_workflow, createWorkflowService)
+    .factory(_workflowSupervisor, [
+    _workflow,
+    ($workflow) => (config) => createWorkflowSupervisor($workflow, config),
+]);
 
 export { orchestrationModule };

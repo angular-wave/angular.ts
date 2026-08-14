@@ -1,6 +1,6 @@
 import { _templateRequest, _anchorScroll, _injector, _exceptionHandler, _parse, _compile } from '../../injection-tokens.js';
 import { assertDefined, isInstanceOf, isDefined } from '../../shared/utils.js';
-import { getNormalizedAttr } from '../../shared/dom.js';
+import { getNormalizedAttr, removeElement } from '../../shared/dom.js';
 import { getCompiledFragmentRecordFromNodes } from '../../core/compile/incremental-fragment.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 
@@ -54,17 +54,17 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                         if (previousFragment && !previousFragment.disposed) {
                             previousFragment.dispose();
                         }
+                        else {
+                            removeElement(previousElement);
+                        }
                         previousElement = null;
                         previousFragment = null;
-                    }
-                    if (currentScope) {
-                        currentScope.$destroy();
-                        currentScope = null;
                     }
                     if (currentElement) {
                         const leavingFragment = currentFragment;
                         const animate = getAnimateForNode(getAnimate, currentElement);
                         if (animate) {
+                            currentScope?.$destroy();
                             animate.leave(currentElement).done((response) => {
                                 if (response) {
                                     leavingFragment?.dispose();
@@ -77,11 +77,20 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             if (leavingFragment && !leavingFragment.disposed) {
                                 leavingFragment.dispose();
                             }
+                            else {
+                                removeElement(currentElement);
+                            }
+                            currentScope?.$destroy();
                         }
+                        currentScope = null;
                         previousElement = currentElement;
                         previousFragment = currentFragment;
                         currentElement = null;
                         currentFragment = null;
+                    }
+                    else if (currentScope) {
+                        currentScope.$destroy();
+                        currentScope = null;
                     }
                 };
                 scope.$watch(srcExp, (src) => {

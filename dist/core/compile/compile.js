@@ -3,7 +3,7 @@ import { setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDo
 import { NodeType } from '../../shared/node.js';
 import { identifierForController } from '../controller/controller.js';
 import { createScope } from '../scope/scope.js';
-import { deleteProperty, nullObject, assign, getNodeName, uppercase, isFunction, trim, hasOwn, assertDefined, inherit, stringify, arrayRemove, directiveNormalize, assertArg, assertNotHasOwnProperty, isError, isArray, extend, callFunction, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, shouldHandleViewRetentionPause, equals } from '../../shared/utils.js';
+import { deleteProperty, nullObject, assign, getNodeName, uppercase, isFunction, trim, hasOwn, assertDefined, inherit, stringify, arrayRemove, directiveNormalize, assertArg, assertNotHasOwnProperty, isError, isString, isArray, extend, callFunction, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, shouldHandleViewRetentionPause, equals } from '../../shared/utils.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 import { PREFIX_REGEXP, ALIASED_ATTR } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
@@ -2242,8 +2242,21 @@ class CompileRegistry {
                         const controller = assertDefined(elementControllers[name]);
                         const bindings = assertDefined(controllerDirective._bindings)
                             ._bindToController;
-                        const controllerInstance = controller();
-                        controller._instance = controllerScope.$new(controllerInstance);
+                        const reactiveControllerInstance = controllerScope.$newIsolate(controller._instance);
+                        const controllerInstance = controller(reactiveControllerInstance);
+                        if (controllerInstance === reactiveControllerInstance) {
+                            controller._instance = reactiveControllerInstance;
+                        }
+                        else {
+                            reactiveControllerInstance.$destroy?.();
+                            controller._instance = controllerScope.$newIsolate(controllerInstance);
+                        }
+                        const controllerIdentifier = controllerDirective.controllerAs ??
+                            controllerInstance.$controllerIdentifier;
+                        if (isString(controllerIdentifier)) {
+                            controller._scope[controllerIdentifier] =
+                                controller._instance;
+                        }
                         setCacheData(elementNode, `$${controllerDirective.name}Controller`, controller._instance);
                         controller._bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller._instance, bindings, controllerDirective, elementNode);
                     }
@@ -2948,6 +2961,7 @@ class CompileRegistry {
                             controller = readNormalizedElementAttribute(node, directive.name);
                         }
                         const controllerInstance = $controller(assertDefined(controller), locals, true, directive.controllerAs);
+                        controllerInstance._scope = locals.$scope;
                         // For directives with element transclusion the element is a comment.
                         // In this case .data will not attach any data.
                         // Instead, we save the controllers for the element in a local hash and attach to .data

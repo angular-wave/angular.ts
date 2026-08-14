@@ -1,6 +1,7 @@
 import { _httpParamSerializer } from '../../injection-tokens.js';
 import { urlIsAllowedOriginFactory, trimEmptyHash } from '../../shared/url-utils/url-utils.js';
 import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isNumber, isPromiseLike, isObject, isDate, toJson, isFile, isBlob, isFormData, hasOwn, lowercase, deleteProperty, createErrorFactory, isInstanceOf, stringify, deProxy, assertDefined, trim, nullObject } from '../../shared/utils.js';
+import { isCacheStrategy, executeCacheStrategy } from '../cache/cache.js';
 
 const APPLICATION_JSON = "application/json";
 function withResolvers() {
@@ -357,6 +358,7 @@ function applyHttpConfiguration(configuration, config) {
 function createHttpService($injector, $sce, $cookie, $security, $stream, configuration) {
     const { defaults, interceptors, xsrfTrustedOrigins } = configuration;
     const defaultCache = new Map();
+    const strategyCache = new Map();
     /**
      * Resolves the configured default param serializer to a callable function.
      */
@@ -515,7 +517,7 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
             }
             applySecurityCredentials(configParam, securityDecision.credentials);
             // send request
-            return sendReq(configParam, reqData).then(transformResponse, transformResponse);
+            return sendReqWithCacheStrategy(configParam, reqData).then(transformResponse, transformResponse);
         }
         function applySecurityCredentials(configParam, credentials) {
             if (!credentials) {
@@ -533,6 +535,14 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
         }
         /** Applies response transforms and rejects responses outside the success range. */
         async function transformResponse(response) {
+            if (!isObject(response) || !hasOwn(response, "status")) {
+                const error = response instanceof Error
+                    ? response
+                    : new Error("$http request pipeline rejected without a response.", {
+                        cause: response,
+                    });
+                return Promise.reject(error);
+            }
             const httpResponse = response;
             // make a copy since the response must be cacheable
             const resp = extend({}, httpResponse);
@@ -557,6 +567,41 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
      */
     $http.defaults = defaults;
     return $http;
+    /** Applies strategy-aware caching before falling back to the legacy cache path. */
+    async function sendReqWithCacheStrategy(config, reqData) {
+        const option = config.cache ?? defaults.cache;
+        if (config.method !== "GET" || option === false || option === undefined) {
+            return sendReq(config, reqData);
+        }
+        let strategy;
+        let store;
+        if (isCacheStrategy(option)) {
+            strategy = option;
+            store = strategyCache;
+        }
+        else if (isObject(option) &&
+            (hasOwn(option, "strategy") || hasOwn(option, "store"))) {
+            const cacheConfig = option;
+            strategy = cacheConfig.strategy ?? "cache-first";
+            store = cacheConfig.store ?? strategyCache;
+        }
+        else if (isObject(option)) {
+            throw new Error("$http cache objects must use the { strategy, store } configuration shape.");
+        }
+        if (!strategy || !store) {
+            return sendReq(config, reqData);
+        }
+        const paramSerializer = config.paramSerializer;
+        const url = buildUrl(String($sce.valueOf(config.url)), paramSerializer(config.params));
+        const result = await executeCacheStrategy({
+            strategy,
+            store,
+            key: url,
+            load: () => sendReq({ ...config, cache: false }, reqData),
+        });
+        const response = { ...result.value, config };
+        return response;
+    }
     /** Creates one shorthand method for requests that do not send a request body. */
     function createShortMethod(method) {
         return async function (url, config) {
@@ -595,12 +640,7 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
         if ((config.cache || defaults.cache) &&
             config.cache !== false &&
             config.method === "GET") {
-            const providerDefaults = defaults;
-            cache = isObject(config.cache)
-                ? config.cache
-                : isObject(providerDefaults.cache)
-                    ? providerDefaults.cache
-                    : defaultCache;
+            cache = defaultCache;
         }
         if (cache) {
             cachedResp = cache.get(url);

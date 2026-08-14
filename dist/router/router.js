@@ -26,6 +26,9 @@ class RouterRuntimeState {
         this._params = new StateParams();
         this._scroll = undefined;
         this._focus = undefined;
+        this._prefetch = false;
+        this._prefetchDelay = 60;
+        this._relay = false;
         this._viewTransitions = undefined;
         this._loading = undefined;
         this._retry = undefined;
@@ -76,6 +79,15 @@ class RouterRuntimeState {
         }
         if (config.focus !== undefined) {
             this._focus = config.focus;
+        }
+        if (config.prefetch !== undefined) {
+            this._prefetch = config.prefetch;
+        }
+        if (config.prefetchDelay !== undefined) {
+            this._prefetchDelay = Math.max(0, config.prefetchDelay);
+        }
+        if (config.relay !== undefined) {
+            this._relay = config.relay;
         }
         if (config.viewTransitions !== undefined) {
             this._viewTransitions = config.viewTransitions;
@@ -138,5 +150,23 @@ class RouterRuntimeState {
         return new UrlMatcher(urlPattern, this._paramTypes, this._paramFactory, assign(globalConfig, config));
     }
 }
+/** @internal */
+function _getRouterPrefetchDelay(element, routerState) {
+    const mode = element.getAttribute("data-prefetch");
+    if (mode !== null && mode !== "" && mode !== "true") {
+        return undefined;
+    }
+    if (mode === null && !routerState._prefetch) {
+        return undefined;
+    }
+    const delayValue = element.getAttribute("data-prefetch-delay");
+    if (delayValue !== null && delayValue.trim() !== "") {
+        const delay = Number(delayValue);
+        if (Number.isFinite(delay)) {
+            return Math.max(0, delay);
+        }
+    }
+    return routerState._prefetchDelay;
+}
 
-export { RouterRuntimeState };
+export { RouterRuntimeState, _getRouterPrefetchDelay };

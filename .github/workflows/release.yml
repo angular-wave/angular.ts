@@ -114,7 +114,7 @@ jobs:
 
       - name: Build release artifacts
         run: |
-          make release-build types
+          make release-build
           make docs-requirement
           make version-check
 

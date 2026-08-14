@@ -186,6 +186,18 @@ function ngRepeatDirective($injector) {
         }
         return clone;
     }
+    function removeBlockNodes(nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (node.nodeType === NodeType._ELEMENT_NODE) {
+                removeElement(node);
+            }
+            else {
+                removeElementData(node);
+                node.parentNode?.removeChild(node);
+            }
+        }
+    }
     function restoreScopedBlocks(targetMap, blockOrder) {
         for (let i = 0; i < blockOrder.length; i++) {
             const retainedBlock = blockOrder[i];
@@ -661,9 +673,6 @@ function ngRepeatDirective($injector) {
                                 lastBlockOrder[i]._scope?.$destroy();
                             }
                             removeNodeRangeFast(firstNode, lastNode);
-                            for (let i = 0; i < lastBlockOrder.length; i++) {
-                                lastBlockOrder[i]._fragment?.dispose();
-                            }
                             lastBlockMap = nullObject();
                             lastBlockOrder = [];
                         }
@@ -691,7 +700,7 @@ function ngRepeatDirective($injector) {
                         }
                         else {
                             block._scope?.$destroy();
-                            assertDefined(block._fragment).dispose();
+                            removeBlockNodes(blockNodes);
                         }
                         if (blockNodes.length && blockNodes[0].parentNode) {
                             for (let i = 0, j = blockNodes.length; i < j; i++) {

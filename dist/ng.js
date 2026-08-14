@@ -1,10 +1,11 @@
-import { _injector, _templateCache, _http, _security, _rootScope, _rootElement, _exceptionHandler, _sce, _cookie, _stream, _log, _location, _document, _window, _parse, _workflow, _machine, _filter, _sceDelegate, _state, _worker, _webTransport, _websocket, _webComponent, _sse, _serviceWorker, _eventBus, _compile, _angular, _interpolate, _controller } from './injection-tokens.js';
-import { createAnimateService } from './animations/animate.js';
+import { _injector, _templateCache, _http, _security, _rootScope, _rootElement, _exceptionHandler, _sce, _cookie, _stream, _log, _location, _document, _window, _parse, _workflowSupervisor, _workflow, _machine, _storage, _filter, _sceDelegate, _state, _worker, _webTransport, _websocket, _webComponent, _sse, _serviceWorker, _eventBus, _compile, _angular, _interpolate, _controller } from './injection-tokens.js';
+import { createAnimateService, AnimationRegistry } from './animations/animate.js';
 import { createControllerService } from './core/controller/controller.js';
 import { createFilterRegistration } from './core/filter/filter.js';
 import { applyInterpolateConfiguration, createInterpolateService } from './core/interpolate/interpolate.js';
 import { createMachineService } from './services/machine/machine.js';
-import { createWorkflowService } from './services/workflow/workflow.js';
+import { createWorkflowSupervisor, createWorkflowService } from './services/workflow/workflow.js';
+import { createPersistentProxy } from './services/storage/storage.js';
 import { createParseService } from './core/parse/parse.js';
 import { requireAppRoot } from './core/app-context/app-context.js';
 import { registerRuntimeProviders } from './core/composition/runtime-composition.js';
@@ -29,7 +30,7 @@ import { ngElDirective } from './directive/el/el.js';
 import { ngEventDirectives } from './directive/events/events.js';
 export { createEventDirective, createWindowEventDirective } from './directive/events/events.js';
 import { ngFormDirective, formDirective } from './directive/form/form.js';
-import { ngSseDirective, ngPutDirective, ngPostDirective, ngGetDirective, ngDeleteDirective } from './directive/http/http.js';
+import { ngSseDirective, ngPutDirective, ngPostDirective, ngPatchDirective, ngGetDirective, ngDeleteDirective } from './directive/http/http.js';
 import { ngIfDirective } from './directive/if/if.js';
 import { ngIncludeDirective, ngIncludeFillContentDirective } from './directive/include/include.js';
 import { inputDirective } from './directive/input/input.js';
@@ -167,9 +168,26 @@ const workflowRuntimeRegistration = {
         return registry.factory(name, createWorkflowService);
     },
 };
+const workflowSupervisorRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, [
+            _workflow,
+            ($workflow) => (config) => createWorkflowSupervisor($workflow, config),
+        ]);
+    },
+};
 const ngOrchestrationProviders = {
     [_machine]: machineRuntimeRegistration,
     [_workflow]: workflowRuntimeRegistration,
+    [_workflowSupervisor]: workflowSupervisorRuntimeRegistration,
+};
+const storageRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, () => createPersistentProxy);
+    },
+};
+const ngStorageProviders = {
+    [_storage]: storageRuntimeRegistration,
 };
 const filterRuntimeRegistration = {
     _register(registry, name, context) {
@@ -408,9 +426,13 @@ const ngSecurityProviders = {
 /** Native animation service composition. */
 const animateRuntimeRegistration = {
     _register(registry, name, context) {
+        const animationRegistry = context.runtime.animationRegistry;
+        if (!animationRegistry) {
+            throw new Error("Animation support is not installed.");
+        }
         return registry.factory(name, [
             _injector,
-            ($injector) => createAnimateService(context.runtime.animationRegistry, $injector),
+            ($injector) => createAnimateService(animationRegistry, $injector),
         ]);
     },
 };
@@ -645,6 +667,7 @@ const ngIntegrationDirectives = {
     ngChannel: ngChannelDirective,
     ngDelete: ngDeleteDirective,
     ngGet: ngGetDirective,
+    ngPatch: ngPatchDirective,
     ngPost: ngPostDirective,
     ngPut: ngPutDirective,
     ngSse: ngSseDirective,
@@ -682,6 +705,7 @@ const ngFillDirectives = {
 const ngDefaultProviderGroups = [
     ngCoreProviders,
     ngOrchestrationProviders,
+    ngStorageProviders,
     ngFilterProviders,
     ngSecurityProviders,
     ngBrowserProviders,
@@ -710,7 +734,9 @@ const ngDefaultDirectiveGroups = [
  */
 function registerNgModule(angular) {
     const runtime = angular;
-    const compileRegistry = runtime._composition.compileRegistry;
+    const composition = runtime._composition;
+    const compileRegistry = composition.compileRegistry;
+    composition._installAnimationRegistry(new AnimationRegistry());
     const ngModule = angular.module("ng", []);
     ngModule._registerProviders((registry) => {
         const composition = registerRuntimeHostValues(angular, registry);
@@ -738,4 +764,4 @@ function registerNgModule(angular) {
     return ngModule;
 }
 
-export { StateRefActiveDirective, StateRefDynamicDirective, ViewDirective, ViewDirectiveContentGuard, asyncFilter, classDirective, currencyFilter, dateFilter, entriesFilter, filterFilter, formDirective, inputDirective, jsonFilter, keysFilter, limitToFilter, maxlengthDirective, minlengthDirective, ngAnimationProviders, ngAriaDirectives, ngAttributeAliasDirectives, ngBindDirective, ngBindHtmlDirective, ngBindTemplateDirective, ngBindingDirectives, ngBrowserProviders, ngBuiltInFilters, ngChannelDirective, ngCheckedAriaDirective, ngClickAriaDirective, ngCloakDirective, ngControllerDirective, ngCoreProviders, ngDblclickAriaDirective, ngDefaultDirectiveGroups, ngDefaultProviderGroups, ngDeleteDirective, ngDisabledAriaDirective, ngElDirective, ngElementDirectives, ngEventDirectives, ngFillDirectives, ngFilterProviders, ngFormDirective, ngFormDirectives, ngGetDirective, ngHideAriaDirective, ngHideDirective, ngIfDirective, ngIncludeDirective, ngIncludeFillContentDirective, ngInitDirective, ngInjectDirective, ngIntegrationDirectives, ngIntegrationProviders, ngListenerDirective, ngMessageDefaultDirective, ngMessageDirective, ngMessageExpDirective, ngMessagesAriaDirective, ngMessagesDirective, ngMessagesIncludeDirective, ngModelAriaDirective, ngModelDirective, ngModelOptionsDirective, ngNonBindableDirective, ngOptionsDirective, ngOrchestrationProviders, ngPointerCaptureDirective, ngPostDirective, ngPutDirective, ngReadonlyAriaDirective, ngRefDirective, ngRepeatDirective, ngRequiredAriaDirective, ngRouterDirectives, ngRouterProviders, ngScopeDirective, ngSecurityProviders, ngSetterDirective, ngShowAriaDirective, ngShowDirective, ngSseDirective, ngStyleDirective, ngSwitchDefaultDirective, ngSwitchDirective, ngSwitchWhenDirective, ngTemplateDirectives, ngTranscludeDirective, ngValueAriaDirective, ngViewportDirective, ngWebTransportDirective, ngWorkerDirective, numberFilter, optionDirective, orderByFilter, patternDirective, percentFilter, registerNgModule, relativeTimeFilter, requiredDirective, scriptDirective, selectDirective, valuesFilter };
+export { StateRefActiveDirective, StateRefDynamicDirective, ViewDirective, ViewDirectiveContentGuard, asyncFilter, classDirective, currencyFilter, dateFilter, entriesFilter, filterFilter, formDirective, inputDirective, jsonFilter, keysFilter, limitToFilter, maxlengthDirective, minlengthDirective, ngAnimationProviders, ngAriaDirectives, ngAttributeAliasDirectives, ngBindDirective, ngBindHtmlDirective, ngBindTemplateDirective, ngBindingDirectives, ngBrowserProviders, ngBuiltInFilters, ngChannelDirective, ngCheckedAriaDirective, ngClickAriaDirective, ngCloakDirective, ngControllerDirective, ngCoreProviders, ngDblclickAriaDirective, ngDefaultDirectiveGroups, ngDefaultProviderGroups, ngDeleteDirective, ngDisabledAriaDirective, ngElDirective, ngElementDirectives, ngEventDirectives, ngFillDirectives, ngFilterProviders, ngFormDirective, ngFormDirectives, ngGetDirective, ngHideAriaDirective, ngHideDirective, ngIfDirective, ngIncludeDirective, ngIncludeFillContentDirective, ngInitDirective, ngInjectDirective, ngIntegrationDirectives, ngIntegrationProviders, ngListenerDirective, ngMessageDefaultDirective, ngMessageDirective, ngMessageExpDirective, ngMessagesAriaDirective, ngMessagesDirective, ngMessagesIncludeDirective, ngModelAriaDirective, ngModelDirective, ngModelOptionsDirective, ngNonBindableDirective, ngOptionsDirective, ngOrchestrationProviders, ngPatchDirective, ngPointerCaptureDirective, ngPostDirective, ngPutDirective, ngReadonlyAriaDirective, ngRefDirective, ngRepeatDirective, ngRequiredAriaDirective, ngRouterDirectives, ngRouterProviders, ngScopeDirective, ngSecurityProviders, ngSetterDirective, ngShowAriaDirective, ngShowDirective, ngSseDirective, ngStorageProviders, ngStyleDirective, ngSwitchDefaultDirective, ngSwitchDirective, ngSwitchWhenDirective, ngTemplateDirectives, ngTranscludeDirective, ngValueAriaDirective, ngViewportDirective, ngWebTransportDirective, ngWorkerDirective, numberFilter, optionDirective, orderByFilter, patternDirective, percentFilter, registerNgModule, relativeTimeFilter, requiredDirective, scriptDirective, selectDirective, valuesFilter };

@@ -133,7 +133,7 @@ function createInterpolateService(state, $parse, security) {
                             if (watchable) {
                                 callFunction(watchable.$watch, watchable, watchProp, () => {
                                     cb(compute(context));
-                                });
+                                }, false, true);
                             }
                         }
                         return compute(context);
@@ -176,7 +176,7 @@ function createInterpolateService(state, $parse, security) {
                                         watchedValues[j] = parseFns[j](context);
                                     }
                                     cb(compute(watchedValues));
-                                });
+                                }, false, true);
                             }
                         }
                         values[i] = parseFns[i](context);

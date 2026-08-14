@@ -1,4 +1,4 @@
-/* Version: 0.31.0 */
+/* Version: 0.32.0 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -34,6 +34,7 @@ const _sce = "$sce";
 const _sceDelegate = "$sceDelegate";
 const _state = "$state";
 const _stateRegistry = "$stateRegistry";
+const _storage = "$storage";
 const _security = "$security";
 const _serviceWorker = "$serviceWorker";
 const _stream = "$stream";
@@ -48,6 +49,7 @@ const _websocket = "$websocket";
 const _worker = "$worker";
 const _wasm = "$wasm";
 const _workflow = "$workflow";
+const _workflowSupervisor = "$workflowSupervisor";
 const _injector = "$injector";
 /**
  * Runtime token registry. Prefer importing individual token constants in source
@@ -84,6 +86,7 @@ const $injectTokens = {
     _serviceWorker,
     _state,
     _stateRegistry,
+    _storage,
     _stream,
     _sse,
     _templateCache,
@@ -96,6 +99,7 @@ const $injectTokens = {
     _worker,
     _wasm,
     _workflow,
+    _workflowSupervisor,
     _injector,
 };
 
@@ -2408,461 +2412,6 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
     }
 }
 
-const $animateError = createErrorFactory("$animate");
-class AnimationHandle {
-    constructor(result, controller = new AbortController(), cleanup) {
-        this._doneCallbacks = [];
-        this._settled = false;
-        this._status = true;
-        this.controller = controller;
-        this._cleanup = cleanup;
-        const results = Array.isArray(result) ? result : [result];
-        this._animations = results.filter((item) => !!item && "finished" in item);
-        const promises = results.map(async (item) => {
-            if (!item)
-                return Promise.resolve();
-            if ("finished" in item)
-                return item.finished.then(() => undefined);
-            return item;
-        });
-        this.finished = Promise.allSettled(promises).then((settled) => {
-            const rejected = settled.some((item) => item.status === "rejected");
-            this.complete(!rejected);
-            return undefined;
-        });
-        controller.signal.addEventListener("abort", () => {
-            this.cancel();
-        }, { once: true });
-    }
-    then(onfulfilled, onrejected) {
-        return this.finished.then(onfulfilled, onrejected);
-    }
-    async catch(onrejected) {
-        return this.finished.catch(onrejected);
-    }
-    async finally(onfinally) {
-        return this.finished.finally(onfinally);
-    }
-    done(callback) {
-        if (this._settled) {
-            callback(this._status);
-            return;
-        }
-        this._doneCallbacks.push(callback);
-    }
-    cancel() {
-        this._status = false;
-        this._animations.forEach((animation) => {
-            animation.cancel();
-        });
-        this.controller.abort();
-        this.complete(false);
-    }
-    finish() {
-        this._animations.forEach((animation) => {
-            animation.finish();
-        });
-        this.complete(true);
-    }
-    pause() {
-        this._animations.forEach((animation) => {
-            animation.pause();
-        });
-    }
-    play() {
-        this._animations.forEach((animation) => {
-            animation.play();
-        });
-    }
-    complete(status = true) {
-        if (this._settled)
-            return;
-        this._settled = true;
-        this._status = status;
-        this._cleanup?.(status);
-        const callbacks = this._doneCallbacks;
-        this._doneCallbacks = [];
-        callbacks.forEach((callback) => {
-            callback(status);
-        });
-    }
-}
-const DEFAULT_DURATION = 150;
-const CSS_ANIMATION_PROPERTIES = {
-    enter: "--ng-enter-animation",
-    leave: "--ng-leave-animation",
-    move: "--ng-move-animation",
-    addClass: "--ng-add-class-animation",
-    removeClass: "--ng-remove-class-animation",
-    setClass: "--ng-set-class-animation",
-    animate: "--ng-style-animation",
-};
-const CSS_BUILT_IN_PRESETS = new Set([
-    "fade",
-    "fade-slide",
-    "scale",
-    "slide-start",
-    "slide-end",
-    "collapse",
-    "expand",
-]);
-/** @internal */
-class AnimationRegistry {
-    constructor() {
-        this._registrations = new Map();
-        this._destroyed = false;
-    }
-    register(name, preset) {
-        this.assertActive();
-        if (!name || !isString(name)) {
-            throw $animateError("noname", "Animation name must be a string.");
-        }
-        const normalizedName = normalizeAnimationName(name);
-        this._registrations.set(normalizedName, preset);
-    }
-    get(name) {
-        this.assertActive();
-        return this._registrations.get(name);
-    }
-    has(name) {
-        this.assertActive();
-        return this._registrations.has(name);
-    }
-    destroy() {
-        if (this._destroyed)
-            return;
-        this._destroyed = true;
-        this._registrations.clear();
-    }
-    assertActive() {
-        if (this._destroyed) {
-            throw new Error("Animation registry has already been disposed.");
-        }
-    }
-}
-/** @internal */
-function createAnimateService(registry, $injector) {
-    const resolvedPresets = new Map();
-    const activeHandles = new WeakMap();
-    const resolvePreset = (element, options) => {
-        const name = animationNameFor(element, options);
-        if (!name)
-            return undefined;
-        const registration = registry.get(name);
-        if (!registration)
-            return undefined;
-        const resolved = resolvedPresets.get(name);
-        if (resolved?.registration === registration) {
-            return resolved.preset;
-        }
-        const preset = isFunction(registration) || Array.isArray(registration)
-            ? $injector.invoke(registration)
-            : registration;
-        resolvedPresets.set(name, { registration, preset });
-        return preset;
-    };
-    const run = (phase, element, options = {}, contextOverrides = {}, cleanup) => {
-        const controller = new AbortController();
-        activeHandles.get(element)?.cancel();
-        activeHandles.delete(element);
-        const context = {
-            phase,
-            signal: controller.signal,
-            ...contextOverrides,
-        };
-        const tempClasses = splitOptionClasses(options.tempClasses);
-        const elementClassList = element.classList;
-        if (tempClasses.length) {
-            elementClassList.add(...tempClasses);
-        }
-        const animationName = animationNameFor(element, options);
-        const cssPresetClass = animationName && !registry.has(animationName)
-            ? cssPresetClassFor(animationName)
-            : undefined;
-        const finishCleanup = (ok) => {
-            if (tempClasses.length) {
-                elementClassList.remove(...tempClasses);
-            }
-            if (cssPresetClass) {
-                elementClassList.remove(cssPresetClass);
-            }
-            if (ok) {
-                options.onDone?.(element, context);
-            }
-            else {
-                options.onCancel?.(element, context);
-            }
-            cleanup?.(ok);
-        };
-        if (shouldSkipAnimation(element, options)) {
-            finishCleanup(true);
-            return new AnimationHandle(undefined, controller);
-        }
-        options.onStart?.(element, context);
-        if (cssPresetClass) {
-            elementClassList.add(cssPresetClass);
-        }
-        const resolvedPreset = resolvePreset(element, options);
-        const preset = resolvedPreset;
-        const handler = preset?.[phase];
-        let result;
-        let animationCleanup;
-        const cssPresetCleanup = animationName
-            ? prepareCssPreset(element, animationName, phase)
-            : undefined;
-        if (isFunction(handler)) {
-            result = handler(element, context, options);
-        }
-        else {
-            const optionKeyframes = keyframesForPhase(phase, options);
-            const keyframes = optionKeyframes ?? handler;
-            const cssAnimation = keyframes
-                ? undefined
-                : cssAnimationForPhase(element, phase);
-            if (keyframes) {
-                result = element.animate(keyframes, animationOptionsFor(preset, options));
-            }
-            else if (cssAnimation) {
-                const cssResult = runCssAnimation(element, cssAnimation);
-                if (animationName && isAutoHeightPreset(animationName)) {
-                    applyCssAnimationTiming(cssResult.animations, options);
-                }
-                result = cssResult.animations;
-                animationCleanup = cssResult.cleanup;
-            }
-            else {
-                const styleKeyframes = keyframesFromStyles(context.from, context.to);
-                result = styleKeyframes
-                    ? element.animate(styleKeyframes, animationOptionsFor(preset, options))
-                    : undefined;
-            }
-        }
-        const handle = new AnimationHandle(result, controller, (ok) => {
-            animationCleanup?.();
-            cssPresetCleanup?.();
-            finishCleanup(ok);
-        });
-        activeHandles.set(element, handle);
-        handle.done(() => {
-            if (activeHandles.get(element) === handle) {
-                activeHandles.delete(element);
-            }
-        });
-        return handle;
-    };
-    return {
-        cancel(handle) {
-            handle?.cancel();
-        },
-        define: (name, preset) => {
-            registry.register(name, preset);
-        },
-        enter: (element, parent, after, options) => {
-            domInsert(element, assertDefined(parent ?? after?.parentNode), after);
-            return run("enter", element, options);
-        },
-        move: (element, parent, after, options) => {
-            domInsert(element, assertDefined(parent ?? after?.parentNode), after);
-            return run("move", element, options);
-        },
-        leave: (element, options) => run("leave", element, options, {}, (ok) => {
-            if (ok)
-                removeElement(element);
-        }),
-        addClass: (element, className, options) => {
-            const nextOptions = { ...options, addClass: className };
-            element.classList.add(...splitClasses(className));
-            return run("addClass", element, nextOptions, {
-                className,
-                addClass: className,
-            });
-        },
-        removeClass: (element, className, options) => {
-            const nextOptions = { ...options, removeClass: className };
-            element.classList.remove(...splitClasses(className));
-            return run("removeClass", element, nextOptions, {
-                className,
-                removeClass: className,
-            });
-        },
-        setClass: (element, add, remove, options) => {
-            const nextOptions = {
-                ...options,
-                addClass: add,
-                removeClass: remove,
-            };
-            element.classList.add(...splitClasses(add));
-            element.classList.remove(...splitClasses(remove));
-            return run("setClass", element, nextOptions, {
-                addClass: add,
-                removeClass: remove,
-            });
-        },
-        animate: (element, from, to, className, options) => {
-            const toStyles = to ?? {};
-            if (className)
-                element.classList.add(...splitClasses(className));
-            assign(element.style, from);
-            return run("animate", element, { ...options, from, to: toStyles }, { from, to: toStyles, className }, () => {
-                assign(element.style, toStyles);
-            });
-        },
-        async transition(update) {
-            const startViewTransition = Reflect.get(document, "startViewTransition");
-            if (!isFunction(startViewTransition)) {
-                await update();
-                return;
-            }
-            await startViewTransition.call(document, update).finished;
-        },
-    };
-}
-function splitClasses(className) {
-    return className.trim().split(/\s+/).filter(Boolean);
-}
-function splitOptionClasses(className) {
-    if (!className)
-        return [];
-    return Array.isArray(className)
-        ? className.flatMap(splitClasses)
-        : splitClasses(className);
-}
-function normalizeAnimationName(name) {
-    return name.startsWith(".") ? name.slice(1) : name;
-}
-function cssPresetClassFor(name) {
-    return CSS_BUILT_IN_PRESETS.has(name)
-        ? `ng-animate-preset-${name}`
-        : undefined;
-}
-function prepareCssPreset(element, name, phase) {
-    if (!isAutoHeightPreset(name) ||
-        (phase !== "enter" && phase !== "leave") ||
-        !(element instanceof HTMLElement)) {
-        return undefined;
-    }
-    const property = "--ng-animate-auto-height";
-    const previousHeight = element.style.getPropertyValue(property);
-    const height = phase === "enter"
-        ? element.scrollHeight
-        : element.offsetHeight || element.scrollHeight;
-    element.style.setProperty(property, `${String(height)}px`);
-    return () => {
-        if (previousHeight) {
-            element.style.setProperty(property, previousHeight);
-        }
-        else {
-            element.style.removeProperty(property);
-        }
-    };
-}
-function isAutoHeightPreset(name) {
-    return name === "collapse" || name === "expand";
-}
-function animationNameFor(element, options) {
-    const explicit = options?.animation;
-    if (explicit)
-        return normalizeAnimationName(explicit);
-    const value = element.dataset.animate ?? element.getAttribute("animate");
-    if (!value || value === "true" || value === "")
-        return "fade";
-    if (value === "false")
-        return undefined;
-    return normalizeAnimationName(value);
-}
-function keyframesForPhase(phase, options) {
-    if (options.keyframes)
-        return options.keyframes;
-    if (phase === "enter")
-        return options.enter;
-    if (phase === "leave")
-        return options.leave;
-    if (phase === "move")
-        return options.move;
-    return undefined;
-}
-function keyframesFromStyles(from, to) {
-    if (!from && !to)
-        return undefined;
-    return [from ?? {}, to ?? {}];
-}
-function animationOptionsFor(preset, options) {
-    const defaults = preset?.options ?? {};
-    const { keyframes: _keyframes, enter, leave, move, animation, tempClasses, onStart, onDone, onCancel, ...rest } = options;
-    return {
-        duration: DEFAULT_DURATION,
-        fill: "both",
-        ...defaults,
-        ...rest,
-    };
-}
-function cssAnimationForPhase(element, phase) {
-    const styles = getComputedStyle(element);
-    const value = readCssAnimationProperty(styles, CSS_ANIMATION_PROPERTIES[phase]) ??
-        readCssAnimationProperty(styles, "--ng-animation");
-    if (!value || value === "none")
-        return undefined;
-    return value;
-}
-function readCssAnimationProperty(styles, property) {
-    const value = styles.getPropertyValue(property).trim();
-    return value || undefined;
-}
-function runCssAnimation(element, animation) {
-    const animatedElement = element;
-    const { style } = animatedElement;
-    const previousAnimation = style.animation;
-    const previousAnimations = new Set(element.getAnimations());
-    style.animation = "none";
-    if ("offsetWidth" in animatedElement) {
-        void animatedElement.offsetWidth;
-    }
-    style.animation = animation;
-    const animations = element
-        .getAnimations()
-        .filter((currentAnimation) => !previousAnimations.has(currentAnimation) &&
-        currentAnimation.playState !== "finished");
-    return {
-        animations,
-        cleanup: () => {
-            style.animation = previousAnimation;
-        },
-    };
-}
-function applyCssAnimationTiming(animations, options) {
-    const timing = {};
-    const timingKeys = [
-        "delay",
-        "direction",
-        "duration",
-        "easing",
-        "endDelay",
-        "fill",
-        "iterationStart",
-        "iterations",
-    ];
-    timingKeys.forEach((key) => {
-        const value = options[key];
-        if (value !== undefined) {
-            Object.assign(timing, { [key]: value });
-        }
-    });
-    if (Object.keys(timing).length === 0)
-        return;
-    animations.forEach((animation) => {
-        animation.effect?.updateTiming(timing);
-    });
-}
-function shouldSkipAnimation(element, options) {
-    if (!("animate" in element))
-        return true;
-    if (document.hidden)
-        return true;
-    if (options.duration === 0)
-        return true;
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 const $controllerError = createErrorFactory("$controller");
 const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
 function identifierForController(controller, ident) {
@@ -2975,7 +2524,14 @@ function createControllerService(registry, $injector) {
                 locals.$scope.$scopename =
                     instance.constructor.$scopename;
             }
-            return () => {
+            const initialize = ((instanceOverride) => {
+                if (instanceOverride) {
+                    instance = instanceOverride;
+                    if (identifier) {
+                        instance.$controllerIdentifier = identifier;
+                        addIdentifier(locals, identifier, instance, exportName);
+                    }
+                }
                 const result = $injector.invoke(injectable, instance, locals, constructorName);
                 if (result !== instance && (isObject(result) || isFunction(result))) {
                     instance = result;
@@ -2984,8 +2540,11 @@ function createControllerService(registry, $injector) {
                         addIdentifier(locals, identifier, instance, exportName);
                     }
                 }
+                initialize._instance = instance;
                 return instance;
-            };
+            });
+            initialize._instance = instance;
+            return initialize;
         }
         instance = $injector.instantiate(injectable, locals, constructorName);
         if (identifier) {
@@ -3074,221 +2633,6 @@ function createFilterRegistration(registry) {
     return [_injector, ($injector) => createFilterService(registry, $injector)];
 }
 
-/**
- * Matches state names using glob-like pattern strings.
- *
- * Globs can be used in specific APIs including:
- *
- * - [[StateService.matches]]
- * - The first argument to Hook Registration functions like [[TransitionService.onStart]]
- *    - [[HookMatchCriteria]] and [[HookMatchCriterion]]
- *
- * A `Glob` string is a pattern which matches state names.
- * Nested state names are split into segments (separated by a dot) when processing.
- * The state named `foo.bar.baz` is split into three segments ['foo', 'bar', 'baz']
- *
- * Globs work according to the following rules:
- *
- * ### Exact match:
- *
- * The glob `'A.B'` matches the state named exactly `'A.B'`.
- *
- * | Glob        |Matches states named|Does not match state named|
- * |:------------|:--------------------|:---------------------|
- * | `'A'`       | `'A'`               | `'B'` , `'A.C'`      |
- * | `'A.B'`     | `'A.B'`             | `'A'` , `'A.B.C'`    |
- * | `'foo'`     | `'foo'`             | `'FOO'` , `'foo.bar'`|
- *
- * ### Single star (`*`)
- *
- * A single star (`*`) is a wildcard that matches exactly one segment.
- *
- * | Glob        |Matches states named  |Does not match state named |
- * |:------------|:---------------------|:--------------------------|
- * | `'*'`       | `'A'` , `'Z'`        | `'A.B'` , `'Z.Y.X'`       |
- * | `'A.*'`     | `'A.B'` , `'A.C'`    | `'A'` , `'A.B.C'`         |
- * | `'A.*.*'`   | `'A.B.C'` , `'A.X.Y'`| `'A'`, `'A.B'` , `'Z.Y.X'`|
- *
- * ### Double star (`**`)
- *
- * A double star (`'**'`) is a wildcard that matches *zero or more segments*
- *
- * | Glob        |Matches states named                           |Does not match state named         |
- * |:------------|:----------------------------------------------|:----------------------------------|
- * | `'**'`      | `'A'` , `'A.B'`, `'Z.Y.X'`                    | (matches all states)              |
- * | `'A.**'`    | `'A'` , `'A.B'` , `'A.C.X'`                   | `'Z.Y.X'`                         |
- * | `'**.X'`    | `'X'` , `'A.X'` , `'Z.Y.X'`                   | `'A'` , `'A.login.Z'`             |
- * | `'A.**.X'`  | `'A.X'` , `'A.B.X'` , `'A.B.C.X'`             | `'A'` , `'A.B.C'`                 |
- *
- */
-class Glob {
-    /** Returns a glob from the string, or null if the string isn't Glob-like. */
-    static fromString(text) {
-        return hasGlobs(text) ? new Glob(text) : null;
-    }
-    constructor(text) {
-        this._text = text;
-        const segments = this._text.split(".");
-        const regexpParts = [];
-        segments.forEach((segment) => {
-            if (segment === "**") {
-                regexpParts.push("(?:|(?:\\.[^.]*)*)");
-            }
-            else if (segment === "*") {
-                regexpParts.push("\\.[^.]*");
-            }
-            else {
-                regexpParts.push(`\\.${segment}`);
-            }
-        });
-        this._regexp = new RegExp(`^${regexpParts.join("")}$`);
-    }
-    matches(name) {
-        return this._regexp.test(`.${name}`);
-    }
-}
-/** Returns true if the string has glob-like characters in it. */
-function hasGlobs(text) {
-    return !!/[!,*]+/.exec(text);
-}
-
-const stateDeclarationSources = new WeakMap();
-/** @internal */
-function setStateDeclarationSource(flattened, source) {
-    stateDeclarationSources.set(flattened, source);
-}
-/** @internal */
-function getStateDeclarationSource(declaration) {
-    return stateDeclarationSources.get(declaration);
-}
-/**
- * Internal representation of a ng-router state.
- *
- * Instances of this class are created when a [[StateDeclaration]] is registered with the [[StateRegistry]].
- *
- * A registered declaration is internally augmented with a getter that returns
- * the corresponding [[StateObject]] object.
- *
- * This class prototypally inherits from the corresponding [[StateDeclaration]].
- * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
- * @extends {ng.StateDeclaration}
- */
-class StateObject {
-    static isStateDeclaration(obj) {
-        return isFunction(obj._state);
-    }
-    static isState(obj) {
-        return (isObject(obj) &&
-            isObject(obj._stateObjectCache));
-    }
-    /**
-     * @param {StateDeclaration} config
-     */
-    constructor(config) {
-        assign(this, config);
-        this.self = config;
-        this.name = config.name;
-        config._state = () => this;
-        const nameGlob = this.name ? Glob.fromString(this.name) : null;
-        this._stateObjectCache = { nameGlob };
-    }
-    /** @returns {StateObject} */
-    /** @internal */
-    _state() {
-        return this;
-    }
-    /**
-     * Returns true if the provided parameter is the same state.
-     *
-     * Compares the identity of the state against the passed value, which is either an object
-     * reference to the actual `State` instance, the original definition object passed to
-     * `app.router()`, or the fully-qualified name.
-     *
-     * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
-     *        into `app.router()`, (c) the fully-qualified name of a state as a string.
-     * @returns Returns `true` if `ref` matches the current `State` instance.
-     */
-    is(ref) {
-        return (this === ref ||
-            this.self === ref ||
-            getStateDeclarationSource(this.self) === ref ||
-            this._pathName() === ref);
-    }
-    /**
-     * @deprecated this does not properly handle dot notation
-     * @returns {string} Returns a dot-separated name of the state.
-     */
-    fqn() {
-        return this._pathName();
-    }
-    _pathName() {
-        return (this.path ?? [])
-            .map((state) => state.name)
-            .filter(Boolean)
-            .join(".");
-    }
-    /**
-     * Returns the root node of this state's tree.
-     *
-     * @returns {StateObject} The root of this state's tree.
-     */
-    root() {
-        return this.parent?.root() ?? this;
-    }
-    /**
-     * Gets the state's `Param` objects
-     *
-     * Gets the list of [[Param]] objects owned by the state.
-     * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
-     * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
-     *
-     * @param {StateParamOptions} [opts] options
-     * @returns {Param[]} the list of [[Param]] objects
-     */
-    parameters(opts) {
-        const inherit = opts?.inherit !== false;
-        const matchingKeys = opts?.matchingKeys;
-        const inherited = inherit
-            ? (this.parent?.parameters({ matchingKeys }) ?? [])
-            : [];
-        const result = inherited.slice();
-        const { params } = this;
-        if (!params)
-            return result;
-        keys(params).forEach((id) => {
-            const { [id]: param } = params;
-            if (!matchingKeys || hasOwn(matchingKeys, id)) {
-                result.push(param);
-            }
-        });
-        return result;
-    }
-    /**
-     * Returns a single [[Param]] that is owned by the state
-     *
-     * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
-     * @param {string} id the name of the [[Param]] to return
-     * @param {StateParamOptions} [opts] options
-     * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
-     */
-    parameter(id, opts) {
-        const urlParam = this._url?._parameter(id, opts);
-        if (urlParam)
-            return urlParam;
-        const { params } = this;
-        if (params && hasOwn(params, id)) {
-            const { [id]: param } = params;
-            return param;
-        }
-        return opts?.inherit && this.parent
-            ? this.parent.parameter(id, opts)
-            : undefined;
-    }
-    toString() {
-        return this._pathName();
-    }
-}
-
 const ASTType = {
     _Program: 1,
     _ExpressionStatement: 2,
@@ -3310,10 +2654,35 @@ const ASTType = {
     _UpdateExpression: 18,
 };
 
+const scheduledBindingTask = {
+    _kind: "bindings",
+};
+const foreignProxyParentPathCache = new Map();
+function getForeignProxyParentPath(watchProp) {
+    if (foreignProxyParentPathCache.has(watchProp)) {
+        return foreignProxyParentPathCache.get(watchProp);
+    }
+    const parentExpression = getWatchParentExpression(watchProp);
+    if (!parentExpression || parentExpression.includes("[")) {
+        foreignProxyParentPathCache.set(watchProp, undefined);
+        return undefined;
+    }
+    const parts = parentExpression.split(".");
+    if (parts.length < 2 ||
+        parts.some((part) => !/^[$A-Z_a-z][$\w]*$/.test(part))) {
+        foreignProxyParentPathCache.set(watchProp, undefined);
+        return undefined;
+    }
+    foreignProxyParentPathCache.set(watchProp, parts);
+    return parts;
+}
 /** @internal Creates a listener scheduler that can be owned by a scope family or AppContext. */
 function createScopeListenerScheduler() {
     const scheduler = {
         _queue: [],
+        _bindingQueue: [],
+        _bindingEpoch: 0,
+        _bindingsQueued: false,
         _index: 0,
         _queued: false,
         _flushing: false,
@@ -4597,12 +3966,14 @@ class Scope {
                     ? this._watchers.get(property)
                     : undefined;
                 const targetHashKey = getHashKey(target);
+                let hasExactPropListeners = false;
                 if (isDefined(targetHashKey)) {
                     const hashedPropListeners = this._watchersByHash
                         .get(property)
                         ?.get(targetHashKey);
                     if (hashedPropListeners) {
                         propListeners = hashedPropListeners;
+                        hasExactPropListeners = directListeners.length === 0;
                     }
                 }
                 if (propListeners) {
@@ -4611,26 +3982,31 @@ class Scope {
                     }
                 }
                 if (directListeners.length > 0) {
-                    this._scheduleListener(directListeners, (list) => {
-                        const scheduled = [];
-                        for (let i = 0, l = list.length; i < l; i++) {
-                            const x = list[i];
-                            if (!x._watchProp) {
-                                scheduled.push(x);
-                                continue;
+                    if (hasExactPropListeners) {
+                        this._scheduleListener(directListeners, undefined, property);
+                    }
+                    else {
+                        this._scheduleListener(directListeners, (list) => {
+                            const scheduled = [];
+                            for (let i = 0, l = list.length; i < l; i++) {
+                                const x = list[i];
+                                if (!x._watchProp) {
+                                    scheduled.push(x);
+                                    continue;
+                                }
+                                const expectedParent = x._watchParentFn?.(x._originalTarget);
+                                const expectedParentTarget = unwrapScopeValue(expectedParent);
+                                if (expectedTarget === expectedParentTarget ||
+                                    (isArray(expectedParentTarget) &&
+                                        expectedTarget === x._originalTarget) ||
+                                    (x._watchProp.includes("[") &&
+                                        expectedTarget === x._originalTarget)) {
+                                    scheduled.push(x);
+                                }
                             }
-                            const expectedParent = x._watchParentFn?.(x._originalTarget);
-                            const expectedParentTarget = unwrapScopeValue(expectedParent);
-                            if (expectedTarget === expectedParentTarget ||
-                                (isArray(expectedParentTarget) &&
-                                    expectedTarget === x._originalTarget) ||
-                                (x._watchProp.includes("[") &&
-                                    expectedTarget === x._originalTarget)) {
-                                scheduled.push(x);
-                            }
-                        }
-                        return scheduled;
-                    });
+                            return scheduled;
+                        }, property);
+                    }
                 }
                 if (nestedListeners.length > 0) {
                     this._scheduleListener(nestedListeners);
@@ -4666,16 +4042,30 @@ class Scope {
                             this._foreignListenersByHash.get(property)?.get(hashKey) ?? [];
                     }
                     if (scheduled.length > 0) {
-                        this._scheduleListener(scheduled);
+                        if (seenListenerIds.size > 0) {
+                            const uniqueForeignListeners = [];
+                            for (let i = 0, l = scheduled.length; i < l; i++) {
+                                if (!seenListenerIds.has(scheduled[i]._id)) {
+                                    uniqueForeignListeners.push(scheduled[i]);
+                                }
+                            }
+                            scheduled = uniqueForeignListeners;
+                        }
+                        if (scheduled.length > 0) {
+                            this._scheduleListener(scheduled, undefined, property);
+                        }
                     }
                 }
             }
             if (this._objectListeners.has(target) && property !== "length") {
                 const keyList = this._objectListeners.get(target);
                 if (keyList) {
+                    const objectHashKey = getHashKey(target);
                     for (let i = 0, l = keyList.length; i < l; i++) {
                         const key = keyList[i];
-                        const listeners = this._watchers.get(key);
+                        const listeners = isDefined(objectHashKey)
+                            ? this._watchersByHash.get(key)?.get(objectHashKey)
+                            : this._watchers.get(key);
                         if (listeners && this._scheduled !== listeners) {
                             this._scheduleListener(listeners);
                         }
@@ -5023,13 +4413,18 @@ class Scope {
         let bound = false;
         for (let i = 0, l = descriptors.length; i < l; i++) {
             const descriptor = descriptors[i];
-            const foreignProxy = this._resolveForeignDependencyProxy(listener, descriptor);
+            const existing = descriptor._dependency;
+            const parent = descriptor._watchParentFn(listener._originalTarget);
+            if (existing && descriptor._parent === parent) {
+                continue;
+            }
+            const foreignProxy = this._resolveForeignDependencyProxy(listener, descriptor, parent);
             if (!foreignProxy) {
                 continue;
             }
-            const existing = descriptor._dependency;
             if (existing?._handler === foreignProxy.$handler &&
                 existing._key === descriptor._key) {
+                descriptor._parent = parent;
                 continue;
             }
             if (existing) {
@@ -5043,6 +4438,7 @@ class Scope {
                 _key: descriptor._key,
                 _id: listener._id,
             };
+            descriptor._parent = parent;
             bound = true;
         }
         return bound;
@@ -5061,11 +4457,11 @@ class Scope {
             existing._handler._deregisterForeignKey(existing._key, listener._id);
             this._untrackOwnedForeignListener(existing._handler, existing._key, listener._id);
             descriptors[i]._dependency = undefined;
+            descriptors[i]._parent = undefined;
         }
     }
     /** @internal Resolves the foreign proxy parent for a member-expression listener. */
-    _resolveForeignDependencyProxy(listener, descriptor) {
-        const potentialProxy = descriptor._watchParentFn(listener._originalTarget);
+    _resolveForeignDependencyProxy(listener, descriptor, potentialProxy) {
         if (isObject(potentialProxy) &&
             isFunction(potentialProxy[SCOPE_PROXY_BIND])) {
             getCachedScopeProxy(potentialProxy, this);
@@ -5091,18 +4487,9 @@ class Scope {
     }
     /** @internal Resolves a nested foreign proxy parent from a simple dotted watch path. */
     _resolveForeignProxyParent(watchProp, target) {
-        const parentExpression = getWatchParentExpression(watchProp);
-        if (!parentExpression || parentExpression.includes("[")) {
+        const parts = getForeignProxyParentPath(watchProp);
+        if (!parts) {
             return undefined;
-        }
-        const parts = parentExpression.split(".");
-        if (parts.length < 2) {
-            return undefined;
-        }
-        for (let i = 0, l = parts.length; i < l; i++) {
-            if (!/^[$A-Z_a-z][$\w]*$/.test(parts[i])) {
-                return undefined;
-            }
         }
         const rootValue = target[parts[0]];
         if (!isObject(rootValue) || isNonScope(rootValue)) {
@@ -5272,11 +4659,21 @@ class Scope {
                     task._callback();
                     continue;
                 }
+                if (task._kind === "bindings") {
+                    const bindingQueue = scheduler._bindingQueue;
+                    scheduler._bindingQueue = [];
+                    scheduler._bindingsQueued = false;
+                    scheduler._bindingEpoch++;
+                    for (let i = 0, l = bindingQueue.length; i < l; i++) {
+                        this._notifyBindingListener(bindingQueue[i]);
+                    }
+                    continue;
+                }
                 const filteredListeners = task._filter
                     ? task._filter(task._listeners)
                     : task._listeners;
                 for (let i = 0, l = filteredListeners.length; i < l; i++) {
-                    this._notifyListener(filteredListeners[i], task._target);
+                    this._notifyListener(filteredListeners[i], task._target, task._sourceHandler, task._sourceProperty);
                 }
             }
         }
@@ -5329,8 +4726,34 @@ class Scope {
         });
     }
     /** @internal Queues listener notification for the next microtask, optionally filtering the list first. */
-    _scheduleListener(listeners, filterOrTarget) {
+    _scheduleListener(listeners, filterOrTarget, sourceProperty) {
         const filter = isFunction(filterOrTarget) ? filterOrTarget : undefined;
+        if (!filter && sourceProperty !== undefined) {
+            const scheduler = this._listenerScheduler;
+            let genericListeners;
+            for (let i = 0, l = listeners.length; i < l; i++) {
+                const listener = listeners[i];
+                if (!listener._directLeaf) {
+                    genericListeners ?? (genericListeners = []);
+                    genericListeners.push(listener);
+                    continue;
+                }
+                listener._bindingSourceHandler = this;
+                listener._bindingSourceProperty = sourceProperty;
+                if (listener._bindingEpoch !== scheduler._bindingEpoch) {
+                    listener._bindingEpoch = scheduler._bindingEpoch;
+                    scheduler._bindingQueue.push(listener);
+                }
+            }
+            if (scheduler._bindingQueue.length > 0 && !scheduler._bindingsQueued) {
+                scheduler._bindingsQueued = true;
+                this._enqueueScheduledTask(scheduledBindingTask);
+            }
+            if (!genericListeners) {
+                return;
+            }
+            listeners = genericListeners;
+        }
         const target = filter
             ? this.$target
             : (filterOrTarget ?? this.$target);
@@ -5339,6 +4762,8 @@ class Scope {
             _listeners: listeners,
             _target: target,
             _filter: filter,
+            _sourceHandler: sourceProperty === undefined ? undefined : this,
+            _sourceProperty: sourceProperty,
         });
     }
     /** @internal Records a whole-model change when this scope backs an app model. */
@@ -5355,7 +4780,7 @@ class Scope {
      * @returns A function to deregister the watcher, or undefined if no listener function is provided.
      * @throws Error when `watchProp` is not a string expression.
      */
-    $watch(watchProp, listenerFn, lazy = false) {
+    $watch(watchProp, listenerFn, lazy = false, directLeaf = false) {
         assert(isString(watchProp), "Watched property required");
         watchProp = watchProp.trim();
         const get = this._parse(watchProp);
@@ -5518,6 +4943,8 @@ class Scope {
                     listener._watchParentFn = this._parse(getWatchParentExpression(watchProp));
                     collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
                     this._bindForeignDependency(listener);
+                    listener._directLeaf =
+                        directLeaf && listener._foreignWatchDescriptors?.length === 1;
                 }
                 break;
             }
@@ -5568,6 +4995,7 @@ class Scope {
                 const collectedKeys = new Set();
                 for (let i = 0, l = properties.length; i < l; i++) {
                     const prop = properties[i];
+                    const value = assertDefined(prop._value);
                     let currentKey;
                     if (assertDefined(prop._key)._isPure === false) {
                         listener._watchNestedObject = true;
@@ -5576,8 +5004,8 @@ class Scope {
                             collectWatchKeys(prop._key, collectedKeys);
                         }
                     }
-                    else if (getNodeName(prop._value)) {
-                        currentKey = getNodeName(prop._value);
+                    else if (getNodeName(value)) {
+                        currentKey = getNodeName(value);
                     }
                     else {
                         const [target] = assertDefined(expr._toWatch);
@@ -5589,10 +5017,12 @@ class Scope {
                     if (currentKey) {
                         pushUniqueListenerKey(keySet, seenKeys, listener, currentKey);
                     }
+                    collectForeignWatchDescriptors(value, listener, keySet, seenKeys);
                 }
                 for (const collectedKey of collectedKeys) {
                     pushUniqueListenerKey(keySet, seenKeys, listener, collectedKey);
                 }
+                this._bindForeignDependency(listener);
                 break;
             }
             case ASTType._Program:
@@ -5681,7 +5111,7 @@ class Scope {
     }
     /** Creates an isolate child scope that does not inherit watchable properties directly. */
     $newIsolate(instance) {
-        const child = (instance ? createObject(instance) : nullObject());
+        const child = instance ?? nullObject();
         const proxy = new Proxy(child, new Scope(this, this.$root));
         scopeProxyTargets.set(proxy, child);
         this._children.push(proxy);
@@ -6261,13 +5691,83 @@ class Scope {
         };
     }
     /** @internal Resolves the watched value and notifies a single listener. */
-    _notifyListener(listener, target) {
+    _notifyBindingListener(listener) {
+        const sourceHandler = listener._bindingSourceHandler;
+        const sourceProperty = listener._bindingSourceProperty;
+        listener._bindingSourceHandler = undefined;
+        listener._bindingSourceProperty = undefined;
+        if (!sourceHandler || sourceProperty === undefined) {
+            return;
+        }
+        try {
+            const value = sourceHandler.$proxy[sourceProperty];
+            if (isFunction(value) || isArray(value)) {
+                this._notifyListener(listener, sourceHandler, sourceHandler, sourceProperty);
+                return;
+            }
+            listener._listenerFn(value, listener._originalTarget);
+        }
+        catch (err) {
+            this._exceptionHandler(err);
+        }
+    }
+    /** @internal Resolves the watched value and notifies a single listener. */
+    _notifyListener(listener, target, sourceHandler, sourceProperty) {
         const { _originalTarget, _listenerFn, _watchFn } = listener;
         try {
-            this._bindForeignDependency(listener);
+            let hasDirectForeignSource = false;
+            let hasStableForeignSource = false;
+            if (sourceProperty !== undefined) {
+                const descriptors = listener._foreignWatchDescriptors;
+                if (descriptors) {
+                    for (let i = 0, l = descriptors.length; i < l; i++) {
+                        const dependency = descriptors[i]._dependency;
+                        if (dependency?._key !== sourceProperty) {
+                            continue;
+                        }
+                        hasDirectForeignSource = dependency._handler === sourceHandler;
+                        hasStableForeignSource =
+                            hasDirectForeignSource || dependency._handler.$target === target;
+                        if (!hasStableForeignSource && isString(sourceProperty)) {
+                            const parentPath = getForeignProxyParentPath(descriptors[i]._watchProp);
+                            hasStableForeignSource =
+                                parentPath !== undefined &&
+                                    !parentPath.includes(sourceProperty);
+                        }
+                        if (hasStableForeignSource)
+                            break;
+                    }
+                }
+            }
+            if (!hasStableForeignSource) {
+                this._bindForeignDependency(listener);
+            }
+            if (hasDirectForeignSource &&
+                listener._directLeaf &&
+                sourceHandler &&
+                sourceProperty !== undefined) {
+                const value = sourceHandler.$proxy[sourceProperty];
+                if (!isFunction(value) && !isArray(value)) {
+                    _listenerFn(value, _originalTarget);
+                    return;
+                }
+            }
             let newVal = _watchFn(_originalTarget);
             if (isUndefined(newVal) && target !== _originalTarget) {
                 newVal = _watchFn(target);
+            }
+            if (!isFunction(newVal) && !isArray(newVal)) {
+                const hasForeignDependency = listener._foreignWatchDescriptors?.some((descriptor) => descriptor._dependency);
+                if (listener._dedupeUnchanged && !hasForeignDependency) {
+                    if (listener._hasLastValue &&
+                        simpleCompare(listener._lastValue, newVal)) {
+                        return;
+                    }
+                    listener._hasLastValue = true;
+                    listener._lastValue = newVal;
+                }
+                _listenerFn(newVal, _originalTarget);
+                return;
             }
             const notify = (value) => {
                 const hasForeignDependency = listener._foreignWatchDescriptors?.some((descriptor) => descriptor._dependency);
@@ -6288,10 +5788,6 @@ class Scope {
                 newVal = listener._invokeWatchFn
                     ? listener._invokeWatchFn(_originalTarget)
                     : callFunction(newVal, undefined, _originalTarget);
-            }
-            else if (!isArray(newVal)) {
-                notify(newVal);
-                return;
             }
             else {
                 for (let i = 0, l = newVal.length; i < l; i++) {
@@ -6377,1500 +5873,6 @@ function collectChildIds(child) {
         }
     }
     return ids;
-}
-
-const WORKFLOW_COMMAND_CANCELLATION = Symbol("workflow.command.cancellation");
-class WorkflowCommandRejectionError extends Error {
-    constructor(diagnostic) {
-        super(diagnostic.message);
-        this.diagnostic = diagnostic;
-        this.name = "WorkflowCommandRejectionError";
-    }
-}
-/** @internal */
-function createWorkflowService() {
-    return createWorkflowFactory();
-}
-function defineWorkflow(config) {
-    return config.data === undefined ? { ...config, data: {} } : config;
-}
-function createWorkflowSupervisor($workflow, config) {
-    const workflows = createWorkflowSupervisorRegistry($workflow, config);
-    const persistence = resolveWorkflowSupervisorPersistence(config.persistence);
-    const exposedWorkflows = new Map();
-    const diagnostics = [];
-    let status = "idle";
-    function snapshot() {
-        const workflowSnapshots = {};
-        for (const [name, workflow] of workflows) {
-            workflowSnapshots[name] = workflow.snapshot();
-        }
-        return {
-            version: 1,
-            id: config.id,
-            status,
-            workflows: workflowSnapshots,
-            diagnostics: normalizeWorkflowSupervisorDiagnostics(diagnostics),
-            updatedAt: Date.now(),
-        };
-    }
-    function appendSupervisorDiagnostic(diagnostic) {
-        diagnostics.push(diagnostic);
-        return diagnostic;
-    }
-    function createMissingWorkflowDiagnostic(workflowName, command) {
-        const formattedWorkflow = isString(workflowName) ? workflowName : "";
-        const workflow = isString(workflowName) && workflowName ? workflowName : undefined;
-        return {
-            code: "workflowSupervisor.missingWorkflow",
-            message: formattedWorkflow
-                ? `Workflow supervisor '${config.id}' does not have workflow '${formattedWorkflow}'.`
-                : `Workflow supervisor '${config.id}' requires a workflow name.`,
-            recoverable: true,
-            workflow,
-            command,
-            detail: normalizeDiagnosticDetail({
-                supervisor: config.id,
-                workflow: workflowName,
-            }),
-        };
-    }
-    function createUnknownSnapshotWorkflowDiagnostic(workflowName) {
-        return {
-            code: "workflowSupervisor.unknownSnapshotWorkflow",
-            message: `Workflow supervisor '${config.id}' snapshot includes unknown workflow '${workflowName}'.`,
-            recoverable: true,
-            workflow: workflowName,
-            detail: normalizeDiagnosticDetail({
-                supervisor: config.id,
-                workflow: workflowName,
-            }),
-        };
-    }
-    function createPersistenceDiagnostic(code, action, error) {
-        return {
-            code,
-            message: `Workflow supervisor '${config.id}' failed to ${action} persisted snapshot: ${formatUnknownMessage(error)}`,
-            recoverable: true,
-            detail: normalizeDiagnosticDetail({
-                supervisor: config.id,
-                action,
-                error: formatUnknownMessage(error),
-            }),
-        };
-    }
-    function createRecoveryDiagnostic(workflowName, command, result) {
-        return {
-            code: "workflowSupervisor.recoveryCommandFailed",
-            message: `Workflow supervisor '${config.id}' recovery retry failed for workflow '${workflowName}' command '${command}'.`,
-            recoverable: result.diagnostics.some((diagnostic) => diagnostic.recoverable === true),
-            workflow: workflowName,
-            command,
-            detail: normalizeDiagnosticDetail({
-                supervisor: config.id,
-                workflow: workflowName,
-                command,
-                diagnostics: result.diagnostics,
-            }),
-        };
-    }
-    function findRecoverableFailedCommand(workflow) {
-        for (let index = workflow.history.length - 1; index >= 0; index -= 1) {
-            const entry = workflow.history[index];
-            if (entry.type !== "command.failed") {
-                continue;
-            }
-            if (!entry.diagnostics?.some((diagnostic) => diagnostic.recoverable === true)) {
-                continue;
-            }
-            return entry;
-        }
-        return undefined;
-    }
-    function recoverWorkflowCommand(workflow, entry) {
-        return runWorkflowCommand(workflow, entry.command, entry.input);
-    }
-    function restore(snapshotInput) {
-        const restoredSnapshot = normalizeWorkflowSupervisorSnapshot(snapshotInput);
-        if (restoredSnapshot.id !== config.id) {
-            throw new Error("$workflowSupervisor restore snapshot id must match supervisor id.");
-        }
-        const supervisorDiagnostics = [...restoredSnapshot.diagnostics];
-        for (const [name, workflowSnapshot] of Object.entries(restoredSnapshot.workflows)) {
-            const workflow = workflows.get(name);
-            if (!workflow) {
-                supervisorDiagnostics.push(createUnknownSnapshotWorkflowDiagnostic(name));
-                continue;
-            }
-            workflow.restore(workflowSnapshot);
-        }
-        status = restoredSnapshot.status;
-        replaceArray(diagnostics, supervisorDiagnostics);
-    }
-    async function persist() {
-        const supervisorSnapshot = snapshot();
-        if (!persistence) {
-            return supervisorSnapshot;
-        }
-        status = "persisting";
-        try {
-            await persistence.save(config.id, supervisorSnapshot);
-            status = "idle";
-            return supervisorSnapshot;
-        }
-        catch (error) {
-            status = "failed";
-            appendSupervisorDiagnostic(createPersistenceDiagnostic("workflowSupervisor.persistenceSaveFailed", "save", error));
-            throw error;
-        }
-    }
-    async function restorePersisted() {
-        if (!persistence) {
-            return undefined;
-        }
-        status = "recovering";
-        try {
-            const persistedSnapshot = await persistence.load(config.id);
-            if (!persistedSnapshot) {
-                status = "idle";
-                return undefined;
-            }
-            restore(persistedSnapshot);
-            status = "idle";
-            return snapshot();
-        }
-        catch (error) {
-            status = "failed";
-            appendSupervisorDiagnostic(createPersistenceDiagnostic("workflowSupervisor.persistenceLoadFailed", "load", error));
-            throw error;
-        }
-    }
-    async function persistAfterCommand(result) {
-        try {
-            await persist();
-        }
-        catch {
-            return result;
-        }
-        return result;
-    }
-    function getWorkflowOrThrow(name) {
-        const workflow = getWorkflowOrRecordDiagnostic(name);
-        if (!workflow) {
-            throw new Error(`$workflowSupervisor workflow '${name}' is not registered.`);
-        }
-        if (config.autoPersist !== true) {
-            return workflow;
-        }
-        let exposedWorkflow = exposedWorkflows.get(name);
-        if (!exposedWorkflow) {
-            exposedWorkflow = new Proxy(workflow, {
-                get(target, property, receiver) {
-                    if (property === "run") {
-                        return (command, input) => runWorkflowCommand(target, command, input).then(persistAfterCommand);
-                    }
-                    return Reflect.get(target, property, receiver);
-                },
-            });
-            exposedWorkflows.set(name, exposedWorkflow);
-        }
-        return exposedWorkflow;
-    }
-    function getWorkflowOrRecordDiagnostic(workflowName, command) {
-        if (!isString(workflowName) || !workflowName) {
-            appendSupervisorDiagnostic(createMissingWorkflowDiagnostic(workflowName, command));
-            return undefined;
-        }
-        const workflow = workflows.get(workflowName);
-        if (!workflow) {
-            appendSupervisorDiagnostic(createMissingWorkflowDiagnostic(workflowName, command));
-            return undefined;
-        }
-        return workflow;
-    }
-    async function recover() {
-        status = "recovering";
-        const restored = await restorePersisted();
-        let recovered = false;
-        let failed = false;
-        for (const [workflowName, workflow] of workflows) {
-            const entry = findRecoverableFailedCommand(workflow);
-            if (!entry)
-                continue;
-            recovered = true;
-            const result = await recoverWorkflowCommand(workflow, entry);
-            if (!result.ok) {
-                failed = true;
-                appendSupervisorDiagnostic(createRecoveryDiagnostic(workflowName, entry.command, result));
-            }
-        }
-        status = failed ? "failed" : "idle";
-        return restored || recovered ? snapshot() : undefined;
-    }
-    const supervisor = {
-        id: config.id,
-        get status() {
-            return status;
-        },
-        diagnostics,
-        ready: config.autoRecover === true
-            ? recover().catch(() => undefined)
-            : Promise.resolve(undefined),
-        workflow(name) {
-            return getWorkflowOrThrow(name);
-        },
-        cancelAll() {
-            let cancelled = 0;
-            for (const workflow of workflows.values()) {
-                cancelled += workflow.cancel();
-            }
-            return cancelled;
-        },
-        snapshot,
-        restore,
-        persist,
-        recover,
-    };
-    return supervisor;
-}
-function createWorkflowSupervisorRegistry($workflow, config) {
-    assertWorkflowSupervisorConfig(config);
-    const registry = new Map();
-    const workflowEntries = normalizeWorkflowSupervisorEntries(config.workflows);
-    if (!workflowEntries.length) {
-        throw new Error("$workflowSupervisor requires at least one workflow.");
-    }
-    for (const [name, definition] of workflowEntries) {
-        if (!isString(name) || !name) {
-            throw new Error("$workflowSupervisor workflow names must be non-empty strings.");
-        }
-        if (registry.has(name)) {
-            throw new Error(`$workflowSupervisor duplicate workflow name '${name}'.`);
-        }
-        registry.set(name, createWorkflowSupervisorWorkflow($workflow, definition));
-    }
-    return registry;
-}
-function assertWorkflowSupervisorConfig(config) {
-    if (!isObject(config)) {
-        throw new Error("$workflowSupervisor requires a config object.");
-    }
-    const id = config.id;
-    if (!isString(id) || !id) {
-        throw new Error("$workflowSupervisor requires a non-empty id.");
-    }
-    for (const option of ["autoPersist", "autoRecover"]) {
-        const value = config[option];
-        if (value !== undefined && !isBoolean(value)) {
-            throw new Error(`$workflowSupervisor ${option} must be a boolean.`);
-        }
-    }
-    const typedConfig = config;
-    if ((typedConfig.autoPersist === true || typedConfig.autoRecover === true) &&
-        typedConfig.persistence === undefined) {
-        throw new Error("$workflowSupervisor autoPersist and autoRecover require persistence.");
-    }
-}
-function normalizeWorkflowSupervisorEntries(workflows) {
-    if (isArray(workflows)) {
-        return workflows.map(normalizeWorkflowSupervisorEntry);
-    }
-    if (!isObject(workflows)) {
-        throw new Error("$workflowSupervisor requires workflows.");
-    }
-    return Object.entries(workflows);
-}
-function normalizeWorkflowSupervisorEntry(entry) {
-    if (isArray(entry)) {
-        return [entry[0], entry[1]];
-    }
-    if (isObject(entry)) {
-        const record = entry;
-        if (hasOwn(record, "workflow")) {
-            return [record.name, record.workflow];
-        }
-        if (hasOwn(record, "config")) {
-            return [record.name, record.config];
-        }
-    }
-    throw new Error("$workflowSupervisor workflow entries must be tuples or objects.");
-}
-function createWorkflowSupervisorWorkflow($workflow, definition) {
-    if (isWorkflowInstance(definition)) {
-        return definition;
-    }
-    if (!isObject(definition)) {
-        throw new Error("$workflowSupervisor workflow must be a workflow instance or config object.");
-    }
-    return $workflow(definition);
-}
-function isWorkflowInstance(value) {
-    const workflow = value;
-    return (isObject(workflow) &&
-        isString(workflow.id) &&
-        isString(workflow.state) &&
-        isObject(workflow.data) &&
-        isArray(workflow.diagnostics) &&
-        isArray(workflow.history) &&
-        isFunction(workflow.can) &&
-        isFunction(workflow.run) &&
-        isFunction(workflow.cancel) &&
-        isFunction(workflow.snapshot) &&
-        isFunction(workflow.restore));
-}
-function normalizeWorkflowSupervisorSnapshot(snapshot) {
-    assertWorkflowSupervisorSnapshot(snapshot);
-    const diagnostics = normalizeWorkflowSupervisorDiagnostics(snapshot.diagnostics);
-    return {
-        version: 1,
-        id: snapshot.id,
-        status: normalizeRestoredSupervisorStatus(snapshot.status, diagnostics),
-        workflows: snapshot.workflows,
-        diagnostics,
-        updatedAt: snapshot.updatedAt,
-    };
-}
-function normalizeRestoredSupervisorStatus(status, diagnostics) {
-    if (status === "failed") {
-        return "failed";
-    }
-    if (status === "persisting" || status === "recovering") {
-        return diagnostics.some((diagnostic) => diagnostic.recoverable === false)
-            ? "failed"
-            : "idle";
-    }
-    return status;
-}
-function assertWorkflowSupervisorSnapshot(snapshot) {
-    if (!isObject(snapshot)) {
-        throw new Error("$workflowSupervisor restore requires a snapshot object.");
-    }
-    const candidate = snapshot;
-    if (candidate.version !== 1) {
-        throw new Error("$workflowSupervisor restore requires a version 1 snapshot.");
-    }
-    if (!isString(candidate.id) || !candidate.id) {
-        throw new Error("$workflowSupervisor restore requires a non-empty id.");
-    }
-    if (!isWorkflowSupervisorStatus(candidate.status)) {
-        throw new Error("$workflowSupervisor restore requires a valid status.");
-    }
-    if (!isObject(candidate.workflows) || isArray(candidate.workflows)) {
-        throw new Error("$workflowSupervisor restore requires workflows.");
-    }
-    if (!isArray(candidate.diagnostics)) {
-        throw new Error("$workflowSupervisor restore requires diagnostics.");
-    }
-    if (!isNumber(candidate.updatedAt) || !Number.isFinite(candidate.updatedAt)) {
-        throw new Error("$workflowSupervisor restore requires updatedAt.");
-    }
-}
-function isWorkflowSupervisorStatus(value) {
-    return (value === "idle" ||
-        value === "persisting" ||
-        value === "recovering" ||
-        value === "failed");
-}
-function normalizeWorkflowSupervisorDiagnostics(supervisorDiagnostics) {
-    /* istanbul ignore next: restore validation enforces diagnostics arrays before normalization. */
-    if (!isArray(supervisorDiagnostics)) {
-        return [];
-    }
-    return supervisorDiagnostics.map((diagnostic) => {
-        if (!isObject(diagnostic)) {
-            return {
-                code: "workflowSupervisor.diagnostic",
-                message: formatUnknownMessage(diagnostic),
-                recoverable: true,
-            };
-        }
-        const candidate = diagnostic;
-        return {
-            code: isString(candidate.code)
-                ? candidate.code
-                : "workflowSupervisor.diagnostic",
-            message: isString(candidate.message)
-                ? candidate.message
-                : "Workflow supervisor diagnostic.",
-            recoverable: isBoolean(candidate.recoverable)
-                ? candidate.recoverable
-                : undefined,
-            workflow: isString(candidate.workflow) ? candidate.workflow : undefined,
-            command: isString(candidate.command) ? candidate.command : undefined,
-            detail: normalizeDiagnosticDetail(candidate.detail),
-        };
-    });
-}
-function createIndexedDbWorkflowSupervisorPersistence(config) {
-    const database = normalizeWorkflowSupervisorIndexedDbName(config.database, "database", "angular-ts-workflows");
-    const store = normalizeWorkflowSupervisorIndexedDbName(config.store, "store", "supervisorSnapshots");
-    const version = normalizeWorkflowSupervisorIndexedDbVersion(config.version);
-    const indexedDBFactory = config.indexedDB ?? globalThis.indexedDB;
-    return {
-        async load(id) {
-            const databaseHandle = await openWorkflowSupervisorIndexedDb(indexedDBFactory, database, store, version);
-            try {
-                const transaction = databaseHandle.transaction(store, "readonly");
-                const objectStore = transaction.objectStore(store);
-                const value = await workflowSupervisorIdbRequest(objectStore.get(id));
-                await workflowSupervisorIdbTransaction(transaction);
-                return value;
-            }
-            finally {
-                databaseHandle.close();
-            }
-        },
-        async save(id, snapshot) {
-            const databaseHandle = await openWorkflowSupervisorIndexedDb(indexedDBFactory, database, store, version);
-            try {
-                const transaction = databaseHandle.transaction(store, "readwrite");
-                const objectStore = transaction.objectStore(store);
-                await workflowSupervisorIdbRequest(objectStore.put(snapshot, id));
-                await workflowSupervisorIdbTransaction(transaction);
-            }
-            finally {
-                databaseHandle.close();
-            }
-        },
-    };
-}
-function resolveWorkflowSupervisorPersistence(persistence) {
-    if (persistence === undefined)
-        return undefined;
-    if (persistence === "indexeddb") {
-        return createIndexedDbWorkflowSupervisorPersistence({});
-    }
-    if (isWorkflowSupervisorPersistenceConfig(persistence)) {
-        return createIndexedDbWorkflowSupervisorPersistence(persistence);
-    }
-    if (isWorkflowSupervisorPersistence(persistence)) {
-        return persistence;
-    }
-    throw new Error("$workflowSupervisor persistence must be 'indexeddb', an IndexedDB config, or a persistence adapter.");
-}
-function isWorkflowSupervisorPersistenceConfig(value) {
-    return isObject(value) && value.type === "indexeddb";
-}
-function isWorkflowSupervisorPersistence(value) {
-    if (!isObject(value))
-        return false;
-    const candidate = value;
-    return isFunction(candidate.load) && isFunction(candidate.save);
-}
-function normalizeWorkflowSupervisorIndexedDbName(value, field, fallback) {
-    if (value === undefined) {
-        return fallback;
-    }
-    if (!isString(value) || !value) {
-        throw new Error(`$workflowSupervisor IndexedDB ${field} must be non-empty.`);
-    }
-    return value;
-}
-function normalizeWorkflowSupervisorIndexedDbVersion(value) {
-    if (value === undefined) {
-        return 1;
-    }
-    if (!isNumber(value) || !Number.isInteger(value) || value < 1) {
-        throw new Error("$workflowSupervisor IndexedDB version must be a positive integer.");
-    }
-    return value;
-}
-function openWorkflowSupervisorIndexedDb(indexedDBFactory, database, store, version) {
-    if (!indexedDBFactory) {
-        return Promise.reject(new Error("$workflowSupervisor IndexedDB persistence requires indexedDB."));
-    }
-    return new Promise((resolve, reject) => {
-        const request = indexedDBFactory.open(database, version);
-        request.onupgradeneeded = () => {
-            const databaseHandle = request.result;
-            if (!databaseHandle.objectStoreNames.contains(store)) {
-                databaseHandle.createObjectStore(store);
-            }
-        };
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-        request.onerror = () => {
-            reject(request.error ?? new Error("IndexedDB open failed."));
-        };
-        request.onblocked = () => {
-            reject(new Error("IndexedDB open was blocked."));
-        };
-    });
-}
-function workflowSupervisorIdbRequest(request) {
-    return new Promise((resolve, reject) => {
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-        request.onerror = () => {
-            reject(request.error ?? new Error("IndexedDB request failed."));
-        };
-    });
-}
-function workflowSupervisorIdbTransaction(transaction) {
-    return new Promise((resolve, reject) => {
-        transaction.oncomplete = () => {
-            resolve();
-        };
-        transaction.onerror = () => {
-            reject(transaction.error ?? new Error("IndexedDB transaction failed."));
-        };
-        transaction.onabort = () => {
-            reject(transaction.error ?? new Error("IndexedDB transaction aborted."));
-        };
-    });
-}
-function createWorkflowFactory() {
-    return function createWorkflow(config) {
-        if (!isObject(config)) {
-            throw new Error("$workflow requires a config object.");
-        }
-        const data = defaultWorkflowData(config.data);
-        config = {
-            ...config,
-            data,
-        };
-        assertWorkflowConfig(config);
-        const diagnostics = [];
-        const history = [];
-        const diagnosticLimit = normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
-        const historyLimit = normalizeHistoryLimit(config.historyLimit);
-        const runningCommands = new Set();
-        const commandQueues = new Map();
-        const bindings = new Map();
-        let state = config.initial;
-        let nextHistoryId = 1;
-        let queueGeneration = 0;
-        const workflowTarget = {
-            id: config.id,
-            get state() {
-                return state;
-            },
-            get data() {
-                return data;
-            },
-            diagnostics,
-            history,
-            can(command) {
-                const definition = getCommand(config, command);
-                if (!definition || !isCommandAllowedFrom(definition, state)) {
-                    return false;
-                }
-                return !((definition.concurrency ?? "reject") === "reject" &&
-                    isCommandRunning(command));
-            },
-            async run(command, input) {
-                if (!isString(command) || !command) {
-                    return failCommand(command, input, [
-                        createDiagnostic("workflow.invalidCommand", "Workflow command name must be a non-empty string.", command, true),
-                    ]);
-                }
-                const definition = getCommand(config, command);
-                if (!definition) {
-                    return failCommand(command, input, [
-                        createDiagnostic("workflow.missingCommand", `Workflow command '${command}' is not configured.`, command, true),
-                    ]);
-                }
-                const mode = definition.concurrency ?? "reject";
-                if (mode === "reject" && isCommandRunning(command)) {
-                    return failCommand(command, input, [
-                        createDiagnostic("workflow.commandRunning", `Workflow command '${command}' is already running.`, command, true),
-                    ]);
-                }
-                if (mode === "queue") {
-                    const generation = queueGeneration;
-                    const previous = commandQueues.get(command) ?? Promise.resolve();
-                    const queued = previous.then(() => {
-                        if (generation !== queueGeneration) {
-                            return {
-                                ok: false,
-                                status: "cancelled",
-                                diagnostics: [
-                                    createDiagnostic("workflow.commandCancelled", `Workflow command '${command}' was cancelled.`, command, true),
-                                ],
-                            };
-                        }
-                        return executeCommand(command, input, definition);
-                    });
-                    const tail = queued.finally(() => {
-                        if (commandQueues.get(command) === tail) {
-                            commandQueues.delete(command);
-                        }
-                    });
-                    commandQueues.set(command, tail);
-                    return queued;
-                }
-                return executeCommand(command, input, definition);
-            },
-            cancel(command) {
-                if (command !== undefined && (!isString(command) || !command)) {
-                    return 0;
-                }
-                let cancelled = 0;
-                for (const state of runningCommands) {
-                    if (command && state._command !== command) {
-                        continue;
-                    }
-                    if (cancelRun(state, createDiagnostic("workflow.commandCancelled", `Workflow command '${state._command}' was cancelled.`, state._command, true))) {
-                        cancelled += 1;
-                    }
-                }
-                return cancelled;
-            },
-            snapshot() {
-                return {
-                    version: 1,
-                    id: config.id,
-                    state,
-                    data: structuredClone(data),
-                    diagnostics: structuredClone(diagnostics),
-                    history: structuredClone(history),
-                };
-            },
-            restore(snapshot) {
-                const restoredSnapshot = normalizeWorkflowSnapshot(snapshot);
-                if (restoredSnapshot.id !== config.id) {
-                    throw new Error("$workflow restore snapshot id must match workflow id.");
-                }
-                queueGeneration += 1;
-                commandQueues.clear();
-                cancelRunningCommands();
-                state = restoredSnapshot.state;
-                replaceWorkflowData(data, restoredSnapshot.data);
-                replaceArray(diagnostics, normalizeDiagnostics(restoredSnapshot.diagnostics));
-                trimDiagnostics();
-                replaceArray(history, normalizeHistory(restoredSnapshot.history));
-                trimHistory();
-                nextHistoryId =
-                    history.reduce((max, entry) => Math.max(max, entry.id), 0) + 1;
-                scheduleWorkflowBindings();
-            },
-        };
-        Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
-            value(handler, proxy) {
-                let binding = bindings.get(handler.$id);
-                if (!binding) {
-                    binding = {
-                        _handler: handler,
-                        _proxy: proxy,
-                    };
-                    bindings.set(handler.$id, binding);
-                }
-            },
-        });
-        return workflowTarget;
-        async function executeCommand(command, input, definition) {
-            if (!isCommandAllowedFrom(definition, state)) {
-                return failCommand(command, input, [
-                    createDiagnostic("workflow.commandNotAllowed", `Workflow command '${command}' cannot run from state '${state}'.`, command, true, { command, state }),
-                ]);
-            }
-            appendHistory({
-                type: "command.started",
-                command,
-                input,
-            });
-            const runState = createRunState(command, definition.commandTimeout);
-            try {
-                applyLifecycleTarget(definition.pending, {
-                    command,
-                    input,
-                    data,
-                });
-                const cancelDiagnostic = runState._cancelDiagnostic;
-                if (cancelDiagnostic) {
-                    applyFailureLifecycle(definition, command, input, [cancelDiagnostic]);
-                    return failCommand(command, input, [cancelDiagnostic]);
-                }
-                const retries = normalizeRetryCount(definition.retry);
-                let attempt = 0;
-                let commandValue;
-                while (attempt <= retries) {
-                    try {
-                        commandValue = await executeCommandAttempt(command, input, definition, runState);
-                        break;
-                    }
-                    catch (error) {
-                        if (runState._cancelDiagnostic ||
-                            error instanceof WorkflowCommandRejectionError ||
-                            attempt >= retries) {
-                            throw error;
-                        }
-                        attempt += 1;
-                    }
-                }
-                applyLifecycleTarget(definition.success, {
-                    command,
-                    input,
-                    data,
-                    output: commandValue,
-                });
-                const result = {
-                    ok: true,
-                    status: "completed",
-                    output: commandValue,
-                    diagnostics: undefined,
-                };
-                appendHistory({
-                    type: "command.completed",
-                    command,
-                    input,
-                    output: result.output,
-                    diagnostics: result.diagnostics,
-                });
-                return result;
-            }
-            catch (error) {
-                if (runState._cancelDiagnostic) {
-                    if (runState._discardResult) {
-                        return {
-                            ok: false,
-                            status: commandStatusFromDiagnostics([
-                                runState._cancelDiagnostic,
-                            ]),
-                            diagnostics: [runState._cancelDiagnostic],
-                        };
-                    }
-                    applyFailureLifecycle(definition, command, input, [
-                        runState._cancelDiagnostic,
-                    ]);
-                    return failCommand(command, input, [
-                        runState._cancelDiagnostic,
-                    ]);
-                }
-                if (error instanceof WorkflowCommandRejectionError) {
-                    const diagnostic = error.diagnostic;
-                    applyFailureLifecycle(definition, command, input, [diagnostic]);
-                    return failCommand(command, input, [diagnostic], "rejected");
-                }
-                const commandDiagnostics = [diagnosticFromError(error, command)];
-                applyFailureLifecycle(definition, command, input, commandDiagnostics);
-                return failCommand(command, input, commandDiagnostics);
-            }
-            finally {
-                finishRunState(runState);
-            }
-        }
-        async function executeCommandAttempt(command, input, definition, runState) {
-            const commandPromise = Promise.resolve(definition.execute
-                ? invokeWorkflowCommand(definition.execute, {
-                    cleanup(callback) {
-                        if (isFunction(callback)) {
-                            runState._cleanups.push(callback);
-                        }
-                    },
-                    reject(diagnostic) {
-                        throw new WorkflowCommandRejectionError(normalizeDiagnostic(diagnostic));
-                    },
-                    data: createReadonlyWorkflowData(data),
-                    input,
-                    command,
-                    signal: runState._controller.signal,
-                })
-                : undefined);
-            const commandValue = (await Promise.race([
-                commandPromise,
-                runState._cancelPromise.then((diagnostic) => ({
-                    [WORKFLOW_COMMAND_CANCELLATION]: diagnostic,
-                })),
-            ]));
-            commandPromise.catch(() => undefined);
-            if (isObject(commandValue) &&
-                WORKFLOW_COMMAND_CANCELLATION in commandValue) {
-                throw new WorkflowCommandRejectionError(commandValue[WORKFLOW_COMMAND_CANCELLATION]);
-            }
-            return commandValue;
-        }
-        function applyLifecycleTarget(target, context) {
-            if (isString(target)) {
-                state = target;
-            }
-            else {
-                state = target.to;
-                target.update?.(context);
-            }
-            scheduleWorkflowBindings();
-        }
-        function applyFailureLifecycle(definition, command, input, commandDiagnostics) {
-            const status = commandStatusFromDiagnostics(commandDiagnostics);
-            const target = status === "timeout"
-                ? (definition.timeout ?? definition.failure)
-                : status === "cancelled"
-                    ? (definition.cancelled ?? definition.failure)
-                    : definition.failure;
-            try {
-                applyLifecycleTarget(target, {
-                    command,
-                    input,
-                    data,
-                    diagnostic: commandDiagnostics[0],
-                    diagnostics: commandDiagnostics,
-                });
-            }
-            catch (error) {
-                commandDiagnostics.push(diagnosticFromError(error, command, "workflow.lifecycleUpdateFailed"));
-            }
-        }
-        function scheduleWorkflowBindings() {
-            for (const [scopeId, binding] of bindings) {
-                if (binding._handler._destroyed) {
-                    bindings.delete(scopeId);
-                    continue;
-                }
-                binding._handler._scheduleWatchKeys([
-                    "state",
-                    "data",
-                    "diagnostics",
-                    "history",
-                ]);
-                binding._handler._checkListenersForAllKeys(workflowTarget);
-                binding._handler._checkListenersForAllKeys(data);
-                binding._handler._checkListenersForAllKeys(diagnostics);
-                binding._handler._checkListenersForAllKeys(history);
-            }
-        }
-        function appendDiagnostics(...entries) {
-            diagnostics.push(...entries);
-            trimDiagnostics();
-        }
-        function trimDiagnostics() {
-            trimArray(diagnostics, diagnosticLimit);
-        }
-        function appendHistory(entry) {
-            const historyEntry = {
-                id: nextHistoryId++,
-                type: entry.type,
-                command: entry.command,
-                input: normalizeHistoryValue(entry.input),
-                ...(hasOwn(entry, "output")
-                    ? { output: normalizeHistoryValue(entry.output) }
-                    : {}),
-                ...(entry.diagnostics
-                    ? { diagnostics: normalizeDiagnostics(entry.diagnostics) }
-                    : {}),
-            };
-            history.push(historyEntry);
-            trimHistory();
-            scheduleWorkflowBindings();
-            return historyEntry;
-        }
-        function trimHistory() {
-            trimArray(history, historyLimit);
-        }
-        function isCommandRunning(command) {
-            for (const state of runningCommands) {
-                if (state._command === command) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        function createRunState(command, commandTimeout) {
-            const controller = new AbortController();
-            let cancel;
-            const state = {
-                _cancel(diagnostic) {
-                    cancel(diagnostic);
-                },
-                _cancelPromise: new Promise((resolve) => {
-                    cancel = resolve;
-                }),
-                _cleanups: [],
-                _command: command,
-                _controller: controller,
-                _discardResult: false,
-                _done: false,
-            };
-            const timeout = normalizeTimeout(commandTimeout);
-            let timeoutId;
-            if (timeout !== undefined) {
-                timeoutId = globalThis.setTimeout(() => {
-                    cancelRun(state, createDiagnostic("workflow.commandTimeout", `Workflow command '${command}' timed out after ${String(timeout)}ms.`, command, true, {
-                        timeout,
-                    }));
-                }, timeout);
-            }
-            if (timeoutId !== undefined) {
-                state._cleanups.push(() => {
-                    globalThis.clearTimeout(timeoutId);
-                });
-            }
-            runningCommands.add(state);
-            return state;
-        }
-        function cancelRun(state, diagnostic, discardResult = false) {
-            if (state._done || state._cancelDiagnostic) {
-                return false;
-            }
-            state._discardResult = discardResult;
-            state._cancelDiagnostic = diagnostic;
-            state._cancel(diagnostic);
-            if (!state._controller.signal.aborted) {
-                state._controller.abort(diagnostic);
-            }
-            return true;
-        }
-        function finishRunState(state) {
-            state._done = true;
-            runningCommands.delete(state);
-            while (state._cleanups.length) {
-                const cleanup = state._cleanups.pop();
-                try {
-                    cleanup?.();
-                }
-                catch (error) {
-                    if (state._discardResult) {
-                        continue;
-                    }
-                    appendDiagnostics(diagnosticFromError(error, state._command, "workflow.cleanupFailed"));
-                }
-            }
-            scheduleWorkflowBindings();
-        }
-        function cancelRunningCommands(recordResult) {
-            for (const state of runningCommands) {
-                cancelRun(state, createDiagnostic("workflow.commandCancelled", `Workflow command '${state._command}' was cancelled.`, state._command, true), true);
-            }
-        }
-        function normalizeWorkflowSnapshot(snapshot) {
-            if (isObject(snapshot) &&
-                snapshot.version === 1) {
-                assertWorkflowSnapshot(snapshot);
-                return snapshot;
-            }
-            if (config.migrateSnapshot) {
-                const migrated = config.migrateSnapshot(snapshot);
-                assertWorkflowSnapshot(migrated);
-                return migrated;
-            }
-            throw new Error("$workflow restore requires a version 1 snapshot.");
-        }
-        function failCommand(command, input, commandDiagnostics, status) {
-            appendDiagnostics(...commandDiagnostics);
-            if (isString(command) && command) {
-                appendHistory({
-                    type: "command.failed",
-                    command,
-                    input,
-                    diagnostics: commandDiagnostics,
-                });
-            }
-            else {
-                scheduleWorkflowBindings();
-            }
-            return {
-                ok: false,
-                status: status ?? commandStatusFromDiagnostics(commandDiagnostics),
-                diagnostics: commandDiagnostics,
-            };
-        }
-    };
-}
-function runWorkflowCommand(workflow, command, input) {
-    const runner = workflow;
-    return runner.run(command, input);
-}
-function invokeWorkflowCommand(handler, context) {
-    return handler(context);
-}
-function createReadonlyWorkflowData(data) {
-    const proxies = new WeakMap();
-    const targets = new WeakMap();
-    return proxify(data);
-    function proxify(value) {
-        if (!isWorkflowDataProxyable(value)) {
-            return value;
-        }
-        const cached = proxies.get(value);
-        if (cached) {
-            return cached;
-        }
-        const proxy = new Proxy(value, {
-            get(target, property, receiver) {
-                if (isInstanceOf(target, Map)) {
-                    return getReadonlyWorkflowMapProperty(target, property, proxify, unproxify);
-                }
-                if (isInstanceOf(target, Set)) {
-                    return getReadonlyWorkflowSetProperty(target, property, proxify, unproxify);
-                }
-                return proxify(Reflect.get(target, property, receiver));
-            },
-            set() {
-                throwReadonlyWorkflowDataError();
-            },
-            deleteProperty() {
-                throwReadonlyWorkflowDataError();
-            },
-            defineProperty() {
-                throwReadonlyWorkflowDataError();
-            },
-            setPrototypeOf() {
-                throwReadonlyWorkflowDataError();
-            },
-        });
-        proxies.set(value, proxy);
-        targets.set(proxy, value);
-        return proxy;
-    }
-    function unproxify(value) {
-        return isObject(value) ? (targets.get(value) ?? value) : value;
-    }
-}
-function getReadonlyWorkflowMapProperty(target, property, proxify, unproxify) {
-    if (property === "size") {
-        return target.size;
-    }
-    if (property === "get") {
-        return (key) => proxify(target.get(unproxify(key)));
-    }
-    if (property === "has") {
-        return (key) => target.has(unproxify(key));
-    }
-    if (property === "keys") {
-        return () => mapReadonlyIterator(target.keys(), proxify);
-    }
-    if (property === "values") {
-        return () => mapReadonlyIterator(target.values(), proxify);
-    }
-    if (property === "entries" || property === Symbol.iterator) {
-        return () => mapReadonlyEntries(target.entries(), proxify);
-    }
-    if (property === "forEach") {
-        return (callback) => {
-            target.forEach((value, key) => {
-                callback(proxify(value), proxify(key));
-            });
-        };
-    }
-    if (property === "set" || property === "delete" || property === "clear") {
-        return throwReadonlyWorkflowDataError;
-    }
-    if (property === "constructor") {
-        return target.constructor;
-    }
-    const value = Reflect.get(target, property, target);
-    return isFunction(value) ? value.bind(target) : value;
-}
-function getReadonlyWorkflowSetProperty(target, property, proxify, unproxify) {
-    if (property === "size") {
-        return target.size;
-    }
-    if (property === "add" || property === "delete" || property === "clear") {
-        return throwReadonlyWorkflowDataError;
-    }
-    if (property === "has") {
-        return (value) => target.has(unproxify(value));
-    }
-    if (property === "keys" ||
-        property === "values" ||
-        property === Symbol.iterator) {
-        return () => mapReadonlyIterator(target.values(), proxify);
-    }
-    if (property === "entries") {
-        return () => mapReadonlyEntries(target.entries(), proxify);
-    }
-    if (property === "forEach") {
-        return (callback) => {
-            target.forEach((value) => {
-                const readonlyValue = proxify(value);
-                callback(readonlyValue, readonlyValue);
-            });
-        };
-    }
-    if (property === "constructor") {
-        return target.constructor;
-    }
-    const value = Reflect.get(target, property, target);
-    return isFunction(value) ? value.bind(target) : value;
-}
-function* mapReadonlyIterator(iterator, proxify) {
-    for (const value of iterator) {
-        yield proxify(value);
-    }
-}
-function* mapReadonlyEntries(iterator, proxify) {
-    for (const [key, value] of iterator) {
-        yield [proxify(key), proxify(value)];
-    }
-}
-function throwReadonlyWorkflowDataError() {
-    throw new TypeError("Workflow command data is readonly; mutate data in a lifecycle update.");
-}
-function isWorkflowDataProxyable(value) {
-    if (!isObject(value)) {
-        return false;
-    }
-    const prototype = Object.getPrototypeOf(value);
-    return (isArray(value) ||
-        isInstanceOf(value, Map) ||
-        isInstanceOf(value, Set) ||
-        prototype === Object.prototype ||
-        prototype === null);
-}
-function getCommand(config, command) {
-    if (!hasOwn(config.commands, command)) {
-        return undefined;
-    }
-    const definition = config.commands[command];
-    return definition;
-}
-function isCommandAllowedFrom(definition, state) {
-    return isArray(definition.from)
-        ? definition.from.includes(state)
-        : definition.from === state;
-}
-function commandStatusFromDiagnostics(diagnostics) {
-    for (const diagnostic of diagnostics) {
-        if (diagnostic.code === "workflow.commandTimeout") {
-            return "timeout";
-        }
-    }
-    for (const diagnostic of diagnostics) {
-        if (diagnostic.code === "workflow.commandCancelled") {
-            return "cancelled";
-        }
-    }
-    for (const diagnostic of diagnostics) {
-        if (diagnostic.code === "workflow.invalidCommand" ||
-            diagnostic.code === "workflow.missingCommand" ||
-            diagnostic.code === "workflow.commandNotAllowed" ||
-            diagnostic.code === "workflow.commandRunning") {
-            return "rejected";
-        }
-    }
-    return "failed";
-}
-function normalizeDiagnostics(diagnostics) {
-    if (!isArray(diagnostics)) {
-        return [];
-    }
-    return diagnostics.map((diagnostic) => isObject(diagnostic)
-        ? {
-            code: isString(diagnostic.code)
-                ? diagnostic.code
-                : "workflow.diagnostic",
-            message: isString(diagnostic.message)
-                ? diagnostic.message
-                : "Workflow diagnostic.",
-            recoverable: diagnostic.recoverable,
-            path: isString(diagnostic.path) ? diagnostic.path : undefined,
-            command: isString(diagnostic.command)
-                ? diagnostic.command
-                : undefined,
-            detail: normalizeDiagnosticDetail(diagnostic.detail),
-        }
-        : createDiagnostic("workflow.diagnostic", formatUnknownMessage(diagnostic), undefined, true));
-}
-function normalizeDiagnostic(diagnostic) {
-    return normalizeDiagnostics([diagnostic])[0];
-}
-function normalizeHistoryValue(value) {
-    return normalizeDiagnosticDetail(value);
-}
-function normalizeHistory(historyEntries) {
-    let nextFallbackId = 1;
-    const usedIds = new Set();
-    return historyEntries.map((entry) => {
-        const candidate = isObject(entry)
-            ? entry
-            : {};
-        const id = allocateHistoryId(candidate.id);
-        return {
-            id,
-            type: normalizeHistoryType(candidate.type),
-            command: isString(candidate.command) && candidate.command
-                ? candidate.command
-                : "unknown",
-            ...(hasOwn(candidate, "input")
-                ? { input: normalizeHistoryValue(candidate.input) }
-                : {}),
-            ...(hasOwn(candidate, "output")
-                ? { output: normalizeHistoryValue(candidate.output) }
-                : {}),
-            ...(hasOwn(candidate, "diagnostics")
-                ? { diagnostics: normalizeDiagnostics(candidate.diagnostics) }
-                : {}),
-        };
-    });
-    function allocateHistoryId(value) {
-        if (isNumber(value) &&
-            Number.isInteger(value) &&
-            value > 0 &&
-            !usedIds.has(value)) {
-            usedIds.add(value);
-            nextFallbackId = Math.max(nextFallbackId, value + 1);
-            return value;
-        }
-        const id = nextFallbackId;
-        usedIds.add(id);
-        nextFallbackId += 1;
-        return id;
-    }
-}
-function normalizeHistoryType(value) {
-    if (value === "command.started" ||
-        value === "command.completed" ||
-        value === "command.failed") {
-        return value;
-    }
-    return "command.failed";
-}
-function diagnosticFromError(error, command, code = "workflow.commandFailed") {
-    if (isInstanceOf(error, Error)) {
-        return createDiagnostic(code, error.message || "Workflow command failed.", command, true, {
-            name: error.name,
-        });
-    }
-    return createDiagnostic(code, formatUnknownMessage(error), command, true);
-}
-function normalizeHistoryLimit(value) {
-    return normalizeEntryLimit(value, "$workflow historyLimit", 1000);
-}
-function normalizeEntryLimit(value, label, defaultValue) {
-    if (value === undefined) {
-        return defaultValue;
-    }
-    if (!isNumber(value) || !Number.isFinite(value)) {
-        throw new Error(`${label} must be a finite number.`);
-    }
-    if (!Number.isInteger(value) || value < 0) {
-        throw new Error(`${label} must be a non-negative integer.`);
-    }
-    return value;
-}
-function trimArray(target, limit) {
-    const deleteCount = target.length - limit;
-    if (deleteCount <= 0) {
-        return [];
-    }
-    return target.splice(0, deleteCount);
-}
-function normalizeTimeout(value) {
-    if (value === undefined) {
-        return undefined;
-    }
-    if (!isNumber(value) || !Number.isFinite(value)) {
-        throw new Error("$workflow command timeout must be a finite number.");
-    }
-    if (!Number.isInteger(value) || value < 0) {
-        throw new Error("$workflow command timeout must be a non-negative integer.");
-    }
-    return value;
-}
-function normalizeRetryCount(value) {
-    return normalizeEntryLimit(value, "$workflow command retry", 0);
-}
-function createDiagnostic(code, message, command, recoverable, detail) {
-    return {
-        code,
-        message,
-        recoverable,
-        command,
-        detail: normalizeDiagnosticDetail(detail),
-    };
-}
-function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
-    if (value === undefined || value === null) {
-        return value;
-    }
-    const valueType = typeof value;
-    if (valueType === "string" ||
-        valueType === "number" ||
-        valueType === "boolean") {
-        return value;
-    }
-    if (valueType === "bigint") {
-        return value.toString();
-    }
-    if (valueType === "symbol") {
-        return formatSymbol(value);
-    }
-    if (valueType === "function") {
-        return "[Function]";
-    }
-    const objectValue = value;
-    if (seen.has(objectValue)) {
-        return "[Circular]";
-    }
-    seen.add(objectValue);
-    if (isInstanceOf(value, Date)) {
-        seen.delete(objectValue);
-        return value.toISOString();
-    }
-    if (isArray(value)) {
-        const normalized = value.map((item) => normalizeDiagnosticDetail(item, seen));
-        seen.delete(objectValue);
-        return normalized;
-    }
-    if (isInstanceOf(value, Map)) {
-        const normalized = Array.from(value.entries()).map(([key, entryValue]) => [
-            normalizeDiagnosticDetail(key, seen),
-            normalizeDiagnosticDetail(entryValue, seen),
-        ]);
-        seen.delete(objectValue);
-        return normalized;
-    }
-    if (isInstanceOf(value, Set)) {
-        const normalized = Array.from(value.values()).map((item) => normalizeDiagnosticDetail(item, seen));
-        seen.delete(objectValue);
-        return normalized;
-    }
-    const normalized = {};
-    for (const key of Object.keys(value)) {
-        normalized[key] = normalizeDiagnosticDetail(value[key], seen);
-    }
-    seen.delete(objectValue);
-    return normalized;
-}
-function formatUnknownMessage(value) {
-    if (isInstanceOf(value, Error)) {
-        return value.message || value.name;
-    }
-    if (isString(value)) {
-        return value;
-    }
-    const valueType = typeof value;
-    if (valueType === "number" || valueType === "boolean") {
-        return String(value);
-    }
-    if (valueType === "bigint") {
-        return value.toString();
-    }
-    if (valueType === "symbol") {
-        return formatSymbol(value);
-    }
-    if (valueType === "function") {
-        return "[Function]";
-    }
-    return "Workflow diagnostic.";
-}
-function formatSymbol(value) {
-    return value.description ? `Symbol(${value.description})` : "Symbol()";
-}
-function replaceArray(target, source) {
-    target.splice(0, target.length, ...structuredClone(source));
-}
-function replaceWorkflowData(target, source) {
-    const restored = structuredClone(source);
-    if (isArray(target) && isArray(restored)) {
-        target.splice(0, target.length, ...restored);
-        return;
-    }
-    if (isInstanceOf(target, Map) && isInstanceOf(restored, Map)) {
-        target.clear();
-        for (const [key, value] of restored) {
-            target.set(key, value);
-        }
-        return;
-    }
-    if (isInstanceOf(target, Set) && isInstanceOf(restored, Set)) {
-        target.clear();
-        for (const value of restored) {
-            target.add(value);
-        }
-        return;
-    }
-    for (const key of Reflect.ownKeys(target)) {
-        Reflect.deleteProperty(target, key);
-    }
-    Object.assign(target, restored);
-}
-function defaultWorkflowData(data) {
-    if (data === undefined) {
-        return {};
-    }
-    return data;
-}
-function assertWorkflowConfig(config) {
-    if (!isString(config.id) || !config.id) {
-        throw new Error("$workflow requires a non-empty id.");
-    }
-    if (!isString(config.initial) || !config.initial) {
-        throw new Error("$workflow requires a non-empty initial state.");
-    }
-    if (!isObject(config.data)) {
-        throw new Error("$workflow requires a data object.");
-    }
-    if (!isObject(config.commands) || isArray(config.commands)) {
-        throw new Error("$workflow commands must be an object.");
-    }
-    for (const [command, value] of Object.entries(config.commands)) {
-        if (!command) {
-            throw new Error("$workflow command names must be non-empty strings.");
-        }
-        assertWorkflowCommandDefinition(command, value);
-    }
-    normalizeHistoryLimit(config.historyLimit);
-    normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
-    if (config.migrateSnapshot !== undefined &&
-        !isFunction(config.migrateSnapshot)) {
-        throw new Error("$workflow migrateSnapshot must be a function.");
-    }
-}
-function assertWorkflowCommandDefinition(command, value) {
-    if (!isObject(value) || isArray(value)) {
-        throw new Error(`$workflow command '${command}' must be a lifecycle definition.`);
-    }
-    const definition = value;
-    if (!(isString(definition.from) && definition.from.length > 0) &&
-        !(isArray(definition.from) &&
-            definition.from.length > 0 &&
-            definition.from.every((state) => isString(state) && state.length > 0))) {
-        throw new Error(`$workflow command '${command}' requires a non-empty from state.`);
-    }
-    assertWorkflowLifecycleTarget(command, "pending", definition.pending);
-    assertWorkflowLifecycleTarget(command, "success", definition.success);
-    assertWorkflowLifecycleTarget(command, "failure", definition.failure);
-    if (definition.cancelled !== undefined) {
-        assertWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
-    }
-    if (definition.timeout !== undefined) {
-        assertWorkflowLifecycleTarget(command, "timeout", definition.timeout);
-    }
-    if (definition.execute !== undefined && !isFunction(definition.execute)) {
-        throw new Error(`$workflow command '${command}' execute must be a function.`);
-    }
-    const concurrency = value.concurrency;
-    if (concurrency !== undefined &&
-        concurrency !== "parallel" &&
-        concurrency !== "reject" &&
-        concurrency !== "queue") {
-        throw new Error(`$workflow command '${command}' concurrency must be 'parallel', 'reject', or 'queue'.`);
-    }
-    normalizeTimeout(definition.commandTimeout);
-    normalizeRetryCount(definition.retry);
-}
-function assertWorkflowLifecycleTarget(command, lifecycle, value) {
-    if (isString(value) && value) {
-        return;
-    }
-    const target = value;
-    if (isObject(value) &&
-        isString(target.to) &&
-        target.to.length > 0 &&
-        (target.update === undefined || isFunction(target.update))) {
-        return;
-    }
-    throw new Error(`$workflow command '${command}' ${lifecycle} must target a non-empty state.`);
-}
-function assertWorkflowSnapshot(snapshot) {
-    const candidate = snapshot;
-    if (!isString(candidate.id) || !candidate.id) {
-        throw new Error("$workflow restore requires a non-empty id.");
-    }
-    if (!isString(candidate.state) || !candidate.state) {
-        throw new Error("$workflow restore requires a non-empty state.");
-    }
-    if (!isObject(candidate.data)) {
-        throw new Error("$workflow restore requires a data object.");
-    }
-    if (!isArray(candidate.diagnostics)) {
-        throw new Error("$workflow restore requires diagnostics.");
-    }
-    if (!isArray(candidate.history)) {
-        throw new Error("$workflow restore requires history.");
-    }
 }
 
 const SCE_CONTEXTS = {
@@ -8146,6 +6148,23 @@ function mergeAfterRenderEntry(queue, entry) {
     });
 }
 
+function addScopeEventListener(scope, target, type, listener, options) {
+    if (options === undefined) {
+        target.addEventListener(type, listener);
+    }
+    else {
+        target.addEventListener(type, listener, options);
+    }
+    scope.$on("$destroy", () => {
+        if (options === undefined) {
+            target.removeEventListener(type, listener);
+        }
+        else {
+            target.removeEventListener(type, listener, options);
+        }
+    });
+}
+
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
  * AngularTS expressions and are compiled and executed within the current scope.
@@ -8227,20 +6246,7 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
                         scheduleEventAfterRender(scope, element);
                     }
                 };
-                if (eventBehavior._listenerOptions) {
-                    element.addEventListener(eventName, handler, eventBehavior._listenerOptions);
-                }
-                else {
-                    element.addEventListener(eventName, handler);
-                }
-                scope.$on("$destroy", () => {
-                    if (eventBehavior._listenerOptions) {
-                        element.removeEventListener(eventName, handler, eventBehavior._listenerOptions);
-                    }
-                    else {
-                        element.removeEventListener(eventName, handler);
-                    }
-                });
+                addScopeEventListener(scope, element, eventName, handler, eventBehavior._listenerOptions);
             };
         },
     };
@@ -8301,10 +6307,7 @@ function createWindowEventDirective($parse, $exceptionHandler, target, directive
                         scheduleEventAfterRender(scope, element);
                     }
                 };
-                target.addEventListener(eventName, handler);
-                scope.$on("$destroy", () => {
-                    target.removeEventListener(eventName, handler);
-                });
+                addScopeEventListener(scope, target, eventName, handler);
             };
         },
     };
@@ -8452,7 +6455,6 @@ function addCompiledFragmentChild(parent, child) {
     }
     ensureFragmentArray(parent, "childFragments").push(child);
     compiledFragmentParents.set(child, parent);
-    disposeCompiledFragmentScopeLifecycle(child);
 }
 function addCompiledFragmentAsyncWork(record, work) {
     if (record.disposed) {
@@ -11011,8 +9013,21 @@ class CompileRegistry {
                         const controller = assertDefined(elementControllers[name]);
                         const bindings = assertDefined(controllerDirective._bindings)
                             ._bindToController;
-                        const controllerInstance = controller();
-                        controller._instance = controllerScope.$new(controllerInstance);
+                        const reactiveControllerInstance = controllerScope.$newIsolate(controller._instance);
+                        const controllerInstance = controller(reactiveControllerInstance);
+                        if (controllerInstance === reactiveControllerInstance) {
+                            controller._instance = reactiveControllerInstance;
+                        }
+                        else {
+                            reactiveControllerInstance.$destroy?.();
+                            controller._instance = controllerScope.$newIsolate(controllerInstance);
+                        }
+                        const controllerIdentifier = controllerDirective.controllerAs ??
+                            controllerInstance.$controllerIdentifier;
+                        if (isString(controllerIdentifier)) {
+                            controller._scope[controllerIdentifier] =
+                                controller._instance;
+                        }
                         setCacheData(elementNode, `$${controllerDirective.name}Controller`, controller._instance);
                         controller._bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller._instance, bindings, controllerDirective, elementNode);
                     }
@@ -11717,6 +9732,7 @@ class CompileRegistry {
                             controller = readNormalizedElementAttribute(node, directive.name);
                         }
                         const controllerInstance = $controller(assertDefined(controller), locals, true, directive.controllerAs);
+                        controllerInstance._scope = locals.$scope;
                         // For directives with element transclusion the element is a comment.
                         // In this case .data will not attach any data.
                         // Instead, we save the controllers for the element in a local hash and attach to .data
@@ -13295,7 +11311,7 @@ function createInterpolateService(state, $parse, security) {
                             if (watchable) {
                                 callFunction(watchable.$watch, watchable, watchProp, () => {
                                     cb(compute(context));
-                                });
+                                }, false, true);
                             }
                         }
                         return compute(context);
@@ -13338,7 +11354,7 @@ function createInterpolateService(state, $parse, security) {
                                         watchedValues[j] = parseFns[j](context);
                                     }
                                     cb(compute(watchedValues));
-                                });
+                                }, false, true);
                             }
                         }
                         values[i] = parseFns[i](context);
@@ -13396,13 +11412,13 @@ function createInterpolateRegistration(state, security) {
  * ```js
  * angular
  *   .module('app')
- *   .factory('$exceptionHandler', function(myLogger) {
+ *   .factory('$exceptionHandler', ['myLogger', function(myLogger) {
  *     return function handleError(error) {
  *       myLogger.capture(error);
  *       // Rethrow to preserve fail-fast behavior:
  *       throw error;
  *     };
- *   });
+ *   }]);
  * ```
  *
  * IMPORTANT: custom implementation should always rethrow the error as the framework assumes that `$exceptionHandler` always does the throwing.
@@ -13541,7 +11557,7 @@ function createPlatformRuntime(dependencies) {
 function createCoreRuntime(dependencies) {
     const ownsAppContext = !dependencies.appContext;
     const appContext = dependencies.appContext ?? new AppContext();
-    const animationRegistry = new AnimationRegistry();
+    let animationRegistry;
     const compileLifecycle = new CompileLifecycle();
     const compileRegistry = new CompileRegistry(compileLifecycle);
     const controllerRegistry = new ControllerRegistry();
@@ -13559,11 +11575,9 @@ function createCoreRuntime(dependencies) {
             disposers[index]();
         }
         disposers.length = 0;
-    };
-    const removeAppContextDestroyHook = appContext.onDestroy(finishDestroy);
-    disposers.push(() => {
         platform.destroy();
-        animationRegistry.destroy();
+        animationRegistry?.destroy();
+        animationRegistry = undefined;
         controllerRegistry.destroy();
         destroyExceptionHandlerRuntimeState(exceptionHandlerState);
         filterRegistry.destroy();
@@ -13571,9 +11585,12 @@ function createCoreRuntime(dependencies) {
         configRegistry.clear();
         compileRegistry.destroy();
         compileLifecycle.destroy();
-    });
+    };
+    const removeAppContextDestroyHook = appContext.onDestroy(finishDestroy);
     return {
-        animationRegistry,
+        get animationRegistry() {
+            return animationRegistry;
+        },
         appContext,
         compileLifecycle,
         compileRegistry,
@@ -13585,6 +11602,17 @@ function createCoreRuntime(dependencies) {
         platform,
         get destroyed() {
             return destroyed;
+        },
+        _installAnimationRegistry(registry) {
+            if (destroyed) {
+                registry.destroy();
+                throw new Error("Cannot install animation support on a destroyed runtime.");
+            }
+            if (animationRegistry && animationRegistry !== registry) {
+                registry.destroy();
+                throw new Error("Animation support is already installed.");
+            }
+            animationRegistry = registry;
         },
         addDisposer(disposer) {
             if (destroyed) {
@@ -13809,7 +11837,7 @@ class NgModule {
         this._invokeQueue = [];
         this._configBlocks = [];
         this._runBlocks = [];
-        this._animationRegistry = animationRegistry ?? new AnimationRegistry();
+        this._animationRegistry = animationRegistry;
         this._controllerRegistry = controllerRegistry ?? new ControllerRegistry();
         this._filterRegistry = filterRegistry ?? new FilterRegistry();
         this._compileRegistry =
@@ -14143,8 +12171,12 @@ class NgModule {
     animation(name, animationFactory) {
         validate(isString, name, "name");
         validateRequired(animationFactory, "animationFactory");
+        const animationRegistry = this._animationRegistry;
+        if (!animationRegistry) {
+            throw new Error("Animation support is not installed. Include animationModule in this runtime.");
+        }
         this._invokeQueue.push([
-            this._animationRegistry,
+            animationRegistry,
             "register",
             [name, animationFactory],
         ]);
@@ -14293,11 +12325,11 @@ class NgModule {
         validate(isString, name, "name");
         validate(isDynamicConfig.bind(null, config, isObject), config, "config");
         this._invokeQueue.push(registerFactory(name, [
-            _workflow,
+            _workflowSupervisor,
             _injector,
-            ($workflow, $injector) => {
+            ($workflowSupervisor, $injector) => {
                 const resolvedConfig = resolveDynamicConfig(config, $injector);
-                return createWorkflowSupervisor($workflow, cloneWorkflowSupervisorModuleConfig({
+                return $workflowSupervisor(cloneWorkflowSupervisorModuleConfig({
                     ...resolvedConfig,
                     id: resolvedConfig.id ?? name,
                 }));
@@ -14313,7 +12345,11 @@ class NgModule {
                 "configure",
                 [
                     routerConfigKey,
-                    { type: "state", definition: state },
+                    {
+                        type: "state",
+                        definition: state.definition,
+                        source: state.source,
+                    },
                 ],
             ]);
         }
@@ -14573,10 +12609,10 @@ function appendRouterModuleDeclaration(declaration, parentName, states) {
     const flattened = canUseSource
         ? declaration
         : { ...stateDeclaration, name };
-    if (!canUseSource) {
-        setStateDeclarationSource(flattened, declaration);
-    }
-    states.push(flattened);
+    states.push({
+        definition: flattened,
+        source: canUseSource ? undefined : declaration,
+    });
     if (children === undefined) {
         return;
     }
@@ -14630,7 +12666,7 @@ class AngularRuntime extends EventTarget {
         this._bootsrappedModules = [];
         this._injectorCreated = false;
         /** AngularTS version string replaced at build time. */
-        this.version = "0.31.0";
+        this.version = "0.32.0";
         /** Retrieve the controller instance cached on a compiled DOM element. */
         this.getController = getController;
         /** Retrieve the injector cached on a bootstrapped DOM element. */
@@ -14784,9 +12820,9 @@ class AngularRuntime extends EventTarget {
      * <script src="angular.js"></script>
      * <script>
      *   let app = angular.module('demo', [])
-     *   .controller('WelcomeController', function($scope) {
+     *   .controller('WelcomeController', ['$scope', function($scope) {
      *       $scope.greeting = 'Welcome!';
-     *   });
+     *   }]);
      *   angular.bootstrap(document, ['demo']);
      * </script>
      * </body>
@@ -14967,6 +13003,461 @@ function normalizeRuntimeOptions(options) {
  */
 function isInvocationDetail(value) {
     return isObject(value) && isString(value.expr);
+}
+
+const $animateError = createErrorFactory("$animate");
+class AnimationHandle {
+    constructor(result, controller = new AbortController(), cleanup) {
+        this._doneCallbacks = [];
+        this._settled = false;
+        this._status = true;
+        this.controller = controller;
+        this._cleanup = cleanup;
+        const results = Array.isArray(result) ? result : [result];
+        this._animations = results.filter((item) => !!item && "finished" in item);
+        const promises = results.map(async (item) => {
+            if (!item)
+                return Promise.resolve();
+            if ("finished" in item)
+                return item.finished.then(() => undefined);
+            return item;
+        });
+        this.finished = Promise.allSettled(promises).then((settled) => {
+            const rejected = settled.some((item) => item.status === "rejected");
+            this.complete(!rejected);
+            return undefined;
+        });
+        controller.signal.addEventListener("abort", () => {
+            this.cancel();
+        }, { once: true });
+    }
+    then(onfulfilled, onrejected) {
+        return this.finished.then(onfulfilled, onrejected);
+    }
+    async catch(onrejected) {
+        return this.finished.catch(onrejected);
+    }
+    async finally(onfinally) {
+        return this.finished.finally(onfinally);
+    }
+    done(callback) {
+        if (this._settled) {
+            callback(this._status);
+            return;
+        }
+        this._doneCallbacks.push(callback);
+    }
+    cancel() {
+        this._status = false;
+        this._animations.forEach((animation) => {
+            animation.cancel();
+        });
+        this.controller.abort();
+        this.complete(false);
+    }
+    finish() {
+        this._animations.forEach((animation) => {
+            animation.finish();
+        });
+        this.complete(true);
+    }
+    pause() {
+        this._animations.forEach((animation) => {
+            animation.pause();
+        });
+    }
+    play() {
+        this._animations.forEach((animation) => {
+            animation.play();
+        });
+    }
+    complete(status = true) {
+        if (this._settled)
+            return;
+        this._settled = true;
+        this._status = status;
+        this._cleanup?.(status);
+        const callbacks = this._doneCallbacks;
+        this._doneCallbacks = [];
+        callbacks.forEach((callback) => {
+            callback(status);
+        });
+    }
+}
+const DEFAULT_DURATION = 150;
+const CSS_ANIMATION_PROPERTIES = {
+    enter: "--ng-enter-animation",
+    leave: "--ng-leave-animation",
+    move: "--ng-move-animation",
+    addClass: "--ng-add-class-animation",
+    removeClass: "--ng-remove-class-animation",
+    setClass: "--ng-set-class-animation",
+    animate: "--ng-style-animation",
+};
+const CSS_BUILT_IN_PRESETS = new Set([
+    "fade",
+    "fade-slide",
+    "scale",
+    "slide-start",
+    "slide-end",
+    "collapse",
+    "expand",
+]);
+/** @internal */
+class AnimationRegistry {
+    constructor() {
+        this._registrations = new Map();
+        this._destroyed = false;
+    }
+    register(name, preset) {
+        this.assertActive();
+        if (!name || !isString(name)) {
+            throw $animateError("noname", "Animation name must be a string.");
+        }
+        const normalizedName = normalizeAnimationName(name);
+        this._registrations.set(normalizedName, preset);
+    }
+    get(name) {
+        this.assertActive();
+        return this._registrations.get(name);
+    }
+    has(name) {
+        this.assertActive();
+        return this._registrations.has(name);
+    }
+    destroy() {
+        if (this._destroyed)
+            return;
+        this._destroyed = true;
+        this._registrations.clear();
+    }
+    assertActive() {
+        if (this._destroyed) {
+            throw new Error("Animation registry has already been disposed.");
+        }
+    }
+}
+/** @internal */
+function createAnimateService(registry, $injector) {
+    const resolvedPresets = new Map();
+    const activeHandles = new WeakMap();
+    const resolvePreset = (element, options) => {
+        const name = animationNameFor(element, options);
+        if (!name)
+            return undefined;
+        const registration = registry.get(name);
+        if (!registration)
+            return undefined;
+        const resolved = resolvedPresets.get(name);
+        if (resolved?.registration === registration) {
+            return resolved.preset;
+        }
+        const preset = isFunction(registration) || Array.isArray(registration)
+            ? $injector.invoke(registration)
+            : registration;
+        resolvedPresets.set(name, { registration, preset });
+        return preset;
+    };
+    const run = (phase, element, options = {}, contextOverrides = {}, cleanup) => {
+        const controller = new AbortController();
+        activeHandles.get(element)?.cancel();
+        activeHandles.delete(element);
+        const context = {
+            phase,
+            signal: controller.signal,
+            ...contextOverrides,
+        };
+        const tempClasses = splitOptionClasses(options.tempClasses);
+        const elementClassList = element.classList;
+        if (tempClasses.length) {
+            elementClassList.add(...tempClasses);
+        }
+        const animationName = animationNameFor(element, options);
+        const cssPresetClass = animationName && !registry.has(animationName)
+            ? cssPresetClassFor(animationName)
+            : undefined;
+        const finishCleanup = (ok) => {
+            if (tempClasses.length) {
+                elementClassList.remove(...tempClasses);
+            }
+            if (cssPresetClass) {
+                elementClassList.remove(cssPresetClass);
+            }
+            if (ok) {
+                options.onDone?.(element, context);
+            }
+            else {
+                options.onCancel?.(element, context);
+            }
+            cleanup?.(ok);
+        };
+        if (shouldSkipAnimation(element, options)) {
+            finishCleanup(true);
+            return new AnimationHandle(undefined, controller);
+        }
+        options.onStart?.(element, context);
+        if (cssPresetClass) {
+            elementClassList.add(cssPresetClass);
+        }
+        const resolvedPreset = resolvePreset(element, options);
+        const preset = resolvedPreset;
+        const handler = preset?.[phase];
+        let result;
+        let animationCleanup;
+        const cssPresetCleanup = animationName
+            ? prepareCssPreset(element, animationName, phase)
+            : undefined;
+        if (isFunction(handler)) {
+            result = handler(element, context, options);
+        }
+        else {
+            const optionKeyframes = keyframesForPhase(phase, options);
+            const keyframes = optionKeyframes ?? handler;
+            const cssAnimation = keyframes
+                ? undefined
+                : cssAnimationForPhase(element, phase);
+            if (keyframes) {
+                result = element.animate(keyframes, animationOptionsFor(preset, options));
+            }
+            else if (cssAnimation) {
+                const cssResult = runCssAnimation(element, cssAnimation);
+                if (animationName && isAutoHeightPreset(animationName)) {
+                    applyCssAnimationTiming(cssResult.animations, options);
+                }
+                result = cssResult.animations;
+                animationCleanup = cssResult.cleanup;
+            }
+            else {
+                const styleKeyframes = keyframesFromStyles(context.from, context.to);
+                result = styleKeyframes
+                    ? element.animate(styleKeyframes, animationOptionsFor(preset, options))
+                    : undefined;
+            }
+        }
+        const handle = new AnimationHandle(result, controller, (ok) => {
+            animationCleanup?.();
+            cssPresetCleanup?.();
+            finishCleanup(ok);
+        });
+        activeHandles.set(element, handle);
+        handle.done(() => {
+            if (activeHandles.get(element) === handle) {
+                activeHandles.delete(element);
+            }
+        });
+        return handle;
+    };
+    return {
+        cancel(handle) {
+            handle?.cancel();
+        },
+        define: (name, preset) => {
+            registry.register(name, preset);
+        },
+        enter: (element, parent, after, options) => {
+            domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+            return run("enter", element, options);
+        },
+        move: (element, parent, after, options) => {
+            domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+            return run("move", element, options);
+        },
+        leave: (element, options) => run("leave", element, options, {}, (ok) => {
+            if (ok)
+                removeElement(element);
+        }),
+        addClass: (element, className, options) => {
+            const nextOptions = { ...options, addClass: className };
+            element.classList.add(...splitClasses(className));
+            return run("addClass", element, nextOptions, {
+                className,
+                addClass: className,
+            });
+        },
+        removeClass: (element, className, options) => {
+            const nextOptions = { ...options, removeClass: className };
+            element.classList.remove(...splitClasses(className));
+            return run("removeClass", element, nextOptions, {
+                className,
+                removeClass: className,
+            });
+        },
+        setClass: (element, add, remove, options) => {
+            const nextOptions = {
+                ...options,
+                addClass: add,
+                removeClass: remove,
+            };
+            element.classList.add(...splitClasses(add));
+            element.classList.remove(...splitClasses(remove));
+            return run("setClass", element, nextOptions, {
+                addClass: add,
+                removeClass: remove,
+            });
+        },
+        animate: (element, from, to, className, options) => {
+            const toStyles = to ?? {};
+            if (className)
+                element.classList.add(...splitClasses(className));
+            assign(element.style, from);
+            return run("animate", element, { ...options, from, to: toStyles }, { from, to: toStyles, className }, () => {
+                assign(element.style, toStyles);
+            });
+        },
+        async transition(update) {
+            const startViewTransition = Reflect.get(document, "startViewTransition");
+            if (!isFunction(startViewTransition)) {
+                await update();
+                return;
+            }
+            await startViewTransition.call(document, update).finished;
+        },
+    };
+}
+function splitClasses(className) {
+    return className.trim().split(/\s+/).filter(Boolean);
+}
+function splitOptionClasses(className) {
+    if (!className)
+        return [];
+    return Array.isArray(className)
+        ? className.flatMap(splitClasses)
+        : splitClasses(className);
+}
+function normalizeAnimationName(name) {
+    return name.startsWith(".") ? name.slice(1) : name;
+}
+function cssPresetClassFor(name) {
+    return CSS_BUILT_IN_PRESETS.has(name)
+        ? `ng-animate-preset-${name}`
+        : undefined;
+}
+function prepareCssPreset(element, name, phase) {
+    if (!isAutoHeightPreset(name) ||
+        (phase !== "enter" && phase !== "leave") ||
+        !(element instanceof HTMLElement)) {
+        return undefined;
+    }
+    const property = "--ng-animate-auto-height";
+    const previousHeight = element.style.getPropertyValue(property);
+    const height = phase === "enter"
+        ? element.scrollHeight
+        : element.offsetHeight || element.scrollHeight;
+    element.style.setProperty(property, `${String(height)}px`);
+    return () => {
+        if (previousHeight) {
+            element.style.setProperty(property, previousHeight);
+        }
+        else {
+            element.style.removeProperty(property);
+        }
+    };
+}
+function isAutoHeightPreset(name) {
+    return name === "collapse" || name === "expand";
+}
+function animationNameFor(element, options) {
+    const explicit = options?.animation;
+    if (explicit)
+        return normalizeAnimationName(explicit);
+    const value = element.dataset.animate ?? element.getAttribute("animate");
+    if (!value || value === "true" || value === "")
+        return "fade";
+    if (value === "false")
+        return undefined;
+    return normalizeAnimationName(value);
+}
+function keyframesForPhase(phase, options) {
+    if (options.keyframes)
+        return options.keyframes;
+    if (phase === "enter")
+        return options.enter;
+    if (phase === "leave")
+        return options.leave;
+    if (phase === "move")
+        return options.move;
+    return undefined;
+}
+function keyframesFromStyles(from, to) {
+    if (!from && !to)
+        return undefined;
+    return [from ?? {}, to ?? {}];
+}
+function animationOptionsFor(preset, options) {
+    const defaults = preset?.options ?? {};
+    const { keyframes: _keyframes, enter, leave, move, animation, tempClasses, onStart, onDone, onCancel, ...rest } = options;
+    return {
+        duration: DEFAULT_DURATION,
+        fill: "both",
+        ...defaults,
+        ...rest,
+    };
+}
+function cssAnimationForPhase(element, phase) {
+    const styles = getComputedStyle(element);
+    const value = readCssAnimationProperty(styles, CSS_ANIMATION_PROPERTIES[phase]) ??
+        readCssAnimationProperty(styles, "--ng-animation");
+    if (!value || value === "none")
+        return undefined;
+    return value;
+}
+function readCssAnimationProperty(styles, property) {
+    const value = styles.getPropertyValue(property).trim();
+    return value || undefined;
+}
+function runCssAnimation(element, animation) {
+    const animatedElement = element;
+    const { style } = animatedElement;
+    const previousAnimation = style.animation;
+    const previousAnimations = new Set(element.getAnimations());
+    style.animation = "none";
+    if ("offsetWidth" in animatedElement) {
+        void animatedElement.offsetWidth;
+    }
+    style.animation = animation;
+    const animations = element
+        .getAnimations()
+        .filter((currentAnimation) => !previousAnimations.has(currentAnimation) &&
+        currentAnimation.playState !== "finished");
+    return {
+        animations,
+        cleanup: () => {
+            style.animation = previousAnimation;
+        },
+    };
+}
+function applyCssAnimationTiming(animations, options) {
+    const timing = {};
+    const timingKeys = [
+        "delay",
+        "direction",
+        "duration",
+        "easing",
+        "endDelay",
+        "fill",
+        "iterationStart",
+        "iterations",
+    ];
+    timingKeys.forEach((key) => {
+        const value = options[key];
+        if (value !== undefined) {
+            Object.assign(timing, { [key]: value });
+        }
+    });
+    if (Object.keys(timing).length === 0)
+        return;
+    animations.forEach((animation) => {
+        animation.effect?.updateTiming(timing);
+    });
+}
+function shouldSkipAnimation(element, options) {
+    if (!("animate" in element))
+        return true;
+    if (document.hidden)
+        return true;
+    if (options.duration === 0)
+        return true;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 /** @internal */
@@ -15459,6 +13950,1500 @@ function isPlainObject(value) {
     }
     const prototype = Reflect.getPrototypeOf(value);
     return prototype === Object.prototype || prototype === null;
+}
+
+const WORKFLOW_COMMAND_CANCELLATION = Symbol("workflow.command.cancellation");
+class WorkflowCommandRejectionError extends Error {
+    constructor(diagnostic) {
+        super(diagnostic.message);
+        this.diagnostic = diagnostic;
+        this.name = "WorkflowCommandRejectionError";
+    }
+}
+/** @internal */
+function createWorkflowService() {
+    return createWorkflowFactory();
+}
+function defineWorkflow(config) {
+    return config.data === undefined ? { ...config, data: {} } : config;
+}
+function createWorkflowSupervisor($workflow, config) {
+    const workflows = createWorkflowSupervisorRegistry($workflow, config);
+    const persistence = resolveWorkflowSupervisorPersistence(config.persistence);
+    const exposedWorkflows = new Map();
+    const diagnostics = [];
+    let status = "idle";
+    function snapshot() {
+        const workflowSnapshots = {};
+        for (const [name, workflow] of workflows) {
+            workflowSnapshots[name] = workflow.snapshot();
+        }
+        return {
+            version: 1,
+            id: config.id,
+            status,
+            workflows: workflowSnapshots,
+            diagnostics: normalizeWorkflowSupervisorDiagnostics(diagnostics),
+            updatedAt: Date.now(),
+        };
+    }
+    function appendSupervisorDiagnostic(diagnostic) {
+        diagnostics.push(diagnostic);
+        return diagnostic;
+    }
+    function createMissingWorkflowDiagnostic(workflowName, command) {
+        const formattedWorkflow = isString(workflowName) ? workflowName : "";
+        const workflow = isString(workflowName) && workflowName ? workflowName : undefined;
+        return {
+            code: "workflowSupervisor.missingWorkflow",
+            message: formattedWorkflow
+                ? `Workflow supervisor '${config.id}' does not have workflow '${formattedWorkflow}'.`
+                : `Workflow supervisor '${config.id}' requires a workflow name.`,
+            recoverable: true,
+            workflow,
+            command,
+            detail: normalizeDiagnosticDetail({
+                supervisor: config.id,
+                workflow: workflowName,
+            }),
+        };
+    }
+    function createUnknownSnapshotWorkflowDiagnostic(workflowName) {
+        return {
+            code: "workflowSupervisor.unknownSnapshotWorkflow",
+            message: `Workflow supervisor '${config.id}' snapshot includes unknown workflow '${workflowName}'.`,
+            recoverable: true,
+            workflow: workflowName,
+            detail: normalizeDiagnosticDetail({
+                supervisor: config.id,
+                workflow: workflowName,
+            }),
+        };
+    }
+    function createPersistenceDiagnostic(code, action, error) {
+        return {
+            code,
+            message: `Workflow supervisor '${config.id}' failed to ${action} persisted snapshot: ${formatUnknownMessage(error)}`,
+            recoverable: true,
+            detail: normalizeDiagnosticDetail({
+                supervisor: config.id,
+                action,
+                error: formatUnknownMessage(error),
+            }),
+        };
+    }
+    function createRecoveryDiagnostic(workflowName, command, result) {
+        return {
+            code: "workflowSupervisor.recoveryCommandFailed",
+            message: `Workflow supervisor '${config.id}' recovery retry failed for workflow '${workflowName}' command '${command}'.`,
+            recoverable: result.diagnostics.some((diagnostic) => diagnostic.recoverable === true),
+            workflow: workflowName,
+            command,
+            detail: normalizeDiagnosticDetail({
+                supervisor: config.id,
+                workflow: workflowName,
+                command,
+                diagnostics: result.diagnostics,
+            }),
+        };
+    }
+    function findRecoverableFailedCommand(workflow) {
+        for (let index = workflow.history.length - 1; index >= 0; index -= 1) {
+            const entry = workflow.history[index];
+            if (entry.type !== "command.failed") {
+                continue;
+            }
+            if (!entry.diagnostics?.some((diagnostic) => diagnostic.recoverable === true)) {
+                continue;
+            }
+            return entry;
+        }
+        return undefined;
+    }
+    function recoverWorkflowCommand(workflow, entry) {
+        return runWorkflowCommand(workflow, entry.command, entry.input);
+    }
+    function restore(snapshotInput) {
+        const restoredSnapshot = normalizeWorkflowSupervisorSnapshot(snapshotInput);
+        if (restoredSnapshot.id !== config.id) {
+            throw new Error("$workflowSupervisor restore snapshot id must match supervisor id.");
+        }
+        const supervisorDiagnostics = [...restoredSnapshot.diagnostics];
+        for (const [name, workflowSnapshot] of Object.entries(restoredSnapshot.workflows)) {
+            const workflow = workflows.get(name);
+            if (!workflow) {
+                supervisorDiagnostics.push(createUnknownSnapshotWorkflowDiagnostic(name));
+                continue;
+            }
+            workflow.restore(workflowSnapshot);
+        }
+        status = restoredSnapshot.status;
+        replaceArray(diagnostics, supervisorDiagnostics);
+    }
+    async function persist() {
+        const supervisorSnapshot = snapshot();
+        if (!persistence) {
+            return supervisorSnapshot;
+        }
+        status = "persisting";
+        try {
+            await persistence.save(config.id, supervisorSnapshot);
+            status = "idle";
+            return supervisorSnapshot;
+        }
+        catch (error) {
+            status = "failed";
+            appendSupervisorDiagnostic(createPersistenceDiagnostic("workflowSupervisor.persistenceSaveFailed", "save", error));
+            throw error;
+        }
+    }
+    async function restorePersisted() {
+        if (!persistence) {
+            return undefined;
+        }
+        status = "recovering";
+        try {
+            const persistedSnapshot = await persistence.load(config.id);
+            if (!persistedSnapshot) {
+                status = "idle";
+                return undefined;
+            }
+            restore(persistedSnapshot);
+            status = "idle";
+            return snapshot();
+        }
+        catch (error) {
+            status = "failed";
+            appendSupervisorDiagnostic(createPersistenceDiagnostic("workflowSupervisor.persistenceLoadFailed", "load", error));
+            throw error;
+        }
+    }
+    async function persistAfterCommand(result) {
+        try {
+            await persist();
+        }
+        catch {
+            return result;
+        }
+        return result;
+    }
+    function getWorkflowOrThrow(name) {
+        const workflow = getWorkflowOrRecordDiagnostic(name);
+        if (!workflow) {
+            throw new Error(`$workflowSupervisor workflow '${name}' is not registered.`);
+        }
+        if (config.autoPersist !== true) {
+            return workflow;
+        }
+        let exposedWorkflow = exposedWorkflows.get(name);
+        if (!exposedWorkflow) {
+            exposedWorkflow = new Proxy(workflow, {
+                get(target, property, receiver) {
+                    if (property === "run") {
+                        return (command, input) => runWorkflowCommand(target, command, input).then(persistAfterCommand);
+                    }
+                    return Reflect.get(target, property, receiver);
+                },
+            });
+            exposedWorkflows.set(name, exposedWorkflow);
+        }
+        return exposedWorkflow;
+    }
+    function getWorkflowOrRecordDiagnostic(workflowName, command) {
+        if (!isString(workflowName) || !workflowName) {
+            appendSupervisorDiagnostic(createMissingWorkflowDiagnostic(workflowName, command));
+            return undefined;
+        }
+        const workflow = workflows.get(workflowName);
+        if (!workflow) {
+            appendSupervisorDiagnostic(createMissingWorkflowDiagnostic(workflowName, command));
+            return undefined;
+        }
+        return workflow;
+    }
+    async function recover() {
+        status = "recovering";
+        const restored = await restorePersisted();
+        let recovered = false;
+        let failed = false;
+        for (const [workflowName, workflow] of workflows) {
+            const entry = findRecoverableFailedCommand(workflow);
+            if (!entry)
+                continue;
+            recovered = true;
+            const result = await recoverWorkflowCommand(workflow, entry);
+            if (!result.ok) {
+                failed = true;
+                appendSupervisorDiagnostic(createRecoveryDiagnostic(workflowName, entry.command, result));
+            }
+        }
+        status = failed ? "failed" : "idle";
+        return restored || recovered ? snapshot() : undefined;
+    }
+    const supervisor = {
+        id: config.id,
+        get status() {
+            return status;
+        },
+        diagnostics,
+        ready: config.autoRecover === true
+            ? recover().catch(() => undefined)
+            : Promise.resolve(undefined),
+        workflow(name) {
+            return getWorkflowOrThrow(name);
+        },
+        cancelAll() {
+            let cancelled = 0;
+            for (const workflow of workflows.values()) {
+                cancelled += workflow.cancel();
+            }
+            return cancelled;
+        },
+        snapshot,
+        restore,
+        persist,
+        recover,
+    };
+    return supervisor;
+}
+function createWorkflowSupervisorRegistry($workflow, config) {
+    assertWorkflowSupervisorConfig(config);
+    const registry = new Map();
+    const workflowEntries = normalizeWorkflowSupervisorEntries(config.workflows);
+    if (!workflowEntries.length) {
+        throw new Error("$workflowSupervisor requires at least one workflow.");
+    }
+    for (const [name, definition] of workflowEntries) {
+        if (!isString(name) || !name) {
+            throw new Error("$workflowSupervisor workflow names must be non-empty strings.");
+        }
+        if (registry.has(name)) {
+            throw new Error(`$workflowSupervisor duplicate workflow name '${name}'.`);
+        }
+        registry.set(name, createWorkflowSupervisorWorkflow($workflow, definition));
+    }
+    return registry;
+}
+function assertWorkflowSupervisorConfig(config) {
+    if (!isObject(config)) {
+        throw new Error("$workflowSupervisor requires a config object.");
+    }
+    const id = config.id;
+    if (!isString(id) || !id) {
+        throw new Error("$workflowSupervisor requires a non-empty id.");
+    }
+    for (const option of ["autoPersist", "autoRecover"]) {
+        const value = config[option];
+        if (value !== undefined && !isBoolean(value)) {
+            throw new Error(`$workflowSupervisor ${option} must be a boolean.`);
+        }
+    }
+    const typedConfig = config;
+    if ((typedConfig.autoPersist === true || typedConfig.autoRecover === true) &&
+        typedConfig.persistence === undefined) {
+        throw new Error("$workflowSupervisor autoPersist and autoRecover require persistence.");
+    }
+}
+function normalizeWorkflowSupervisorEntries(workflows) {
+    if (isArray(workflows)) {
+        return workflows.map(normalizeWorkflowSupervisorEntry);
+    }
+    if (!isObject(workflows)) {
+        throw new Error("$workflowSupervisor requires workflows.");
+    }
+    return Object.entries(workflows);
+}
+function normalizeWorkflowSupervisorEntry(entry) {
+    if (isArray(entry)) {
+        return [entry[0], entry[1]];
+    }
+    if (isObject(entry)) {
+        const record = entry;
+        if (hasOwn(record, "workflow")) {
+            return [record.name, record.workflow];
+        }
+        if (hasOwn(record, "config")) {
+            return [record.name, record.config];
+        }
+    }
+    throw new Error("$workflowSupervisor workflow entries must be tuples or objects.");
+}
+function createWorkflowSupervisorWorkflow($workflow, definition) {
+    if (isWorkflowInstance(definition)) {
+        return definition;
+    }
+    if (!isObject(definition)) {
+        throw new Error("$workflowSupervisor workflow must be a workflow instance or config object.");
+    }
+    return $workflow(definition);
+}
+function isWorkflowInstance(value) {
+    const workflow = value;
+    return (isObject(workflow) &&
+        isString(workflow.id) &&
+        isString(workflow.state) &&
+        isObject(workflow.data) &&
+        isArray(workflow.diagnostics) &&
+        isArray(workflow.history) &&
+        isFunction(workflow.can) &&
+        isFunction(workflow.run) &&
+        isFunction(workflow.cancel) &&
+        isFunction(workflow.snapshot) &&
+        isFunction(workflow.restore));
+}
+function normalizeWorkflowSupervisorSnapshot(snapshot) {
+    assertWorkflowSupervisorSnapshot(snapshot);
+    const diagnostics = normalizeWorkflowSupervisorDiagnostics(snapshot.diagnostics);
+    return {
+        version: 1,
+        id: snapshot.id,
+        status: normalizeRestoredSupervisorStatus(snapshot.status, diagnostics),
+        workflows: snapshot.workflows,
+        diagnostics,
+        updatedAt: snapshot.updatedAt,
+    };
+}
+function normalizeRestoredSupervisorStatus(status, diagnostics) {
+    if (status === "failed") {
+        return "failed";
+    }
+    if (status === "persisting" || status === "recovering") {
+        return diagnostics.some((diagnostic) => diagnostic.recoverable === false)
+            ? "failed"
+            : "idle";
+    }
+    return status;
+}
+function assertWorkflowSupervisorSnapshot(snapshot) {
+    if (!isObject(snapshot)) {
+        throw new Error("$workflowSupervisor restore requires a snapshot object.");
+    }
+    const candidate = snapshot;
+    if (candidate.version !== 1) {
+        throw new Error("$workflowSupervisor restore requires a version 1 snapshot.");
+    }
+    if (!isString(candidate.id) || !candidate.id) {
+        throw new Error("$workflowSupervisor restore requires a non-empty id.");
+    }
+    if (!isWorkflowSupervisorStatus(candidate.status)) {
+        throw new Error("$workflowSupervisor restore requires a valid status.");
+    }
+    if (!isObject(candidate.workflows) || isArray(candidate.workflows)) {
+        throw new Error("$workflowSupervisor restore requires workflows.");
+    }
+    if (!isArray(candidate.diagnostics)) {
+        throw new Error("$workflowSupervisor restore requires diagnostics.");
+    }
+    if (!isNumber(candidate.updatedAt) || !Number.isFinite(candidate.updatedAt)) {
+        throw new Error("$workflowSupervisor restore requires updatedAt.");
+    }
+}
+function isWorkflowSupervisorStatus(value) {
+    return (value === "idle" ||
+        value === "persisting" ||
+        value === "recovering" ||
+        value === "failed");
+}
+function normalizeWorkflowSupervisorDiagnostics(supervisorDiagnostics) {
+    /* istanbul ignore next: restore validation enforces diagnostics arrays before normalization. */
+    if (!isArray(supervisorDiagnostics)) {
+        return [];
+    }
+    return supervisorDiagnostics.map((diagnostic) => {
+        if (!isObject(diagnostic)) {
+            return {
+                code: "workflowSupervisor.diagnostic",
+                message: formatUnknownMessage(diagnostic),
+                recoverable: true,
+            };
+        }
+        const candidate = diagnostic;
+        return {
+            code: isString(candidate.code)
+                ? candidate.code
+                : "workflowSupervisor.diagnostic",
+            message: isString(candidate.message)
+                ? candidate.message
+                : "Workflow supervisor diagnostic.",
+            recoverable: isBoolean(candidate.recoverable)
+                ? candidate.recoverable
+                : undefined,
+            workflow: isString(candidate.workflow) ? candidate.workflow : undefined,
+            command: isString(candidate.command) ? candidate.command : undefined,
+            detail: normalizeDiagnosticDetail(candidate.detail),
+        };
+    });
+}
+function createIndexedDbWorkflowSupervisorPersistence(config) {
+    const database = normalizeWorkflowSupervisorIndexedDbName(config.database, "database", "angular-ts-workflows");
+    const store = normalizeWorkflowSupervisorIndexedDbName(config.store, "store", "supervisorSnapshots");
+    const version = normalizeWorkflowSupervisorIndexedDbVersion(config.version);
+    const indexedDBFactory = config.indexedDB ?? globalThis.indexedDB;
+    return {
+        async load(id) {
+            const databaseHandle = await openWorkflowSupervisorIndexedDb(indexedDBFactory, database, store, version);
+            try {
+                const transaction = databaseHandle.transaction(store, "readonly");
+                const objectStore = transaction.objectStore(store);
+                const value = await workflowSupervisorIdbRequest(objectStore.get(id));
+                await workflowSupervisorIdbTransaction(transaction);
+                return value;
+            }
+            finally {
+                databaseHandle.close();
+            }
+        },
+        async save(id, snapshot) {
+            const databaseHandle = await openWorkflowSupervisorIndexedDb(indexedDBFactory, database, store, version);
+            try {
+                const transaction = databaseHandle.transaction(store, "readwrite");
+                const objectStore = transaction.objectStore(store);
+                await workflowSupervisorIdbRequest(objectStore.put(snapshot, id));
+                await workflowSupervisorIdbTransaction(transaction);
+            }
+            finally {
+                databaseHandle.close();
+            }
+        },
+    };
+}
+function resolveWorkflowSupervisorPersistence(persistence) {
+    if (persistence === undefined)
+        return undefined;
+    if (persistence === "indexeddb") {
+        return createIndexedDbWorkflowSupervisorPersistence({});
+    }
+    if (isWorkflowSupervisorPersistenceConfig(persistence)) {
+        return createIndexedDbWorkflowSupervisorPersistence(persistence);
+    }
+    if (isWorkflowSupervisorPersistence(persistence)) {
+        return persistence;
+    }
+    throw new Error("$workflowSupervisor persistence must be 'indexeddb', an IndexedDB config, or a persistence adapter.");
+}
+function isWorkflowSupervisorPersistenceConfig(value) {
+    return isObject(value) && value.type === "indexeddb";
+}
+function isWorkflowSupervisorPersistence(value) {
+    if (!isObject(value))
+        return false;
+    const candidate = value;
+    return isFunction(candidate.load) && isFunction(candidate.save);
+}
+function normalizeWorkflowSupervisorIndexedDbName(value, field, fallback) {
+    if (value === undefined) {
+        return fallback;
+    }
+    if (!isString(value) || !value) {
+        throw new Error(`$workflowSupervisor IndexedDB ${field} must be non-empty.`);
+    }
+    return value;
+}
+function normalizeWorkflowSupervisorIndexedDbVersion(value) {
+    if (value === undefined) {
+        return 1;
+    }
+    if (!isNumber(value) || !Number.isInteger(value) || value < 1) {
+        throw new Error("$workflowSupervisor IndexedDB version must be a positive integer.");
+    }
+    return value;
+}
+function openWorkflowSupervisorIndexedDb(indexedDBFactory, database, store, version) {
+    if (!indexedDBFactory) {
+        return Promise.reject(new Error("$workflowSupervisor IndexedDB persistence requires indexedDB."));
+    }
+    return new Promise((resolve, reject) => {
+        const request = indexedDBFactory.open(database, version);
+        request.onupgradeneeded = () => {
+            const databaseHandle = request.result;
+            if (!databaseHandle.objectStoreNames.contains(store)) {
+                databaseHandle.createObjectStore(store);
+            }
+        };
+        request.onsuccess = () => {
+            resolve(request.result);
+        };
+        request.onerror = () => {
+            reject(request.error ?? new Error("IndexedDB open failed."));
+        };
+        request.onblocked = () => {
+            reject(new Error("IndexedDB open was blocked."));
+        };
+    });
+}
+function workflowSupervisorIdbRequest(request) {
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => {
+            resolve(request.result);
+        };
+        request.onerror = () => {
+            reject(request.error ?? new Error("IndexedDB request failed."));
+        };
+    });
+}
+function workflowSupervisorIdbTransaction(transaction) {
+    return new Promise((resolve, reject) => {
+        transaction.oncomplete = () => {
+            resolve();
+        };
+        transaction.onerror = () => {
+            reject(transaction.error ?? new Error("IndexedDB transaction failed."));
+        };
+        transaction.onabort = () => {
+            reject(transaction.error ?? new Error("IndexedDB transaction aborted."));
+        };
+    });
+}
+function createWorkflowFactory() {
+    return function createWorkflow(config) {
+        if (!isObject(config)) {
+            throw new Error("$workflow requires a config object.");
+        }
+        const data = defaultWorkflowData(config.data);
+        config = {
+            ...config,
+            data,
+        };
+        assertWorkflowConfig(config);
+        const diagnostics = [];
+        const history = [];
+        const diagnosticLimit = normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
+        const historyLimit = normalizeHistoryLimit(config.historyLimit);
+        const runningCommands = new Set();
+        const commandQueues = new Map();
+        const bindings = new Map();
+        let state = config.initial;
+        let nextHistoryId = 1;
+        let queueGeneration = 0;
+        const workflowTarget = {
+            id: config.id,
+            get state() {
+                return state;
+            },
+            get data() {
+                return data;
+            },
+            diagnostics,
+            history,
+            can(command) {
+                const definition = getCommand(config, command);
+                if (!definition || !isCommandAllowedFrom(definition, state)) {
+                    return false;
+                }
+                return !((definition.concurrency ?? "reject") === "reject" &&
+                    isCommandRunning(command));
+            },
+            async run(command, input) {
+                if (!isString(command) || !command) {
+                    return failCommand(command, input, [
+                        createDiagnostic("workflow.invalidCommand", "Workflow command name must be a non-empty string.", command, true),
+                    ]);
+                }
+                const definition = getCommand(config, command);
+                if (!definition) {
+                    return failCommand(command, input, [
+                        createDiagnostic("workflow.missingCommand", `Workflow command '${command}' is not configured.`, command, true),
+                    ]);
+                }
+                const mode = definition.concurrency ?? "reject";
+                if (mode === "reject" && isCommandRunning(command)) {
+                    return failCommand(command, input, [
+                        createDiagnostic("workflow.commandRunning", `Workflow command '${command}' is already running.`, command, true),
+                    ]);
+                }
+                if (mode === "queue") {
+                    const generation = queueGeneration;
+                    const previous = commandQueues.get(command) ?? Promise.resolve();
+                    const queued = previous.then(() => {
+                        if (generation !== queueGeneration) {
+                            return {
+                                ok: false,
+                                status: "cancelled",
+                                diagnostics: [
+                                    createDiagnostic("workflow.commandCancelled", `Workflow command '${command}' was cancelled.`, command, true),
+                                ],
+                            };
+                        }
+                        return executeCommand(command, input, definition);
+                    });
+                    const tail = queued.finally(() => {
+                        if (commandQueues.get(command) === tail) {
+                            commandQueues.delete(command);
+                        }
+                    });
+                    commandQueues.set(command, tail);
+                    return queued;
+                }
+                return executeCommand(command, input, definition);
+            },
+            cancel(command) {
+                if (command !== undefined && (!isString(command) || !command)) {
+                    return 0;
+                }
+                let cancelled = 0;
+                for (const state of runningCommands) {
+                    if (command && state._command !== command) {
+                        continue;
+                    }
+                    if (cancelRun(state, createDiagnostic("workflow.commandCancelled", `Workflow command '${state._command}' was cancelled.`, state._command, true))) {
+                        cancelled += 1;
+                    }
+                }
+                return cancelled;
+            },
+            snapshot() {
+                return {
+                    version: 1,
+                    id: config.id,
+                    state,
+                    data: structuredClone(data),
+                    diagnostics: structuredClone(diagnostics),
+                    history: structuredClone(history),
+                };
+            },
+            restore(snapshot) {
+                const restoredSnapshot = normalizeWorkflowSnapshot(snapshot);
+                if (restoredSnapshot.id !== config.id) {
+                    throw new Error("$workflow restore snapshot id must match workflow id.");
+                }
+                queueGeneration += 1;
+                commandQueues.clear();
+                cancelRunningCommands();
+                state = restoredSnapshot.state;
+                replaceWorkflowData(data, restoredSnapshot.data);
+                replaceArray(diagnostics, normalizeDiagnostics(restoredSnapshot.diagnostics));
+                trimDiagnostics();
+                replaceArray(history, normalizeHistory(restoredSnapshot.history));
+                trimHistory();
+                nextHistoryId =
+                    history.reduce((max, entry) => Math.max(max, entry.id), 0) + 1;
+                scheduleWorkflowBindings();
+            },
+        };
+        Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
+            value(handler, proxy) {
+                let binding = bindings.get(handler.$id);
+                if (!binding) {
+                    binding = {
+                        _handler: handler,
+                        _proxy: proxy,
+                    };
+                    bindings.set(handler.$id, binding);
+                }
+            },
+        });
+        return workflowTarget;
+        async function executeCommand(command, input, definition) {
+            if (!isCommandAllowedFrom(definition, state)) {
+                return failCommand(command, input, [
+                    createDiagnostic("workflow.commandNotAllowed", `Workflow command '${command}' cannot run from state '${state}'.`, command, true, { command, state }),
+                ]);
+            }
+            appendHistory({
+                type: "command.started",
+                command,
+                input,
+            });
+            const runState = createRunState(command, definition.commandTimeout);
+            try {
+                applyLifecycleTarget(definition.pending, {
+                    command,
+                    input,
+                    data,
+                });
+                const cancelDiagnostic = runState._cancelDiagnostic;
+                if (cancelDiagnostic) {
+                    applyFailureLifecycle(definition, command, input, [cancelDiagnostic]);
+                    return failCommand(command, input, [cancelDiagnostic]);
+                }
+                const retries = normalizeRetryCount(definition.retry);
+                let attempt = 0;
+                let commandValue;
+                while (attempt <= retries) {
+                    try {
+                        commandValue = await executeCommandAttempt(command, input, definition, runState);
+                        break;
+                    }
+                    catch (error) {
+                        if (runState._cancelDiagnostic ||
+                            error instanceof WorkflowCommandRejectionError ||
+                            attempt >= retries) {
+                            throw error;
+                        }
+                        attempt += 1;
+                    }
+                }
+                applyLifecycleTarget(definition.success, {
+                    command,
+                    input,
+                    data,
+                    output: commandValue,
+                });
+                const result = {
+                    ok: true,
+                    status: "completed",
+                    output: commandValue,
+                    diagnostics: undefined,
+                };
+                appendHistory({
+                    type: "command.completed",
+                    command,
+                    input,
+                    output: result.output,
+                    diagnostics: result.diagnostics,
+                });
+                return result;
+            }
+            catch (error) {
+                if (runState._cancelDiagnostic) {
+                    if (runState._discardResult) {
+                        return {
+                            ok: false,
+                            status: commandStatusFromDiagnostics([
+                                runState._cancelDiagnostic,
+                            ]),
+                            diagnostics: [runState._cancelDiagnostic],
+                        };
+                    }
+                    applyFailureLifecycle(definition, command, input, [
+                        runState._cancelDiagnostic,
+                    ]);
+                    return failCommand(command, input, [
+                        runState._cancelDiagnostic,
+                    ]);
+                }
+                if (error instanceof WorkflowCommandRejectionError) {
+                    const diagnostic = error.diagnostic;
+                    applyFailureLifecycle(definition, command, input, [diagnostic]);
+                    return failCommand(command, input, [diagnostic], "rejected");
+                }
+                const commandDiagnostics = [diagnosticFromError(error, command)];
+                applyFailureLifecycle(definition, command, input, commandDiagnostics);
+                return failCommand(command, input, commandDiagnostics);
+            }
+            finally {
+                finishRunState(runState);
+            }
+        }
+        async function executeCommandAttempt(command, input, definition, runState) {
+            const commandPromise = Promise.resolve(definition.execute
+                ? invokeWorkflowCommand(definition.execute, {
+                    cleanup(callback) {
+                        if (isFunction(callback)) {
+                            runState._cleanups.push(callback);
+                        }
+                    },
+                    reject(diagnostic) {
+                        throw new WorkflowCommandRejectionError(normalizeDiagnostic(diagnostic));
+                    },
+                    data: createReadonlyWorkflowData(data),
+                    input,
+                    command,
+                    signal: runState._controller.signal,
+                })
+                : undefined);
+            const commandValue = (await Promise.race([
+                commandPromise,
+                runState._cancelPromise.then((diagnostic) => ({
+                    [WORKFLOW_COMMAND_CANCELLATION]: diagnostic,
+                })),
+            ]));
+            commandPromise.catch(() => undefined);
+            if (isObject(commandValue) &&
+                WORKFLOW_COMMAND_CANCELLATION in commandValue) {
+                throw new WorkflowCommandRejectionError(commandValue[WORKFLOW_COMMAND_CANCELLATION]);
+            }
+            return commandValue;
+        }
+        function applyLifecycleTarget(target, context) {
+            if (isString(target)) {
+                state = target;
+            }
+            else {
+                state = target.to;
+                target.update?.(context);
+            }
+            scheduleWorkflowBindings();
+        }
+        function applyFailureLifecycle(definition, command, input, commandDiagnostics) {
+            const status = commandStatusFromDiagnostics(commandDiagnostics);
+            const target = status === "timeout"
+                ? (definition.timeout ?? definition.failure)
+                : status === "cancelled"
+                    ? (definition.cancelled ?? definition.failure)
+                    : definition.failure;
+            try {
+                applyLifecycleTarget(target, {
+                    command,
+                    input,
+                    data,
+                    diagnostic: commandDiagnostics[0],
+                    diagnostics: commandDiagnostics,
+                });
+            }
+            catch (error) {
+                commandDiagnostics.push(diagnosticFromError(error, command, "workflow.lifecycleUpdateFailed"));
+            }
+        }
+        function scheduleWorkflowBindings() {
+            for (const [scopeId, binding] of bindings) {
+                if (binding._handler._destroyed) {
+                    bindings.delete(scopeId);
+                    continue;
+                }
+                binding._handler._scheduleWatchKeys([
+                    "state",
+                    "data",
+                    "diagnostics",
+                    "history",
+                ]);
+                binding._handler._checkListenersForAllKeys(workflowTarget);
+                binding._handler._checkListenersForAllKeys(data);
+                binding._handler._checkListenersForAllKeys(diagnostics);
+                binding._handler._checkListenersForAllKeys(history);
+            }
+        }
+        function appendDiagnostics(...entries) {
+            diagnostics.push(...entries);
+            trimDiagnostics();
+        }
+        function trimDiagnostics() {
+            trimArray(diagnostics, diagnosticLimit);
+        }
+        function appendHistory(entry) {
+            const historyEntry = {
+                id: nextHistoryId++,
+                type: entry.type,
+                command: entry.command,
+                input: normalizeHistoryValue(entry.input),
+                ...(hasOwn(entry, "output")
+                    ? { output: normalizeHistoryValue(entry.output) }
+                    : {}),
+                ...(entry.diagnostics
+                    ? { diagnostics: normalizeDiagnostics(entry.diagnostics) }
+                    : {}),
+            };
+            history.push(historyEntry);
+            trimHistory();
+            scheduleWorkflowBindings();
+            return historyEntry;
+        }
+        function trimHistory() {
+            trimArray(history, historyLimit);
+        }
+        function isCommandRunning(command) {
+            for (const state of runningCommands) {
+                if (state._command === command) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        function createRunState(command, commandTimeout) {
+            const controller = new AbortController();
+            let cancel;
+            const state = {
+                _cancel(diagnostic) {
+                    cancel(diagnostic);
+                },
+                _cancelPromise: new Promise((resolve) => {
+                    cancel = resolve;
+                }),
+                _cleanups: [],
+                _command: command,
+                _controller: controller,
+                _discardResult: false,
+                _done: false,
+            };
+            const timeout = normalizeTimeout(commandTimeout);
+            let timeoutId;
+            if (timeout !== undefined) {
+                timeoutId = globalThis.setTimeout(() => {
+                    cancelRun(state, createDiagnostic("workflow.commandTimeout", `Workflow command '${command}' timed out after ${String(timeout)}ms.`, command, true, {
+                        timeout,
+                    }));
+                }, timeout);
+            }
+            if (timeoutId !== undefined) {
+                state._cleanups.push(() => {
+                    globalThis.clearTimeout(timeoutId);
+                });
+            }
+            runningCommands.add(state);
+            return state;
+        }
+        function cancelRun(state, diagnostic, discardResult = false) {
+            if (state._done || state._cancelDiagnostic) {
+                return false;
+            }
+            state._discardResult = discardResult;
+            state._cancelDiagnostic = diagnostic;
+            state._cancel(diagnostic);
+            if (!state._controller.signal.aborted) {
+                state._controller.abort(diagnostic);
+            }
+            return true;
+        }
+        function finishRunState(state) {
+            state._done = true;
+            runningCommands.delete(state);
+            while (state._cleanups.length) {
+                const cleanup = state._cleanups.pop();
+                try {
+                    cleanup?.();
+                }
+                catch (error) {
+                    if (state._discardResult) {
+                        continue;
+                    }
+                    appendDiagnostics(diagnosticFromError(error, state._command, "workflow.cleanupFailed"));
+                }
+            }
+            scheduleWorkflowBindings();
+        }
+        function cancelRunningCommands(recordResult) {
+            for (const state of runningCommands) {
+                cancelRun(state, createDiagnostic("workflow.commandCancelled", `Workflow command '${state._command}' was cancelled.`, state._command, true), true);
+            }
+        }
+        function normalizeWorkflowSnapshot(snapshot) {
+            if (isObject(snapshot) &&
+                snapshot.version === 1) {
+                assertWorkflowSnapshot(snapshot);
+                return snapshot;
+            }
+            if (config.migrateSnapshot) {
+                const migrated = config.migrateSnapshot(snapshot);
+                assertWorkflowSnapshot(migrated);
+                return migrated;
+            }
+            throw new Error("$workflow restore requires a version 1 snapshot.");
+        }
+        function failCommand(command, input, commandDiagnostics, status) {
+            appendDiagnostics(...commandDiagnostics);
+            if (isString(command) && command) {
+                appendHistory({
+                    type: "command.failed",
+                    command,
+                    input,
+                    diagnostics: commandDiagnostics,
+                });
+            }
+            else {
+                scheduleWorkflowBindings();
+            }
+            return {
+                ok: false,
+                status: status ?? commandStatusFromDiagnostics(commandDiagnostics),
+                diagnostics: commandDiagnostics,
+            };
+        }
+    };
+}
+function runWorkflowCommand(workflow, command, input) {
+    const runner = workflow;
+    return runner.run(command, input);
+}
+function invokeWorkflowCommand(handler, context) {
+    return handler(context);
+}
+function createReadonlyWorkflowData(data) {
+    const proxies = new WeakMap();
+    const targets = new WeakMap();
+    return proxify(data);
+    function proxify(value) {
+        if (!isWorkflowDataProxyable(value)) {
+            return value;
+        }
+        const cached = proxies.get(value);
+        if (cached) {
+            return cached;
+        }
+        const proxy = new Proxy(value, {
+            get(target, property, receiver) {
+                if (isInstanceOf(target, Map)) {
+                    return getReadonlyWorkflowMapProperty(target, property, proxify, unproxify);
+                }
+                if (isInstanceOf(target, Set)) {
+                    return getReadonlyWorkflowSetProperty(target, property, proxify, unproxify);
+                }
+                return proxify(Reflect.get(target, property, receiver));
+            },
+            set() {
+                throwReadonlyWorkflowDataError();
+            },
+            deleteProperty() {
+                throwReadonlyWorkflowDataError();
+            },
+            defineProperty() {
+                throwReadonlyWorkflowDataError();
+            },
+            setPrototypeOf() {
+                throwReadonlyWorkflowDataError();
+            },
+        });
+        proxies.set(value, proxy);
+        targets.set(proxy, value);
+        return proxy;
+    }
+    function unproxify(value) {
+        return isObject(value) ? (targets.get(value) ?? value) : value;
+    }
+}
+function getReadonlyWorkflowMapProperty(target, property, proxify, unproxify) {
+    if (property === "size") {
+        return target.size;
+    }
+    if (property === "get") {
+        return (key) => proxify(target.get(unproxify(key)));
+    }
+    if (property === "has") {
+        return (key) => target.has(unproxify(key));
+    }
+    if (property === "keys") {
+        return () => mapReadonlyIterator(target.keys(), proxify);
+    }
+    if (property === "values") {
+        return () => mapReadonlyIterator(target.values(), proxify);
+    }
+    if (property === "entries" || property === Symbol.iterator) {
+        return () => mapReadonlyEntries(target.entries(), proxify);
+    }
+    if (property === "forEach") {
+        return (callback) => {
+            target.forEach((value, key) => {
+                callback(proxify(value), proxify(key));
+            });
+        };
+    }
+    if (property === "set" || property === "delete" || property === "clear") {
+        return throwReadonlyWorkflowDataError;
+    }
+    if (property === "constructor") {
+        return target.constructor;
+    }
+    const value = Reflect.get(target, property, target);
+    return isFunction(value) ? value.bind(target) : value;
+}
+function getReadonlyWorkflowSetProperty(target, property, proxify, unproxify) {
+    if (property === "size") {
+        return target.size;
+    }
+    if (property === "add" || property === "delete" || property === "clear") {
+        return throwReadonlyWorkflowDataError;
+    }
+    if (property === "has") {
+        return (value) => target.has(unproxify(value));
+    }
+    if (property === "keys" ||
+        property === "values" ||
+        property === Symbol.iterator) {
+        return () => mapReadonlyIterator(target.values(), proxify);
+    }
+    if (property === "entries") {
+        return () => mapReadonlyEntries(target.entries(), proxify);
+    }
+    if (property === "forEach") {
+        return (callback) => {
+            target.forEach((value) => {
+                const readonlyValue = proxify(value);
+                callback(readonlyValue, readonlyValue);
+            });
+        };
+    }
+    if (property === "constructor") {
+        return target.constructor;
+    }
+    const value = Reflect.get(target, property, target);
+    return isFunction(value) ? value.bind(target) : value;
+}
+function* mapReadonlyIterator(iterator, proxify) {
+    for (const value of iterator) {
+        yield proxify(value);
+    }
+}
+function* mapReadonlyEntries(iterator, proxify) {
+    for (const [key, value] of iterator) {
+        yield [proxify(key), proxify(value)];
+    }
+}
+function throwReadonlyWorkflowDataError() {
+    throw new TypeError("Workflow command data is readonly; mutate data in a lifecycle update.");
+}
+function isWorkflowDataProxyable(value) {
+    if (!isObject(value)) {
+        return false;
+    }
+    const prototype = Object.getPrototypeOf(value);
+    return (isArray(value) ||
+        isInstanceOf(value, Map) ||
+        isInstanceOf(value, Set) ||
+        prototype === Object.prototype ||
+        prototype === null);
+}
+function getCommand(config, command) {
+    if (!hasOwn(config.commands, command)) {
+        return undefined;
+    }
+    const definition = config.commands[command];
+    return definition;
+}
+function isCommandAllowedFrom(definition, state) {
+    return isArray(definition.from)
+        ? definition.from.includes(state)
+        : definition.from === state;
+}
+function commandStatusFromDiagnostics(diagnostics) {
+    for (const diagnostic of diagnostics) {
+        if (diagnostic.code === "workflow.commandTimeout") {
+            return "timeout";
+        }
+    }
+    for (const diagnostic of diagnostics) {
+        if (diagnostic.code === "workflow.commandCancelled") {
+            return "cancelled";
+        }
+    }
+    for (const diagnostic of diagnostics) {
+        if (diagnostic.code === "workflow.invalidCommand" ||
+            diagnostic.code === "workflow.missingCommand" ||
+            diagnostic.code === "workflow.commandNotAllowed" ||
+            diagnostic.code === "workflow.commandRunning") {
+            return "rejected";
+        }
+    }
+    return "failed";
+}
+function normalizeDiagnostics(diagnostics) {
+    if (!isArray(diagnostics)) {
+        return [];
+    }
+    return diagnostics.map((diagnostic) => isObject(diagnostic)
+        ? {
+            code: isString(diagnostic.code)
+                ? diagnostic.code
+                : "workflow.diagnostic",
+            message: isString(diagnostic.message)
+                ? diagnostic.message
+                : "Workflow diagnostic.",
+            recoverable: diagnostic.recoverable,
+            path: isString(diagnostic.path) ? diagnostic.path : undefined,
+            command: isString(diagnostic.command)
+                ? diagnostic.command
+                : undefined,
+            detail: normalizeDiagnosticDetail(diagnostic.detail),
+        }
+        : createDiagnostic("workflow.diagnostic", formatUnknownMessage(diagnostic), undefined, true));
+}
+function normalizeDiagnostic(diagnostic) {
+    return normalizeDiagnostics([diagnostic])[0];
+}
+function normalizeHistoryValue(value) {
+    return normalizeDiagnosticDetail(value);
+}
+function normalizeHistory(historyEntries) {
+    let nextFallbackId = 1;
+    const usedIds = new Set();
+    return historyEntries.map((entry) => {
+        const candidate = isObject(entry)
+            ? entry
+            : {};
+        const id = allocateHistoryId(candidate.id);
+        return {
+            id,
+            type: normalizeHistoryType(candidate.type),
+            command: isString(candidate.command) && candidate.command
+                ? candidate.command
+                : "unknown",
+            ...(hasOwn(candidate, "input")
+                ? { input: normalizeHistoryValue(candidate.input) }
+                : {}),
+            ...(hasOwn(candidate, "output")
+                ? { output: normalizeHistoryValue(candidate.output) }
+                : {}),
+            ...(hasOwn(candidate, "diagnostics")
+                ? { diagnostics: normalizeDiagnostics(candidate.diagnostics) }
+                : {}),
+        };
+    });
+    function allocateHistoryId(value) {
+        if (isNumber(value) &&
+            Number.isInteger(value) &&
+            value > 0 &&
+            !usedIds.has(value)) {
+            usedIds.add(value);
+            nextFallbackId = Math.max(nextFallbackId, value + 1);
+            return value;
+        }
+        const id = nextFallbackId;
+        usedIds.add(id);
+        nextFallbackId += 1;
+        return id;
+    }
+}
+function normalizeHistoryType(value) {
+    if (value === "command.started" ||
+        value === "command.completed" ||
+        value === "command.failed") {
+        return value;
+    }
+    return "command.failed";
+}
+function diagnosticFromError(error, command, code = "workflow.commandFailed") {
+    if (isInstanceOf(error, Error)) {
+        return createDiagnostic(code, error.message || "Workflow command failed.", command, true, {
+            name: error.name,
+        });
+    }
+    return createDiagnostic(code, formatUnknownMessage(error), command, true);
+}
+function normalizeHistoryLimit(value) {
+    return normalizeEntryLimit(value, "$workflow historyLimit", 1000);
+}
+function normalizeEntryLimit(value, label, defaultValue) {
+    if (value === undefined) {
+        return defaultValue;
+    }
+    if (!isNumber(value) || !Number.isFinite(value)) {
+        throw new Error(`${label} must be a finite number.`);
+    }
+    if (!Number.isInteger(value) || value < 0) {
+        throw new Error(`${label} must be a non-negative integer.`);
+    }
+    return value;
+}
+function trimArray(target, limit) {
+    const deleteCount = target.length - limit;
+    if (deleteCount <= 0) {
+        return [];
+    }
+    return target.splice(0, deleteCount);
+}
+function normalizeTimeout(value) {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (!isNumber(value) || !Number.isFinite(value)) {
+        throw new Error("$workflow command timeout must be a finite number.");
+    }
+    if (!Number.isInteger(value) || value < 0) {
+        throw new Error("$workflow command timeout must be a non-negative integer.");
+    }
+    return value;
+}
+function normalizeRetryCount(value) {
+    return normalizeEntryLimit(value, "$workflow command retry", 0);
+}
+function createDiagnostic(code, message, command, recoverable, detail) {
+    return {
+        code,
+        message,
+        recoverable,
+        command,
+        detail: normalizeDiagnosticDetail(detail),
+    };
+}
+function normalizeDiagnosticDetail(value, seen = new WeakSet()) {
+    if (value === undefined || value === null) {
+        return value;
+    }
+    const valueType = typeof value;
+    if (valueType === "string" ||
+        valueType === "number" ||
+        valueType === "boolean") {
+        return value;
+    }
+    if (valueType === "bigint") {
+        return value.toString();
+    }
+    if (valueType === "symbol") {
+        return formatSymbol(value);
+    }
+    if (valueType === "function") {
+        return "[Function]";
+    }
+    const objectValue = value;
+    if (seen.has(objectValue)) {
+        return "[Circular]";
+    }
+    seen.add(objectValue);
+    if (isInstanceOf(value, Date)) {
+        seen.delete(objectValue);
+        return value.toISOString();
+    }
+    if (isArray(value)) {
+        const normalized = value.map((item) => normalizeDiagnosticDetail(item, seen));
+        seen.delete(objectValue);
+        return normalized;
+    }
+    if (isInstanceOf(value, Map)) {
+        const normalized = Array.from(value.entries()).map(([key, entryValue]) => [
+            normalizeDiagnosticDetail(key, seen),
+            normalizeDiagnosticDetail(entryValue, seen),
+        ]);
+        seen.delete(objectValue);
+        return normalized;
+    }
+    if (isInstanceOf(value, Set)) {
+        const normalized = Array.from(value.values()).map((item) => normalizeDiagnosticDetail(item, seen));
+        seen.delete(objectValue);
+        return normalized;
+    }
+    const normalized = {};
+    for (const key of Object.keys(value)) {
+        normalized[key] = normalizeDiagnosticDetail(value[key], seen);
+    }
+    seen.delete(objectValue);
+    return normalized;
+}
+function formatUnknownMessage(value) {
+    if (isInstanceOf(value, Error)) {
+        return value.message || value.name;
+    }
+    if (isString(value)) {
+        return value;
+    }
+    const valueType = typeof value;
+    if (valueType === "number" || valueType === "boolean") {
+        return String(value);
+    }
+    if (valueType === "bigint") {
+        return value.toString();
+    }
+    if (valueType === "symbol") {
+        return formatSymbol(value);
+    }
+    if (valueType === "function") {
+        return "[Function]";
+    }
+    return "Workflow diagnostic.";
+}
+function formatSymbol(value) {
+    return value.description ? `Symbol(${value.description})` : "Symbol()";
+}
+function replaceArray(target, source) {
+    target.splice(0, target.length, ...structuredClone(source));
+}
+function replaceWorkflowData(target, source) {
+    const restored = structuredClone(source);
+    if (isArray(target) && isArray(restored)) {
+        target.splice(0, target.length, ...restored);
+        return;
+    }
+    if (isInstanceOf(target, Map) && isInstanceOf(restored, Map)) {
+        target.clear();
+        for (const [key, value] of restored) {
+            target.set(key, value);
+        }
+        return;
+    }
+    if (isInstanceOf(target, Set) && isInstanceOf(restored, Set)) {
+        target.clear();
+        for (const value of restored) {
+            target.add(value);
+        }
+        return;
+    }
+    for (const key of Reflect.ownKeys(target)) {
+        Reflect.deleteProperty(target, key);
+    }
+    Object.assign(target, restored);
+}
+function defaultWorkflowData(data) {
+    if (data === undefined) {
+        return {};
+    }
+    return data;
+}
+function assertWorkflowConfig(config) {
+    if (!isString(config.id) || !config.id) {
+        throw new Error("$workflow requires a non-empty id.");
+    }
+    if (!isString(config.initial) || !config.initial) {
+        throw new Error("$workflow requires a non-empty initial state.");
+    }
+    if (!isObject(config.data)) {
+        throw new Error("$workflow requires a data object.");
+    }
+    if (!isObject(config.commands) || isArray(config.commands)) {
+        throw new Error("$workflow commands must be an object.");
+    }
+    for (const [command, value] of Object.entries(config.commands)) {
+        if (!command) {
+            throw new Error("$workflow command names must be non-empty strings.");
+        }
+        assertWorkflowCommandDefinition(command, value);
+    }
+    normalizeHistoryLimit(config.historyLimit);
+    normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
+    if (config.migrateSnapshot !== undefined &&
+        !isFunction(config.migrateSnapshot)) {
+        throw new Error("$workflow migrateSnapshot must be a function.");
+    }
+}
+function assertWorkflowCommandDefinition(command, value) {
+    if (!isObject(value) || isArray(value)) {
+        throw new Error(`$workflow command '${command}' must be a lifecycle definition.`);
+    }
+    const definition = value;
+    if (!(isString(definition.from) && definition.from.length > 0) &&
+        !(isArray(definition.from) &&
+            definition.from.length > 0 &&
+            definition.from.every((state) => isString(state) && state.length > 0))) {
+        throw new Error(`$workflow command '${command}' requires a non-empty from state.`);
+    }
+    assertWorkflowLifecycleTarget(command, "pending", definition.pending);
+    assertWorkflowLifecycleTarget(command, "success", definition.success);
+    assertWorkflowLifecycleTarget(command, "failure", definition.failure);
+    if (definition.cancelled !== undefined) {
+        assertWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
+    }
+    if (definition.timeout !== undefined) {
+        assertWorkflowLifecycleTarget(command, "timeout", definition.timeout);
+    }
+    if (definition.execute !== undefined && !isFunction(definition.execute)) {
+        throw new Error(`$workflow command '${command}' execute must be a function.`);
+    }
+    const concurrency = value.concurrency;
+    if (concurrency !== undefined &&
+        concurrency !== "parallel" &&
+        concurrency !== "reject" &&
+        concurrency !== "queue") {
+        throw new Error(`$workflow command '${command}' concurrency must be 'parallel', 'reject', or 'queue'.`);
+    }
+    normalizeTimeout(definition.commandTimeout);
+    normalizeRetryCount(definition.retry);
+}
+function assertWorkflowLifecycleTarget(command, lifecycle, value) {
+    if (isString(value) && value) {
+        return;
+    }
+    const target = value;
+    if (isObject(value) &&
+        isString(target.to) &&
+        target.to.length > 0 &&
+        (target.update === undefined || isFunction(target.update))) {
+        return;
+    }
+    throw new Error(`$workflow command '${command}' ${lifecycle} must target a non-empty state.`);
+}
+function assertWorkflowSnapshot(snapshot) {
+    const candidate = snapshot;
+    if (!isString(candidate.id) || !candidate.id) {
+        throw new Error("$workflow restore requires a non-empty id.");
+    }
+    if (!isString(candidate.state) || !candidate.state) {
+        throw new Error("$workflow restore requires a non-empty state.");
+    }
+    if (!isObject(candidate.data)) {
+        throw new Error("$workflow restore requires a data object.");
+    }
+    if (!isArray(candidate.diagnostics)) {
+        throw new Error("$workflow restore requires diagnostics.");
+    }
+    if (!isArray(candidate.history)) {
+        throw new Error("$workflow restore requires history.");
+    }
 }
 
 const $parseError$1 = createErrorFactory("$parse");
@@ -19020,7 +19005,7 @@ function ngBindDirective() {
             scope.$watch(expression, (value) => {
                 const text = stringify$1(deProxy(value));
                 element.textContent = isString(text) ? text : "";
-            }, hasNormalizedAttr(element, "lazy"));
+            }, hasNormalizedAttr(element, "lazy"), true);
         },
     };
 }
@@ -19069,7 +19054,7 @@ function ngBindHtmlDirective($parse) {
                 scope.$watch(expression, (val) => {
                     const html = isUndefined(val) || isNull(val) ? "" : stringify$1(deProxy(val));
                     element.innerHTML = isString(html) ? html : "";
-                });
+                }, false, true);
             });
         },
     };
@@ -20255,6 +20240,63 @@ function trimEmptyHash(url) {
     return url.replace(/#$/, "");
 }
 
+/** Returns whether a runtime value is a supported cache strategy. */
+function isCacheStrategy(value) {
+    return (value === "cache-first" ||
+        value === "network-first" ||
+        value === "stale-while-revalidate");
+}
+async function loadAndStore(options) {
+    const value = await options.load();
+    await options.store.set(options.key, value);
+    return value;
+}
+/** Executes one cache policy without coupling it to a transport or storage API. */
+async function executeCacheStrategy(options) {
+    switch (options.strategy) {
+        case "cache-first": {
+            const cached = await options.store.get(options.key);
+            return cached === undefined
+                ? {
+                    value: await loadAndStore(options),
+                    source: "network",
+                    stale: false,
+                }
+                : { value: cached, source: "cache", stale: false };
+        }
+        case "network-first":
+            try {
+                return {
+                    value: await loadAndStore(options),
+                    source: "network",
+                    stale: false,
+                };
+            }
+            catch (error) {
+                const cached = await options.store.get(options.key);
+                if (cached !== undefined) {
+                    return { value: cached, source: "cache", stale: true };
+                }
+                throw error;
+            }
+        case "stale-while-revalidate": {
+            const cached = await options.store.get(options.key);
+            if (cached === undefined) {
+                return {
+                    value: await loadAndStore(options),
+                    source: "network",
+                    stale: false,
+                };
+            }
+            void loadAndStore(options).then((value) => {
+                options.onRevalidate?.(value);
+                return undefined;
+            }, () => undefined);
+            return { value: cached, source: "cache", stale: true };
+        }
+    }
+}
+
 const APPLICATION_JSON = "application/json";
 function withResolvers$1() {
     let resolve;
@@ -20609,6 +20651,7 @@ function applyHttpConfiguration(configuration, config) {
 function createHttpService($injector, $sce, $cookie, $security, $stream, configuration) {
     const { defaults, interceptors, xsrfTrustedOrigins } = configuration;
     const defaultCache = new Map();
+    const strategyCache = new Map();
     /**
      * Resolves the configured default param serializer to a callable function.
      */
@@ -20767,7 +20810,7 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
             }
             applySecurityCredentials(configParam, securityDecision.credentials);
             // send request
-            return sendReq(configParam, reqData).then(transformResponse, transformResponse);
+            return sendReqWithCacheStrategy(configParam, reqData).then(transformResponse, transformResponse);
         }
         function applySecurityCredentials(configParam, credentials) {
             if (!credentials) {
@@ -20785,6 +20828,14 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
         }
         /** Applies response transforms and rejects responses outside the success range. */
         async function transformResponse(response) {
+            if (!isObject(response) || !hasOwn(response, "status")) {
+                const error = response instanceof Error
+                    ? response
+                    : new Error("$http request pipeline rejected without a response.", {
+                        cause: response,
+                    });
+                return Promise.reject(error);
+            }
             const httpResponse = response;
             // make a copy since the response must be cacheable
             const resp = extend({}, httpResponse);
@@ -20809,6 +20860,41 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
      */
     $http.defaults = defaults;
     return $http;
+    /** Applies strategy-aware caching before falling back to the legacy cache path. */
+    async function sendReqWithCacheStrategy(config, reqData) {
+        const option = config.cache ?? defaults.cache;
+        if (config.method !== "GET" || option === false || option === undefined) {
+            return sendReq(config, reqData);
+        }
+        let strategy;
+        let store;
+        if (isCacheStrategy(option)) {
+            strategy = option;
+            store = strategyCache;
+        }
+        else if (isObject(option) &&
+            (hasOwn(option, "strategy") || hasOwn(option, "store"))) {
+            const cacheConfig = option;
+            strategy = cacheConfig.strategy ?? "cache-first";
+            store = cacheConfig.store ?? strategyCache;
+        }
+        else if (isObject(option)) {
+            throw new Error("$http cache objects must use the { strategy, store } configuration shape.");
+        }
+        if (!strategy || !store) {
+            return sendReq(config, reqData);
+        }
+        const paramSerializer = config.paramSerializer;
+        const url = buildUrl(String($sce.valueOf(config.url)), paramSerializer(config.params));
+        const result = await executeCacheStrategy({
+            strategy,
+            store,
+            key: url,
+            load: () => sendReq({ ...config, cache: false }, reqData),
+        });
+        const response = { ...result.value, config };
+        return response;
+    }
     /** Creates one shorthand method for requests that do not send a request body. */
     function createShortMethod(method) {
         return async function (url, config) {
@@ -20847,12 +20933,7 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
         if ((config.cache || defaults.cache) &&
             config.cache !== false &&
             config.method === "GET") {
-            const providerDefaults = defaults;
-            cache = isObject(config.cache)
-                ? config.cache
-                : isObject(providerDefaults.cache)
-                    ? providerDefaults.cache
-                    : defaultCache;
+            cache = defaultCache;
         }
         if (cache) {
             cachedResp = cache.get(url);
@@ -21527,6 +21608,7 @@ function defineDirective(method, attrOverride) {
 const ngGetDirective = defineDirective("get");
 const ngDeleteDirective = defineDirective("delete");
 const ngPostDirective = defineDirective("post");
+const ngPatchDirective = defineDirective("patch");
 const ngPutDirective = defineDirective("put");
 const ngSseDirective = defineDirective("get", "ngSse");
 /** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
@@ -22056,17 +22138,17 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                         if (previousFragment && !previousFragment.disposed) {
                             previousFragment.dispose();
                         }
+                        else {
+                            removeElement(previousElement);
+                        }
                         previousElement = null;
                         previousFragment = null;
-                    }
-                    if (currentScope) {
-                        currentScope.$destroy();
-                        currentScope = null;
                     }
                     if (currentElement) {
                         const leavingFragment = currentFragment;
                         const animate = getAnimateForNode(getAnimate, currentElement);
                         if (animate) {
+                            currentScope?.$destroy();
                             animate.leave(currentElement).done((response) => {
                                 if (response) {
                                     leavingFragment?.dispose();
@@ -22079,11 +22161,20 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             if (leavingFragment && !leavingFragment.disposed) {
                                 leavingFragment.dispose();
                             }
+                            else {
+                                removeElement(currentElement);
+                            }
+                            currentScope?.$destroy();
                         }
+                        currentScope = null;
                         previousElement = currentElement;
                         previousFragment = currentFragment;
                         currentElement = null;
                         currentFragment = null;
+                    }
+                    else if (currentScope) {
+                        currentScope.$destroy();
+                        currentScope = null;
                     }
                 };
                 scope.$watch(srcExp, (src) => {
@@ -23503,7 +23594,7 @@ class NgModelController {
        </file>
        <file name="app.js">
         angular.module('inputExample', [])
-          .controller('inputController', function($scope) {
+          .controller('inputController', ['$scope', function($scope) {
             $scope.items = [
               {name: 'Apricot', id: 443},
               {name: 'Clementine', id: 972},
@@ -23511,14 +23602,14 @@ class NgModelController {
               {name: 'Jackfruit', id: 982},
               {name: 'Strawberry', id: 863}
             ];
-          })
+          }])
           .component('basicAutocomplete', {
             bindings: {
               items: '<',
               onSelect: '&'
             },
             templateUrl: 'autocomplete.html',
-            controller: function($element, $scope) {
+            controller: ['$element', '$scope', function($element, $scope) {
               let that = this;
               let ngModel;
      *
@@ -23547,7 +23638,7 @@ class NgModelController {
                 ngModel.$processModelValue();
                 that.onSelect({item: item});
               };
-            }
+            }]
           });
        </file>
        <file name="autocomplete.html">
@@ -25097,7 +25188,6 @@ function ngRefDirective($parse) {
                     refValue =
                         getCacheData(element, `$${controllerName}Controller`) ?? element;
                 }
-                refValue = deProxy(refValue);
                 if (refValue && typeof refValue === "object") {
                     try {
                         Object.defineProperty(refValue, "$nonscope", {
@@ -25298,6 +25388,18 @@ function ngRepeatDirective($injector) {
             return arrayFrom(clone);
         }
         return clone;
+    }
+    function removeBlockNodes(nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (node.nodeType === NodeType._ELEMENT_NODE) {
+                removeElement(node);
+            }
+            else {
+                removeElementData(node);
+                node.parentNode?.removeChild(node);
+            }
+        }
     }
     function restoreScopedBlocks(targetMap, blockOrder) {
         for (let i = 0; i < blockOrder.length; i++) {
@@ -25774,9 +25876,6 @@ function ngRepeatDirective($injector) {
                                 lastBlockOrder[i]._scope?.$destroy();
                             }
                             removeNodeRangeFast(firstNode, lastNode);
-                            for (let i = 0; i < lastBlockOrder.length; i++) {
-                                lastBlockOrder[i]._fragment?.dispose();
-                            }
                             lastBlockMap = nullObject();
                             lastBlockOrder = [];
                         }
@@ -25804,7 +25903,7 @@ function ngRepeatDirective($injector) {
                         }
                         else {
                             block._scope?.$destroy();
-                            assertDefined(block._fragment).dispose();
+                            removeBlockNodes(blockNodes);
                         }
                         if (blockNodes.length && blockNodes[0].parentNode) {
                             for (let i = 0, j = blockNodes.length; i < j; i++) {
@@ -27912,2007 +28011,6 @@ function defaults(opts, ...defaultsList) {
     return defaultVals;
 }
 
-const noopDeregister = () => undefined;
-const uniqueStrings = (classes) => arrayFrom(new Set(classes));
-const ACTIVE_REQUIREMENTS = [
-    "?^ngStateActiveExact",
-    "?^ngStateActive",
-];
-const DATA_STATE_CURRENT = "data-state-current";
-const isRouteLinkAriaDisabled = (element) => hasNormalizedAttr(element, "ngAriaDisable");
-function selectActiveController(controllers) {
-    return controllers[0] ?? controllers[1];
-}
-function getFirstNormalizedAttr(element, names) {
-    for (const name of names) {
-        const value = getNormalizedAttr(element, name);
-        if (value !== undefined) {
-            return value;
-        }
-    }
-    return undefined;
-}
-function hasDataStateModifier(element, modifier) {
-    return getNormalizedAttr(element, modifier) !== undefined;
-}
-function setDataStateCurrent(element, currentState, isCurrent) {
-    currentState._managed = true;
-    element.setAttribute(DATA_STATE_CURRENT, String(isCurrent));
-}
-function updateDataStateCurrent($state, element, rawDef, currentState) {
-    const tracksActive = hasDataStateModifier(element, "stateActive");
-    const tracksExact = hasDataStateModifier(element, "stateExact");
-    if (!tracksActive && !tracksExact) {
-        if (currentState._managed) {
-            element.removeAttribute(DATA_STATE_CURRENT);
-            currentState._managed = false;
-        }
-        return undefined;
-    }
-    const def = processedDef($state, element, rawDef);
-    const stateName = def._ngState;
-    if (!stateName) {
-        setDataStateCurrent(element, currentState, false);
-        return false;
-    }
-    const params = def._ngStateParams;
-    const isCurrent = $state.matches(stateName, params, { exact: tracksExact });
-    setDataStateCurrent(element, currentState, isCurrent);
-    return isCurrent;
-}
-function appendSplitClasses(classes, value) {
-    const split = value.split(/\s/);
-    split.forEach((className) => {
-        if (className)
-            classes.push(className);
-    });
-}
-function getClasses(stateList) {
-    const classes = [];
-    stateList.forEach((state) => {
-        appendSplitClasses(classes, state._activeClass);
-    });
-    return classes;
-}
-function appendUniqueClasses(target, source) {
-    source.forEach((className) => {
-        if (!target.includes(className))
-            target.push(className);
-    });
-}
-/**
- * Parses a state ref expression into a target state name and parameter expression.
- */
-function parseStateRef(ref) {
-    const normalizedRef = normalizeParamsOnlyStateRef(ref).replace(/\n/g, " ");
-    const trimmedRef = normalizedRef.trim();
-    const openParenIndex = trimmedRef.indexOf("(");
-    if (openParenIndex === -1) {
-        return { _state: trimmedRef || null, _paramExpr: null };
-    }
-    const closeParenIndex = trimmedRef.lastIndexOf(")");
-    if (closeParenIndex !== trimmedRef.length - 1) {
-        throw new Error(`Invalid state ref '${ref}'`);
-    }
-    return {
-        _state: trimmedRef.slice(0, openParenIndex).trimEnd() || null,
-        _paramExpr: trimmedRef.slice(openParenIndex + 1, closeParenIndex) || null,
-    };
-}
-function normalizeParamsOnlyStateRef(ref) {
-    const trimmedRef = ref.trim();
-    if (trimmedRef.startsWith("{") &&
-        trimmedRef.endsWith("}") &&
-        trimmedRef.indexOf("}") === trimmedRef.length - 1) {
-        return `(${trimmedRef})`;
-    }
-    return ref;
-}
-/**
- * Resolves the relative state context for a state-ref-bearing element.
- */
-function stateContext(el) {
-    const $ngView = getInheritedData(el, "$ngView");
-    const path = $ngView?.$cfg
-        ?._path;
-    return path ? path[path.length - 1].state.name : undefined;
-}
-/**
- * Computes the current state-ref definition, href, and navigation options.
- */
-function processedDef($state, $element, def) {
-    const ngState = def._ngState ?? $state.current?.name;
-    const ngStateOpts = assign(defaultOpts($element, $state), def._ngStateOpts ?? {});
-    const href = ngState
-        ? $state.href(ngState, def._ngStateParams, ngStateOpts)
-        : undefined;
-    return {
-        _ngState: ngState,
-        _ngStateParams: def._ngStateParams,
-        _ngStateOpts: ngStateOpts,
-        _href: href,
-    };
-}
-/**
- * Returns the relevant DOM attribute and click behavior metadata for the element.
- */
-function getTypeInfo(el) {
-    // SVG 2 uses the standard `href` attribute; `xlink:href` is obsolete.
-    const isForm = el.nodeName === "FORM";
-    return {
-        _attr: isForm ? "action" : "href",
-        _isAnchor: el.nodeName === "A",
-        _isButton: el.nodeName === "BUTTON",
-        _clickable: !isForm,
-    };
-}
-function applyRouteLinkAriaDefaults($aria, element, type) {
-    if (isRouteLinkAriaDisabled(element) || type._isAnchor || type._isButton) {
-        return;
-    }
-    if ($aria.config("bindRoleForState") && !element.hasAttribute("role")) {
-        element.setAttribute("role", "link");
-    }
-    if ($aria.config("tabindex") && !element.hasAttribute("tabindex")) {
-        element.setAttribute("tabindex", "0");
-    }
-}
-function updateRouteLinkAriaCurrent($aria, element, currentState, isCurrent) {
-    if (isRouteLinkAriaDisabled(element) ||
-        !$aria.config("ariaCurrent") ||
-        isCurrent === undefined) {
-        if (currentState._managedAriaCurrent) {
-            element.removeAttribute("aria-current");
-            currentState._managedAriaCurrent = false;
-        }
-        return;
-    }
-    if (isCurrent) {
-        if (currentState._managedAriaCurrent ||
-            !element.hasAttribute("aria-current")) {
-            element.setAttribute("aria-current", $aria.config("ariaCurrentToken"));
-            currentState._managedAriaCurrent = true;
-        }
-        return;
-    }
-    if (currentState._managedAriaCurrent) {
-        element.removeAttribute("aria-current");
-        currentState._managedAriaCurrent = false;
-    }
-}
-/**
- * Creates the click handler that triggers a state transition for a state ref.
- */
-function clickHook(el, $state, type, rawDef, scope) {
-    return function (event) {
-        const mouseEvent = event;
-        const { button } = mouseEvent;
-        const target = processedDef($state, el, rawDef);
-        const res = button > 0 ||
-            mouseEvent.ctrlKey ||
-            mouseEvent.metaKey ||
-            mouseEvent.shiftKey ||
-            mouseEvent.altKey ||
-            el.getAttribute("target");
-        if (!res) {
-            const originalPreventDefault = event.preventDefault.bind(event);
-            let cancelled = false;
-            let ignorePreventDefaultCount = type._isAnchor && !target._href ? 1 : 0;
-            event.preventDefault = function () {
-                originalPreventDefault();
-                if (ignorePreventDefaultCount-- <= 0) {
-                    cancelled = true;
-                }
-            };
-            originalPreventDefault();
-            queueMicrotask(() => {
-                event.preventDefault = originalPreventDefault;
-                if (cancelled) {
-                    return;
-                }
-                if (!el.getAttribute("disabled") && target._ngState) {
-                    void $state
-                        .go(target._ngState, target._ngStateParams, target._ngStateOpts)
-                        .then(() => {
-                        scope.$emit("$updateBrowser");
-                        return undefined;
-                    })
-                        .catch(() => undefined);
-                }
-            });
-        }
-        else {
-            // ignored
-            event.preventDefault();
-            event.stopImmediatePropagation();
-        }
-    };
-}
-/**
- * Produces default navigation options for a state-ref element.
- */
-function defaultOpts(el, $state) {
-    return {
-        relative: stateContext(el) ?? $state.$current,
-        inherit: true,
-        source: "ng-state",
-    };
-}
-/**
- * Binds the configured activation events and removes them on scope destroy.
- */
-function bindEvents(element, scope, hookFn, keyboardHookFn, ngStateOpts) {
-    let events = ngStateOpts ? ngStateOpts.events : undefined;
-    if (!isArray(events)) {
-        events = ["click"];
-    }
-    const eventNames = events;
-    //const on = element.on ? "on" : "bind";
-    for (const event of eventNames) {
-        element.addEventListener(event, hookFn);
-    }
-    if (keyboardHookFn) {
-        element.addEventListener("keydown", keyboardHookFn);
-    }
-    scope.$on("$destroy", function () {
-        // const off = element.off ? "off" : "unbind";
-        for (const event of eventNames) {
-            element.removeEventListener(event, hookFn);
-        }
-        if (keyboardHookFn) {
-            element.removeEventListener("keydown", keyboardHookFn);
-        }
-    });
-}
-function createKeyboardRouteLinkHook(hookFn) {
-    return function (event) {
-        const keyboardEvent = event;
-        if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") {
-            return;
-        }
-        hookFn(event);
-    };
-}
-StateRefDynamicDirective.$inject = [
-    _aria,
-    _state,
-    _rootScope,
-    _stateRegistry,
-    _transitions,
-    _parse,
-];
-/**
- * Generates dynamic `ui-state` links whose target state is read from an expression.
- */
-function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $transitions, $parse) {
-    return {
-        restrict: "A",
-        require: ACTIVE_REQUIREMENTS,
-        link(scope, element, activeControllers) {
-            const type = getTypeInfo(element);
-            const active = selectActiveController(activeControllers);
-            let unlinkInfoFn;
-            const rawDef = {};
-            const dataStateCurrent = {
-                _managed: false,
-                _managedAriaCurrent: false,
-            };
-            const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
-            const rawDefKeyByAttr = {
-                ngState: "_ngState",
-                ngStateParams: "_ngStateParams",
-                ngStateOpts: "_ngStateOpts",
-            };
-            const watchDeregFns = {};
-            inputAttrs.forEach((attr) => {
-                watchDeregFns[attr] = () => {
-                    /* empty */
-                };
-            });
-            function update() {
-                const def = processedDef($state, element, rawDef);
-                if (unlinkInfoFn) {
-                    unlinkInfoFn();
-                }
-                if (active?._addStateInfo) {
-                    unlinkInfoFn = active._addStateInfo(def._ngState ?? null, def._ngStateParams);
-                }
-                if (!isNullOrUndefined(def._href)) {
-                    setNormalizedAttr(element, type._attr, def._href);
-                }
-                const isCurrent = updateDataStateCurrent($state, element, rawDef, dataStateCurrent);
-                updateRouteLinkAriaCurrent($aria, element, dataStateCurrent, isCurrent);
-            }
-            inputAttrs.forEach((field) => {
-                function readFieldExpression() {
-                    return getNormalizedAttr(element, field);
-                }
-                const initialExpr = readFieldExpression();
-                rawDef[rawDefKeyByAttr[field]] =
-                    initialExpr && !initialExpr.includes("{{")
-                        ? $parse(initialExpr)(scope)
-                        : undefined;
-                const syncFieldExpression = () => {
-                    const expr = readFieldExpression();
-                    watchDeregFns[field]();
-                    if (!expr || expr.includes("{{")) {
-                        return;
-                    }
-                    watchDeregFns[field] =
-                        scope.$watch(expr, (newval) => {
-                            rawDef[rawDefKeyByAttr[field]] =
-                                newval;
-                            update();
-                        }) ?? noopDeregister;
-                };
-                syncFieldExpression();
-                const observerName = directiveNormalize(field);
-                const observer = new MutationObserver((mutations) => {
-                    for (let i = 0; i < mutations.length; i++) {
-                        const attributeName = mutations[i].attributeName;
-                        if (attributeName &&
-                            directiveNormalize(attributeName) === observerName) {
-                            syncFieldExpression();
-                        }
-                    }
-                });
-                observer.observe(element, { attributes: true });
-                let deregisterDestroy = scope.$on("$destroy", deregister);
-                function deregister() {
-                    observer.disconnect();
-                    deregisterDestroy?.();
-                    deregisterDestroy = undefined;
-                }
-            });
-            const modifierNames = new Set([
-                directiveNormalize("stateActive"),
-                directiveNormalize("stateExact"),
-                directiveNormalize("ngAriaDisable"),
-            ]);
-            const modifierObserver = new MutationObserver((mutations) => {
-                if (mutations.some(({ attributeName }) => attributeName &&
-                    modifierNames.has(directiveNormalize(attributeName)))) {
-                    update();
-                }
-            });
-            modifierObserver.observe(element, { attributes: true });
-            scope.$on("$destroy", () => {
-                modifierObserver.disconnect();
-            });
-            update();
-            scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
-            scope.$on("$destroy", $transitions.onSuccess({}, update));
-            if (!type._clickable)
-                return;
-            applyRouteLinkAriaDefaults($aria, element, type);
-            const hookFn = clickHook(element, $state, type, rawDef, $rootScope);
-            const keyboardHookFn = !isRouteLinkAriaDisabled(element) &&
-                !type._isAnchor &&
-                !type._isButton &&
-                $aria.config("bindKeydown")
-                ? createKeyboardRouteLinkHook(hookFn)
-                : undefined;
-            bindEvents(element, scope, hookFn, keyboardHookFn, rawDef._ngStateOpts);
-        },
-    };
-}
-StateRefActiveDirective.$inject = [
-    _state,
-    _interpolate,
-    _stateRegistry,
-    _transitions,
-    _parse,
-];
-/**
- * Toggles active CSS classes based on the current router state.
- */
-function StateRefActiveDirective($state, $interpolate, $stateRegistry, $transitions, $parse) {
-    const routerState = $state._routerState;
-    return {
-        restrict: "A",
-        controller: [
-            _scope,
-            _element,
-            function ($scope, $element) {
-                let states = [];
-                let activeDefinition;
-                const activeEqRead = getFirstNormalizedAttr($element, [
-                    "ngStateActiveExact",
-                ]);
-                const activeEqExpr = activeEqRead ?? "";
-                const activeEqClass = stringify$1(assertDefined($interpolate(activeEqExpr, false))($scope) ?? "");
-                const activeRead = getFirstNormalizedAttr($element, ["ngStateActive"]);
-                const activeExpr = activeRead;
-                try {
-                    activeDefinition = activeExpr
-                        ? $parse(activeExpr)($scope)
-                        : undefined;
-                }
-                catch {
-                    // Do nothing. The active directive value is not a valid expression.
-                    // Fall back to using $interpolate below
-                }
-                activeDefinition =
-                    activeDefinition ??
-                        stringify$1(assertDefined($interpolate(activeExpr ?? "", false))($scope) ?? "");
-                setStatesFromDefinitionObject(activeDefinition);
-                // Allow state-ref directives to communicate with active-state directives.
-                this._addStateInfo = function (newState, newParams) {
-                    // An explicit state map shadows the state inferred from a linked child.
-                    if (isObject(activeDefinition) && states.length > 0) {
-                        return undefined;
-                    }
-                    const deregister = addState(newState, newParams, String(activeDefinition));
-                    update();
-                    return deregister;
-                };
-                /**
-                 * Updates active classes after a transition settles.
-                 */
-                function updateAfterTransition(trans) {
-                    void trans.promise
-                        .then(() => {
-                        update();
-                        return undefined;
-                    })
-                        .catch(() => undefined);
-                }
-                $scope.$on("$destroy", setupEventListeners());
-                if (routerState._transition) {
-                    updateAfterTransition(routerState._transition);
-                }
-                function setupEventListeners() {
-                    const deregisterStatesChangedListener = $stateRegistry.onStatesChanged(handleStatesChanged);
-                    const deregisterOnStartListener = $transitions.onStart({}, updateAfterTransition);
-                    const deregisterStateChangeSuccessListener = $scope.$on("$stateChangeSuccess", update);
-                    return function cleanUp() {
-                        deregisterStatesChangedListener();
-                        deregisterOnStartListener();
-                        deregisterStateChangeSuccessListener();
-                    };
-                }
-                function handleStatesChanged() {
-                    setStatesFromDefinitionObject(activeDefinition);
-                }
-                /** Updates the tracked state list from the directive definition object. */
-                function setStatesFromDefinitionObject(statesDefinition) {
-                    if (isObject(statesDefinition)) {
-                        states = [];
-                        const definition = statesDefinition;
-                        keys(definition).forEach((activeClass) => {
-                            const stateOrName = definition[activeClass];
-                            if (isString(stateOrName)) {
-                                addStateForClass(stateOrName, activeClass);
-                            }
-                            else if (isArray(stateOrName)) {
-                                stateOrName.forEach((stateName) => {
-                                    addStateForClass(stateName, activeClass);
-                                });
-                            }
-                        });
-                    }
-                }
-                function addStateForClass(stateOrNameParam, activeClassParam) {
-                    const ref = parseStateRef(stateOrNameParam);
-                    addState(ref._state, ref._paramExpr && $parse(ref._paramExpr)($scope), activeClassParam);
-                }
-                function addState(stateName, stateParams, activeClass) {
-                    const state = stateName
-                        ? $state.get(stateName, stateContext($element))
-                        : undefined;
-                    const foundState = state;
-                    const stateInfo = {
-                        _state: {
-                            name: foundState?.name ??
-                                (isObject(stateName) && "name" in stateName
-                                    ? String(stateName.name)
-                                    : String(stateName)),
-                        },
-                        _params: stateParams,
-                        _activeClass: activeClass,
-                    };
-                    states.push(stateInfo);
-                    return function removeState() {
-                        removeFrom(states, stateInfo);
-                    };
-                }
-                // Update route state
-                function update() {
-                    const allClasses = getClasses(states);
-                    appendSplitClasses(allClasses, activeEqClass);
-                    const fuzzyStates = [];
-                    const exactlyMatchesAny = states.some((state) => $state.matches(state._state.name, state._params, {
-                        exact: true,
-                    }));
-                    states.forEach((state) => {
-                        if ($state.matches(state._state.name, state._params)) {
-                            fuzzyStates.push(state);
-                        }
-                    });
-                    const fuzzyClasses = getClasses(fuzzyStates);
-                    const exactClasses = [];
-                    if (exactlyMatchesAny) {
-                        appendSplitClasses(exactClasses, activeEqClass);
-                    }
-                    const addClasses = uniqueStrings(fuzzyClasses);
-                    appendUniqueClasses(addClasses, exactClasses);
-                    const removeClasses = [];
-                    const uniqueClasses = uniqueStrings(allClasses);
-                    uniqueClasses.forEach((cls) => {
-                        if (!addClasses.includes(cls)) {
-                            removeClasses.push(cls);
-                        }
-                    });
-                    addClasses.forEach((className) => {
-                        $element.classList.add(className);
-                    });
-                    removeClasses.forEach((className) => {
-                        $element.classList.remove(className);
-                    });
-                }
-                update();
-                return undefined;
-            },
-        ],
-    };
-}
-
-/**
- * Functions that manipulate strings
- */
-const DOTS = "...";
-/**
- * Returns a string shortened to a maximum length
- *
- * If the string is already less than the `max` length, return the string.
- * Else return the string, shortened to `max - 3` and append three dots ("...").
- *
- * `max` is the maximum length of the returned string.
- */
-function maxLength(max, str) {
-    if (str.length <= max)
-        return str;
-    return `${str.substring(0, max - DOTS.length)}${DOTS}`;
-}
-/** Converts a camelCase string into kebab-case. */
-function kebobString(camelCase) {
-    return camelCase
-        .replace(/^([A-Z])/, ($1) => $1.toLowerCase()) // replace first char
-        .replace(/([A-Z])/g, ($1) => `-${$1.toLowerCase()}`); // replace rest
-}
-const FN_LENGTH = 9;
-/** Returns a stable string representation for a function. */
-function functionToString(fn) {
-    const fnStr = fnToString(fn);
-    const toStr = fnStr.replace(/^(function [^ ]+\([^)]*\))/, "$1");
-    const fnName = fn.name || "";
-    if (fnName && /function \(/.exec(toStr)) {
-        return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
-    }
-    return toStr;
-}
-function fnToString(fn) {
-    let _fn;
-    if (isArray(fn)) {
-        const candidate = fn[fn.length - 1];
-        if (isFunction(candidate))
-            _fn = candidate;
-    }
-    else if (isFunction(fn)) {
-        _fn = fn;
-    }
-    else {
-        _fn = undefined;
-    }
-    return _fn ? _fn.toString() : "undefined";
-}
-/** Converts arbitrary values into short readable debug strings. */
-function stringify(value) {
-    const seen = [];
-    const isRejection = (obj) => {
-        return (isObject(obj) &&
-            "then" in obj &&
-            isFunction(obj.then) &&
-            obj.constructor.name === "Rejection");
-    };
-    const hasToString = (obj) => isObject(obj) &&
-        !isArray(obj) &&
-        obj.constructor !== Object &&
-        isFunction(Reflect.get(obj, "toString"));
-    /** Formats a single item while tracking circular references. */
-    function format(item) {
-        if (isObject(item)) {
-            if (seen.includes(item))
-                return "[circular ref]";
-            seen.push(item);
-        }
-        if (isUndefined(item))
-            return "undefined";
-        if (isNull(item))
-            return "null";
-        if (isRejection(item))
-            return String(item._transitionRejection);
-        if (isPromiseLike(item))
-            return "[Promise]";
-        if (hasToString(item)) {
-            const toStringFn = Reflect.get(item, "toString");
-            return toStringFn.call(item);
-        }
-        if (isFunction(item))
-            return functionToString(item);
-        return item;
-    }
-    if (isUndefined(value)) {
-        // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
-        // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
-        // manually stringifying it.
-        return String(format(value));
-    }
-    const json = JSON.stringify(value, (_key, item) => format(item));
-    return isString(json) ? json.replace(/\\"/g, '"') : String(json);
-}
-function stripLastPathElement(str) {
-    return str.replace(/\/[^/]*$/, "");
-}
-
-async function resolveResolvable(resolvable, resolveContext, trans) {
-    const dependencies = resolveContext.getDependencies(resolvable);
-    const dependencyPromises = dependencies.map(async (dependency) => dependency.get(resolveContext, trans));
-    const resolvedDeps = await Promise.all(dependencyPromises);
-    const resolvedValue = await resolvable.resolveFn?.(...resolvedDeps);
-    resolvable.data = resolvedValue;
-    resolvable.resolved = true;
-    resolvable.resolveFn = null;
-    return resolvable.data;
-}
-/**
- * # The Resolve subsystem
- *
- * This subsystem is an asynchronous, hierarchical Dependency Injection system.
- *
- * Typically, resolve is configured on a state using a [[StateDeclaration.resolve]] declaration.
- */
-/**
- * Represents one dependency that can be resolved for a transition.
- *
- * A resolvable tracks its token, dependency list, eager timing, cached value,
- * and in-flight promise so router state resolution stays idempotent.
- */
-class Resolvable {
-    /**
-     * @throws Error when a resolve function is provided without a token.
-     */
-    constructor(arg1, resolveFn, deps, eager, data) {
-        this.token = undefined;
-        this.resolveFn = undefined;
-        this.deps = [];
-        this.eager = false;
-        this.data = undefined;
-        this.resolved = false;
-        this.promise = undefined;
-        if (isInstanceOf(arg1, Resolvable)) {
-            this.token = arg1.token;
-            this.resolveFn = arg1.resolveFn;
-            this.deps = arg1.deps;
-            this.eager = arg1.eager;
-            this.data = arg1.data;
-            this.resolved = arg1.resolved;
-            this.promise = arg1.promise;
-        }
-        else if (isFunction(resolveFn)) {
-            assert(!isNullOrUndefined(arg1), "token argument is required");
-            this.token = arg1;
-            this.eager = !!eager;
-            this.resolveFn = resolveFn;
-            this.deps = deps ?? [];
-            this.data = data;
-            this.resolved = data !== undefined;
-            this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
-        }
-        else if (isObject(arg1) &&
-            hasOwn(arg1, "token") &&
-            (hasOwn(arg1, "resolveFn") || hasOwn(arg1, "data"))) {
-            const literal = arg1;
-            this.token = literal.token;
-            this.resolveFn = literal.resolveFn;
-            this.deps = literal.deps ?? [];
-            this.eager = !!literal.eager;
-            this.data = literal.data;
-            this.resolved = literal.data !== undefined;
-            this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
-        }
-    }
-    /**
-     * Resolves this token by first resolving its dependencies, then invoking
-     * the resolve function and caching the resulting value.
-     */
-    async resolve(resolveContext, trans) {
-        this.promise = resolveResolvable(this, resolveContext, trans);
-        return this.promise;
-    }
-    /**
-     * Returns the cached promise, resolving the token first if necessary.
-     */
-    async get(resolveContext, trans) {
-        return this.promise ?? this.resolve(resolveContext, trans);
-    }
-    /**
-     * Returns a readable description of the resolvable and its dependencies.
-     */
-    toString() {
-        const deps = isArray(this.deps) ? this.deps : [this.deps];
-        return `Resolvable(token: ${stringify(this.token)}, requires: [${deps
-            .map(stringify)
-            .join(", ")}])`;
-    }
-    /**
-     * Creates a shallow copy of this resolvable.
-     */
-    clone() {
-        return new Resolvable(this);
-    }
-    /**
-     * Creates a resolvable that is already resolved to `data`.
-     */
-    static fromData(token, data) {
-        return new Resolvable(token, () => data, undefined, undefined, data);
-    }
-}
-
-/** @internal */
-function createResolveInvocationLocals(context) {
-    const locals = {};
-    context.getTokens().forEach((token) => {
-        if (isString(token)) {
-            locals[token] = assertDefined(context.getResolvable(token)).data;
-        }
-    });
-    return locals;
-}
-async function resolveToken(resolvable, context, trans) {
-    return {
-        token: resolvable.token,
-        value: await resolvable.get(context, trans),
-    };
-}
-/**
- * Provides resolve lookup and execution helpers for a specific transition path.
- */
-class ResolveContext {
-    /**
-     * @param _path path of nodes whose resolvables are visible in this context
-     * @param _injector injector used when dependency tokens are not resolvables in the path
-     */
-    constructor(_path, _injector) {
-        this._path = _path;
-        this._injector = _injector;
-    }
-    /**
-     * Returns the unique tokens available from all resolvables in this path.
-     */
-    getTokens() {
-        const tokenSet = new Set();
-        this._path.forEach(({ resolvables }) => {
-            resolvables.forEach(({ token }) => {
-                tokenSet.add(token);
-            });
-        });
-        return Array.from(tokenSet);
-    }
-    /**
-     * Returns the most local resolvable registered for the specified token.
-     */
-    getResolvable(token) {
-        for (let i = this._path.length - 1; i >= 0; i--) {
-            const { resolvables } = this._path[i];
-            for (let j = resolvables.length - 1; j >= 0; j--) {
-                const candidate = resolvables[j];
-                if (candidate.token === token) {
-                    return candidate;
-                }
-            }
-        }
-        return undefined;
-    }
-    /**
-     * Returns a child resolve context scoped to the specified state.
-     */
-    subContext(state) {
-        let contextPath;
-        for (let i = 0; i < this._path.length; i++) {
-            if (this._path[i].state.name === state.name) {
-                contextPath = this._path.slice(0, i + 1);
-                break;
-            }
-        }
-        return new ResolveContext(contextPath ?? this._path, this._injector);
-    }
-    /**
-     * Adds or replaces resolvables for a specific state in this path.
-     */
-    addResolvables(newResolvables, state) {
-        let node;
-        for (let i = 0; i < this._path.length; i++) {
-            const candidate = this._path[i];
-            if (candidate.state === state) {
-                node = candidate;
-                break;
-            }
-        }
-        if (!node) {
-            throw new Error(`Could not find path node for state: ${state.name}`);
-        }
-        const resolvables = [];
-        const tokens = new Set();
-        newResolvables.forEach((resolvable) => {
-            const normalized = isInstanceOf(resolvable, Resolvable)
-                ? resolvable
-                : new Resolvable(resolvable);
-            resolvables.push(normalized);
-            tokens.add(normalized.token);
-        });
-        const nextResolvables = [];
-        node.resolvables.forEach((existing) => {
-            if (!tokens.has(existing.token)) {
-                nextResolvables.push(existing);
-            }
-        });
-        resolvables.forEach((resolvable) => {
-            nextResolvables.push(resolvable);
-        });
-        node.resolvables = nextResolvables;
-    }
-    /**
-     * Resolves the path's resolvables.
-     */
-    async resolvePath(eagerOnly, trans) {
-        const shouldResolveEagerOnly = eagerOnly ?? false;
-        const promises = [];
-        this._path.forEach((node, index) => {
-            const subContext = new ResolveContext(this._path.slice(0, index + 1), this._injector);
-            node.resolvables.forEach((resolvable) => {
-                if (!shouldResolveEagerOnly || resolvable.eager) {
-                    promises.push(resolveToken(resolvable, subContext, trans));
-                }
-            });
-        });
-        return Promise.all(promises);
-    }
-    /**
-     * Finds the path node that owns the provided resolvable.
-     */
-    findNode(resolvable) {
-        const index = this._findNodeIndex(resolvable);
-        return index === -1 ? undefined : this._path[index];
-    }
-    /** @internal */
-    _findNodeIndex(resolvable) {
-        for (let i = 0; i < this._path.length; i++) {
-            const node = this._path[i];
-            for (let j = 0; j < node.resolvables.length; j++) {
-                if (node.resolvables[j] === resolvable) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-    /**
-     * Resolves the dependency tokens required by a resolvable from either
-     * the current path or the injector fallback.
-     */
-    getDependencies(resolvable) {
-        const nodeIndex = this._findNodeIndex(resolvable);
-        const dependencyPath = nodeIndex === -1 ? this._path : this._path.slice(0, nodeIndex + 1);
-        const latestByToken = new Map();
-        dependencyPath.forEach(({ resolvables }) => {
-            resolvables.forEach((candidate) => {
-                if (candidate !== resolvable) {
-                    latestByToken.set(candidate.token, candidate);
-                }
-            });
-        });
-        const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
-        const dependencies = [];
-        deps.forEach((token) => {
-            const matching = latestByToken.get(token);
-            if (matching) {
-                dependencies.push(matching);
-                return;
-            }
-            let fromInjector;
-            if (this._injector && isString(token)) {
-                try {
-                    fromInjector = this._injector.get(token);
-                }
-                catch {
-                    fromInjector = undefined;
-                }
-            }
-            if (isUndefined(fromInjector)) {
-                throw new Error(`Could not find Dependency Injection token: ${stringify(token)}`);
-            }
-            dependencies.push(new Resolvable({ token, data: fromInjector }));
-        });
-        return dependencies;
-    }
-}
-
-const controllerRegisteredScopes = new WeakMap();
-const controllerLastParamsChangedTransition = new WeakMap();
-function appendParamSchema(nodes, schema) {
-    for (let i = 0; i < nodes.length; i++) {
-        const nodeSchema = nodes[i].paramSchema;
-        for (let j = 0; j < nodeSchema.length; j++) {
-            schema.push(nodeSchema[j]);
-        }
-    }
-}
-/** @ignore incrementing id */
-let canExitId = 0;
-/**
- * Registers component/controller transition lifecycle callbacks for an active view.
- *
- * @internal
- */
-function registerViewControllerCallbacks($transitions, controllerInstance, $scope, cfg) {
-    let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
-    if (!registeredScopes) {
-        registeredScopes = new WeakSet();
-        controllerRegisteredScopes.set(controllerInstance, registeredScopes);
-    }
-    if (registeredScopes.has($scope)) {
-        return;
-    }
-    registeredScopes.add($scope);
-    // Call $onInit() ASAP
-    const onInit = controllerInstance.$onInit;
-    if (isFunction(onInit) && !cfg._viewDecl.component) {
-        onInit();
-    }
-    const viewState = cfg._path[cfg._path.length - 1].state.self;
-    const hookOptions = { bind: controllerInstance };
-    // Add component/controller-level hook for $onParamsChanged
-    if (isFunction(controllerInstance.$onParamsChanged)) {
-        const onParamsChanged = controllerInstance.$onParamsChanged;
-        const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
-        const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
-        // Fire callback on any successful transition
-        const paramsUpdated = ($transition$) => {
-            if (!$transition$)
-                return;
-            if (controllerLastParamsChangedTransition.get(controllerInstance) ===
-                $transition$) {
-                return;
-            }
-            controllerLastParamsChangedTransition.set(controllerInstance, $transition$);
-            // Exit early if the $transition$ is the same as the view was created within.
-            // Exit early if the $transition$ will exit the state the view is for.
-            if ($transition$ === viewCreationTrans ||
-                $transition$.exiting().includes(viewState)) {
-                return;
-            }
-            const toParams = $transition$.params("to");
-            const fromParams = $transition$.params("from");
-            const toNodes = $transition$._treeChanges.to;
-            const fromNodes = $transition$._treeChanges.from;
-            const toSchema = [];
-            appendParamSchema(toNodes, toSchema);
-            const fromSchema = [];
-            appendParamSchema(fromNodes, fromSchema);
-            // Find the to params that have different values than the from params
-            const changedToParams = [];
-            for (let i = 0; i < toSchema.length; i++) {
-                const param = toSchema[i];
-                const idx = fromSchema.indexOf(param);
-                if (idx === -1 ||
-                    !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])) {
-                    changedToParams.push(param);
-                }
-            }
-            // Only trigger callback if a to param has changed or is new
-            if (changedToParams.length) {
-                // Filter the params to only changed/new to params. `$transition$.params()` may be used to get all params.
-                const newValues = {};
-                for (let i = 0; i < changedToParams.length; i++) {
-                    const param = changedToParams[i];
-                    const key = param.id;
-                    if (key in toParams)
-                        newValues[key] = toParams[key];
-                }
-                onParamsChanged.call(controllerInstance, newValues, $transition$);
-            }
-        };
-        const hookRegistryKey = [
-            viewState.name || "",
-            cfg._viewDecl._ngViewName ?? "$default",
-            cfg._viewDecl._ngViewContextAnchor ?? "^",
-        ].join("::");
-        const rootScope = $scope.$root;
-        const registryProp = "__ngRouterParamsChangedHooks__";
-        const hookRegistry = (rootScope[registryProp] ??
-            (rootScope[registryProp] = new Map()));
-        hookRegistry.get(hookRegistryKey)?.();
-        const deregisterParamsHook = $transitions.onSuccess({}, paramsUpdated, hookOptions);
-        hookRegistry.set(hookRegistryKey, deregisterParamsHook);
-        $scope.$on("$destroy", () => {
-            if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
-                hookRegistry.delete(hookRegistryKey);
-            }
-            deregisterParamsHook();
-        });
-    }
-    // Add component/controller-level hook for $canExit
-    if (isFunction(controllerInstance.$canExit)) {
-        const canExit = controllerInstance.$canExit;
-        const id = canExitId++;
-        /**
-         * Returns true if any transition in the redirect chain already answered truthy.
-         */
-        const prevTruthyAnswer = (trans) => {
-            if (!trans)
-                return false;
-            const cache = trans._$canExitIds;
-            return (cache?.[id] === true ||
-                prevTruthyAnswer(trans._options.redirectedFrom ?? null));
-        };
-        // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-        const wrappedHook = async (trans) => {
-            let promise;
-            const cacheTrans = trans;
-            const ids = (cacheTrans._$canExitIds = cacheTrans._$canExitIds ?? {});
-            if (!prevTruthyAnswer(trans)) {
-                promise = Promise.resolve(canExit.call(controllerInstance, trans));
-                void promise.then((val) => (ids[id] = val !== false));
-            }
-            return promise;
-        };
-        const criteria = { exiting: viewState.name };
-        $scope.$on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
-    }
-}
-
-/** @internal */
-function createTransitionPolicyInvocationLocals(context) {
-    return {
-        context,
-        $transition$: context.transition,
-        state: context.state,
-        from: context.from,
-        to: context.to,
-    };
-}
-/** @internal */
-function createTransitionErrorPolicyInvocationLocals(context) {
-    return {
-        ...createTransitionPolicyInvocationLocals(context),
-        error: context.error,
-    };
-}
-/** @internal */
-function createRetentionPolicyInvocationLocals(context) {
-    return {
-        context,
-        $transition$: context.transition,
-    };
-}
-/** @internal */
-function createRetentionEvictionPolicyInvocationLocals(context) {
-    return { context };
-}
-
-/** @internal */
-function createRouterViewControllerInvocationLocals(resolves, scope, element) {
-    return { ...resolves, $scope: scope, $element: element };
-}
-
-function normalizeNgViewTarget(context, rawViewName = "") {
-    const viewAtContext = rawViewName.split("@");
-    const [viewName, viewContextAnchor] = viewAtContext;
-    let ngViewName = viewName || "$default";
-    let ngViewContextAnchor = isString(viewContextAnchor)
-        ? viewContextAnchor
-        : "^";
-    const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
-    if (relativeViewNameSugar) {
-        [, ngViewContextAnchor, ngViewName] = relativeViewNameSugar;
-    }
-    if (ngViewName.startsWith("!")) {
-        ngViewName = ngViewName.substring(1);
-        ngViewContextAnchor = "";
-    }
-    const relativeMatch = /^(\^(?:\.\^)*)$/;
-    if (relativeMatch.exec(ngViewContextAnchor)) {
-        let anchorState = context;
-        let hops = 0;
-        for (let i = 0; i < ngViewContextAnchor.length; i++) {
-            if (ngViewContextAnchor[i] === "^") {
-                hops++;
-            }
-        }
-        for (let i = 0; i < hops; i++) {
-            anchorState = anchorState?.parent;
-        }
-        if (!anchorState) {
-            anchorState = context;
-            while (anchorState.parent)
-                anchorState = anchorState.parent;
-        }
-        ngViewContextAnchor = anchorState.name;
-    }
-    else if (ngViewContextAnchor === ".") {
-        ngViewContextAnchor = context.name;
-    }
-    return { ngViewName, ngViewContextAnchor };
-}
-
-const FQN_MULTIPLIER = 10000;
-const COMPONENT_CONTEXT_ATTR = "data-ng-view-component-context";
-let nextViewId = 0;
-function createViewFillPlan(viewDecl, componentName) {
-    const resolvedComponentName = componentName ?? viewDecl.component;
-    const component = isString(resolvedComponentName)
-        ? resolvedComponentName
-        : undefined;
-    return {
-        _kind: component ? "component" : "template",
-        _componentName: component,
-        _componentElementName: component ? kebobString(component) : undefined,
-        _hasController: !!viewDecl.controller,
-        _needsResolveContext: true,
-    };
-}
-function viewDeclTargetKey(viewDecl) {
-    const viewName = viewDecl._ngViewName ?? "$default";
-    const viewContext = viewDecl._ngViewContextAnchor ?? "";
-    return viewContext ? `${viewContext}.${viewName}` : viewName;
-}
-function viewDeclDepth(viewDecl) {
-    let context = assertDefined(viewDecl._context);
-    let count = 0;
-    while (++count && context.parent) {
-        context = context.parent;
-    }
-    return count;
-}
-/** @internal */
-function createViewConfig(path, viewDecl, factory) {
-    return {
-        _id: nextViewId++,
-        _path: path,
-        _viewDecl: viewDecl,
-        _factory: factory,
-        _component: undefined,
-        _template: undefined,
-        _loaded: false,
-        _controller: undefined,
-        _fillPlan: createViewFillPlan(viewDecl, undefined),
-        _targetKey: viewDeclTargetKey(viewDecl),
-        _depth: viewDeclDepth(viewDecl),
-        _retention: undefined,
-    };
-}
-/** @internal */
-function getViewTemplate(config, ngView, context) {
-    const plan = config._fillPlan;
-    return plan._kind === "component" && plan._componentName
-        ? config._factory._makeComponentTemplate(ngView, context, plan._componentName, config._viewDecl.bindings)
-        : config._template;
-}
-/** @internal */
-async function loadViewConfig(config) {
-    const params = {};
-    config._path.forEach((node) => {
-        assign(params, node.paramValues);
-    });
-    const viewResult = await config._factory._fromConfig(config._viewDecl, params);
-    config._controller = config._viewDecl.controller;
-    assign(config, viewResult);
-    config._loaded = true;
-    config._fillPlan = createViewFillPlan(config._viewDecl, config._component);
-    return config;
-}
-function contextDepth(context) {
-    let cursor = context;
-    let depth = 1;
-    while (cursor.parent) {
-        depth += 1;
-        cursor = cursor.parent;
-    }
-    return depth;
-}
-function ngViewDepth(cache, ngView) {
-    const cached = cache.get(ngView);
-    if (cached !== undefined)
-        return cached;
-    const computed = ngView._fqn.split(".").length * FQN_MULTIPLIER +
-        contextDepth(ngView._creationContext);
-    cache.set(ngView, computed);
-    return computed;
-}
-/**
- * Tracks active `ng-view` instances and matches them with registered
- * view configs produced during state transitions.
- */
-class ViewService {
-    /**
-     * Creates a fully initialized view registry for one router runtime.
-     */
-    constructor(dependencies) {
-        this._ngViews = [];
-        this._viewConfigs = [];
-        this._viewConfigsByTarget = new Map();
-        this._templateFactory = dependencies.templateFactory;
-        this._compile = dependencies.compile;
-        this._controller = dependencies.controller;
-        this._injector = dependencies.injector;
-        this._rootContext = dependencies.routerState._currentState ?? null;
-        this._transitions = dependencies.transitions;
-        this._componentContexts = new Map();
-        this._nextComponentContextId = 0;
-        this._filledHosts = new WeakSet();
-        this._deregisterCompileLifecycle = undefined;
-        this._deregisterRootDestroy = undefined;
-        this._retainedViews = new Map();
-        this._retainedViewClock = 0;
-        this._retentionDiagnostics = [];
-        this._deregisterCompileLifecycle =
-            dependencies.compileLifecycle.onControllerCreated((record) => {
-                this._componentControllerCreated(record);
-            });
-        this._deregisterRootDestroy = dependencies.rootScope.$on("$destroy", () => {
-            this._destroyRetainedViews();
-            this._deregisterCompileLifecycle?.();
-            this._deregisterCompileLifecycle = undefined;
-            this._deregisterRootDestroy = undefined;
-        });
-    }
-    /** @internal */
-    destroy() {
-        this._destroyRetainedViews();
-        this._deregisterCompileLifecycle?.();
-        this._deregisterCompileLifecycle = undefined;
-        this._deregisterRootDestroy?.();
-        this._deregisterRootDestroy = undefined;
-    }
-    /** @internal */
-    _fillView(options) {
-        const { host, rootNodes, scope, config, initial, activeNgView, animation } = options;
-        const $compile = assertDefined(this._compile);
-        const viewData = {
-            $cfg: config,
-            $ngView: activeNgView,
-            $filled: true,
-        };
-        for (let i = 0; i < rootNodes.length; i++) {
-            const node = rootNodes[i];
-            setCacheData(node, "$ngViewAnim", animation);
-            setCacheData(node, "$ngView", viewData);
-        }
-        const plan = config?._fillPlan;
-        const resolveContext = config && plan?._needsResolveContext
-            ? new ResolveContext(config._path, assertDefined(this._injector))
-            : undefined;
-        if (host.childNodes.length || this._filledHosts.has(host)) {
-            scope.$broadcast("$destroy");
-        }
-        else {
-            this._filledHosts.add(host);
-        }
-        host.innerHTML = config
-            ? (getViewTemplate(config, host, assertDefined(resolveContext)) ??
-                initial)
-            : initial;
-        if (config && plan?._kind === "component") {
-            this._markComponentView(host, config, scope);
-        }
-        const link = $compile(host.contentDocument ?? host.childNodes);
-        const locals = resolveContext
-            ? createResolveInvocationLocals(resolveContext)
-            : undefined;
-        const targetScope = scope.$target;
-        targetScope.$resolve = locals;
-        const controller = plan?._hasController ? config?._controller : undefined;
-        if (controller) {
-            const controllerConfig = assertDefined(config);
-            const controllerInstance = assertDefined(this._controller)(controller, createRouterViewControllerInvocationLocals(locals, scope, host));
-            setCacheData(host, "$ngControllerController", controllerInstance);
-            const { children } = host;
-            for (let i = 0; i < children.length; i++) {
-                setCacheData(children[i], "$ngControllerController", controllerInstance);
-            }
-            registerViewControllerCallbacks(assertDefined(this._transitions), controllerInstance, scope, controllerConfig);
-        }
-        link(scope);
-        if (scope.$handler._destroyed) {
-            scope.$broadcast("$destroy");
-        }
-    }
-    /** @internal */
-    _markComponentView(host, config, scope) {
-        const { _componentElementName, _componentName } = config._fillPlan;
-        if (!_componentElementName || !_componentName)
-            return;
-        const componentHost = host.querySelector(_componentElementName);
-        if (!componentHost)
-            return;
-        const id = `${String(config._id)}:${String(this._nextComponentContextId++)}`;
-        componentHost.setAttribute(COMPONENT_CONTEXT_ATTR, id);
-        this._componentContexts.set(id, {
-            componentName: _componentName,
-            config,
-            scope,
-        });
-        scope.$on("$destroy", () => {
-            this._componentContexts.delete(id);
-        });
-    }
-    /** @internal */
-    _componentControllerCreated(record) {
-        const id = record.element.getAttribute(COMPONENT_CONTEXT_ATTR);
-        if (!id)
-            return;
-        const context = this._componentContexts.get(id);
-        if (record.directiveName !== context?.componentName)
-            return;
-        record.element.removeAttribute(COMPONENT_CONTEXT_ATTR);
-        this._componentContexts.delete(id);
-        registerViewControllerCallbacks(this._transitions, record.controller, context.scope, context.config);
-    }
-    /** @internal */
-    _restoreRetainedView(config) {
-        const retention = config._retention;
-        if (retention?._mode !== "keep-alive")
-            return undefined;
-        const retained = this._retainedViews.get(retention._key);
-        if (!retained)
-            return undefined;
-        this._retainedViews.delete(retention._key);
-        retained._lastUsed = ++this._retainedViewClock;
-        retained._config = config;
-        this._recordRetentionDiagnostic("restored", retained, {
-            _cacheSize: this._retainedViews.size,
-        });
-        return retained;
-    }
-    /** @internal */
-    _retainView(entry) {
-        const retention = entry._config._retention;
-        if (retention?._mode !== "keep-alive") {
-            this._destroyRetainedView(entry, "mode-destroy");
-            return;
-        }
-        const existing = this._retainedViews.get(retention._key);
-        if (existing) {
-            this._destroyRetainedView(existing, "replaced");
-        }
-        const clock = ++this._retainedViewClock;
-        this._retainedViews.set(retention._key, {
-            ...entry,
-            _createdAt: clock,
-            _lastUsed: clock,
-        });
-        this._recordRetentionDiagnostic("retained", entry, {
-            _cacheSize: this._retainedViews.size,
-            _max: retention._max,
-        });
-        this._evictRetainedViews(retention._max, retention._evict);
-    }
-    /** @internal */
-    _destroyRetainedView(entry, reason) {
-        if (!entry._scope.$handler._destroyed) {
-            entry._scope.$destroy();
-        }
-        if (entry._fragment && !entry._fragment.disposed) {
-            entry._fragment.dispose();
-        }
-        else if (entry._element.parentNode) {
-            removeElement(entry._element);
-        }
-        else {
-            dealoc(entry._element);
-        }
-        const key = entry._key;
-        const config = entry._config;
-        if (key && config) {
-            this._recordRetentionDiagnostic("destroyed", { _key: key, _config: config }, {
-                _cacheSize: this._retainedViews.size,
-                _reason: reason,
-            });
-        }
-    }
-    /** @internal */
-    _destroyRetainedViews() {
-        this._retainedViews.forEach((entry) => {
-            this._destroyRetainedView(entry, "root-destroy");
-        });
-        this._retainedViews.clear();
-    }
-    /** @internal */
-    _evictRetainedViews(max, evict) {
-        if (max === undefined || max < 0)
-            return;
-        while (this._retainedViews.size > max) {
-            const selected = this._selectPolicyRetainedView(max, evict) ??
-                this._selectOrderedRetainedView(evict === "oldest" ? "oldest" : "lru");
-            if (!selected)
-                return;
-            this._retainedViews.delete(selected._key);
-            this._destroyRetainedView(selected, "evicted");
-        }
-    }
-    /** @internal */
-    _recordRetentionDiagnostic(kind, entry, options) {
-        this._retentionDiagnostics.push({
-            _kind: kind,
-            _key: entry._key,
-            _state: entry._config._retention?._state,
-            _targetKey: entry._config._targetKey,
-            _cacheSize: options._cacheSize,
-            _max: options._max,
-            _reason: options._reason,
-        });
-    }
-    /** @internal */
-    _selectPolicyRetainedView(max, evict) {
-        if (!evict || evict === "lru" || evict === "oldest")
-            return undefined;
-        for (const entry of this._retainedViews.values()) {
-            const state = entry._config._path[entry._config._path.length - 1].state.self;
-            const context = {
-                state,
-                key: entry._key,
-                size: this._retainedViews.size,
-                max,
-            };
-            const result = this._injector.invoke(evict, undefined, createRetentionEvictionPolicyInvocationLocals(context), "retention eviction policy");
-            if (!isString(result))
-                continue;
-            const selected = this._retainedViews.get(result);
-            if (selected)
-                return selected;
-        }
-        return undefined;
-    }
-    /** @internal */
-    _selectOrderedRetainedView(evict) {
-        let selected;
-        this._retainedViews.forEach((entry) => {
-            if (!selected) {
-                selected = entry;
-                return;
-            }
-            const left = evict === "oldest" ? entry._createdAt : entry._lastUsed;
-            const right = evict === "oldest" ? selected._createdAt : selected._lastUsed;
-            if (left < right) {
-                selected = entry;
-            }
-        });
-        return selected;
-    }
-    /**
-     * Gets or sets the root view context used for relative `ng-view` targeting.
-     */
-    /** @internal */
-    _rootViewContext(context) {
-        return (this._rootContext = context ?? this._rootContext);
-    }
-    /**
-     * Removes a view config from the active registry.
-     */
-    /** @internal */
-    _deactivateViewConfig(viewConfig) {
-        removeFrom(this._viewConfigs, viewConfig);
-        const targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);
-        if (!targetConfigs)
-            return;
-        removeFrom(targetConfigs, viewConfig);
-        if (!targetConfigs.length) {
-            this._viewConfigsByTarget.delete(viewConfig._targetKey);
-        }
-    }
-    /**
-     * Adds a view config to the active registry.
-     */
-    /** @internal */
-    _activateViewConfig(viewConfig) {
-        const existingTargetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey) ?? [];
-        existingTargetConfigs.slice().forEach((existing) => {
-            if (existing !== viewConfig && existing._depth === viewConfig._depth) {
-                this._deactivateViewConfig(existing);
-            }
-        });
-        this._viewConfigs.push(viewConfig);
-        let targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);
-        if (!targetConfigs) {
-            targetConfigs = [];
-            this._viewConfigsByTarget.set(viewConfig._targetKey, targetConfigs);
-        }
-        targetConfigs.push(viewConfig);
-    }
-    /**
-     * Re-matches active `ng-view` instances against currently registered view configs
-     * and notifies each view when its config assignment changes.
-     */
-    /** @internal */
-    _sync() {
-        const ngViewsByFqn = {};
-        this._ngViews.forEach((ngView) => {
-            ngViewsByFqn[ngView._fqn] = ngView;
-        });
-        const ngViewDepthCache = new Map();
-        this._ngViews.sort((left, right) => ngViewDepth(ngViewDepthCache, left) -
-            ngViewDepth(ngViewDepthCache, right));
-        this._ngViews.forEach((ngView) => {
-            let selectedViewConfig = null;
-            let bestDepth = Number.NEGATIVE_INFINITY;
-            const targetConfigs = this._viewConfigsByTarget.get(ngView._fqn) ?? [];
-            for (let i = 0; i < targetConfigs.length; i++) {
-                const candidate = targetConfigs[i];
-                if (!ViewService._matches(ngViewsByFqn, ngView, candidate))
-                    continue;
-                if (selectedViewConfig === null || candidate._depth > bestDepth) {
-                    selectedViewConfig = candidate;
-                    bestDepth = candidate._depth;
-                }
-            }
-            if (!this._ngViews.includes(ngView))
-                return;
-            if (ngView._config === selectedViewConfig)
-                return;
-            ngView._config = selectedViewConfig;
-            ngView._configUpdated(selectedViewConfig ?? undefined);
-        });
-    }
-    /**
-     * Registers one active `ng-view` and returns a deregistration function.
-     */
-    /** @internal */
-    _registerNgView(ngView) {
-        const ngViews = this._ngViews;
-        ngViews.push(ngView);
-        this._sync();
-        return () => {
-            removeFrom(ngViews, ngView);
-            this._sync();
-        };
-    }
-    /**
-     * Builds a predicate that determines whether a view config matches
-     * a specific active `ng-view`.
-     */
-    /** @internal */
-    static _matches(ngViewsByFqn, ngView, viewConfig) {
-        const ngViewContext = ngView._creationContext;
-        const viewDecl = viewConfig._viewDecl;
-        const normalizedTarget = viewConfig._targetKey;
-        const vcContext = viewDecl._ngViewContextAnchor ?? "";
-        if (normalizedTarget !== ngView._fqn)
-            return false;
-        const viewContext = assertDefined(viewDecl._context);
-        if (viewContext.name !== ngViewContext.name &&
-            vcContext !== ngViewContext.name) {
-            return false;
-        }
-        const childViewFqn = `${normalizedTarget}.${ngView._name}`;
-        return !ngViewsByFqn[childViewFqn];
-    }
-}
-
-function getFirstElementFromClone(clone) {
-    if (!clone)
-        return null;
-    if (isInstanceOf(clone, HTMLElement)) {
-        return clone;
-    }
-    if (isInstanceOf(clone, DocumentFragment)) {
-        const firstElement = clone.firstElementChild;
-        return isInstanceOf(firstElement, HTMLElement) ? firstElement : null;
-    }
-    if (isInstanceOf(clone, NodeList) || isArray(clone)) {
-        for (let i = 0, l = clone.length; i < l; i++) {
-            const node = clone[i];
-            if (isInstanceOf(node, HTMLElement)) {
-                return node;
-            }
-        }
-        return null;
-    }
-    return isInstanceOf(clone, Element) ? clone : null;
-}
-function getRootNodesFromClone(clone) {
-    if (!clone) {
-        return [];
-    }
-    if (isInstanceOf(clone, DocumentFragment)) {
-        return arrayFrom(clone.childNodes);
-    }
-    return isInstanceOf(clone, NodeList) || isArray(clone)
-        ? arrayFrom(clone)
-        : [clone];
-}
-function withResolvers() {
-    let resolve;
-    let reject;
-    const promise = new Promise((_resolve, _reject) => {
-        resolve = _resolve;
-        reject = _reject;
-    });
-    return {
-        promise,
-        resolve: assertDefined(resolve),
-        reject: assertDefined(reject),
-    };
-}
-/**
- * `ng-view`: A viewport directive which is filled in by a view from the active state.
- *
- * ### Attribute Runtime
- *
- * - `name`: (Optional) A view name.
- *   Named views are targeted from [[StateDeclaration.views]] entries.
- *
- * - `autoscroll`: an expression. When it evaluates to true, the `ng-view` will be scrolled into view when it is activated.
- *   Uses [[$anchorScroll]] to do the scrolling.
- *
- * - `onload`: Expression to evaluate whenever the view updates.
- *
- * #### Example:
- * A state can render into the unnamed `$default` view, or target named views.
- *
- * ```html
- * <div ng-view></div>
- * <div ng-view="messagelist"></div>
- * ```
- *
- * ```js
- * app.router("home", {
- *   template: "<h1>HELLO!</h1>"
- * })
- *
- * app.router("messages", {
- *   views: {
- *     messagelist: "messageList"
- *   }
- * })
- * ```
- *
- * #### Examples for `autoscroll`:
- * ```html
- * <!-- If autoscroll present with no expression,
- *      then scroll ng-view into view -->
- * <ng-view autoscroll/>
- *
- * <!-- If autoscroll present with valid expression,
- *      then scroll ng-view into view if expression evaluates to true -->
- * <ng-view autoscroll='true'/>
- * <ng-view autoscroll='false'/>
- * <ng-view autoscroll='scopeVariable'/>
- * ```
- *
- * Resolve data:
- *
- * The resolved data from the state's `resolve` block is placed on the scope as `$resolve`.
- *
- * #### Example:
- * ```js
- * app.router('home', {
- *   template: '<my-component user="$resolve.user"></my-component>',
- *   resolve: {
- *     user: function(UserService) { return UserService.fetchUser(); }
- *   }
- * });
- * ```
- */
-ViewDirective.$inject = [_state, _anchorScroll, _interpolate, _parse];
-/**
- * Renders and updates the currently active view configuration.
- */
-function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
-    const $view = $state._viewService;
-    const rootContext = $view._rootViewContext();
-    const rootData = {
-        $cfg: { _viewDecl: { _context: rootContext } },
-        $ngView: {},
-    };
-    const directive = {
-        count: 0,
-        terminal: true,
-        priority: 400,
-        transclude: "element",
-        compile(tElement, $transclude) {
-            const transclude = assertDefined($transclude);
-            const onloadExp = getNormalizedAttr(tElement, "onload") ?? "";
-            const autoScrollExp = getNormalizedAttr(tElement, "autoscroll");
-            const viewNameExp = getNormalizedAttr(tElement, "ngView") ??
-                getNormalizedAttr(tElement, "name") ??
-                "";
-            return function (scope, $element) {
-                const inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertDefined($interpolate(viewNameExp))(scope), name = isString(rawName) && rawName ? rawName : "$default";
-                const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
-                const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
-                let currentEl = null;
-                let currentScope = null;
-                let currentNodes = [];
-                let currentFragment = null;
-                let currentAnimation;
-                let currentConfig;
-                let viewConfig;
-                let configUpdateVersion = 0;
-                let destroyed = false;
-                let initialTemplate;
-                const inheritedContext = inherited.$cfg._viewDecl._context;
-                const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
-                const activeNgView = {
-                    _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
-                    _element: $element,
-                    _name: name, // ng-view name, retained internally for nested view matching
-                    _fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
-                    _config: null,
-                    _configUpdated: configUpdatedCallback,
-                    get _creationContext() {
-                        return (inheritedContext ??
-                            inherited.$ngView._creationContext ??
-                            rootContext);
-                    },
-                };
-                function configUpdatedCallback(config) {
-                    if (destroyed)
-                        return;
-                    const updateVersion = ++configUpdateVersion;
-                    if (!config) {
-                        if (!viewConfig)
-                            return;
-                        queueMicrotask(() => {
-                            if (updateVersion !== configUpdateVersion ||
-                                viewConfig !== undefined) {
-                                return;
-                            }
-                            activeNgView._config = null;
-                            updateView(undefined);
-                        });
-                        viewConfig = undefined;
-                        activeNgView._config = null;
-                        return;
-                    }
-                    if (viewConfig === config)
-                        return;
-                    activeNgView._config = config;
-                    viewConfig = config;
-                    if (!config._loaded) {
-                        void loadViewConfig(config).then((loadedConfig) => {
-                            if (updateVersion !== configUpdateVersion ||
-                                viewConfig !== config) {
-                                return undefined;
-                            }
-                            updateView(loadedConfig);
-                            return undefined;
-                        });
-                        return;
-                    }
-                    updateView(config);
-                }
-                setCacheData($element, "$ngView", { $ngView: activeNgView });
-                const unregister = $view._registerNgView(activeNgView);
-                if (!viewConfig) {
-                    updateView();
-                }
-                scope.$on("$destroy", function () {
-                    destroyed = true;
-                    configUpdateVersion++;
-                    viewConfig = undefined;
-                    activeNgView._config = null;
-                    unregister();
-                    currentConfig = undefined;
-                    cleanupLastView();
-                });
-                function cleanupLastView() {
-                    const destroyedScope = currentScope;
-                    const retention = currentConfig?._retention;
-                    if (retention?._mode === "keep-alive" &&
-                        currentConfig &&
-                        currentEl &&
-                        currentScope &&
-                        currentFragment &&
-                        currentAnimation) {
-                        const retainedElement = currentEl;
-                        const retainedScope = currentScope;
-                        const retainedNodes = currentNodes;
-                        const retainedFragment = currentFragment;
-                        const retainedAnimation = currentAnimation;
-                        const retainedConfig = currentConfig;
-                        if (retention._pause === "schedulers") {
-                            retainedScope.$broadcast("$viewRetentionPause", retainedConfig);
-                        }
-                        removeElement(retainedElement, true);
-                        retainedAnimation.$$animLeave.resolve(undefined);
-                        currentEl = null;
-                        currentScope = null;
-                        currentNodes = [];
-                        currentFragment = null;
-                        currentAnimation = undefined;
-                        currentConfig = undefined;
-                        $view._retainView({
-                            _key: retention._key,
-                            _config: retainedConfig,
-                            _element: retainedElement,
-                            _nodes: retainedNodes,
-                            _fragment: retainedFragment,
-                            _scope: retainedScope,
-                            _animation: retainedAnimation,
-                        });
-                        return;
-                    }
-                    if (currentScope) {
-                        currentScope.$destroy();
-                        currentScope = null;
-                    }
-                    if (currentEl) {
-                        const _viewData = getCacheData(currentEl, "$ngViewAnim");
-                        const elementScope = getInheritedData(currentEl, _scope);
-                        if (destroyedScope &&
-                            elementScope &&
-                            elementScope !== destroyedScope &&
-                            elementScope.$parent === destroyedScope &&
-                            !elementScope.$handler._destroyed) {
-                            elementScope.$destroy();
-                        }
-                        if (currentFragment && !currentFragment.disposed) {
-                            currentFragment.dispose();
-                        }
-                        else {
-                            removeElement(currentEl);
-                        }
-                        _viewData?.$$animLeave.resolve(undefined);
-                        currentEl = null;
-                    }
-                    currentNodes = [];
-                    currentFragment = null;
-                    currentAnimation = undefined;
-                    currentConfig = undefined;
-                }
-                function updateView(config) {
-                    const retained = config
-                        ? $view._restoreRetainedView(config)
-                        : undefined;
-                    if (config && retained) {
-                        restoreRetainedView(config, retained);
-                        return;
-                    }
-                    const newScope = scope.$new();
-                    const animEnter = withResolvers();
-                    const animLeave = withResolvers();
-                    const $ngViewAnim = {
-                        $animEnter: animEnter.promise,
-                        $animLeave: animLeave.promise,
-                        $$animLeave: animLeave,
-                    };
-                    /**
-                     * Fired once the view **begins loading**, *before* the DOM is rendered.
-                     *
-                     * @param event Event object.
-                     * @param viewName Name of the view.
-                     */
-                    newScope.$emit("$viewContentLoading", name);
-                    let enteredElement = null;
-                    let enteredNodes = [];
-                    let enteredFragment = null;
-                    transclude(newScope, (clone) => {
-                        const elementClone = getFirstElementFromClone(clone);
-                        const cloneNodes = getRootNodesFromClone(clone);
-                        if (!elementClone) {
-                            return;
-                        }
-                        initialTemplate ?? (initialTemplate = elementClone.innerHTML);
-                        const viewData = {
-                            $cfg: config,
-                            $ngView: activeNgView,
-                        };
-                        for (let i = 0; i < cloneNodes.length; i++) {
-                            const node = cloneNodes[i];
-                            setCacheData(node, "$ngViewAnim", $ngViewAnim);
-                            setCacheData(node, "$ngView", viewData);
-                        }
-                        enteredElement = elementClone;
-                        enteredNodes = cloneNodes;
-                        enteredFragment = assertDefined(getCompiledFragmentRecord(assertDefined(cloneNodes[0])));
-                        $element.after(elementClone);
-                        animEnter.resolve(undefined);
-                        cleanupLastView();
-                        currentEl = elementClone;
-                        currentScope = newScope;
-                        currentNodes = enteredNodes;
-                        currentFragment = enteredFragment;
-                        currentAnimation = $ngViewAnim;
-                        if ((isDefined(autoScrollExp) && !autoScrollExp) ||
-                            (autoScrollExp && autoScrollFn?.(scope))) {
-                            $anchorScroll(elementClone);
-                        }
-                    });
-                    if (currentScope !== newScope)
-                        return;
-                    if (newScope.$handler._destroyed) {
-                        return;
-                    }
-                    const host = assertDefined(enteredElement);
-                    const viewData = getCacheData(host, "$ngView");
-                    $view._fillView({
-                        host,
-                        rootNodes: enteredNodes,
-                        scope: newScope,
-                        config,
-                        initial: viewData?.$initial ?? initialTemplate ?? "",
-                        activeNgView,
-                        animation: $ngViewAnim,
-                    });
-                    currentConfig = config;
-                    newScope.$emit("$viewContentAnimationEnded");
-                    /**
-                     * Fired once the view is **loaded**, *after* the DOM is rendered.
-                     *
-                     * @param event Event object.
-                     */
-                    newScope.$emit("$viewContentLoaded", config ?? viewConfig);
-                    onloadFn?.(newScope);
-                }
-                function restoreRetainedView(config, retained) {
-                    const viewData = {
-                        $cfg: config,
-                        $ngView: activeNgView,
-                        $filled: true,
-                    };
-                    for (let i = 0; i < retained._nodes.length; i++) {
-                        const node = retained._nodes[i];
-                        setCacheData(node, "$ngViewAnim", retained._animation);
-                        setCacheData(node, "$ngView", viewData);
-                    }
-                    retained._scope.$emit("$viewContentLoading", name);
-                    $element.after(...retained._nodes);
-                    cleanupLastView();
-                    if (config._retention?._pause === "schedulers") {
-                        retained._scope.$broadcast("$viewRetentionResume", config);
-                    }
-                    currentEl = retained._element;
-                    currentScope = retained._scope;
-                    currentNodes = retained._nodes;
-                    currentFragment = assertDefined(retained._fragment);
-                    currentAnimation = retained._animation;
-                    currentConfig = config;
-                    retained._scope.$emit("$viewContentAnimationEnded");
-                    retained._scope.$emit("$viewContentLoaded", config);
-                    onloadFn?.(retained._scope);
-                }
-            };
-        },
-    };
-    return directive;
-}
-/**
- * Clears stale fallback content before a routed `ng-view` clone links children.
- *
- * The mounted view is filled later by `ViewService`; this guard only preserves
- * the old two-directive transclusion ordering without owning view rendering.
- */
-function ViewDirectiveContentGuard() {
-    return {
-        priority: -400,
-        compile(tElement) {
-            const initial = tElement.innerHTML;
-            return {
-                pre(_scope, $element) {
-                    const data = getCacheData($element, "$ngView");
-                    if (data) {
-                        data.$initial ?? (data.$initial = initial);
-                    }
-                    if (data?.$cfg && !data.$filled) {
-                        dealoc($element, true);
-                    }
-                },
-            };
-        },
-    };
-}
-
 const emptyParamTypeDefinition = {};
 function valToString(val) {
     if (isNullOrUndefined(val)) {
@@ -31083,6 +29181,104 @@ class RouteTable {
 }
 
 /**
+ * Functions that manipulate strings
+ */
+const DOTS = "...";
+/**
+ * Returns a string shortened to a maximum length
+ *
+ * If the string is already less than the `max` length, return the string.
+ * Else return the string, shortened to `max - 3` and append three dots ("...").
+ *
+ * `max` is the maximum length of the returned string.
+ */
+function maxLength(max, str) {
+    if (str.length <= max)
+        return str;
+    return `${str.substring(0, max - DOTS.length)}${DOTS}`;
+}
+/** Converts a camelCase string into kebab-case. */
+function kebobString(camelCase) {
+    return camelCase
+        .replace(/^([A-Z])/, ($1) => $1.toLowerCase()) // replace first char
+        .replace(/([A-Z])/g, ($1) => `-${$1.toLowerCase()}`); // replace rest
+}
+const FN_LENGTH = 9;
+/** Returns a stable string representation for a function. */
+function functionToString(fn) {
+    const fnStr = fnToString(fn);
+    const toStr = fnStr.replace(/^(function [^ ]+\([^)]*\))/, "$1");
+    const fnName = fn.name || "";
+    if (fnName && /function \(/.exec(toStr)) {
+        return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
+    }
+    return toStr;
+}
+function fnToString(fn) {
+    let _fn;
+    if (isArray(fn)) {
+        const candidate = fn[fn.length - 1];
+        if (isFunction(candidate))
+            _fn = candidate;
+    }
+    else if (isFunction(fn)) {
+        _fn = fn;
+    }
+    else {
+        _fn = undefined;
+    }
+    return _fn ? _fn.toString() : "undefined";
+}
+/** Converts arbitrary values into short readable debug strings. */
+function stringify(value) {
+    const seen = [];
+    const isRejection = (obj) => {
+        return (isObject(obj) &&
+            "then" in obj &&
+            isFunction(obj.then) &&
+            obj.constructor.name === "Rejection");
+    };
+    const hasToString = (obj) => isObject(obj) &&
+        !isArray(obj) &&
+        obj.constructor !== Object &&
+        isFunction(Reflect.get(obj, "toString"));
+    /** Formats a single item while tracking circular references. */
+    function format(item) {
+        if (isObject(item)) {
+            if (seen.includes(item))
+                return "[circular ref]";
+            seen.push(item);
+        }
+        if (isUndefined(item))
+            return "undefined";
+        if (isNull(item))
+            return "null";
+        if (isRejection(item))
+            return String(item._transitionRejection);
+        if (isPromiseLike(item))
+            return "[Promise]";
+        if (hasToString(item)) {
+            const toStringFn = Reflect.get(item, "toString");
+            return toStringFn.call(item);
+        }
+        if (isFunction(item))
+            return functionToString(item);
+        return item;
+    }
+    if (isUndefined(value)) {
+        // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
+        // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
+        // manually stringifying it.
+        return String(format(value));
+    }
+    const json = JSON.stringify(value, (_key, item) => format(item));
+    return isString(json) ? json.replace(/\\"/g, '"') : String(json);
+}
+function stripLastPathElement(str) {
+    return str.replace(/\/[^/]*$/, "");
+}
+
+/**
  * Owns URL reads, writes, and href formatting for the router runtime.
  *
  * @internal
@@ -31160,6 +29356,50 @@ class RouterUrlRuntime {
             url,
         ].join("");
     }
+    /** @internal */
+    _parseHref(href) {
+        const baseUrl = new URL(window.location.href);
+        const url = new URL(href, baseUrl);
+        if (url.origin !== baseUrl.origin)
+            return undefined;
+        const html5Mode = this._locationConfig.html5Mode;
+        const isHtml5 = typeof html5Mode === "boolean" ? html5Mode : (html5Mode?.enabled ?? true);
+        if (!isHtml5) {
+            const hashPrefix = this._locationConfig.hashPrefix ?? "!";
+            const hashUrl = url.hash.slice(1);
+            if (!hashUrl.startsWith(hashPrefix))
+                return undefined;
+            const parsed = new URL(hashUrl.slice(hashPrefix.length), baseUrl.origin);
+            return {
+                path: decodeURIComponent(parsed.pathname),
+                search: parseSearchParams(parsed.searchParams),
+                hash: decodeURIComponent(parsed.hash.slice(1)),
+            };
+        }
+        const basePath = stripLastPathElement(this._getBaseHref()).replace(/\/$/, "");
+        if (basePath &&
+            url.pathname !== basePath &&
+            !url.pathname.startsWith(`${basePath}/`)) {
+            return undefined;
+        }
+        return {
+            path: decodeURIComponent(url.pathname.slice(basePath.length) || "/"),
+            search: parseSearchParams(url.searchParams),
+            hash: decodeURIComponent(url.hash.slice(1)),
+        };
+    }
+}
+function parseSearchParams(params) {
+    const result = {};
+    params.forEach((value, key) => {
+        const current = result[key];
+        result[key] = isDefined(current)
+            ? Array.isArray(current)
+                ? current.concat(value)
+                : [current, value]
+            : value;
+    });
+    return result;
 }
 function appendBasePath(url, isHtml5, absolute, baseHref) {
     if (baseHref === "/")
@@ -31190,6 +29430,9 @@ class RouterRuntimeState {
         this._params = new StateParams();
         this._scroll = undefined;
         this._focus = undefined;
+        this._prefetch = false;
+        this._prefetchDelay = 60;
+        this._relay = false;
         this._viewTransitions = undefined;
         this._loading = undefined;
         this._retry = undefined;
@@ -31240,6 +29483,15 @@ class RouterRuntimeState {
         }
         if (config.focus !== undefined) {
             this._focus = config.focus;
+        }
+        if (config.prefetch !== undefined) {
+            this._prefetch = config.prefetch;
+        }
+        if (config.prefetchDelay !== undefined) {
+            this._prefetchDelay = Math.max(0, config.prefetchDelay);
+        }
+        if (config.relay !== undefined) {
+            this._relay = config.relay;
         }
         if (config.viewTransitions !== undefined) {
             this._viewTransitions = config.viewTransitions;
@@ -31300,6 +29552,2180 @@ class RouterRuntimeState {
             caseInsensitive: this._isCaseInsensitive,
         };
         return new UrlMatcher(urlPattern, this._paramTypes, this._paramFactory, assign(globalConfig, config));
+    }
+}
+/** @internal */
+function _getRouterPrefetchDelay(element, routerState) {
+    const mode = element.getAttribute("data-prefetch");
+    if (mode !== null && mode !== "" && mode !== "true") {
+        return undefined;
+    }
+    if (mode === null && !routerState._prefetch) {
+        return undefined;
+    }
+    const delayValue = element.getAttribute("data-prefetch-delay");
+    if (delayValue !== null && delayValue.trim() !== "") {
+        const delay = Number(delayValue);
+        if (Number.isFinite(delay)) {
+            return Math.max(0, delay);
+        }
+    }
+    return routerState._prefetchDelay;
+}
+
+const noopDeregister = () => undefined;
+const uniqueStrings = (classes) => arrayFrom(new Set(classes));
+const ACTIVE_REQUIREMENTS = [
+    "?^ngStateActiveExact",
+    "?^ngStateActive",
+];
+const DATA_STATE_CURRENT = "data-state-current";
+const isRouteLinkAriaDisabled = (element) => hasNormalizedAttr(element, "ngAriaDisable");
+function selectActiveController(controllers) {
+    return controllers[0] ?? controllers[1];
+}
+function getFirstNormalizedAttr(element, names) {
+    for (const name of names) {
+        const value = getNormalizedAttr(element, name);
+        if (value !== undefined) {
+            return value;
+        }
+    }
+    return undefined;
+}
+function hasDataStateModifier(element, modifier) {
+    return getNormalizedAttr(element, modifier) !== undefined;
+}
+function setDataStateCurrent(element, currentState, isCurrent) {
+    currentState._managed = true;
+    element.setAttribute(DATA_STATE_CURRENT, String(isCurrent));
+}
+function updateDataStateCurrent($state, element, rawDef, currentState) {
+    const tracksActive = hasDataStateModifier(element, "stateActive");
+    const tracksExact = hasDataStateModifier(element, "stateExact");
+    if (!tracksActive && !tracksExact) {
+        if (currentState._managed) {
+            element.removeAttribute(DATA_STATE_CURRENT);
+            currentState._managed = false;
+        }
+        return undefined;
+    }
+    const def = processedDef($state, element, rawDef);
+    const stateName = def._ngState;
+    if (!stateName) {
+        setDataStateCurrent(element, currentState, false);
+        return false;
+    }
+    const params = def._ngStateParams;
+    const isCurrent = $state.matches(stateName, params, { exact: tracksExact });
+    setDataStateCurrent(element, currentState, isCurrent);
+    return isCurrent;
+}
+function appendSplitClasses(classes, value) {
+    const split = value.split(/\s/);
+    split.forEach((className) => {
+        if (className)
+            classes.push(className);
+    });
+}
+function getClasses(stateList) {
+    const classes = [];
+    stateList.forEach((state) => {
+        appendSplitClasses(classes, state._activeClass);
+    });
+    return classes;
+}
+function appendUniqueClasses(target, source) {
+    source.forEach((className) => {
+        if (!target.includes(className))
+            target.push(className);
+    });
+}
+/**
+ * Parses a state ref expression into a target state name and parameter expression.
+ */
+function parseStateRef(ref) {
+    const normalizedRef = normalizeParamsOnlyStateRef(ref).replace(/\n/g, " ");
+    const trimmedRef = normalizedRef.trim();
+    const openParenIndex = trimmedRef.indexOf("(");
+    if (openParenIndex === -1) {
+        return { _state: trimmedRef || null, _paramExpr: null };
+    }
+    const closeParenIndex = trimmedRef.lastIndexOf(")");
+    if (closeParenIndex !== trimmedRef.length - 1) {
+        throw new Error(`Invalid state ref '${ref}'`);
+    }
+    return {
+        _state: trimmedRef.slice(0, openParenIndex).trimEnd() || null,
+        _paramExpr: trimmedRef.slice(openParenIndex + 1, closeParenIndex) || null,
+    };
+}
+function normalizeParamsOnlyStateRef(ref) {
+    const trimmedRef = ref.trim();
+    if (trimmedRef.startsWith("{") &&
+        trimmedRef.endsWith("}") &&
+        trimmedRef.indexOf("}") === trimmedRef.length - 1) {
+        return `(${trimmedRef})`;
+    }
+    return ref;
+}
+/**
+ * Resolves the relative state context for a state-ref-bearing element.
+ */
+function stateContext(el) {
+    const $ngView = getInheritedData(el, "$ngView");
+    const path = $ngView?.$cfg
+        ?._path;
+    return path ? path[path.length - 1].state.name : undefined;
+}
+/**
+ * Computes the current state-ref definition, href, and navigation options.
+ */
+function processedDef($state, $element, def) {
+    const ngState = def._ngState ?? $state.current?.name;
+    const ngStateOpts = assign(defaultOpts($element, $state), def._ngStateOpts ?? {});
+    const href = ngState
+        ? $state.href(ngState, def._ngStateParams, ngStateOpts)
+        : undefined;
+    return {
+        _ngState: ngState,
+        _ngStateParams: def._ngStateParams,
+        _ngStateOpts: ngStateOpts,
+        _href: href,
+    };
+}
+/**
+ * Returns the relevant DOM attribute and click behavior metadata for the element.
+ */
+function getTypeInfo(el) {
+    // SVG 2 uses the standard `href` attribute; `xlink:href` is obsolete.
+    const isForm = el.nodeName === "FORM";
+    return {
+        _attr: isForm ? "action" : "href",
+        _isAnchor: el.nodeName === "A",
+        _isButton: el.nodeName === "BUTTON",
+        _clickable: !isForm,
+    };
+}
+function applyRouteLinkAriaDefaults($aria, element, type) {
+    if (isRouteLinkAriaDisabled(element) || type._isAnchor || type._isButton) {
+        return;
+    }
+    if ($aria.config("bindRoleForState") && !element.hasAttribute("role")) {
+        element.setAttribute("role", "link");
+    }
+    if ($aria.config("tabindex") && !element.hasAttribute("tabindex")) {
+        element.setAttribute("tabindex", "0");
+    }
+}
+function updateRouteLinkAriaCurrent($aria, element, currentState, isCurrent) {
+    if (isRouteLinkAriaDisabled(element) ||
+        !$aria.config("ariaCurrent") ||
+        isCurrent === undefined) {
+        if (currentState._managedAriaCurrent) {
+            element.removeAttribute("aria-current");
+            currentState._managedAriaCurrent = false;
+        }
+        return;
+    }
+    if (isCurrent) {
+        if (currentState._managedAriaCurrent ||
+            !element.hasAttribute("aria-current")) {
+            element.setAttribute("aria-current", $aria.config("ariaCurrentToken"));
+            currentState._managedAriaCurrent = true;
+        }
+        return;
+    }
+    if (currentState._managedAriaCurrent) {
+        element.removeAttribute("aria-current");
+        currentState._managedAriaCurrent = false;
+    }
+}
+/**
+ * Creates the click handler that triggers a state transition for a state ref.
+ */
+function clickHook(el, $state, type, rawDef, scope) {
+    return function (event) {
+        const mouseEvent = event;
+        const { button } = mouseEvent;
+        const target = processedDef($state, el, rawDef);
+        const res = button > 0 ||
+            mouseEvent.ctrlKey ||
+            mouseEvent.metaKey ||
+            mouseEvent.shiftKey ||
+            mouseEvent.altKey ||
+            el.getAttribute("target");
+        if (!res) {
+            const originalPreventDefault = event.preventDefault.bind(event);
+            let cancelled = false;
+            let ignorePreventDefaultCount = type._isAnchor && !target._href ? 1 : 0;
+            event.preventDefault = function () {
+                originalPreventDefault();
+                if (ignorePreventDefaultCount-- <= 0) {
+                    cancelled = true;
+                }
+            };
+            originalPreventDefault();
+            queueMicrotask(() => {
+                event.preventDefault = originalPreventDefault;
+                if (cancelled) {
+                    return;
+                }
+                if (!el.getAttribute("disabled") && target._ngState) {
+                    void $state
+                        .go(target._ngState, target._ngStateParams, target._ngStateOpts)
+                        .then(() => {
+                        scope.$emit("$updateBrowser");
+                        return undefined;
+                    })
+                        .catch(() => undefined);
+                }
+            });
+        }
+        else {
+            // ignored
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    };
+}
+/**
+ * Produces default navigation options for a state-ref element.
+ */
+function defaultOpts(el, $state) {
+    return {
+        relative: stateContext(el) ?? $state.$current,
+        inherit: true,
+        source: "ng-state",
+    };
+}
+/**
+ * Binds the configured activation events and removes them on scope destroy.
+ */
+function bindEvents(element, scope, hookFn, keyboardHookFn, ngStateOpts) {
+    let events = ngStateOpts ? ngStateOpts.events : undefined;
+    if (!isArray(events)) {
+        events = ["click"];
+    }
+    const eventNames = events;
+    //const on = element.on ? "on" : "bind";
+    for (const event of eventNames) {
+        element.addEventListener(event, hookFn);
+    }
+    if (keyboardHookFn) {
+        element.addEventListener("keydown", keyboardHookFn);
+    }
+    scope.$on("$destroy", function () {
+        // const off = element.off ? "off" : "unbind";
+        for (const event of eventNames) {
+            element.removeEventListener(event, hookFn);
+        }
+        if (keyboardHookFn) {
+            element.removeEventListener("keydown", keyboardHookFn);
+        }
+    });
+}
+function bindPrefetchEvents(element, scope, $state, rawDef) {
+    let timer;
+    const cancel = () => {
+        if (timer !== undefined) {
+            clearTimeout(timer);
+            timer = undefined;
+        }
+    };
+    const schedule = () => {
+        const delay = _getRouterPrefetchDelay(element, $state._routerState);
+        if (delay === undefined)
+            return;
+        cancel();
+        timer = window.setTimeout(() => {
+            timer = undefined;
+            if (element.hasAttribute("disabled"))
+                return;
+            const target = processedDef($state, element, rawDef);
+            if (target._ngState) {
+                void $state
+                    .prefetch(target._ngState, target._ngStateParams, target._ngStateOpts)
+                    .catch(() => undefined);
+            }
+        }, delay);
+    };
+    element.addEventListener("pointerenter", schedule);
+    element.addEventListener("pointerleave", cancel);
+    element.addEventListener("focus", schedule);
+    element.addEventListener("blur", cancel);
+    scope.$on("$destroy", () => {
+        cancel();
+        element.removeEventListener("pointerenter", schedule);
+        element.removeEventListener("pointerleave", cancel);
+        element.removeEventListener("focus", schedule);
+        element.removeEventListener("blur", cancel);
+    });
+}
+function createKeyboardRouteLinkHook(hookFn) {
+    return function (event) {
+        const keyboardEvent = event;
+        if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") {
+            return;
+        }
+        hookFn(event);
+    };
+}
+StateRefDynamicDirective.$inject = [
+    _aria,
+    _state,
+    _rootScope,
+    _stateRegistry,
+    _transitions,
+    _parse,
+];
+/**
+ * Generates dynamic `ui-state` links whose target state is read from an expression.
+ */
+function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $transitions, $parse) {
+    return {
+        restrict: "A",
+        require: ACTIVE_REQUIREMENTS,
+        link(scope, element, activeControllers) {
+            const type = getTypeInfo(element);
+            const active = selectActiveController(activeControllers);
+            let unlinkInfoFn;
+            const rawDef = {};
+            const dataStateCurrent = {
+                _managed: false,
+                _managedAriaCurrent: false,
+            };
+            const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
+            const rawDefKeyByAttr = {
+                ngState: "_ngState",
+                ngStateParams: "_ngStateParams",
+                ngStateOpts: "_ngStateOpts",
+            };
+            const watchDeregFns = {};
+            inputAttrs.forEach((attr) => {
+                watchDeregFns[attr] = () => {
+                    /* empty */
+                };
+            });
+            function update() {
+                const def = processedDef($state, element, rawDef);
+                if (unlinkInfoFn) {
+                    unlinkInfoFn();
+                }
+                if (active?._addStateInfo) {
+                    unlinkInfoFn = active._addStateInfo(def._ngState ?? null, def._ngStateParams);
+                }
+                if (!isNullOrUndefined(def._href)) {
+                    setNormalizedAttr(element, type._attr, def._href);
+                }
+                const isCurrent = updateDataStateCurrent($state, element, rawDef, dataStateCurrent);
+                updateRouteLinkAriaCurrent($aria, element, dataStateCurrent, isCurrent);
+            }
+            inputAttrs.forEach((field) => {
+                function readFieldExpression() {
+                    return getNormalizedAttr(element, field);
+                }
+                const initialExpr = readFieldExpression();
+                rawDef[rawDefKeyByAttr[field]] =
+                    initialExpr && !initialExpr.includes("{{")
+                        ? $parse(initialExpr)(scope)
+                        : undefined;
+                const syncFieldExpression = () => {
+                    const expr = readFieldExpression();
+                    watchDeregFns[field]();
+                    if (!expr || expr.includes("{{")) {
+                        return;
+                    }
+                    watchDeregFns[field] =
+                        scope.$watch(expr, (newval) => {
+                            rawDef[rawDefKeyByAttr[field]] =
+                                newval;
+                            update();
+                        }) ?? noopDeregister;
+                };
+                syncFieldExpression();
+                const observerName = directiveNormalize(field);
+                const observer = new MutationObserver((mutations) => {
+                    for (let i = 0; i < mutations.length; i++) {
+                        const attributeName = mutations[i].attributeName;
+                        if (attributeName &&
+                            directiveNormalize(attributeName) === observerName) {
+                            syncFieldExpression();
+                        }
+                    }
+                });
+                observer.observe(element, { attributes: true });
+                let deregisterDestroy = scope.$on("$destroy", deregister);
+                function deregister() {
+                    observer.disconnect();
+                    deregisterDestroy?.();
+                    deregisterDestroy = undefined;
+                }
+            });
+            const modifierNames = new Set([
+                directiveNormalize("stateActive"),
+                directiveNormalize("stateExact"),
+                directiveNormalize("ngAriaDisable"),
+            ]);
+            const modifierObserver = new MutationObserver((mutations) => {
+                if (mutations.some(({ attributeName }) => attributeName &&
+                    modifierNames.has(directiveNormalize(attributeName)))) {
+                    update();
+                }
+            });
+            modifierObserver.observe(element, { attributes: true });
+            scope.$on("$destroy", () => {
+                modifierObserver.disconnect();
+            });
+            update();
+            scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
+            scope.$on("$destroy", $transitions.onSuccess({}, update));
+            bindPrefetchEvents(element, scope, $state, rawDef);
+            if (!type._clickable)
+                return;
+            applyRouteLinkAriaDefaults($aria, element, type);
+            const hookFn = clickHook(element, $state, type, rawDef, $rootScope);
+            const keyboardHookFn = !isRouteLinkAriaDisabled(element) &&
+                !type._isAnchor &&
+                !type._isButton &&
+                $aria.config("bindKeydown")
+                ? createKeyboardRouteLinkHook(hookFn)
+                : undefined;
+            bindEvents(element, scope, hookFn, keyboardHookFn, rawDef._ngStateOpts);
+        },
+    };
+}
+StateRefActiveDirective.$inject = [
+    _state,
+    _interpolate,
+    _stateRegistry,
+    _transitions,
+    _parse,
+];
+/**
+ * Toggles active CSS classes based on the current router state.
+ */
+function StateRefActiveDirective($state, $interpolate, $stateRegistry, $transitions, $parse) {
+    const routerState = $state._routerState;
+    return {
+        restrict: "A",
+        controller: [
+            _scope,
+            _element,
+            function ($scope, $element) {
+                let states = [];
+                let activeDefinition;
+                const activeEqRead = getFirstNormalizedAttr($element, [
+                    "ngStateActiveExact",
+                ]);
+                const activeEqExpr = activeEqRead ?? "";
+                const activeEqClass = stringify$1(assertDefined($interpolate(activeEqExpr, false))($scope) ?? "");
+                const activeRead = getFirstNormalizedAttr($element, ["ngStateActive"]);
+                const activeExpr = activeRead;
+                try {
+                    activeDefinition = activeExpr
+                        ? $parse(activeExpr)($scope)
+                        : undefined;
+                }
+                catch {
+                    // Do nothing. The active directive value is not a valid expression.
+                    // Fall back to using $interpolate below
+                }
+                activeDefinition =
+                    activeDefinition ??
+                        stringify$1(assertDefined($interpolate(activeExpr ?? "", false))($scope) ?? "");
+                setStatesFromDefinitionObject(activeDefinition);
+                // Allow state-ref directives to communicate with active-state directives.
+                this._addStateInfo = function (newState, newParams) {
+                    // An explicit state map shadows the state inferred from a linked child.
+                    if (isObject(activeDefinition) && states.length > 0) {
+                        return undefined;
+                    }
+                    const deregister = addState(newState, newParams, String(activeDefinition));
+                    update();
+                    return deregister;
+                };
+                /**
+                 * Updates active classes after a transition settles.
+                 */
+                function updateAfterTransition(trans) {
+                    void trans.promise
+                        .then(() => {
+                        update();
+                        return undefined;
+                    })
+                        .catch(() => undefined);
+                }
+                $scope.$on("$destroy", setupEventListeners());
+                if (routerState._transition) {
+                    updateAfterTransition(routerState._transition);
+                }
+                function setupEventListeners() {
+                    const deregisterStatesChangedListener = $stateRegistry.onStatesChanged(handleStatesChanged);
+                    const deregisterOnStartListener = $transitions.onStart({}, updateAfterTransition);
+                    const deregisterStateChangeSuccessListener = $scope.$on("$stateChangeSuccess", update);
+                    return function cleanUp() {
+                        deregisterStatesChangedListener();
+                        deregisterOnStartListener();
+                        deregisterStateChangeSuccessListener();
+                    };
+                }
+                function handleStatesChanged() {
+                    setStatesFromDefinitionObject(activeDefinition);
+                }
+                /** Updates the tracked state list from the directive definition object. */
+                function setStatesFromDefinitionObject(statesDefinition) {
+                    if (isObject(statesDefinition)) {
+                        states = [];
+                        const definition = statesDefinition;
+                        keys(definition).forEach((activeClass) => {
+                            const stateOrName = definition[activeClass];
+                            if (isString(stateOrName)) {
+                                addStateForClass(stateOrName, activeClass);
+                            }
+                            else if (isArray(stateOrName)) {
+                                stateOrName.forEach((stateName) => {
+                                    addStateForClass(stateName, activeClass);
+                                });
+                            }
+                        });
+                    }
+                }
+                function addStateForClass(stateOrNameParam, activeClassParam) {
+                    const ref = parseStateRef(stateOrNameParam);
+                    addState(ref._state, ref._paramExpr && $parse(ref._paramExpr)($scope), activeClassParam);
+                }
+                function addState(stateName, stateParams, activeClass) {
+                    const state = stateName
+                        ? $state.get(stateName, stateContext($element))
+                        : undefined;
+                    const foundState = state;
+                    const stateInfo = {
+                        _state: {
+                            name: foundState?.name ??
+                                (isObject(stateName) && "name" in stateName
+                                    ? String(stateName.name)
+                                    : String(stateName)),
+                        },
+                        _params: stateParams,
+                        _activeClass: activeClass,
+                    };
+                    states.push(stateInfo);
+                    return function removeState() {
+                        removeFrom(states, stateInfo);
+                    };
+                }
+                // Update route state
+                function update() {
+                    const allClasses = getClasses(states);
+                    appendSplitClasses(allClasses, activeEqClass);
+                    const fuzzyStates = [];
+                    const exactlyMatchesAny = states.some((state) => $state.matches(state._state.name, state._params, {
+                        exact: true,
+                    }));
+                    states.forEach((state) => {
+                        if ($state.matches(state._state.name, state._params)) {
+                            fuzzyStates.push(state);
+                        }
+                    });
+                    const fuzzyClasses = getClasses(fuzzyStates);
+                    const exactClasses = [];
+                    if (exactlyMatchesAny) {
+                        appendSplitClasses(exactClasses, activeEqClass);
+                    }
+                    const addClasses = uniqueStrings(fuzzyClasses);
+                    appendUniqueClasses(addClasses, exactClasses);
+                    const removeClasses = [];
+                    const uniqueClasses = uniqueStrings(allClasses);
+                    uniqueClasses.forEach((cls) => {
+                        if (!addClasses.includes(cls)) {
+                            removeClasses.push(cls);
+                        }
+                    });
+                    addClasses.forEach((className) => {
+                        $element.classList.add(className);
+                    });
+                    removeClasses.forEach((className) => {
+                        $element.classList.remove(className);
+                    });
+                }
+                update();
+                return undefined;
+            },
+        ],
+    };
+}
+
+async function resolveResolvable(resolvable, resolveContext, trans) {
+    const dependencies = resolveContext.getDependencies(resolvable);
+    const dependencyPromises = dependencies.map(async (dependency) => dependency.get(resolveContext, trans));
+    const resolvedDeps = await Promise.all(dependencyPromises);
+    const resolvedValue = await resolvable.resolveFn?.(...resolvedDeps);
+    resolvable.data = resolvedValue;
+    resolvable.resolved = true;
+    resolvable.resolveFn = null;
+    return resolvable.data;
+}
+/**
+ * # The Resolve subsystem
+ *
+ * This subsystem is an asynchronous, hierarchical Dependency Injection system.
+ *
+ * Typically, resolve is configured on a state using a [[StateDeclaration.resolve]] declaration.
+ */
+/**
+ * Represents one dependency that can be resolved for a transition.
+ *
+ * A resolvable tracks its token, dependency list, eager timing, cached value,
+ * and in-flight promise so router state resolution stays idempotent.
+ */
+class Resolvable {
+    /**
+     * @throws Error when a resolve function is provided without a token.
+     */
+    constructor(arg1, resolveFn, deps, eager, data) {
+        this.token = undefined;
+        this.resolveFn = undefined;
+        this.deps = [];
+        this.eager = false;
+        this.data = undefined;
+        this.resolved = false;
+        this.promise = undefined;
+        if (isInstanceOf(arg1, Resolvable)) {
+            this.token = arg1.token;
+            this.resolveFn = arg1.resolveFn;
+            this.deps = arg1.deps;
+            this.eager = arg1.eager;
+            this.data = arg1.data;
+            this.resolved = arg1.resolved;
+            this.promise = arg1.promise;
+        }
+        else if (isFunction(resolveFn)) {
+            assert(!isNullOrUndefined(arg1), "token argument is required");
+            this.token = arg1;
+            this.eager = !!eager;
+            this.resolveFn = resolveFn;
+            this.deps = deps ?? [];
+            this.data = data;
+            this.resolved = data !== undefined;
+            this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
+        }
+        else if (isObject(arg1) &&
+            hasOwn(arg1, "token") &&
+            (hasOwn(arg1, "resolveFn") || hasOwn(arg1, "data"))) {
+            const literal = arg1;
+            this.token = literal.token;
+            this.resolveFn = literal.resolveFn;
+            this.deps = literal.deps ?? [];
+            this.eager = !!literal.eager;
+            this.data = literal.data;
+            this.resolved = literal.data !== undefined;
+            this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
+        }
+    }
+    /**
+     * Resolves this token by first resolving its dependencies, then invoking
+     * the resolve function and caching the resulting value.
+     */
+    async resolve(resolveContext, trans) {
+        this.promise = resolveResolvable(this, resolveContext, trans);
+        return this.promise;
+    }
+    /**
+     * Returns the cached promise, resolving the token first if necessary.
+     */
+    async get(resolveContext, trans) {
+        return this.promise ?? this.resolve(resolveContext, trans);
+    }
+    /**
+     * Returns a readable description of the resolvable and its dependencies.
+     */
+    toString() {
+        const deps = isArray(this.deps) ? this.deps : [this.deps];
+        return `Resolvable(token: ${stringify(this.token)}, requires: [${deps
+            .map(stringify)
+            .join(", ")}])`;
+    }
+    /**
+     * Creates a shallow copy of this resolvable.
+     */
+    clone() {
+        return new Resolvable(this);
+    }
+    /**
+     * Creates a resolvable that is already resolved to `data`.
+     */
+    static fromData(token, data) {
+        return new Resolvable(token, () => data, undefined, undefined, data);
+    }
+}
+
+/** @internal */
+function createResolveInvocationLocals(context) {
+    const locals = {};
+    context.getTokens().forEach((token) => {
+        if (isString(token)) {
+            locals[token] = assertDefined(context.getResolvable(token)).data;
+        }
+    });
+    return locals;
+}
+async function resolveToken(resolvable, context, trans) {
+    return {
+        token: resolvable.token,
+        value: await resolvable.get(context, trans),
+    };
+}
+/**
+ * Provides resolve lookup and execution helpers for a specific transition path.
+ */
+class ResolveContext {
+    /**
+     * @param _path path of nodes whose resolvables are visible in this context
+     * @param _injector injector used when dependency tokens are not resolvables in the path
+     */
+    constructor(_path, _injector) {
+        this._path = _path;
+        this._injector = _injector;
+    }
+    /**
+     * Returns the unique tokens available from all resolvables in this path.
+     */
+    getTokens() {
+        const tokenSet = new Set();
+        this._path.forEach(({ resolvables }) => {
+            resolvables.forEach(({ token }) => {
+                tokenSet.add(token);
+            });
+        });
+        return Array.from(tokenSet);
+    }
+    /**
+     * Returns the most local resolvable registered for the specified token.
+     */
+    getResolvable(token) {
+        for (let i = this._path.length - 1; i >= 0; i--) {
+            const { resolvables } = this._path[i];
+            for (let j = resolvables.length - 1; j >= 0; j--) {
+                const candidate = resolvables[j];
+                if (candidate.token === token) {
+                    return candidate;
+                }
+            }
+        }
+        return undefined;
+    }
+    /**
+     * Returns a child resolve context scoped to the specified state.
+     */
+    subContext(state) {
+        let contextPath;
+        for (let i = 0; i < this._path.length; i++) {
+            if (this._path[i].state.name === state.name) {
+                contextPath = this._path.slice(0, i + 1);
+                break;
+            }
+        }
+        return new ResolveContext(contextPath ?? this._path, this._injector);
+    }
+    /**
+     * Adds or replaces resolvables for a specific state in this path.
+     */
+    addResolvables(newResolvables, state) {
+        let node;
+        for (let i = 0; i < this._path.length; i++) {
+            const candidate = this._path[i];
+            if (candidate.state === state) {
+                node = candidate;
+                break;
+            }
+        }
+        if (!node) {
+            throw new Error(`Could not find path node for state: ${state.name}`);
+        }
+        const resolvables = [];
+        const tokens = new Set();
+        newResolvables.forEach((resolvable) => {
+            const normalized = isInstanceOf(resolvable, Resolvable)
+                ? resolvable
+                : new Resolvable(resolvable);
+            resolvables.push(normalized);
+            tokens.add(normalized.token);
+        });
+        const nextResolvables = [];
+        node.resolvables.forEach((existing) => {
+            if (!tokens.has(existing.token)) {
+                nextResolvables.push(existing);
+            }
+        });
+        resolvables.forEach((resolvable) => {
+            nextResolvables.push(resolvable);
+        });
+        node.resolvables = nextResolvables;
+    }
+    /**
+     * Resolves the path's resolvables.
+     */
+    async resolvePath(eagerOnly, trans) {
+        const shouldResolveEagerOnly = eagerOnly ?? false;
+        const promises = [];
+        this._path.forEach((node, index) => {
+            const subContext = new ResolveContext(this._path.slice(0, index + 1), this._injector);
+            node.resolvables.forEach((resolvable) => {
+                if (!shouldResolveEagerOnly || resolvable.eager) {
+                    promises.push(resolveToken(resolvable, subContext, trans));
+                }
+            });
+        });
+        return Promise.all(promises);
+    }
+    /**
+     * Finds the path node that owns the provided resolvable.
+     */
+    findNode(resolvable) {
+        const index = this._findNodeIndex(resolvable);
+        return index === -1 ? undefined : this._path[index];
+    }
+    /** @internal */
+    _findNodeIndex(resolvable) {
+        for (let i = 0; i < this._path.length; i++) {
+            const node = this._path[i];
+            for (let j = 0; j < node.resolvables.length; j++) {
+                if (node.resolvables[j] === resolvable) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    /**
+     * Resolves the dependency tokens required by a resolvable from either
+     * the current path or the injector fallback.
+     */
+    getDependencies(resolvable) {
+        const nodeIndex = this._findNodeIndex(resolvable);
+        const dependencyPath = nodeIndex === -1 ? this._path : this._path.slice(0, nodeIndex + 1);
+        const latestByToken = new Map();
+        dependencyPath.forEach(({ resolvables }) => {
+            resolvables.forEach((candidate) => {
+                if (candidate !== resolvable) {
+                    latestByToken.set(candidate.token, candidate);
+                }
+            });
+        });
+        const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
+        const dependencies = [];
+        deps.forEach((token) => {
+            const matching = latestByToken.get(token);
+            if (matching) {
+                dependencies.push(matching);
+                return;
+            }
+            let fromInjector;
+            if (this._injector && isString(token)) {
+                try {
+                    fromInjector = this._injector.get(token);
+                }
+                catch {
+                    fromInjector = undefined;
+                }
+            }
+            if (isUndefined(fromInjector)) {
+                throw new Error(`Could not find Dependency Injection token: ${stringify(token)}`);
+            }
+            dependencies.push(new Resolvable({ token, data: fromInjector }));
+        });
+        return dependencies;
+    }
+}
+
+const controllerRegisteredScopes = new WeakMap();
+const controllerLastParamsChangedTransition = new WeakMap();
+function appendParamSchema(nodes, schema) {
+    for (let i = 0; i < nodes.length; i++) {
+        const nodeSchema = nodes[i].paramSchema;
+        for (let j = 0; j < nodeSchema.length; j++) {
+            schema.push(nodeSchema[j]);
+        }
+    }
+}
+/** @ignore incrementing id */
+let canExitId = 0;
+/**
+ * Registers component/controller transition lifecycle callbacks for an active view.
+ *
+ * @internal
+ */
+function registerViewControllerCallbacks($transitions, controllerInstance, $scope, cfg) {
+    let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
+    if (!registeredScopes) {
+        registeredScopes = new WeakSet();
+        controllerRegisteredScopes.set(controllerInstance, registeredScopes);
+    }
+    if (registeredScopes.has($scope)) {
+        return;
+    }
+    registeredScopes.add($scope);
+    // Call $onInit() ASAP
+    const onInit = controllerInstance.$onInit;
+    if (isFunction(onInit) && !cfg._viewDecl.component) {
+        onInit();
+    }
+    const viewState = cfg._path[cfg._path.length - 1].state.self;
+    const hookOptions = { bind: controllerInstance };
+    // Add component/controller-level hook for $onParamsChanged
+    if (isFunction(controllerInstance.$onParamsChanged)) {
+        const onParamsChanged = controllerInstance.$onParamsChanged;
+        const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
+        const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
+        // Fire callback on any successful transition
+        const paramsUpdated = ($transition$) => {
+            if (!$transition$)
+                return;
+            if (controllerLastParamsChangedTransition.get(controllerInstance) ===
+                $transition$) {
+                return;
+            }
+            controllerLastParamsChangedTransition.set(controllerInstance, $transition$);
+            // Exit early if the $transition$ is the same as the view was created within.
+            // Exit early if the $transition$ will exit the state the view is for.
+            if ($transition$ === viewCreationTrans ||
+                $transition$.exiting().includes(viewState)) {
+                return;
+            }
+            const toParams = $transition$.params("to");
+            const fromParams = $transition$.params("from");
+            const toNodes = $transition$._treeChanges.to;
+            const fromNodes = $transition$._treeChanges.from;
+            const toSchema = [];
+            appendParamSchema(toNodes, toSchema);
+            const fromSchema = [];
+            appendParamSchema(fromNodes, fromSchema);
+            // Find the to params that have different values than the from params
+            const changedToParams = [];
+            for (let i = 0; i < toSchema.length; i++) {
+                const param = toSchema[i];
+                const idx = fromSchema.indexOf(param);
+                if (idx === -1 ||
+                    !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])) {
+                    changedToParams.push(param);
+                }
+            }
+            // Only trigger callback if a to param has changed or is new
+            if (changedToParams.length) {
+                // Filter the params to only changed/new to params. `$transition$.params()` may be used to get all params.
+                const newValues = {};
+                for (let i = 0; i < changedToParams.length; i++) {
+                    const param = changedToParams[i];
+                    const key = param.id;
+                    if (key in toParams)
+                        newValues[key] = toParams[key];
+                }
+                onParamsChanged.call(controllerInstance, newValues, $transition$);
+            }
+        };
+        const hookRegistryKey = [
+            viewState.name || "",
+            cfg._viewDecl._ngViewName ?? "$default",
+            cfg._viewDecl._ngViewContextAnchor ?? "^",
+        ].join("::");
+        const rootScope = $scope.$root;
+        const registryProp = "__ngRouterParamsChangedHooks__";
+        const hookRegistry = (rootScope[registryProp] ??
+            (rootScope[registryProp] = new Map()));
+        hookRegistry.get(hookRegistryKey)?.();
+        const deregisterParamsHook = $transitions.onSuccess({}, paramsUpdated, hookOptions);
+        hookRegistry.set(hookRegistryKey, deregisterParamsHook);
+        $scope.$on("$destroy", () => {
+            if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
+                hookRegistry.delete(hookRegistryKey);
+            }
+            deregisterParamsHook();
+        });
+    }
+    // Add component/controller-level hook for $canExit
+    if (isFunction(controllerInstance.$canExit)) {
+        const canExit = controllerInstance.$canExit;
+        const id = canExitId++;
+        /**
+         * Returns true if any transition in the redirect chain already answered truthy.
+         */
+        const prevTruthyAnswer = (trans) => {
+            if (!trans)
+                return false;
+            const cache = trans._$canExitIds;
+            return (cache?.[id] === true ||
+                prevTruthyAnswer(trans._options.redirectedFrom ?? null));
+        };
+        // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
+        const wrappedHook = async (trans) => {
+            let promise;
+            const cacheTrans = trans;
+            const ids = (cacheTrans._$canExitIds = cacheTrans._$canExitIds ?? {});
+            if (!prevTruthyAnswer(trans)) {
+                promise = Promise.resolve(canExit.call(controllerInstance, trans));
+                void promise.then((val) => (ids[id] = val !== false));
+            }
+            return promise;
+        };
+        const criteria = { exiting: viewState.name };
+        $scope.$on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
+    }
+}
+
+/** @internal */
+function createTransitionPolicyInvocationLocals(context) {
+    return {
+        context,
+        $transition$: context.transition,
+        state: context.state,
+        from: context.from,
+        to: context.to,
+    };
+}
+/** @internal */
+function createTransitionErrorPolicyInvocationLocals(context) {
+    return {
+        ...createTransitionPolicyInvocationLocals(context),
+        error: context.error,
+    };
+}
+/** @internal */
+function createRetentionPolicyInvocationLocals(context) {
+    return {
+        context,
+        $transition$: context.transition,
+    };
+}
+/** @internal */
+function createRetentionEvictionPolicyInvocationLocals(context) {
+    return { context };
+}
+
+/** @internal */
+function createRouterViewControllerInvocationLocals(resolves, scope, element) {
+    return { ...resolves, $scope: scope, $element: element };
+}
+
+function normalizeNgViewTarget(context, rawViewName = "") {
+    const viewAtContext = rawViewName.split("@");
+    const [viewName, viewContextAnchor] = viewAtContext;
+    let ngViewName = viewName || "$default";
+    let ngViewContextAnchor = isString(viewContextAnchor)
+        ? viewContextAnchor
+        : "^";
+    const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
+    if (relativeViewNameSugar) {
+        [, ngViewContextAnchor, ngViewName] = relativeViewNameSugar;
+    }
+    if (ngViewName.startsWith("!")) {
+        ngViewName = ngViewName.substring(1);
+        ngViewContextAnchor = "";
+    }
+    const relativeMatch = /^(\^(?:\.\^)*)$/;
+    if (relativeMatch.exec(ngViewContextAnchor)) {
+        let anchorState = context;
+        let hops = 0;
+        for (let i = 0; i < ngViewContextAnchor.length; i++) {
+            if (ngViewContextAnchor[i] === "^") {
+                hops++;
+            }
+        }
+        for (let i = 0; i < hops; i++) {
+            anchorState = anchorState?.parent;
+        }
+        if (!anchorState) {
+            anchorState = context;
+            while (anchorState.parent)
+                anchorState = anchorState.parent;
+        }
+        ngViewContextAnchor = anchorState.name;
+    }
+    else if (ngViewContextAnchor === ".") {
+        ngViewContextAnchor = context.name;
+    }
+    return { ngViewName, ngViewContextAnchor };
+}
+
+const FQN_MULTIPLIER = 10000;
+const COMPONENT_CONTEXT_ATTR = "data-ng-view-component-context";
+let nextViewId = 0;
+function createViewFillPlan(viewDecl, componentName) {
+    const resolvedComponentName = componentName ?? viewDecl.component;
+    const component = isString(resolvedComponentName)
+        ? resolvedComponentName
+        : undefined;
+    return {
+        _kind: component ? "component" : "template",
+        _componentName: component,
+        _componentElementName: component ? kebobString(component) : undefined,
+        _hasController: !!viewDecl.controller,
+        _needsResolveContext: true,
+    };
+}
+function viewDeclTargetKey(viewDecl) {
+    const viewName = viewDecl._ngViewName ?? "$default";
+    const viewContext = viewDecl._ngViewContextAnchor ?? "";
+    return viewContext ? `${viewContext}.${viewName}` : viewName;
+}
+function viewDeclDepth(viewDecl) {
+    let context = assertDefined(viewDecl._context);
+    let count = 0;
+    while (++count && context.parent) {
+        context = context.parent;
+    }
+    return count;
+}
+/** @internal */
+function createViewConfig(path, viewDecl, factory) {
+    return {
+        _id: nextViewId++,
+        _path: path,
+        _viewDecl: viewDecl,
+        _factory: factory,
+        _component: undefined,
+        _template: undefined,
+        _loaded: false,
+        _controller: undefined,
+        _fillPlan: createViewFillPlan(viewDecl, undefined),
+        _targetKey: viewDeclTargetKey(viewDecl),
+        _depth: viewDeclDepth(viewDecl),
+        _retention: undefined,
+    };
+}
+/** @internal */
+function getViewTemplate(config, ngView, context) {
+    const plan = config._fillPlan;
+    return plan._kind === "component" && plan._componentName
+        ? config._factory._makeComponentTemplate(ngView, context, plan._componentName, config._viewDecl.bindings)
+        : config._template;
+}
+/** @internal */
+async function loadViewConfig(config) {
+    const params = {};
+    config._path.forEach((node) => {
+        assign(params, node.paramValues);
+    });
+    const viewResult = await config._factory._fromConfig(config._viewDecl, params);
+    config._controller = config._viewDecl.controller;
+    assign(config, viewResult);
+    config._loaded = true;
+    config._fillPlan = createViewFillPlan(config._viewDecl, config._component);
+    return config;
+}
+function contextDepth(context) {
+    let cursor = context;
+    let depth = 1;
+    while (cursor.parent) {
+        depth += 1;
+        cursor = cursor.parent;
+    }
+    return depth;
+}
+function ngViewDepth(cache, ngView) {
+    const cached = cache.get(ngView);
+    if (cached !== undefined)
+        return cached;
+    const computed = ngView._fqn.split(".").length * FQN_MULTIPLIER +
+        contextDepth(ngView._creationContext);
+    cache.set(ngView, computed);
+    return computed;
+}
+/**
+ * Tracks active `ng-view` instances and matches them with registered
+ * view configs produced during state transitions.
+ */
+class ViewService {
+    /**
+     * Creates a fully initialized view registry for one router runtime.
+     */
+    constructor(dependencies) {
+        this._ngViews = [];
+        this._viewConfigs = [];
+        this._viewConfigsByTarget = new Map();
+        this._templateFactory = dependencies.templateFactory;
+        this._compile = dependencies.compile;
+        this._controller = dependencies.controller;
+        this._injector = dependencies.injector;
+        this._rootContext = dependencies.routerState._currentState ?? null;
+        this._transitions = dependencies.transitions;
+        this._componentContexts = new Map();
+        this._nextComponentContextId = 0;
+        this._filledHosts = new WeakSet();
+        this._deregisterCompileLifecycle = undefined;
+        this._deregisterRootDestroy = undefined;
+        this._retainedViews = new Map();
+        this._retainedViewClock = 0;
+        this._retentionDiagnostics = [];
+        this._deregisterCompileLifecycle =
+            dependencies.compileLifecycle.onControllerCreated((record) => {
+                this._componentControllerCreated(record);
+            });
+        this._deregisterRootDestroy = dependencies.rootScope.$on("$destroy", () => {
+            this._destroyRetainedViews();
+            this._deregisterCompileLifecycle?.();
+            this._deregisterCompileLifecycle = undefined;
+            this._deregisterRootDestroy = undefined;
+        });
+    }
+    /** @internal */
+    destroy() {
+        this._destroyRetainedViews();
+        this._deregisterCompileLifecycle?.();
+        this._deregisterCompileLifecycle = undefined;
+        this._deregisterRootDestroy?.();
+        this._deregisterRootDestroy = undefined;
+    }
+    /** @internal */
+    _fillView(options) {
+        const { host, rootNodes, scope, config, initial, activeNgView, animation } = options;
+        const $compile = assertDefined(this._compile);
+        const viewData = {
+            $cfg: config,
+            $ngView: activeNgView,
+            $filled: true,
+        };
+        for (let i = 0; i < rootNodes.length; i++) {
+            const node = rootNodes[i];
+            setCacheData(node, "$ngViewAnim", animation);
+            setCacheData(node, "$ngView", viewData);
+        }
+        const plan = config?._fillPlan;
+        const resolveContext = config && plan?._needsResolveContext
+            ? new ResolveContext(config._path, assertDefined(this._injector))
+            : undefined;
+        if (host.childNodes.length || this._filledHosts.has(host)) {
+            scope.$broadcast("$destroy");
+        }
+        else {
+            this._filledHosts.add(host);
+        }
+        host.innerHTML = config
+            ? (getViewTemplate(config, host, assertDefined(resolveContext)) ??
+                initial)
+            : initial;
+        if (config && plan?._kind === "component") {
+            this._markComponentView(host, config, scope);
+        }
+        const link = $compile(host.contentDocument ?? host.childNodes);
+        const locals = resolveContext
+            ? createResolveInvocationLocals(resolveContext)
+            : undefined;
+        const targetScope = scope.$target;
+        targetScope.$resolve = locals;
+        const controller = plan?._hasController ? config?._controller : undefined;
+        if (controller) {
+            const controllerConfig = assertDefined(config);
+            const controllerInstance = assertDefined(this._controller)(controller, createRouterViewControllerInvocationLocals(locals, scope, host));
+            setCacheData(host, "$ngControllerController", controllerInstance);
+            const { children } = host;
+            for (let i = 0; i < children.length; i++) {
+                setCacheData(children[i], "$ngControllerController", controllerInstance);
+            }
+            registerViewControllerCallbacks(assertDefined(this._transitions), controllerInstance, scope, controllerConfig);
+        }
+        link(scope);
+        if (scope.$handler._destroyed) {
+            scope.$broadcast("$destroy");
+        }
+    }
+    /** @internal */
+    _markComponentView(host, config, scope) {
+        const { _componentElementName, _componentName } = config._fillPlan;
+        if (!_componentElementName || !_componentName)
+            return;
+        const componentHost = host.querySelector(_componentElementName);
+        if (!componentHost)
+            return;
+        const id = `${String(config._id)}:${String(this._nextComponentContextId++)}`;
+        componentHost.setAttribute(COMPONENT_CONTEXT_ATTR, id);
+        this._componentContexts.set(id, {
+            componentName: _componentName,
+            config,
+            scope,
+        });
+        scope.$on("$destroy", () => {
+            this._componentContexts.delete(id);
+        });
+    }
+    /** @internal */
+    _componentControllerCreated(record) {
+        const id = record.element.getAttribute(COMPONENT_CONTEXT_ATTR);
+        if (!id)
+            return;
+        const context = this._componentContexts.get(id);
+        if (record.directiveName !== context?.componentName)
+            return;
+        record.element.removeAttribute(COMPONENT_CONTEXT_ATTR);
+        this._componentContexts.delete(id);
+        registerViewControllerCallbacks(this._transitions, record.controller, context.scope, context.config);
+    }
+    /** @internal */
+    _restoreRetainedView(config) {
+        const retention = config._retention;
+        if (retention?._mode !== "keep-alive")
+            return undefined;
+        const retained = this._retainedViews.get(retention._key);
+        if (!retained)
+            return undefined;
+        this._retainedViews.delete(retention._key);
+        retained._lastUsed = ++this._retainedViewClock;
+        retained._config = config;
+        this._recordRetentionDiagnostic("restored", retained, {
+            _cacheSize: this._retainedViews.size,
+        });
+        return retained;
+    }
+    /** @internal */
+    _retainView(entry) {
+        const retention = entry._config._retention;
+        if (retention?._mode !== "keep-alive") {
+            this._destroyRetainedView(entry, "mode-destroy");
+            return;
+        }
+        const existing = this._retainedViews.get(retention._key);
+        if (existing) {
+            this._destroyRetainedView(existing, "replaced");
+        }
+        const clock = ++this._retainedViewClock;
+        this._retainedViews.set(retention._key, {
+            ...entry,
+            _createdAt: clock,
+            _lastUsed: clock,
+        });
+        this._recordRetentionDiagnostic("retained", entry, {
+            _cacheSize: this._retainedViews.size,
+            _max: retention._max,
+        });
+        this._evictRetainedViews(retention._max, retention._evict);
+    }
+    /** @internal */
+    _destroyRetainedView(entry, reason) {
+        if (!entry._scope.$handler._destroyed) {
+            entry._scope.$destroy();
+        }
+        if (entry._fragment && !entry._fragment.disposed) {
+            entry._fragment.dispose();
+        }
+        else if (entry._element.parentNode) {
+            removeElement(entry._element);
+        }
+        else {
+            dealoc(entry._element);
+        }
+        const key = entry._key;
+        const config = entry._config;
+        if (key && config) {
+            this._recordRetentionDiagnostic("destroyed", { _key: key, _config: config }, {
+                _cacheSize: this._retainedViews.size,
+                _reason: reason,
+            });
+        }
+    }
+    /** @internal */
+    _destroyRetainedViews() {
+        this._retainedViews.forEach((entry) => {
+            this._destroyRetainedView(entry, "root-destroy");
+        });
+        this._retainedViews.clear();
+    }
+    /** @internal */
+    _evictRetainedViews(max, evict) {
+        if (max === undefined || max < 0)
+            return;
+        while (this._retainedViews.size > max) {
+            const selected = this._selectPolicyRetainedView(max, evict) ??
+                this._selectOrderedRetainedView(evict === "oldest" ? "oldest" : "lru");
+            if (!selected)
+                return;
+            this._retainedViews.delete(selected._key);
+            this._destroyRetainedView(selected, "evicted");
+        }
+    }
+    /** @internal */
+    _recordRetentionDiagnostic(kind, entry, options) {
+        this._retentionDiagnostics.push({
+            _kind: kind,
+            _key: entry._key,
+            _state: entry._config._retention?._state,
+            _targetKey: entry._config._targetKey,
+            _cacheSize: options._cacheSize,
+            _max: options._max,
+            _reason: options._reason,
+        });
+    }
+    /** @internal */
+    _selectPolicyRetainedView(max, evict) {
+        if (!evict || evict === "lru" || evict === "oldest")
+            return undefined;
+        for (const entry of this._retainedViews.values()) {
+            const state = entry._config._path[entry._config._path.length - 1].state.self;
+            const context = {
+                state,
+                key: entry._key,
+                size: this._retainedViews.size,
+                max,
+            };
+            const result = this._injector.invoke(evict, undefined, createRetentionEvictionPolicyInvocationLocals(context), "retention eviction policy");
+            if (!isString(result))
+                continue;
+            const selected = this._retainedViews.get(result);
+            if (selected)
+                return selected;
+        }
+        return undefined;
+    }
+    /** @internal */
+    _selectOrderedRetainedView(evict) {
+        let selected;
+        this._retainedViews.forEach((entry) => {
+            if (!selected) {
+                selected = entry;
+                return;
+            }
+            const left = evict === "oldest" ? entry._createdAt : entry._lastUsed;
+            const right = evict === "oldest" ? selected._createdAt : selected._lastUsed;
+            if (left < right) {
+                selected = entry;
+            }
+        });
+        return selected;
+    }
+    /**
+     * Gets or sets the root view context used for relative `ng-view` targeting.
+     */
+    /** @internal */
+    _rootViewContext(context) {
+        return (this._rootContext = context ?? this._rootContext);
+    }
+    /**
+     * Removes a view config from the active registry.
+     */
+    /** @internal */
+    _deactivateViewConfig(viewConfig) {
+        removeFrom(this._viewConfigs, viewConfig);
+        const targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);
+        if (!targetConfigs)
+            return;
+        removeFrom(targetConfigs, viewConfig);
+        if (!targetConfigs.length) {
+            this._viewConfigsByTarget.delete(viewConfig._targetKey);
+        }
+    }
+    /**
+     * Adds a view config to the active registry.
+     */
+    /** @internal */
+    _activateViewConfig(viewConfig) {
+        const existingTargetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey) ?? [];
+        existingTargetConfigs.slice().forEach((existing) => {
+            if (existing !== viewConfig && existing._depth === viewConfig._depth) {
+                this._deactivateViewConfig(existing);
+            }
+        });
+        this._viewConfigs.push(viewConfig);
+        let targetConfigs = this._viewConfigsByTarget.get(viewConfig._targetKey);
+        if (!targetConfigs) {
+            targetConfigs = [];
+            this._viewConfigsByTarget.set(viewConfig._targetKey, targetConfigs);
+        }
+        targetConfigs.push(viewConfig);
+    }
+    /**
+     * Re-matches active `ng-view` instances against currently registered view configs
+     * and notifies each view when its config assignment changes.
+     */
+    /** @internal */
+    _sync() {
+        const ngViewsByFqn = {};
+        this._ngViews.forEach((ngView) => {
+            ngViewsByFqn[ngView._fqn] = ngView;
+        });
+        const ngViewDepthCache = new Map();
+        this._ngViews.sort((left, right) => ngViewDepth(ngViewDepthCache, left) -
+            ngViewDepth(ngViewDepthCache, right));
+        this._ngViews.forEach((ngView) => {
+            let selectedViewConfig = null;
+            let bestDepth = Number.NEGATIVE_INFINITY;
+            const targetConfigs = this._viewConfigsByTarget.get(ngView._fqn) ?? [];
+            for (let i = 0; i < targetConfigs.length; i++) {
+                const candidate = targetConfigs[i];
+                if (!ViewService._matches(ngViewsByFqn, ngView, candidate))
+                    continue;
+                if (selectedViewConfig === null || candidate._depth > bestDepth) {
+                    selectedViewConfig = candidate;
+                    bestDepth = candidate._depth;
+                }
+            }
+            if (!this._ngViews.includes(ngView))
+                return;
+            if (ngView._config === selectedViewConfig)
+                return;
+            ngView._config = selectedViewConfig;
+            ngView._configUpdated(selectedViewConfig ?? undefined);
+        });
+    }
+    /**
+     * Registers one active `ng-view` and returns a deregistration function.
+     */
+    /** @internal */
+    _registerNgView(ngView) {
+        const ngViews = this._ngViews;
+        ngViews.push(ngView);
+        this._sync();
+        return () => {
+            removeFrom(ngViews, ngView);
+            this._sync();
+        };
+    }
+    /**
+     * Builds a predicate that determines whether a view config matches
+     * a specific active `ng-view`.
+     */
+    /** @internal */
+    static _matches(ngViewsByFqn, ngView, viewConfig) {
+        const ngViewContext = ngView._creationContext;
+        const viewDecl = viewConfig._viewDecl;
+        const normalizedTarget = viewConfig._targetKey;
+        const vcContext = viewDecl._ngViewContextAnchor ?? "";
+        if (normalizedTarget !== ngView._fqn)
+            return false;
+        const viewContext = assertDefined(viewDecl._context);
+        if (viewContext.name !== ngViewContext.name &&
+            vcContext !== ngViewContext.name) {
+            return false;
+        }
+        const childViewFqn = `${normalizedTarget}.${ngView._name}`;
+        return !ngViewsByFqn[childViewFqn];
+    }
+}
+
+function getFirstElementFromClone(clone) {
+    if (!clone)
+        return null;
+    if (isInstanceOf(clone, HTMLElement)) {
+        return clone;
+    }
+    if (isInstanceOf(clone, DocumentFragment)) {
+        const firstElement = clone.firstElementChild;
+        return isInstanceOf(firstElement, HTMLElement) ? firstElement : null;
+    }
+    if (isInstanceOf(clone, NodeList) || isArray(clone)) {
+        for (let i = 0, l = clone.length; i < l; i++) {
+            const node = clone[i];
+            if (isInstanceOf(node, HTMLElement)) {
+                return node;
+            }
+        }
+        return null;
+    }
+    return isInstanceOf(clone, Element) ? clone : null;
+}
+function getRootNodesFromClone(clone) {
+    if (!clone) {
+        return [];
+    }
+    if (isInstanceOf(clone, DocumentFragment)) {
+        return arrayFrom(clone.childNodes);
+    }
+    return isInstanceOf(clone, NodeList) || isArray(clone)
+        ? arrayFrom(clone)
+        : [clone];
+}
+function withResolvers() {
+    let resolve;
+    let reject;
+    const promise = new Promise((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+    });
+    return {
+        promise,
+        resolve: assertDefined(resolve),
+        reject: assertDefined(reject),
+    };
+}
+/**
+ * `ng-view`: A viewport directive which is filled in by a view from the active state.
+ *
+ * ### Attribute Runtime
+ *
+ * - `name`: (Optional) A view name.
+ *   Named views are targeted from [[StateDeclaration.views]] entries.
+ *
+ * - `autoscroll`: an expression. When it evaluates to true, the `ng-view` will be scrolled into view when it is activated.
+ *   Uses [[$anchorScroll]] to do the scrolling.
+ *
+ * - `onload`: Expression to evaluate whenever the view updates.
+ *
+ * #### Example:
+ * A state can render into the unnamed `$default` view, or target named views.
+ *
+ * ```html
+ * <div ng-view></div>
+ * <div ng-view="messagelist"></div>
+ * ```
+ *
+ * ```js
+ * app.router("home", {
+ *   template: "<h1>HELLO!</h1>"
+ * })
+ *
+ * app.router("messages", {
+ *   views: {
+ *     messagelist: "messageList"
+ *   }
+ * })
+ * ```
+ *
+ * #### Examples for `autoscroll`:
+ * ```html
+ * <!-- If autoscroll present with no expression,
+ *      then scroll ng-view into view -->
+ * <ng-view autoscroll/>
+ *
+ * <!-- If autoscroll present with valid expression,
+ *      then scroll ng-view into view if expression evaluates to true -->
+ * <ng-view autoscroll='true'/>
+ * <ng-view autoscroll='false'/>
+ * <ng-view autoscroll='scopeVariable'/>
+ * ```
+ *
+ * Resolve data:
+ *
+ * The resolved data from the state's `resolve` block is placed on the scope as `$resolve`.
+ *
+ * #### Example:
+ * ```js
+ * app.router('home', {
+ *   template: '<my-component user="$resolve.user"></my-component>',
+ *   resolve: {
+ *     user: ['UserService', function(UserService) { return UserService.fetchUser(); }]
+ *   }
+ * });
+ * ```
+ */
+ViewDirective.$inject = [_state, _anchorScroll, _interpolate, _parse];
+/**
+ * Renders and updates the currently active view configuration.
+ */
+function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
+    const $view = $state._viewService;
+    const rootContext = $view._rootViewContext();
+    const rootData = {
+        $cfg: { _viewDecl: { _context: rootContext } },
+        $ngView: {},
+    };
+    const directive = {
+        count: 0,
+        terminal: true,
+        priority: 400,
+        transclude: "element",
+        compile(tElement, $transclude) {
+            const transclude = assertDefined($transclude);
+            const onloadExp = getNormalizedAttr(tElement, "onload") ?? "";
+            const autoScrollExp = getNormalizedAttr(tElement, "autoscroll");
+            const viewNameExp = getNormalizedAttr(tElement, "ngView") ??
+                getNormalizedAttr(tElement, "name") ??
+                "";
+            return function (scope, $element) {
+                const inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertDefined($interpolate(viewNameExp))(scope), name = isString(rawName) && rawName ? rawName : "$default";
+                const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
+                const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
+                let currentEl = null;
+                let currentScope = null;
+                let currentNodes = [];
+                let currentFragment = null;
+                let currentAnimation;
+                let currentConfig;
+                let viewConfig;
+                let configUpdateVersion = 0;
+                let destroyed = false;
+                let initialTemplate;
+                const inheritedContext = inherited.$cfg._viewDecl._context;
+                const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
+                const activeNgView = {
+                    _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
+                    _element: $element,
+                    _name: name, // ng-view name, retained internally for nested view matching
+                    _fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
+                    _config: null,
+                    _configUpdated: configUpdatedCallback,
+                    get _creationContext() {
+                        return (inheritedContext ??
+                            inherited.$ngView._creationContext ??
+                            rootContext);
+                    },
+                };
+                function configUpdatedCallback(config) {
+                    if (destroyed)
+                        return;
+                    const updateVersion = ++configUpdateVersion;
+                    if (!config) {
+                        if (!viewConfig)
+                            return;
+                        queueMicrotask(() => {
+                            if (updateVersion !== configUpdateVersion ||
+                                viewConfig !== undefined) {
+                                return;
+                            }
+                            activeNgView._config = null;
+                            updateView(undefined);
+                        });
+                        viewConfig = undefined;
+                        activeNgView._config = null;
+                        return;
+                    }
+                    if (viewConfig === config)
+                        return;
+                    activeNgView._config = config;
+                    viewConfig = config;
+                    if (!config._loaded) {
+                        void loadViewConfig(config).then((loadedConfig) => {
+                            if (updateVersion !== configUpdateVersion ||
+                                viewConfig !== config) {
+                                return undefined;
+                            }
+                            updateView(loadedConfig);
+                            return undefined;
+                        });
+                        return;
+                    }
+                    updateView(config);
+                }
+                setCacheData($element, "$ngView", { $ngView: activeNgView });
+                const unregister = $view._registerNgView(activeNgView);
+                if (!viewConfig) {
+                    updateView();
+                }
+                scope.$on("$destroy", function () {
+                    destroyed = true;
+                    configUpdateVersion++;
+                    viewConfig = undefined;
+                    activeNgView._config = null;
+                    unregister();
+                    currentConfig = undefined;
+                    cleanupLastView();
+                });
+                function cleanupLastView() {
+                    const destroyedScope = currentScope;
+                    const retention = currentConfig?._retention;
+                    if (retention?._mode === "keep-alive" &&
+                        currentConfig &&
+                        currentEl &&
+                        currentScope &&
+                        currentFragment &&
+                        currentAnimation) {
+                        const retainedElement = currentEl;
+                        const retainedScope = currentScope;
+                        const retainedNodes = currentNodes;
+                        const retainedFragment = currentFragment;
+                        const retainedAnimation = currentAnimation;
+                        const retainedConfig = currentConfig;
+                        if (retention._pause === "schedulers") {
+                            retainedScope.$broadcast("$viewRetentionPause", retainedConfig);
+                        }
+                        removeElement(retainedElement, true);
+                        retainedAnimation.$$animLeave.resolve(undefined);
+                        currentEl = null;
+                        currentScope = null;
+                        currentNodes = [];
+                        currentFragment = null;
+                        currentAnimation = undefined;
+                        currentConfig = undefined;
+                        $view._retainView({
+                            _key: retention._key,
+                            _config: retainedConfig,
+                            _element: retainedElement,
+                            _nodes: retainedNodes,
+                            _fragment: retainedFragment,
+                            _scope: retainedScope,
+                            _animation: retainedAnimation,
+                        });
+                        return;
+                    }
+                    if (currentScope) {
+                        currentScope.$destroy();
+                        currentScope = null;
+                    }
+                    if (currentEl) {
+                        const _viewData = getCacheData(currentEl, "$ngViewAnim");
+                        const elementScope = getInheritedData(currentEl, _scope);
+                        if (destroyedScope &&
+                            elementScope &&
+                            elementScope !== destroyedScope &&
+                            elementScope.$parent === destroyedScope &&
+                            !elementScope.$handler._destroyed) {
+                            elementScope.$destroy();
+                        }
+                        if (currentFragment && !currentFragment.disposed) {
+                            currentFragment.dispose();
+                        }
+                        else {
+                            removeElement(currentEl);
+                        }
+                        _viewData?.$$animLeave.resolve(undefined);
+                        currentEl = null;
+                    }
+                    currentNodes = [];
+                    currentFragment = null;
+                    currentAnimation = undefined;
+                    currentConfig = undefined;
+                }
+                function updateView(config) {
+                    const retained = config
+                        ? $view._restoreRetainedView(config)
+                        : undefined;
+                    if (config && retained) {
+                        restoreRetainedView(config, retained);
+                        return;
+                    }
+                    const newScope = scope.$new();
+                    const animEnter = withResolvers();
+                    const animLeave = withResolvers();
+                    const $ngViewAnim = {
+                        $animEnter: animEnter.promise,
+                        $animLeave: animLeave.promise,
+                        $$animLeave: animLeave,
+                    };
+                    /**
+                     * Fired once the view **begins loading**, *before* the DOM is rendered.
+                     *
+                     * @param event Event object.
+                     * @param viewName Name of the view.
+                     */
+                    newScope.$emit("$viewContentLoading", name);
+                    let enteredElement = null;
+                    let enteredNodes = [];
+                    let enteredFragment = null;
+                    transclude(newScope, (clone) => {
+                        const elementClone = getFirstElementFromClone(clone);
+                        const cloneNodes = getRootNodesFromClone(clone);
+                        if (!elementClone) {
+                            return;
+                        }
+                        initialTemplate ?? (initialTemplate = elementClone.innerHTML);
+                        const viewData = {
+                            $cfg: config,
+                            $ngView: activeNgView,
+                        };
+                        for (let i = 0; i < cloneNodes.length; i++) {
+                            const node = cloneNodes[i];
+                            setCacheData(node, "$ngViewAnim", $ngViewAnim);
+                            setCacheData(node, "$ngView", viewData);
+                        }
+                        enteredElement = elementClone;
+                        enteredNodes = cloneNodes;
+                        enteredFragment = assertDefined(getCompiledFragmentRecord(assertDefined(cloneNodes[0])));
+                        $element.after(elementClone);
+                        animEnter.resolve(undefined);
+                        cleanupLastView();
+                        currentEl = elementClone;
+                        currentScope = newScope;
+                        currentNodes = enteredNodes;
+                        currentFragment = enteredFragment;
+                        currentAnimation = $ngViewAnim;
+                        if ((isDefined(autoScrollExp) && !autoScrollExp) ||
+                            (autoScrollExp && autoScrollFn?.(scope))) {
+                            $anchorScroll(elementClone);
+                        }
+                    });
+                    if (currentScope !== newScope)
+                        return;
+                    if (newScope.$handler._destroyed) {
+                        return;
+                    }
+                    const host = assertDefined(enteredElement);
+                    const viewData = getCacheData(host, "$ngView");
+                    $view._fillView({
+                        host,
+                        rootNodes: enteredNodes,
+                        scope: newScope,
+                        config,
+                        initial: viewData?.$initial ?? initialTemplate ?? "",
+                        activeNgView,
+                        animation: $ngViewAnim,
+                    });
+                    currentConfig = config;
+                    newScope.$emit("$viewContentAnimationEnded");
+                    /**
+                     * Fired once the view is **loaded**, *after* the DOM is rendered.
+                     *
+                     * @param event Event object.
+                     */
+                    newScope.$emit("$viewContentLoaded", config ?? viewConfig);
+                    onloadFn?.(newScope);
+                }
+                function restoreRetainedView(config, retained) {
+                    const viewData = {
+                        $cfg: config,
+                        $ngView: activeNgView,
+                        $filled: true,
+                    };
+                    for (let i = 0; i < retained._nodes.length; i++) {
+                        const node = retained._nodes[i];
+                        setCacheData(node, "$ngViewAnim", retained._animation);
+                        setCacheData(node, "$ngView", viewData);
+                    }
+                    retained._scope.$emit("$viewContentLoading", name);
+                    $element.after(...retained._nodes);
+                    cleanupLastView();
+                    if (config._retention?._pause === "schedulers") {
+                        retained._scope.$broadcast("$viewRetentionResume", config);
+                    }
+                    currentEl = retained._element;
+                    currentScope = retained._scope;
+                    currentNodes = retained._nodes;
+                    currentFragment = assertDefined(retained._fragment);
+                    currentAnimation = retained._animation;
+                    currentConfig = config;
+                    retained._scope.$emit("$viewContentAnimationEnded");
+                    retained._scope.$emit("$viewContentLoaded", config);
+                    onloadFn?.(retained._scope);
+                }
+            };
+        },
+    };
+    return directive;
+}
+/**
+ * Clears stale fallback content before a routed `ng-view` clone links children.
+ *
+ * The mounted view is filled later by `ViewService`; this guard only preserves
+ * the old two-directive transclusion ordering without owning view rendering.
+ */
+function ViewDirectiveContentGuard() {
+    return {
+        priority: -400,
+        compile(tElement) {
+            const initial = tElement.innerHTML;
+            return {
+                pre(_scope, $element) {
+                    const data = getCacheData($element, "$ngView");
+                    if (data) {
+                        data.$initial ?? (data.$initial = initial);
+                    }
+                    if (data?.$cfg && !data.$filled) {
+                        dealoc($element, true);
+                    }
+                },
+            };
+        },
+    };
+}
+
+/**
+ * Matches state names using glob-like pattern strings.
+ *
+ * Globs can be used in specific APIs including:
+ *
+ * - [[StateService.matches]]
+ * - The first argument to Hook Registration functions like [[TransitionService.onStart]]
+ *    - [[HookMatchCriteria]] and [[HookMatchCriterion]]
+ *
+ * A `Glob` string is a pattern which matches state names.
+ * Nested state names are split into segments (separated by a dot) when processing.
+ * The state named `foo.bar.baz` is split into three segments ['foo', 'bar', 'baz']
+ *
+ * Globs work according to the following rules:
+ *
+ * ### Exact match:
+ *
+ * The glob `'A.B'` matches the state named exactly `'A.B'`.
+ *
+ * | Glob        |Matches states named|Does not match state named|
+ * |:------------|:--------------------|:---------------------|
+ * | `'A'`       | `'A'`               | `'B'` , `'A.C'`      |
+ * | `'A.B'`     | `'A.B'`             | `'A'` , `'A.B.C'`    |
+ * | `'foo'`     | `'foo'`             | `'FOO'` , `'foo.bar'`|
+ *
+ * ### Single star (`*`)
+ *
+ * A single star (`*`) is a wildcard that matches exactly one segment.
+ *
+ * | Glob        |Matches states named  |Does not match state named |
+ * |:------------|:---------------------|:--------------------------|
+ * | `'*'`       | `'A'` , `'Z'`        | `'A.B'` , `'Z.Y.X'`       |
+ * | `'A.*'`     | `'A.B'` , `'A.C'`    | `'A'` , `'A.B.C'`         |
+ * | `'A.*.*'`   | `'A.B.C'` , `'A.X.Y'`| `'A'`, `'A.B'` , `'Z.Y.X'`|
+ *
+ * ### Double star (`**`)
+ *
+ * A double star (`'**'`) is a wildcard that matches *zero or more segments*
+ *
+ * | Glob        |Matches states named                           |Does not match state named         |
+ * |:------------|:----------------------------------------------|:----------------------------------|
+ * | `'**'`      | `'A'` , `'A.B'`, `'Z.Y.X'`                    | (matches all states)              |
+ * | `'A.**'`    | `'A'` , `'A.B'` , `'A.C.X'`                   | `'Z.Y.X'`                         |
+ * | `'**.X'`    | `'X'` , `'A.X'` , `'Z.Y.X'`                   | `'A'` , `'A.login.Z'`             |
+ * | `'A.**.X'`  | `'A.X'` , `'A.B.X'` , `'A.B.C.X'`             | `'A'` , `'A.B.C'`                 |
+ *
+ */
+class Glob {
+    /** Returns a glob from the string, or null if the string isn't Glob-like. */
+    static fromString(text) {
+        return hasGlobs(text) ? new Glob(text) : null;
+    }
+    constructor(text) {
+        this._text = text;
+        const segments = this._text.split(".");
+        const regexpParts = [];
+        segments.forEach((segment) => {
+            if (segment === "**") {
+                regexpParts.push("(?:|(?:\\.[^.]*)*)");
+            }
+            else if (segment === "*") {
+                regexpParts.push("\\.[^.]*");
+            }
+            else {
+                regexpParts.push(`\\.${segment}`);
+            }
+        });
+        this._regexp = new RegExp(`^${regexpParts.join("")}$`);
+    }
+    matches(name) {
+        return this._regexp.test(`.${name}`);
+    }
+}
+/** Returns true if the string has glob-like characters in it. */
+function hasGlobs(text) {
+    return !!/[!,*]+/.exec(text);
+}
+
+const stateDeclarationSources = new WeakMap();
+/** @internal */
+function setStateDeclarationSource(flattened, source) {
+    stateDeclarationSources.set(flattened, source);
+}
+/** @internal */
+function getStateDeclarationSource(declaration) {
+    return stateDeclarationSources.get(declaration);
+}
+/**
+ * Internal representation of a ng-router state.
+ *
+ * Instances of this class are created when a [[StateDeclaration]] is registered with the [[StateRegistry]].
+ *
+ * A registered declaration is internally augmented with a getter that returns
+ * the corresponding [[StateObject]] object.
+ *
+ * This class prototypally inherits from the corresponding [[StateDeclaration]].
+ * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
+ * @extends {ng.StateDeclaration}
+ */
+class StateObject {
+    static isStateDeclaration(obj) {
+        return isFunction(obj._state);
+    }
+    static isState(obj) {
+        return (isObject(obj) &&
+            isObject(obj._stateObjectCache));
+    }
+    /**
+     * @param {StateDeclaration} config
+     */
+    constructor(config) {
+        assign(this, config);
+        this.self = config;
+        this.name = config.name;
+        config._state = () => this;
+        const nameGlob = this.name ? Glob.fromString(this.name) : null;
+        this._stateObjectCache = { nameGlob };
+    }
+    /** @returns {StateObject} */
+    /** @internal */
+    _state() {
+        return this;
+    }
+    /**
+     * Returns true if the provided parameter is the same state.
+     *
+     * Compares the identity of the state against the passed value, which is either an object
+     * reference to the actual `State` instance, the original definition object passed to
+     * `app.router()`, or the fully-qualified name.
+     *
+     * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
+     *        into `app.router()`, (c) the fully-qualified name of a state as a string.
+     * @returns Returns `true` if `ref` matches the current `State` instance.
+     */
+    is(ref) {
+        return (this === ref ||
+            this.self === ref ||
+            getStateDeclarationSource(this.self) === ref ||
+            this._pathName() === ref);
+    }
+    /**
+     * @deprecated this does not properly handle dot notation
+     * @returns {string} Returns a dot-separated name of the state.
+     */
+    fqn() {
+        return this._pathName();
+    }
+    _pathName() {
+        return (this.path ?? [])
+            .map((state) => state.name)
+            .filter(Boolean)
+            .join(".");
+    }
+    /**
+     * Returns the root node of this state's tree.
+     *
+     * @returns {StateObject} The root of this state's tree.
+     */
+    root() {
+        return this.parent?.root() ?? this;
+    }
+    /**
+     * Gets the state's `Param` objects
+     *
+     * Gets the list of [[Param]] objects owned by the state.
+     * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
+     * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
+     *
+     * @param {StateParamOptions} [opts] options
+     * @returns {Param[]} the list of [[Param]] objects
+     */
+    parameters(opts) {
+        const inherit = opts?.inherit !== false;
+        const matchingKeys = opts?.matchingKeys;
+        const inherited = inherit
+            ? (this.parent?.parameters({ matchingKeys }) ?? [])
+            : [];
+        const result = inherited.slice();
+        const { params } = this;
+        if (!params)
+            return result;
+        keys(params).forEach((id) => {
+            const { [id]: param } = params;
+            if (!matchingKeys || hasOwn(matchingKeys, id)) {
+                result.push(param);
+            }
+        });
+        return result;
+    }
+    /**
+     * Returns a single [[Param]] that is owned by the state
+     *
+     * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
+     * @param {string} id the name of the [[Param]] to return
+     * @param {StateParamOptions} [opts] options
+     * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
+     */
+    parameter(id, opts) {
+        const urlParam = this._url?._parameter(id, opts);
+        if (urlParam)
+            return urlParam;
+        const { params } = this;
+        if (params && hasOwn(params, id)) {
+            const { [id]: param } = params;
+            return param;
+        }
+        return opts?.inherit && this.parent
+            ? this.parent.parameter(id, opts)
+            : undefined;
+    }
+    toString() {
+        return this._pathName();
     }
 }
 
@@ -32159,6 +32585,142 @@ class PathNode {
     }
 }
 
+/**
+ * Converts a TargetState into the concrete path nodes used by a transition.
+ */
+function buildPath(targetState) {
+    const toParams = targetState.params();
+    const stateObject = targetState.$state();
+    if (!stateObject) {
+        throw new Error("Target state does not resolve to a state object");
+    }
+    const states = stateObject.path ?? [];
+    const path = [];
+    states.forEach((state) => {
+        path.push(new PathNode(state).applyRawParams(toParams));
+    });
+    return path;
+}
+/**
+ * Given a fromPath and a TargetState, builds a toPath.
+ */
+function buildToPath(fromPath, targetState) {
+    const toPath = buildPath(targetState);
+    if (targetState.options().inherit) {
+        return inheritParams(fromPath, toPath, keys(targetState.params()));
+    }
+    return toPath;
+}
+/**
+ * Creates internal view records and adds them to the nodes for the specified states.
+ */
+function applyViewConfigs($view, path, states) {
+    const stateSet = states instanceof Set ? states : new Set(states);
+    for (let i = 0; i < path.length; i++) {
+        const node = path[i];
+        if (!stateSet.has(node.state))
+            continue;
+        const viewDecls = node.state._views ?? {};
+        const viewSubPath = path.slice(0, i + 1);
+        const viewConfigs = [];
+        keys(viewDecls).forEach((name) => {
+            const templateFactory = $view._templateFactory;
+            viewConfigs.push(createViewConfig(viewSubPath, viewDecls[name], templateFactory));
+        });
+        node._views = viewConfigs;
+    }
+}
+/**
+ * Returns a new to path which inherits parameters from the from path.
+ */
+function inheritParams(fromPath, toPath, toKeys = []) {
+    const noInherit = new Set();
+    const incomingKeys = new Set(toKeys);
+    fromPath.forEach(({ paramSchema }) => {
+        paramSchema.forEach((param) => {
+            if (!param.inherit) {
+                noInherit.add(param.id);
+            }
+        });
+    });
+    const inheritedPath = [];
+    for (let i = 0; i < toPath.length; i++) {
+        const toNode = toPath[i];
+        let fromParamVals = {};
+        for (let j = 0; j < fromPath.length; j++) {
+            const fromNode = fromPath[j];
+            if (fromNode.state === toNode.state) {
+                fromParamVals = assign({}, fromNode.paramValues);
+                break;
+            }
+        }
+        noInherit.forEach((key) => {
+            deleteProperty(fromParamVals, key);
+        });
+        const toParamVals = {};
+        const incomingParamVals = {};
+        const toNodeParamValues = toNode.paramValues;
+        keys(toNodeParamValues).forEach((key) => {
+            if (!incomingKeys.has(key)) {
+                toParamVals[key] = toNodeParamValues[key];
+            }
+            else {
+                incomingParamVals[key] = toNodeParamValues[key];
+            }
+        });
+        const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
+        inheritedPath.push(new PathNode(toNode.state).applyRawParams(ownParamVals));
+    }
+    return inheritedPath;
+}
+/**
+ * Computes the tree changes between a fromPath and toPath.
+ */
+function treeChanges(fromPath, toPath, reloadState) {
+    const max = Math.min(fromPath.length, toPath.length);
+    let keep = 0;
+    while (keep < max &&
+        fromPath[keep].state !== reloadState &&
+        fromPath[keep].equals(toPath[keep], nonDynamicParams)) {
+        keep++;
+    }
+    const from = fromPath;
+    const retained = from.slice(0, keep);
+    const exiting = from.slice(keep);
+    const retainedWithToParams = [];
+    retained.forEach((node, idx) => {
+        const cloned = node.clone();
+        cloned.paramValues = toPath[idx].paramValues;
+        retainedWithToParams.push(cloned);
+    });
+    const entering = toPath.slice(keep);
+    const to = retainedWithToParams.concat(entering);
+    return { from, to, retained, retainedWithToParams, exiting, entering };
+}
+/**
+ * Returns the path prefix whose nodes match both paths.
+ */
+function matching(pathA, pathB, paramsFn) {
+    const matchingPath = [];
+    const max = Math.min(pathA.length, pathB.length);
+    for (let i = 0; i < max; i++) {
+        const nodeA = pathA[i];
+        const nodeB = pathB[i];
+        if (!nodeA.equals(nodeB, paramsFn))
+            break;
+        matchingPath.push(nodeA);
+    }
+    return matchingPath;
+}
+function nonDynamicParams(node) {
+    const nonDynamic = [];
+    node.paramSchema.forEach((param) => {
+        if (!param.dynamic)
+            nonDynamic.push(param);
+    });
+    return nonDynamic;
+}
+
 function stateNameString(state) {
     if (isString(state))
         return state;
@@ -32729,142 +33291,6 @@ const TransitionRunner = {
         TransitionHook._runAllHooks(hooks);
     },
 };
-
-/**
- * Converts a TargetState into the concrete path nodes used by a transition.
- */
-function buildPath(targetState) {
-    const toParams = targetState.params();
-    const stateObject = targetState.$state();
-    if (!stateObject) {
-        throw new Error("Target state does not resolve to a state object");
-    }
-    const states = stateObject.path ?? [];
-    const path = [];
-    states.forEach((state) => {
-        path.push(new PathNode(state).applyRawParams(toParams));
-    });
-    return path;
-}
-/**
- * Given a fromPath and a TargetState, builds a toPath.
- */
-function buildToPath(fromPath, targetState) {
-    const toPath = buildPath(targetState);
-    if (targetState.options().inherit) {
-        return inheritParams(fromPath, toPath, keys(targetState.params()));
-    }
-    return toPath;
-}
-/**
- * Creates internal view records and adds them to the nodes for the specified states.
- */
-function applyViewConfigs($view, path, states) {
-    const stateSet = states instanceof Set ? states : new Set(states);
-    for (let i = 0; i < path.length; i++) {
-        const node = path[i];
-        if (!stateSet.has(node.state))
-            continue;
-        const viewDecls = node.state._views ?? {};
-        const viewSubPath = path.slice(0, i + 1);
-        const viewConfigs = [];
-        keys(viewDecls).forEach((name) => {
-            const templateFactory = $view._templateFactory;
-            viewConfigs.push(createViewConfig(viewSubPath, viewDecls[name], templateFactory));
-        });
-        node._views = viewConfigs;
-    }
-}
-/**
- * Returns a new to path which inherits parameters from the from path.
- */
-function inheritParams(fromPath, toPath, toKeys = []) {
-    const noInherit = new Set();
-    const incomingKeys = new Set(toKeys);
-    fromPath.forEach(({ paramSchema }) => {
-        paramSchema.forEach((param) => {
-            if (!param.inherit) {
-                noInherit.add(param.id);
-            }
-        });
-    });
-    const inheritedPath = [];
-    for (let i = 0; i < toPath.length; i++) {
-        const toNode = toPath[i];
-        let fromParamVals = {};
-        for (let j = 0; j < fromPath.length; j++) {
-            const fromNode = fromPath[j];
-            if (fromNode.state === toNode.state) {
-                fromParamVals = assign({}, fromNode.paramValues);
-                break;
-            }
-        }
-        noInherit.forEach((key) => {
-            deleteProperty(fromParamVals, key);
-        });
-        const toParamVals = {};
-        const incomingParamVals = {};
-        const toNodeParamValues = toNode.paramValues;
-        keys(toNodeParamValues).forEach((key) => {
-            if (!incomingKeys.has(key)) {
-                toParamVals[key] = toNodeParamValues[key];
-            }
-            else {
-                incomingParamVals[key] = toNodeParamValues[key];
-            }
-        });
-        const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
-        inheritedPath.push(new PathNode(toNode.state).applyRawParams(ownParamVals));
-    }
-    return inheritedPath;
-}
-/**
- * Computes the tree changes between a fromPath and toPath.
- */
-function treeChanges(fromPath, toPath, reloadState) {
-    const max = Math.min(fromPath.length, toPath.length);
-    let keep = 0;
-    while (keep < max &&
-        fromPath[keep].state !== reloadState &&
-        fromPath[keep].equals(toPath[keep], nonDynamicParams)) {
-        keep++;
-    }
-    const from = fromPath;
-    const retained = from.slice(0, keep);
-    const exiting = from.slice(keep);
-    const retainedWithToParams = [];
-    retained.forEach((node, idx) => {
-        const cloned = node.clone();
-        cloned.paramValues = toPath[idx].paramValues;
-        retainedWithToParams.push(cloned);
-    });
-    const entering = toPath.slice(keep);
-    const to = retainedWithToParams.concat(entering);
-    return { from, to, retained, retainedWithToParams, exiting, entering };
-}
-/**
- * Returns the path prefix whose nodes match both paths.
- */
-function matching(pathA, pathB, paramsFn) {
-    const matchingPath = [];
-    const max = Math.min(pathA.length, pathB.length);
-    for (let i = 0; i < max; i++) {
-        const nodeA = pathA[i];
-        const nodeB = pathB[i];
-        if (!nodeA.equals(nodeB, paramsFn))
-            break;
-        matchingPath.push(nodeA);
-    }
-    return matchingPath;
-}
-function nonDynamicParams(node) {
-    const nonDynamic = [];
-    node.paramSchema.forEach((param) => {
-        if (!param.dynamic)
-            nonDynamic.push(param);
-    });
-    return nonDynamic;
-}
 
 const REDIRECT_MAX = 20;
 function createDeferredPromise() {
@@ -34819,6 +35245,8 @@ class StateRuntime {
         this._$injector = undefined;
         this._lazyStates = [];
         this._policyDiagnostics = [];
+        this._prefetches = new Map();
+        this._prefetchRootDisposer = undefined;
         this._defaultErrorHandler = exceptionHandler;
     }
     /** @internal */
@@ -34826,7 +35254,7 @@ class StateRuntime {
         this._policyDiagnostics.push(diagnostic);
     }
     /** @internal */
-    _initRuntime($injector, $location, $stateRegistry, $rootScope, viewService) {
+    _initRuntime($injector, $location, $stateRegistry, $rootScope, viewService, $rootElement) {
         this._routerState._initRuntime($location, $injector);
         this._stateRegistry = $stateRegistry;
         this._viewService = viewService;
@@ -34837,7 +35265,154 @@ class StateRuntime {
         this._transitionService._initRuntimeHooks(this, viewService);
         this._$injector = $injector;
         this._routerState._injector = $injector;
+        this._prefetchRootDisposer?.();
+        this._prefetchRootDisposer = $rootElement
+            ? this._bindPrefetchRoot($rootElement)
+            : undefined;
         return this;
+    }
+    /** @internal */
+    _destroyRuntime() {
+        this._prefetchRootDisposer?.();
+        this._prefetchRootDisposer = undefined;
+        this._prefetches.clear();
+    }
+    /** @internal */
+    _bindPrefetchRoot($rootElement) {
+        const timers = new Map();
+        const findAnchor = (event) => {
+            const target = event.target;
+            if (!(target instanceof Element))
+                return undefined;
+            const anchor = target.closest("a[href]");
+            if (!(anchor instanceof HTMLAnchorElement) ||
+                !$rootElement.contains(anchor) ||
+                hasNormalizedAttr(anchor, "ngState")) {
+                return undefined;
+            }
+            return anchor;
+        };
+        const cancel = (anchor) => {
+            const timer = timers.get(anchor);
+            if (timer !== undefined) {
+                clearTimeout(timer);
+                timers.delete(anchor);
+            }
+        };
+        const enter = ((event) => {
+            const anchor = findAnchor(event);
+            if (!anchor ||
+                anchor.contains(event.relatedTarget)) {
+                return;
+            }
+            const delay = _getRouterPrefetchDelay(anchor, this._routerState);
+            if (delay === undefined)
+                return;
+            cancel(anchor);
+            timers.set(anchor, window.setTimeout(() => {
+                timers.delete(anchor);
+                void this._prefetchHref(anchor.href).catch(() => undefined);
+            }, delay));
+        });
+        const leave = ((event) => {
+            const anchor = findAnchor(event);
+            if (anchor &&
+                !anchor.contains(event.relatedTarget)) {
+                cancel(anchor);
+            }
+        });
+        $rootElement.addEventListener("pointerover", enter);
+        $rootElement.addEventListener("pointerout", leave);
+        $rootElement.addEventListener("focusin", enter);
+        $rootElement.addEventListener("focusout", leave);
+        return () => {
+            $rootElement.removeEventListener("pointerover", enter);
+            $rootElement.removeEventListener("pointerout", leave);
+            $rootElement.removeEventListener("focusin", enter);
+            $rootElement.removeEventListener("focusout", leave);
+            timers.forEach((timer) => {
+                clearTimeout(timer);
+            });
+            timers.clear();
+        };
+    }
+    /** @internal */
+    async _prefetchHref(href) {
+        const parts = this._routerState._urlRuntime._parseHref(href);
+        if (!parts)
+            return;
+        const match = this._routerState._routeTable._match(parts.path, parts.search, parts.hash);
+        if (match) {
+            await this.prefetch(match.state, match.match, { inherit: true });
+        }
+    }
+    /** @internal */
+    async _prefetchTarget(stateOrName, params, options) {
+        let target = this.target(stateOrName, params, options);
+        if (!target.valid()) {
+            const lazy = this._findLazyState(target);
+            if (lazy) {
+                lazy.promise ?? (lazy.promise = this._loadLazyRegistration(lazy, target));
+                await lazy.promise;
+                target = this.target(stateOrName, params, options);
+            }
+        }
+        if (!target.valid()) {
+            throw new Error(String(target.error()));
+        }
+        const templateFactory = this._viewService._templateFactory;
+        const templateLoads = [];
+        buildPath(target).forEach((node) => {
+            Object.values(node.state._views ?? {}).forEach((view) => {
+                templateLoads.push(this._prefetchView(templateFactory, view, target.params()));
+            });
+        });
+        await Promise.all(templateLoads);
+    }
+    /** @internal */
+    async _prefetchView(templateFactory, view, params) {
+        const templateUrl = templateFactory._getTemplateUrl(view, params);
+        if (templateUrl && (await this._relayResource(templateUrl))) {
+            return undefined;
+        }
+        return templateFactory._fromConfig(view, params);
+    }
+    /** @internal */
+    async _relayResource(url) {
+        const relay = this._routerState._relay;
+        const injector = this._$injector;
+        if (!relay || !injector?.has(_serviceWorker))
+            return false;
+        const serviceWorker = injector.get(_serviceWorker);
+        if (!serviceWorker.controller)
+            return false;
+        const cache = isObject(relay) ? (relay.cache ?? true) : true;
+        try {
+            const result = await serviceWorker.request({
+                type: "angular-router:prefetch",
+                version: 1,
+                url,
+                cache,
+            });
+            return result.ok;
+        }
+        catch {
+            return false;
+        }
+    }
+    /**
+     * Loads lazy state declarations and route templates without navigating.
+     */
+    prefetch(stateOrName, params = {}, options = {}) {
+        const key = `${diagnosticStateName(stateOrName)}:${JSON.stringify(params)}`;
+        const existing = this._prefetches.get(key);
+        if (existing)
+            return existing;
+        const promise = this._prefetchTarget(stateOrName, params, options).finally(() => {
+            this._prefetches.delete(key);
+        });
+        this._prefetches.set(key, promise);
+        return promise;
     }
     state(nameOrDefinition, definition) {
         const stateDefinition = normalizeStateDeclaration(nameOrDefinition, definition);
@@ -35147,11 +35722,11 @@ class StateRuntime {
      * ```js
      * let app = angular.module('app', []);
      *
-     * app.controller('ctrl', function ($scope, $state) {
+     * app.controller('ctrl', ['$scope', '$state', function ($scope, $state) {
      *   $scope.changeState = function () {
      *     $state.go('contact.detail');
      *   };
-     * });
+     * }]);
      * ```
      *
      * @param {StateOrName} to Absolute state name, state object, or relative state path (relative to current state).
@@ -35333,6 +35908,7 @@ class TemplateFactoryService {
         this._compileRegistry = compileRegistry;
         this._templateRequest = $templateRequest;
         this._injector = $injector;
+        this._templatePromises = new Map();
     }
     /**
      * Resolves a state's view config into either concrete template HTML or a component name.
@@ -35369,7 +35945,24 @@ class TemplateFactoryService {
         const templateUrl = isFunction(url) ? url(params) : url;
         if (isNullOrUndefined(templateUrl))
             return null;
-        return this._getTemplateRequest()(templateUrl);
+        let promise = this._templatePromises.get(templateUrl);
+        if (!promise) {
+            promise = this._getTemplateRequest()(templateUrl).catch((error) => {
+                this._templatePromises.delete(templateUrl);
+                throw error;
+            });
+            this._templatePromises.set(templateUrl, promise);
+        }
+        return promise;
+    }
+    /** @internal */
+    _getTemplateUrl(config, params) {
+        const { templateUrl } = config;
+        if (!isDefined(templateUrl))
+            return null;
+        return isFunction(templateUrl)
+            ? (templateUrl(params) ?? null)
+            : templateUrl;
     }
     /**
      * Builds the HTML for a routed component and binds resolve data to its inputs.
@@ -35449,6 +36042,9 @@ function applyRouterRuntimeCommand(runtime, command) {
             runtime.routerState.config(command.config);
             break;
         case "state":
+            if (command.source) {
+                setStateDeclarationSource(command.definition, command.source);
+            }
             runtime.stateService.state(command.definition);
             break;
         case "lazy":
@@ -35502,6 +36098,7 @@ function createRouterRuntime(dependencies) {
             if (destroyed)
                 return;
             destroyed = true;
+            stateService._destroyRuntime();
             viewService?.destroy();
         },
     };
@@ -35537,8 +36134,9 @@ const routerRuntimeRegistration = {
             _rootScope,
             _injector,
             _location,
+            _rootElement,
             _stateRegistry,
-            (templateRequest, compile, controller, rootScope, injector, location, stateRegistry) => {
+            (templateRequest, compile, controller, rootScope, injector, location, rootElement, stateRegistry) => {
                 const templateFactory = routerRuntime.createTemplateFactory(templateRequest, injector);
                 const viewService = routerRuntime.createViewService({
                     templateFactory,
@@ -35547,7 +36145,7 @@ const routerRuntimeRegistration = {
                     rootScope,
                     injector,
                 });
-                return stateService._initRuntime(injector, location, stateRegistry, rootScope, viewService);
+                return stateService._initRuntime(injector, location, stateRegistry, rootScope, viewService, rootElement);
             },
         ]);
         return stateService;
@@ -39665,22 +40263,35 @@ function applyTemplateRequestConfig(current, config) {
 }
 /** @internal */
 function createTemplateRequestService($templateCache, $http, httpOptions) {
-    return async (templateUrl) => {
-        let transformResponse = $http.defaults.transformResponse ?? null;
-        if (isArray(transformResponse)) {
-            transformResponse = transformResponse.filter((transform) => transform !== defaultHttpResponseTransform);
-        }
-        else if (transformResponse === defaultHttpResponseTransform) {
-            transformResponse = null;
-        }
-        const config = extend({
-            cache: $templateCache,
-            transformResponse,
-        }, httpOptions);
-        return $http.get(templateUrl, config).then((response) => {
+    const pendingRequests = new Map();
+    return (templateUrl) => {
+        const pendingRequest = pendingRequests.get(templateUrl);
+        if (pendingRequest)
+            return pendingRequest;
+        const request = Promise.resolve()
+            .then(async () => {
+            const cachedTemplate = $templateCache.get(templateUrl);
+            if (cachedTemplate !== undefined)
+                return cachedTemplate;
+            let transformResponse = $http.defaults.transformResponse ?? null;
+            if (isArray(transformResponse)) {
+                transformResponse = transformResponse.filter((transform) => transform !== defaultHttpResponseTransform);
+            }
+            else if (transformResponse === defaultHttpResponseTransform) {
+                transformResponse = null;
+            }
+            const config = extend({
+                transformResponse,
+            }, httpOptions);
+            const response = await $http.get(templateUrl, config);
             $templateCache.set(templateUrl, response.data);
             return response.data;
+        })
+            .finally(() => {
+            pendingRequests.delete(templateUrl);
         });
+        pendingRequests.set(templateUrl, request);
+        return request;
     };
 }
 
@@ -40635,9 +41246,26 @@ const workflowRuntimeRegistration = {
         return registry.factory(name, createWorkflowService);
     },
 };
+const workflowSupervisorRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, [
+            _workflow,
+            ($workflow) => (config) => createWorkflowSupervisor($workflow, config),
+        ]);
+    },
+};
 const ngOrchestrationProviders = {
     [_machine]: machineRuntimeRegistration,
     [_workflow]: workflowRuntimeRegistration,
+    [_workflowSupervisor]: workflowSupervisorRuntimeRegistration,
+};
+const storageRuntimeRegistration = {
+    _register(registry, name) {
+        return registry.factory(name, () => createPersistentProxy);
+    },
+};
+const ngStorageProviders = {
+    [_storage]: storageRuntimeRegistration,
 };
 const filterRuntimeRegistration = {
     _register(registry, name, context) {
@@ -40876,9 +41504,13 @@ const ngSecurityProviders = {
 /** Native animation service composition. */
 const animateRuntimeRegistration = {
     _register(registry, name, context) {
+        const animationRegistry = context.runtime.animationRegistry;
+        if (!animationRegistry) {
+            throw new Error("Animation support is not installed.");
+        }
         return registry.factory(name, [
             _injector,
-            ($injector) => createAnimateService(context.runtime.animationRegistry, $injector),
+            ($injector) => createAnimateService(animationRegistry, $injector),
         ]);
     },
 };
@@ -41113,6 +41745,7 @@ const ngIntegrationDirectives = {
     ngChannel: ngChannelDirective,
     ngDelete: ngDeleteDirective,
     ngGet: ngGetDirective,
+    ngPatch: ngPatchDirective,
     ngPost: ngPostDirective,
     ngPut: ngPutDirective,
     ngSse: ngSseDirective,
@@ -41150,6 +41783,7 @@ const ngFillDirectives = {
 const ngDefaultProviderGroups = [
     ngCoreProviders,
     ngOrchestrationProviders,
+    ngStorageProviders,
     ngFilterProviders,
     ngSecurityProviders,
     ngBrowserProviders,
@@ -41178,7 +41812,9 @@ const ngDefaultDirectiveGroups = [
  */
 function registerNgModule(angular) {
     const runtime = angular;
-    const compileRegistry = runtime._composition.compileRegistry;
+    const composition = runtime._composition;
+    const compileRegistry = composition.compileRegistry;
+    composition._installAnimationRegistry(new AnimationRegistry());
     const ngModule = angular.module("ng", []);
     ngModule._registerProviders((registry) => {
         const composition = registerRuntimeHostValues(angular, registry);

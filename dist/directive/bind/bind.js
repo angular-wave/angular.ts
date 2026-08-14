@@ -12,7 +12,7 @@ function ngBindDirective() {
             scope.$watch(expression, (value) => {
                 const text = stringify(deProxy(value));
                 element.textContent = isString(text) ? text : "";
-            }, hasNormalizedAttr(element, "lazy"));
+            }, hasNormalizedAttr(element, "lazy"), true);
         },
     };
 }
@@ -61,7 +61,7 @@ function ngBindHtmlDirective($parse) {
                 scope.$watch(expression, (val) => {
                     const html = isUndefined(val) || isNull(val) ? "" : stringify(deProxy(val));
                     element.innerHTML = isString(html) ? html : "";
-                });
+                }, false, true);
             });
         },
     };

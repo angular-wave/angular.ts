@@ -15,13 +15,13 @@
  * ```js
  * angular
  *   .module('app')
- *   .factory('$exceptionHandler', function(myLogger) {
+ *   .factory('$exceptionHandler', ['myLogger', function(myLogger) {
  *     return function handleError(error) {
  *       myLogger.capture(error);
  *       // Rethrow to preserve fail-fast behavior:
  *       throw error;
  *     };
- *   });
+ *   }]);
  * ```
  *
  * IMPORTANT: custom implementation should always rethrow the error as the framework assumes that `$exceptionHandler` always does the throwing.

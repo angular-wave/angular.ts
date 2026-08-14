@@ -185,12 +185,9 @@ serve: ensure-deps
 
 prepare-release: release-notes-check
 	@$(MAKE) format-check
-	@$(MAKE) check
-	@$(MAKE) test
-	@$(MAKE) docs-requirement
-	@$(MAKE) release-build
-	@$(MAKE) types
 	@$(MAKE) version
+	@$(MAKE) release-build
+	@$(MAKE) docs-requirement
 	@$(MAKE) size-html
 
 PLAYWRIGHT_TEST := npx playwright test

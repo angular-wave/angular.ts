@@ -10,6 +10,7 @@ export { EventBus } from './services/event-bus/event-bus.js';
 export { CachedRestBackend, RestService } from './services/rest/rest.js';
 export { SCE_CONTEXTS } from './services/sce/context.js';
 export { ServiceWorkerError } from './services/service-worker/service-worker.js';
+export { executeCacheStrategy, isCacheStrategy } from './services/cache/cache.js';
 export { ScopeElement } from './services/web-component/web-component.js';
 export { createAngular } from './runtime/index.js';
 export { orchestrationModule } from './runtime/orchestration.js';

@@ -2,6 +2,7 @@ import { _parse, _exceptionHandler } from '../../injection-tokens.js';
 import { directiveNormalize, isString } from '../../shared/utils.js';
 import { getNormalizedAttr, hasNormalizedAttr, getInheritedData } from '../../shared/dom.js';
 import { AFTER_RENDER_EVENT_SCHEDULER_KEY } from '../../core/render/after-render.js';
+import { addScopeEventListener } from '../../core/render/event-dispatcher.js';
 
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
@@ -84,20 +85,7 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
                         scheduleEventAfterRender(scope, element);
                     }
                 };
-                if (eventBehavior._listenerOptions) {
-                    element.addEventListener(eventName, handler, eventBehavior._listenerOptions);
-                }
-                else {
-                    element.addEventListener(eventName, handler);
-                }
-                scope.$on("$destroy", () => {
-                    if (eventBehavior._listenerOptions) {
-                        element.removeEventListener(eventName, handler, eventBehavior._listenerOptions);
-                    }
-                    else {
-                        element.removeEventListener(eventName, handler);
-                    }
-                });
+                addScopeEventListener(scope, element, eventName, handler, eventBehavior._listenerOptions);
             };
         },
     };
@@ -158,10 +146,7 @@ function createWindowEventDirective($parse, $exceptionHandler, target, directive
                         scheduleEventAfterRender(scope, element);
                     }
                 };
-                target.addEventListener(eventName, handler);
-                scope.$on("$destroy", () => {
-                    target.removeEventListener(eventName, handler);
-                });
+                addScopeEventListener(scope, target, eventName, handler);
             };
         },
     };

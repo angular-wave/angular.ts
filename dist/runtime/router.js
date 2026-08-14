@@ -90,8 +90,9 @@ const routerModule = (angular) => {
         _rootScope,
         _injector,
         _location,
+        _rootElement,
         _stateRegistry,
-        (compile, controller, rootScope, injector, $location, stateRegistry) => {
+        (compile, controller, rootScope, injector, $location, rootElement, stateRegistry) => {
             const templateFactory = router.createTemplateFactory(templateRequest, injector);
             const viewService = router.createViewService({
                 templateFactory,
@@ -100,7 +101,7 @@ const routerModule = (angular) => {
                 rootScope,
                 injector,
             });
-            return stateService._initRuntime(injector, $location, stateRegistry, rootScope, viewService);
+            return stateService._initRuntime(injector, $location, stateRegistry, rootScope, viewService, rootElement);
         },
     ])
         .directive("ngState", StateRefDynamicDirective)
