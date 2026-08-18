@@ -352,6 +352,16 @@ const arraySwapCandidates = new WeakMap<object, ArraySwapCandidate>();
 
 let arrayMutationVersion = 0;
 
+const SET_MUTATION_KEYS = ["add", "delete", "clear"];
+
+const MAP_MUTATION_METHODS = [
+  "set",
+  "delete",
+  "clear",
+  "getOrInsert",
+  "getOrInsertComputed",
+];
+
 function toArrayMutationLength(value: unknown): number {
   const numericValue = Number(value);
 
@@ -1272,13 +1282,11 @@ const mapPrototype = Map.prototype as Map<unknown, unknown> &
 const setPrototype = Set.prototype as Set<unknown> & Record<string, unknown>;
 
 const mapMutationMethods = new Set(
-  ["set", "delete", "clear", "getOrInsert", "getOrInsertComputed"].filter(
-    (key) => isFunction(mapPrototype[key]),
-  ),
+  MAP_MUTATION_METHODS.filter((key) => isFunction(mapPrototype[key])),
 );
 
 const setMutationMethods = new Set(
-  ["add", "delete", "clear"].filter((key) => isFunction(setPrototype[key])),
+  SET_MUTATION_KEYS.filter((key) => isFunction(setPrototype[key])),
 );
 
 const mapValueMutationWatchKeys = getPrototypeMethodNames(
@@ -1374,7 +1382,7 @@ const scopeProxyCache = new WeakMap<object, WeakMap<Scope, ScopeProxy>>();
 
 const scopeProxyTargets = new WeakMap<object, object>();
 
-const destroyedScopeCleanupQueue: Scope[] = [];
+let destroyedScopeCleanupQueue: Scope[] = [];
 
 let destroyedScopeCleanupQueued = false;
 
@@ -1392,7 +1400,9 @@ function queueDestroyedScopeCleanup(scope: Scope): void {
 function flushDestroyedScopeCleanup(): void {
   destroyedScopeCleanupQueued = false;
 
-  const queue = destroyedScopeCleanupQueue.splice(0);
+  const queue = destroyedScopeCleanupQueue;
+
+  destroyedScopeCleanupQueue = [];
 
   for (let i = 0, l = queue.length; i < l; i++) {
     queue[i]._cleanupDestroyedScope();
@@ -2471,13 +2481,13 @@ export class Scope {
             this._scheduleListener(
               directListeners,
               (list) => {
-                const scheduled: Listener[] = [];
+                let scheduled: Listener[] | undefined;
 
                 for (let i = 0, l = list.length; i < l; i++) {
                   const x = list[i];
 
                   if (!x._watchProp) {
-                    scheduled.push(x);
+                    scheduled?.push(x);
                     continue;
                   }
 
@@ -2492,11 +2502,13 @@ export class Scope {
                     (x._watchProp.includes("[") &&
                       expectedTarget === x._originalTarget)
                   ) {
-                    scheduled.push(x);
+                    scheduled?.push(x);
+                  } else {
+                    scheduled ??= list.slice(0, i);
                   }
                 }
 
-                return scheduled;
+                return scheduled ?? list;
               },
               property,
             );

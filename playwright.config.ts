@@ -83,10 +83,18 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: "make serve",
-    url: baseUrl,
-    reuseExistingServer:
-      process.env.PW_COVERAGE !== "1" || process.env.PW_REUSE_SERVER === "1",
-  },
+  webServer: [
+    {
+      command: "node_modules/.bin/vite --config utils/vite.config.js",
+      url: baseUrl,
+      reuseExistingServer:
+        process.env.PW_COVERAGE !== "1" || process.env.PW_REUSE_SERVER === "1",
+    },
+    {
+      command: "cd utils/server && go run .",
+      url: "http://localhost:3000/",
+      reuseExistingServer:
+        process.env.PW_COVERAGE !== "1" || process.env.PW_REUSE_SERVER === "1",
+    },
+  ],
 });
