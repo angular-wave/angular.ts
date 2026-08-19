@@ -115,6 +115,8 @@ import type {
   ClassValue as TClassValue,
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
+  DirectiveFactoryFn as TDirectiveFactoryFn,
+  DirectiveLinkFn as TDirectiveLinkFn,
   DirectiveRestrict as TDirectiveRestrict,
   InjectionTokenMap as TInjectionTokenMap,
   AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
@@ -306,6 +308,10 @@ declare global {
     export type DirectiveRestrict = TDirectiveRestrict;
 
     export type DirectiveFactory = TDirectiveFactory;
+
+    export type DirectiveFactoryFn = TDirectiveFactoryFn;
+
+    export type DirectiveLinkFn<T = unknown> = TDirectiveLinkFn<T>;
 
     export type NgModule = TNgModule;
 

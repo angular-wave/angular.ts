@@ -427,6 +427,18 @@ ng.DirectiveRestrict;
 ng.DirectiveFactory;
 
 /**
+ * Public AngularTS DirectiveFactoryFn contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(): !ng.Directive}
+ */
+ng.DirectiveFactoryFn;
+
+/**
+ * Public AngularTS DirectiveLinkFn contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!ng.Scope, !HTMLElement): void}
+ */
+ng.DirectiveLinkFn;
+
+/**
  * AngularTS module registration surface for controllers, directives, services, factories, providers, filters, run blocks, and config blocks.
  * @constructor
  */

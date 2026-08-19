@@ -27,6 +27,8 @@ const semanticTypedefs = new Map([
     "DirectiveFactory",
     "(!ng.AnnotatedDirectiveFactory|function(...?): (!ng.Directive|function(!ng.Scope, !HTMLElement, ?, (!ng.TranscludeFn|undefined)): void))",
   ],
+  ["DirectiveFactoryFn", "function(): !ng.Directive"],
+  ["DirectiveLinkFn", "function(!ng.Scope, !HTMLElement): void"],
   [
     "Injectable",
     "(!ng.AnnotatedFactory|function(...?): ?|function(new: ?, ...?))",

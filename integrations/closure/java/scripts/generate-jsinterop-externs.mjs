@@ -9,6 +9,11 @@ if (!inputPath || !outputPath) {
 
 const source = readFileSync(inputPath, "utf8");
 
+const preservedFunctionTypedefs = new Set([
+  "function(): !ng.Directive",
+  "function(!ng.Scope, !HTMLElement): void",
+]);
+
 function replaceTemplatizedType(input, name, replacement) {
   let output = "";
   let index = 0;
@@ -81,12 +86,66 @@ function rewriteJsDoc(jsDoc) {
       }
 
       const [, prefix, typeExpression, suffix] = match;
+
+      if (
+        line.includes("@typedef") &&
+        preservedFunctionTypedefs.has(typeExpression)
+      ) {
+        return line;
+      }
+
       return `${prefix}{${simplifyJsDocTypeExpression(typeExpression)}}${suffix}`;
     })
     .join("\n");
 }
 
-const output = source.replace(/\/\*\*[\s\S]*?\*\//g, rewriteJsDoc);
+function replaceMemberType(input, declaration, typeExpression) {
+  const declarationIndex = input.indexOf(declaration);
+
+  if (declarationIndex === -1) {
+    throw new Error(`Missing extern declaration: ${declaration}`);
+  }
+
+  const jsDocStart = input.lastIndexOf("/**", declarationIndex);
+  const jsDocEnd = input.indexOf("*/", jsDocStart) + 2;
+  const jsDoc = input.slice(jsDocStart, jsDocEnd);
+  const rewritten = jsDoc.replace(
+    /@type\s*\{[^}\n]+\}/,
+    `@type {${typeExpression}}`,
+  );
+
+  return input.slice(0, jsDocStart) + rewritten + input.slice(jsDocEnd);
+}
+
+function replaceParameterType(input, declaration, parameter, typeExpression) {
+  const declarationIndex = input.indexOf(declaration);
+
+  if (declarationIndex === -1) {
+    throw new Error(`Missing extern declaration: ${declaration}`);
+  }
+
+  const jsDocStart = input.lastIndexOf("/**", declarationIndex);
+  const jsDocEnd = input.indexOf("*/", jsDocStart) + 2;
+  const jsDoc = input.slice(jsDocStart, jsDocEnd);
+  const pattern = new RegExp(`(@param\\s*)\\{[^}\\n]+\\}(\\s+${parameter}\\b)`);
+  const rewritten = jsDoc.replace(pattern, `$1{${typeExpression}}$2`);
+
+  return input.slice(0, jsDocStart) + rewritten + input.slice(jsDocEnd);
+}
+
+let output = source.replace(/\/\*\*[\s\S]*?\*\//g, rewriteJsDoc);
+
+output = replaceMemberType(
+  output,
+  "ng.Directive.prototype.link;",
+  "(!ng.DirectiveLinkFn|undefined)",
+);
+output = replaceParameterType(
+  output,
+  "ng.NgModule.prototype.directive = function",
+  "directiveFactory",
+  "!ng.DirectiveFactoryFn",
+);
 
 writeFileSync(
   outputPath,

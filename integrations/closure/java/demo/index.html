@@ -27,7 +27,7 @@
   <body>
     <main
       class="demo-shell"
-      data-j2cl-app
+      data-j2cl-root
       ng-controller="TodoCtrl as $ctrl"
     >
       <section class="demo-hero">
@@ -50,7 +50,7 @@
         </form>
 
         <p id="j2cl-remaining" class="demo-note">
-          {{ $ctrl.remainingCount }} of {{ $ctrl.tasks.length }} remaining
+          {{ $ctrl.remainingCount() }} of {{ $ctrl.tasks.length }} remaining
         </p>
 
         <div class="demo-actions">
@@ -84,16 +84,13 @@
     <script type="module">
       import { angular } from "/src/index.ts";
 
-      await new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = "./target/webapp/j2cl-todo/j2cl-todo.js";
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.append(script);
-      });
+      const bundleUrl = new URL(
+        "./target/webapp/j2cl-todo/j2cl-todo.js",
+        document.baseURI,
+      ).href;
+      await import(/* @vite-ignore */ bundleUrl);
 
-      globalThis.j2clTodoMain();
-      angular.bootstrap(document.querySelector("[data-j2cl-app]"), [
+      angular.bootstrap(document.querySelector("[data-j2cl-root]"), [
         "j2clTodo",
       ]);
     </script>

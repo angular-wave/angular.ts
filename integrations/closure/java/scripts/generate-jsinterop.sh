@@ -10,7 +10,19 @@ PACKAGE_PREFIX="${6:?package prefix is required}"
 EXTENSION_TYPE_PREFIX="${7:?extension type prefix is required}"
 GLOBAL_SCOPE_CLASS_NAME="${8:?global scope class name is required}"
 OUTPUT_SOURCES_DIR="${9:?output sources directory is required}"
-JAVA_CMD="${JSINTEROP_GENERATOR_JAVA:-java}"
+if [[ -n "${JSINTEROP_GENERATOR_JAVA:-}" ]]; then
+  JAVA_CMD="${JSINTEROP_GENERATOR_JAVA}"
+elif [[ -n "${TOOLCHAIN_JAVA_HOME:-}" ]]; then
+  JAVA_CMD="${TOOLCHAIN_JAVA_HOME}/bin/java"
+else
+  JAVA_CMD="java"
+fi
+
+if ! command -v "${JAVA_CMD}" >/dev/null 2>&1; then
+  echo "Java executable not found: ${JAVA_CMD}" >&2
+  echo "Unset JSINTEROP_GENERATOR_JAVA to use Maven's JDK 21 toolchain." >&2
+  exit 1
+fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JSINTEROP_EXTERNS="${OUTPUT_SRCJAR%.jar}.externs.js"
 
@@ -53,6 +65,16 @@ OUTPUT_SRCJAR_ABS="$(cd "$(dirname "${OUTPUT_SRCJAR}")" && pwd)/$(basename "${OU
   cd "${OUTPUT_SOURCES_DIR}"
   jar -xf "${OUTPUT_SRCJAR_ABS}"
 )
+
+mkdir -p "${OUTPUT_SOURCES_DIR}/META-INF/externs"
+{
+  cat "${EXTERNS_FILE}"
+  cat <<'EOF'
+
+/** @constructor */
+function ElementInternals() {}
+EOF
+} > "${OUTPUT_SOURCES_DIR}/META-INF/externs/angular-ts.externs.js"
 
 "${NODE:-node}" "${SCRIPT_DIR}/normalize-generated-jsinterop-java.mjs" \
   "${OUTPUT_SOURCES_DIR}"

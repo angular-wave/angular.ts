@@ -6,7 +6,7 @@
 
   <groupId>io.github.angular-wave</groupId>
   <artifactId>angular-ts-jsinterop</artifactId>
-  <version>0.27.0</version>
+  <version>0.32.0</version>
   <packaging>jar</packaging>
 
   <name>AngularTS JsInterop Bindings</name>
@@ -32,7 +32,7 @@
     <connection>scm:git:https://github.com/angular-wave/angular.ts.git</connection>
     <developerConnection>scm:git:https://github.com/angular-wave/angular.ts.git</developerConnection>
     <url>https://github.com/angular-wave/angular.ts</url>
-    <tag>v0.27.0</tag>
+    <tag>v0.32.0</tag>
   </scm>
 
   <properties>
@@ -74,10 +74,37 @@
       <artifactId>base</artifactId>
       <version>${jsinterop.base.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.elemental2</groupId>
+      <artifactId>elemental2-dom</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.elemental2</groupId>
+      <artifactId>elemental2-promise</artifactId>
+      <version>1.2.3</version>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-toolchains-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <id>select-jsinterop-generator-jdk</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>select-jdk-toolchain</goal>
+            </goals>
+            <configuration>
+              <version>[21,)</version>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>

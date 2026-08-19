@@ -1,7 +1,17 @@
-# AngularTS JsInterop Maven Package
+# AngularTS JsInterop Packages
 
-This folder builds the Maven package for Java JsInterop bindings generated from
-AngularTS Closure externs.
+This folder builds the two Maven Central artifacts used by Java and Gradle J2CL
+applications:
+
+```text
+io.github.angular-wave:angular-ts-jsinterop
+io.github.angular-wave:angular-ts-jsinterop-processor
+```
+
+The first contains Java JsInterop bindings generated from AngularTS Closure
+externs. The second is a compile-time annotation processor that generates the
+Closure entry module and template externs for an application. Gradle consumes
+these same artifacts; no separate Gradle dependency is published.
 
 The build uses Google's `jsinterop-generator`:
 
@@ -24,7 +34,7 @@ The published artifact uses GitHub-owned Maven Central coordinates:
 ```xml
 <groupId>io.github.angular-wave</groupId>
 <artifactId>angular-ts-jsinterop</artifactId>
-<version>0.27.0</version>
+<version>0.32.0</version>
 ```
 
 The generated Java package prefix remains `org.angular.ts`, matching the
@@ -56,12 +66,15 @@ JSINTEROP_GENERATOR_JAR=/path/to/ClosureJsinteropGenerator_deploy.jar \
 ```
 
 The latest upstream generator currently requires a Java 21 runtime to execute.
-If Maven runs on an older JDK, point generation at Java 21:
+Maven automatically discovers and selects an installed JDK 21 toolchain, even
+when Maven itself runs on an older JDK:
 
 ```bash
-JSINTEROP_GENERATOR_JAVA=/path/to/jdk-21/bin/java \
-  mvn -f integrations/closure/java/pom.xml package
+mvn -f integrations/closure/java/pom.xml package
 ```
+
+Set `JSINTEROP_GENERATOR_JAVA` to an actual Java 21 executable only when
+automatic toolchain discovery is unavailable.
 
 The build pins `jsinterop-generator` to `v20250910` by default so release output
 is reproducible. To intentionally test a different generator, override it:
@@ -133,27 +146,27 @@ demo/target/webapp/j2cl-todo/j2cl-todo.js
 ```
 
 The demo uses Closure Compiler `ADVANCED_OPTIMIZATIONS` through the J2CL Maven
-plugin and an explicit `goog:org.angular.ts.demo.j2cl.App` entry point. It
-exports a small `j2clTodoMain()` startup function from the paired native JS file
-so the browser page can register the AngularTS module after loading the
-compiled bundle.
+plugin. `@AngularEntryPoint` generates the Closure entry module during Java
+compilation, and `@AngularTemplateApi` generates the exports and externs needed
+for members referenced by AngularTS template strings. Applications do not
+maintain JavaScript bootstrap or extern files.
 
 The demo intentionally keeps Java out of AngularTS view-scope plumbing. The
-Java `TodoController` owns todo domain behavior and publishes a small
-Closure-stable JavaScript facade. The paired native JS file adapts that facade
-into an AngularTS `app.model("todoModel", ...)` service, then exposes the model
-through `TodoCtrl as $ctrl`. Templates bind to `$ctrl` and `ng-model` normally;
-they do not receive `$scope`, call `$digest`, or run manual refresh helpers.
+Java `TodoController` owns todo domain behavior and is registered directly
+through the generated AngularTS JsInterop bindings. Templates bind to
+`TodoCtrl as $ctrl` and `ng-model` normally; they do not receive `$scope`, call
+`$digest`, use JavaScript adapters, or run manual refresh helpers.
 
-When adding J2CL examples, keep public template keys quoted in native JS object
-literals. Closure `ADVANCED_OPTIMIZATIONS` can rename unquoted object-literal
-properties, while AngularTS templates resolve the runtime property names.
+When adding J2CL examples, annotate the startup method with
+`@AngularEntryPoint`, annotate template-facing global JsTypes with
+`@AngularTemplateApi`, and expose their fields and methods with `@JsProperty`
+or `@JsMethod`. The annotation processor runs during `javac` and writes all
+Closure wiring under `target`.
 
 Run the full Java integration check from the repository root:
 
 ```bash
-make -f integrations/closure/Makefile java-check \
-  JSINTEROP_GENERATOR_JAVA=/path/to/jdk-21/bin/java
+make -f integrations/closure/Makefile java-check
 ```
 
 Then serve the repo and open:
@@ -180,24 +193,87 @@ Configure Maven Central credentials and GPG signing in your Maven settings:
 </servers>
 ```
 
-Then run:
+Build both release artifacts locally with:
 
 ```bash
-mvn -f integrations/closure/java/pom.xml -Prelease deploy
+make -f integrations/closure/Makefile java-package
 ```
 
-The Central publishing plugin is configured with `autoPublish=false`, so the
-deployment is staged for manual review before publishing.
+Deploy both artifacts with:
 
-Consumers use the generated bindings as a normal Maven dependency:
+```bash
+make -f integrations/closure/Makefile java-deploy
+```
+
+Both POMs attach source and javadoc jars and sign their outputs. The Central
+publishing plugin is configured with `autoPublish=false`, so deployments are
+staged for manual review before publishing. Publish the bindings deployment
+before the processor deployment because the processor declares the bindings as
+a dependency at the same version.
+
+## Maven Consumer Setup
+
+Applications use the bindings as a normal dependency and place the processor
+on the compiler's annotation-processor path:
 
 ```xml
 <dependency>
   <groupId>io.github.angular-wave</groupId>
   <artifactId>angular-ts-jsinterop</artifactId>
-  <version>0.27.0</version>
+  <version>0.32.0</version>
 </dependency>
+
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-compiler-plugin</artifactId>
+  <configuration>
+    <annotationProcessorPaths>
+      <path>
+        <groupId>io.github.angular-wave</groupId>
+        <artifactId>angular-ts-jsinterop-processor</artifactId>
+        <version>0.32.0</version>
+      </path>
+    </annotationProcessorPaths>
+    <annotationProcessors>
+      <annotationProcessor>org.angular.ts.processor.AngularClosureProcessor</annotationProcessor>
+    </annotationProcessors>
+  </configuration>
+</plugin>
 ```
+
+For the Vertispan J2CL Maven plugin, use `PREFER_MAVEN`, add
+`target/generated-sources/annotations` as a source root, select
+`goog:angular.ts.generated.entrypoint` as the Closure entry point, and pass
+`target/classes/META-INF/externs/angular-ts-template.externs.js` as an extern.
+The demo POM contains the complete configuration.
+
+## Gradle Consumer Setup
+
+Gradle resolves the same two artifacts from Maven Central:
+
+```kotlin
+dependencies {
+    implementation("io.github.angular-wave:angular-ts-jsinterop:0.32.0")
+    annotationProcessor(
+        "io.github.angular-wave:angular-ts-jsinterop-processor:0.32.0"
+    )
+}
+```
+
+The Java compilation task runs the processor. Configure the selected J2CL
+Gradle plugin so its Closure compilation:
+
+1. Depends on `compileJava`.
+2. Includes `build/generated/sources/annotationProcessor/java/main`, which
+   contains `angular/ts/generated/entrypoint.js`.
+3. Uses `goog:angular.ts.generated.entrypoint` as its entry point.
+4. Passes
+   `build/classes/java/main/META-INF/externs/angular-ts-template.externs.js`
+   as an extern.
+
+J2CL Gradle plugins expose source and extern inputs differently, so those four
+paths should be attached using the APIs of the plugin selected by the
+application. This wiring does not require another published AngularTS artifact.
 
 The browser still loads the AngularTS JavaScript runtime separately; this jar is
 only the typed Java/J2CL API surface for that runtime.

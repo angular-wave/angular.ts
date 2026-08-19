@@ -1,12 +1,10 @@
-.PHONY: closure-generate closure-externs closure-validate closure-build closure-test closure-demo clojurescript-generate clojurescript-validate clojurescript-build clojurescript-test clojurescript-package clojurescript-deploy java-generate java-check generate-check
+.PHONY: closure-generate closure-externs closure-validate closure-build closure-test closure-demo clojurescript-generate clojurescript-validate clojurescript-build clojurescript-test clojurescript-package clojurescript-deploy java-generate java-processor java-package java-deploy java-check generate-check
 
 CLOSURE_INTEGRATION_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 CLOSURE_REPO_ROOT := $(abspath $(CLOSURE_INTEGRATION_DIR)/../..)
 CLOSURE_NODE ?= $(shell command -v node)
 SHADOW_CLJS_VERSION ?= 3.4.10
 CLOJURESCRIPT_JAVA_HOME ?= $(firstword $(wildcard $(HOME)/.sdkman/candidates/java/21*))
-CLOSURE_JAVA_21_HOME ?= $(firstword $(wildcard $(HOME)/.sdkman/candidates/java/21*))
-JSINTEROP_GENERATOR_JAVA ?= $(if $(CLOSURE_JAVA_21_HOME),$(CLOSURE_JAVA_21_HOME)/bin/java,java)
 CLOJARS_REPOSITORY_ID ?= clojars
 CLOJARS_URL ?= https://repo.clojars.org/
 CLOJURESCRIPT_GROUP_ID ?= org.angular.ts
@@ -66,12 +64,30 @@ clojurescript-deploy: clojurescript-package
 
 java-generate: closure-externs
 	@cd $(CLOSURE_REPO_ROOT) && \
-		JSINTEROP_GENERATOR_JAVA="$(JSINTEROP_GENERATOR_JAVA)" \
 		mvn -f integrations/closure/java/pom.xml process-sources
+
+java-processor:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		mvn -f integrations/closure/java/pom.xml install
+	@cd $(CLOSURE_REPO_ROOT) && \
+		mvn -f integrations/closure/java/processor/pom.xml install
+
+java-package:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		mvn -f integrations/closure/java/pom.xml clean install
+	@cd $(CLOSURE_REPO_ROOT) && \
+		mvn -f integrations/closure/java/processor/pom.xml clean package
+
+java-deploy:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		mvn -f integrations/closure/java/pom.xml -Prelease clean deploy
+	@cd $(CLOSURE_REPO_ROOT) && \
+		mvn -f integrations/closure/java/processor/pom.xml -Prelease clean deploy
 
 java-check:
 	@cd $(CLOSURE_REPO_ROOT) && \
-		JSINTEROP_GENERATOR_JAVA="$(JSINTEROP_GENERATOR_JAVA)" \
-		mvn -f integrations/closure/java/pom.xml clean verify
+		mvn -f integrations/closure/java/pom.xml clean install
+	@cd $(CLOSURE_REPO_ROOT) && \
+		mvn -f integrations/closure/java/processor/pom.xml clean install
 	@cd $(CLOSURE_REPO_ROOT) && \
 		mvn -f integrations/closure/java/demo/pom.xml clean j2cl:clean verify

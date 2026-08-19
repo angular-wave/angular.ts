@@ -1,14 +1,17 @@
 package org.angular.ts.demo.j2cl;
 
+import elemental2.dom.HTMLElement;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import jsinterop.base.JsPropertyMap;
-import org.angular.ts.HTMLElement;
+import org.angular.ts.Angular;
+import org.angular.ts.annotation.AngularEntryPoint;
+import org.angular.ts.ng.Directive;
+import org.angular.ts.ng.NgModule;
 
 /** J2CL entry point that registers the AngularTS todo module. */
+@JsType(namespace = JsPackage.GLOBAL, name = "J2clTodoApp")
 public final class App {
   private App() {}
 
@@ -16,43 +19,26 @@ public final class App {
     start();
   }
 
+  @JsMethod
+  @AngularEntryPoint
   public static void start() {
-    registerJ2clTodoModule(
-        (TodoControllerFactory) TodoController::new,
-        (DirectiveFactory) App::createBadgeDirective);
+    NgModule app = Angular.module("j2clTodo", new String[0]);
+    app.controller("TodoCtrl", (TodoControllerFactory) TodoController::new);
+    app.directive("j2clBadge", App::createBadgeDirective);
   }
 
-  @JsMethod(namespace = JsPackage.GLOBAL, name = "registerJ2clTodoModule")
-  private static native void registerJ2clTodoModule(
-      TodoControllerFactory controllerFactory,
-      DirectiveFactory directiveFactory);
-
-  private static Object createBadgeDirective() {
-    JsPropertyMap<Object> directive = JsPropertyMap.of();
-    directive.set("restrict", "A");
-    directive.set("link", (LinkFn) (scope, element) -> element.setTextContent(
-        "Application JavaScript compiled from Java with J2CL and AngularTS JsInterop bindings"));
+  private static Directive<Object> createBadgeDirective() {
+    Directive<Object> directive = Directive.create();
+    directive.setRestrict("A");
+    directive.setLink(
+        (scope, element) ->
+            element.textContent =
+                "Application JavaScript compiled from Java with J2CL and AngularTS JsInterop bindings");
     return directive;
   }
 
   @JsFunction
   private interface TodoControllerFactory {
     TodoController create();
-  }
-
-  @JsFunction
-  private interface DirectiveFactory {
-    Object create();
-  }
-
-  @JsFunction
-  private interface LinkFn {
-    void link(Object scope, TextElement element);
-  }
-
-  @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "HTMLElement")
-  private interface TextElement extends HTMLElement {
-    @JsProperty(name = "textContent")
-    void setTextContent(String textContent);
   }
 }

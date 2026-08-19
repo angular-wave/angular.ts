@@ -57,3 +57,31 @@ for (const [path, content] of contents) {
   assert(!content.includes("TODO Auto-generated"), `Generator TODO marker found in ${path}`);
   assert(!content.includes("Unknown type"), `Generator error marker found in ${path}`);
 }
+
+const directiveLinkFn = contents.get(
+  "org/angular/ts/ng/DirectiveLinkFn.java",
+);
+const directiveFactoryFn = contents.get(
+  "org/angular/ts/ng/DirectiveFactoryFn.java",
+);
+const directive = contents.get("org/angular/ts/ng/Directive.java");
+const ngModule = contents.get("org/angular/ts/ng/NgModule.java");
+
+assert(
+  directiveLinkFn?.includes("@JsFunction"),
+  "Generated DirectiveLinkFn is not a @JsFunction callback.",
+);
+assert(
+  directiveFactoryFn?.includes("@JsFunction"),
+  "Generated DirectiveFactoryFn is not a @JsFunction callback.",
+);
+assert(
+  directive?.includes("setLink(DirectiveLinkFn link)"),
+  "Generated Directive.setLink does not accept DirectiveLinkFn.",
+);
+assert(
+  ngModule?.includes(
+    "directive(String name,DirectiveFactoryFn directiveFactory)",
+  ),
+  "Generated NgModule.directive does not accept DirectiveFactoryFn.",
+);

@@ -6,7 +6,7 @@
 
   <groupId>org.angular.ts</groupId>
   <artifactId>angular-ts-j2cl-todo-demo</artifactId>
-  <version>0.27.0-SNAPSHOT</version>
+  <version>0.32.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>AngularTS J2CL Todo Demo</name>
@@ -18,6 +18,7 @@
     <angular.ts.java.dir>${project.basedir}/..</angular.ts.java.dir>
     <angular.ts.handwritten.sources>${angular.ts.java.dir}/src/main/java</angular.ts.handwritten.sources>
     <angular.ts.generated.sources>${angular.ts.java.dir}/target/generated-sources/jsinterop</angular.ts.generated.sources>
+    <angular.ts.jsinterop.version>0.32.0</angular.ts.jsinterop.version>
     <j2cl.maven.plugin.version>0.22.0</j2cl.maven.plugin.version>
     <jsinterop.annotations.version>2.0.2</jsinterop.annotations.version>
     <jsinterop.base.version>1.1.1</jsinterop.base.version>
@@ -38,6 +39,16 @@
       <artifactId>base</artifactId>
       <version>${jsinterop.base.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.elemental2</groupId>
+      <artifactId>elemental2-dom</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.elemental2</groupId>
+      <artifactId>elemental2-promise</artifactId>
+      <version>1.2.3</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -57,6 +68,7 @@
               <sources>
                 <source>${angular.ts.handwritten.sources}</source>
                 <source>${angular.ts.generated.sources}</source>
+                <source>${project.build.directory}/generated-sources/annotations</source>
               </sources>
             </configuration>
           </execution>
@@ -69,6 +81,16 @@
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
           <release>${maven.compiler.release}</release>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>io.github.angular-wave</groupId>
+              <artifactId>angular-ts-jsinterop-processor</artifactId>
+              <version>${angular.ts.jsinterop.version}</version>
+            </path>
+          </annotationProcessorPaths>
+          <annotationProcessors>
+            <annotationProcessor>org.angular.ts.processor.AngularClosureProcessor</annotationProcessor>
+          </annotationProcessors>
         </configuration>
       </plugin>
 
@@ -99,10 +121,14 @@
         </executions>
         <configuration>
           <compilationLevel>ADVANCED_OPTIMIZATIONS</compilationLevel>
+          <annotationProcessorMode>PREFER_MAVEN</annotationProcessorMode>
           <dependencyMode>PRUNE</dependencyMode>
           <entrypoint>
-            <entrypoint>goog:org.angular.ts.demo.j2cl.App</entrypoint>
+              <entrypoint>goog:angular.ts.generated.entrypoint</entrypoint>
           </entrypoint>
+          <externs>
+            <extern>${project.build.outputDirectory}/META-INF/externs/angular-ts-template.externs.js</extern>
+          </externs>
           <initialScriptFilename>j2cl-todo/j2cl-todo.js</initialScriptFilename>
           <webappDirectory>${project.build.directory}/webapp</webappDirectory>
         </configuration>
