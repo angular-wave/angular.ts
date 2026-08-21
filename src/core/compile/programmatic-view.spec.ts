@@ -609,4 +609,13 @@ describe("programmatic views", () => {
       expect(PROGRAMMATIC_VIEW_TEMPLATE).toBe("<!--ng-programmatic-view-->");
     });
   });
+  it("defers static markup properties until child views are available", () => {
+    bootstrap("<static-markup></static-markup>", (module) => {
+      module.component("staticMarkup", {
+        view: () => tags.div({ innerHTML: "" }, tags.span("discarded")),
+      });
+    });
+
+    expect(host.querySelector("static-markup div")?.textContent).toBe("");
+  });
 });

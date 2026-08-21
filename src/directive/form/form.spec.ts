@@ -9,7 +9,7 @@ import {
 } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 import { assert, isFunction } from "../../shared/utils.ts";
-import { FormController } from "./form.ts";
+import { FormController, nullFormCtrl } from "./form.ts";
 
 describe("form", () => {
   let doc;
@@ -1832,5 +1832,27 @@ describe("form", () => {
         }, 100);
       }, 100);
     });
+  });
+  it("keeps the null form controller inert and supports non-string names", () => {
+    const detachedControl = { _target: {} };
+
+    expect(nullFormCtrl.getControls()).toEqual([]);
+    nullFormCtrl.addControl(detachedControl);
+    nullFormCtrl.removeControl(detachedControl);
+    nullFormCtrl.setValidity("test", true);
+    nullFormCtrl.setNativeValidity(true);
+    nullFormCtrl.setDirty();
+    nullFormCtrl.setPristine();
+    nullFormCtrl.setSubmitted();
+    nullFormCtrl._setSubmitted();
+
+    const form = new FormController(
+      document.createElement("form"),
+      scope,
+      injector,
+      () => () => ({ invalid: "name" }),
+    );
+
+    expect(form.controlName).toBe("");
   });
 });

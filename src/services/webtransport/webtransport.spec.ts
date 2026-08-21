@@ -987,7 +987,7 @@ function restoreWebTransport(descriptor) {
 }
 
 async function webTransportTestConfig(config = {}) {
-  const response = await fetch("http://localhost:3000/webtransport/cert-hash");
+  const response = await fetch(`${__PW_API_URL__}webtransport/cert-hash`);
 
   if (!response.ok) {
     pending("WebTransport test backend is unavailable");

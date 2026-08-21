@@ -2672,6 +2672,7 @@ export class CompileRegistry {
           controllerInstance: UnknownRecord,
           scope: Scope,
         ): void {
+          /* istanbul ignore next -- controllers are normalized to scoped instances. */
           const controllerTarget = (controllerInstance._target ??
             controllerInstance) as UnknownRecord & {
             afterRender?: RuntimeFunction;
@@ -3059,6 +3060,7 @@ export class CompileRegistry {
             // for transclusion, which caused us to lose a layer of element on which
             // we could hold the new transclusion scope, so we will create it manually
             // here.
+            /* istanbul ignore next -- a compile child scope always has a parent. */
             scope = scope.parent?.new() ?? scope.new();
           }
 
@@ -5369,6 +5371,7 @@ export class CompileRegistry {
 
             if (isFunction(controllerInstance.onInit)) {
               try {
+                /* istanbul ignore next -- controllers are normalized to scoped instances. */
                 const controllerTarget =
                   controllerInstance._target ?? controllerInstance;
 

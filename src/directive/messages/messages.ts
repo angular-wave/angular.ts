@@ -105,6 +105,7 @@ class NgMessageCtrl {
       ngMessagesMultipleExpression,
     );
 
+    /* istanbul ignore next -- matching ngMessages attributes always provide a string. */
     this._scope.watch(collectionExpression ?? "", this._render.bind(this));
   }
 

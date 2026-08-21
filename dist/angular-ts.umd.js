@@ -2234,6 +2234,7 @@
             else {
                 newProvider = providerDefinition;
             }
+            /* istanbul ignore if -- normalized providers always define `get`. */
             if (!newProvider.get) {
                 throw $injectorError$1("pget", "Provider '{0}' must define get factory method.", name);
             }
@@ -4399,16 +4400,7 @@
                 arrayIdentityMethods.has(property)) {
                 return (...args) => Reflect.apply(targetProp, target, unwrapArrayMutationArgs(args));
             }
-            if (typeof property !== "symbol" &&
-                hasOwn(this._propertyMap, property) &&
-                !targetShadowsScopeData) {
-                this._target = target;
-                return scopeMember;
-            }
-            else {
-                // we are a simple getter
-                return scopedTargetProp;
-            }
+            return scopedTargetProp;
         }
         /** @internal Returns a native collection method wrapper bound to the raw collection target. */
         _getNativeCollectionMethodWrapper(target, property, method) {
@@ -4606,6 +4598,7 @@
                 if (!foreignProxy) {
                     continue;
                 }
+                /* istanbul ignore next -- avoids replacing an equivalent cached dependency. */
                 if (existing?._handler === foreignProxy._handler &&
                     existing._key === descriptor._key) {
                     descriptor._parent = parent;
@@ -5897,7 +5890,6 @@
         _notifyListener(listener, target, sourceHandler, sourceProperty) {
             const { _originalTarget, _listenerFn, _watchFn } = listener;
             try {
-                let hasDirectForeignSource = false;
                 let hasStableForeignSource = false;
                 if (sourceProperty !== undefined) {
                     const descriptors = listener._foreignWatchDescriptors;
@@ -5907,9 +5899,9 @@
                             if (dependency?._key !== sourceProperty) {
                                 continue;
                             }
-                            hasDirectForeignSource = dependency._handler === sourceHandler;
                             hasStableForeignSource =
-                                hasDirectForeignSource || dependency._handler._target === target;
+                                dependency._handler === sourceHandler ||
+                                    dependency._handler._target === target;
                             if (!hasStableForeignSource && isString(sourceProperty)) {
                                 const parentPath = getForeignProxyParentPath(descriptors[i]._watchProp);
                                 hasStableForeignSource =
@@ -5923,16 +5915,6 @@
                 }
                 if (!hasStableForeignSource) {
                     this._bindForeignDependency(listener);
-                }
-                if (hasDirectForeignSource &&
-                    listener._directLeaf &&
-                    sourceHandler &&
-                    sourceProperty !== undefined) {
-                    const value = sourceHandler._proxy[sourceProperty];
-                    if (!isFunction(value) && !isArray(value)) {
-                        _listenerFn(value, _originalTarget);
-                        return;
-                    }
                 }
                 let newVal = _watchFn(_originalTarget);
                 if (isUndefined(newVal) && target !== _originalTarget) {
@@ -7020,9 +7002,13 @@
         };
         const wrapper = () => {
             const items = read();
-            return items === null || items === undefined
-                ? []
-                : Array.from(items, (item) => render(() => item));
+            if (items === null || items === undefined)
+                return [];
+            const children = [];
+            for (const item of items) {
+                children.push(render(() => item));
+            }
+            return children;
         };
         return markBinding(wrapper, { _kind: "keyed-child", _binding: binding });
     }
@@ -8706,6 +8692,7 @@
                         queueMicrotask(queueState._flush);
                     }
                     function scheduleControllerAfterRender(controllerInstance, scope) {
+                        /* istanbul ignore next -- controllers are normalized to scoped instances. */
                         const controllerTarget = (controllerInstance._target ??
                             controllerInstance);
                         if (!isFunction(controllerTarget.afterRender)) {
@@ -8929,6 +8916,7 @@
                             // for transclusion, which caused us to lose a layer of element on which
                             // we could hold the new transclusion scope, so we will create it manually
                             // here.
+                            /* istanbul ignore next -- a compile child scope always has a parent. */
                             scope = scope.parent?.new() ?? scope.new();
                         }
                         options = options ?? {};
@@ -10034,6 +10022,7 @@
                             }
                             if (isFunction(controllerInstance.onInit)) {
                                 try {
+                                    /* istanbul ignore next -- controllers are normalized to scoped instances. */
                                     const controllerTarget = controllerInstance._target ?? controllerInstance;
                                     callFunction(controllerTarget.onInit, controllerTarget);
                                 }
@@ -24868,6 +24857,7 @@
             this._default = undefined;
             this._multipleExpression = parseAttrTruthy($parse, multipleExpression);
             this._ngMessagesMultipleExpression = parseAttrTruthy($parse, ngMessagesMultipleExpression);
+            /* istanbul ignore next -- matching ngMessages attributes always provide a string. */
             this._scope.watch(collectionExpression ?? "", this._render.bind(this));
         }
         /** @internal */
@@ -25378,24 +25368,6 @@
                 const linkFn = $compile(assertDefined(selectCtrl._emptyOption));
                 selectNode.prepend(assertDefined(selectCtrl._emptyOption));
                 linkFn(scope);
-                if (assertDefined(selectCtrl._emptyOption).nodeType ===
-                    NodeType._COMMENT_NODE) {
-                    selectCtrl._hasEmptyOption = false;
-                    selectCtrl._registerOption = function (_optionScope, optionEl) {
-                        if (optionEl.value === "") {
-                            selectCtrl._hasEmptyOption = true;
-                            selectCtrl._emptyOption = optionEl;
-                            ngModelCtrl.render();
-                            optionEl.addEventListener("$destroy", () => {
-                                const needsRerender = selectCtrl.isEmptyOptionSelected();
-                                selectCtrl._hasEmptyOption = false;
-                                selectCtrl._emptyOption = undefined;
-                                if (needsRerender)
-                                    ngModelCtrl.render();
-                            });
-                        }
-                    };
-                }
             }
             scope.watch(ngOptions._getWatchables, updateOptions);
             function _addOptionElement(option, parent) {
@@ -25892,6 +25864,7 @@
                     }
                 };
                 syncNgValue(undefined);
+                /* istanbul ignore next -- this directive only links when ngValue exists. */
                 optionScope.watch(stringify$1(ngValueExpression ?? ""), syncNgValue);
                 observeOptionElementAttr(optionScope, optionElement, "value", (observedValue) => {
                     if (observedValue !== optionElement.getAttribute("value")) {
@@ -26051,6 +26024,7 @@
                 };
                 let lastView;
                 let lastViewRef = NaN;
+                /* istanbul ignore next -- the select controller requires ngModel here. */
                 _scope.watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
                     if (lastViewRef === ngModelCtrl.viewValue &&
                         !equals(lastView, ngModelCtrl.viewValue)) {
@@ -30910,6 +30884,7 @@
                         if (!expr || expr.includes("{{")) {
                             return;
                         }
+                        /* istanbul ignore next -- Scope.watch always returns a deregister function. */
                         watchDeregFns[field] =
                             scope.watch(expr, (newval) => {
                                 rawDef[rawDefKeyByAttr[field]] =
@@ -32215,7 +32190,6 @@
                     let viewConfig;
                     let configUpdateVersion = 0;
                     let destroyed = false;
-                    let initialTemplate;
                     const inheritedContext = inherited._config._viewDecl._context;
                     const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
                     const activeNgView = {
@@ -32326,6 +32300,7 @@
                         if (currentEl) {
                             const _viewData = getCacheData(currentEl, "$ngViewAnim");
                             const elementScope = getInheritedData(currentEl, _scope);
+                            /* istanbul ignore next -- compiled roots normally inherit the view scope itself. */
                             if (destroyedScope &&
                                 elementScope &&
                                 elementScope !== destroyedScope &&
@@ -32379,7 +32354,6 @@
                             if (!elementClone) {
                                 return;
                             }
-                            initialTemplate ?? (initialTemplate = elementClone.innerHTML);
                             const viewData = {
                                 _config: config,
                                 $ngView: activeNgView,
@@ -32407,17 +32381,18 @@
                         });
                         if (currentScope !== newScope)
                             return;
+                        /* istanbul ignore if -- linking controllers cannot destroy this scope mid-fill. */
                         if (newScope._handler._destroyed) {
                             return;
                         }
                         const host = assertDefined(enteredElement);
-                        const viewData = getCacheData(host, "$ngView");
+                        const viewData = assertDefined(getCacheData(host, "$ngView"));
                         $view._fillView({
                             host,
                             rootNodes: enteredNodes,
                             scope: newScope,
                             config,
-                            initial: viewData?._initial ?? initialTemplate ?? "",
+                            initial: assertDefined(viewData._initial),
                             activeNgView,
                             animation: $ngViewAnim,
                         });

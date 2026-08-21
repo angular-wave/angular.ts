@@ -941,4 +941,13 @@ describe("ngMessages", () => {
       expect(s(element.textContent)).toEqual("YYYZZZX");
     });
   });
+  it("treats a missing ngMessages expression as an empty collection", async () => {
+    element = $compile(
+      '<div ng-messages><span ng-message="required">required</span></div>',
+    )($rootScope);
+
+    await wait();
+
+    expect(element.textContent).toBe("");
+  });
 });

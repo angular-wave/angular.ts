@@ -1041,6 +1041,7 @@ class CompileRegistry {
                     queueMicrotask(queueState._flush);
                 }
                 function scheduleControllerAfterRender(controllerInstance, scope) {
+                    /* istanbul ignore next -- controllers are normalized to scoped instances. */
                     const controllerTarget = (controllerInstance._target ??
                         controllerInstance);
                     if (!isFunction(controllerTarget.afterRender)) {
@@ -1264,6 +1265,7 @@ class CompileRegistry {
                         // for transclusion, which caused us to lose a layer of element on which
                         // we could hold the new transclusion scope, so we will create it manually
                         // here.
+                        /* istanbul ignore next -- a compile child scope always has a parent. */
                         scope = scope.parent?.new() ?? scope.new();
                     }
                     options = options ?? {};
@@ -2369,6 +2371,7 @@ class CompileRegistry {
                         }
                         if (isFunction(controllerInstance.onInit)) {
                             try {
+                                /* istanbul ignore next -- controllers are normalized to scoped instances. */
                                 const controllerTarget = controllerInstance._target ?? controllerInstance;
                                 callFunction(controllerTarget.onInit, controllerTarget);
                             }

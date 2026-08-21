@@ -623,6 +623,7 @@ export function StateRefDynamicDirective(
             return;
           }
 
+          /* istanbul ignore next -- Scope.watch always returns a deregister function. */
           watchDeregFns[field] =
             scope.watch(expr, (newval) => {
               (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] =

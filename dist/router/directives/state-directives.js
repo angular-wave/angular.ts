@@ -367,6 +367,7 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                     if (!expr || expr.includes("{{")) {
                         return;
                     }
+                    /* istanbul ignore next -- Scope.watch always returns a deregister function. */
                     watchDeregFns[field] =
                         scope.watch(expr, (newval) => {
                             rawDef[rawDefKeyByAttr[field]] =

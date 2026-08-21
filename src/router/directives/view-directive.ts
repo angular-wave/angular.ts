@@ -383,6 +383,7 @@ export function ViewDirective(
               | ng.Scope
               | undefined;
 
+            /* istanbul ignore next -- compiled roots normally inherit the view scope itself. */
             if (
               destroyedScope &&
               elementScope &&
@@ -491,6 +492,7 @@ export function ViewDirective(
 
           if (currentScope !== newScope) return;
 
+          /* istanbul ignore if -- linking controllers cannot destroy this scope mid-fill. */
           if (newScope._handler._destroyed) {
             return;
           }

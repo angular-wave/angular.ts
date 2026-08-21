@@ -6501,7 +6501,7 @@ describe("$compile", () => {
           .directive("trustedTemplate", () => ({
             restrict: "A",
             templateUrl() {
-              return $sce.trustAsResourceUrl("http://localhost:3000/hello");
+              return $sce.trustAsResourceUrl(`${__PW_API_URL__}hello`);
             },
           }))
           .directive("cError", () => ({

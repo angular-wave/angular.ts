@@ -3053,18 +3053,7 @@ export class Scope {
         );
     }
 
-    if (
-      typeof property !== "symbol" &&
-      hasOwn(this._propertyMap, property) &&
-      !targetShadowsScopeData
-    ) {
-      this._target = target;
-
-      return scopeMember;
-    } else {
-      // we are a simple getter
-      return scopedTargetProp;
-    }
+    return scopedTargetProp;
   }
 
   /** @internal Returns a native collection method wrapper bound to the raw collection target. */
@@ -3383,6 +3372,7 @@ export class Scope {
         continue;
       }
 
+      /* istanbul ignore next -- avoids replacing an equivalent cached dependency. */
       if (
         existing?._handler === foreignProxy._handler &&
         existing._key === descriptor._key
@@ -5201,7 +5191,6 @@ export class Scope {
     const { _originalTarget, _listenerFn, _watchFn } = listener;
 
     try {
-      let hasDirectForeignSource = false;
       let hasStableForeignSource = false;
 
       if (sourceProperty !== undefined) {
@@ -5215,9 +5204,9 @@ export class Scope {
               continue;
             }
 
-            hasDirectForeignSource = dependency._handler === sourceHandler;
             hasStableForeignSource =
-              hasDirectForeignSource || dependency._handler._target === target;
+              dependency._handler === sourceHandler ||
+              dependency._handler._target === target;
 
             if (!hasStableForeignSource && isString(sourceProperty)) {
               const parentPath = getForeignProxyParentPath(
@@ -5236,23 +5225,6 @@ export class Scope {
 
       if (!hasStableForeignSource) {
         this._bindForeignDependency(listener);
-      }
-
-      if (
-        hasDirectForeignSource &&
-        listener._directLeaf &&
-        sourceHandler &&
-        sourceProperty !== undefined
-      ) {
-        const value = (
-          sourceHandler._proxy as unknown as Record<PropertyKey, unknown>
-        )[sourceProperty];
-
-        if (!isFunction(value) && !isArray(value)) {
-          _listenerFn(value, _originalTarget);
-
-          return;
-        }
       }
 
       let newVal = _watchFn(_originalTarget);

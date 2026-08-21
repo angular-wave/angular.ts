@@ -9,9 +9,7 @@
       import { Angular } from "/src/angular.ts";
 
       const decoder = new TextDecoder();
-      const response = await fetch(
-        "http://localhost:3000/webtransport/cert-hash",
-      );
+      const response = await fetch(`${__PW_API_URL__}webtransport/cert-hash`);
       const metadata = await response.json();
       const streamMessage = encodeURIComponent(
         JSON.stringify({

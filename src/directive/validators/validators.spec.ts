@@ -948,4 +948,26 @@ describe("validators", () => {
       expect(inputElm.classList.contains("ng-valid")).toBeTrue();
     });
   });
+  it("revalidates when a bound pattern changes", async () => {
+    inputElm = $compile('<input ng-model="value" pattern="^a+$">')($rootScope);
+    await wait();
+    const ctrl = getController(inputElm, "ngModel");
+
+    spyOn(ctrl, "validate").and.callThrough();
+    inputElm.setAttribute("pattern", "^b+$");
+    await wait();
+
+    expect(ctrl.validate).toHaveBeenCalled();
+  });
+
+  it("applies minlength validation to array values", async () => {
+    inputElm = $compile('<span ng-model="value" minlength="3"></span>')(
+      $rootScope,
+    );
+    await wait();
+    const ctrl = getController(inputElm, "ngModel");
+
+    expect(ctrl.validators.minlength(undefined, ["a", "b"])).toBeFalse();
+    expect(ctrl.validators.minlength(undefined, ["a", "b", "c"])).toBeTrue();
+  });
 });

@@ -129,6 +129,7 @@ export function createInjector(
       newProvider = providerDefinition;
     }
 
+    /* istanbul ignore if -- normalized providers always define `get`. */
     if (!newProvider.get) {
       throw $injectorError(
         "pget",

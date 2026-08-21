@@ -51,9 +51,13 @@ function each(read, key, render) {
     };
     const wrapper = () => {
         const items = read();
-        return items === null || items === undefined
-            ? []
-            : Array.from(items, (item) => render(() => item));
+        if (items === null || items === undefined)
+            return [];
+        const children = [];
+        for (const item of items) {
+            children.push(render(() => item));
+        }
+        return children;
     };
     return markBinding(wrapper, { _kind: "keyed-child", _binding: binding });
 }

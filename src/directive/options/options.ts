@@ -7,7 +7,6 @@ import {
   removeElement,
   startingTag,
 } from "../../shared/dom.ts";
-import { NodeType } from "../../shared/node.ts";
 import {
   equals,
   hasOwn,
@@ -333,33 +332,6 @@ export function ngOptionsDirective(
 
       selectNode.prepend(assertDefined(selectCtrl._emptyOption));
       linkFn(scope);
-
-      if (
-        assertDefined(selectCtrl._emptyOption).nodeType ===
-        NodeType._COMMENT_NODE
-      ) {
-        selectCtrl._hasEmptyOption = false;
-
-        selectCtrl._registerOption = function (
-          _optionScope: ng.Scope,
-          optionEl: HTMLOptionElement,
-        ) {
-          if (optionEl.value === "") {
-            selectCtrl._hasEmptyOption = true;
-            selectCtrl._emptyOption = optionEl;
-            ngModelCtrl.render();
-
-            optionEl.addEventListener("$destroy", () => {
-              const needsRerender = selectCtrl.isEmptyOptionSelected();
-
-              selectCtrl._hasEmptyOption = false;
-              selectCtrl._emptyOption = undefined;
-
-              if (needsRerender) ngModelCtrl.render();
-            });
-          }
-        };
-      }
     }
 
     scope.watch(

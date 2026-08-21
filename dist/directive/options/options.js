@@ -1,6 +1,5 @@
 import { _compile, _parse } from '../../injection-tokens.js';
 import { hasNormalizedAttr, emptyElement, getNormalizedAttr, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
-import { NodeType } from '../../shared/node.js';
 import { assertDefined, isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, createErrorFactory } from '../../shared/utils.js';
 
 const ngOptionsError = createErrorFactory("ngOptions");
@@ -176,24 +175,6 @@ function ngOptionsDirective($compile, $parse) {
             const linkFn = $compile(assertDefined(selectCtrl._emptyOption));
             selectNode.prepend(assertDefined(selectCtrl._emptyOption));
             linkFn(scope);
-            if (assertDefined(selectCtrl._emptyOption).nodeType ===
-                NodeType._COMMENT_NODE) {
-                selectCtrl._hasEmptyOption = false;
-                selectCtrl._registerOption = function (_optionScope, optionEl) {
-                    if (optionEl.value === "") {
-                        selectCtrl._hasEmptyOption = true;
-                        selectCtrl._emptyOption = optionEl;
-                        ngModelCtrl.render();
-                        optionEl.addEventListener("$destroy", () => {
-                            const needsRerender = selectCtrl.isEmptyOptionSelected();
-                            selectCtrl._hasEmptyOption = false;
-                            selectCtrl._emptyOption = undefined;
-                            if (needsRerender)
-                                ngModelCtrl.render();
-                        });
-                    }
-                };
-            }
         }
         scope.watch(ngOptions._getWatchables, updateOptions);
         function _addOptionElement(option, parent) {

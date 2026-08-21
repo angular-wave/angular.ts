@@ -70,6 +70,9 @@ const jasmineCoreAssets = {
   },
 };
 export default defineConfig({
+  define: {
+    __PW_API_URL__: JSON.stringify(apiUrl),
+  },
   resolve: {
     alias: sourcePackageAliases,
   },

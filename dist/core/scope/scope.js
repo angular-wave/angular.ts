@@ -1716,16 +1716,7 @@ class Scope {
             arrayIdentityMethods.has(property)) {
             return (...args) => Reflect.apply(targetProp, target, unwrapArrayMutationArgs(args));
         }
-        if (typeof property !== "symbol" &&
-            hasOwn(this._propertyMap, property) &&
-            !targetShadowsScopeData) {
-            this._target = target;
-            return scopeMember;
-        }
-        else {
-            // we are a simple getter
-            return scopedTargetProp;
-        }
+        return scopedTargetProp;
     }
     /** @internal Returns a native collection method wrapper bound to the raw collection target. */
     _getNativeCollectionMethodWrapper(target, property, method) {
@@ -1923,6 +1914,7 @@ class Scope {
             if (!foreignProxy) {
                 continue;
             }
+            /* istanbul ignore next -- avoids replacing an equivalent cached dependency. */
             if (existing?._handler === foreignProxy._handler &&
                 existing._key === descriptor._key) {
                 descriptor._parent = parent;
@@ -3214,7 +3206,6 @@ class Scope {
     _notifyListener(listener, target, sourceHandler, sourceProperty) {
         const { _originalTarget, _listenerFn, _watchFn } = listener;
         try {
-            let hasDirectForeignSource = false;
             let hasStableForeignSource = false;
             if (sourceProperty !== undefined) {
                 const descriptors = listener._foreignWatchDescriptors;
@@ -3224,9 +3215,9 @@ class Scope {
                         if (dependency?._key !== sourceProperty) {
                             continue;
                         }
-                        hasDirectForeignSource = dependency._handler === sourceHandler;
                         hasStableForeignSource =
-                            hasDirectForeignSource || dependency._handler._target === target;
+                            dependency._handler === sourceHandler ||
+                                dependency._handler._target === target;
                         if (!hasStableForeignSource && isString(sourceProperty)) {
                             const parentPath = getForeignProxyParentPath(descriptors[i]._watchProp);
                             hasStableForeignSource =
@@ -3240,16 +3231,6 @@ class Scope {
             }
             if (!hasStableForeignSource) {
                 this._bindForeignDependency(listener);
-            }
-            if (hasDirectForeignSource &&
-                listener._directLeaf &&
-                sourceHandler &&
-                sourceProperty !== undefined) {
-                const value = sourceHandler._proxy[sourceProperty];
-                if (!isFunction(value) && !isArray(value)) {
-                    _listenerFn(value, _originalTarget);
-                    return;
-                }
             }
             let newVal = _watchFn(_originalTarget);
             if (isUndefined(newVal) && target !== _originalTarget) {

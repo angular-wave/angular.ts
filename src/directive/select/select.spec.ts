@@ -1900,4 +1900,30 @@ describe("select", () => {
       });
     });
   });
+  it("renders after deferred updates and clears a disabled selection", async () => {
+    await compile(
+      '<select ng-model="choice" spy-on-write-value>' +
+        '<option value="one">One</option>' +
+        "</select>",
+    );
+    scope.choice = "one";
+    await wait();
+
+    const scheduledRender = jasmine.createSpy("scheduledRender");
+
+    selectCtrl._ngModelCtrl.render = scheduledRender;
+    selectCtrl._updateScheduled = false;
+    selectCtrl._scheduleDeferred = (callback) => callback();
+    selectCtrl._scheduleViewValueUpdate(true);
+
+    expect(scheduledRender).toHaveBeenCalled();
+
+    const selected = element.querySelector("option");
+
+    selected.selected = true;
+    selected.setAttribute("disabled", "true");
+    await wait();
+
+    expect(ngModelCtrl.viewValue).toBeNull();
+  });
 });

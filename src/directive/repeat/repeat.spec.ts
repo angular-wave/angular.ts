@@ -1,6 +1,7 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
+import { createScope } from "../../core/scope/scope.ts";
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { browserTrigger, wait, waitUntil } from "../../shared/test-utils.ts";
 import { ngRepeatDirective } from "./repeat.ts";
@@ -1588,6 +1589,17 @@ describe("ngRepeat", () => {
       ]);
       expect().toBe();
     });
+  });
+  it("registers explicitly proxied repeated values as foreign proxies", async () => {
+    const task = createScope({ task: "proxied" });
+
+    element = $compile(
+      '<ul><li ng-repeat="todo in tasks">{{todo.task}}</li></ul>',
+    )(scope);
+    scope.tasks = [task];
+    await wait();
+
+    expect(element.textContent).toBe("proxied");
   });
 });
 

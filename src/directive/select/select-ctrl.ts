@@ -514,6 +514,7 @@ export class SelectController {
       };
 
       syncNgValue(undefined);
+      /* istanbul ignore next -- this directive only links when ngValue exists. */
       optionScope.watch(stringify(ngValueExpression ?? ""), syncNgValue);
       observeOptionElementAttr(
         optionScope,

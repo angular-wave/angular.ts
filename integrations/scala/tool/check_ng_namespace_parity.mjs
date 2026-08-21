@@ -91,9 +91,10 @@ function extractNamespaceTypes(sourceText) {
 
 function extractParityEntries(parityText) {
   const entries = [];
-  const entryPattern = /^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|$/gm;
+  const [inventory] = parityText.split("\n## Public Method Documentation", 1);
+  const entryPattern = /^\|\s*`([^`]+)`\s*\|.*\|\s*([^|]+?)\s*\|$/gm;
 
-  for (const match of parityText.matchAll(entryPattern)) {
+  for (const match of inventory.matchAll(entryPattern)) {
     const typeName = match[1];
     const status = match[2].trim().replace(/^`|`$/g, "");
 

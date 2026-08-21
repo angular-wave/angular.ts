@@ -193,6 +193,7 @@ generated-check-kotlin:
 
 generated-check-scala:
 	@node integrations/scala/tool/generate_ng_namespace_parity.mjs --check
+	@node integrations/scala/tool/check_ng_namespace_parity.mjs
 
 generated-check-wasm-contracts:
 	@$(MAKE) wasm-contracts-check

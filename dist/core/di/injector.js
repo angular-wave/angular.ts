@@ -63,6 +63,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
         else {
             newProvider = providerDefinition;
         }
+        /* istanbul ignore if -- normalized providers always define `get`. */
         if (!newProvider.get) {
             throw $injectorError("pget", "Provider '{0}' must define get factory method.", name);
         }

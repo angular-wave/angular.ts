@@ -83,4 +83,31 @@ describe("ngTransclude", () => {
     expect(element.querySelector(".item")!.textContent).toBe("selected");
     expect(element.querySelector(".other")!.textContent).toBe("default");
   });
+  it("destroys a transcluded scope when its last node is destroyed", async () => {
+    let transcludedScope;
+
+    compileRegistry.directive("captureTranscludedScope", () => ({
+      link(scope) {
+        transcludedScope = scope;
+      },
+    }));
+    compileRegistry.directive("destroySlotHost", () => ({
+      restrict: "E",
+      transclude: true,
+      template: "<div ng-transclude></div>",
+    }));
+
+    element = $compile(
+      "<destroy-slot-host>" +
+        "<span capture-transcluded-scope>content</span>" +
+        "</destroy-slot-host>",
+    )($rootScope);
+    await wait();
+
+    const destroy = spyOn(transcludedScope, "destroy").and.callThrough();
+
+    element.querySelector("span").dispatchEvent(new Event("$destroy"));
+
+    expect(destroy).toHaveBeenCalled();
+  });
 });

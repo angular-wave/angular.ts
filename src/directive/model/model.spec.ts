@@ -2152,3 +2152,93 @@ describe("data-change", () => {
     expect(el.querySelector("input").value).toBe("b");
   });
 });
+
+describe("ngModel defensive coverage", () => {
+  let app;
+  let injector;
+  let rootScope;
+  let compile;
+
+  beforeEach(() => {
+    app = document.createElement("div");
+    document.body.appendChild(app);
+    window.angular = new Angular();
+    injector = window.angular.bootstrap(app, ["ng"]);
+    rootScope = injector.get("$rootScope");
+    compile = injector.get("$compile");
+  });
+
+  afterEach(() => {
+    dealoc(app);
+    app.remove();
+  });
+
+  function createControl(markup = '<input ng-model="value">') {
+    const input = compile(markup)(rootScope);
+
+    return {
+      input,
+      controller: getController(input, "ngModel"),
+    };
+  }
+
+  it("handles uninitialized validation and null update event options", () => {
+    const { controller } = createControl();
+
+    controller.modelValue = Number.NaN;
+
+    expect(() => controller.validate()).not.toThrow();
+    expect(() =>
+      controller.overrideModelOptions({ updateOn: null }),
+    ).not.toThrow();
+  });
+
+  it("does not rewrite an empty model when parsing produces null", () => {
+    const { controller } = createControl();
+
+    controller.modelValue = "";
+    controller.viewValue = null;
+    controller._lastCommittedViewValue = undefined;
+    controller._rawModelValue = null;
+    controller._parserValid = true;
+    spyOn(controller, "_writeModelToScope");
+
+    controller.commitViewValue();
+
+    expect(controller._writeModelToScope).not.toHaveBeenCalled();
+  });
+
+  it("accepts scopes whose watch implementation omits deregistration", async () => {
+    const watchedScope = rootScope.new();
+    const watch = watchedScope.watch.bind(watchedScope);
+
+    watchedScope.watch = (...args) => {
+      watch(...args);
+
+      return undefined;
+    };
+
+    const input = compile(
+      '<input ng-model="value" ng-model-options="options">',
+    )(watchedScope);
+
+    await wait();
+
+    expect(getController(input, "ngModel")).toBeDefined();
+  });
+
+  it("normalizes non-string interpolated control names", () => {
+    const { input, controller } = createControl();
+    const Controller = controller.constructor;
+    const directController = new Controller(
+      rootScope,
+      injector.get("$exceptionHandler"),
+      input,
+      injector.get("$parse"),
+      injector,
+      () => () => ({ invalid: "name" }),
+    );
+
+    expect(directController.controlName).toBe("");
+  });
+});

@@ -71,6 +71,7 @@ function selectDirective() {
             };
             let lastView;
             let lastViewRef = NaN;
+            /* istanbul ignore next -- the select controller requires ngModel here. */
             _scope.watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
                 if (lastViewRef === ngModelCtrl.viewValue &&
                     !equals(lastView, ngModelCtrl.viewValue)) {

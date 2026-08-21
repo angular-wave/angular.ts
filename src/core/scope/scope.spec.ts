@@ -1,7 +1,12 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { wait } from "../../shared/test-utils.ts";
-import { createScope, getArrayMutationMeta, isNonScope } from "./scope.ts";
+import {
+  createScope,
+  getArrayMutationMeta,
+  isNonScope,
+  observeScopeExpression,
+} from "./scope.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
 import { deProxy, isDefined, isProxy, sliceArgs } from "../../shared/utils.ts";
@@ -6133,6 +6138,135 @@ describe("Scope optimizations", () => {
       // Repeated access should be stable
       expect(child.root).toBe(child.root);
       expect(child.parent).toBe(child.parent);
+    });
+  });
+  describe("defensive observer and lifecycle paths", () => {
+    it("coalesces expression invalidations and tolerates repeated disposal", async () => {
+      const observedScope = createScope({ value: 0 });
+      const values = [];
+      const dispose = observeScopeExpression(
+        observedScope,
+        () => observedScope.value,
+        (value) => values.push(value),
+      );
+
+      observedScope.value = 1;
+      observedScope.value = 2;
+      dispose();
+      dispose();
+      await wait();
+
+      expect(values).toEqual([0]);
+    });
+
+    it("routes expression reader and listener failures to the scope handler", () => {
+      const observedScope = createScope({});
+      const errors = [];
+      const readerFailure = new Error("reader");
+      const listenerFailure = new Error("listener");
+
+      observedScope._handler._exceptionHandler = (error) => errors.push(error);
+
+      observeScopeExpression(
+        observedScope,
+        () => {
+          throw readerFailure;
+        },
+        () => undefined,
+      );
+      observeScopeExpression(
+        observedScope,
+        () => 1,
+        () => {
+          throw listenerFailure;
+        },
+      );
+
+      expect(errors).toEqual([readerFailure, listenerFailure]);
+    });
+
+    it("skips a queued expression observer after its owner is destroyed", async () => {
+      const observedScope = createScope({ value: 0 });
+      const listener = jasmine.createSpy("listener");
+
+      observeScopeExpression(
+        observedScope,
+        () => observedScope.value,
+        listener,
+      );
+      observedScope.value = 1;
+      observedScope._handler._destroyed = true;
+      await wait();
+
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores stale destroyed child registrations", () => {
+      const parent = createScope({});
+      const targetChild = parent.new({ target: true });
+
+      targetChild.destroy();
+      parent._handler._childTargets.set(targetChild._target, targetChild);
+      parent._handler._destroyDisplacedValue(targetChild._target);
+
+      const proxyChild = parent.new({ proxy: true });
+
+      proxyChild.destroy();
+      parent._handler._children.push(proxyChild);
+      parent._handler._destroyDisplacedValue(proxyChild);
+
+      expect(targetChild._handler._destroyed).toBeTrue();
+      expect(proxyChild._handler._destroyed).toBeTrue();
+    });
+
+    it("exposes scope methods on nested proxied targets", () => {
+      const observedScope = createScope({ nested: {} });
+
+      expect(observedScope.nested.watch).toEqual(jasmine.any(Function));
+    });
+
+    it("tracks array index deletion and resolves function-only watches", async () => {
+      const observedScope = createScope({
+        items: ["first", "second"],
+        value: () => () => "resolved",
+      });
+      const values = [];
+
+      observedScope.watch("items", (value) => values.push(value.slice()), true);
+      delete observedScope.items[0];
+
+      expect(observedScope.watch("value")).toBeUndefined();
+      await wait();
+
+      expect(values.at(-1)).toEqual([undefined, "second"]);
+    });
+
+    it("removes a child by scanning when its cached index is absent", () => {
+      const parent = createScope({});
+      const child = parent.new({});
+
+      parent._handler._childIndices.delete(child);
+      child.destroy();
+
+      expect(parent._handler._children).not.toContain(child);
+    });
+
+    it("notifies direct foreign leaf watchers", async () => {
+      const source = createScope({ profile: { name: "Ada" } });
+      const consumer = createScope({});
+      const values = [];
+
+      consumer._target.profile = source.profile;
+      consumer.watch(
+        "profile.name",
+        (value) => values.push(value),
+        false,
+        true,
+      );
+      source.profile.name = "Grace";
+      await wait();
+
+      expect(values).toContain("Grace");
     });
   });
 });

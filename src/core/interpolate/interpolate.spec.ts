@@ -701,4 +701,11 @@ describe("$interpolate", () => {
       destroyInterpolateRuntimeState(state);
     });
   });
+  it("does not register callback watches on plain object contexts", () => {
+    const callback = jasmine.createSpy("callback");
+    const interpolate = $interpolate("{{value}}");
+
+    expect(interpolate({ value: 42 }, callback)).toBe("42");
+    expect(callback).not.toHaveBeenCalled();
+  });
 });

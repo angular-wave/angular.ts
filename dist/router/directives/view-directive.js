@@ -145,7 +145,6 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                 let viewConfig;
                 let configUpdateVersion = 0;
                 let destroyed = false;
-                let initialTemplate;
                 const inheritedContext = inherited._config._viewDecl._context;
                 const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
                 const activeNgView = {
@@ -256,6 +255,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                     if (currentEl) {
                         const _viewData = getCacheData(currentEl, "$ngViewAnim");
                         const elementScope = getInheritedData(currentEl, _scope);
+                        /* istanbul ignore next -- compiled roots normally inherit the view scope itself. */
                         if (destroyedScope &&
                             elementScope &&
                             elementScope !== destroyedScope &&
@@ -309,7 +309,6 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         if (!elementClone) {
                             return;
                         }
-                        initialTemplate ?? (initialTemplate = elementClone.innerHTML);
                         const viewData = {
                             _config: config,
                             $ngView: activeNgView,
@@ -337,17 +336,18 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                     });
                     if (currentScope !== newScope)
                         return;
+                    /* istanbul ignore if -- linking controllers cannot destroy this scope mid-fill. */
                     if (newScope._handler._destroyed) {
                         return;
                     }
                     const host = assertDefined(enteredElement);
-                    const viewData = getCacheData(host, "$ngView");
+                    const viewData = assertDefined(getCacheData(host, "$ngView"));
                     $view._fillView({
                         host,
                         rootNodes: enteredNodes,
                         scope: newScope,
                         config,
-                        initial: viewData?._initial ?? initialTemplate ?? "",
+                        initial: assertDefined(viewData._initial),
                         activeNgView,
                         animation: $ngViewAnim,
                     });
