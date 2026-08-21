@@ -169,8 +169,8 @@ tags.output(controller.total)
 tags.button({disabled: !controller.canSubmit})
 ```
 
-Reader functions replace the former `computed()` wrapper. There is no
-`computed()` programmatic-view API.
+Use reader functions whenever a child or property must be reevaluated
+reactively.
 
 ## Properties and attributes
 
