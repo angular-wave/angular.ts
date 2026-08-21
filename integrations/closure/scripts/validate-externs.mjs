@@ -127,18 +127,53 @@ function hasTemplateDoc(jsDoc) {
 }
 
 function hasUsefulDescription(jsDoc) {
-  const description = jsDoc
-    .replace(/^\/\*\*|\*\/$/g, "")
-    .split("\n")
-    .map((line) => line.replace(/^\s*\*\s?/, "").trim())
-    .filter((line) => line && !line.startsWith("@"))
-    .join(" ");
+  const description = documentationDescription(jsDoc);
 
   return (
     description.length >= 24 &&
     !description.includes("Closure mirror") &&
     !description.includes("TypeScript type")
   );
+}
+
+function documentationDescription(jsDoc) {
+  return jsDoc
+    .replace(/^\/\*\*|\*\/$/g, "")
+    .split("\n")
+    .map((line) => line.replace(/^\s*\*\s?/, "").trim())
+    .filter((line) => line && !line.startsWith("@"))
+    .join(" ");
+}
+
+function collectCallableDocumentationIssues(source) {
+  const issues = [];
+  const callablePattern =
+    /(\/\*\*(?:(?!\/\*\*)[\s\S])*?\*\/)\s*(ng\.[A-Za-z_$][\w$]*\.prototype\.[A-Za-z_$][\w$]*)\s*=\s*function\(([^)]*)\)\s*\{\};/g;
+
+  for (const match of source.matchAll(callablePattern)) {
+    const [, jsDoc, memberName, argumentsSource] = match;
+    if (!documentationDescription(jsDoc)) {
+      issues.push(`${memberName}: missing method description`);
+    }
+
+    const documentedParameters = new Map(
+      [...jsDoc.matchAll(/^\s*\*\s+@param\s+\{.+\}\s+([A-Za-z_$][\w$]*)\s+(.+)$/gm)].map(
+        (parameter) => [parameter[1], parameter[2].trim()],
+      ),
+    );
+    const argumentNames = argumentsSource
+      .split(",")
+      .map((argument) => argument.trim())
+      .filter(Boolean);
+
+    for (const argumentName of argumentNames) {
+      if (!documentedParameters.get(argumentName)) {
+        issues.push(`${memberName}.${argumentName}: missing parameter description`);
+      }
+    }
+  }
+
+  return issues;
 }
 
 function hasStructuralExtern(source, name) {
@@ -191,6 +226,7 @@ const selfReferentialTypedefs = [
 const underscoredExternMembers = [
   ...externsSource.matchAll(/\bng\.([A-Za-z_$][\w$]*)\.prototype\.(_[A-Za-z_$][\w$]*)\b/g),
 ].map((match) => `${match[1]}.${match[2]}`);
+const callableDocumentationIssues = collectCallableDocumentationIssues(externsSource);
 
 if (
   missing.length > 0 ||
@@ -200,7 +236,8 @@ if (
   genericStructuralMissingTemplate.length > 0 ||
   wildcardTypedefs.length > 0 ||
   selfReferentialTypedefs.length > 0 ||
-  underscoredExternMembers.length > 0
+  underscoredExternMembers.length > 0 ||
+  callableDocumentationIssues.length > 0
 ) {
   if (missing.length > 0) {
     console.error("Missing AngularTS Closure extern types:");
@@ -239,6 +276,11 @@ if (
   if (underscoredExternMembers.length > 0) {
     console.error("Underscored Closure extern members are not allowed:");
     underscoredExternMembers.forEach((name) => console.error(`  - ${name}`));
+  }
+
+  if (callableDocumentationIssues.length > 0) {
+    console.error("AngularTS Closure extern methods have incomplete documentation:");
+    callableDocumentationIssues.forEach((issue) => console.error(`  - ${issue}`));
   }
 
   process.exit(1);

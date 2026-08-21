@@ -10,7 +10,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
     const ownedFragments = new Set();
     const activeAnimations = new Set();
     const placeholders = new Set();
-    scope.$on("$destroy", () => {
+    scope.on("$destroy", () => {
         destroyed = true;
         activeAnimations.forEach((animation) => {
             animation.cancel();

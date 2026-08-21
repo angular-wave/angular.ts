@@ -127,6 +127,7 @@
     "react-dom": "^19.2.6",
     "rollup": "latest",
     "rollup-plugin-version-injector": "latest",
+    "shadow-cljs": "3.4.10",
     "typedoc": "^0.28.17",
     "typescript": "latest",
     "typescript-eslint": "^8.57.1",

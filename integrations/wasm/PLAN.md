@@ -9,9 +9,9 @@ allows Wasm clients to read, write, delete, sync, watch, and unbind that scope
 through a stable ABI.
 
 `WasmScope` is not the app-owned model boundary. After the model lifecycle
-roadmap implements `$snapshot`, `$restore`, and `$sync`, WASM examples and
+roadmap implements `snapshot`, `restore`, and `sync`, WASM examples and
 language bindings must be audited so app-owned state uses `app.model(...)` and
-model `$sync()` adapters where appropriate, while `WasmScope` remains the
+model `sync()` adapters where appropriate, while `WasmScope` remains the
 DOM/root-scoped bridge for view scopes.
 
 This direction is separate from scope sync, event bus, server state sync, and
@@ -162,7 +162,7 @@ buffer_free(bufferHandle)
 - [x] Infer Rust manifest registration export names from registration kind and
       name.
 - [x] Add Rust facade helpers over pointer/length operations.
-- [x] Finish Rust lifecycle hook generation for `$onInit` and `$onDestroy`.
+- [x] Finish Rust lifecycle hook generation for `onInit` and `onDestroy`.
 - [x] Finish Rust module registration for services, factories, values,
       components, and controllers.
 - [x] Finish typed DI diagnostics for invalid injection shapes.
@@ -257,7 +257,7 @@ complete, including the required namespace porting surface.
 
 ### Phase G - Post-Model-Sync Alignment
 
-Model `$snapshot`, `$restore`, and `$sync` are implemented in AngularTS, so this
+Model `snapshot`, `restore`, and `sync` are implemented in AngularTS, so this
 phase is now active.
 
 - [x] Audit `WasmScope` examples and identify which examples are view-scope
@@ -288,8 +288,8 @@ Audit result:
 | Zig todo | `WasmScope` view scope | Keep as view-scope ABI reference. |
 | C++ todo | `WasmScope` view scope | Keep as view-scope ABI reference. |
 | C todo | `WasmScope` view scope | Keep as view-scope ABI reference. |
-| SQLite WASM concept | `app.model(...)` + `$sync()` | Use as model-centered WASM/data runtime proof. |
-| Unity WebGL concept | `app.model(...)` + `$sync()` | Use as model-centered engine/runtime proof. |
+| SQLite WASM concept | `app.model(...)` + `sync()` | Use as model-centered WASM/data runtime proof. |
+| Unity WebGL concept | `app.model(...)` + `sync()` | Use as model-centered engine/runtime proof. |
 
 Current decision:
 
@@ -297,7 +297,7 @@ Current decision:
 - no model-specific Wasm ABI imports are added in this phase;
 - language bindings continue to expose `WasmScope` only for scope/view work;
 - model-centered Wasm integrations should be authored as AngularTS services or
-  `$sync()` targets around the Wasm runtime.
+  `sync()` targets around the Wasm runtime.
 
 ### Phase H - ABI Namespace Split
 
@@ -443,7 +443,7 @@ integrations/wasm/WASM_NAMESPACE_AUDIT.md
 ### Phase M - Transactional and Binary ABI v2
 
 - [x] Apply validated multi-path writes as one reactive transaction and route
-      app-model origins through `$restore()` and the model scheduler.
+      app-model origins through `restore()` and the model scheduler.
 - [x] Suppress guest write echoes by default while allowing explicit
       `{ origin, echo: true }` requests.
 - [x] Add owned raw-byte get/set operations that bypass JSON and base64.
@@ -479,7 +479,7 @@ runtime requirement and are no longer deferred implementation targets.
 - Only after Rust is feature complete, including the required public namespace
   porting surface, Go, AssemblyScript, C#, Zig, C++, and C may resume active
   implementation.
-- Model `$snapshot`, `$restore`, and `$sync` exist, and Phase G documents the
+- Model `snapshot`, `restore`, and `sync` exist, and Phase G documents the
   scope/model boundary for the shared ABI, active examples, and language
   integration notes.
 - Wasm writes update real AngularTS scopes directly.

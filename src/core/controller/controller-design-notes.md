@@ -150,9 +150,9 @@ Rules:
 
 ---
 
-## `$scopename` Propagation
+## `scopeName` Propagation
 
-If a controller defines `$scopename`, it is propagated to `locals.$scope`
+If a controller defines `scopeName`, it is propagated to `locals.$scope`
 in both normal and deferred modes when a scope is present.
 
 ---

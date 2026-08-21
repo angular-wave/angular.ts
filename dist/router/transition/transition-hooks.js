@@ -436,7 +436,7 @@ async function securityNavigationHook(transition) {
             params: transition.params("to"),
         },
         transition: {
-            id: String(transition.$id),
+            id: String(transition.id),
         },
         routePolicy: buildEffectiveNavigationPolicy(transition),
         userAgent: typeof navigator === "undefined" ? undefined : navigator.userAgent,
@@ -769,7 +769,7 @@ function updateUrlHook(transition) {
     const options = transition._options;
     const stateService = this._stateService;
     const routerState = this._routerState;
-    const navigable = stateService.$current?.navigable;
+    const navigable = stateService._current?.navigable;
     if (options.source !== "url" && options.location && navigable?._url) {
         const urlOptions = {
             replace: options.location === "replace",
@@ -787,7 +787,7 @@ function registerUpdateUrl(transitionService) {
 function registerUpdateGlobalState(transitionService) {
     const updateGlobalState = (trans) => {
         const routerState = trans._routerState;
-        const current = trans.$to();
+        const current = trans._to();
         routerState._setSuccessfulTransition(trans);
         routerState._currentState = current;
         routerState._current = current.self;

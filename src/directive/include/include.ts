@@ -107,7 +107,7 @@ export function ngIncludeDirective(
             const animate = getAnimateForNode(getAnimate, currentElement);
 
             if (animate) {
-              currentScope?.$destroy();
+              currentScope?.destroy();
               animate.leave(currentElement).done((response: boolean) => {
                 if (response) {
                   leavingFragment?.dispose();
@@ -121,7 +121,7 @@ export function ngIncludeDirective(
               } else {
                 removeElement(currentElement);
               }
-              currentScope?.$destroy();
+              currentScope?.destroy();
             }
 
             currentScope = null;
@@ -130,12 +130,12 @@ export function ngIncludeDirective(
             currentElement = null;
             currentFragment = null;
           } else if (currentScope) {
-            currentScope.$destroy();
+            currentScope.destroy();
             currentScope = null;
           }
         };
 
-        scope.$watch(srcExp, (src: string | null | undefined) => {
+        scope.watch(srcExp, (src: string | null | undefined) => {
           const afterAnimation = function (response: boolean) {
             if (response) {
               maybeScroll();
@@ -145,13 +145,13 @@ export function ngIncludeDirective(
           const thisChangeId = ++changeCounter;
 
           if (src) {
-            scope.$emit("$includeContentRequested", src);
+            scope.emit("$includeContentRequested", src);
             $templateRequest(src)
               .then((response) => {
                 if (scope._destroyed) return;
 
                 if (thisChangeId !== changeCounter) return undefined;
-                const newScope = scope.$new();
+                const newScope = scope.new();
 
                 ctrl.template = response;
 
@@ -184,7 +184,7 @@ export function ngIncludeDirective(
                 currentFragment = assertDefined(
                   getCompiledFragmentRecordFromNodes(clone),
                 );
-                currentScope.$emit("$includeContentLoaded", src);
+                currentScope.emit("$includeContentLoaded", src);
                 onloadFn?.(scope);
 
                 return undefined;
@@ -194,7 +194,7 @@ export function ngIncludeDirective(
 
                 if (thisChangeId === changeCounter) {
                   cleanupLastIncludeContent();
-                  scope.$emit("$includeContentError", src);
+                  scope.emit("$includeContentError", src);
                 }
                 $exceptionHandler(
                   isInstanceOf(err, Error) ? err : new Error(String(err)),

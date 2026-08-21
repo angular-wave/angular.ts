@@ -671,13 +671,13 @@ function createWorkflowFactory() {
         };
         Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
             value(handler, proxy) {
-                let binding = bindings.get(handler.$id);
+                let binding = bindings.get(handler.id);
                 if (!binding) {
                     binding = {
                         _handler: handler,
                         _proxy: proxy,
                     };
-                    bindings.set(handler.$id, binding);
+                    bindings.set(handler.id, binding);
                 }
             },
         });
@@ -892,6 +892,7 @@ function createWorkflowFactory() {
             const controller = new AbortController();
             let cancel;
             const state = {
+                /** @internal */
                 _cancel(diagnostic) {
                     cancel(diagnostic);
                 },

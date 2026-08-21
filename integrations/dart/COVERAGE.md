@@ -130,8 +130,8 @@ handwritten ergonomic coverage is still incomplete for several services:
 
 ## Missing Directive/Component Precision
 
-- Component lifecycle export helpers: `$onInit`, `$onChanges`, `$doCheck`,
-  `$onDestroy`, `$postLink`.
+- Component lifecycle export helpers: `onInit`, `onChanges`, `$doCheck`,
+  `onDestroy`, `postLink`.
 - Runtime validation for optional inputs and expression outputs.
 - Runtime validation for typed `require` relationships.
 - Runtime validation for typed transclusion.

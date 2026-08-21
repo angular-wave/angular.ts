@@ -43,13 +43,13 @@ listeners may also receive the new and old history state values when the browser
 supports the History API.
 
 ```typescript
-$rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+$rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   if (shouldBlock(newUrl, oldUrl)) {
     event.preventDefault();
   }
 });
 
-$rootScope.$on("$locationChangeSuccess", (_event, newUrl) => {
+$rootScope.on("$locationChangeSuccess", (_event, newUrl) => {
   analytics.track("page_view", { url: newUrl });
 });
 ```

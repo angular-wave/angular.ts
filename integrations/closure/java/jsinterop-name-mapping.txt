@@ -1,0 +1,2 @@
+org.angular.ts.ng.DirectiveLinkFn.onInvoke.p0=scope
+org.angular.ts.ng.DirectiveLinkFn.onInvoke.p1=element

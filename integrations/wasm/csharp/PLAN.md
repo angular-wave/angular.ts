@@ -18,7 +18,7 @@ integrations/wasm/ABI.md
 
 This plan covers `WasmScope` only. C# should use the scope ABI for view-local
 controller/component state. App-owned state should use `app.model(...)` and
-host-side `model.$sync(...)` targets around a .NET/WebAssembly runtime; do not
+host-side `model.sync(...)` targets around a .NET/WebAssembly runtime; do not
 add model handles, model path writes, or model watch imports to the C# facade
 unless the shared ABI adds that surface later.
 

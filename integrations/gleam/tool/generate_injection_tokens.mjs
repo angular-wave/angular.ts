@@ -126,6 +126,7 @@ function render(tokens) {
     const fnName = toFunctionName(property);
     const typeName = typeMap.get(property) ?? "js.JsValue";
     const signature = `pub fn ${fnName}() -> Token(${typeName}) {`;
+    lines.push(`/// Returns the typed token for the \`${value}\` AngularTS injectable.`);
     if (signature.length > 88) {
       lines.push(`pub fn ${fnName}() -> Token(`);
       lines.push(`  ${typeName},`);

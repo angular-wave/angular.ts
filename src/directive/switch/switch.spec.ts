@@ -23,7 +23,7 @@ describe("ngSwitch", () => {
       "$rootScope",
       "$compile",
       ($rootScope, _$compile_) => {
-        $scope = $rootScope.$new();
+        $scope = $rootScope.new();
         $compile = _$compile_;
       },
     ]);
@@ -287,7 +287,7 @@ describe("ngSwitch", () => {
     expect(switchFrameCalls).toBeGreaterThan(callsAfterOne);
     const callsDuringActiveSwitch = switchFrameCalls;
 
-    $scope.$broadcast("$viewRetentionPause", {
+    $scope.broadcast("$viewRetentionPause", {
       _pause: "schedulers",
     });
     trackSwitchFrames = false;
@@ -298,14 +298,14 @@ describe("ngSwitch", () => {
     expect(switchFrameCalls).toBe(callsDuringActiveSwitch);
     expect(element.textContent).toBe("two");
 
-    $scope.$broadcast("$viewRetentionResume", {
+    $scope.broadcast("$viewRetentionResume", {
       _pause: "background",
     });
     await wait();
 
     expect(element.textContent).toBe("two");
 
-    $scope.$broadcast("$viewRetentionResume", {
+    $scope.broadcast("$viewRetentionResume", {
       _pause: "schedulers",
     });
     trackSwitchFrames = true;
@@ -341,7 +341,7 @@ describe("ngSwitch", () => {
       "Timed out waiting for second switch case",
     );
 
-    $scope.$broadcast("$viewRetentionPause", { _pause: "background" });
+    $scope.broadcast("$viewRetentionPause", { _pause: "background" });
     $scope.mode = "one";
     await waitUntil(
       () => element.textContent === "one",
@@ -353,11 +353,11 @@ describe("ngSwitch", () => {
   });
 
   it("should handle changes to the switch value in a digest loop with multiple value matches", async () => {
-    const scope = $scope.$new();
+    const scope = $scope.new();
 
     scope.value = "foo";
 
-    scope.$watch("value", () => {
+    scope.watch("value", () => {
       if (scope.value === "bar") {
         Promise.resolve().then(() => {
           scope.value = "baz";
@@ -554,7 +554,7 @@ describe("ngSwitch", () => {
 //       () => {
 //         // inejct $compile, $scope, $animate, $templateCache
 //         let item;
-//         const $scope = $rootScope.$new();
+//         const $scope = $rootScope.new();
 //         element = $compile(
 //           html(
 //             '<div ng-switch="inc">' +
@@ -584,7 +584,7 @@ describe("ngSwitch", () => {
 //       $animate,
 //     ) => {
 //       let item;
-//       const $scope = $rootScope.$new();
+//       const $scope = $rootScope.new();
 //       element = $compile(
 //         html(
 //           '<div ng-switch on="val">' +
@@ -610,7 +610,7 @@ describe("ngSwitch", () => {
 //       $animate,
 //     ) => {
 //       let item;
-//       const $scope = $rootScope.$new();
+//       const $scope = $rootScope.new();
 //       element = $compile(
 //         html(
 //           '<div ng-switch on="val">' +

@@ -47,7 +47,7 @@ describe("form", () => {
       "$rootScope",
       (_$compile_, $rootScope) => {
         $compile = _$compile_;
-        scope = $rootScope.$new();
+        scope = $rootScope.new();
       },
     ]);
   });
@@ -76,16 +76,16 @@ describe("form", () => {
     const form = scope.myForm;
 
     await wait();
-    control.$setValidity("required", false);
+    control.setValidity("required", false);
     await wait();
 
     expect(form.alias).toBe(control);
-    expect(form.$error.required).toEqual([control]);
+    expect(form.error.required).toEqual([control]);
 
     // remove nested control
     scope.inputPresent = false;
     await wait();
-    expect(form.$error.required).toBeFalsy();
+    expect(form.error.required).toBeFalsy();
     expect(form.alias).toBeUndefined();
   });
 
@@ -107,26 +107,26 @@ describe("form", () => {
 
     // await wait();
     await wait(10);
-    expect(form.$error.maxlength).toBeTruthy();
-    expect(form.$dirty).toBe(true);
-    expect(form.$error.maxlength[0].$name).toBe("control");
+    expect(form.error.maxlength).toBeTruthy();
+    expect(form.dirty).toBe(true);
+    expect(form.error.maxlength[0].controlName).toBe("control");
 
     // remove control
-    form.$removeControl(form.control);
+    form.removeControl(form.control);
     expect(form.control).toBeUndefined();
-    expect(form.$error.maxlength).toBeFalsy();
+    expect(form.error.maxlength).toBeFalsy();
 
-    inputController.$setPristine();
-    expect(form.$dirty).toBe(true);
+    inputController.setPristine();
+    expect(form.dirty).toBe(true);
 
-    form.$setPristine();
+    form.setPristine();
 
     input.value = "ab";
     browserTrigger(input, "input");
 
     await wait();
-    expect(form.$error.maxlength).toBeFalsy();
-    expect(form.$dirty).toBe(false);
+    expect(form.error.maxlength).toBeFalsy();
+    expect(form.dirty).toBe(false);
   });
 
   it("should react to validation changes in manually added controls", async () => {
@@ -141,29 +141,29 @@ describe("form", () => {
     const input = doc.children[0];
 
     // remove control and invalidate it
-    form.$removeControl(control);
+    form.removeControl(control);
     expect(form.control).toBeUndefined();
     await wait();
     input.value = "abc";
     browserTrigger(input, "input");
     await wait();
-    expect(control.$error.maxlength).toBe(true);
-    expect(control.$dirty).toBe(true);
-    expect(form.$error.maxlength).toBeFalsy();
-    expect(form.$dirty).toBe(false);
+    expect(control.error.maxlength).toBe(true);
+    expect(control.dirty).toBe(true);
+    expect(form.error.maxlength).toBeFalsy();
+    expect(form.dirty).toBe(false);
     // re-add the control; its current validation state is not propagated
-    form.$addControl(control);
+    form.addControl(control);
     await wait();
     expect(form.control).toBe(control);
-    expect(form.$error.maxlength).toBeFalsy();
-    expect(form.$dirty).toBe(false);
+    expect(form.error.maxlength).toBeFalsy();
+    expect(form.dirty).toBe(false);
 
     // Only when the input changes again its validation state is propagated
     input.value = "abcd";
     browserTrigger(input, "input");
 
-    expect(form.$error.maxlength[0]).toEqual(control);
-    expect(form.$dirty).toBe(false);
+    expect(form.error.maxlength[0]).toEqual(control);
+    expect(form.dirty).toBe(false);
   });
 
   it("should use the correct parent when renaming and removing dynamically added controls", async () => {
@@ -187,8 +187,8 @@ describe("form", () => {
     const { childControl } = form;
 
     // remove child form and add it to another form
-    form.$removeControl(childControl);
-    otherForm.$addControl(childControl);
+    form.removeControl(childControl);
+    otherForm.addControl(childControl);
 
     expect(form.childControl).toBeUndefined();
     expect(otherForm.childControl).toBe(childControl);
@@ -306,10 +306,10 @@ describe("form", () => {
     `)(scope);
     await wait();
 
-    expect(scope.formA.$error.required.length).toBe(1);
-    expect(scope.formA.$error.required).toEqual([scope.formA.firstName]);
-    expect(scope.formB.$error.required.length).toBe(1);
-    expect(scope.formB.$error.required).toEqual([scope.formB.lastName]);
+    expect(scope.formA.error.required.length).toBe(1);
+    expect(scope.formA.error.required).toEqual([scope.formA.firstName]);
+    expect(scope.formB.error.required.length).toBe(1);
+    expect(scope.formB.error.required).toEqual([scope.formB.lastName]);
 
     const inputA = doc.querySelectorAll("input")[0];
 
@@ -324,8 +324,8 @@ describe("form", () => {
     expect(scope.firstName).toBe("val1");
     expect(scope.lastName).toBe("val2");
     await wait();
-    expect(scope.formA.$error.required).toBeFalsy();
-    expect(scope.formB.$error.required).toBeFalsy();
+    expect(scope.formA.error.required).toBeFalsy();
+    expect(scope.formB.error.required).toBeFalsy();
   });
 
   it("should publish widgets", async () => {
@@ -337,10 +337,10 @@ describe("form", () => {
     const widget = scope.form.w1;
 
     expect(widget).toBeDefined();
-    expect(widget.$pristine).toBe(true);
-    expect(widget.$dirty).toBe(false);
-    expect(widget.$valid).toBe(true);
-    expect(widget.$invalid).toBe(false);
+    expect(widget.pristine).toBe(true);
+    expect(widget.dirty).toBe(false);
+    expect(widget.valid).toBe(true);
+    expect(widget.invalid).toBe(false);
   });
 
   it('should throw an exception if an input has name="hasOwnProperty"', async () => {
@@ -442,7 +442,7 @@ describe("form", () => {
       form.dispatchEvent(submitEvent);
 
       expect(scope.name).toEqual("a");
-      expect(scope.test.$submitted).toBe(true);
+      expect(scope.test.submitted).toBe(true);
       expect(submitSpy).toHaveBeenCalled();
     });
   });
@@ -452,7 +452,7 @@ describe("form", () => {
       const form = $compile(
         '<form name="test" ng-model-options="{ updateOn: \'submit\' }" >' +
           '<input type="text" ng-model="name" />' +
-          '<button ng-click="test.$rollbackViewValue()" />' +
+          '<button ng-click="test.rollbackViewValue()" />' +
           "</form>",
       )(scope);
 
@@ -471,7 +471,7 @@ describe("form", () => {
           '<div ng-form name="child">' +
           '<input type="text" ng-model="name" />' +
           "</div>" +
-          '<button ng-click="test.$rollbackViewValue()" />' +
+          '<button ng-click="test.rollbackViewValue()" />' +
           "</form>",
       )(scope);
 
@@ -562,7 +562,7 @@ describe("form", () => {
 
       window.setTimeout(() => {
         expect(submitted).toBe(true);
-        expect(scope.form.$submitted).toBe(true);
+        expect(scope.form.submitted).toBe(true);
         done();
       }, 0);
     });
@@ -591,7 +591,7 @@ describe("form", () => {
 
       window.setTimeout(() => {
         expect(submitted).toBe(true);
-        expect(scope.form.$submitted).toBe(true);
+        expect(scope.form.submitted).toBe(true);
         done();
       }, 0);
     });
@@ -640,7 +640,7 @@ describe("form", () => {
       doc = createElementFromHTML(
         "<div>" +
           '<form ng-submit="submitMe()">' +
-          '<button type="submit" ng-click="destroy()"></button>' +
+          '<button type="submit" ng-click="removeForm()"></button>' +
           "</form>" +
           "</div>",
       );
@@ -655,7 +655,7 @@ describe("form", () => {
 
       let reloadPrevented = "never called";
 
-      scope.destroy = function () {
+      scope.removeForm = function () {
         // yes, I know, scope methods should not do direct DOM manipulation, but I wanted to keep
         // this test small. Imagine that the destroy action will cause a model change (e.g.
         // $location change) that will cause some directive to destroy the dom (e.g. ngView+$route)
@@ -736,24 +736,24 @@ describe("form", () => {
 
       const { inputB } = child;
 
-      inputA.$setValidity("MyError", false);
-      inputB.$setValidity("MyError", false);
-      expect(parent.$error.MyError).toEqual([child]);
-      expect(child.$error.MyError).toEqual([inputA, inputB]);
+      inputA.setValidity("MyError", false);
+      inputB.setValidity("MyError", false);
+      expect(parent.error.MyError).toEqual([child]);
+      expect(child.error.MyError).toEqual([inputA, inputB]);
 
-      inputA.$setValidity("MyError", true);
-      expect(parent.$error.MyError).toEqual([child]);
-      expect(child.$error.MyError).toEqual([inputB]);
+      inputA.setValidity("MyError", true);
+      expect(parent.error.MyError).toEqual([child]);
+      expect(child.error.MyError).toEqual([inputB]);
 
-      inputB.$setValidity("MyError", true);
-      expect(parent.$error.MyError).toBeFalsy();
-      expect(child.$error.MyError).toBeFalsy();
+      inputB.setValidity("MyError", true);
+      expect(parent.error.MyError).toBeFalsy();
+      expect(child.error.MyError).toBeFalsy();
 
-      child.$setDirty();
-      expect(parent.$dirty).toBeTruthy();
+      child.setDirty();
+      expect(parent.dirty).toBeTruthy();
 
-      child.$setSubmitted();
-      expect(parent.$submitted).toBeTruthy();
+      child.setSubmitted();
+      expect(parent.submitted).toBeTruthy();
     });
 
     it("should keep ngForm groups separate from native submit and reset behavior", async () => {
@@ -776,7 +776,7 @@ describe("form", () => {
       );
       await wait();
       expect(scope.name).toBeUndefined();
-      expect(scope.group.$submitted).toBe(false);
+      expect(scope.group.submitted).toBe(false);
 
       group.dispatchEvent(
         new Event("reset", { bubbles: true, cancelable: true }),
@@ -786,7 +786,7 @@ describe("form", () => {
       expect(scope.name).toBeUndefined();
     });
 
-    it("should set $submitted to true on child forms when parent is submitted", () => {
+    it("should set submitted to true on child forms when parent is submitted", () => {
       doc = createElementFromHTML(
         '<ng-form name="parent">' +
           '<ng-form name="child">' +
@@ -801,12 +801,12 @@ describe("form", () => {
 
       const { child } = scope;
 
-      parent.$setSubmitted();
-      expect(parent.$submitted).toBeTruthy();
-      expect(child.$submitted).toBeTruthy();
+      parent.setSubmitted();
+      expect(parent.submitted).toBeTruthy();
+      expect(child.submitted).toBeTruthy();
     });
 
-    it("should not propagate $submitted state on removed child forms when parent is submitted", async () => {
+    it("should not propagate submitted state on removed child forms when parent is submitted", async () => {
       doc = createElementFromHTML(
         '<ng-form name="parent">' +
           '<ng-form name="child">' +
@@ -826,55 +826,55 @@ describe("form", () => {
 
       const ggchild = scope.greatgrandchild;
 
-      parent.$removeControl(child);
+      parent.removeControl(child);
 
-      parent.$setSubmitted();
-      expect(parent.$submitted).toBeTruthy();
-      expect(child.$submitted).not.toBeTruthy();
-      expect(grandchild.$submitted).not.toBeTruthy();
+      parent.setSubmitted();
+      expect(parent.submitted).toBeTruthy();
+      expect(child.submitted).not.toBeTruthy();
+      expect(grandchild.submitted).not.toBeTruthy();
 
-      parent.$addControl(child);
-      expect(parent.$submitted).toBeTruthy();
-      expect(child.$submitted).not.toBeTruthy();
-      expect(grandchild.$submitted).not.toBeTruthy();
+      parent.addControl(child);
+      expect(parent.submitted).toBeTruthy();
+      expect(child.submitted).not.toBeTruthy();
+      expect(grandchild.submitted).not.toBeTruthy();
 
-      parent.$setSubmitted();
-      expect(parent.$submitted).toBeTruthy();
-      expect(child.$submitted).toBeTruthy();
-      expect(grandchild.$submitted).toBeTruthy();
+      parent.setSubmitted();
+      expect(parent.submitted).toBeTruthy();
+      expect(child.submitted).toBeTruthy();
+      expect(grandchild.submitted).toBeTruthy();
 
-      parent.$removeControl(child);
+      parent.removeControl(child);
 
-      expect(parent.$submitted).toBeTruthy();
-      expect(child.$submitted).toBeTruthy();
-      expect(grandchild.$submitted).toBeTruthy();
+      expect(parent.submitted).toBeTruthy();
+      expect(child.submitted).toBeTruthy();
+      expect(grandchild.submitted).toBeTruthy();
 
-      parent.$setPristine(); // sets $submitted to false
-      expect(parent.$submitted).not.toBeTruthy();
-      expect(child.$submitted).toBeTruthy();
-      expect(grandchild.$submitted).toBeTruthy();
+      parent.setPristine(); // sets submitted to false
+      expect(parent.submitted).not.toBeTruthy();
+      expect(child.submitted).toBeTruthy();
+      expect(grandchild.submitted).toBeTruthy();
 
-      grandchild.$setPristine();
-      expect(grandchild.$submitted).not.toBeTruthy();
+      grandchild.setPristine();
+      expect(grandchild.submitted).not.toBeTruthy();
 
-      child.$setSubmitted();
-      expect(parent.$submitted).not.toBeTruthy();
-      expect(child.$submitted).toBeTruthy();
-      expect(grandchild.$submitted).toBeTruthy();
+      child.setSubmitted();
+      expect(parent.submitted).not.toBeTruthy();
+      expect(child.submitted).toBeTruthy();
+      expect(grandchild.submitted).toBeTruthy();
 
-      child.$setPristine();
-      expect(parent.$submitted).not.toBeTruthy();
-      expect(child.$submitted).not.toBeTruthy();
-      expect(grandchild.$submitted).not.toBeTruthy();
+      child.setPristine();
+      expect(parent.submitted).not.toBeTruthy();
+      expect(child.submitted).not.toBeTruthy();
+      expect(grandchild.submitted).not.toBeTruthy();
 
       // Test upwards submission setting
-      grandchild.$setSubmitted();
-      expect(parent.$submitted).not.toBeTruthy();
-      expect(child.$submitted).toBeTruthy();
-      expect(grandchild.$submitted).toBeTruthy();
+      grandchild.setSubmitted();
+      expect(parent.submitted).not.toBeTruthy();
+      expect(child.submitted).toBeTruthy();
+      expect(grandchild.submitted).toBeTruthy();
     });
 
-    it("should set $submitted to true on child and parent forms when form is submitted", async () => {
+    it("should set submitted to true on child and parent forms when form is submitted", async () => {
       doc = createElementFromHTML(
         '<ng-form name="parent">' +
           '<ng-form name="child">' +
@@ -893,11 +893,11 @@ describe("form", () => {
 
       const { grandchild } = scope;
 
-      child.$setSubmitted();
+      child.setSubmitted();
 
-      expect(parent.$submitted).toBeTruthy();
-      expect(child.$submitted).toBeTruthy();
-      expect(grandchild.$submitted).toBeTruthy();
+      expect(parent.submitted).toBeTruthy();
+      expect(child.submitted).toBeTruthy();
+      expect(grandchild.submitted).toBeTruthy();
     });
 
     it("should deregister a child form when its element is destroyed", async () => {
@@ -915,7 +915,7 @@ describe("form", () => {
 
       expect(parent).toBeDefined();
       expect(child).toBeDefined();
-      expect(parent.$error.required).toEqual([child]);
+      expect(parent.error.required).toEqual([child]);
 
       const childElement = doc.querySelector("[ng-form]");
 
@@ -925,7 +925,7 @@ describe("form", () => {
 
       expect(parent.child).toBeUndefined();
       expect(scope.child).toBeUndefined();
-      expect(parent.$error.required).toBeFalsy();
+      expect(parent.error.required).toBeFalsy();
     });
 
     it("should deregister a child form whose name is an expression when its element is destroyed", async () => {
@@ -946,7 +946,7 @@ describe("form", () => {
 
       expect(parent).toBeDefined();
       expect(child).toBeDefined();
-      expect(parent.$error.required).toEqual([child]);
+      expect(parent.error.required).toEqual([child]);
 
       const childElement = doc.querySelector("[ng-form]");
 
@@ -956,7 +956,7 @@ describe("form", () => {
 
       expect(parent["child.form"]).toBeUndefined();
       expect(scope.child.form).toBeUndefined();
-      expect(parent.$error.required).toBeFalsy();
+      expect(parent.error.required).toBeFalsy();
     });
 
     it("should deregister a input when it is removed from DOM", async () => {
@@ -980,12 +980,12 @@ describe("form", () => {
       expect(parent).toBeDefined();
       expect(child).toBeDefined();
 
-      expect(parent.$error.required).toEqual([child]);
+      expect(parent.error.required).toEqual([child]);
       expect(
         Array.from(parent._validCustomValidatorControls.get("maxlength")),
       ).toEqual([child]);
 
-      expect(child.$error.required).toEqual([input]);
+      expect(child.error.required).toEqual([input]);
       expect(
         Array.from(child._validCustomValidatorControls.get("maxlength")),
       ).toEqual([input]);
@@ -1006,12 +1006,12 @@ describe("form", () => {
       // remove child input
       scope.inputPresent = false;
       await wait();
-      expect(parent.$error.required).toBeFalsy();
+      expect(parent.error.required).toBeFalsy();
       expect(
         parent._validCustomValidatorControls.get("maxlength"),
       ).toBeUndefined();
 
-      expect(child.$error.required).toBeFalsy();
+      expect(child.error.required).toBeFalsy();
       expect(
         child._validCustomValidatorControls.get("maxlength"),
       ).toBeUndefined();
@@ -1039,7 +1039,7 @@ describe("form", () => {
       ).toBe(false);
     });
 
-    it("should deregister a input that is $pending when it is removed from DOM", async () => {
+    it("should deregister a input that is pending when it is removed from DOM", async () => {
       doc = createElementFromHTML(
         '<form name="parent">' +
           '<div ng-form name="child">' +
@@ -1056,13 +1056,13 @@ describe("form", () => {
 
       const input = child.inputA;
 
-      child.inputA.$setValidity("fake", undefined);
+      child.inputA.setValidity("fake", undefined);
       await wait();
       expect(parent).toBeDefined();
       expect(child).toBeDefined();
 
-      expect(parent.$pending.fake).toEqual([child]);
-      expect(child.$pending.fake).toEqual([input]);
+      expect(parent.pending.fake).toEqual([child]);
+      expect(child.pending.fake).toEqual([input]);
 
       expect(doc.classList.contains("ng-pending")).toBe(true);
       expect(doc.querySelector("div").classList.contains("ng-pending")).toBe(
@@ -1072,8 +1072,8 @@ describe("form", () => {
       // remove child input
       scope.inputPresent = false;
       await wait();
-      expect(parent.$pending).toBeUndefined();
-      expect(child.$pending).toBeUndefined();
+      expect(parent.pending).toBeUndefined();
+      expect(child.pending).toBeUndefined();
 
       expect(doc.classList.contains("ng-pending")).toBe(false);
       expect(doc.querySelector("div").classList.contains("ng-pending")).toBe(
@@ -1104,15 +1104,15 @@ describe("form", () => {
 
       expect(parent).toBeDefined();
       expect(child).toBeDefined();
-      expect(parent.$error.required).toEqual([child]);
-      expect(child.$error.required).toEqual([inputB, inputA]);
+      expect(parent.error.required).toEqual([child]);
+      expect(child.error.required).toEqual([inputB, inputA]);
 
       // remove child input
       scope.inputPresent = false;
       await wait();
 
-      expect(parent.$error.required).toEqual([child]);
-      expect(child.$error.required).toEqual([inputB]);
+      expect(parent.error.required).toEqual([child]);
+      expect(child.error.required).toEqual([inputB]);
     });
 
     it("should ignore changes in manually removed child forms", async () => {
@@ -1141,29 +1141,29 @@ describe("form", () => {
 
       await wait();
 
-      expect(form.$dirty).toBe(true);
-      expect(form.$error.maxlength).toBeTruthy();
-      expect(form.$error.maxlength[0].$name).toBe("childform");
+      expect(form.dirty).toBe(true);
+      expect(form.error.maxlength).toBeTruthy();
+      expect(form.error.maxlength[0].controlName).toBe("childform");
 
-      inputController.$setPristine();
+      inputController.setPristine();
       await wait();
-      expect(form.$dirty).toBe(true);
+      expect(form.dirty).toBe(true);
 
-      form.$setPristine();
+      form.setPristine();
 
       // remove child form
-      form.$removeControl(childformController);
+      form.removeControl(childformController);
       await wait();
       expect(form.childform).toBeUndefined();
-      expect(form.$error.maxlength).toBeFalsy();
+      expect(form.error.maxlength).toBeFalsy();
 
       // changeInputValue(input, "abc");
       input.value = "abc";
       browserTrigger(input, "input");
       await wait();
 
-      expect(form.$error.maxlength).toBeFalsy();
-      expect(form.$dirty).toBe(false);
+      expect(form.error.maxlength).toBeFalsy();
+      expect(form.dirty).toBe(false);
     });
 
     it("should react to changes in manually added child forms", async () => {
@@ -1186,27 +1186,27 @@ describe("form", () => {
       const input = doc.children[0].firstChild;
 
       // remove child form so we can add it manually
-      form.$removeControl(childFormController);
+      form.removeControl(childFormController);
       // changeInputValue(input, "ab");
       input.value = "ab";
       browserTrigger(input, "input");
 
       expect(form.childForm).toBeUndefined();
-      expect(form.$dirty).toBe(false);
-      expect(form.$error.maxlength).toBeFalsy();
+      expect(form.dirty).toBe(false);
+      expect(form.error.maxlength).toBeFalsy();
 
       // re-add the child form; its current validation state is not propagated
-      form.$addControl(childFormController);
+      form.addControl(childFormController);
       expect(form.childForm).toBe(childFormController);
-      expect(form.$error.maxlength).toBeFalsy();
-      expect(form.$dirty).toBe(false);
+      expect(form.error.maxlength).toBeFalsy();
+      expect(form.dirty).toBe(false);
 
       // Only when the input inside the child form changes, the validation state is propagated
       // changeInputValue(input, "abc");
       input.value = "abc";
       browserTrigger(input, "input");
-      expect(form.$error.maxlength[0]).toBe(childFormController);
-      expect(form.$dirty).toBe(false);
+      expect(form.error.maxlength[0]).toBe(childFormController);
+      expect(form.dirty).toBe(false);
     });
 
     it("should use the correct parent when renaming and removing dynamically added forms", async () => {
@@ -1234,8 +1234,8 @@ describe("form", () => {
       const { otherForm } = scope;
 
       // remove child form and add it to another form
-      form.$removeControl(childForm);
-      otherForm.$addControl(childForm);
+      form.removeControl(childForm);
+      otherForm.addControl(childForm);
 
       expect(form.childForm).toBeUndefined();
       expect(otherForm.childForm).toBe(childForm);
@@ -1276,14 +1276,14 @@ describe("form", () => {
       expect(child).toBeDefined();
       expect(input).toBeDefined();
 
-      input.$setValidity("myRule", false);
-      expect(input.$error.myRule).toEqual(true);
-      expect(child.$error.myRule).toEqual([input]);
-      expect(parent.$error.myRule).toEqual([child]);
+      input.setValidity("myRule", false);
+      expect(input.error.myRule).toEqual(true);
+      expect(child.error.myRule).toEqual([input]);
+      expect(parent.error.myRule).toEqual([child]);
 
-      input.$setValidity("myRule", true);
-      expect(parent.$error.myRule).toBeFalsy();
-      expect(child.$error.myRule).toBeFalsy();
+      input.setValidity("myRule", true);
+      expect(parent.error.myRule).toBeFalsy();
+      expect(child.error.myRule).toBeFalsy();
     });
   });
 
@@ -1299,25 +1299,25 @@ describe("form", () => {
     it("should have ng-valid/ng-invalid css class", () => {
       expect(doc.classList.contains("ng-valid")).toBeTrue();
 
-      control.$setValidity("error", false);
+      control.setValidity("error", false);
       expect(doc.classList.contains("ng-invalid")).toBeTrue();
       expect(doc.classList.contains("ng-valid-error")).toBe(false);
       expect(doc.classList.contains("ng-invalid-error")).toBe(true);
 
-      control.$setValidity("another", false);
+      control.setValidity("another", false);
       expect(doc.classList.contains("ng-valid-error")).toBe(false);
       expect(doc.classList.contains("ng-invalid-error")).toBe(true);
       expect(doc.classList.contains("ng-valid-another")).toBe(false);
       expect(doc.classList.contains("ng-invalid-another")).toBe(true);
 
-      control.$setValidity("error", true);
+      control.setValidity("error", true);
       expect(doc.classList.contains("ng-invalid")).toBeTrue();
       expect(doc.classList.contains("ng-valid-error")).toBe(true);
       expect(doc.classList.contains("ng-invalid-error")).toBe(false);
       expect(doc.classList.contains("ng-valid-another")).toBe(false);
       expect(doc.classList.contains("ng-invalid-another")).toBe(true);
 
-      control.$setValidity("another", true);
+      control.setValidity("another", true);
       expect(doc.classList.contains("ng-valid")).toBeTrue();
       expect(doc.classList.contains("ng-valid-error")).toBe(true);
       expect(doc.classList.contains("ng-invalid-error")).toBe(false);
@@ -1325,8 +1325,8 @@ describe("form", () => {
       expect(doc.classList.contains("ng-invalid-another")).toBe(false);
 
       // validators are skipped, e.g. because of a parser error
-      control.$setValidity("error", null);
-      control.$setValidity("another", null);
+      control.setValidity("error", null);
+      control.setValidity("another", null);
       expect(doc.classList.contains("ng-valid-error")).toBe(false);
       expect(doc.classList.contains("ng-invalid-error")).toBe(false);
       expect(doc.classList.contains("ng-valid-another")).toBe(false);
@@ -1351,12 +1351,12 @@ describe("form", () => {
       browserTrigger(input, "input");
       await wait();
 
-      expect(scope.form.$invalid).toBeTrue();
-      expect(scope.form.group.$invalid).toBeTrue();
-      expect(scope.form.$error.native).toBeUndefined();
-      expect(scope.form.group.$error.native).toBeUndefined();
-      expect(Object.keys(scope.form.$error)).toEqual([]);
-      expect(Object.keys(scope.form.group.$error)).toEqual([]);
+      expect(scope.form.invalid).toBeTrue();
+      expect(scope.form.group.invalid).toBeTrue();
+      expect(scope.form.error.native).toBeUndefined();
+      expect(scope.form.group.error.native).toBeUndefined();
+      expect(Object.keys(scope.form.error)).toEqual([]);
+      expect(Object.keys(scope.form.group.error)).toEqual([]);
       expect(doc.classList.contains("ng-invalid")).toBeTrue();
       expect(groupElement.classList.contains("ng-invalid")).toBeTrue();
       expect(doc.classList.contains("ng-invalid-native")).toBeFalse();
@@ -1368,33 +1368,33 @@ describe("form", () => {
       browserTrigger(input, "input");
       await wait();
 
-      expect(scope.form.$valid).toBeTrue();
-      expect(scope.form.group.$valid).toBeTrue();
+      expect(scope.form.valid).toBeTrue();
+      expect(scope.form.group.valid).toBeTrue();
 
       input.value = "not email";
       browserTrigger(input, "input");
       await wait();
-      expect(scope.form.$invalid).toBeTrue();
+      expect(scope.form.invalid).toBeTrue();
 
       scope.showEmail = false;
       await wait();
 
-      expect(scope.form.$valid).toBeTrue();
-      expect(scope.form.group.$valid).toBeTrue();
+      expect(scope.form.valid).toBeTrue();
+      expect(scope.form.group.valid).toBeTrue();
     });
 
     it("should have ng-pristine/ng-dirty css class", async () => {
       expect(doc.classList.contains("ng-pristine")).toBeTrue();
       expect(doc.classList.contains("ng-dirty")).toBeFalse();
 
-      control.$setViewValue("");
+      control.setViewValue("");
       await wait();
       expect(doc.classList.contains("ng-pristine")).toBeFalse();
       expect(doc.classList.contains("ng-dirty")).toBeTrue();
     });
   });
 
-  describe("$pending", () => {
+  describe("pending", () => {
     beforeEach(() => {
       doc = $compile('<form name="form"></form>')(scope);
     });
@@ -1406,27 +1406,27 @@ describe("form", () => {
 
       const ctrl = {};
 
-      form.$setValidity("matias", undefined, ctrl);
+      form.setValidity("matias", undefined, ctrl);
 
-      expect(form.$valid).toBeUndefined();
-      expect(form.$invalid).toBeUndefined();
-      expect(form.$pending.matias).toEqual([ctrl]);
+      expect(form.valid).toBeUndefined();
+      expect(form.invalid).toBeUndefined();
+      expect(form.pending.matias).toEqual([ctrl]);
 
-      form.$setValidity("matias", true, ctrl);
+      form.setValidity("matias", true, ctrl);
 
-      expect(form.$valid).toBe(true);
-      expect(form.$invalid).toBe(false);
-      expect(form.$pending).toBeUndefined();
+      expect(form.valid).toBe(true);
+      expect(form.invalid).toBe(false);
+      expect(form.pending).toBeUndefined();
 
-      form.$setValidity("matias", false, ctrl);
+      form.setValidity("matias", false, ctrl);
 
-      expect(form.$valid).toBe(false);
-      expect(form.$invalid).toBe(true);
-      expect(form.$pending).toBeUndefined();
+      expect(form.valid).toBe(false);
+      expect(form.invalid).toBe(true);
+      expect(form.pending).toBeUndefined();
     });
   });
 
-  describe("$setPristine", () => {
+  describe("setPristine", () => {
     it("should reset pristine state of form and controls", async () => {
       doc = $compile(
         '<form name="testForm">' +
@@ -1447,25 +1447,25 @@ describe("form", () => {
 
       const input2Ctrl = getController(input2, "ngModel");
 
-      input1Ctrl.$setViewValue("xx");
-      input2Ctrl.$setViewValue("yy");
+      input1Ctrl.setViewValue("xx");
+      input2Ctrl.setViewValue("yy");
       await wait();
       expect(form.classList.contains("ng-dirty")).toBeTrue();
       expect(input1.classList.contains("ng-dirty")).toBeTrue();
       expect(input2.classList.contains("ng-dirty")).toBeTrue();
 
-      formCtrl.$setPristine();
+      formCtrl.setPristine();
       expect(form.classList.contains("ng-pristine")).toBeTrue();
       expect(form.classList.contains("ng-dirty")).toBeFalse();
-      expect(formCtrl.$pristine).toBe(true);
-      expect(formCtrl.$dirty).toBe(false);
+      expect(formCtrl.pristine).toBe(true);
+      expect(formCtrl.dirty).toBe(false);
 
       expect(input1.classList.contains("ng-pristine")).toBeTrue();
-      expect(input1Ctrl.$pristine).toBe(true);
-      expect(input1Ctrl.$dirty).toBe(false);
+      expect(input1Ctrl.pristine).toBe(true);
+      expect(input1Ctrl.dirty).toBe(false);
       expect(input2.classList.contains("ng-pristine")).toBeTrue();
-      expect(input2Ctrl.$pristine).toBe(true);
-      expect(input2Ctrl.$dirty).toBe(false);
+      expect(input2Ctrl.pristine).toBe(true);
+      expect(input2Ctrl.dirty).toBe(false);
     });
 
     it("should reset pristine state of anonymous form controls", async () => {
@@ -1481,18 +1481,18 @@ describe("form", () => {
 
       const inputCtrl = getController(input, "ngModel");
 
-      inputCtrl.$setViewValue("xx");
+      inputCtrl.setViewValue("xx");
       await wait();
       expect(form.classList.contains("ng-dirty")).toBeTrue();
       expect(input.classList.contains("ng-dirty")).toBeTrue();
 
-      formCtrl.$setPristine();
+      formCtrl.setPristine();
       expect(form.classList.contains("ng-pristine")).toBeTrue();
-      expect(formCtrl.$pristine).toBe(true);
-      expect(formCtrl.$dirty).toBe(false);
+      expect(formCtrl.pristine).toBe(true);
+      expect(formCtrl.dirty).toBe(false);
       expect(input.classList.contains("ng-pristine")).toBeTrue();
-      expect(inputCtrl.$pristine).toBe(true);
-      expect(inputCtrl.$dirty).toBe(false);
+      expect(inputCtrl.pristine).toBe(true);
+      expect(inputCtrl.dirty).toBe(false);
     });
 
     it("should reset pristine state of nested forms", async () => {
@@ -1522,26 +1522,26 @@ describe("form", () => {
 
       assert(nestedInputCtrl);
 
-      nestedInputCtrl.$setViewValue("xx");
+      nestedInputCtrl.setViewValue("xx");
       await wait();
       expect(form.classList.contains("ng-dirty")).toBeTrue();
       expect(nestedForm.classList.contains("ng-dirty")).toBeTrue();
       expect(nestedInput.classList.contains("ng-dirty")).toBeTrue();
 
-      formCtrl.$setPristine();
+      formCtrl.setPristine();
       expect(form.classList.contains("ng-pristine")).toBeTrue();
-      expect(formCtrl.$pristine).toBe(true);
-      expect(formCtrl.$dirty).toBe(false);
+      expect(formCtrl.pristine).toBe(true);
+      expect(formCtrl.dirty).toBe(false);
       expect(nestedForm.classList.contains("ng-pristine")).toBeTrue();
-      expect(nestedFormCtrl.$pristine).toBe(true);
-      expect(nestedFormCtrl.$dirty).toBe(false);
+      expect(nestedFormCtrl.pristine).toBe(true);
+      expect(nestedFormCtrl.dirty).toBe(false);
       expect(nestedInput.classList.contains("ng-pristine")).toBeTrue();
-      expect(nestedInputCtrl.$pristine).toBe(true);
-      expect(nestedInputCtrl.$dirty).toBe(false);
+      expect(nestedInputCtrl.pristine).toBe(true);
+      expect(nestedInputCtrl.dirty).toBe(false);
     });
   });
 
-  describe("$setUntouched", () => {
+  describe("setUntouched", () => {
     it("should trigger setUntouched on form controls", () => {
       const form = $compile(
         '<form name="myForm">' +
@@ -1549,10 +1549,10 @@ describe("form", () => {
           "</form>",
       )(scope);
 
-      scope.myForm.alias.$setTouched();
-      expect(scope.myForm.alias.$touched).toBe(true);
-      scope.myForm.$setUntouched();
-      expect(scope.myForm.alias.$touched).toBe(false);
+      scope.myForm.alias.setTouched();
+      expect(scope.myForm.alias.touched).toBe(true);
+      scope.myForm.setUntouched();
+      expect(scope.myForm.alias.touched).toBe(false);
     });
 
     it("should trigger setUntouched on form controls with nested forms", () => {
@@ -1564,20 +1564,20 @@ describe("form", () => {
           "</form>",
       )(scope);
 
-      scope.myForm.childForm.alias.$setTouched();
-      expect(scope.myForm.childForm.alias.$touched).toBe(true);
-      scope.myForm.$setUntouched();
-      expect(scope.myForm.childForm.alias.$touched).toBe(false);
+      scope.myForm.childForm.alias.setTouched();
+      expect(scope.myForm.childForm.alias.touched).toBe(true);
+      scope.myForm.setUntouched();
+      expect(scope.myForm.childForm.alias.touched).toBe(false);
     });
   });
 
-  describe("$getControls", () => {
+  describe("getControls", () => {
     it("should return an empty array if the controller has no controls", () => {
       doc = $compile('<form name="testForm"></form>')(scope);
 
       const formCtrl = scope.testForm;
 
-      expect(formCtrl.$getControls()).toEqual([]);
+      expect(formCtrl.getControls()).toEqual([]);
     });
 
     it("should return a shallow copy of the form controls", async () => {
@@ -1607,7 +1607,7 @@ describe("form", () => {
 
       const nestedInputCtrl = getController(nestedInput, "ngModel");
 
-      const controls = formCtrl.$getControls();
+      const controls = formCtrl.getControls();
 
       expect(controls).not.toBe(formCtrl._controls);
 
@@ -1617,7 +1617,7 @@ describe("form", () => {
       expect(controls[0]).toBe(formInputCtrl);
       expect(controls[1]).toBe(nestedFormCtrl);
 
-      const nestedControls = controls[1].$getControls();
+      const nestedControls = controls[1].getControls();
 
       expect(nestedControls[0]).toBe(nestedInputCtrl);
     });
@@ -1639,12 +1639,12 @@ describe("form", () => {
     const formA = scope.form.nestedA;
 
     expect(formA).toBeDefined();
-    expect(formA.$name).toBe("nestedA");
+    expect(formA.controlName).toBe("nestedA");
 
     const formX = formA.nestedX;
 
     expect(formX).toBeDefined();
-    expect(formX.$name).toBe("nestedX");
+    expect(formX.controlName).toBe("nestedX");
 
     scope.idA = "B";
     scope.idB = "Y";
@@ -1669,8 +1669,8 @@ describe("form", () => {
 
     expect(scope.nameA).toBe(form);
     expect(scope.ngformA).toBe(form2);
-    expect(form.$name).toBe("nameA");
-    expect(form2.$name).toBe("ngformA");
+    expect(form.controlName).toBe("nameA");
+    expect(form2.controlName).toBe("ngformA");
 
     scope.nameID = "B";
     await wait();
@@ -1678,8 +1678,8 @@ describe("form", () => {
     expect(scope.ngformA).toBeUndefined();
     expect(scope.nameB).toBe(form);
     expect(scope.ngformB).toBe(form2);
-    expect(form.$name).toBe("nameB");
-    expect(form2.$name).toBe("ngformB");
+    expect(form.controlName).toBe("nameB");
+    expect(form2.controlName).toBe("ngformB");
   });
 
   it("should rename forms with an initially blank name", async () => {
@@ -1689,16 +1689,16 @@ describe("form", () => {
     const form = getController(element, "form");
 
     expect(scope[""]).toBe(form);
-    expect(form.$name).toBe("");
+    expect(form.controlName).toBe("");
     scope.name = "foo";
     await wait();
 
     expect(scope.foo).toBe(form);
-    expect(form.$name).toBe("foo");
+    expect(form.controlName).toBe("foo");
     expect(scope.foo).toBe(form);
   });
 
-  describe("$setSubmitted", () => {
+  describe("setSubmitted", () => {
     beforeEach(async () => {
       doc = $compile(
         '<form name="form" ng-submit="submitted = true">' +
@@ -1710,19 +1710,19 @@ describe("form", () => {
     });
 
     it("should not init in submitted state", () => {
-      expect(scope.form.$submitted).toBe(false);
+      expect(scope.form.submitted).toBe(false);
     });
 
     it("should be in submitted state when submitted", () => {
       // browserTrigger(doc, "submit");
       doc.dispatchEvent(new Event("submit"));
-      expect(scope.form.$submitted).toBe(true);
+      expect(scope.form.submitted).toBe(true);
     });
 
-    it("should revert submitted back to false when $setPristine is called on the form", () => {
-      scope.form.$submitted = true;
-      scope.form.$setPristine();
-      expect(scope.form.$submitted).toBe(false);
+    it("should revert submitted back to false when setPristine is called on the form", () => {
+      scope.form.submitted = true;
+      scope.form.setPristine();
+      expect(scope.form.submitted).toBe(false);
     });
   });
 
@@ -1760,7 +1760,7 @@ describe("form", () => {
         "$animate",
         (_$compile_, $rootScope, _$animate_) => {
           $compile = _$compile_;
-          scope = $rootScope.$new();
+          scope = $rootScope.new();
           $animate = _$animate_;
           doc = $compile('<form name="myForm"></form>')(scope);
         },
@@ -1774,7 +1774,7 @@ describe("form", () => {
     });
 
     it("should trigger an animation when invalid", (done) => {
-      form.$setValidity("required", false);
+      form.setValidity("required", false);
       setTimeout(() => {
         expect(doc.classList.contains("ng-invalid")).toBeTrue();
         expect(doc.classList.contains("ng-invalid-required")).toBeTrue();
@@ -1784,9 +1784,9 @@ describe("form", () => {
     });
 
     it("should trigger an animation when valid", (done) => {
-      form.$setValidity("required", false);
+      form.setValidity("required", false);
 
-      form.$setValidity("required", true);
+      form.setValidity("required", true);
 
       setTimeout(() => {
         expect(doc.classList.contains("ng-valid")).toBeTrue();
@@ -1797,7 +1797,7 @@ describe("form", () => {
     });
 
     it("should trigger an animation when dirty", (done) => {
-      form.$setDirty();
+      form.setDirty();
       setTimeout(() => {
         expect(doc.classList.contains("ng-pristine")).toBeFalse();
         expect(doc.classList.contains("ng-dirty")).toBeTrue();
@@ -1806,8 +1806,8 @@ describe("form", () => {
     });
 
     it("should trigger an animation when pristine", (done) => {
-      form.$setDirty();
-      form.$setPristine();
+      form.setDirty();
+      form.setPristine();
       setTimeout(() => {
         expect(doc.classList.contains("ng-pristine")).toBeTrue();
         expect(doc.classList.contains("ng-dirty")).toBeFalse();
@@ -1816,13 +1816,13 @@ describe("form", () => {
     });
 
     it("should trigger custom errors as addClass/removeClass when invalid/valid", (done) => {
-      form.$setValidity("custom-error", false);
+      form.setValidity("custom-error", false);
 
       setTimeout(() => {
         expect(doc.classList.contains("ng-valid")).toBeFalse();
         expect(doc.classList.contains("ng-invalid")).toBeTrue();
         expect(doc.classList.contains("ng-invalid-custom-error")).toBeTrue();
-        form.$setValidity("custom-error", true);
+        form.setValidity("custom-error", true);
 
         setTimeout(() => {
           expect(doc.classList.contains("ng-valid")).toBeTrue();

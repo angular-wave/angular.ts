@@ -18,7 +18,7 @@ window.angular
         this.compute = computeModel;
         this.destroyRuntime = () => {};
         this.stopModelSync = () => {};
-        $scope.$on("$destroy", () => {
+        $scope.on("$destroy", () => {
           this.stopModelSync();
           this.destroyRuntime();
         });
@@ -32,7 +32,7 @@ window.angular
       }
 
       reset() {
-        this.compute.$restore(
+        this.compute.restore(
           {
             status: "idle",
             input: 42,
@@ -49,7 +49,7 @@ window.angular
       mount() {
         const worker = new Worker("./worker.js");
 
-        this.stopModelSync = this.compute.$sync(
+        this.stopModelSync = this.compute.sync(
           this.createWorkerSyncTarget(worker),
         );
         this.destroyRuntime = () => worker.terminate();
@@ -62,7 +62,7 @@ window.angular
           if (message.runId !== this.compute.runId) return;
 
           if (message.type === "progress") {
-            this.compute.$restore(
+            this.compute.restore(
               {
                 status: "running",
                 progress: message.progress,
@@ -73,7 +73,7 @@ window.angular
             return;
           }
 
-          this.compute.$restore(
+          this.compute.restore(
             {
               status: "complete",
               progress: message.progress,

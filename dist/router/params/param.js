@@ -151,7 +151,7 @@ class Param {
         const config = getParamDeclaration(id, location, state);
         type = getType(config, type, location, id, urlConfig._paramTypes);
         const arrayMode = getArrayMode(id, location, config);
-        type = arrayMode ? type.$asArray(arrayMode) : type;
+        type = arrayMode ? type._asArray(arrayMode) : type;
         const isOptional = config.value !== undefined || location === DefType._SEARCH;
         const dynamic = !!config.dynamic;
         const raw = !!config.raw;
@@ -194,7 +194,7 @@ class Param {
             ? this._getDefaultValue()
             : source === "url"
                 ? this.type.decode(value)
-                : this.type.$normalize(value);
+                : this.type._normalize(value);
     }
     /** @internal */
     _getDefaultValue() {
@@ -225,7 +225,7 @@ class Param {
         if ((isUndefined(value) || value === null) && this.isOptional)
             return true;
         // The value was not of the correct ParamType, and could not be decoded to the correct ParamType
-        const normalized = this.type.$normalize(value);
+        const normalized = this.type._normalize(value);
         if (!this.type.is(normalized))
             return false;
         // The value was of the correct type, but when encoded, did not match the ParamType's regexp

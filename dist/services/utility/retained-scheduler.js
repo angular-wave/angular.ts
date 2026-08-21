@@ -6,13 +6,13 @@ function createScopeRetainedWorkState(scope) {
         _flushing: false,
         _destroyed: false,
         _pending: [],
-        _deregisterPause: scope.$on("$viewRetentionPause", (...args) => {
+        _deregisterPause: scope.on("$viewRetentionPause", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
             state._paused = true;
         }),
-        _deregisterResume: scope.$on("$viewRetentionResume", (...args) => {
+        _deregisterResume: scope.on("$viewRetentionResume", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
@@ -21,7 +21,7 @@ function createScopeRetainedWorkState(scope) {
             state._paused = false;
             flushScopeRetainedWorkQueue(state);
         }),
-        _deregisterDestroy: scope.$on("$destroy", () => {
+        _deregisterDestroy: scope.on("$destroy", () => {
             state._destroyed = true;
             state._paused = false;
             state._flushing = false;
@@ -51,7 +51,7 @@ function flushScopeRetainedWorkQueue(state) {
     });
 }
 function queueScopeRetainedWork(scope, state, task) {
-    if (scope.$handler._destroyed || state._destroyed) {
+    if (scope._handler._destroyed || state._destroyed) {
         return;
     }
     if (state._paused) {

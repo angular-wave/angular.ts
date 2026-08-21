@@ -38,32 +38,32 @@ describe("ngEl", () => {
     ]);
   });
 
-  it("should attach element to scope.$target by id when no expression is provided", async () => {
+  it("should attach element to scope._target by id when no expression is provided", async () => {
     el.innerHTML = `<div id="foo" ng-el></div>`;
     $compile(el)($rootScope);
     await wait();
 
-    expect($rootScope.$target.foo).toBeDefined();
-    expect($rootScope.$target.foo instanceof HTMLElement).toBe(true);
-    expect($rootScope.$target.foo.id).toBe("foo");
+    expect($rootScope._target.foo).toBeDefined();
+    expect($rootScope._target.foo instanceof HTMLElement).toBe(true);
+    expect($rootScope._target.foo.id).toBe("foo");
   });
 
-  it("should attach element to scope.$target using ng-el value as key", async () => {
+  it("should attach element to scope._target using ng-el value as key", async () => {
     el.innerHTML = `<div id="bar" ng-el="myEl"></div>`;
     $compile(el)($rootScope);
     await wait();
 
-    expect($rootScope.$target.myEl).toBeDefined();
-    expect($rootScope.$target.myEl.id).toBe("bar");
+    expect($rootScope._target.myEl).toBeDefined();
+    expect($rootScope._target.myEl.id).toBe("bar");
   });
 
-  it("should keep simple $-prefixed names as scope.$target keys", async () => {
+  it("should keep simple $-prefixed names as scope._target keys", async () => {
     el.innerHTML = `<button id="bar" ng-el="$button"></button>`;
     $compile(el)($rootScope);
     await wait();
 
-    expect($rootScope.$target.$button).toBeDefined();
-    expect($rootScope.$target.$button.id).toBe("bar");
+    expect($rootScope._target.$button).toBeDefined();
+    expect($rootScope._target.$button.id).toBe("bar");
   });
 
   it("should assign element to a controller-as expression", async () => {
@@ -78,7 +78,7 @@ describe("ngEl", () => {
 
     expect(elementController.boardEl).toBeDefined();
     expect(elementController.boardEl.id).toBe("board");
-    expect($rootScope.$target["$ctrl.boardEl"]).toBeUndefined();
+    expect($rootScope._target["$ctrl.boardEl"]).toBeUndefined();
   });
 
   it("should clear controller-as expression refs when the element is removed", async () => {
@@ -102,7 +102,7 @@ describe("ngEl", () => {
   });
 
   it("should assign and clear object path expressions on scope destroy", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     scope.refs = {
       panel: null,
@@ -115,7 +115,7 @@ describe("ngEl", () => {
     expect(scope.refs.panel).toBeDefined();
     expect(scope.refs.panel.id).toBe("panel");
 
-    scope.$destroy();
+    scope.destroy();
 
     expect(scope.refs.panel).toBeNull();
   });
@@ -133,8 +133,8 @@ describe("ngEl", () => {
     $compile(el)($rootScope);
     await wait();
 
-    expect($rootScope.$target.myEl).toBeDefined();
-    expect($rootScope.$target.myEl.id).toBe("bar");
+    expect($rootScope._target.myEl).toBeDefined();
+    expect($rootScope._target.myEl.id).toBe("bar");
   });
 
   it("should support multiple ng-el elements", async () => {
@@ -147,18 +147,18 @@ describe("ngEl", () => {
     $compile(el)($rootScope);
     await wait();
 
-    expect(Object.keys($rootScope.$target)).toContain("first");
-    expect(Object.keys($rootScope.$target)).toContain("second");
-    expect(Object.keys($rootScope.$target)).toContain("c");
-    expect($rootScope.$target.first.id).toBe("a");
-    expect($rootScope.$target.second.id).toBe("b");
-    expect($rootScope.$target.c.id).toBe("c");
+    expect(Object.keys($rootScope._target)).toContain("first");
+    expect(Object.keys($rootScope._target)).toContain("second");
+    expect(Object.keys($rootScope._target)).toContain("c");
+    expect($rootScope._target.first.id).toBe("a");
+    expect($rootScope._target.second.id).toBe("b");
+    expect($rootScope._target.c.id).toBe("c");
   });
 
-  it("should not throw if $target is not defined on scope", async () => {
+  it("should not throw if _target is not defined on scope", async () => {
     el.innerHTML = `<div id="noTarget" ng-el="missing"></div>`;
 
-    // no $target defined on scope
+    // no _target defined on scope
     expect(() => {
       $compile(el)($rootScope);
     }).not.toThrow();
@@ -169,26 +169,26 @@ describe("ngEl", () => {
       <div id="x1" ng-el="dup"></div>
       <div id="x2" ng-el="dup"></div>
     `;
-    $rootScope.$target = {};
+    $rootScope._target = {};
 
     $compile(el)($rootScope);
     await wait();
 
-    expect($rootScope.$target.dup.id).toBe("x2");
+    expect($rootScope._target.dup.id).toBe("x2");
   });
 
-  it("should remove reference from scope.$target when element is removed", async () => {
+  it("should remove reference from scope._target when element is removed", async () => {
     el.innerHTML = `<div id="temp" ng-el="tempEl"></div>`;
     $compile(el)($rootScope);
     await wait();
 
-    expect($rootScope.$target.tempEl).toBeDefined();
-    const elem = $rootScope.$target.tempEl;
+    expect($rootScope._target.tempEl).toBeDefined();
+    const elem = $rootScope._target.tempEl;
 
     // simulate element removal and scope destruction
     elem.remove();
     await wait();
 
-    expect($rootScope.$target.tempEl).toBeUndefined();
+    expect($rootScope._target.tempEl).toBeUndefined();
   });
 });

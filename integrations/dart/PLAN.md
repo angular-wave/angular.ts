@@ -71,7 +71,7 @@ AngularTS core must expose stable contracts for the Dart package:
 WASM scope types exposed through the public namespace are view-scope bindings,
 not app model bindings. Dart should keep `WasmScope` wrappers scoped to
 DOM/root-scoped state. App-owned state should use `app.model(...)` and
-host-side `model.$sync(...)` targets around external runtimes.
+host-side `model.sync(...)` targets around external runtimes.
 
 ## Dart Technology Choices
 

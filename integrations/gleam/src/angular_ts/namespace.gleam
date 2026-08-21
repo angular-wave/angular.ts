@@ -3,426 +3,765 @@
 ////
 //// Source: @types/namespace.d.ts public `ng` namespace type aliases.
 
+/// Main AngularTS runtime entry point with the full built-in `ng` module configured by default.
 pub type Angular
 
+/// Public AngularTS AnnotatedDirectiveFactory contract exposed through the ng namespace.
 pub type AnnotatedDirectiveFactory
 
+/// Defines a component's configuration object (a simplified directive definition object).
 pub type Component
 
+/// Programmatic real-DOM factory used instead of a component template.
+pub type ComponentView
+
+/// DOM content accepted from programmatic component and directive views. Functions are reactive
+/// child readers, arrays are flattened recursively, and existing nodes are moved rather than
+/// cloned. `null`, `undefined`, and `false` render no DOM content. Document fragments contribute
+/// their children.
+pub type ComponentViewChild
+
+/// Runtime context passed to a component's programmatic view.
+pub type ComponentViewContext
+
+/// Primitive text value accepted as a programmatic view child.
+pub type ComponentViewPrimitive
+
+/// Typed DOM properties plus arbitrary attribute and custom-element values.
+pub type ComponentViewProperties
+
+/// Property, attribute, event listener, or reactive property reader accepted by a programmatic view
+/// tag factory.
+pub type ComponentViewPropertyValue
+
+/// Factory that creates one real DOM element without parsing HTML.
+pub type ComponentViewTag(a)
+
+/// Typed HTML tag factories. Calling the object with a namespace URI returns factories for
+/// namespaced elements such as SVG and MathML.
+pub type ComponentViewTags
+
+/// AngularTS component lifecycle interface. Directive controllers have a well-defined lifecycle.
+/// Each controller can implement "lifecycle hooks". These are methods that will be called by
+/// Angular at certain points in the life cycle of the directive.
+/// https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
+/// https://docs.angularjs.org/guide/component
 pub type Controller
 
+/// Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values add the
+/// class; `false`, `null`, and `undefined` remove it.
 pub type ClassMap
 
+/// Public shape accepted by `ng-class` for class binding expressions.
 pub type ClassValue
 
+/// Defines the structure of an AngularTS directive.
 pub type Directive(a)
 
+/// Supported directive matching locations.
 pub type DirectiveRestrict
 
+/// Public AngularTS DirectiveFactory contract exposed through the ng namespace.
 pub type DirectiveFactory
 
+/// Public AngularTS DirectiveFactoryFn contract exposed through the ng namespace.
+pub type DirectiveFactoryFn
+
+/// A compile function used to prepare directives before linking.
+pub type DirectiveCompileFn
+
+/// A controller instance or object map used in directives.
+pub type DirectiveController
+
+/// Public AngularTS DirectiveLinkFn contract exposed through the ng namespace.
+pub type DirectiveLinkFn(a)
+
+/// Defines optional pre/post link functions in directive compile phase.
+pub type DirectivePrePost
+
+/// Programmatic real-DOM factory used instead of a directive template.
+pub type DirectiveView(a, b)
+
+/// Runtime context passed to a directive's programmatic view.
+pub type DirectiveViewContext(a, b)
+
+/// Modules are collections of application configuration information for components: controllers,
+/// directives, filters, etc. They provide recipes for the injector to do the actual instantiation.
+/// A module itself has no behaviour but only state. A such, it acts as a data structure between the
+/// Angular instance and the injector service.
 pub type NgModule
 
+/// Public AngularTS RouterModule contract exposed through the ng namespace.
 pub type RouterModule(a)
 
+/// A function returned by the `$compile` service that links a compiled template to a scope.
 pub type LinkFn
 
+/// Scope class for the Proxy. It intercepts operations like property access (get) and property
+/// setting (set), and adds support for deep change tracking and observer-like behavior.
 pub type Scope
 
+/// A function passed to directive link functions for transcluded content. It behaves like a linking
+/// function, with the `scope` argument automatically created as a new child of the transcluded
+/// parent scope. The function returns the DOM content to be injected (transcluded) into the
+/// directive.
 pub type TranscludeFn
 
+/// Public AngularTS AriaConfig contract exposed through the ng namespace.
 pub type AriaConfig
 
+/// Delimiter configuration accepted by `NgModule.config()`.
 pub type InterpolateConfig
 
+/// Main AngularTS runtime entry point with the full built-in `ng` module configured by default.
 pub type AngularService
 
+/// Scope class for the Proxy. It intercepts operations like property access (get) and property
+/// setting (set), and adds support for deep change tracking and observer-like behavior.
 pub type ScopeService
 
+/// Scope class for the Proxy. It intercepts operations like property access (get) and property
+/// setting (set), and adds support for deep change tracking and observer-like behavior.
 pub type RootScopeService
 
+/// **`Element`** is the most general base class from which all element objects (i.e., objects that
+/// represent elements) in a Document inherit. [MDN
+/// Reference](https://developer.mozilla.org/docs/Web/API/Element)
 pub type ElementService
 
+/// The **`HTMLElement`** interface represents any HTML element. [MDN
+/// Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement)
 pub type RootElementService
 
+/// The **`Document`** interface represents any web page loaded in the browser and serves as an
+/// entry point into the web page's content, which is the DOM tree. [MDN
+/// Reference](https://developer.mozilla.org/docs/Web/API/Document)
 pub type DocumentService
 
+/// The **`Window`** interface represents a window containing a DOM document; the `document`
+/// property points to the DOM document loaded in that window. [MDN
+/// Reference](https://developer.mozilla.org/docs/Web/API/Window)
 pub type WindowService
 
+/// Public AngularTS AnchorScrollService contract exposed through the ng namespace.
 pub type AnchorScrollService
 
+/// Public AngularTS AnimateService contract exposed through the ng namespace.
 pub type AnimateService
 
+/// Public AngularTS AnimationHandle contract exposed through the ng namespace.
 pub type AnimationHandle
 
+/// Public AngularTS AnimationContext contract exposed through the ng namespace.
 pub type AnimationContext
 
+/// Public AngularTS AnimationLifecycleCallback contract exposed through the ng namespace.
 pub type AnimationLifecycleCallback
 
+/// Public AngularTS AriaService contract exposed through the ng namespace.
 pub type AriaService
 
+/// Entry point for the `$compile` service.
 pub type CompileService
 
+/// Public AngularTS ControllerService contract exposed through the ng namespace.
 pub type ControllerService
 
+/// High-level API for reading, writing, serializing, and removing browser cookies through the
+/// injectable `$cookie` service.
 pub type CookieService
 
+/// Application-wide asynchronous publish/subscribe utility. `EventBus` powers `$eventBus` for
+/// cross-boundary domain events, browser callbacks, worker messages, realtime messages, and
+/// non-Angular integrations. It is intentionally not a state store and should not replace scope
+/// events for parent/child scope-tree communication.
 pub type EventBusService
 
+/// A callback type for handling errors.
 pub type ExceptionHandlerService
 
+/// Declarative config accepted by `NgModule.config({ $htmlCanvas: ... })`. The integration is
+/// disabled by default and has no AngularTS fallback.
 pub type HtmlCanvasConfig
 
+/// Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the ng namespace.
 pub type HtmlCanvasRuntimeSupport
 
+/// Public AngularTS HtmlCanvasService contract exposed through the ng namespace.
 pub type HtmlCanvasService
 
+/// Public AngularTS FilterFn contract exposed through the ng namespace.
 pub type FilterFn
 
+/// Public AngularTS FilterFactory contract exposed through the ng namespace.
 pub type FilterFactory
 
+/// Public AngularTS FilterService contract exposed through the ng namespace.
 pub type FilterService
 
+/// Public AngularTS EntryFilterItem contract exposed through the ng namespace.
 pub type EntryFilterItem
 
+/// Public AngularTS CurrencyFilterOptions contract exposed through the ng namespace.
 pub type CurrencyFilterOptions
 
+/// Function that serializes query params into a URL-encoded string.
 pub type HttpParamSerializerService
 
+/// Runtime surface of the `$http` service. Call the service directly with a full HttpRequestConfig,
+/// or use a shorthand method for common HTTP verbs. All methods return an
+/// `Promise<HttpResponse<T>>` that resolves for successful 2xx responses and rejects with HttpError
+/// for errors.
 pub type HttpService
 
+/// Injector for factories and services
 pub type InjectorService(a)
 
+/// Public injectable contracts keyed by their canonical runtime token. Every single-dollar token
+/// exposed by [[PublicInjectionTokens]] must map to a named, documented contract here.
+/// Double-dollar framework internals are intentionally excluded.
 pub type InjectionTokenMap
 
+/// Public AngularTS Model contract exposed through the ng namespace.
 pub type Model(a)
 
+/// Public AngularTS ModelChange contract exposed through the ng namespace.
 pub type ModelChange
 
+/// Public AngularTS ModelRestoreOptions contract exposed through the ng namespace.
 pub type ModelRestoreOptions
 
+/// Public AngularTS ModelSyncFailureMode contract exposed through the ng namespace.
 pub type ModelSyncFailureMode
 
+/// Public AngularTS ModelSyncOptions contract exposed through the ng namespace.
 pub type ModelSyncOptions
 
+/// Public AngularTS ModelSyncTarget contract exposed through the ng namespace.
 pub type ModelSyncTarget(a)
 
+/// Public AngularTS InterpolateService contract exposed through the ng namespace.
 pub type InterpolateService
 
+/// Public AngularTS LocationService contract exposed through the ng namespace.
 pub type LocationService
 
+/// Declarative remote logging configuration for `navigator.sendBeacon()`.
 pub type LogBeaconConfig
 
+/// Converts a structured log entry into a Beacon-compatible request body.
 pub type LogBeaconSerializer
 
+/// Structured record passed to a configured Beacon serializer.
 pub type LogEntry
 
+/// Logging severity attached to a structured remote log entry.
 pub type LogLevel
 
+/// Service for logging messages at various levels.
 pub type LogService
 
+/// Public AngularTS MachineService contract exposed through the ng namespace.
 pub type MachineService
 
+/// Creates a proxy that automatically persists an object's state into a storage backend whenever a
+/// property is set. The proxy also restores previously serialized state on creation and persists
+/// deletions in addition to property assignments.
 pub type StorageService
 
+/// Public AngularTS WorkflowService contract exposed through the ng namespace.
 pub type WorkflowService
 
+/// Public AngularTS WorkflowSupervisorService contract exposed through the ng namespace.
 pub type WorkflowSupervisorService
 
+/// Parses a string or expression function into a compiled expression.
 pub type ParseService
 
+/// Public AngularTS Policy contract exposed through the ng namespace.
 pub type Policy(a, b)
 
+/// Public AngularTS PolicyContext contract exposed through the ng namespace.
 pub type PolicyContext(a)
 
+/// Public AngularTS PolicyDecision contract exposed through the ng namespace.
 pub type PolicyDecision(a)
 
+/// Public AngularTS EventBusConfig contract exposed through the ng namespace.
 pub type EventBusConfig
 
+/// Public AngularTS EventDeliveryPolicy contract exposed through the ng namespace.
 pub type EventDeliveryPolicy
 
+/// Public AngularTS EventDeliveryPolicyContext contract exposed through the ng namespace.
 pub type EventDeliveryPolicyContext
 
+/// Public AngularTS SceService contract exposed through the ng namespace.
 pub type SceService
 
+/// Public AngularTS SceDelegateService contract exposed through the ng namespace.
 pub type SceDelegateService
 
+/// $sse service type Returns a managed SSE connection that automatically reconnects when needed.
 pub type SseService
 
+/// SSE-specific configuration
 pub type SseConfig
 
+/// Managed SSE connection object returned by $sse. Provides a safe way to close the connection and
+/// stop reconnection attempts.
 pub type SseConnection
 
+/// Public AngularTS SecurityPolicy contract exposed through the ng namespace.
 pub type SecurityPolicy
 
+/// Public AngularTS SecurityConfig contract exposed through the ng namespace.
 pub type SecurityConfig
 
+/// Public AngularTS SecurityCredentialsConfig contract exposed through the ng namespace.
 pub type SecurityCredentialsConfig
 
+/// Public `$stateRegistry` contract for dynamic route registration. Module-owned static routes
+/// should normally use [[NgModule.router]]. Use this service when routes must be added or removed
+/// at runtime.
 pub type StateRegistryService
 
+/// Injectable service-worker lifecycle and messaging facade.
 pub type ServiceWorkerService
 
+/// Public AngularTS RealtimeProtocolEventDetail contract exposed through the ng namespace.
 pub type RealtimeProtocolEventDetail(a, b)
 
+/// Public AngularTS RealtimeProtocolMessage contract exposed through the ng namespace.
 pub type RealtimeProtocolMessage
 
+/// Possible values for `data-swap` and realtime protocol `swap` fields. Union type representing all
+/// possible DOM insertion modes.
 pub type SwapMode
 
+/// Public contract implemented by the `$templateCache` injectable.
 pub type TemplateCacheService
 
+/// Downloads a template using $http and, upon success, stores the contents inside of
+/// $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then
+/// a $compile error will be thrown (unless {ignoreRequestError} is set to true).
 pub type TemplateRequestService
 
+/// This interface specifies the api for registering Transition Hooks. Both the
+/// [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note:
+/// the Transition object only allows hooks to be registered before the Transition is started.
 pub type TransitionsService
 
+/// Injectable factory for typed managed Web Worker connections.
 pub type WorkerService
 
+/// Dependency-annotated factory array used by AngularTS DI system. Example: ['dep1', 'dep2', (dep1,
+/// dep2) => new MyController(dep1, dep2)]
 pub type AnnotatedFactory(a)
 
+/// Public AngularTS AnimationOptions contract exposed through the ng namespace.
 pub type AnimationOptions
 
+/// Public AngularTS AnimationPhase contract exposed through the ng namespace.
 pub type AnimationPhase
 
+/// Public AngularTS AnimationPreset contract exposed through the ng namespace.
 pub type AnimationPreset
 
+/// Public AngularTS AnimationPresetHandler contract exposed through the ng namespace.
 pub type AnimationPresetHandler
 
+/// Public AngularTS AnimationResult contract exposed through the ng namespace.
 pub type AnimationResult
 
+/// Runtime metadata returned after defining a standalone custom element.
 pub type AngularElementDefinition
 
+/// Configuration for the application module that owns the custom element.
 pub type AngularElementModuleOptions
 
+/// Options for a standalone AngularTS-backed custom element runtime.
 pub type AngularElementOptions(a)
 
+/// A controller constructor function used in AngularTS.
 pub type ControllerConstructor
 
+/// Public AngularTS CookieOptions contract exposed through the ng namespace.
 pub type CookieOptions
 
+/// Serialization options for cookie-backed stores.
 pub type CookieStoreOptions
 
+/// Creates a new entity instance from raw response data.
 pub type EntityClass(a)
 
+/// Error configuration object. May only contain the options that need to be updated.
 pub type ErrorHandlingConfig
 
+/// A JavaScript expression represented as a string, typically used in interpolation bindings.
+/// Example: ```html <span title="{{ attrBinding }}">{{ textBinding }}</span> ```
 pub type Expression
 
+/// HTTP method accepted by HttpRequestConfig.method.
 pub type HttpMethod
 
+/// Default request settings configured through `app.config({ $http })` and exposed at runtime
+/// through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape
+/// only includes the fields that the runtime reads from provider-level defaults.
+/// https://docs.angularjs.org/api/ng/service/$http#defaults
+/// https://docs.angularjs.org/api/ng/service/$http#usage
 pub type HttpDefaults
 
+/// Response object returned by `$http` requests.
 pub type HttpResponse(a)
 
+/// Final transport status reported by transport completion handlers.
 pub type HttpResponseStatus
 
+/// Public AngularTS Injectable contract exposed through the ng namespace.
 pub type Injectable(a)
 
+/// A user-defined service recipe accepted by ng.NgModule.provider. Object recipes define an
+/// injectable `get` factory directly. Injectable functions and classes are instantiated first and
+/// must produce an object with an injectable `get` factory.
 pub type ProviderDefinition
 
+/// Public AngularTS InterpolationFunction contract exposed through the ng namespace.
 pub type InterpolationFunction
 
+/// Public watcher callback shape. The first argument is the resolved watched value. The second
+/// argument is the original target object used when the watcher was registered.
 pub type ListenerFn
 
+/// Public AngularTS Machine contract exposed through the ng namespace.
 pub type Machine(a)
 
+/// Labeled type contract carried by a machine definition and instance.
 pub type MachineContract
 
+/// Public AngularTS MachineConfig contract exposed through the ng namespace.
 pub type MachineConfig(a)
 
+/// Public AngularTS MachineSnapshot contract exposed through the ng namespace.
 pub type MachineSnapshot(a)
 
+/// Public AngularTS MachineSendResult contract exposed through the ng namespace.
 pub type MachineSendResult(a)
 
+/// Public AngularTS MachineSendStatus contract exposed through the ng namespace.
 pub type MachineSendStatus
 
+/// Public AngularTS Workflow contract exposed through the ng namespace.
 pub type Workflow(a)
 
+/// Labeled type contract carried by a workflow definition and instance.
 pub type WorkflowContract
 
+/// Public AngularTS WorkflowCommand contract exposed through the ng namespace.
 pub type WorkflowCommand(a, b)
 
+/// Input and output carried by a workflow command.
 pub type WorkflowCommandContract
 
+/// Public AngularTS WorkflowCommandContext contract exposed through the ng namespace.
 pub type WorkflowCommandContext(a, b)
 
+/// Public AngularTS WorkflowCommandDefinition contract exposed through the ng namespace.
 pub type WorkflowCommandDefinition(a, b)
 
+/// Public AngularTS WorkflowResult contract exposed through the ng namespace.
 pub type WorkflowResult(a)
 
+/// Public AngularTS WorkflowSnapshot contract exposed through the ng namespace.
 pub type WorkflowSnapshot(a)
 
+/// Public AngularTS WorkflowSupervisor contract exposed through the ng namespace.
 pub type WorkflowSupervisor(a)
 
+/// Public AngularTS WorkflowSupervisorConfig contract exposed through the ng namespace.
 pub type WorkflowSupervisorConfig(a)
 
+/// Built-in IndexedDB persistence selected by a workflow supervisor.
 pub type WorkflowSupervisorPersistenceConfig
 
+/// Public AngularTS WorkflowSupervisorPersistence contract exposed through the ng namespace.
 pub type WorkflowSupervisorPersistence(a)
 
+/// Public AngularTS WorkflowSupervisorSnapshot contract exposed through the ng namespace.
 pub type WorkflowSupervisorSnapshot(a)
 
+/// Public AngularTS NgModelController contract exposed through the ng namespace.
 pub type NgModelController
 
+/// Full request configuration accepted by `$http(...)`. See
+/// http://docs.angularjs.org/api/ng/service/$http#usage
 pub type HttpRequestConfig
 
+/// Request options shared by the `$http` shortcut methods. See
+/// http://docs.angularjs.org/api/ng/service/$http#usage
 pub type HttpRequestOptions
 
+/// Factory service exposed as `$rest`. Creates a typed RestService for a base URL, optional entity
+/// mapper, and optional backend request defaults.
 pub type RestFactory
 
+/// Backend abstraction used by RestService. Implement this interface to route REST operations
+/// through `$http`, IndexedDB, the Cache API, a test double, or a composed backend such as
+/// CachedRestBackend.
 pub type RestBackend
 
+/// Public AngularTS RestCachePolicy contract exposed through the ng namespace.
 pub type RestCachePolicy
 
+/// Public AngularTS RestCachePolicyContext contract exposed through the ng namespace.
 pub type RestCachePolicyContext
 
+/// Async cache store used by CachedRestBackend. The interface is deliberately small so
+/// implementations can be backed by IndexedDB, the browser Cache API, local storage, memory, or
+/// test fixtures.
 pub type RestCacheStore
 
+/// Cache read strategies shared by HTTP, REST, and router transports.
 pub type RestCacheStrategy
 
+/// Extra backend options merged into requests made by a REST resource.
 pub type RestOptions
 
+/// Normalized request object passed from RestService to a RestBackend. Backends receive expanded
+/// URLs and already-separated request options, so they can focus on transport, persistence, or
+/// cache policy.
 pub type RestRequest
 
+/// Response shape returned by RestBackend implementations. HTTP-backed responses may include the
+/// usual HttpResponse metadata, while local or cached backends can return only `data` plus optional
+/// cache source metadata.
 pub type RestResponse(a)
 
+/// Event emitted after a stale-while-revalidate background refresh succeeds.
 pub type RestRevalidateEvent(a)
 
+/// Configuration for CachedRestBackend.
 pub type CachedRestBackendOptions
 
+/// Typed REST resource client backed by RestBackend. A `RestService` is usually created by
+/// injecting `$rest` and calling it with a base URL, optional EntityClass, and optional backend
+/// request defaults.
 pub type RestService(a, b)
 
+/// Event object passed to `emit` and `broadcast` listeners. Tracks target scope, current scope,
+/// name, propagation/default flags, and control methods.
 pub type ScopeEvent
 
+/// Module-owned router state tree declaration. Use this with [[NgModule.router]] when a module owns
+/// a route subtree. Child state names are relative to their parent unless they contain a dot.
 pub type RouterModuleDeclaration
 
+/// Public AngularTS RouterConfig contract exposed through the ng namespace.
 pub type RouterConfig
 
+/// Public route contract entry used by router helper types. This is an author-written TypeScript
+/// shape. It is intentionally separate from built router state records so generated docs and
+/// language bindings do not expose internal state/runtime implementation details.
 pub type RouteContract
 
+/// Public route-name to route-contract map used by `StateService`, generic `Transition`,
+/// `ParamsOf`, and `ResolvesOf`.
 pub type RouteMap
 
+/// Derives the public route map for a literal `router(...)` tree.
 pub type RoutesOf(a, b)
 
+/// Params declared by one route in a public route map.
 pub type ParamsOf(a, b)
 
+/// Resolve values declared by one route in a public route map.
 pub type ResolvesOf(a, b)
 
+/// Public AngularTS StateService contract exposed through the ng namespace.
 pub type StateService(a)
 
+/// The StateDeclaration object is used to define a state or nested state. #### Example: ```js //
+/// StateDeclaration object var foldersState = { name: 'folders', url: '/folders', component:
+/// FoldersComponent, resolve: { allfolders: ['FolderService', function(FolderService) { return
+/// FolderService.list(); }] }, } registry.register(foldersState); ```
 pub type StateDeclaration
 
+/// Public AngularTS StatePolicyDeclaration contract exposed through the ng namespace.
 pub type StatePolicyDeclaration
 
+/// Public AngularTS StorageBackend contract exposed through the ng namespace.
 pub type StorageBackend
 
+/// Built-in persistent storage backends understood by `NgModule.store()`.
 pub type StorageType
 
+/// Public AngularTS ConnectionConfig contract exposed through the ng namespace.
 pub type ConnectionConfig
 
+/// Public AngularTS ConnectionEvent contract exposed through the ng namespace.
 pub type ConnectionEvent
 
+/// Declarative defaults used when registering an application service worker. This config
+/// intentionally maps only browser registration options and safe observation policy. Activation,
+/// reload, cache strategy, push, and background sync remain explicit application or adapter policy.
 pub type ServiceWorkerConfig
 
+/// Stable failure codes reported by ServiceWorkerError.
 pub type ServiceWorkerErrorCode
 
+/// Message event normalized by `$serviceWorker`.
 pub type ServiceWorkerMessageEvent(a)
 
+/// Explicit message target for `$serviceWorker.post(...)`.
 pub type ServiceWorkerMessageTarget
 
+/// Options for ServiceWorkerService.post.
 pub type ServiceWorkerPostOptions
 
+/// Template-friendly snapshot of the current registration.
 pub type ServiceWorkerRegistrationState
 
+/// Per-request options for ServiceWorkerService.request.
 pub type ServiceWorkerRequestOptions
 
+/// Template-friendly snapshot of update-related service-worker state.
 pub type ServiceWorkerUpdateState
 
+/// Public AngularTS StreamService contract exposed through the ng namespace.
 pub type StreamService
 
+/// Represents a transition between two states. A transition contains the source and destination
+/// states, parameters, resolves, and the states entered or exited during navigation.
 pub type Transition(a, b)
 
+/// Names the destination and source routes carried by a typed transition.
 pub type TransitionRouteContract(a)
 
+/// Public AngularTS Validator contract exposed through the ng namespace.
 pub type Validator
 
+/// Public AngularTS ElementScopeOptions contract exposed through the ng namespace.
 pub type ElementScopeOptions
 
+/// Public AngularTS AppComponentOptions contract exposed through the ng namespace.
 pub type AppComponentOptions(a)
 
+/// Native custom element base class backed by an AngularTS child scope.
 pub type ScopeElement(a)
 
+/// Public AngularTS ScopeElementConstructor contract exposed through the ng namespace.
 pub type ScopeElementConstructor(a)
 
+/// Public AngularTS WebComponentContext contract exposed through the ng namespace.
 pub type WebComponentContext(a)
 
+/// Application-wide defaults for scoped custom elements.
 pub type WebComponentConfig
 
+/// Public AngularTS WebComponentInput contract exposed through the ng namespace.
 pub type WebComponentInput
 
+/// Public AngularTS WebComponentInputConfig contract exposed through the ng namespace.
 pub type WebComponentInputConfig
 
+/// Public AngularTS WebComponentInputs contract exposed through the ng namespace.
 pub type WebComponentInputs
 
+/// Public AngularTS WebComponentService contract exposed through the ng namespace.
 pub type WebComponentService
 
+/// WebSocket-specific configuration
 pub type WebSocketConfig
 
+/// Managed WebSocket connection returned by $websocket.
 pub type WebSocketConnection
 
+/// Public AngularTS WebSocketService contract exposed through the ng namespace.
 pub type WebSocketService
 
+/// Public AngularTS WebTransportBufferInput contract exposed through the ng namespace.
 pub type WebTransportBufferInput
 
+/// Options passed to `$webTransport`.
 pub type WebTransportConfig
 
+/// Managed WebTransport connection returned by `$webTransport`. The connection wraps the
+/// browser-native `WebTransport` object and keeps its promise/stream model visible while adding
+/// small conveniences for sending bytes, text, datagrams, and unidirectional streams.
 pub type WebTransportConnection
 
+/// Event emitted for each incoming WebTransport datagram.
 pub type WebTransportDatagramEvent(a)
 
+/// Event passed to WebTransport reconnect and renegotiation hooks.
 pub type WebTransportReconnectEvent
 
+/// Delay, in milliseconds, before a reconnect attempt is opened.
 pub type WebTransportRetryDelay
 
+/// Factory function exposed as `$webTransport`.
 pub type WebTransportService
 
+/// Native worker options plus AngularTS decoding and restart policy.
 pub type WorkerConfig(a)
 
+/// Typed failure reported by a managed worker.
 pub type WorkerError
 
+/// Public AngularTS WorkerErrorCode contract exposed through the ng namespace.
 pub type WorkerErrorCode
 
+/// Managed, scope-bindable handle to one page-owned Web Worker.
 pub type WorkerHandle(a, b)
 
+/// Standard messages used by WorkerHandle.model.
 pub type WorkerModelMessage(a)
 
+/// Request envelope understood by WorkerHandle.request.
 pub type WorkerRequest(a)
 
+/// Options for one correlated worker request.
 pub type WorkerRequestOptions
 
+/// Response envelope returned for a correlated worker request.
 pub type WorkerResponse(a)
 
+/// Lifecycle state exposed by a managed WorkerHandle.
 pub type WorkerStatus
 
+/// Active connection between one AngularTS target and a WebAssembly guest.
 pub type WasmBinding(a)
 
+/// Options for binding one reactive target to a WebAssembly guest.
 pub type WasmBindingOptions
 
+/// Standard WebAssembly compilation options forwarded without translation.
 pub type WasmCompileOptions
 
+/// Structured error raised by the high-level WebAssembly host.
 pub type WasmError
 
+/// Error categories reported by the high-level WebAssembly host.
 pub type WasmErrorCode
 
+/// Lifecycle stage at which a WebAssembly operation failed.
 pub type WasmErrorStage
 
+/// Declarative options for loading one WebAssembly module.
 pub type WasmLoadOptions
 
+/// Loaded WebAssembly module with owned reactive bindings and lifecycle.
 pub type WasmResource(a)
 
+/// Lifecycle state of a WebAssembly resource.
 pub type WasmResourceStatus
 
+/// High-level WebAssembly host service.
 pub type WasmService
 
+/// Source accepted by the WebAssembly loader.
 pub type WasmSource
 
+/// Scope class for the Proxy. It intercepts operations like property access (get) and property
+/// setting (set), and adds support for deep change tracking and observer-like behavior.
 pub type WasmTarget

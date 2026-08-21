@@ -135,6 +135,10 @@ export function parseWasmContract(value) {
     paths.add(field.path);
 
     return Object.freeze({
+      description: contractDescription(
+        field.description,
+        `Reactive ${field.path} field.`,
+      ),
       path: field.path,
       type: field.type,
       optional: field.optional === true,
@@ -142,7 +146,14 @@ export function parseWasmContract(value) {
     });
   });
 
-  return Object.freeze({ name: value.name, fields: Object.freeze(fields) });
+  return Object.freeze({
+    description: contractDescription(
+      value.description,
+      `${value.name} AngularTS Wasm model contract.`,
+    ),
+    name: value.name,
+    fields: Object.freeze(fields),
+  });
 }
 
 export function generateWasmContractFiles(contractValue) {
@@ -195,6 +206,7 @@ function renderTypeScript(contract) {
   const fields = contract.fields
     .map(
       (field) =>
+        `  /** ${escapeBlockComment(field.description)} */\n` +
         `  readonly ${JSON.stringify(field.path)}${field.optional ? "?" : ""}: ${TYPE_MAP[field.type].typescript};`,
     )
     .join("\n");
@@ -203,6 +215,7 @@ function renderTypeScript(contract) {
     .join("\n");
 
   return banner("TypeScript", contract) +
+    `/** ${escapeBlockComment(contract.description)} */\n` +
     `export interface ${contract.name}Values {\n${fields}\n}\n\n` +
     `export const ${contract.name}Paths = Object.freeze({\n${paths}\n} as const);\n`;
 }
@@ -214,26 +227,36 @@ function renderRust(contract) {
   const lines = contract.fields.map((field) => {
     if (field.type === "bytes") {
       const constructor = field.optional ? "optional" : "new";
-      return `pub const ${constant(field.path)}: BinaryField = BinaryField::${constructor}(${JSON.stringify(field.path)});`;
+      return `/// ${field.description}\npub const ${constant(field.path)}: BinaryField = BinaryField::${constructor}(${JSON.stringify(field.path)});`;
     }
 
     const valueType = `${field.optional ? "Option<" : ""}${TYPE_MAP[field.type].rust}${field.optional ? ">" : ""}`;
-    return `pub const ${constant(field.path)}: Field<${valueType}> = Field::new(${JSON.stringify(field.path)});`;
+    return `/// ${field.description}\npub const ${constant(field.path)}: Field<${valueType}> = Field::new(${JSON.stringify(field.path)});`;
   });
 
   return banner("Rust", contract, "//") +
-    `use angular_ts::{${imports.join(", ")}};\n\n${lines.join("\n")}\n`;
+    `// ${contract.description}\n\n` +
+    `use angular_ts::{${imports.join(", ")}};\n\n${lines.join("\n\n")}\n`;
 }
 
 function renderGo(contract) {
   const constants = contract.fields
-    .map((field) => `\t${contract.name}Path${field.symbol} = ${JSON.stringify(field.path)}`)
+    .map(
+      (field) =>
+        `\t// ${contract.name}Path${field.symbol} identifies the ${JSON.stringify(field.path)} field. ${field.description}\n` +
+        `\t${contract.name}Path${field.symbol} = ${JSON.stringify(field.path)}`,
+    )
     .join("\n");
   const aliases = contract.fields
-    .map((field) => `type ${contract.name}${field.symbol}Value = ${TYPE_MAP[field.type].go}`)
-    .join("\n");
+    .map(
+      (field) =>
+        `// ${contract.name}${field.symbol}Value is the value type for the ${JSON.stringify(field.path)} field. ${field.description}\n` +
+        `type ${contract.name}${field.symbol}Value = ${TYPE_MAP[field.type].go}`,
+    )
+    .join("\n\n");
 
   return banner("Go", contract, "//") +
+    `// Package contracts contains ${contract.description}\n` +
     `package contracts\n\nconst (\n${constants}\n)\n\n${aliases}\n`;
 }
 
@@ -242,21 +265,26 @@ function renderC(contract) {
   const lines = contract.fields.map((field) => {
     const type = field.type === "bytes" ? "binary" : field.type;
     const initializer = `${field.optional ? "OPTIONAL_" : ""}${constant(type)}_FIELD`;
-    return `static const ng_${type}_field_t ${constant(contract.name)}_${constant(field.path)} = NG_${initializer}(${JSON.stringify(field.path)});`;
+    return `/** ${escapeBlockComment(field.description)} */\n` +
+      `static const ng_${type}_field_t ${constant(contract.name)}_${constant(field.path)} = NG_${initializer}(${JSON.stringify(field.path)});`;
   });
 
   return banner("C", contract, "//") +
-    `#ifndef ${guard}\n#define ${guard}\n\n#include "angular_ts_wasm.h"\n\n${lines.join("\n")}\n\n#endif\n`;
+    `#ifndef ${guard}\n#define ${guard}\n\n#include "angular_ts_wasm.h"\n\n` +
+    `/** @file\n * ${escapeBlockComment(contract.description)}\n */\n\n` +
+    `${lines.join("\n\n")}\n\n#endif\n`;
 }
 
 function renderCpp(contract) {
   const lines = contract.fields.flatMap((field) => [
+    `/// ${field.description}`,
     `inline constexpr std::string_view ${field.symbol}Path = ${JSON.stringify(field.path)};`,
     `using ${field.symbol}Value = ${TYPE_MAP[field.type].cpp};`,
   ]);
 
   return banner("C++", contract, "//") +
-    `#pragma once\n\n#include <cstdint>\n#include <string>\n#include <string_view>\n#include <vector>\n\nnamespace angular_ts::contracts::${contract.name} {\n${indent(lines.join("\n"))}\n}\n`;
+    `#pragma once\n\n#include <cstdint>\n#include <string>\n#include <string_view>\n#include <vector>\n\n` +
+    `/// ${contract.description}\nnamespace angular_ts::contracts::${contract.name} {\n${indent(lines.join("\n"))}\n}\n`;
 }
 
 function renderZig(contract) {
@@ -267,24 +295,26 @@ function renderZig(contract) {
   const lines = contract.fields.map((field) => {
     if (field.type === "bytes") {
       const constructor = field.optional ? "optional" : "init";
-      return `pub const ${camel(field.symbol)} = angular.BinaryField.${constructor}(${JSON.stringify(field.path)});`;
+      return `/// ${field.description}\npub const ${camel(field.symbol)} = angular.BinaryField.${constructor}(${JSON.stringify(field.path)});`;
     }
 
     const valueType = `${field.optional ? "?" : ""}${TYPE_MAP[field.type].zig}`;
-    return `pub const ${camel(field.symbol)} = angular.Field(${valueType}).init(${JSON.stringify(field.path)});`;
+    return `/// ${field.description}\npub const ${camel(field.symbol)} = angular.Field(${valueType}).init(${JSON.stringify(field.path)});`;
   });
 
   return banner("Zig", contract, "//") +
-    `${imports.join("\n")}\n\n${lines.join("\n")}\n`;
+    `//! ${contract.description}\n\n${imports.join("\n")}\n\n${lines.join("\n\n")}\n`;
 }
 
 function renderAssemblyScript(contract) {
   const lines = contract.fields.flatMap((field) => [
+    `  /** ${escapeBlockComment(field.description)} */`,
     `  static readonly ${field.symbol}Path: string = ${JSON.stringify(field.path)};`,
     `  declare ${field.symbol}Value: ${TYPE_MAP[field.type].assemblyscript};`,
   ]);
 
   return banner("AssemblyScript", contract, "//") +
+    `/** ${escapeBlockComment(contract.description)} */\n` +
     `export class ${contract.name}Contract {\n${lines.join("\n")}\n}\n`;
 }
 
@@ -292,16 +322,39 @@ function renderCSharp(contract) {
   const lines = contract.fields
     .map(
       (field) =>
+        `    /// <summary>${escapeXml(field.description)}</summary>\n` +
         `    public static readonly Field<${TYPE_MAP[field.type].csharp}> ${field.symbol} = new(${JSON.stringify(field.path)});`,
     )
     .join("\n");
 
   return banner("C#", contract, "//") +
-    `namespace AngularTs.Contracts;\n\npublic readonly record struct Field<T>(string Path);\n\npublic static class ${contract.name}Contract\n{\n${lines}\n}\n`;
+    `namespace AngularTs.Contracts;\n\npublic readonly record struct Field<T>(string Path);\n\n` +
+    `/// <summary>${escapeXml(contract.description)}</summary>\n` +
+    `public static class ${contract.name}Contract\n{\n${lines}\n}\n`;
 }
 
 function banner(language, contract, marker = "//") {
   return `${marker} Generated from the ${contract.name} AngularTS Wasm contract for ${language}. Do not edit.\n`;
+}
+
+function contractDescription(value, fallback) {
+  if (value === undefined) return fallback;
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error("Wasm contract descriptions must be non-empty strings");
+  }
+
+  return value.replace(/\s+/gu, " ").trim();
+}
+
+function escapeBlockComment(value) {
+  return value.replaceAll("*/", "*\\/");
+}
+
+function escapeXml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function isSafePath(value) {

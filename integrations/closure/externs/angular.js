@@ -19,8 +19,8 @@ var ng = {};
 
 /**
  * Retrieve or create an AngularTS module.
- * @param {string} name
- * @param {!Array<string>=} requires
+ * @param {string} name Module name to create or retrieve.
+ * @param {!Array<string>=} requires Dependency module names when creating a module.
  * @return {!ng.NgModule}
  */
 angular.module = function(name, requires) {};
@@ -38,6 +38,19 @@ ng.Angular = function() {};
 ng.Angular.prototype.ScopeElement;
 
 /**
+ * JSX-free real-DOM tag factories for programmatic component views.
+ * @param {string} namespaceUri Value supplied for the namespaceUri parameter.
+ * @return {!Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}
+ */
+ng.Angular.prototype.tags = function(namespaceUri) {};
+
+/**
+ * Explicit programmatic-view binding and element helpers.
+ * @type {!Object}
+ */
+ng.Angular.prototype.view;
+
+/**
  * Sub-application instances created when multiple `ng-app` roots are initialized.
  * @type {!Array<!ng.Angular>}
  */
@@ -47,19 +60,19 @@ ng.Angular.prototype.subapps;
  * Application-wide event bus, available after bootstrap providers are created.
  * @type {!ng.EventBusService}
  */
-ng.Angular.prototype.$eventBus;
+ng.Angular.prototype.eventBus;
 
 /**
  * Application injector, available after `bootstrap()` or `injector()` completes.
  * @type {!ng.InjectorService<?>}
  */
-ng.Angular.prototype.$injector;
+ng.Angular.prototype.currentInjector;
 
 /**
  * Root scope for the bootstrapped application.
  * @type {!ng.Scope}
  */
-ng.Angular.prototype.$rootScope;
+ng.Angular.prototype.rootScope;
 
 /**
  * AngularTS version string replaced at build time.
@@ -69,53 +82,53 @@ ng.Angular.prototype.version;
 
 /**
  * Retrieve the controller instance cached on a compiled DOM element.
- * @param {!Element} element
- * @param {(string|undefined)} name
+ * @param {!Element} element The DOM element to get data from.
+ * @param {(string|undefined)} name Controller name.
  * @return {(!ng.Scope|undefined)}
  */
 ng.Angular.prototype.getController = function(element, name) {};
 
 /**
  * Retrieve the injector cached on a bootstrapped DOM element.
- * @param {!Element} element
+ * @param {!Element} element Value supplied for the element parameter.
  * @return {!ng.InjectorService<?>}
  */
 ng.Angular.prototype.getInjector = function(element) {};
 
 /**
  * Retrieve the scope cached on a compiled DOM element.
- * @param {!Element} element
+ * @param {!Element} element The DOM element to get data from.
  * @return {!ng.Scope}
  */
 ng.Angular.prototype.getScope = function(element) {};
 
 /**
  * Read an element attribute by normalized directive-style name.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
+ * @param {(!Element|!Node|null|undefined)} element Value supplied for the element parameter.
+ * @param {string} normalizedName Value supplied for the normalizedName parameter.
  * @return {(string|undefined)}
  */
 ng.Angular.prototype.getNormalizedAttr = function(element, normalizedName) {};
 
 /**
  * Return the actual DOM attribute name for a normalized directive-style name.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
+ * @param {(!Element|!Node|null|undefined)} element Value supplied for the element parameter.
+ * @param {string} normalizedName Value supplied for the normalizedName parameter.
  * @return {(string|undefined)}
  */
 ng.Angular.prototype.getNormalizedAttrName = function(element, normalizedName) {};
 
 /**
  * Return whether an element has an attribute matching a normalized name.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
+ * @param {(!Element|!Node|null|undefined)} element Value supplied for the element parameter.
+ * @param {string} normalizedName Value supplied for the normalizedName parameter.
  * @return {boolean}
  */
 ng.Angular.prototype.hasNormalizedAttr = function(element, normalizedName) {};
 
 /**
  * Global framework error-handling configuration.
- * @param {(!ng.ErrorHandlingConfig|undefined)} config
+ * @param {(!ng.ErrorHandlingConfig|undefined)} config Value supplied for the config parameter.
  * @return {!ng.ErrorHandlingConfig}
  */
 ng.Angular.prototype.errorHandlingConfig = function(config) {};
@@ -124,7 +137,7 @@ ng.Angular.prototype.errorHandlingConfig = function(config) {};
  * Public injection token names keyed by token value.
  * @type {!Object}
  */
-ng.Angular.prototype.$t;
+ng.Angular.prototype.tokens;
 
 /**
  * Registers the configured built-in `ng` module for this runtime instance.
@@ -134,59 +147,59 @@ ng.Angular.prototype.registerNgModule = function() {};
 
 /**
  * The `angular.module` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. `angular.module` is used to configure the auto.$injector `$injector`. ```js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an injector and load your modules like this: ```js let injector = angular.injector(['ng', 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or `bootstrap()` to simplify this process.
- * @param {string} name
- * @param {(!Array<string>|undefined)} requires
- * @param {(!ng.Injectable|undefined)} configFn
+ * @param {string} name The name of the module to create or retrieve.
+ * @param {(!Array<string>|undefined)} requires If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.
+ * @param {(!ng.Injectable|undefined)} configFn Optional configuration function for the module that gets passed to `NgModule.config()`.
  * @return {!ng.NgModule}
  */
 ng.Angular.prototype.module = function(name, requires, configFn) {};
 
 /**
  * Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.
- * @param {!Event} event
+ * @param {!Event} event Value supplied for the event parameter.
  * @return {boolean}
  */
 ng.Angular.prototype.dispatchEvent = function(event) {};
 
 /**
  * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
- * @param {string} input
+ * @param {string} input Value supplied for the input parameter.
  * @return {void}
  */
 ng.Angular.prototype.emit = function(input) {};
 
 /**
  * Await result. Accepts a single string: `"<target>.<expression>"`
- * @param {string} input
+ * @param {string} input Value supplied for the input parameter.
  * @return {!Promise<?>}
  */
 ng.Angular.prototype.call = function(input) {};
 
 /**
  * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
- * @param {(!Document|!HTMLElement|string)} element
- * @param {(!Array<(string|!ng.Injectable)>|undefined)} modules
+ * @param {(!Document|!HTMLElement|string)} element DOM element which is the root of AngularTS application.
+ * @param {(!Array<(string|!ng.Injectable)>|undefined)} modules an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.module()`.
  * @return {!ng.InjectorService<?>}
  */
 ng.Angular.prototype.bootstrap = function(element, modules) {};
 
 /**
  * Create a standalone injector without bootstrapping the DOM.
- * @param {!Array<(string|!ng.Injectable)>} modules
+ * @param {!Array<(string|!ng.Injectable)>} modules Module names or config functions to load.
  * @return {!ng.InjectorService<?>}
  */
 ng.Angular.prototype.injector = function(modules) {};
 
 /**
  * Find `ng-app` roots under the provided element and bootstrap them. The first root uses this instance. Additional roots are bootstrapped as sub-applications and stored in {@link subapps}.
- * @param {(!Document|!HTMLElement)} element
+ * @param {(!Document|!HTMLElement)} element Root element or document to scan.
  * @return {void}
  */
 ng.Angular.prototype.init = function(element) {};
 
 /**
- * Find a scope by its registered `$scopename`.
- * @param {string} name
+ * Find a scope by its registered `scopeName`.
+ * @param {string} name Scope name to search for.
  * @return {(!ng.Scope|undefined)}
  */
 ng.Angular.prototype.getScopeByName = function(name) {};
@@ -198,7 +211,7 @@ ng.Angular.prototype.getScopeByName = function(name) {};
 ng.AnnotatedDirectiveFactory;
 
 /**
- * Defines a component's configuration object (a simplified directive definition object).
+ * Public AngularTS Component contract exposed through the global ng namespace for Closure-annotated applications.
  * @record
  */
 ng.Component = function() {};
@@ -228,6 +241,12 @@ ng.Component.prototype.template;
 ng.Component.prototype.templateUrl;
 
 /**
+ * Programmatic real-DOM view factory. It runs during linking after controller bindings and `onInit`, and is mutually exclusive with template, templateUrl, and replace.
+ * @type {(function(!ng.ComponentViewContext): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
+ */
+ng.Component.prototype.view;
+
+/**
  * Define DOM attribute binding to component properties. Component properties are always bound to the component controller and not to the scope.
  * @type {(!Object<string, string>|undefined)}
  */
@@ -246,10 +265,95 @@ ng.Component.prototype.replace;
 ng.Component.prototype.transclude;
 
 /**
- * Requires the controllers of other directives and binds them to this component's controller. The object keys specify the property names under which the required controllers (object values) will be bound. Note that the required controllers will not be available during the instantiation of the controller, but they are guaranteed to be available just before the $onInit method is executed!
+ * Requires the controllers of other directives and binds them to this component's controller. The object keys specify the property names under which the required controllers (object values) will be bound. Note that the required controllers will not be available during the instantiation of the controller, but they are guaranteed to be available just before the onInit method is executed!
  * @type {(!Object<string, string>|undefined)}
  */
 ng.Component.prototype.require;
+
+/**
+ * Public AngularTS ComponentView contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!ng.ComponentViewContext): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
+ */
+ng.ComponentView;
+
+/**
+ * DOM content accepted from programmatic component and directive views. Functions are reactive child readers, arrays are flattened recursively, and existing nodes are moved rather than cloned. `null`, `undefined`, and `false` render no DOM content. Document fragments contribute their children.
+ * @typedef {(!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
+ */
+ng.ComponentViewChild;
+
+/**
+ * Public AngularTS ComponentViewContext contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.ComponentViewContext = function() {};
+
+/**
+ * Component controller after bindings and `onInit` have run.
+ * @type {!Object}
+ */
+ng.ComponentViewContext.prototype.controller;
+
+/**
+ * Scope that owns the generated DOM and reactive child readers.
+ * @type {!ng.Scope}
+ */
+ng.ComponentViewContext.prototype.scope;
+
+/**
+ * Native component host element.
+ * @type {!HTMLElement}
+ */
+ng.ComponentViewContext.prototype.element;
+
+/**
+ * Component transclusion function, when transclusion is enabled.
+ * @type {(!ng.TranscludeFn|undefined)}
+ */
+ng.ComponentViewContext.prototype.transclude;
+
+/**
+ * Registers cleanup owned by the compiled view and returns a cancellation function.
+ * @param {function(): void} cleanup Value supplied for the cleanup parameter.
+ * @return {function(): void}
+ */
+ng.ComponentViewContext.prototype.onDestroy = function(cleanup) {};
+
+/**
+ * Primitive text value accepted as a programmatic view child.
+ * @typedef {(bigint|boolean|number|string)}
+ */
+ng.ComponentViewPrimitive;
+
+/**
+ * Public AngularTS ComponentViewProperties contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.ComponentViewProperties = function() {};
+
+/**
+ * Public ComponentViewProperties.is member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.ComponentViewProperties.prototype.is;
+
+/**
+ * Public AngularTS ComponentViewPropertyValue contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.ComponentViewPropertyValue = function() {};
+
+/**
+ * Public AngularTS ComponentViewTag contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): ?}
+ */
+ng.ComponentViewTag;
+
+/**
+ * Typed HTML tag factories. Calling the object with a namespace URI returns factories for namespaced elements such as SVG and MathML.
+ * @typedef {function(string): !Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}
+ */
+ng.ComponentViewTags;
 
 /**
  * AngularTS component lifecycle interface. Directive controllers have a well-defined lifecycle. Each controller can implement "lifecycle hooks". These are methods that will be called by Angular at certain points in the life cycle of the directive. https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks https://docs.angularjs.org/guide/component
@@ -267,31 +371,31 @@ ng.Controller.prototype.name;
  * Called on each controller after all the controllers on an element have been constructed and had their bindings initialized (and before the pre & post linking functions for the directives on this element). This is a good place to put initialization code for your controller.
  * @type {(function(): void|undefined)}
  */
-ng.Controller.prototype.$onInit;
+ng.Controller.prototype.onInit;
 
 /**
  * Called whenever one-way bindings are updated. The onChangesObj is a hash whose keys are the names of the bound properties that have changed, and the values are a {@link ChangesObject} object of the form { currentValue, previousValue, isFirstChange() }. Use this hook to trigger updates within a component such as cloning the bound value to prevent accidental mutation of the outer value.
  * @type {(function(!Object<string, !Object>): void|undefined)}
  */
-ng.Controller.prototype.$onChanges;
+ng.Controller.prototype.onChanges;
 
 /**
  * Called on a controller when its containing scope is destroyed. Use this hook for releasing external resources, watches and event handlers.
  * @type {(function(): void|undefined)}
  */
-ng.Controller.prototype.$onDestroy;
+ng.Controller.prototype.onDestroy;
 
 /**
  * Called after this controller's element and its children have been linked. Similar to the post-link function this hook can be used to set up DOM event handlers and do direct DOM manipulation. Note that child elements that contain templateUrl directives will not have been compiled and linked since they are waiting for their template to load asynchronously and their own compilation and linking has been suspended until that occurs. This hook can be considered analogous to the ngAfterViewInit and ngAfterContentInit hooks in Angular 2. Since the compilation process is rather different in Angular 1 there is no direct mapping and care should be taken when upgrading.
  * @type {(function(): void|undefined)}
  */
-ng.Controller.prototype.$postLink;
+ng.Controller.prototype.postLink;
 
 /**
  * Called after this controller has been linked, AngularTS has applied DOM mutations for the current flush, and the browser has had one animation frame to settle layout. Multiple schedules for the same controller in one flush are coalesced into one call.
  * @type {(function(): void|undefined)}
  */
-ng.Controller.prototype.$afterRender;
+ng.Controller.prototype.afterRender;
 
 /**
  * Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values add the class; `false`, `null`, and `undefined` remove it.
@@ -326,9 +430,15 @@ ng.Directive.prototype.restrict;
 
 /**
  * Compile function for the directive
- * @type {(function(!HTMLElement, (!ng.LinkFn|!ng.TranscludeFn|undefined)): (!Object|function(...?): void|undefined)|undefined)}
+ * @type {(!ng.DirectiveCompileFn|undefined)}
  */
 ng.Directive.prototype.compile;
+
+/**
+ * Programmatic real-DOM view factory. It is mutually exclusive with template, templateUrl, and replace and composes with compile/link.
+ * @type {(function(!ng.DirectiveViewContext<TController, (!Array<!Object>|!Object|!Object<string, !Object>)>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
+ */
+ng.Directive.prototype.view;
 
 /**
  * Controller constructor or injectable string name
@@ -350,7 +460,7 @@ ng.Directive.prototype.bindToController;
 
 /**
  * Link function(s) executed during linking
- * @type {(!Object|function(...?): void|undefined)}
+ * @type {(!ng.DirectiveLinkFn|!ng.DirectivePrePost|undefined)}
  */
 ng.Directive.prototype.link;
 
@@ -433,10 +543,90 @@ ng.DirectiveFactory;
 ng.DirectiveFactoryFn;
 
 /**
+ * Public AngularTS DirectiveCompileFn contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!HTMLElement, (!ng.LinkFn|!ng.TranscludeFn|undefined)): (!ng.DirectiveLinkFn|!ng.DirectivePrePost|undefined)}
+ */
+ng.DirectiveCompileFn;
+
+/**
+ * A controller instance or object map used in directives.
+ * @typedef {(!Array<!Object>|!Object|!Object<string, !Object>)}
+ */
+ng.DirectiveController;
+
+/**
  * Public AngularTS DirectiveLinkFn contract exposed through the global ng namespace for Closure-annotated applications.
  * @typedef {function(!ng.Scope, !HTMLElement): void}
  */
 ng.DirectiveLinkFn;
+
+/**
+ * Defines optional pre/post link functions in directive compile phase.
+ * @record
+ */
+ng.DirectivePrePost = function() {};
+
+/**
+ * Public DirectivePrePost.pre member exposed by the AngularTS namespace contract.
+ * @type {(!ng.DirectiveLinkFn|undefined)}
+ */
+ng.DirectivePrePost.prototype.pre;
+
+/**
+ * Public DirectivePrePost.post member exposed by the AngularTS namespace contract.
+ * @type {(!ng.DirectiveLinkFn|undefined)}
+ */
+ng.DirectivePrePost.prototype.post;
+
+/**
+ * Public AngularTS DirectiveView contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!ng.DirectiveViewContext<?, ?>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
+ */
+ng.DirectiveView;
+
+/**
+ * Public AngularTS DirectiveViewContext contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TController, TRequired
+ * @record
+ */
+ng.DirectiveViewContext = function() {};
+
+/**
+ * Directive controller, when the directive declares one.
+ * @type {(TController|undefined)}
+ */
+ng.DirectiveViewContext.prototype.controller;
+
+/**
+ * Controllers resolved through the directive's `require` declaration.
+ * @type {(TRequired|undefined)}
+ */
+ng.DirectiveViewContext.prototype.required;
+
+/**
+ * Scope that owns the generated DOM and reactive child readers.
+ * @type {!ng.Scope}
+ */
+ng.DirectiveViewContext.prototype.scope;
+
+/**
+ * Native element matched by the directive.
+ * @type {!Element}
+ */
+ng.DirectiveViewContext.prototype.element;
+
+/**
+ * Directive transclusion function, when transclusion is enabled.
+ * @type {(!ng.TranscludeFn|undefined)}
+ */
+ng.DirectiveViewContext.prototype.transclude;
+
+/**
+ * Registers cleanup owned by the compiled view and returns a cancellation function.
+ * @param {function(): void} cleanup Value supplied for the cleanup parameter.
+ * @return {function(): void}
+ */
+ng.DirectiveViewContext.prototype.onDestroy = function(cleanup) {};
 
 /**
  * AngularTS module registration surface for controllers, directives, services, factories, providers, filters, run blocks, and config blocks.
@@ -452,111 +642,111 @@ ng.NgModule.prototype.name;
 
 /**
  * Public NgModule.value member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {?} object
+ * @param {string} name Value supplied for the name parameter.
+ * @param {?} object Allows undefined
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.value = function(name, object) {};
 
 /**
  * Public NgModule.constant member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Object|number|string)} object
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Object|number|string)} object Value supplied for the object parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.constant = function(name, object) {};
 
 /**
  * Declare built-in AngularTS service configuration during the config phase.
- * @param {!Object} config
+ * @param {!Object} config Built-in config map.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.config = function(config) {};
 
 /**
  * Public NgModule.run member exposed by the AngularTS namespace contract.
- * @param {!ng.Injectable} block
+ * @param {!ng.Injectable} block Value supplied for the block parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.run = function(block) {};
 
 /**
  * Public NgModule.component member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.Component} options
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.Component} options Value supplied for the options parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.component = function(name, options) {};
 
 /**
  * Public NgModule.factory member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.Injectable} providerFunction
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.Injectable} providerFunction Value supplied for the providerFunction parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.factory = function(name, providerFunction) {};
 
 /**
  * Public NgModule.service member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.Injectable} serviceFunction
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.Injectable} serviceFunction Value supplied for the serviceFunction parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.service = function(name, serviceFunction) {};
 
 /**
  * Public NgModule.provider member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.Injectable} providerType
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.Injectable} providerType Value supplied for the providerType parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.provider = function(name, providerType) {};
 
 /**
  * Public NgModule.decorator member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.Injectable} decorFn
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.Injectable} decorFn Value supplied for the decorFn parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.decorator = function(name, decorFn) {};
 
 /**
  * Public NgModule.directive member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.DirectiveFactory} directiveFactory
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.DirectiveFactory} directiveFactory Value supplied for the directiveFactory parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.directive = function(name, directiveFactory) {};
 
 /**
  * Public NgModule.animation member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.Injectable} animationFactory
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.Injectable} animationFactory Value supplied for the animationFactory parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.animation = function(name, animationFactory) {};
 
 /**
  * Public NgModule.filter member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Array<function(...?): function(...?): ?>|function(...?): function(...?): ?)} filterFn
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Array<function(...?): function(...?): ?>|function(...?): function(...?): ?)} filterFn Value supplied for the filterFn parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.filter = function(name, filterFn) {};
 
 /**
  * The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry.
- * @param {string} name
- * @param {!ng.Injectable} ctlFn
+ * @param {string} name Controller name
+ * @param {!ng.Injectable} ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.controller = function(name, ctlFn) {};
 
 /**
- * Register a named reactive model as an injectable app-owned service. The model is created lazily by the owning `AppContext` when the service is first injected. Models are shared across every root scope managed by the same `AppContext`; they are not children of `$rootScope`. Assign an injected model to a controller or scope property to bind it in a template. DOM interpolation, `ng-bind`, directive expressions, nested object reads, and array length reads update when the app model changes. Mutating the model proxy schedules every affected observer. The injected `Model<T>` value is proxy-backed. It exposes scope-proxy methods such as `$watch`, `$batch`, `$merge`, `$on`, `$emit`, `$broadcast`, and `$destroy`, plus `$snapshot`, `$restore`, and `$sync` for model lifecycle and synchronization. Prefer the factory form for nontrivial initial state: ```ts app.model("user", () => ({ name: "John", authenticated: false })); ```
+ * Register a named reactive model as an injectable app-owned service. The model is created lazily by the owning `AppContext` when the service is first injected. Models are shared across every root scope managed by the same `AppContext`; they are not children of `$rootScope`. Assign an injected model to a controller or scope property to bind it in a template. DOM interpolation, `ng-bind`, directive expressions, nested object reads, and array length reads update when the app model changes. Mutating the model proxy schedules every affected observer. The injected `Model<T>` value is proxy-backed. It exposes scope-proxy methods such as `watch`, `batch`, `merge`, `on`, `emit`, `broadcast`, and `destroy`, plus `snapshot`, `restore`, and `sync` for model lifecycle and synchronization. Prefer the factory form for nontrivial initial state: ```ts app.model("user", () => ({ name: "John", authenticated: false })); ```
  * @template T
- * @param {string} name
- * @param {(!Array<function(...?): T>|T|function(...?): T)} initial
+ * @param {string} name Injectable model name.
+ * @param {(!Array<function(...?): T>|T|function(...?): T)} initial Plain object state or an injectable factory that returns plain object state.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.model = function(name, initial) {};
@@ -564,8 +754,8 @@ ng.NgModule.prototype.model = function(name, initial) {};
 /**
  * Register a named reactive state machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.
  * @template TData, TStates
- * @param {string} name
- * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config
+ * @param {string} name Injectable name.
+ * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config Machine configuration or a resolvable config factory.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.machine = function(name, config) {};
@@ -573,8 +763,8 @@ ng.NgModule.prototype.machine = function(name, config) {};
 /**
  * Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.
  * @template TDefinition
- * @param {string} name
- * @param {(!Array<function(): TDefinition>|TDefinition|function(): TDefinition)} config
+ * @param {string} name Injectable name.
+ * @param {(!Array<function(): TDefinition>|TDefinition|function(): TDefinition)} config Workflow configuration or a resolvable config factory.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.workflow = function(name, config) {};
@@ -582,8 +772,8 @@ ng.NgModule.prototype.workflow = function(name, config) {};
 /**
  * Register a named workflow supervisor as an injectable service. The supervisor is created when the named service is requested. It composes existing workflow configs or workflow instances and keeps persistence and recovery policy local to the supervisor config.
  * @template TWorkflows
- * @param {string} name
- * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config
+ * @param {string} name Injectable name.
+ * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config Supervisor configuration or a resolvable config factory.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.workflowSupervisor = function(name, config) {};
@@ -591,50 +781,50 @@ ng.NgModule.prototype.workflowSupervisor = function(name, config) {};
 /**
  * Register a module-owned router state tree during module configuration. Child state names are relative to their parent unless they contain a dot. Each route is queued for the composed router runtime, so module router trees compose with `lazyState(...)` and inherited route policies.
  * @template TDeclaration
- * @param {TDeclaration} declaration
+ * @param {TDeclaration} declaration Router tree root declaration.
  * @return {!Object}
  */
 ng.NgModule.prototype.router = function(declaration) {};
 
 /**
  * Register a lazy router state namespace during module configuration. Lazy route declarations use the same composed router runtime as static module routes.
- * @param {string} prefix
- * @param {function(!Object, (!ng.InjectorService<?>|undefined)): (!Array<!ng.StateDeclaration>|!Promise<(!Array<!ng.StateDeclaration>|!ng.StateDeclaration|undefined)>|!ng.StateDeclaration|undefined)} loader
+ * @param {string} prefix State name prefix to load on demand.
+ * @param {function(!Object, (!ng.InjectorService<?>|undefined)): (!Array<!ng.StateDeclaration>|!Promise<(!Array<!ng.StateDeclaration>|!ng.StateDeclaration|undefined)>|!ng.StateDeclaration|undefined)} loader Loader invoked by the router when a transition targets the prefix.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.lazyState = function(prefix, loader) {};
 
 /**
  * Register a named WebAssembly module as an injectable resource. The actual loading is delegated to the `$wasm` service, so custom runtimes can decide whether WebAssembly support is included.
- * @param {string} name
- * @param {(!Array<function(...?): !ng.WasmLoadOptions>|!ng.WasmLoadOptions|function(...?): !ng.WasmLoadOptions)} config
+ * @param {string} name Injectable name used to access the resource.
+ * @param {(!Array<function(...?): !ng.WasmLoadOptions>|!ng.WasmLoadOptions|function(...?): !ng.WasmLoadOptions)} config Module source and imports, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.wasm = function(name, config) {};
 
 /**
  * Register a named Web Worker connection as an injectable service. The actual connection is delegated to the `$worker` provider, so worker support remains provider-driven instead of directive-driven.
- * @param {string} name
- * @param {(!Array<function(...?): (!Object|string)>|!Object|function(...?): (!Object|string)|string)} scriptPath
- * @param {(!Array<function(...?): !Object>|!Object|function(...?): !Object|undefined)} config
+ * @param {string} name Injectable name.
+ * @param {(!Array<function(...?): (!Object|string)>|!Object|function(...?): (!Object|string)|string)} scriptPath Worker script URL, optionally produced by DI.
+ * @param {(!Array<function(...?): !Object>|!Object|function(...?): !Object|undefined)} config Worker connection options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.worker = function(name, scriptPath, config) {};
 
 /**
  * Configure the singleton `$serviceWorker` for this application.
- * @param {(!Object|string)} scriptUrl
- * @param {(!ng.ServiceWorkerConfig|undefined)} config
+ * @param {(!Object|string)} scriptUrl Value supplied for the scriptUrl parameter.
+ * @param {(!ng.ServiceWorkerConfig|undefined)} config Value supplied for the config parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.serviceWorker = function(scriptUrl, config) {};
 
 /**
  * Register a persistent object store as an injectable service. Store construction is delegated to the internal provider registry, which creates the service through the injector and persists it through the selected backend.
- * @param {string} name
- * @param {(!Object|function(...?): ?|function(new: ?, ...?))} ctor
- * @param {string} type
- * @param {(!Object|undefined)} backendOrConfig
+ * @param {string} name Service name.
+ * @param {(!Object|function(...?): ?|function(new: ?, ...?))} ctor Constructor, factory, or object to persist.
+ * @param {string} type Storage backend type.
+ * @param {(!Object|undefined)} backendOrConfig Custom backend or persistence options.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.store = function(name, ctor, type, backendOrConfig) {};
@@ -642,37 +832,37 @@ ng.NgModule.prototype.store = function(name, ctor, type, backendOrConfig) {};
 /**
  * Register a REST resource as an injectable service. The resource factory is delegated to the injected `$rest` service, keeping REST support configurable by custom runtimes.
  * @template T
- * @param {string} name
- * @param {string} url
- * @param {(function(new: T, ?)|undefined)} entityClass
- * @param {(!Array<function(...?): !ng.RestOptions>|!ng.RestOptions|function(...?): !ng.RestOptions|undefined)} options
+ * @param {string} name Service name.
+ * @param {string} url Base URL or URI template.
+ * @param {(function(new: T, ?)|undefined)} entityClass Optional constructor for mapping JSON.
+ * @param {(!Array<function(...?): !ng.RestOptions>|!ng.RestOptions|function(...?): !ng.RestOptions|undefined)} options Optional RestService options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.rest = function(name, url, entityClass, options) {};
 
 /**
  * Register a pre-configured SSE connection as an injectable service. The connection is created by `$sse` when the named service is requested.
- * @param {string} name
- * @param {string} url
- * @param {(!Array<function(...?): !ng.SseConfig>|!ng.SseConfig|function(...?): !ng.SseConfig|undefined)} config
+ * @param {string} name Injectable name.
+ * @param {string} url SSE endpoint.
+ * @param {(!Array<function(...?): !ng.SseConfig>|!ng.SseConfig|function(...?): !ng.SseConfig|undefined)} config SSE connection options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.sse = function(name, url, config) {};
 
 /**
  * Register a pre-configured WebSocket connection as an injectable service. The connection is created by `$websocket` when the named service is requested.
- * @param {string} name
- * @param {string} url
- * @param {(!Array<function(...?): !ng.WebSocketConfig>|!ng.WebSocketConfig|function(...?): !ng.WebSocketConfig|undefined)} config
+ * @param {string} name Injectable name.
+ * @param {string} url WebSocket endpoint.
+ * @param {(!Array<function(...?): !ng.WebSocketConfig>|!ng.WebSocketConfig|function(...?): !ng.WebSocketConfig|undefined)} config WebSocket connection options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.websocket = function(name, url, config) {};
 
 /**
  * Register a pre-configured WebTransport connection as an injectable service. The connection is created by `$webTransport` when the named service is requested.
- * @param {string} name
- * @param {string} url
- * @param {(!Array<function(...?): !ng.WebTransportConfig>|!ng.WebTransportConfig|function(...?): !ng.WebTransportConfig|undefined)} config
+ * @param {string} name Injectable name.
+ * @param {string} url WebTransport endpoint.
+ * @param {(!Array<function(...?): !ng.WebTransportConfig>|!ng.WebTransportConfig|function(...?): !ng.WebTransportConfig|undefined)} config WebTransport connection options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.webTransport = function(name, url, config) {};
@@ -680,8 +870,8 @@ ng.NgModule.prototype.webTransport = function(name, url, config) {};
 /**
  * Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.
  * @template T
- * @param {string} name
- * @param {!ng.AppComponentOptions<T>} options
+ * @param {string} name Custom element tag name.
+ * @param {!ng.AppComponentOptions<T>} options App component options.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.appComponent = function(name, options) {};
@@ -689,8 +879,8 @@ ng.NgModule.prototype.appComponent = function(name, options) {};
 /**
  * Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.
  * @template T
- * @param {string} name
- * @param {!ng.ScopeElementConstructor<T>} elementClass
+ * @param {string} name Custom element tag name.
+ * @param {!ng.ScopeElementConstructor<T>} elementClass Custom element class.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.webComponent = function(name, elementClass) {};
@@ -704,8 +894,8 @@ ng.RouterModule = function() {};
 
 /**
  * Public RouterModule.filter member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Array<function(...?): function(...?): ?>|function(...?): function(...?): ?)} filterFn
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Array<function(...?): function(...?): ?>|function(...?): function(...?): ?)} filterFn Value supplied for the filterFn parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.filter = function(name, filterFn) {};
@@ -718,103 +908,103 @@ ng.RouterModule.prototype.name;
 
 /**
  * Public RouterModule.value member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {?} object
+ * @param {string} name Value supplied for the name parameter.
+ * @param {?} object Allows undefined
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.value = function(name, object) {};
 
 /**
  * Public RouterModule.constant member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {?} object
+ * @param {string} name Value supplied for the name parameter.
+ * @param {?} object Value supplied for the object parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.constant = function(name, object) {};
 
 /**
  * Declare built-in AngularTS service configuration during the config phase.
- * @param {!Object} config
+ * @param {!Object} config Built-in config map.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.config = function(config) {};
 
 /**
  * Public RouterModule.run member exposed by the AngularTS namespace contract.
- * @param {(!Array<function(...?): ?>|function(...?): ?)} block
+ * @param {(!Array<function(...?): ?>|function(...?): ?)} block Value supplied for the block parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.run = function(block) {};
 
 /**
  * Public RouterModule.component member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.Component} options
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.Component} options Value supplied for the options parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.component = function(name, options) {};
 
 /**
  * Public RouterModule.factory member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Array<function(...?): ?>|function(...?): ?)} providerFunction
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Array<function(...?): ?>|function(...?): ?)} providerFunction Value supplied for the providerFunction parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.factory = function(name, providerFunction) {};
 
 /**
  * Public RouterModule.service member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Array<function(...?): ?>|function(...?): ?|function(new: ?, ...?))} serviceFunction
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Array<function(...?): ?>|function(...?): ?|function(new: ?, ...?))} serviceFunction Value supplied for the serviceFunction parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.service = function(name, serviceFunction) {};
 
 /**
  * Public RouterModule.provider member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Array<function(...?): ?>|!Object|function(...?): ?|function(new: ?, ...?))} providerType
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Array<function(...?): ?>|!Object|function(...?): ?|function(new: ?, ...?))} providerType Value supplied for the providerType parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.provider = function(name, providerType) {};
 
 /**
  * Public RouterModule.decorator member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Array<function(...?): ?>|function(...?): ?)} decorFn
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Array<function(...?): ?>|function(...?): ?)} decorFn Value supplied for the decorFn parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.decorator = function(name, decorFn) {};
 
 /**
  * Public RouterModule.directive member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Array<(function(...?): (!ng.Directive<?>|function(...?): void)|string)>|function(...?): (!ng.Directive<?>|function(...?): void))} directiveFactory
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Array<(function(...?): (!ng.Directive<?>|function(...?): void)|string)>|function(...?): (!ng.Directive<?>|function(...?): void))} directiveFactory Value supplied for the directiveFactory parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.directive = function(name, directiveFactory) {};
 
 /**
  * Public RouterModule.animation member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {(!Array<function(...?): ?>|function(...?): ?)} animationFactory
+ * @param {string} name Value supplied for the name parameter.
+ * @param {(!Array<function(...?): ?>|function(...?): ?)} animationFactory Value supplied for the animationFactory parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.animation = function(name, animationFactory) {};
 
 /**
  * The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry.
- * @param {string} name
- * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?))} ctlFn
+ * @param {string} name Controller name
+ * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?))} ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.controller = function(name, ctlFn) {};
 
 /**
- * Register a named reactive model as an injectable app-owned service. The model is created lazily by the owning `AppContext` when the service is first injected. Models are shared across every root scope managed by the same `AppContext`; they are not children of `$rootScope`. Assign an injected model to a controller or scope property to bind it in a template. DOM interpolation, `ng-bind`, directive expressions, nested object reads, and array length reads update when the app model changes. Mutating the model proxy schedules every affected observer. The injected `Model<T>` value is proxy-backed. It exposes scope-proxy methods such as `$watch`, `$batch`, `$merge`, `$on`, `$emit`, `$broadcast`, and `$destroy`, plus `$snapshot`, `$restore`, and `$sync` for model lifecycle and synchronization. Prefer the factory form for nontrivial initial state: ```ts app.model("user", () => ({ name: "John", authenticated: false })); ```
+ * Register a named reactive model as an injectable app-owned service. The model is created lazily by the owning `AppContext` when the service is first injected. Models are shared across every root scope managed by the same `AppContext`; they are not children of `$rootScope`. Assign an injected model to a controller or scope property to bind it in a template. DOM interpolation, `ng-bind`, directive expressions, nested object reads, and array length reads update when the app model changes. Mutating the model proxy schedules every affected observer. The injected `Model<T>` value is proxy-backed. It exposes scope-proxy methods such as `watch`, `batch`, `merge`, `on`, `emit`, `broadcast`, and `destroy`, plus `snapshot`, `restore`, and `sync` for model lifecycle and synchronization. Prefer the factory form for nontrivial initial state: ```ts app.model("user", () => ({ name: "John", authenticated: false })); ```
  * @template T
- * @param {string} name
- * @param {(!Array<function(...?): T>|T|function(...?): T)} initial
+ * @param {string} name Injectable model name.
+ * @param {(!Array<function(...?): T>|T|function(...?): T)} initial Plain object state or an injectable factory that returns plain object state.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.model = function(name, initial) {};
@@ -822,8 +1012,8 @@ ng.RouterModule.prototype.model = function(name, initial) {};
 /**
  * Register a named reactive state machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.
  * @template TData, TStates
- * @param {string} name
- * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config
+ * @param {string} name Injectable name.
+ * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config Machine configuration or a resolvable config factory.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.machine = function(name, config) {};
@@ -831,8 +1021,8 @@ ng.RouterModule.prototype.machine = function(name, config) {};
 /**
  * Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.
  * @template TDefinition
- * @param {string} name
- * @param {(!Array<function(): TDefinition>|TDefinition|function(): TDefinition)} config
+ * @param {string} name Injectable name.
+ * @param {(!Array<function(): TDefinition>|TDefinition|function(): TDefinition)} config Workflow configuration or a resolvable config factory.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.workflow = function(name, config) {};
@@ -840,43 +1030,43 @@ ng.RouterModule.prototype.workflow = function(name, config) {};
 /**
  * Register a named workflow supervisor as an injectable service. The supervisor is created when the named service is requested. It composes existing workflow configs or workflow instances and keeps persistence and recovery policy local to the supervisor config.
  * @template TWorkflows
- * @param {string} name
- * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config
+ * @param {string} name Injectable name.
+ * @param {(!Array<function(): !Object>|!Object|function(): !Object)} config Supervisor configuration or a resolvable config factory.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.workflowSupervisor = function(name, config) {};
 
 /**
  * Register a named WebAssembly module as an injectable resource. The actual loading is delegated to the `$wasm` service, so custom runtimes can decide whether WebAssembly support is included.
- * @param {string} name
- * @param {(!Array<function(...?): !ng.WasmLoadOptions>|!ng.WasmLoadOptions|function(...?): !ng.WasmLoadOptions)} config
+ * @param {string} name Injectable name used to access the resource.
+ * @param {(!Array<function(...?): !ng.WasmLoadOptions>|!ng.WasmLoadOptions|function(...?): !ng.WasmLoadOptions)} config Module source and imports, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.wasm = function(name, config) {};
 
 /**
  * Register a named Web Worker connection as an injectable service. The actual connection is delegated to the `$worker` provider, so worker support remains provider-driven instead of directive-driven.
- * @param {string} name
- * @param {(!Array<function(...?): (!Object|string)>|!Object|function(...?): (!Object|string)|string)} scriptPath
- * @param {(!Array<function(...?): !Object>|!Object|function(...?): !Object|undefined)} config
+ * @param {string} name Injectable name.
+ * @param {(!Array<function(...?): (!Object|string)>|!Object|function(...?): (!Object|string)|string)} scriptPath Worker script URL, optionally produced by DI.
+ * @param {(!Array<function(...?): !Object>|!Object|function(...?): !Object|undefined)} config Worker connection options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.worker = function(name, scriptPath, config) {};
 
 /**
  * Configure the singleton `$serviceWorker` for this application.
- * @param {(!Object|string)} scriptUrl
- * @param {(!ng.ServiceWorkerConfig|undefined)} config
+ * @param {(!Object|string)} scriptUrl Value supplied for the scriptUrl parameter.
+ * @param {(!ng.ServiceWorkerConfig|undefined)} config Value supplied for the config parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.serviceWorker = function(scriptUrl, config) {};
 
 /**
  * Register a persistent object store as an injectable service. Store construction is delegated to the internal provider registry, which creates the service through the injector and persists it through the selected backend.
- * @param {string} name
- * @param {?} ctor
- * @param {string} type
- * @param {(!Object|undefined)} backendOrConfig
+ * @param {string} name Service name.
+ * @param {?} ctor Constructor, factory, or object to persist.
+ * @param {string} type Storage backend type.
+ * @param {(!Object|undefined)} backendOrConfig Custom backend or persistence options.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.store = function(name, ctor, type, backendOrConfig) {};
@@ -884,37 +1074,37 @@ ng.RouterModule.prototype.store = function(name, ctor, type, backendOrConfig) {}
 /**
  * Register a REST resource as an injectable service. The resource factory is delegated to the injected `$rest` service, keeping REST support configurable by custom runtimes.
  * @template T
- * @param {string} name
- * @param {string} url
- * @param {(function(new: T, ?)|undefined)} entityClass
- * @param {(!Array<function(...?): !ng.RestOptions>|!ng.RestOptions|function(...?): !ng.RestOptions|undefined)} options
+ * @param {string} name Service name.
+ * @param {string} url Base URL or URI template.
+ * @param {(function(new: T, ?)|undefined)} entityClass Optional constructor for mapping JSON.
+ * @param {(!Array<function(...?): !ng.RestOptions>|!ng.RestOptions|function(...?): !ng.RestOptions|undefined)} options Optional RestService options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.rest = function(name, url, entityClass, options) {};
 
 /**
  * Register a pre-configured SSE connection as an injectable service. The connection is created by `$sse` when the named service is requested.
- * @param {string} name
- * @param {string} url
- * @param {(!Array<function(...?): !ng.SseConfig>|!ng.SseConfig|function(...?): !ng.SseConfig|undefined)} config
+ * @param {string} name Injectable name.
+ * @param {string} url SSE endpoint.
+ * @param {(!Array<function(...?): !ng.SseConfig>|!ng.SseConfig|function(...?): !ng.SseConfig|undefined)} config SSE connection options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.sse = function(name, url, config) {};
 
 /**
  * Register a pre-configured WebSocket connection as an injectable service. The connection is created by `$websocket` when the named service is requested.
- * @param {string} name
- * @param {string} url
- * @param {(!Array<function(...?): !ng.WebSocketConfig>|!ng.WebSocketConfig|function(...?): !ng.WebSocketConfig|undefined)} config
+ * @param {string} name Injectable name.
+ * @param {string} url WebSocket endpoint.
+ * @param {(!Array<function(...?): !ng.WebSocketConfig>|!ng.WebSocketConfig|function(...?): !ng.WebSocketConfig|undefined)} config WebSocket connection options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.websocket = function(name, url, config) {};
 
 /**
  * Register a pre-configured WebTransport connection as an injectable service. The connection is created by `$webTransport` when the named service is requested.
- * @param {string} name
- * @param {string} url
- * @param {(!Array<function(...?): !ng.WebTransportConfig>|!ng.WebTransportConfig|function(...?): !ng.WebTransportConfig|undefined)} config
+ * @param {string} name Injectable name.
+ * @param {string} url WebTransport endpoint.
+ * @param {(!Array<function(...?): !ng.WebTransportConfig>|!ng.WebTransportConfig|function(...?): !ng.WebTransportConfig|undefined)} config WebTransport connection options, optionally produced by DI.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.webTransport = function(name, url, config) {};
@@ -922,8 +1112,8 @@ ng.RouterModule.prototype.webTransport = function(name, url, config) {};
 /**
  * Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.
  * @template T
- * @param {string} name
- * @param {!ng.AppComponentOptions<T>} options
+ * @param {string} name Custom element tag name.
+ * @param {!ng.AppComponentOptions<T>} options App component options.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.appComponent = function(name, options) {};
@@ -931,8 +1121,8 @@ ng.RouterModule.prototype.appComponent = function(name, options) {};
 /**
  * Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.
  * @template T
- * @param {string} name
- * @param {!ng.ScopeElementConstructor<T>} elementClass
+ * @param {string} name Custom element tag name.
+ * @param {!ng.ScopeElementConstructor<T>} elementClass Custom element class.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.webComponent = function(name, elementClass) {};
@@ -940,15 +1130,15 @@ ng.RouterModule.prototype.webComponent = function(name, elementClass) {};
 /**
  * Register a router tree while preserving this module's route map.
  * @template TDeclaration
- * @param {!Object} declaration
+ * @param {!Object} declaration Value supplied for the declaration parameter.
  * @return {!Object}
  */
 ng.RouterModule.prototype.router = function(declaration) {};
 
 /**
  * Register a lazy state namespace while preserving this module route map.
- * @param {?} prefix
- * @param {function(!Object, (!ng.InjectorService<?>|undefined)): (!Array<!ng.StateDeclaration>|!Promise<(!Array<!ng.StateDeclaration>|!ng.StateDeclaration|undefined)>|!ng.StateDeclaration|undefined)} loader
+ * @param {?} prefix Value supplied for the prefix parameter.
+ * @param {function(!Object, (!ng.InjectorService<?>|undefined)): (!Array<!ng.StateDeclaration>|!Promise<(!Array<!ng.StateDeclaration>|!ng.StateDeclaration|undefined)>|!ng.StateDeclaration|undefined)} loader Value supplied for the loader parameter.
  * @return {!Object}
  */
 ng.RouterModule.prototype.lazyState = function(prefix, loader) {};
@@ -973,9 +1163,9 @@ ng.LinkFn.prototype.post;
 
 /**
  * Invokes the callable LinkFn contract.
- * @param {!ng.Scope} scope
- * @param {(function((!Array<!Node>|!Node|!Object|null|undefined), (!ng.Scope|null|undefined)): ?|undefined)} cloneAttachFn
- * @param {(!Object|undefined)} options
+ * @param {!ng.Scope} scope Value supplied for the scope parameter.
+ * @param {(function((!Array<!Node>|!Node|!Object|null|undefined), (!ng.Scope|null|undefined)): ?|undefined)} cloneAttachFn Value supplied for the cloneAttachFn parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {(!Array<!Node>|!Element|!Node|!Object)}
  */
 ng.LinkFn.prototype.call = function(scope, cloneAttachFn, options) {};
@@ -987,70 +1177,52 @@ ng.LinkFn.prototype.call = function(scope, cloneAttachFn, options) {};
 ng.Scope = function() {};
 
 /**
- * Public Scope.$proxy member exposed by the AngularTS namespace contract.
- * @type {!ng.Scope}
- */
-ng.Scope.prototype.$proxy;
-
-/**
- * Public Scope.$handler member exposed by the AngularTS namespace contract.
- * @type {?}
- */
-ng.Scope.prototype.$handler;
-
-/**
- * Public Scope.$target member exposed by the AngularTS namespace contract.
- * @type {!Object}
- */
-ng.Scope.prototype.$target;
-
-/**
- * Public Scope.$id member exposed by the AngularTS namespace contract.
+ * Public Scope.id member exposed by the AngularTS namespace contract.
  * @type {number}
  */
-ng.Scope.prototype.$id;
+ng.Scope.prototype.id;
 
 /**
- * Public Scope.$root member exposed by the AngularTS namespace contract.
+ * Public Scope.root member exposed by the AngularTS namespace contract.
  * @type {!ng.Scope}
  */
-ng.Scope.prototype.$root;
+ng.Scope.prototype.root;
 
 /**
- * Public Scope.$parent member exposed by the AngularTS namespace contract.
+ * Public Scope.parent member exposed by the AngularTS namespace contract.
  * @type {(!ng.Scope|undefined)}
  */
-ng.Scope.prototype.$parent;
+ng.Scope.prototype.parent;
 
 /**
- * Public Scope.$scopename member exposed by the AngularTS namespace contract.
+ * Public Scope.scopeName member exposed by the AngularTS namespace contract.
  * @type {(string|undefined)}
  */
-ng.Scope.prototype.$scopename;
+ng.Scope.prototype.scopeName;
 
 /**
  * Intercepts and handles property assignments on the target object. Scopeable objects are stored as raw model values and proxied lazily when read.
- * @param {!Object} target
- * @param {string} property
- * @param {?} value
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {string} property The name of the property being set.
+ * @param {?} value The new value being assigned to the property.
+ * @param {!ng.Scope} proxy The proxy intercepting property access.
  * @return {boolean}
  */
 ng.Scope.prototype.set = function(target, property, value, proxy) {};
 
 /**
  * Intercepts property access on the target object. It checks for specific properties (`watch` and `sync`) and binds their methods. For other properties, it returns the value directly.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being accessed.
+ * @param {!ng.Scope} proxy The proxy object being invoked.
  * @return {?}
  */
 ng.Scope.prototype.get = function(target, property, proxy) {};
 
 /**
  * Public Scope.deleteProperty member exposed by the AngularTS namespace contract.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being deleted.
  * @return {boolean}
  */
 ng.Scope.prototype.deleteProperty = function(target, property) {};
@@ -1058,92 +1230,92 @@ ng.Scope.prototype.deleteProperty = function(target, property) {};
 /**
  * Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws.
  * @template T
- * @param {function(): T} fn
+ * @param {function(): T} fn Value supplied for the fn parameter.
  * @return {T}
  */
-ng.Scope.prototype.$batch = function(fn) {};
+ng.Scope.prototype.batch = function(fn) {};
 
 /**
  * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
- * @param {string} watchProp
- * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
- * @param {(boolean|undefined)} lazy
- * @param {(boolean|undefined)} directLeaf
+ * @param {string} watchProp An expression to be watched in the context of this model.
+ * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
+ * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+ * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
  * @return {(function(): void|undefined)}
  */
-ng.Scope.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.Scope.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
- * @param {(!ng.Scope|undefined)} childInstance
+ * @param {(!ng.Scope|undefined)} childInstance Value supplied for the childInstance parameter.
  * @return {!ng.Scope}
  */
-ng.Scope.prototype.$new = function(childInstance) {};
+ng.Scope.prototype.new = function(childInstance) {};
 
 /**
  * Creates an isolate child scope that does not inherit watchable properties directly.
- * @param {(!ng.Scope|undefined)} instance
+ * @param {(!ng.Scope|undefined)} instance Value supplied for the instance parameter.
  * @return {!ng.Scope}
  */
-ng.Scope.prototype.$newIsolate = function(instance) {};
+ng.Scope.prototype.newIsolate = function(instance) {};
 
 /**
  * Creates a transcluded child scope linked to this scope and an optional parent instance.
- * @param {(!ng.Scope|undefined)} parentInstance
+ * @param {(!ng.Scope|undefined)} parentInstance Value supplied for the parentInstance parameter.
  * @return {!ng.Scope}
  */
-ng.Scope.prototype.$transcluded = function(parentInstance) {};
+ng.Scope.prototype.transcluded = function(parentInstance) {};
 
 /**
  * Merges enumerable properties from the provided object into the current scope target.
- * @param {!Object} newTarget
+ * @param {!Object} newTarget Value supplied for the newTarget parameter.
  * @return {void}
  */
-ng.Scope.prototype.$merge = function(newTarget) {};
+ng.Scope.prototype.merge = function(newTarget) {};
 
 /**
  * Registers an event listener on this scope and returns a deregistration function.
- * @param {string} name
- * @param {function(...?): ?} listener
+ * @param {string} name Value supplied for the name parameter.
+ * @param {function(...?): ?} listener Value supplied for the listener parameter.
  * @return {function(): void}
  */
-ng.Scope.prototype.$on = function(name, listener) {};
+ng.Scope.prototype.on = function(name, listener) {};
 
 /**
  * Emits an event upward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.Scope.prototype.$emit = function(name, var_args) {};
+ng.Scope.prototype.emit = function(name, var_args) {};
 
 /**
  * Broadcasts an event downward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.Scope.prototype.$broadcast = function(name, var_args) {};
+ng.Scope.prototype.broadcast = function(name, var_args) {};
 
 /**
- * Public Scope.$destroy member exposed by the AngularTS namespace contract.
+ * Destroys this scope and its descendants.
  * @return {void}
  */
-ng.Scope.prototype.$destroy = function() {};
+ng.Scope.prototype.destroy = function() {};
 
 /**
  * Searches this scope tree for a scope with the given id.
- * @param {(number|string)} id
+ * @param {(number|string)} id Value supplied for the id parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.Scope.prototype.$getById = function(id) {};
+ng.Scope.prototype.getById = function(id) {};
 
 /**
  * Searches the scope tree for a scope registered under the provided name.
- * @param {string} name
+ * @param {string} name Value supplied for the name parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.Scope.prototype.$searchByName = function(name) {};
+ng.Scope.prototype.searchByName = function(name) {};
 
 /**
  * A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive.
@@ -1159,9 +1331,9 @@ ng.TranscludeFn.prototype.isSlotFilled;
 
 /**
  * Invokes the callable TranscludeFn contract.
- * @param {function((!Array<!Node>|!Node|!Object|null|undefined), (!ng.Scope|null|undefined)): ?} cloneAttachFn
- * @param {(!Element|!Node|null|undefined)} futureParentElement
- * @param {(number|string|undefined)} slotName
+ * @param {function((!Array<!Node>|!Node|!Object|null|undefined), (!ng.Scope|null|undefined)): ?} cloneAttachFn Value supplied for the cloneAttachFn parameter.
+ * @param {(!Element|!Node|null|undefined)} futureParentElement Value supplied for the futureParentElement parameter.
+ * @param {(number|string|undefined)} slotName Value supplied for the slotName parameter.
  * @return {(!Array<!Node>|!Node|!Object|null|undefined)}
  */
 ng.TranscludeFn.prototype.call = function(cloneAttachFn, futureParentElement, slotName) {};
@@ -1287,6 +1459,19 @@ ng.AngularService = function() {};
 ng.AngularService.prototype.ScopeElement;
 
 /**
+ * JSX-free real-DOM tag factories for programmatic component views.
+ * @param {string} namespaceUri Value supplied for the namespaceUri parameter.
+ * @return {!Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}
+ */
+ng.AngularService.prototype.tags = function(namespaceUri) {};
+
+/**
+ * Explicit programmatic-view binding and element helpers.
+ * @type {!Object}
+ */
+ng.AngularService.prototype.view;
+
+/**
  * Sub-application instances created when multiple `ng-app` roots are initialized.
  * @type {!Array<!Object>}
  */
@@ -1296,19 +1481,19 @@ ng.AngularService.prototype.subapps;
  * Application-wide event bus, available after bootstrap providers are created.
  * @type {!ng.EventBusService}
  */
-ng.AngularService.prototype.$eventBus;
+ng.AngularService.prototype.eventBus;
 
 /**
  * Application injector, available after `bootstrap()` or `injector()` completes.
  * @type {!ng.InjectorService<?>}
  */
-ng.AngularService.prototype.$injector;
+ng.AngularService.prototype.currentInjector;
 
 /**
  * Root scope for the bootstrapped application.
  * @type {!ng.Scope}
  */
-ng.AngularService.prototype.$rootScope;
+ng.AngularService.prototype.rootScope;
 
 /**
  * AngularTS version string replaced at build time.
@@ -1318,53 +1503,53 @@ ng.AngularService.prototype.version;
 
 /**
  * Retrieve the controller instance cached on a compiled DOM element.
- * @param {!Element} element
- * @param {(string|undefined)} name
+ * @param {!Element} element The DOM element to get data from.
+ * @param {(string|undefined)} name Controller name.
  * @return {(!ng.Scope|undefined)}
  */
 ng.AngularService.prototype.getController = function(element, name) {};
 
 /**
  * Retrieve the injector cached on a bootstrapped DOM element.
- * @param {!Element} element
+ * @param {!Element} element Value supplied for the element parameter.
  * @return {!ng.InjectorService<?>}
  */
 ng.AngularService.prototype.getInjector = function(element) {};
 
 /**
  * Retrieve the scope cached on a compiled DOM element.
- * @param {!Element} element
+ * @param {!Element} element The DOM element to get data from.
  * @return {!ng.Scope}
  */
 ng.AngularService.prototype.getScope = function(element) {};
 
 /**
  * Read an element attribute by normalized directive-style name.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
+ * @param {(!Element|!Node|null|undefined)} element Value supplied for the element parameter.
+ * @param {string} normalizedName Value supplied for the normalizedName parameter.
  * @return {(string|undefined)}
  */
 ng.AngularService.prototype.getNormalizedAttr = function(element, normalizedName) {};
 
 /**
  * Return the actual DOM attribute name for a normalized directive-style name.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
+ * @param {(!Element|!Node|null|undefined)} element Value supplied for the element parameter.
+ * @param {string} normalizedName Value supplied for the normalizedName parameter.
  * @return {(string|undefined)}
  */
 ng.AngularService.prototype.getNormalizedAttrName = function(element, normalizedName) {};
 
 /**
  * Return whether an element has an attribute matching a normalized name.
- * @param {(!Element|!Node|null|undefined)} element
- * @param {string} normalizedName
+ * @param {(!Element|!Node|null|undefined)} element Value supplied for the element parameter.
+ * @param {string} normalizedName Value supplied for the normalizedName parameter.
  * @return {boolean}
  */
 ng.AngularService.prototype.hasNormalizedAttr = function(element, normalizedName) {};
 
 /**
  * Global framework error-handling configuration.
- * @param {(!ng.ErrorHandlingConfig|undefined)} config
+ * @param {(!ng.ErrorHandlingConfig|undefined)} config Value supplied for the config parameter.
  * @return {!ng.ErrorHandlingConfig}
  */
 ng.AngularService.prototype.errorHandlingConfig = function(config) {};
@@ -1373,7 +1558,7 @@ ng.AngularService.prototype.errorHandlingConfig = function(config) {};
  * Public injection token names keyed by token value.
  * @type {!Object}
  */
-ng.AngularService.prototype.$t;
+ng.AngularService.prototype.tokens;
 
 /**
  * Registers the configured built-in `ng` module for this runtime instance.
@@ -1383,59 +1568,59 @@ ng.AngularService.prototype.registerNgModule = function() {};
 
 /**
  * The `angular.module` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. `angular.module` is used to configure the auto.$injector `$injector`. ```js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an injector and load your modules like this: ```js let injector = angular.injector(['ng', 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or `bootstrap()` to simplify this process.
- * @param {string} name
- * @param {(!Array<string>|undefined)} requires
- * @param {(!Array<function(...?): ?>|function(...?): ?|undefined)} configFn
+ * @param {string} name The name of the module to create or retrieve.
+ * @param {(!Array<string>|undefined)} requires If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.
+ * @param {(!Array<function(...?): ?>|function(...?): ?|undefined)} configFn Optional configuration function for the module that gets passed to `NgModule.config()`.
  * @return {!ng.NgModule}
  */
 ng.AngularService.prototype.module = function(name, requires, configFn) {};
 
 /**
  * Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.
- * @param {!Event} event
+ * @param {!Event} event Value supplied for the event parameter.
  * @return {boolean}
  */
 ng.AngularService.prototype.dispatchEvent = function(event) {};
 
 /**
  * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
- * @param {string} input
+ * @param {string} input Value supplied for the input parameter.
  * @return {void}
  */
 ng.AngularService.prototype.emit = function(input) {};
 
 /**
  * Await result. Accepts a single string: `"<target>.<expression>"`
- * @param {string} input
+ * @param {string} input Value supplied for the input parameter.
  * @return {!Promise<?>}
  */
 ng.AngularService.prototype.call = function(input) {};
 
 /**
  * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
- * @param {(!Document|!HTMLElement|string)} element
- * @param {(!Array<(!Array<function(...?): ?>|function(...?): ?|string)>|undefined)} modules
+ * @param {(!Document|!HTMLElement|string)} element DOM element which is the root of AngularTS application.
+ * @param {(!Array<(!Array<function(...?): ?>|function(...?): ?|string)>|undefined)} modules an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.module()`.
  * @return {!ng.InjectorService<?>}
  */
 ng.AngularService.prototype.bootstrap = function(element, modules) {};
 
 /**
  * Create a standalone injector without bootstrapping the DOM.
- * @param {!Array<(!Array<function(...?): ?>|function(...?): ?|string)>} modules
+ * @param {!Array<(!Array<function(...?): ?>|function(...?): ?|string)>} modules Module names or config functions to load.
  * @return {!ng.InjectorService<?>}
  */
 ng.AngularService.prototype.injector = function(modules) {};
 
 /**
  * Find `ng-app` roots under the provided element and bootstrap them. The first root uses this instance. Additional roots are bootstrapped as sub-applications and stored in {@link subapps}.
- * @param {(!Document|!HTMLElement)} element
+ * @param {(!Document|!HTMLElement)} element Root element or document to scan.
  * @return {void}
  */
 ng.AngularService.prototype.init = function(element) {};
 
 /**
- * Find a scope by its registered `$scopename`.
- * @param {string} name
+ * Find a scope by its registered `scopeName`.
+ * @param {string} name Scope name to search for.
  * @return {(!ng.Scope|undefined)}
  */
 ng.AngularService.prototype.getScopeByName = function(name) {};
@@ -1447,70 +1632,52 @@ ng.AngularService.prototype.getScopeByName = function(name) {};
 ng.ScopeService = function() {};
 
 /**
- * Public ScopeService.$proxy member exposed by the AngularTS namespace contract.
- * @type {!ng.Scope}
- */
-ng.ScopeService.prototype.$proxy;
-
-/**
- * Public ScopeService.$handler member exposed by the AngularTS namespace contract.
- * @type {?}
- */
-ng.ScopeService.prototype.$handler;
-
-/**
- * Public ScopeService.$target member exposed by the AngularTS namespace contract.
- * @type {!Object}
- */
-ng.ScopeService.prototype.$target;
-
-/**
- * Public ScopeService.$id member exposed by the AngularTS namespace contract.
+ * Public ScopeService.id member exposed by the AngularTS namespace contract.
  * @type {number}
  */
-ng.ScopeService.prototype.$id;
+ng.ScopeService.prototype.id;
 
 /**
- * Public ScopeService.$root member exposed by the AngularTS namespace contract.
+ * Public ScopeService.root member exposed by the AngularTS namespace contract.
  * @type {!ng.Scope}
  */
-ng.ScopeService.prototype.$root;
+ng.ScopeService.prototype.root;
 
 /**
- * Public ScopeService.$parent member exposed by the AngularTS namespace contract.
+ * Public ScopeService.parent member exposed by the AngularTS namespace contract.
  * @type {(!ng.Scope|undefined)}
  */
-ng.ScopeService.prototype.$parent;
+ng.ScopeService.prototype.parent;
 
 /**
- * Public ScopeService.$scopename member exposed by the AngularTS namespace contract.
+ * Public ScopeService.scopeName member exposed by the AngularTS namespace contract.
  * @type {(string|undefined)}
  */
-ng.ScopeService.prototype.$scopename;
+ng.ScopeService.prototype.scopeName;
 
 /**
  * Intercepts and handles property assignments on the target object. Scopeable objects are stored as raw model values and proxied lazily when read.
- * @param {!Object} target
- * @param {string} property
- * @param {?} value
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {string} property The name of the property being set.
+ * @param {?} value The new value being assigned to the property.
+ * @param {!ng.Scope} proxy The proxy intercepting property access.
  * @return {boolean}
  */
 ng.ScopeService.prototype.set = function(target, property, value, proxy) {};
 
 /**
  * Intercepts property access on the target object. It checks for specific properties (`watch` and `sync`) and binds their methods. For other properties, it returns the value directly.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being accessed.
+ * @param {!ng.Scope} proxy The proxy object being invoked.
  * @return {?}
  */
 ng.ScopeService.prototype.get = function(target, property, proxy) {};
 
 /**
  * Public ScopeService.deleteProperty member exposed by the AngularTS namespace contract.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being deleted.
  * @return {boolean}
  */
 ng.ScopeService.prototype.deleteProperty = function(target, property) {};
@@ -1518,92 +1685,92 @@ ng.ScopeService.prototype.deleteProperty = function(target, property) {};
 /**
  * Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws.
  * @template T
- * @param {function(): T} fn
+ * @param {function(): T} fn Value supplied for the fn parameter.
  * @return {T}
  */
-ng.ScopeService.prototype.$batch = function(fn) {};
+ng.ScopeService.prototype.batch = function(fn) {};
 
 /**
  * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
- * @param {string} watchProp
- * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
- * @param {(boolean|undefined)} lazy
- * @param {(boolean|undefined)} directLeaf
+ * @param {string} watchProp An expression to be watched in the context of this model.
+ * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
+ * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+ * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
  * @return {(function(): void|undefined)}
  */
-ng.ScopeService.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.ScopeService.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
- * @param {(!ng.Scope|undefined)} childInstance
+ * @param {(!ng.Scope|undefined)} childInstance Value supplied for the childInstance parameter.
  * @return {!ng.Scope}
  */
-ng.ScopeService.prototype.$new = function(childInstance) {};
+ng.ScopeService.prototype.new = function(childInstance) {};
 
 /**
  * Creates an isolate child scope that does not inherit watchable properties directly.
- * @param {(!ng.Scope|undefined)} instance
+ * @param {(!ng.Scope|undefined)} instance Value supplied for the instance parameter.
  * @return {!ng.Scope}
  */
-ng.ScopeService.prototype.$newIsolate = function(instance) {};
+ng.ScopeService.prototype.newIsolate = function(instance) {};
 
 /**
  * Creates a transcluded child scope linked to this scope and an optional parent instance.
- * @param {(!ng.Scope|undefined)} parentInstance
+ * @param {(!ng.Scope|undefined)} parentInstance Value supplied for the parentInstance parameter.
  * @return {!ng.Scope}
  */
-ng.ScopeService.prototype.$transcluded = function(parentInstance) {};
+ng.ScopeService.prototype.transcluded = function(parentInstance) {};
 
 /**
  * Merges enumerable properties from the provided object into the current scope target.
- * @param {?} newTarget
+ * @param {?} newTarget Value supplied for the newTarget parameter.
  * @return {void}
  */
-ng.ScopeService.prototype.$merge = function(newTarget) {};
+ng.ScopeService.prototype.merge = function(newTarget) {};
 
 /**
  * Registers an event listener on this scope and returns a deregistration function.
- * @param {string} name
- * @param {function(...?): ?} listener
+ * @param {string} name Value supplied for the name parameter.
+ * @param {function(...?): ?} listener Value supplied for the listener parameter.
  * @return {function(): void}
  */
-ng.ScopeService.prototype.$on = function(name, listener) {};
+ng.ScopeService.prototype.on = function(name, listener) {};
 
 /**
  * Emits an event upward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.ScopeService.prototype.$emit = function(name, var_args) {};
+ng.ScopeService.prototype.emit = function(name, var_args) {};
 
 /**
  * Broadcasts an event downward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.ScopeService.prototype.$broadcast = function(name, var_args) {};
+ng.ScopeService.prototype.broadcast = function(name, var_args) {};
 
 /**
- * Public ScopeService.$destroy member exposed by the AngularTS namespace contract.
+ * Destroys this scope and its descendants.
  * @return {void}
  */
-ng.ScopeService.prototype.$destroy = function() {};
+ng.ScopeService.prototype.destroy = function() {};
 
 /**
  * Searches this scope tree for a scope with the given id.
- * @param {(number|string)} id
+ * @param {(number|string)} id Value supplied for the id parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.ScopeService.prototype.$getById = function(id) {};
+ng.ScopeService.prototype.getById = function(id) {};
 
 /**
  * Searches the scope tree for a scope registered under the provided name.
- * @param {string} name
+ * @param {string} name Value supplied for the name parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.ScopeService.prototype.$searchByName = function(name) {};
+ng.ScopeService.prototype.searchByName = function(name) {};
 
 /**
  * Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior.
@@ -1612,70 +1779,52 @@ ng.ScopeService.prototype.$searchByName = function(name) {};
 ng.RootScopeService = function() {};
 
 /**
- * Public RootScopeService.$proxy member exposed by the AngularTS namespace contract.
- * @type {!ng.Scope}
- */
-ng.RootScopeService.prototype.$proxy;
-
-/**
- * Public RootScopeService.$handler member exposed by the AngularTS namespace contract.
- * @type {?}
- */
-ng.RootScopeService.prototype.$handler;
-
-/**
- * Public RootScopeService.$target member exposed by the AngularTS namespace contract.
- * @type {!Object}
- */
-ng.RootScopeService.prototype.$target;
-
-/**
- * Public RootScopeService.$id member exposed by the AngularTS namespace contract.
+ * Public RootScopeService.id member exposed by the AngularTS namespace contract.
  * @type {number}
  */
-ng.RootScopeService.prototype.$id;
+ng.RootScopeService.prototype.id;
 
 /**
- * Public RootScopeService.$root member exposed by the AngularTS namespace contract.
+ * Public RootScopeService.root member exposed by the AngularTS namespace contract.
  * @type {!ng.Scope}
  */
-ng.RootScopeService.prototype.$root;
+ng.RootScopeService.prototype.root;
 
 /**
- * Public RootScopeService.$parent member exposed by the AngularTS namespace contract.
+ * Public RootScopeService.parent member exposed by the AngularTS namespace contract.
  * @type {(!ng.Scope|undefined)}
  */
-ng.RootScopeService.prototype.$parent;
+ng.RootScopeService.prototype.parent;
 
 /**
- * Public RootScopeService.$scopename member exposed by the AngularTS namespace contract.
+ * Public RootScopeService.scopeName member exposed by the AngularTS namespace contract.
  * @type {(string|undefined)}
  */
-ng.RootScopeService.prototype.$scopename;
+ng.RootScopeService.prototype.scopeName;
 
 /**
  * Intercepts and handles property assignments on the target object. Scopeable objects are stored as raw model values and proxied lazily when read.
- * @param {!Object} target
- * @param {string} property
- * @param {?} value
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {string} property The name of the property being set.
+ * @param {?} value The new value being assigned to the property.
+ * @param {!ng.Scope} proxy The proxy intercepting property access.
  * @return {boolean}
  */
 ng.RootScopeService.prototype.set = function(target, property, value, proxy) {};
 
 /**
  * Intercepts property access on the target object. It checks for specific properties (`watch` and `sync`) and binds their methods. For other properties, it returns the value directly.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being accessed.
+ * @param {!ng.Scope} proxy The proxy object being invoked.
  * @return {?}
  */
 ng.RootScopeService.prototype.get = function(target, property, proxy) {};
 
 /**
  * Public RootScopeService.deleteProperty member exposed by the AngularTS namespace contract.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being deleted.
  * @return {boolean}
  */
 ng.RootScopeService.prototype.deleteProperty = function(target, property) {};
@@ -1683,92 +1832,92 @@ ng.RootScopeService.prototype.deleteProperty = function(target, property) {};
 /**
  * Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws.
  * @template T
- * @param {function(): T} fn
+ * @param {function(): T} fn Value supplied for the fn parameter.
  * @return {T}
  */
-ng.RootScopeService.prototype.$batch = function(fn) {};
+ng.RootScopeService.prototype.batch = function(fn) {};
 
 /**
  * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
- * @param {string} watchProp
- * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
- * @param {(boolean|undefined)} lazy
- * @param {(boolean|undefined)} directLeaf
+ * @param {string} watchProp An expression to be watched in the context of this model.
+ * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
+ * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+ * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
  * @return {(function(): void|undefined)}
  */
-ng.RootScopeService.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.RootScopeService.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
- * @param {(!ng.Scope|undefined)} childInstance
+ * @param {(!ng.Scope|undefined)} childInstance Value supplied for the childInstance parameter.
  * @return {!ng.Scope}
  */
-ng.RootScopeService.prototype.$new = function(childInstance) {};
+ng.RootScopeService.prototype.new = function(childInstance) {};
 
 /**
  * Creates an isolate child scope that does not inherit watchable properties directly.
- * @param {(!ng.Scope|undefined)} instance
+ * @param {(!ng.Scope|undefined)} instance Value supplied for the instance parameter.
  * @return {!ng.Scope}
  */
-ng.RootScopeService.prototype.$newIsolate = function(instance) {};
+ng.RootScopeService.prototype.newIsolate = function(instance) {};
 
 /**
  * Creates a transcluded child scope linked to this scope and an optional parent instance.
- * @param {(!ng.Scope|undefined)} parentInstance
+ * @param {(!ng.Scope|undefined)} parentInstance Value supplied for the parentInstance parameter.
  * @return {!ng.Scope}
  */
-ng.RootScopeService.prototype.$transcluded = function(parentInstance) {};
+ng.RootScopeService.prototype.transcluded = function(parentInstance) {};
 
 /**
  * Merges enumerable properties from the provided object into the current scope target.
- * @param {?} newTarget
+ * @param {?} newTarget Value supplied for the newTarget parameter.
  * @return {void}
  */
-ng.RootScopeService.prototype.$merge = function(newTarget) {};
+ng.RootScopeService.prototype.merge = function(newTarget) {};
 
 /**
  * Registers an event listener on this scope and returns a deregistration function.
- * @param {string} name
- * @param {function(...?): ?} listener
+ * @param {string} name Value supplied for the name parameter.
+ * @param {function(...?): ?} listener Value supplied for the listener parameter.
  * @return {function(): void}
  */
-ng.RootScopeService.prototype.$on = function(name, listener) {};
+ng.RootScopeService.prototype.on = function(name, listener) {};
 
 /**
  * Emits an event upward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.RootScopeService.prototype.$emit = function(name, var_args) {};
+ng.RootScopeService.prototype.emit = function(name, var_args) {};
 
 /**
  * Broadcasts an event downward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.RootScopeService.prototype.$broadcast = function(name, var_args) {};
+ng.RootScopeService.prototype.broadcast = function(name, var_args) {};
 
 /**
- * Public RootScopeService.$destroy member exposed by the AngularTS namespace contract.
+ * Destroys this scope and its descendants.
  * @return {void}
  */
-ng.RootScopeService.prototype.$destroy = function() {};
+ng.RootScopeService.prototype.destroy = function() {};
 
 /**
  * Searches this scope tree for a scope with the given id.
- * @param {(number|string)} id
+ * @param {(number|string)} id Value supplied for the id parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.RootScopeService.prototype.$getById = function(id) {};
+ng.RootScopeService.prototype.getById = function(id) {};
 
 /**
  * Searches the scope tree for a scope registered under the provided name.
- * @param {string} name
+ * @param {string} name Value supplied for the name parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.RootScopeService.prototype.$searchByName = function(name) {};
+ng.RootScopeService.prototype.searchByName = function(name) {};
 
 /**
  * **`Element`** is the most general base class from which all element objects (i.e., objects that represent elements) in a Document inherit. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element)
@@ -1814,7 +1963,7 @@ ng.AnchorScrollService.prototype.yOffset;
 
 /**
  * Invokes the callable AnchorScrollService contract.
- * @param {(!HTMLElement|number|string|undefined)} hashOrElement
+ * @param {(!HTMLElement|number|string|undefined)} hashOrElement Value supplied for the hashOrElement parameter.
  * @return {void}
  */
 ng.AnchorScrollService.prototype.call = function(hashOrElement) {};
@@ -1827,89 +1976,89 @@ ng.AnimateService = function() {};
 
 /**
  * Public AnimateService.cancel member exposed by the AngularTS namespace contract.
- * @param {(!ng.AnimationHandle|undefined)} handle
+ * @param {(!ng.AnimationHandle|undefined)} handle Value supplied for the handle parameter.
  * @return {void}
  */
 ng.AnimateService.prototype.cancel = function(handle) {};
 
 /**
  * Public AnimateService.define member exposed by the AngularTS namespace contract.
- * @param {string} name
- * @param {!ng.AnimationPreset} preset
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.AnimationPreset} preset Value supplied for the preset parameter.
  * @return {void}
  */
 ng.AnimateService.prototype.define = function(name, preset) {};
 
 /**
  * Public AnimateService.enter member exposed by the AngularTS namespace contract.
- * @param {!Element} element
- * @param {(!Object|null|undefined)} parent
- * @param {(!Object|null|undefined)} after
- * @param {(!ng.AnimationOptions|undefined)} options
+ * @param {!Element} element Value supplied for the element parameter.
+ * @param {(!Object|null|undefined)} parent Value supplied for the parent parameter.
+ * @param {(!Object|null|undefined)} after Value supplied for the after parameter.
+ * @param {(!ng.AnimationOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.AnimationHandle}
  */
 ng.AnimateService.prototype.enter = function(element, parent, after, options) {};
 
 /**
  * Public AnimateService.move member exposed by the AngularTS namespace contract.
- * @param {!Element} element
- * @param {(!Object|null)} parent
- * @param {(!Object|null|undefined)} after
- * @param {(!ng.AnimationOptions|undefined)} options
+ * @param {!Element} element Value supplied for the element parameter.
+ * @param {(!Object|null)} parent Value supplied for the parent parameter.
+ * @param {(!Object|null|undefined)} after Value supplied for the after parameter.
+ * @param {(!ng.AnimationOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.AnimationHandle}
  */
 ng.AnimateService.prototype.move = function(element, parent, after, options) {};
 
 /**
  * Public AnimateService.leave member exposed by the AngularTS namespace contract.
- * @param {!Element} element
- * @param {(!ng.AnimationOptions|undefined)} options
+ * @param {!Element} element Value supplied for the element parameter.
+ * @param {(!ng.AnimationOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.AnimationHandle}
  */
 ng.AnimateService.prototype.leave = function(element, options) {};
 
 /**
  * Public AnimateService.addClass member exposed by the AngularTS namespace contract.
- * @param {!Element} element
- * @param {string} className
- * @param {(!ng.AnimationOptions|undefined)} options
+ * @param {!Element} element Value supplied for the element parameter.
+ * @param {string} className Value supplied for the className parameter.
+ * @param {(!ng.AnimationOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.AnimationHandle}
  */
 ng.AnimateService.prototype.addClass = function(element, className, options) {};
 
 /**
  * Public AnimateService.removeClass member exposed by the AngularTS namespace contract.
- * @param {!Element} element
- * @param {string} className
- * @param {(!ng.AnimationOptions|undefined)} options
+ * @param {!Element} element Value supplied for the element parameter.
+ * @param {string} className Value supplied for the className parameter.
+ * @param {(!ng.AnimationOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.AnimationHandle}
  */
 ng.AnimateService.prototype.removeClass = function(element, className, options) {};
 
 /**
  * Public AnimateService.setClass member exposed by the AngularTS namespace contract.
- * @param {!Element} element
- * @param {string} add
- * @param {string} remove
- * @param {(!ng.AnimationOptions|undefined)} options
+ * @param {!Element} element Value supplied for the element parameter.
+ * @param {string} add Value supplied for the add parameter.
+ * @param {string} remove Value supplied for the remove parameter.
+ * @param {(!ng.AnimationOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.AnimationHandle}
  */
 ng.AnimateService.prototype.setClass = function(element, add, remove, options) {};
 
 /**
  * Public AnimateService.animate member exposed by the AngularTS namespace contract.
- * @param {!Element} element
- * @param {!Object<string, (number|string)>} from
- * @param {(!Object<string, (number|string)>|undefined)} to
- * @param {(string|undefined)} className
- * @param {(!ng.AnimationOptions|undefined)} options
+ * @param {!Element} element Value supplied for the element parameter.
+ * @param {!Object<string, (number|string)>} from Value supplied for the from parameter.
+ * @param {(!Object<string, (number|string)>|undefined)} to Value supplied for the to parameter.
+ * @param {(string|undefined)} className Value supplied for the className parameter.
+ * @param {(!ng.AnimationOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.AnimationHandle}
  */
 ng.AnimateService.prototype.animate = function(element, from, to, className, options) {};
 
 /**
  * Public AnimateService.transition member exposed by the AngularTS namespace contract.
- * @param {function(): (!Promise<void>|void)} update
+ * @param {function(): (!Promise<void>|void)} update Value supplied for the update parameter.
  * @return {!Promise<void>}
  */
 ng.AnimateService.prototype.transition = function(update) {};
@@ -1935,8 +2084,8 @@ ng.AnimationHandle.prototype.finished;
 /**
  * Attaches callbacks for the resolution and/or rejection of the Promise.
  * @template TResult1, TResult2
- * @param {(function(undefined): (!Object|TResult1)|null|undefined)} onfulfilled
- * @param {(function(?): (!Object|TResult2)|null|undefined)} onrejected
+ * @param {(function(undefined): (!Object|TResult1)|null|undefined)} onfulfilled Value supplied for the onfulfilled parameter.
+ * @param {(function(?): (!Object|TResult2)|null|undefined)} onrejected Value supplied for the onrejected parameter.
  * @return {!Object}
  */
 ng.AnimationHandle.prototype.then = function(onfulfilled, onrejected) {};
@@ -1944,21 +2093,21 @@ ng.AnimationHandle.prototype.then = function(onfulfilled, onrejected) {};
 /**
  * Public AnimationHandle.catch member exposed by the AngularTS namespace contract.
  * @template TResult
- * @param {(function(?): (!Object|TResult)|null|undefined)} onrejected
+ * @param {(function(?): (!Object|TResult)|null|undefined)} onrejected Value supplied for the onrejected parameter.
  * @return {!Promise<(TResult|undefined)>}
  */
 ng.AnimationHandle.prototype.catch = function(onrejected) {};
 
 /**
  * Public AnimationHandle.finally member exposed by the AngularTS namespace contract.
- * @param {(function(): void|null|undefined)} onfinally
+ * @param {(function(): void|null|undefined)} onfinally Value supplied for the onfinally parameter.
  * @return {!Promise<undefined>}
  */
 ng.AnimationHandle.prototype.finally = function(onfinally) {};
 
 /**
  * Public AnimationHandle.done member exposed by the AngularTS namespace contract.
- * @param {function(boolean): void} callback
+ * @param {function(boolean): void} callback Value supplied for the callback parameter.
  * @return {void}
  */
 ng.AnimationHandle.prototype.done = function(callback) {};
@@ -1989,7 +2138,7 @@ ng.AnimationHandle.prototype.play = function() {};
 
 /**
  * Public AnimationHandle.complete member exposed by the AngularTS namespace contract.
- * @param {(boolean|undefined)} status
+ * @param {(boolean|undefined)} status Value supplied for the status parameter.
  * @return {void}
  */
 ng.AnimationHandle.prototype.complete = function(status) {};
@@ -2057,7 +2206,7 @@ ng.AriaService = function() {};
 /**
  * Public AriaService.config member exposed by the AngularTS namespace contract.
  * @template K
- * @param {K} key
+ * @param {K} key Value supplied for the key parameter.
  * @return {?}
  */
 ng.AriaService.prototype.config = function(key) {};
@@ -2082,14 +2231,14 @@ ng.CookieService = function() {};
 
 /**
  * Retrieves a raw cookie value.
- * @param {string} key
+ * @param {string} key Cookie name to read.
  * @return {(null|string)}
  */
 ng.CookieService.prototype.get = function(key) {};
 
 /**
  * Retrieves a cookie and deserializes its JSON content.
- * @param {string} key
+ * @param {string} key Cookie name to read.
  * @return {?}
  */
 ng.CookieService.prototype.getObject = function(key) {};
@@ -2102,26 +2251,26 @@ ng.CookieService.prototype.getAll = function() {};
 
 /**
  * Sets a raw cookie value.
- * @param {string} key
- * @param {string} value
- * @param {(!ng.CookieOptions|undefined)} options
+ * @param {string} key Cookie name to write.
+ * @param {string} value String value to write.
+ * @param {(!ng.CookieOptions|undefined)} options Cookie attributes for this write.
  * @return {void}
  */
 ng.CookieService.prototype.put = function(key, value, options) {};
 
 /**
  * Serializes an object as JSON and stores it as a cookie.
- * @param {string} key
- * @param {?} value
- * @param {(!ng.CookieOptions|undefined)} options
+ * @param {string} key Cookie name to write.
+ * @param {?} value JSON-serializable value.
+ * @param {(!ng.CookieOptions|undefined)} options Cookie attributes for this write.
  * @return {void}
  */
 ng.CookieService.prototype.putObject = function(key, value, options) {};
 
 /**
  * Removes a cookie by setting an expired date.
- * @param {string} key
- * @param {(!ng.CookieOptions|undefined)} options
+ * @param {string} key Cookie name to remove.
+ * @param {(!ng.CookieOptions|undefined)} options Cookie attributes that must match the existing cookie.
  * @return {void}
  */
 ng.CookieService.prototype.remove = function(key, options) {};
@@ -2140,7 +2289,7 @@ ng.EventBusService.prototype.reset = function() {};
 
 /**
  * Replace the runtime delivery policy used by future publications. The default policy delivers every active listener. Configured policies can drop deliveries for specific topics, scopes, or application metadata.
- * @param {(function(!ng.EventDeliveryPolicyContext): (!Promise<(!ng.PolicyDecision<string>|string)>|!ng.PolicyDecision<string>|string)|undefined)} policy
+ * @param {(function(!ng.EventDeliveryPolicyContext): (!Promise<(!ng.PolicyDecision<string>|string)>|!ng.PolicyDecision<string>|string)|undefined)} policy Value supplied for the policy parameter.
  * @return {void}
  */
 ng.EventBusService.prototype.setDeliveryPolicy = function(policy) {};
@@ -2159,39 +2308,39 @@ ng.EventBusService.prototype.dispose = function() {};
 
 /**
  * Subscribe a function to a topic. The returned function removes only this listener registration. When `context` is provided, it becomes the listener `this` binding. When `context` is an AngularTS scope proxy, the scope also owns the listener lifecycle: destroying the scope removes the listener and prevents queued delivery from reaching the destroyed scope.
- * @param {string} topic
- * @param {function(...?): ?} fn
+ * @param {string} topic The topic to subscribe to.
+ * @param {function(...?): ?} fn The callback function to invoke when published.
  * @return {function(): boolean}
  */
 ng.EventBusService.prototype.subscribe = function(topic, fn) {};
 
 /**
  * Subscribe a function to a topic only once. Listener is removed before the first invocation. When `context` is provided, it becomes the listener `this` binding. When `context` is an AngularTS scope proxy, scope destruction before first delivery removes the one-time listener.
- * @param {string} topic
- * @param {function(...?): ?} fn
+ * @param {string} topic The topic to subscribe to.
+ * @param {function(...?): ?} fn The callback function.
  * @return {function(): boolean}
  */
 ng.EventBusService.prototype.subscribeOnce = function(topic, fn) {};
 
 /**
  * Unsubscribe a specific function from a topic. Matches by function reference and optional context.
- * @param {string} topic
- * @param {function(...?): ?} fn
+ * @param {string} topic The topic to unsubscribe from.
+ * @param {function(...?): ?} fn The listener function.
  * @return {boolean}
  */
 ng.EventBusService.prototype.unsubscribe = function(topic, fn) {};
 
 /**
  * Get the number of subscribers for a topic. This is the public diagnostic surface for `$eventBus`. It reports active registered listeners only; topic listings, leak reports, and reactive diagnostics are intentionally not exposed.
- * @param {string} topic
+ * @param {string} topic Topic name to inspect.
  * @return {number}
  */
 ng.EventBusService.prototype.getCount = function(topic) {};
 
 /**
  * Publish a value to a topic asynchronously. All listeners are invoked in the order they were added. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their scope is destroyed before the queued delivery runs.
- * @param {string} topic
- * @param {...?} var_args
+ * @param {string} topic The topic to publish.
+ * @param {...?} var_args Arguments to pass to listeners.
  * @return {boolean}
  */
 ng.EventBusService.prototype.publish = function(topic, var_args) {};
@@ -2324,31 +2473,31 @@ ng.HtmlCanvasService.prototype.supported;
 
 /**
  * Public HtmlCanvasService.registerRoot member exposed by the AngularTS namespace contract.
- * @param {!Object} canvas
- * @param {(!Object|undefined)} options
+ * @param {!Object} canvas Value supplied for the canvas parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {!Object}
  */
 ng.HtmlCanvasService.prototype.registerRoot = function(canvas, options) {};
 
 /**
  * Public HtmlCanvasService.registerSource member exposed by the AngularTS namespace contract.
- * @param {!Object} canvas
- * @param {!Element} source
- * @param {(!Object|undefined)} options
+ * @param {!Object} canvas Value supplied for the canvas parameter.
+ * @param {!Element} source Value supplied for the source parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.HtmlCanvasService.prototype.registerSource = function(canvas, source, options) {};
 
 /**
  * Public HtmlCanvasService.invalidate member exposed by the AngularTS namespace contract.
- * @param {!Object} canvas
+ * @param {!Object} canvas Value supplied for the canvas parameter.
  * @return {void}
  */
 ng.HtmlCanvasService.prototype.invalidate = function(canvas) {};
 
 /**
  * Public HtmlCanvasService.requestPaint member exposed by the AngularTS namespace contract.
- * @param {!Object} canvas
+ * @param {!Object} canvas Value supplied for the canvas parameter.
  * @return {void}
  */
 ng.HtmlCanvasService.prototype.requestPaint = function(canvas) {};
@@ -2410,8 +2559,8 @@ ng.HttpService = function() {};
 /**
  * Send a `GET` request.
  * @template T
- * @param {string} url
- * @param {(!ng.HttpRequestOptions|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {(!ng.HttpRequestOptions|undefined)} config Value supplied for the config parameter.
  * @return {!Promise<!ng.HttpResponse<T>>}
  */
 ng.HttpService.prototype.get = function(url, config) {};
@@ -2419,8 +2568,8 @@ ng.HttpService.prototype.get = function(url, config) {};
 /**
  * Send a `DELETE` request.
  * @template T
- * @param {string} url
- * @param {(!ng.HttpRequestOptions|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {(!ng.HttpRequestOptions|undefined)} config Value supplied for the config parameter.
  * @return {!Promise<!ng.HttpResponse<T>>}
  */
 ng.HttpService.prototype.delete = function(url, config) {};
@@ -2428,8 +2577,8 @@ ng.HttpService.prototype.delete = function(url, config) {};
 /**
  * Send a `HEAD` request.
  * @template T
- * @param {string} url
- * @param {(!ng.HttpRequestOptions|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {(!ng.HttpRequestOptions|undefined)} config Value supplied for the config parameter.
  * @return {!Promise<!ng.HttpResponse<T>>}
  */
 ng.HttpService.prototype.head = function(url, config) {};
@@ -2437,9 +2586,9 @@ ng.HttpService.prototype.head = function(url, config) {};
 /**
  * Send a `POST` request with a request body.
  * @template T
- * @param {string} url
- * @param {?} data
- * @param {(!ng.HttpRequestOptions|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {?} data Value supplied for the data parameter.
+ * @param {(!ng.HttpRequestOptions|undefined)} config Value supplied for the config parameter.
  * @return {!Promise<!ng.HttpResponse<T>>}
  */
 ng.HttpService.prototype.post = function(url, data, config) {};
@@ -2447,9 +2596,9 @@ ng.HttpService.prototype.post = function(url, data, config) {};
 /**
  * Send a `PUT` request with a request body.
  * @template T
- * @param {string} url
- * @param {?} data
- * @param {(!ng.HttpRequestOptions|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {?} data Value supplied for the data parameter.
+ * @param {(!ng.HttpRequestOptions|undefined)} config Value supplied for the config parameter.
  * @return {!Promise<!ng.HttpResponse<T>>}
  */
 ng.HttpService.prototype.put = function(url, data, config) {};
@@ -2457,9 +2606,9 @@ ng.HttpService.prototype.put = function(url, data, config) {};
 /**
  * Send a `PATCH` request with a request body.
  * @template T
- * @param {string} url
- * @param {?} data
- * @param {(!ng.HttpRequestOptions|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {?} data Value supplied for the data parameter.
+ * @param {(!ng.HttpRequestOptions|undefined)} config Value supplied for the config parameter.
  * @return {!Promise<!ng.HttpResponse<T>>}
  */
 ng.HttpService.prototype.patch = function(url, data, config) {};
@@ -2479,7 +2628,7 @@ ng.HttpService.prototype.pendingRequests;
 /**
  * Invokes the callable HttpService contract.
  * @template T
- * @param {!ng.HttpRequestConfig} config
+ * @param {!ng.HttpRequestConfig} config Value supplied for the config parameter.
  * @return {!Promise<!ng.HttpResponse<T>>}
  */
 ng.HttpService.prototype.call = function(config) {};
@@ -2493,14 +2642,14 @@ ng.InjectorService = function() {};
 
 /**
  * Public InjectorService.loadNewModules member exposed by the AngularTS namespace contract.
- * @param {!Array<(!Array<function(...?): ?>|function(...?): ?|string)>} mods
+ * @param {!Array<(!Array<function(...?): ?>|function(...?): ?|string)>} mods Value supplied for the mods parameter.
  * @return {void}
  */
 ng.InjectorService.prototype.loadNewModules = function(mods) {};
 
 /**
  * Public InjectorService.has member exposed by the AngularTS namespace contract.
- * @param {string} name
+ * @param {string} name Value supplied for the name parameter.
  * @return {boolean}
  */
 ng.InjectorService.prototype.has = function(name) {};
@@ -2508,7 +2657,7 @@ ng.InjectorService.prototype.has = function(name) {};
 /**
  * Get a service by name.
  * @template TKey
- * @param {TKey} serviceName
+ * @param {TKey} serviceName Value supplied for the serviceName parameter.
  * @return {?}
  */
 ng.InjectorService.prototype.get = function(serviceName) {};
@@ -2516,10 +2665,10 @@ ng.InjectorService.prototype.get = function(serviceName) {};
 /**
  * Invoke a function with optional context and locals.
  * @template TResult
- * @param {(!Array<function(...?): TResult>|function(...?): TResult)} fn
- * @param {(?|undefined)} self
- * @param {(?|undefined)} locals
- * @param {(string|undefined)} serviceName
+ * @param {(!Array<function(...?): TResult>|function(...?): TResult)} fn Value supplied for the fn parameter.
+ * @param {(?|undefined)} self Value supplied for the self parameter.
+ * @param {(?|undefined)} locals Value supplied for the locals parameter.
+ * @param {(string|undefined)} serviceName Value supplied for the serviceName parameter.
  * @return {TResult}
  */
 ng.InjectorService.prototype.invoke = function(fn, self, locals, serviceName) {};
@@ -2527,9 +2676,9 @@ ng.InjectorService.prototype.invoke = function(fn, self, locals, serviceName) {}
 /**
  * Instantiate a type constructor with optional locals.
  * @template TInstance
- * @param {(!Array<TInstance>|function(new: TInstance, ...?))} type
- * @param {(?|undefined)} locals
- * @param {(string|undefined)} serviceName
+ * @param {(!Array<TInstance>|function(new: TInstance, ...?))} type Value supplied for the type parameter.
+ * @param {(?|undefined)} locals Value supplied for the locals parameter.
+ * @param {(string|undefined)} serviceName Value supplied for the serviceName parameter.
  * @return {TInstance}
  */
 ng.InjectorService.prototype.instantiate = function(type, locals, serviceName) {};
@@ -2560,7 +2709,7 @@ ng.InjectionTokenMap.prototype.$element;
 
 /**
  * Public InjectionTokenMap.$anchorScroll member exposed by the AngularTS namespace contract.
- * @param {(!HTMLElement|number|string|undefined)} hashOrElement
+ * @param {(!HTMLElement|number|string|undefined)} hashOrElement Value supplied for the hashOrElement parameter.
  * @return {void}
  */
 ng.InjectionTokenMap.prototype.$anchorScroll = function(hashOrElement) {};
@@ -2579,21 +2728,21 @@ ng.InjectionTokenMap.prototype.$aria;
 
 /**
  * Public InjectionTokenMap.$compile member exposed by the AngularTS namespace contract.
- * @param {(!Element|!Node|!Object|null|string)} compileNode
- * @param {(!ng.LinkFn|!ng.TranscludeFn|null|undefined)} transcludeFn
- * @param {(number|undefined)} maxPriority
- * @param {(string|undefined)} ignoreDirective
- * @param {(!Object|null|undefined)} previousCompileContext
+ * @param {(!Element|!Node|!Object|null|string)} compileNode Value supplied for the compileNode parameter.
+ * @param {(!ng.LinkFn|!ng.TranscludeFn|null|undefined)} transcludeFn Value supplied for the transcludeFn parameter.
+ * @param {(number|undefined)} maxPriority Value supplied for the maxPriority parameter.
+ * @param {(string|undefined)} ignoreDirective Value supplied for the ignoreDirective parameter.
+ * @param {(!Object|null|undefined)} previousCompileContext Value supplied for the previousCompileContext parameter.
  * @return {!ng.LinkFn}
  */
 ng.InjectionTokenMap.prototype.$compile = function(compileNode, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {};
 
 /**
  * Public InjectionTokenMap.$controller member exposed by the AngularTS namespace contract.
- * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string)} expression
- * @param {(!Object|undefined)} locals
- * @param {(boolean|undefined)} later
- * @param {(string|undefined)} ident
+ * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string)} expression Value supplied for the expression parameter.
+ * @param {(!Object|undefined)} locals Value supplied for the locals parameter.
+ * @param {(boolean|undefined)} later Value supplied for the later parameter.
+ * @param {(string|undefined)} ident Value supplied for the ident parameter.
  * @return {?}
  */
 ng.InjectionTokenMap.prototype.$controller = function(expression, locals, later, ident) {};
@@ -2618,14 +2767,14 @@ ng.InjectionTokenMap.prototype.$eventBus;
 
 /**
  * Public InjectionTokenMap.$exceptionHandler member exposed by the AngularTS namespace contract.
- * @param {?} exception
+ * @param {?} exception Value supplied for the exception parameter.
  * @return {?}
  */
 ng.InjectionTokenMap.prototype.$exceptionHandler = function(exception) {};
 
 /**
  * Public InjectionTokenMap.$filter member exposed by the AngularTS namespace contract.
- * @param {string} name
+ * @param {string} name Value supplied for the name parameter.
  * @return {function(...?): ?}
  */
 ng.InjectionTokenMap.prototype.$filter = function(name) {};
@@ -2639,14 +2788,14 @@ ng.InjectionTokenMap.prototype.$htmlCanvas;
 /**
  * Public InjectionTokenMap.$http member exposed by the AngularTS namespace contract.
  * @template T
- * @param {!ng.HttpRequestConfig} config
+ * @param {!ng.HttpRequestConfig} config Value supplied for the config parameter.
  * @return {!Promise<!ng.HttpResponse<T>>}
  */
 ng.InjectionTokenMap.prototype.$http = function(config) {};
 
 /**
  * Public InjectionTokenMap.$httpParamSerializer member exposed by the AngularTS namespace contract.
- * @param {(!Object<string, ?>|undefined)} params
+ * @param {(!Object<string, ?>|undefined)} params Value supplied for the params parameter.
  * @return {string}
  */
 ng.InjectionTokenMap.prototype.$httpParamSerializer = function(params) {};
@@ -2659,10 +2808,10 @@ ng.InjectionTokenMap.prototype.$injector;
 
 /**
  * Public InjectionTokenMap.$interpolate member exposed by the AngularTS namespace contract.
- * @param {string} text
- * @param {(boolean|undefined)} mustHaveExpression
- * @param {(string|undefined)} trustedContext
- * @param {(boolean|undefined)} allOrNothing
+ * @param {string} text Value supplied for the text parameter.
+ * @param {(boolean|undefined)} mustHaveExpression Value supplied for the mustHaveExpression parameter.
+ * @param {(string|undefined)} trustedContext Value supplied for the trustedContext parameter.
+ * @param {(boolean|undefined)} allOrNothing Value supplied for the allOrNothing parameter.
  * @return {(!ng.InterpolationFunction|undefined)}
  */
 ng.InjectionTokenMap.prototype.$interpolate = function(text, mustHaveExpression, trustedContext, allOrNothing) {};
@@ -2682,15 +2831,15 @@ ng.InjectionTokenMap.prototype.$log;
 /**
  * Public InjectionTokenMap.$machine member exposed by the AngularTS namespace contract.
  * @template TData, TStates
- * @param {!Object} config
+ * @param {!Object} config Value supplied for the config parameter.
  * @return {!ng.Machine<!Object>}
  */
 ng.InjectionTokenMap.prototype.$machine = function(config) {};
 
 /**
  * Public InjectionTokenMap.$parse member exposed by the AngularTS namespace contract.
- * @param {string} expression
- * @param {(function(?): ?|undefined)} interceptorFn
+ * @param {string} expression Value supplied for the expression parameter.
+ * @param {(function(?): ?|undefined)} interceptorFn Value supplied for the interceptorFn parameter.
  * @return {!Object}
  */
 ng.InjectionTokenMap.prototype.$parse = function(expression, interceptorFn) {};
@@ -2698,9 +2847,9 @@ ng.InjectionTokenMap.prototype.$parse = function(expression, interceptorFn) {};
 /**
  * Public InjectionTokenMap.$rest member exposed by the AngularTS namespace contract.
  * @template T, ID
- * @param {string} baseUrl
- * @param {(function(new: T, ?)|undefined)} entityClass
- * @param {(!ng.RestOptions|undefined)} options
+ * @param {string} baseUrl Value supplied for the baseUrl parameter.
+ * @param {(function(new: T, ?)|undefined)} entityClass Value supplied for the entityClass parameter.
+ * @param {(!ng.RestOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.RestService<T, ID>}
  */
 ng.InjectionTokenMap.prototype.$rest = function(baseUrl, entityClass, options) {};
@@ -2743,8 +2892,8 @@ ng.InjectionTokenMap.prototype.$serviceWorker;
 
 /**
  * Public InjectionTokenMap.$sse member exposed by the AngularTS namespace contract.
- * @param {string} url
- * @param {(!ng.SseConfig|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {(!ng.SseConfig|undefined)} config Value supplied for the config parameter.
  * @return {!ng.SseConnection}
  */
 ng.InjectionTokenMap.prototype.$sse = function(url, config) {};
@@ -2764,10 +2913,10 @@ ng.InjectionTokenMap.prototype.$stateRegistry;
 /**
  * Public InjectionTokenMap.$storage member exposed by the AngularTS namespace contract.
  * @template T
- * @param {T} target
- * @param {string} key
- * @param {!Object} storage
- * @param {(!Object|undefined)} options
+ * @param {T} target Value supplied for the target parameter.
+ * @param {string} key Value supplied for the key parameter.
+ * @param {!Object} storage Value supplied for the storage parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {T}
  */
 ng.InjectionTokenMap.prototype.$storage = function(target, key, storage, options) {};
@@ -2786,7 +2935,7 @@ ng.InjectionTokenMap.prototype.$templateCache;
 
 /**
  * Public InjectionTokenMap.$templateRequest member exposed by the AngularTS namespace contract.
- * @param {string} templateUrl
+ * @param {string} templateUrl Value supplied for the templateUrl parameter.
  * @return {!Promise<string>}
  */
 ng.InjectionTokenMap.prototype.$templateRequest = function(templateUrl) {};
@@ -2811,16 +2960,16 @@ ng.InjectionTokenMap.prototype.$webComponent;
 
 /**
  * Public InjectionTokenMap.$websocket member exposed by the AngularTS namespace contract.
- * @param {string} url
- * @param {(!ng.WebSocketConfig|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {(!ng.WebSocketConfig|undefined)} config Value supplied for the config parameter.
  * @return {!ng.WebSocketConnection}
  */
 ng.InjectionTokenMap.prototype.$websocket = function(url, config) {};
 
 /**
  * Public InjectionTokenMap.$webTransport member exposed by the AngularTS namespace contract.
- * @param {string} url
- * @param {(!ng.WebTransportConfig|undefined)} config
+ * @param {string} url Value supplied for the url parameter.
+ * @param {(!ng.WebTransportConfig|undefined)} config Value supplied for the config parameter.
  * @return {!ng.WebTransportConnection}
  */
 ng.InjectionTokenMap.prototype.$webTransport = function(url, config) {};
@@ -2834,7 +2983,7 @@ ng.InjectionTokenMap.prototype.$window;
 /**
  * Public InjectionTokenMap.$workflow member exposed by the AngularTS namespace contract.
  * @template TContract
- * @param {!Object} config
+ * @param {!Object} config Value supplied for the config parameter.
  * @return {!ng.Workflow<TContract>}
  */
 ng.InjectionTokenMap.prototype.$workflow = function(config) {};
@@ -2842,7 +2991,7 @@ ng.InjectionTokenMap.prototype.$workflow = function(config) {};
 /**
  * Public InjectionTokenMap.$workflowSupervisor member exposed by the AngularTS namespace contract.
  * @template TWorkflows
- * @param {!Object} config
+ * @param {!Object} config Value supplied for the config parameter.
  * @return {!ng.WorkflowSupervisor<TWorkflows>}
  */
 ng.InjectionTokenMap.prototype.$workflowSupervisor = function(config) {};
@@ -2850,8 +2999,8 @@ ng.InjectionTokenMap.prototype.$workflowSupervisor = function(config) {};
 /**
  * Public InjectionTokenMap.$worker member exposed by the AngularTS namespace contract.
  * @template TSend, TReceive
- * @param {(!Object|string)} scriptPath
- * @param {(!Object|undefined)} config
+ * @param {(!Object|string)} scriptPath Value supplied for the scriptPath parameter.
+ * @param {(!Object|undefined)} config Value supplied for the config parameter.
  * @return {!ng.WorkerHandle<TSend, TReceive>}
  */
 ng.InjectionTokenMap.prototype.$worker = function(scriptPath, config) {};
@@ -2864,70 +3013,52 @@ ng.InjectionTokenMap.prototype.$worker = function(scriptPath, config) {};
 ng.Model = function() {};
 
 /**
- * Public Model.$proxy member exposed by the AngularTS namespace contract.
- * @type {!ng.Scope}
- */
-ng.Model.prototype.$proxy;
-
-/**
- * Public Model.$handler member exposed by the AngularTS namespace contract.
- * @type {?}
- */
-ng.Model.prototype.$handler;
-
-/**
- * Public Model.$target member exposed by the AngularTS namespace contract.
- * @type {!Object}
- */
-ng.Model.prototype.$target;
-
-/**
- * Public Model.$id member exposed by the AngularTS namespace contract.
+ * Public Model.id member exposed by the AngularTS namespace contract.
  * @type {number}
  */
-ng.Model.prototype.$id;
+ng.Model.prototype.id;
 
 /**
- * Public Model.$root member exposed by the AngularTS namespace contract.
+ * Public Model.root member exposed by the AngularTS namespace contract.
  * @type {!ng.Scope}
  */
-ng.Model.prototype.$root;
+ng.Model.prototype.root;
 
 /**
- * Public Model.$parent member exposed by the AngularTS namespace contract.
+ * Public Model.parent member exposed by the AngularTS namespace contract.
  * @type {(!ng.Scope|undefined)}
  */
-ng.Model.prototype.$parent;
+ng.Model.prototype.parent;
 
 /**
- * Public Model.$scopename member exposed by the AngularTS namespace contract.
+ * Public Model.scopeName member exposed by the AngularTS namespace contract.
  * @type {(string|undefined)}
  */
-ng.Model.prototype.$scopename;
+ng.Model.prototype.scopeName;
 
 /**
  * Intercepts and handles property assignments on the target object. Scopeable objects are stored as raw model values and proxied lazily when read.
- * @param {!Object} target
- * @param {string} property
- * @param {?} value
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {string} property The name of the property being set.
+ * @param {?} value The new value being assigned to the property.
+ * @param {!ng.Scope} proxy The proxy intercepting property access.
  * @return {boolean}
  */
 ng.Model.prototype.set = function(target, property, value, proxy) {};
 
 /**
  * Intercepts property access on the target object. It checks for specific properties (`watch` and `sync`) and binds their methods. For other properties, it returns the value directly.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being accessed.
+ * @param {!ng.Scope} proxy The proxy object being invoked.
  * @return {?}
  */
 ng.Model.prototype.get = function(target, property, proxy) {};
 
 /**
  * Public Model.deleteProperty member exposed by the AngularTS namespace contract.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being deleted.
  * @return {boolean}
  */
 ng.Model.prototype.deleteProperty = function(target, property) {};
@@ -2935,114 +3066,114 @@ ng.Model.prototype.deleteProperty = function(target, property) {};
 /**
  * Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws.
  * @template T
- * @param {function(): T} fn
+ * @param {function(): T} fn Value supplied for the fn parameter.
  * @return {T}
  */
-ng.Model.prototype.$batch = function(fn) {};
+ng.Model.prototype.batch = function(fn) {};
 
 /**
  * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
- * @param {string} watchProp
- * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
- * @param {(boolean|undefined)} lazy
- * @param {(boolean|undefined)} directLeaf
+ * @param {string} watchProp An expression to be watched in the context of this model.
+ * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
+ * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+ * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
  * @return {(function(): void|undefined)}
  */
-ng.Model.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.Model.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
- * @param {(!ng.Scope|undefined)} childInstance
+ * @param {(!ng.Scope|undefined)} childInstance Value supplied for the childInstance parameter.
  * @return {!ng.Scope}
  */
-ng.Model.prototype.$new = function(childInstance) {};
+ng.Model.prototype.new = function(childInstance) {};
 
 /**
  * Creates an isolate child scope that does not inherit watchable properties directly.
- * @param {(!ng.Scope|undefined)} instance
+ * @param {(!ng.Scope|undefined)} instance Value supplied for the instance parameter.
  * @return {!ng.Scope}
  */
-ng.Model.prototype.$newIsolate = function(instance) {};
+ng.Model.prototype.newIsolate = function(instance) {};
 
 /**
  * Creates a transcluded child scope linked to this scope and an optional parent instance.
- * @param {(!ng.Scope|undefined)} parentInstance
+ * @param {(!ng.Scope|undefined)} parentInstance Value supplied for the parentInstance parameter.
  * @return {!ng.Scope}
  */
-ng.Model.prototype.$transcluded = function(parentInstance) {};
+ng.Model.prototype.transcluded = function(parentInstance) {};
 
 /**
  * Merges enumerable properties from the provided object into the current scope target.
- * @param {?} newTarget
+ * @param {?} newTarget Value supplied for the newTarget parameter.
  * @return {void}
  */
-ng.Model.prototype.$merge = function(newTarget) {};
+ng.Model.prototype.merge = function(newTarget) {};
 
 /**
  * Registers an event listener on this scope and returns a deregistration function.
- * @param {string} name
- * @param {function(...?): ?} listener
+ * @param {string} name Value supplied for the name parameter.
+ * @param {function(...?): ?} listener Value supplied for the listener parameter.
  * @return {function(): void}
  */
-ng.Model.prototype.$on = function(name, listener) {};
+ng.Model.prototype.on = function(name, listener) {};
 
 /**
  * Emits an event upward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.Model.prototype.$emit = function(name, var_args) {};
+ng.Model.prototype.emit = function(name, var_args) {};
 
 /**
  * Broadcasts an event downward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.Model.prototype.$broadcast = function(name, var_args) {};
+ng.Model.prototype.broadcast = function(name, var_args) {};
 
 /**
- * Public Model.$destroy member exposed by the AngularTS namespace contract.
+ * Destroys this scope and its descendants.
  * @return {void}
  */
-ng.Model.prototype.$destroy = function() {};
+ng.Model.prototype.destroy = function() {};
 
 /**
  * Searches this scope tree for a scope with the given id.
- * @param {(number|string)} id
+ * @param {(number|string)} id Value supplied for the id parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.Model.prototype.$getById = function(id) {};
+ng.Model.prototype.getById = function(id) {};
 
 /**
  * Searches the scope tree for a scope registered under the provided name.
- * @param {string} name
+ * @param {string} name Value supplied for the name parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.Model.prototype.$searchByName = function(name) {};
+ng.Model.prototype.searchByName = function(name) {};
 
 /**
- * Public Model.$snapshot member exposed by the AngularTS namespace contract.
+ * Public Model.snapshot member exposed by the AngularTS namespace contract.
  * @return {T}
  */
-ng.Model.prototype.$snapshot = function() {};
+ng.Model.prototype.snapshot = function() {};
 
 /**
- * Public Model.$restore member exposed by the AngularTS namespace contract.
- * @param {T} snapshot
- * @param {(!ng.ModelRestoreOptions|undefined)} options
+ * Public Model.restore member exposed by the AngularTS namespace contract.
+ * @param {T} snapshot Value supplied for the snapshot parameter.
+ * @param {(!ng.ModelRestoreOptions|undefined)} options Value supplied for the options parameter.
  * @return {void}
  */
-ng.Model.prototype.$restore = function(snapshot, options) {};
+ng.Model.prototype.restore = function(snapshot, options) {};
 
 /**
- * Public Model.$sync member exposed by the AngularTS namespace contract.
- * @param {(!Array<function(...?): !ng.ModelSyncTarget<T>>|!ng.ModelSyncTarget<T>|function(...?): !ng.ModelSyncTarget<T>)} target
- * @param {(!ng.ModelSyncOptions|undefined)} options
+ * Public Model.sync member exposed by the AngularTS namespace contract.
+ * @param {(!Array<function(...?): !ng.ModelSyncTarget<T>>|!ng.ModelSyncTarget<T>|function(...?): !ng.ModelSyncTarget<T>)} target Value supplied for the target parameter.
+ * @param {(!ng.ModelSyncOptions|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
-ng.Model.prototype.$sync = function(target, options) {};
+ng.Model.prototype.sync = function(target, options) {};
 
 /**
  * Public AngularTS ModelChange contract exposed through the global ng namespace for Closure-annotated applications.
@@ -3155,10 +3286,10 @@ ng.InterpolateService.prototype.startSymbol = function() {};
 
 /**
  * Invokes the callable InterpolateService contract.
- * @param {string} text
- * @param {(boolean|undefined)} mustHaveExpression
- * @param {(string|undefined)} trustedContext
- * @param {(boolean|undefined)} allOrNothing
+ * @param {string} text Value supplied for the text parameter.
+ * @param {(boolean|undefined)} mustHaveExpression Value supplied for the mustHaveExpression parameter.
+ * @param {(string|undefined)} trustedContext Value supplied for the trustedContext parameter.
+ * @param {(boolean|undefined)} allOrNothing Value supplied for the allOrNothing parameter.
  * @return {(!ng.InterpolationFunction|undefined)}
  */
 ng.InterpolateService.prototype.call = function(text, mustHaveExpression, trustedContext, allOrNothing) {};
@@ -3207,7 +3338,7 @@ ng.LocationService.prototype.absUrl;
 
 /**
  * Change path, search and hash, when called with parameter and return `$location`.
- * @param {string} url
+ * @param {string} url New URL without base prefix (e.g. `/path?a=b#hash`).
  * @return {!ng.LocationService}
  */
 ng.LocationService.prototype.setUrl = function(url) {};
@@ -3226,7 +3357,7 @@ ng.LocationService.prototype.url = function() {};
 
 /**
  * Changes the path parameter and returns `$location`.
- * @param {(null|number|string)} path
+ * @param {(null|number|string)} path New path.
  * @return {!ng.LocationService}
  */
 ng.LocationService.prototype.setPath = function(path) {};
@@ -3245,7 +3376,7 @@ ng.LocationService.prototype.path = function() {};
 
 /**
  * Changes the hash fragment when called with a parameter and returns `$location`.
- * @param {(null|number|string)} hash
+ * @param {(null|number|string)} hash New hash fragment.
  * @return {!ng.LocationService}
  */
 ng.LocationService.prototype.setHash = function(hash) {};
@@ -3264,8 +3395,8 @@ ng.LocationService.prototype.hash = function() {};
 
 /**
  * Sets the search part of the current URL as an object.
- * @param {(!Object<string, ?>|number|string)} search
- * @param {(!Array<string>|boolean|null|number|string|undefined)} paramValue
+ * @param {(!Object<string, ?>|number|string)} search New search params as a string or object.
+ * @param {(!Array<string>|boolean|null|number|string|undefined)} paramValue If `search` is a string or number, overrides only a single search property.
  * @return {!ng.LocationService}
  */
 ng.LocationService.prototype.setSearch = function(search, paramValue) {};
@@ -3284,7 +3415,7 @@ ng.LocationService.prototype.search = function() {};
 
 /**
  * Change the history state object when called with one parameter and return `$location`. The state object is later passed to `pushState` or `replaceState`. See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state} NOTE: This method is supported only in HTML5 mode and only in browsers supporting the HTML5 History API (i.e. methods `pushState` and `replaceState`). If you need to support older browsers (like IE9 or Android < 4.0), don't use this method.
- * @param {?} state
+ * @param {?} state Value supplied for the state parameter.
  * @return {!ng.LocationService}
  */
 ng.LocationService.prototype.setState = function(state) {};
@@ -3303,15 +3434,15 @@ ng.LocationService.prototype.state = function() {};
 
 /**
  * Attempts to parse a clicked link into an app-relative URL update.
- * @param {string} url
- * @param {(null|string)} relHref
+ * @param {string} url Value supplied for the url parameter.
+ * @param {(null|string)} relHref Value supplied for the relHref parameter.
  * @return {boolean}
  */
 ng.LocationService.prototype.parseLinkUrl = function(url, relHref) {};
 
 /**
  * Parse given HTML5 (regular) URL string into properties
- * @param {string} url
+ * @param {string} url HTML5 URL
  * @return {void}
  */
 ng.LocationService.prototype.parse = function(url) {};
@@ -3390,35 +3521,35 @@ ng.LogService = function() {};
 
 /**
  * Log a debug message.
- * @param {...?} var_args
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {void}
  */
 ng.LogService.prototype.debug = function(var_args) {};
 
 /**
  * Log an error message.
- * @param {...?} var_args
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {void}
  */
 ng.LogService.prototype.error = function(var_args) {};
 
 /**
  * Log an info message.
- * @param {...?} var_args
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {void}
  */
 ng.LogService.prototype.info = function(var_args) {};
 
 /**
  * Log a general message.
- * @param {...?} var_args
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {void}
  */
 ng.LogService.prototype.log = function(var_args) {};
 
 /**
  * Log a warning message.
- * @param {...?} var_args
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {void}
  */
 ng.LogService.prototype.warn = function(var_args) {};
@@ -3577,108 +3708,108 @@ ng.SceService = function() {};
 
 /**
  * Public SceService.getTrusted member exposed by the AngularTS namespace contract.
- * @param {string} type
- * @param {?} mayBeTrusted
+ * @param {string} type Value supplied for the type parameter.
+ * @param {?} mayBeTrusted Value supplied for the mayBeTrusted parameter.
  * @return {?}
  */
 ng.SceService.prototype.getTrusted = function(type, mayBeTrusted) {};
 
 /**
  * Public SceService.getTrustedHtml member exposed by the AngularTS namespace contract.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.getTrustedHtml = function(value) {};
 
 /**
  * Public SceService.getTrustedResourceUrl member exposed by the AngularTS namespace contract.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.getTrustedResourceUrl = function(value) {};
 
 /**
  * Public SceService.getTrustedUrl member exposed by the AngularTS namespace contract.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.getTrustedUrl = function(value) {};
 
 /**
  * Public SceService.getTrustedMediaUrl member exposed by the AngularTS namespace contract.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.getTrustedMediaUrl = function(value) {};
 
 /**
  * Public SceService.parse member exposed by the AngularTS namespace contract.
- * @param {string} type
- * @param {string} expression
+ * @param {string} type Value supplied for the type parameter.
+ * @param {string} expression Value supplied for the expression parameter.
  * @return {!Object}
  */
 ng.SceService.prototype.parse = function(type, expression) {};
 
 /**
  * Public SceService.parseAsHtml member exposed by the AngularTS namespace contract.
- * @param {string} expression
+ * @param {string} expression Value supplied for the expression parameter.
  * @return {!Object}
  */
 ng.SceService.prototype.parseAsHtml = function(expression) {};
 
 /**
  * Public SceService.parseAsResourceUrl member exposed by the AngularTS namespace contract.
- * @param {string} expression
+ * @param {string} expression Value supplied for the expression parameter.
  * @return {!Object}
  */
 ng.SceService.prototype.parseAsResourceUrl = function(expression) {};
 
 /**
  * Public SceService.parseAsUrl member exposed by the AngularTS namespace contract.
- * @param {string} expression
+ * @param {string} expression Value supplied for the expression parameter.
  * @return {!Object}
  */
 ng.SceService.prototype.parseAsUrl = function(expression) {};
 
 /**
  * Public SceService.parseAsMediaUrl member exposed by the AngularTS namespace contract.
- * @param {string} expression
+ * @param {string} expression Value supplied for the expression parameter.
  * @return {!Object}
  */
 ng.SceService.prototype.parseAsMediaUrl = function(expression) {};
 
 /**
  * Public SceService.trustAs member exposed by the AngularTS namespace contract.
- * @param {string} type
- * @param {?} value
+ * @param {string} type Value supplied for the type parameter.
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.trustAs = function(type, value) {};
 
 /**
  * Public SceService.trustAsHtml member exposed by the AngularTS namespace contract.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.trustAsHtml = function(value) {};
 
 /**
  * Public SceService.trustAsResourceUrl member exposed by the AngularTS namespace contract.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.trustAsResourceUrl = function(value) {};
 
 /**
  * Public SceService.trustAsUrl member exposed by the AngularTS namespace contract.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.trustAsUrl = function(value) {};
 
 /**
  * Public SceService.trustAsMediaUrl member exposed by the AngularTS namespace contract.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.trustAsMediaUrl = function(value) {};
@@ -3691,7 +3822,7 @@ ng.SceService.prototype.isEnabled = function() {};
 
 /**
  * Public SceService.valueOf member exposed by the AngularTS namespace contract.
- * @param {(?|undefined)} value
+ * @param {(?|undefined)} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceService.prototype.valueOf = function(value) {};
@@ -3704,23 +3835,23 @@ ng.SceDelegateService = function() {};
 
 /**
  * Public SceDelegateService.getTrusted member exposed by the AngularTS namespace contract.
- * @param {string} type
- * @param {?} mayBeTrusted
+ * @param {string} type Value supplied for the type parameter.
+ * @param {?} mayBeTrusted Value supplied for the mayBeTrusted parameter.
  * @return {?}
  */
 ng.SceDelegateService.prototype.getTrusted = function(type, mayBeTrusted) {};
 
 /**
  * Public SceDelegateService.trustAs member exposed by the AngularTS namespace contract.
- * @param {string} type
- * @param {?} value
+ * @param {string} type Value supplied for the type parameter.
+ * @param {?} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceDelegateService.prototype.trustAs = function(type, value) {};
 
 /**
  * Public SceDelegateService.valueOf member exposed by the AngularTS namespace contract.
- * @param {(?|undefined)} value
+ * @param {(?|undefined)} value Value supplied for the value parameter.
  * @return {?}
  */
 ng.SceDelegateService.prototype.valueOf = function(value) {};
@@ -3841,7 +3972,7 @@ ng.SecurityPolicy = function() {};
 
 /**
  * Public SecurityPolicy.check member exposed by the AngularTS namespace contract.
- * @param {!Object} context
+ * @param {!Object} context Value supplied for the context parameter.
  * @return {!Object}
  */
 ng.SecurityPolicy.prototype.check = function(context) {};
@@ -3920,7 +4051,7 @@ ng.StateRegistryService = function() {};
 
 /**
  * Public StateRegistryService.onStatesChanged member exposed by the AngularTS namespace contract.
- * @param {function(string, !Array<!ng.StateDeclaration>): void} listener
+ * @param {function(string, !Array<!ng.StateDeclaration>): void} listener Value supplied for the listener parameter.
  * @return {function(): void}
  */
 ng.StateRegistryService.prototype.onStatesChanged = function(listener) {};
@@ -3933,14 +4064,14 @@ ng.StateRegistryService.prototype.root = function() {};
 
 /**
  * Public StateRegistryService.register member exposed by the AngularTS namespace contract.
- * @param {!ng.StateDeclaration} stateDefinition
+ * @param {!ng.StateDeclaration} stateDefinition Value supplied for the stateDefinition parameter.
  * @return {!ng.StateDeclaration}
  */
 ng.StateRegistryService.prototype.register = function(stateDefinition) {};
 
 /**
  * Public StateRegistryService.deregister member exposed by the AngularTS namespace contract.
- * @param {(!Object|!ng.StateDeclaration|string)} stateOrName
+ * @param {(!Object|!ng.StateDeclaration|string)} stateOrName Value supplied for the stateOrName parameter.
  * @return {!Array<!ng.StateDeclaration>}
  */
 ng.StateRegistryService.prototype.deregister = function(stateOrName) {};
@@ -4001,8 +4132,8 @@ ng.ServiceWorkerService.prototype.updateState;
 
 /**
  * Register the configured script or an explicit script URL.
- * @param {(!Object|string|undefined)} scriptOrOptions
- * @param {(!Object|undefined)} options
+ * @param {(!Object|string|undefined)} scriptOrOptions Value supplied for the scriptOrOptions parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<!Object>}
  */
 ng.ServiceWorkerService.prototype.register = function(scriptOrOptions, options) {};
@@ -4027,8 +4158,8 @@ ng.ServiceWorkerService.prototype.unregister = function() {};
 
 /**
  * Send a message to the current controller or an explicit worker target.
- * @param {?} message
- * @param {(!ng.ServiceWorkerPostOptions|undefined)} options
+ * @param {?} message Value supplied for the message parameter.
+ * @param {(!ng.ServiceWorkerPostOptions|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<void>}
  */
 ng.ServiceWorkerService.prototype.post = function(message, options) {};
@@ -4036,8 +4167,8 @@ ng.ServiceWorkerService.prototype.post = function(message, options) {};
 /**
  * Send a request through a dedicated `MessageChannel`.
  * @template TResponse
- * @param {?} message
- * @param {(!ng.ServiceWorkerRequestOptions|undefined)} options
+ * @param {?} message Value supplied for the message parameter.
+ * @param {(!ng.ServiceWorkerRequestOptions|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<TResponse>}
  */
 ng.ServiceWorkerService.prototype.request = function(message, options) {};
@@ -4045,21 +4176,21 @@ ng.ServiceWorkerService.prototype.request = function(message, options) {};
 /**
  * Subscribe to messages from the service worker container.
  * @template TData
- * @param {function(!ng.ServiceWorkerMessageEvent<TData>): void} callback
+ * @param {function(!ng.ServiceWorkerMessageEvent<TData>): void} callback Value supplied for the callback parameter.
  * @return {function(): void}
  */
 ng.ServiceWorkerService.prototype.onMessage = function(callback) {};
 
 /**
  * Subscribe to controller-change notifications.
- * @param {function((!Object|null)): void} callback
+ * @param {function((!Object|null)): void} callback Value supplied for the callback parameter.
  * @return {function(): void}
  */
 ng.ServiceWorkerService.prototype.onControllerChange = function(callback) {};
 
 /**
  * Subscribe to update-state notifications.
- * @param {function(!ng.ServiceWorkerUpdateState): void} callback
+ * @param {function(!ng.ServiceWorkerUpdateState): void} callback Value supplied for the callback parameter.
  * @return {function(): void}
  */
 ng.ServiceWorkerService.prototype.onUpdate = function(callback) {};
@@ -4157,72 +4288,72 @@ ng.TransitionsService = function() {};
 
 /**
  * Registers a [[TransitionHookFn]], called *before a transition starts*. Registers a transition lifecycle hook, which is invoked before a transition even begins. This hook can be useful to implement logic which prevents a transition from even starting, such as authentication, redirection See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onBefore` hooks are invoked *before a Transition starts*. No resolves have been fetched yet. Each `onBefore` hook is invoked synchronously, in the same call stack as [[StateService.transitionTo]]. The registered `onBefore` hooks are invoked in priority order. Note: during the `onBefore` phase, additional hooks can be added to the specific [[Transition]] instance. These "on-the-fly" hooks only affect the currently running transition.. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. If any hook modifies the transition *synchronously* (by throwing, returning `false`, or returning a [[TargetState]]), the remainder of the hooks are skipped. If a hook returns a promise, the remainder of the `onBefore` hooks are still invoked synchronously. All promises are resolved, and processed asynchronously before the `onStart` phase of the Transition. ### Examples #### Default Substate This example redirects any transition from 'home' to 'home.dashboard'. This is commonly referred to as a "default substate".
- * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria
- * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback
- * @param {(!Object|undefined)} options
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria defines which Transitions the Hook should be invoked for.
+ * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback the hook function which will be invoked.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.TransitionsService.prototype.onBefore = function(matchCriteria, callback, options) {};
 
 /**
  * Registers a [[TransitionHookFn]], called when a transition starts. Registers a transition lifecycle hook, which is invoked as a transition starts running. This hook can be useful to perform some asynchronous action before completing a transition. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onStart` hooks are invoked asynchronously when the Transition starts running. This happens after the `onBefore` phase is complete. At this point, the Transition has not yet exited nor entered any states. The registered `onStart` hooks are invoked in priority order. Note: A built-in `onStart` hook with high priority is used to fetch any eager resolve data. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Example #### Load feature shell data during transition This example pauses transitions into a reporting branch while an application-level feature shell loads. Use state `resolve` for route data and `policy.navigation` for security; use transition hooks for advanced orchestration that intentionally spans multiple states. #### Example: ```js $transitions.onStart({ to: 'reports.**' }, function(trans) { var reportsShell = trans.injector().get('ReportsShell'); return reportsShell.ensureLoaded(); }); ```
- * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria
- * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback
- * @param {(!Object|undefined)} options
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria defines which Transitions the Hook should be invoked for.
+ * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback the hook function which will be injected and invoked.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.TransitionsService.prototype.onStart = function(matchCriteria, callback, options) {};
 
 /**
  * Registers a [[TransitionStateHookFn]], called when a specific state is entered. Registers a lifecycle hook, which is invoked (during a transition) when a specific state is being entered. Since this hook is run only when the specific state is being *entered*, it can be useful for performing tasks when entering a submodule/feature area such as initializing a stateful service, or for guarding access to a submodule/feature area. See [[TransitionStateHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. `onEnter` hooks generally specify `{ entering: 'somestate' }`. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onEnter` hooks are invoked when the Transition is entering a state. States are entered after the `onRetain` phase is complete. If more than one state is being entered, the parent state is entered first. The registered `onEnter` hooks for a state are invoked in priority order. Note: A built-in `onEnter` hook with high priority is used to fetch lazy resolve data for states being entered. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering `onEnter` hooks using the [[TransitionService]], you may define an `onEnter` hook directly on a state declaration (see: [[StateDeclaration.onEnter]]). ### Examples #### Audit Log This example uses a service to log that a user has entered the admin section of an app. This assumes that there are substates of the "admin" state, such as "admin.users", "admin.pages", etc.
- * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria
- * @param {function(!ng.Transition<!Object<string, !Object>, !Object>, !ng.StateDeclaration): (!Object|boolean|void)} callback
- * @param {(!Object|undefined)} options
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria defines which Transitions the Hook should be invoked for.
+ * @param {function(!ng.Transition<!Object<string, !Object>, !Object>, !ng.StateDeclaration): (!Object|boolean|void)} callback the hook function which will be injected and invoked.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.TransitionsService.prototype.onEnter = function(matchCriteria, callback, options) {};
 
 /**
  * Registers a [[TransitionStateHookFn]], called when a specific state is retained/kept. Registers a lifecycle hook, which is invoked (during a transition) for a specific state that was previously active will remain active (is not being entered nor exited). This hook is invoked when a state is "retained" or "kept". It means the transition is coming *from* a substate of the retained state *to* a substate of the retained state. This hook can be used to perform actions when the user moves from one substate to another, such as between steps in a wizard. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. `onRetain` hooks generally specify `{ retained: 'somestate' }`. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onRetain` hooks are invoked after any `onExit` hooks have been fired. If more than one state is retained, the child states' `onRetain` hooks are invoked first. The registered `onRetain` hooks for a state are invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering `onRetain` hooks using the [[TransitionService]], you may define an `onRetain` hook directly on a state declaration (see: [[StateDeclaration.onRetain]]).
- * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria
- * @param {function(!ng.Transition<!Object<string, !Object>, !Object>, !ng.StateDeclaration): (!Object|boolean|void)} callback
- * @param {(!Object|undefined)} options
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria defines which Transitions the Hook should be invoked for.
+ * @param {function(!ng.Transition<!Object<string, !Object>, !Object>, !ng.StateDeclaration): (!Object|boolean|void)} callback the hook function which will be injected and invoked.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.TransitionsService.prototype.onRetain = function(matchCriteria, callback, options) {};
 
 /**
  * Registers a [[TransitionStateHookFn]], called when a specific state is exited. Registers a lifecycle hook, which is invoked (during a transition) when a specific state is being exited. Since this hook is run only when the specific state is being *exited*, it can be useful for performing tasks when leaving a submodule/feature area such as cleaning up a stateful service, or for preventing the user from leaving a state or submodule until some criteria is satisfied. See [[TransitionStateHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. `onExit` hooks generally specify `{ exiting: 'somestate' }`. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onExit` hooks are invoked when the Transition is exiting a state. States are exited after any `onStart` phase is complete. If more than one state is being exited, the child states are exited first. The registered `onExit` hooks for a state are invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering `onExit` hooks using the [[TransitionService]], you may define an `onExit` hook directly on a state declaration (see: [[StateDeclaration.onExit]]).
- * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria
- * @param {function(!ng.Transition<!Object<string, !Object>, !Object>, !ng.StateDeclaration): (!Object|boolean|void)} callback
- * @param {(!Object|undefined)} options
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria defines which Transitions the Hook should be invoked for.
+ * @param {function(!ng.Transition<!Object<string, !Object>, !Object>, !ng.StateDeclaration): (!Object|boolean|void)} callback the hook function which will be injected and invoked.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.TransitionsService.prototype.onExit = function(matchCriteria, callback, options) {};
 
 /**
  * Registers a [[TransitionHookFn]], called *just before a transition finishes*. Registers a transition lifecycle hook, which is invoked just before a transition finishes. This hook is a last chance to cancel or redirect a transition. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onFinish` hooks are invoked after the `onEnter` phase is complete. These hooks are invoked just before the transition is "committed". Each hook is invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information.
- * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria
- * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback
- * @param {(!Object|undefined)} options
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria defines which Transitions the Hook should be invoked for.
+ * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback the hook function which will be injected and invoked.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.TransitionsService.prototype.onFinish = function(matchCriteria, callback, options) {};
 
 /**
  * Registers a [[TransitionHookFn]], called after a successful transition completed. Registers a transition lifecycle hook, which is invoked after a transition successfully completes. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onSuccess` hooks are chained off the Transition's promise (see [[Transition.promise]]). If the Transition is successful and its promise is resolved, then the `onSuccess` hooks are invoked. Since these hooks are run after the transition is over, their return value is ignored. The `onSuccess` hooks are invoked in priority order. ### Return value Since the Transition is already completed, the hook's return value is ignored
- * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria
- * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback
- * @param {(!Object|undefined)} options
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria defines which Transitions the Hook should be invoked for.
+ * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback the hook function which will be injected and invoked.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.TransitionsService.prototype.onSuccess = function(matchCriteria, callback, options) {};
 
 /**
  * Registers a [[TransitionHookFn]], called after a transition has errored. Registers a transition lifecycle hook, which is invoked after a transition has been rejected for any reason. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle The `onError` hooks are chained off the Transition's promise (see [[Transition.promise]]). If a Transition fails, its promise is rejected and the `onError` hooks are invoked. The `onError` hooks are invoked in priority order. Since these hooks are run after the transition is over, their return value is ignored. A transition "errors" if it was started, but failed to complete (for any reason). A *non-exhaustive list* of reasons a transition can error: - A transition was cancelled because a new transition started while it was still running (`Transition superseded`) - A transition was cancelled by a Transition Hook returning false - A transition was redirected by a Transition Hook returning a [[TargetState]] - A Transition Hook or resolve function threw an error - A Transition Hook returned a rejected promise - A resolve function returned a rejected promise To check the failure reason, inspect the return value of [[Transition.error]]. Note: `onError` should be used for targeted error handling, or error recovery. For catch-all error reporting, configure `$router.error` or `$exceptionHandler`. ### Return value Since the Transition is already completed, the hook's return value is ignored
- * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria
- * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback
- * @param {(!Object|undefined)} options
+ * @param {!Object<string, (boolean|function((!Object|undefined), (!ng.Transition<!Object<string, !Object>, !Object>|undefined)): boolean|string|undefined)>} matchCriteria defines which Transitions the Hook should be invoked for.
+ * @param {function(!ng.Transition<!Object<string, !Object>, !Object>): (!Object|boolean|void)} callback the hook function which will be injected and invoked.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {function(): void}
  */
 ng.TransitionsService.prototype.onError = function(matchCriteria, callback, options) {};
@@ -4734,7 +4865,7 @@ ng.HttpResponseStatus;
 ng.Injectable;
 
 /**
- * A user-defined service recipe accepted by {@link ng.NgModule.provider}. Object recipes define an injectable `$get` factory directly. Injectable functions and classes are instantiated first and must produce an object with an injectable `$get` factory.
+ * A user-defined service recipe accepted by {@link ng.NgModule.provider}. Object recipes define an injectable `get` factory directly. Injectable functions and classes are instantiated first and must produce an object with an injectable `get` factory.
  * @typedef {(!Array<function(...?): ?>|!Object|function(...?): ?|function(new: ?, ...?))}
  */
 ng.ProviderDefinition;
@@ -4759,8 +4890,8 @@ ng.InterpolationFunction.prototype.exp;
 
 /**
  * Invokes the callable InterpolationFunction contract.
- * @param {?} context
- * @param {(function(?): void|undefined)} cb
+ * @param {?} context The scope/context
+ * @param {(function(?): void|undefined)} cb Optional callback when expressions change
  * @return {?}
  */
 ng.InterpolationFunction.prototype.call = function(context, cb) {};
@@ -4793,8 +4924,8 @@ ng.Machine.prototype.data;
 /**
  * Public Machine.send member exposed by the AngularTS namespace contract.
  * @template TType
- * @param {TType} type
- * @param {...?} var_args
+ * @param {TType} type Value supplied for the type parameter.
+ * @param {...?} var_args Value supplied for the payload parameter.
  * @return {!Object}
  */
 ng.Machine.prototype.send = function(type, var_args) {};
@@ -4802,15 +4933,15 @@ ng.Machine.prototype.send = function(type, var_args) {};
 /**
  * Public Machine.can member exposed by the AngularTS namespace contract.
  * @template TType
- * @param {TType} type
- * @param {...?} var_args
+ * @param {TType} type Value supplied for the type parameter.
+ * @param {...?} var_args Value supplied for the payload parameter.
  * @return {boolean}
  */
 ng.Machine.prototype.can = function(type, var_args) {};
 
 /**
  * Public Machine.matches member exposed by the AngularTS namespace contract.
- * @param {?} state
+ * @param {?} state Value supplied for the state parameter.
  * @return {boolean}
  */
 ng.Machine.prototype.matches = function(state) {};
@@ -4823,7 +4954,7 @@ ng.Machine.prototype.snapshot = function() {};
 
 /**
  * Public Machine.restore member exposed by the AngularTS namespace contract.
- * @param {?} snapshot
+ * @param {?} snapshot Value supplied for the snapshot parameter.
  * @return {void}
  */
 ng.Machine.prototype.restore = function(snapshot) {};
@@ -5002,7 +5133,7 @@ ng.Workflow.prototype.history;
 
 /**
  * Public Workflow.can member exposed by the AngularTS namespace contract.
- * @param {?} command
+ * @param {?} command Value supplied for the command parameter.
  * @return {boolean}
  */
 ng.Workflow.prototype.can = function(command) {};
@@ -5010,15 +5141,15 @@ ng.Workflow.prototype.can = function(command) {};
 /**
  * Public Workflow.run member exposed by the AngularTS namespace contract.
  * @template TName
- * @param {TName} command
- * @param {...?} var_args
+ * @param {TName} command Value supplied for the command parameter.
+ * @param {...?} var_args Value supplied for the input parameter.
  * @return {!Promise<!Object>}
  */
 ng.Workflow.prototype.run = function(command, var_args) {};
 
 /**
  * Public Workflow.cancel member exposed by the AngularTS namespace contract.
- * @param {(?|undefined)} command
+ * @param {(?|undefined)} command Value supplied for the command parameter.
  * @return {number}
  */
 ng.Workflow.prototype.cancel = function(command) {};
@@ -5031,7 +5162,7 @@ ng.Workflow.prototype.snapshot = function() {};
 
 /**
  * Public Workflow.restore member exposed by the AngularTS namespace contract.
- * @param {?} snapshot
+ * @param {?} snapshot Value supplied for the snapshot parameter.
  * @return {void}
  */
 ng.Workflow.prototype.restore = function(snapshot) {};
@@ -5111,14 +5242,14 @@ ng.WorkflowCommandContext.prototype.command;
 
 /**
  * Public WorkflowCommandContext.cleanup member exposed by the AngularTS namespace contract.
- * @param {function(): void} callback
+ * @param {function(): void} callback Value supplied for the callback parameter.
  * @return {void}
  */
 ng.WorkflowCommandContext.prototype.cleanup = function(callback) {};
 
 /**
  * Stop the command with a controlled, recorded diagnostic.
- * @param {!Object} diagnostic
+ * @param {!Object} diagnostic Value supplied for the diagnostic parameter.
  * @return {?}
  */
 ng.WorkflowCommandContext.prototype.reject = function(diagnostic) {};
@@ -5298,7 +5429,7 @@ ng.WorkflowSupervisor.prototype.ready;
 /**
  * Public WorkflowSupervisor.workflow member exposed by the AngularTS namespace contract.
  * @template TWorkflowName
- * @param {TWorkflowName} name
+ * @param {TWorkflowName} name Value supplied for the name parameter.
  * @return {?}
  */
 ng.WorkflowSupervisor.prototype.workflow = function(name) {};
@@ -5317,7 +5448,7 @@ ng.WorkflowSupervisor.prototype.snapshot = function() {};
 
 /**
  * Public WorkflowSupervisor.restore member exposed by the AngularTS namespace contract.
- * @param {?} snapshot
+ * @param {?} snapshot Value supplied for the snapshot parameter.
  * @return {void}
  */
 ng.WorkflowSupervisor.prototype.restore = function(snapshot) {};
@@ -5416,15 +5547,15 @@ ng.WorkflowSupervisorPersistence = function() {};
 
 /**
  * Public WorkflowSupervisorPersistence.load member exposed by the AngularTS namespace contract.
- * @param {string} id
+ * @param {string} id Value supplied for the id parameter.
  * @return {!Promise<(TSnapshot|undefined)>}
  */
 ng.WorkflowSupervisorPersistence.prototype.load = function(id) {};
 
 /**
  * Public WorkflowSupervisorPersistence.save member exposed by the AngularTS namespace contract.
- * @param {string} id
- * @param {TSnapshot} snapshot
+ * @param {string} id Value supplied for the id parameter.
+ * @param {TSnapshot} snapshot Value supplied for the snapshot parameter.
  * @return {!Promise<void>}
  */
 ng.WorkflowSupervisorPersistence.prototype.save = function(id, snapshot) {};
@@ -5479,222 +5610,216 @@ ng.WorkflowSupervisorSnapshot.prototype.updatedAt;
 ng.NgModelController = function() {};
 
 /**
- * Public NgModelController.$viewValue member exposed by the AngularTS namespace contract.
+ * Public NgModelController.viewValue member exposed by the AngularTS namespace contract.
  * @type {?}
  */
-ng.NgModelController.prototype.$viewValue;
+ng.NgModelController.prototype.viewValue;
 
 /**
- * Public NgModelController.$modelValue member exposed by the AngularTS namespace contract.
+ * Public NgModelController.modelValue member exposed by the AngularTS namespace contract.
  * @type {?}
  */
-ng.NgModelController.prototype.$modelValue;
+ng.NgModelController.prototype.modelValue;
 
 /**
- * Public NgModelController.$validators member exposed by the AngularTS namespace contract.
+ * Public NgModelController.validators member exposed by the AngularTS namespace contract.
  * @type {!Object<string, function(?, ?): ?>}
  */
-ng.NgModelController.prototype.$validators;
+ng.NgModelController.prototype.validators;
 
 /**
- * Public NgModelController.$asyncValidators member exposed by the AngularTS namespace contract.
+ * Public NgModelController.asyncValidators member exposed by the AngularTS namespace contract.
  * @type {!Object<string, function(?, ?): !Promise<?>>}
  */
-ng.NgModelController.prototype.$asyncValidators;
+ng.NgModelController.prototype.asyncValidators;
 
 /**
- * Public NgModelController.$parsers member exposed by the AngularTS namespace contract.
+ * Public NgModelController.parsers member exposed by the AngularTS namespace contract.
  * @type {!Array<function(?): ?>}
  */
-ng.NgModelController.prototype.$parsers;
+ng.NgModelController.prototype.parsers;
 
 /**
- * Public NgModelController.$formatters member exposed by the AngularTS namespace contract.
+ * Public NgModelController.formatters member exposed by the AngularTS namespace contract.
  * @type {!Array<function(?): ?>}
  */
-ng.NgModelController.prototype.$formatters;
+ng.NgModelController.prototype.formatters;
 
 /**
- * Public NgModelController.$viewChangeListeners member exposed by the AngularTS namespace contract.
+ * Public NgModelController.viewChangeListeners member exposed by the AngularTS namespace contract.
  * @type {!Array<function(): void>}
  */
-ng.NgModelController.prototype.$viewChangeListeners;
+ng.NgModelController.prototype.viewChangeListeners;
 
 /**
- * Public NgModelController.$untouched member exposed by the AngularTS namespace contract.
+ * Public NgModelController.untouched member exposed by the AngularTS namespace contract.
  * @type {boolean}
  */
-ng.NgModelController.prototype.$untouched;
+ng.NgModelController.prototype.untouched;
 
 /**
- * Public NgModelController.$touched member exposed by the AngularTS namespace contract.
+ * Public NgModelController.touched member exposed by the AngularTS namespace contract.
  * @type {boolean}
  */
-ng.NgModelController.prototype.$touched;
+ng.NgModelController.prototype.touched;
 
 /**
- * Public NgModelController.$pristine member exposed by the AngularTS namespace contract.
+ * Public NgModelController.pristine member exposed by the AngularTS namespace contract.
  * @type {boolean}
  */
-ng.NgModelController.prototype.$pristine;
+ng.NgModelController.prototype.pristine;
 
 /**
- * Public NgModelController.$dirty member exposed by the AngularTS namespace contract.
+ * Public NgModelController.dirty member exposed by the AngularTS namespace contract.
  * @type {boolean}
  */
-ng.NgModelController.prototype.$dirty;
+ng.NgModelController.prototype.dirty;
 
 /**
- * Public NgModelController.$valid member exposed by the AngularTS namespace contract.
+ * Public NgModelController.valid member exposed by the AngularTS namespace contract.
  * @type {(boolean|undefined)}
  */
-ng.NgModelController.prototype.$valid;
+ng.NgModelController.prototype.valid;
 
 /**
- * Public NgModelController.$invalid member exposed by the AngularTS namespace contract.
+ * Public NgModelController.invalid member exposed by the AngularTS namespace contract.
  * @type {(boolean|undefined)}
  */
-ng.NgModelController.prototype.$invalid;
+ng.NgModelController.prototype.invalid;
 
 /**
- * Public NgModelController.$validity member exposed by the AngularTS namespace contract.
+ * Public NgModelController.validity member exposed by the AngularTS namespace contract.
  * @type {(!Object|null)}
  */
-ng.NgModelController.prototype.$validity;
+ng.NgModelController.prototype.validity;
 
 /**
- * Public NgModelController.$validationMessage member exposed by the AngularTS namespace contract.
+ * Public NgModelController.validationMessage member exposed by the AngularTS namespace contract.
  * @type {string}
  */
-ng.NgModelController.prototype.$validationMessage;
+ng.NgModelController.prototype.validationMessage;
 
 /**
- * Public NgModelController.$error member exposed by the AngularTS namespace contract.
+ * Public NgModelController.error member exposed by the AngularTS namespace contract.
  * @type {!Object<string, boolean>}
  */
-ng.NgModelController.prototype.$error;
+ng.NgModelController.prototype.error;
 
 /**
- * Public NgModelController.$pending member exposed by the AngularTS namespace contract.
+ * Public NgModelController.pending member exposed by the AngularTS namespace contract.
  * @type {(!Object<string, boolean>|undefined)}
  */
-ng.NgModelController.prototype.$pending;
+ng.NgModelController.prototype.pending;
 
 /**
- * Public NgModelController.$name member exposed by the AngularTS namespace contract.
+ * Public NgModelController.controlName member exposed by the AngularTS namespace contract.
  * @type {(number|string)}
  */
-ng.NgModelController.prototype.$name;
+ng.NgModelController.prototype.controlName;
 
 /**
- * Public NgModelController.$target member exposed by the AngularTS namespace contract.
+ * Public NgModelController.options member exposed by the AngularTS namespace contract.
  * @type {!Object}
  */
-ng.NgModelController.prototype.$target;
-
-/**
- * Public NgModelController.$options member exposed by the AngularTS namespace contract.
- * @type {!Object}
- */
-ng.NgModelController.prototype.$options;
+ng.NgModelController.prototype.options;
 
 /**
  * Updates the validation state of the control and propagates it to the parent form.
- * @param {string} validationErrorKey
- * @param {(boolean|null|undefined)} state
+ * @param {string} validationErrorKey Value supplied for the validationErrorKey parameter.
+ * @param {(boolean|null|undefined)} state Value supplied for the state parameter.
  * @return {void}
  */
-ng.NgModelController.prototype.$setValidity = function(validationErrorKey, state) {};
+ng.NgModelController.prototype.setValidity = function(validationErrorKey, state) {};
 
 /**
- * Public NgModelController.$setNativeValidity member exposed by the AngularTS namespace contract.
- * @param {(boolean|null)} state
+ * Public NgModelController.setNativeValidity member exposed by the AngularTS namespace contract.
+ * @param {(boolean|null)} state Value supplied for the state parameter.
  * @return {void}
  */
-ng.NgModelController.prototype.$setNativeValidity = function(state) {};
+ng.NgModelController.prototype.setNativeValidity = function(state) {};
 
 /**
  * Sets the control's single native custom-validity message. Native controls expose this through `ValidityState.customError`; an empty message clears the custom error.
- * @param {string} message
+ * @param {string} message Value supplied for the message parameter.
  * @return {void}
  */
-ng.NgModelController.prototype.$setCustomValidity = function(message) {};
+ng.NgModelController.prototype.setCustomValidity = function(message) {};
 
 /**
- * Called when the view needs to be updated. It is expected that the user of the ng-model directive will implement this method. The `$render()` method is invoked in the following situations: * `$rollbackViewValue()` is called. If we are rolling back the view value to the last committed value then `$render()` is called to update the input control. * The value referenced by `ng-model` is changed programmatically and both the `$modelValue` and the `$viewValue` are different from last time. Since `ng-model` does not do a deep watch, `$render()` is only invoked if the values of `$modelValue` and `$viewValue` are actually different from their previous values. If `$modelValue` or `$viewValue` are objects (rather than a string or number) then `$render()` will not be invoked if you only change a property on the objects.
+ * Called when the view needs to be updated. It is expected that the user of the ng-model directive will implement this method. The `render()` method is invoked in the following situations: * `rollbackViewValue()` is called. If we are rolling back the view value to the last committed value then `render()` is called to update the input control. * The value referenced by `ng-model` is changed programmatically and both the `modelValue` and the `viewValue` are different from last time. Since `ng-model` does not do a deep watch, `render()` is only invoked if the values of `modelValue` and `viewValue` are actually different from their previous values. If `modelValue` or `viewValue` are objects (rather than a string or number) then `render()` will not be invoked if you only change a property on the objects.
  * @return {void}
  */
-ng.NgModelController.prototype.$render = function() {};
+ng.NgModelController.prototype.render = function() {};
 
 /**
- * This is called when we need to determine if the value of an input is empty. For instance, the required directive does this to work out if the input has data or not. The default `$isEmpty` function checks whether the value is `undefined`, `''`, `null` or `NaN`. You can override this for input directives whose concept of being empty is different from the default. The `checkboxInputType` directive does this because in its case a value of `false` implies empty.
- * @param {?} value
+ * This is called when we need to determine if the value of an input is empty. For instance, the required directive does this to work out if the input has data or not. The default `isEmpty` function checks whether the value is `undefined`, `''`, `null` or `NaN`. You can override this for input directives whose concept of being empty is different from the default. The `checkboxInputType` directive does this because in its case a value of `false` implies empty.
+ * @param {?} value The value of the input to check for emptiness.
  * @return {boolean}
  */
-ng.NgModelController.prototype.$isEmpty = function(value) {};
+ng.NgModelController.prototype.isEmpty = function(value) {};
 
 /**
  * Sets the control to its pristine state. This method can be called to remove the `ng-dirty` class and set the control to its pristine state (`ng-pristine` class). A model is considered to be pristine when the control has not been changed from when first compiled.
  * @return {void}
  */
-ng.NgModelController.prototype.$setPristine = function() {};
+ng.NgModelController.prototype.setPristine = function() {};
 
 /**
  * Sets the control to its dirty state. This method can be called to remove the `ng-pristine` class and set the control to its dirty state (`ng-dirty` class). A model is considered to be dirty when the control has been changed from when first compiled.
  * @return {void}
  */
-ng.NgModelController.prototype.$setDirty = function() {};
+ng.NgModelController.prototype.setDirty = function() {};
 
 /**
  * Sets the control to its untouched state. This method can be called to remove the `ng-touched` class and set the control to its untouched state (`ng-untouched` class). Upon compilation, a model is set as untouched by default, however this function can be used to restore that state if the model has already been touched by the user.
  * @return {void}
  */
-ng.NgModelController.prototype.$setUntouched = function() {};
+ng.NgModelController.prototype.setUntouched = function() {};
 
 /**
  * Sets the control to its touched state. This method can be called to remove the `ng-untouched` class and set the control to its touched state (`ng-touched` class). A model is considered to be touched when the user has first focused the control element and then shifted focus away from the control (blur event).
  * @return {void}
  */
-ng.NgModelController.prototype.$setTouched = function() {};
+ng.NgModelController.prototype.setTouched = function() {};
 
 /**
- * Cancel an update and reset the input element's value to prevent an update to the `$modelValue`, which may be caused by a pending debounced event or because the input is waiting for some future event. If you have an input that uses `ng-model-options` to set up debounced updates or updates that depend on special events such as `blur`, there can be a period when the `$viewValue` is out of sync with the ngModel's `$modelValue`. In this case, you can use `$rollbackViewValue()` to manually cancel the debounced / future update and reset the input to the last committed view value. It is also possible that you run into difficulties if you try to update the ngModel's `$modelValue` programmatically before these debounced/future events have resolved/occurred, because AngularTS's dirty checking mechanism is not able to tell whether the model has actually changed or not. The `$rollbackViewValue()` method should be called before programmatically changing the model of an input which may have such events pending. This is important in order to make sure that the input field will be updated with the new model value and any pending operations are cancelled.
+ * Cancel an update and reset the input element's value to prevent an update to the `modelValue`, which may be caused by a pending debounced event or because the input is waiting for some future event. If you have an input that uses `ng-model-options` to set up debounced updates or updates that depend on special events such as `blur`, there can be a period when the `viewValue` is out of sync with the ngModel's `modelValue`. In this case, you can use `rollbackViewValue()` to manually cancel the debounced / future update and reset the input to the last committed view value. It is also possible that you run into difficulties if you try to update the ngModel's `modelValue` programmatically before these debounced/future events have resolved/occurred, because AngularTS's dirty checking mechanism is not able to tell whether the model has actually changed or not. The `rollbackViewValue()` method should be called before programmatically changing the model of an input which may have such events pending. This is important in order to make sure that the input field will be updated with the new model value and any pending operations are cancelled.
  * @return {void}
  */
-ng.NgModelController.prototype.$rollbackViewValue = function() {};
+ng.NgModelController.prototype.rollbackViewValue = function() {};
 
 /**
- * Runs each of the registered validators (first synchronous validators and then asynchronous validators). If the validity changes to invalid, the model will be set to `undefined`, unless `ngModelOptions.allowInvalid` is `true`. If the validity changes to valid, it will set the model to the last available valid `$modelValue`, i.e. either the last parsed value or the last value set from the scope.
+ * Runs each of the registered validators (first synchronous validators and then asynchronous validators). If the validity changes to invalid, the model will be set to `undefined`, unless `ngModelOptions.allowInvalid` is `true`. If the validity changes to valid, it will set the model to the last available valid `modelValue`, i.e. either the last parsed value or the last value set from the scope.
  * @return {void}
  */
-ng.NgModelController.prototype.$validate = function() {};
+ng.NgModelController.prototype.validate = function() {};
 
 /**
- * Commit a pending update to the `$modelValue`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in `ng-model-options`. this method is rarely needed as `NgModelController` usually handles calling this in response to input events.
+ * Commit a pending update to the `modelValue`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in `ng-model-options`. this method is rarely needed as `NgModelController` usually handles calling this in response to input events.
  * @return {void}
  */
-ng.NgModelController.prototype.$commitViewValue = function() {};
+ng.NgModelController.prototype.commitViewValue = function() {};
 
 /**
- * Update the view value. This method should be called when a control wants to change the view value; typically, this is done from within a DOM event handler. For example, the `input` directive calls it when the value of the input changes and `select` calls it when an option is selected. When `$setViewValue` is called, the new `value` will be staged for committing through the `$parsers` and `$validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged value is sent directly for processing through the `$parsers` pipeline. After this, the `$validators` and `$asyncValidators` are called and the value is applied to `$modelValue`. Finally, the value is set to the **expression** specified in the `ng-model` attribute and all the registered change listeners, in the `$viewChangeListeners` list are called. In case the `ngModelOptions` directive is used with `updateOn` and the `default` trigger is not listed, all those actions will remain pending until one of the `updateOn` events is triggered on the DOM element. All these actions will be debounced if the `ngModelOptions` directive is used with a custom debounce for this particular event. Note that a `$digest` is only triggered once the `updateOn` events are fired, or if `debounce` is specified, once the timer runs out. Standard native inputs pass through browser-native values, such as strings from text-like controls, booleans from checkboxes, and `FileList | null` from file inputs. However, custom controls might also pass objects to this method. In this case, we should make a copy of the object before passing it to `$setViewValue`. This is because `ngModel` does not perform a deep watch of objects, it only looks for a change of identity. If you only change the property of the object then ngModel will not realize that the object has changed and will not invoke the `$parsers` and `$validators` pipelines. For this reason, you should not change properties of the copy once it has been passed to `$setViewValue`. Otherwise you may cause the model value on the scope to change incorrectly. <div class="alert alert-info"> In any case, the value passed to the method should always reflect the current value of the control. For example, if you are calling `$setViewValue` for an input element, you should pass the input DOM value. Otherwise, the control and the scope model become out of sync. It's also important to note that `$setViewValue` does not call `$render` or change the control's DOM value in any way. If we want to change the control's DOM value programmatically, we should update the `ngModel` scope expression. Its new value will be picked up by the model controller, which will run it through the `$formatters`, `$render` it to update the DOM, and finally call `$validate` on it. </div>
- * @param {?} value
- * @param {(string|undefined)} trigger
+ * Update the view value. This method should be called when a control wants to change the view value; typically, this is done from within a DOM event handler. For example, the `input` directive calls it when the value of the input changes and `select` calls it when an option is selected. When `setViewValue` is called, the new `value` will be staged for committing through the `parsers` and `validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged value is sent directly for processing through the `parsers` pipeline. After this, the `validators` and `asyncValidators` are called and the value is applied to `modelValue`. Finally, the value is set to the **expression** specified in the `ng-model` attribute and all the registered change listeners, in the `viewChangeListeners` list are called. In case the `ngModelOptions` directive is used with `updateOn` and the `default` trigger is not listed, all those actions will remain pending until one of the `updateOn` events is triggered on the DOM element. All these actions will be debounced if the `ngModelOptions` directive is used with a custom debounce for this particular event. The model commit and its reactive notifications run when an `updateOn` event fires, or after the configured debounce timer expires. Standard native inputs pass through browser-native values, such as strings from text-like controls, booleans from checkboxes, and `FileList | null` from file inputs. However, custom controls might also pass objects to this method. In this case, we should make a copy of the object before passing it to `setViewValue`. This is because `ngModel` does not perform a deep watch of objects, it only looks for a change of identity. If you only change the property of the object then ngModel will not realize that the object has changed and will not invoke the `parsers` and `validators` pipelines. For this reason, you should not change properties of the copy once it has been passed to `setViewValue`. Otherwise you may cause the model value on the scope to change incorrectly. <div class="alert alert-info"> In any case, the value passed to the method should always reflect the current value of the control. For example, if you are calling `setViewValue` for an input element, you should pass the input DOM value. Otherwise, the control and the scope model become out of sync. It's also important to note that `setViewValue` does not call `render` or change the control's DOM value in any way. If we want to change the control's DOM value programmatically, we should update the `ngModel` scope expression. Its new value will be picked up by the model controller, which will run it through the `formatters`, `render` it to update the DOM, and finally call `validate` on it. </div>
+ * @param {?} value value from the view.
+ * @param {(string|undefined)} trigger Event that triggered the update.
  * @return {void}
  */
-ng.NgModelController.prototype.$setViewValue = function(value, trigger) {};
+ng.NgModelController.prototype.setViewValue = function(value, trigger) {};
 
 /**
  * Override the current model options settings programmatically. The previous `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See `ngModelOptions` for information about what options can be specified and how model option inheritance works. <div class="alert alert-warning"> **Note:** this function only affects the options set on the `ngModelController`, and not the options on the `ngModelOptions` directive from which they might have been obtained initially. </div> <div class="alert alert-danger"> **Note:** it is not possible to override the `getterSetter` option. </div>
- * @param {!Object} options
+ * @param {!Object} options a hash of settings to override the previous options
  * @return {void}
  */
-ng.NgModelController.prototype.$overrideModelOptions = function(options) {};
+ng.NgModelController.prototype.overrideModelOptions = function(options) {};
 
 /**
- * Runs the model -> view pipeline on the current {@link NgModelController.$modelValue$modelValue}. The following actions are performed by this method: - the `$modelValue` is run through the {@link NgModelController.$formatters$formatters} and the result is set to the {@link NgModelController.$viewValue$viewValue} - the `ng-empty` or `ng-not-empty` class is set on the element - if the `$viewValue` has changed: - {@link NgModelController.$render$render} is called on the control - the {@link NgModelController.$validators$validators} are run and the validation status is set. This method is called by ngModel internally when the bound scope value changes. Application developers usually do not have to call this function themselves. This function can be used when the `$viewValue` or the rendered DOM value are not correctly formatted and the `$modelValue` must be run through the `$formatters` again.
+ * Runs the model -> view pipeline on the current {@link NgModelController.modelValuemodelValue}. The following actions are performed by this method: - the `modelValue` is run through the {@link NgModelController.formattersformatters} and the result is set to the {@link NgModelController.viewValueviewValue} - the `ng-empty` or `ng-not-empty` class is set on the element - if the `viewValue` has changed: - {@link NgModelController.renderrender} is called on the control - the {@link NgModelController.validatorsvalidators} are run and the validation status is set. This method is called by ngModel internally when the bound scope value changes. Application developers usually do not have to call this function themselves. This function can be used when the `viewValue` or the rendered DOM value are not correctly formatted and the `modelValue` must be run through the `formatters` again.
  * @return {void}
  */
-ng.NgModelController.prototype.$processModelValue = function() {};
+ng.NgModelController.prototype.processModelValue = function() {};
 
 /**
  * Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage
@@ -5891,7 +6016,7 @@ ng.RestBackend = function() {};
 /**
  * Execute one normalized REST request.
  * @template T
- * @param {!ng.RestRequest} request
+ * @param {!ng.RestRequest} request Request produced by `RestService`.
  * @return {!Promise<!ng.RestResponse<T>>}
  */
 ng.RestBackend.prototype.request = function(request) {};
@@ -5971,7 +6096,7 @@ ng.RestCacheStore = function() {};
 /**
  * Read a cached REST response by deterministic key.
  * @template T
- * @param {string} key
+ * @param {string} key Opaque cache key supplied by {@link CachedRestBackend}.
  * @return {!Promise<(!ng.RestResponse<T>|undefined)>}
  */
 ng.RestCacheStore.prototype.get = function(key) {};
@@ -5979,22 +6104,22 @@ ng.RestCacheStore.prototype.get = function(key) {};
 /**
  * Store a REST response by deterministic key.
  * @template T
- * @param {string} key
- * @param {!ng.RestResponse<T>} response
+ * @param {string} key Opaque cache key supplied by {@link CachedRestBackend}.
+ * @param {!ng.RestResponse<T>} response Response to persist.
  * @return {!Promise<void>}
  */
 ng.RestCacheStore.prototype.set = function(key, response) {};
 
 /**
  * Delete one cached REST response.
- * @param {string} key
+ * @param {string} key Exact cache key to remove.
  * @return {!Promise<void>}
  */
 ng.RestCacheStore.prototype.delete = function(key) {};
 
 /**
  * Delete cached REST responses whose keys start with the prefix. `CachedRestBackend` uses prefixes such as `GET /api/users` to invalidate collection and entity entries after successful writes.
- * @param {string} prefix
+ * @param {string} prefix Value supplied for the prefix parameter.
  * @return {!Promise<void>}
  */
 ng.RestCacheStore.prototype.deletePrefix = function(prefix) {};
@@ -6190,43 +6315,43 @@ ng.RestService = function() {};
 
 /**
  * Fetch a collection. Parameters are used for URI template expansion and are also forwarded to `$http` as query params. Non-array responses resolve to an empty array.
- * @param {(!Object<string, ?>|undefined)} params
+ * @param {(!Object<string, ?>|undefined)} params Value supplied for the params parameter.
  * @return {!Promise<!Array<T>>}
  */
 ng.RestService.prototype.list = function(params) {};
 
 /**
  * Fetch one resource by ID using `GET`.
- * @param {ID} id
- * @param {(!Object<string, ?>|undefined)} params
+ * @param {ID} id Resource identifier appended to the base URL.
+ * @param {(!Object<string, ?>|undefined)} params Additional URI template or query parameters.
  * @return {!Promise<(T|null)>}
  */
 ng.RestService.prototype.get = function(id, params) {};
 
 /**
  * Create a resource using `POST`.
- * @param {T} item
+ * @param {T} item Request body to create.
  * @return {!Promise<(T|null)>}
  */
 ng.RestService.prototype.create = function(item) {};
 
 /**
  * Update a resource using `PUT`.
- * @param {ID} id
- * @param {!Object} item
+ * @param {ID} id Resource identifier appended to the base URL.
+ * @param {!Object} item Request body to send.
  * @return {!Promise<(T|null)>}
  */
 ng.RestService.prototype.update = function(id, item) {};
 
 /**
  * Delete a resource by ID.
- * @param {ID} id
+ * @param {ID} id Resource identifier appended to the base URL.
  * @return {!Promise<void>}
  */
 ng.RestService.prototype.delete = function(id) {};
 
 /**
- * Event object passed to `$emit` and `$broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods.
+ * Event object passed to `emit` and `broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods.
  * @record
  */
 ng.ScopeEvent = function() {};
@@ -6568,8 +6693,8 @@ ng.StateService.prototype.current;
 /**
  * Overload for typed route names and params. Untyped overload used when no route map is supplied.
  * @template TRouteName
- * @param {TRouteName} to
- * @param {...?} var_args
+ * @param {TRouteName} to Value supplied for the to parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!Object}
  */
 ng.StateService.prototype.go = function(to, var_args) {};
@@ -6577,8 +6702,8 @@ ng.StateService.prototype.go = function(to, var_args) {};
 /**
  * Prefetch lazy declarations and templates for a typed route. Prefetch lazy declarations and templates without navigating.
  * @template TRouteName
- * @param {TRouteName} stateOrName
- * @param {...?} var_args
+ * @param {TRouteName} stateOrName Value supplied for the stateOrName parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!Promise<void>}
  */
 ng.StateService.prototype.prefetch = function(stateOrName, var_args) {};
@@ -6586,17 +6711,17 @@ ng.StateService.prototype.prefetch = function(stateOrName, var_args) {};
 /**
  * Overload for typed route names and params. Untyped overload used when no route map is supplied.
  * @template TRouteName
- * @param {TRouteName} stateOrName
- * @param {...?} var_args
+ * @param {TRouteName} stateOrName Value supplied for the stateOrName parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {(null|string)}
  */
 ng.StateService.prototype.href = function(stateOrName, var_args) {};
 
 /**
  * Build a target that can be returned from a transition hook.
- * @param {(!Object|!ng.StateDeclaration|string)} identifier
- * @param {(!Object<string, ?>|undefined)} params
- * @param {(!Object|undefined)} options
+ * @param {(!Object|!ng.StateDeclaration|string)} identifier Value supplied for the identifier parameter.
+ * @param {(!Object<string, ?>|undefined)} params Value supplied for the params parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {!Object}
  */
 ng.StateService.prototype.target = function(identifier, params, options) {};
@@ -6609,9 +6734,9 @@ ng.StateService.prototype.get = function() {};
 
 /**
  * Check whether the current state matches a state, ancestor, or glob.
- * @param {(!Object|!ng.StateDeclaration|string)} stateOrName
- * @param {(!Object<string, ?>|undefined)} params
- * @param {(!Object|undefined)} options
+ * @param {(!Object|!ng.StateDeclaration|string)} stateOrName Value supplied for the stateOrName parameter.
+ * @param {(!Object<string, ?>|undefined)} params Value supplied for the params parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {boolean}
  */
 ng.StateService.prototype.matches = function(stateOrName, params, options) {};
@@ -6768,22 +6893,22 @@ ng.StorageBackend = function() {};
 
 /**
  * Read a stored serialized value.
- * @param {string} key
+ * @param {string} key Value supplied for the key parameter.
  * @return {(string|undefined)}
  */
 ng.StorageBackend.prototype.get = function(key) {};
 
 /**
  * Store a serialized value.
- * @param {string} key
- * @param {string} value
+ * @param {string} key Value supplied for the key parameter.
+ * @param {string} value Value supplied for the value parameter.
  * @return {void}
  */
 ng.StorageBackend.prototype.set = function(key, value) {};
 
 /**
  * Remove a stored value.
- * @param {string} key
+ * @param {string} key Value supplied for the key parameter.
  * @return {void}
  */
 ng.StorageBackend.prototype.remove = function(key) {};
@@ -7103,31 +7228,31 @@ ng.StreamService = function() {};
 
 /**
  * Returns true when a value is a native readable byte stream.
- * @param {?} value
+ * @param {?} value Value supplied for the value parameter.
  * @return {boolean}
  */
 ng.StreamService.prototype.isReadableStream = function(value) {};
 
 /**
  * Decodes a byte stream and calls `onChunk` without retaining decoded text.
- * @param {!Object} stream
- * @param {(!Object|undefined)} options
+ * @param {!Object} stream Value supplied for the stream parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<void>}
  */
 ng.StreamService.prototype.consumeText = function(stream, options) {};
 
 /**
  * Decodes a byte stream into text chunks.
- * @param {!Object} stream
- * @param {(!Object|undefined)} options
+ * @param {!Object} stream Value supplied for the stream parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<string>}
  */
 ng.StreamService.prototype.readText = function(stream, options) {};
 
 /**
  * Decodes a byte stream and emits complete lines.
- * @param {!Object} stream
- * @param {(!Object|undefined)} options
+ * @param {!Object} stream Value supplied for the stream parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<!Array<string>>}
  */
 ng.StreamService.prototype.readLines = function(stream, options) {};
@@ -7135,8 +7260,8 @@ ng.StreamService.prototype.readLines = function(stream, options) {};
 /**
  * Decodes newline-delimited JSON without retaining parsed values.
  * @template T
- * @param {!Object} stream
- * @param {(!Object|undefined)} options
+ * @param {!Object} stream Value supplied for the stream parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<void>}
  */
 ng.StreamService.prototype.consumeJsonLines = function(stream, options) {};
@@ -7144,8 +7269,8 @@ ng.StreamService.prototype.consumeJsonLines = function(stream, options) {};
 /**
  * Decodes newline-delimited JSON and returns all parsed values.
  * @template T
- * @param {!Object} stream
- * @param {(!Object|undefined)} options
+ * @param {!Object} stream Value supplied for the stream parameter.
+ * @param {(!Object|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<!Array<T>>}
  */
 ng.StreamService.prototype.readJsonLines = function(stream, options) {};
@@ -7164,10 +7289,10 @@ ng.Transition = function() {};
 ng.Transition.prototype.promise;
 
 /**
- * Public Transition.$id member exposed by the AngularTS namespace contract.
+ * Public Transition.id member exposed by the AngularTS namespace contract.
  * @type {number}
  */
-ng.Transition.prototype.$id;
+ng.Transition.prototype.id;
 
 /**
  * Public Transition.success member exposed by the AngularTS namespace contract.
@@ -7180,18 +7305,6 @@ ng.Transition.prototype.success;
  * @return {void}
  */
 ng.Transition.prototype.applyViewConfigs = function() {};
-
-/**
- * Public Transition.$from member exposed by the AngularTS namespace contract.
- * @return {!Object}
- */
-ng.Transition.prototype.$from = function() {};
-
-/**
- * Public Transition.$to member exposed by the AngularTS namespace contract.
- * @return {!Object}
- */
-ng.Transition.prototype.$to = function() {};
 
 /**
  * Returns the "from state" Returns the state that the transition is coming *from*.
@@ -7207,7 +7320,7 @@ ng.Transition.prototype.to = function() {};
 
 /**
  * Public Transition.params member exposed by the AngularTS namespace contract.
- * @param {(string|undefined)} pathname
+ * @param {(string|undefined)} pathname Value supplied for the pathname parameter.
  * @return {!Object<string, ?>}
  */
 ng.Transition.prototype.params = function(pathname) {};
@@ -7226,7 +7339,7 @@ ng.Transition.prototype.exiting = function() {};
 
 /**
  * Creates a new transition that is a redirection of the current one. This transition can be returned from a [[TransitionService]] hook to redirect a transition to a new state and/or set of parameters.
- * @param {!Object} targetState
+ * @param {!Object} targetState the new target state for the redirected transition
  * @return {!ng.Transition<!Object<string, !Object>, !Object>}
  */
 ng.Transition.prototype.redirect = function(targetState) {};
@@ -7410,9 +7523,9 @@ ng.ScopeElement.prototype.disconnectedCallback = function() {};
 
 /**
  * Public ScopeElement.attributeChangedCallback member exposed by the AngularTS namespace contract.
- * @param {string} attribute
- * @param {(null|string)} oldValue
- * @param {(null|string)} newValue
+ * @param {string} attribute Value supplied for the attribute parameter.
+ * @param {(null|string)} oldValue Value supplied for the oldValue parameter.
+ * @param {(null|string)} newValue Value supplied for the newValue parameter.
  * @return {void}
  */
 ng.ScopeElement.prototype.attributeChangedCallback = function(attribute, oldValue, newValue) {};
@@ -7437,9 +7550,9 @@ ng.ScopeElement.prototype.attributeChanged;
 
 /**
  * Dispatch a composed bubbling DOM event from this custom element.
- * @param {string} type
- * @param {(?|undefined)} detail
- * @param {(!Object|undefined)} init
+ * @param {string} type Value supplied for the type parameter.
+ * @param {(?|undefined)} detail Value supplied for the detail parameter.
+ * @param {(!Object|undefined)} init Value supplied for the init parameter.
  * @return {boolean}
  */
 ng.ScopeElement.prototype.dispatch = function(type, detail, init) {};
@@ -7520,9 +7633,9 @@ ng.WebComponentContext.prototype.shadowRoot;
 
 /**
  * Dispatch a composed bubbling DOM event from the host.
- * @param {string} type
- * @param {(?|undefined)} detail
- * @param {(!Object|undefined)} init
+ * @param {string} type Value supplied for the type parameter.
+ * @param {(?|undefined)} detail Value supplied for the detail parameter.
+ * @param {(!Object|undefined)} init Value supplied for the init parameter.
  * @return {boolean}
  */
 ng.WebComponentContext.prototype.dispatch = function(type, detail, init) {};
@@ -7590,8 +7703,8 @@ ng.WebComponentService = function() {};
 /**
  * Define an options-backed application host custom element.
  * @template T
- * @param {string} name
- * @param {!ng.AppComponentOptions<T>} options
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.AppComponentOptions<T>} options Value supplied for the options parameter.
  * @return {function(new: HTMLElement, ...?)}
  */
 ng.WebComponentService.prototype.defineAppComponent = function(name, options) {};
@@ -7599,8 +7712,8 @@ ng.WebComponentService.prototype.defineAppComponent = function(name, options) {}
 /**
  * Define a native custom element backed by an AngularTS child scope.
  * @template T
- * @param {string} name
- * @param {!ng.ScopeElementConstructor<T>} elementClass
+ * @param {string} name Value supplied for the name parameter.
+ * @param {!ng.ScopeElementConstructor<T>} elementClass Value supplied for the elementClass parameter.
  * @return {function(new: HTMLElement, ...?)}
  */
 ng.WebComponentService.prototype.defineElement = function(name, elementClass) {};
@@ -7608,9 +7721,9 @@ ng.WebComponentService.prototype.defineElement = function(name, elementClass) {}
 /**
  * Create and attach a normal AngularTS child scope for a custom element.
  * @template T
- * @param {!HTMLElement} host
- * @param {(T|undefined)} initialState
- * @param {(!ng.ElementScopeOptions|undefined)} options
+ * @param {!HTMLElement} host Value supplied for the host parameter.
+ * @param {(T|undefined)} initialState Value supplied for the initialState parameter.
+ * @param {(!ng.ElementScopeOptions|undefined)} options Value supplied for the options parameter.
  * @return {!ng.Scope}
  */
 ng.WebComponentService.prototype.createElementScope = function(host, initialState, options) {};
@@ -7713,7 +7826,7 @@ ng.WebSocketConnection.prototype.reconnect = function() {};
 
 /**
  * Send a JSON-serialized message through the native WebSocket.
- * @param {?} data
+ * @param {?} data Value supplied for the data parameter.
  * @return {void}
  */
 ng.WebSocketConnection.prototype.send = function(data) {};
@@ -7828,21 +7941,21 @@ ng.WebTransportConnection.prototype.transport;
 
 /**
  * Send one unreliable datagram.
- * @param {(!Object|string)} data
+ * @param {(!Object|string)} data Value supplied for the data parameter.
  * @return {!Promise<void>}
  */
 ng.WebTransportConnection.prototype.sendDatagram = function(data) {};
 
 /**
  * Send UTF-8 text as one unreliable datagram.
- * @param {string} data
+ * @param {string} data Value supplied for the data parameter.
  * @return {!Promise<void>}
  */
 ng.WebTransportConnection.prototype.sendText = function(data) {};
 
 /**
  * Send data on a client-opened reliable unidirectional stream.
- * @param {(!Object|string)} data
+ * @param {(!Object|string)} data Value supplied for the data parameter.
  * @return {!Promise<void>}
  */
 ng.WebTransportConnection.prototype.sendStream = function(data) {};
@@ -7855,7 +7968,7 @@ ng.WebTransportConnection.prototype.createBidirectionalStream = function() {};
 
 /**
  * Close the WebTransport session.
- * @param {(!Object|undefined)} closeInfo
+ * @param {(!Object|undefined)} closeInfo Value supplied for the closeInfo parameter.
  * @return {void}
  */
 ng.WebTransportConnection.prototype.close = function(closeInfo) {};
@@ -8003,16 +8116,16 @@ ng.WorkerHandle.prototype.restartCount;
 
 /**
  * Send a typed message and optional transferable ownership list.
- * @param {TSend} message
- * @param {(!Array<!Object>|undefined)} transfer
+ * @param {TSend} message Value supplied for the message parameter.
+ * @param {(!Array<!Object>|undefined)} transfer Value supplied for the transfer parameter.
  * @return {void}
  */
 ng.WorkerHandle.prototype.post = function(message, transfer) {};
 
 /**
  * Send a correlated request using the AngularTS worker envelope.
- * @param {TSend} message
- * @param {(!ng.WorkerRequestOptions|undefined)} options
+ * @param {TSend} message Value supplied for the message parameter.
+ * @param {(!ng.WorkerRequestOptions|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<TReceive>}
  */
 ng.WorkerHandle.prototype.request = function(message, options) {};
@@ -8020,21 +8133,21 @@ ng.WorkerHandle.prototype.request = function(message, options) {};
 /**
  * Adapt this handle to the standard model synchronization contract.
  * @template T
- * @param {(string|undefined)} channel
+ * @param {(string|undefined)} channel Value supplied for the channel parameter.
  * @return {!ng.ModelSyncTarget<T>}
  */
 ng.WorkerHandle.prototype.model = function(channel) {};
 
 /**
  * Subscribe to decoded worker messages.
- * @param {function(TReceive, !Object): void} listener
+ * @param {function(TReceive, !Object): void} listener Value supplied for the listener parameter.
  * @return {function(): void}
  */
 ng.WorkerHandle.prototype.onMessage = function(listener) {};
 
 /**
  * Subscribe to runtime, message, decoding, and request failures.
- * @param {function(!ng.WorkerError): void} listener
+ * @param {function(!ng.WorkerError): void} listener Value supplied for the listener parameter.
  * @return {function(): void}
  */
 ng.WorkerHandle.prototype.onError = function(listener) {};
@@ -8347,8 +8460,8 @@ ng.WasmResource.prototype.disposed;
 /**
  * Public WasmResource.bind member exposed by the AngularTS namespace contract.
  * @template TTarget
- * @param {TTarget} target
- * @param {(!ng.WasmBindingOptions|undefined)} options
+ * @param {TTarget} target Value supplied for the target parameter.
+ * @param {(!ng.WasmBindingOptions|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<!ng.WasmBinding<TTarget>>}
  */
 ng.WasmResource.prototype.bind = function(target, options) {};
@@ -8374,7 +8487,7 @@ ng.WasmService = function() {};
 /**
  * Loads one module and returns its owned resource.
  * @template TExports
- * @param {!ng.WasmLoadOptions} options
+ * @param {!ng.WasmLoadOptions} options Value supplied for the options parameter.
  * @return {!ng.WasmResource<TExports>}
  */
 ng.WasmService.prototype.load = function(options) {};
@@ -8392,70 +8505,52 @@ ng.WasmSource;
 ng.WasmTarget = function() {};
 
 /**
- * Public WasmTarget.$proxy member exposed by the AngularTS namespace contract.
- * @type {!ng.Scope}
- */
-ng.WasmTarget.prototype.$proxy;
-
-/**
- * Public WasmTarget.$handler member exposed by the AngularTS namespace contract.
- * @type {?}
- */
-ng.WasmTarget.prototype.$handler;
-
-/**
- * Public WasmTarget.$target member exposed by the AngularTS namespace contract.
- * @type {!Object}
- */
-ng.WasmTarget.prototype.$target;
-
-/**
- * Public WasmTarget.$id member exposed by the AngularTS namespace contract.
+ * Public WasmTarget.id member exposed by the AngularTS namespace contract.
  * @type {number}
  */
-ng.WasmTarget.prototype.$id;
+ng.WasmTarget.prototype.id;
 
 /**
- * Public WasmTarget.$root member exposed by the AngularTS namespace contract.
+ * Public WasmTarget.root member exposed by the AngularTS namespace contract.
  * @type {!ng.Scope}
  */
-ng.WasmTarget.prototype.$root;
+ng.WasmTarget.prototype.root;
 
 /**
- * Public WasmTarget.$parent member exposed by the AngularTS namespace contract.
+ * Public WasmTarget.parent member exposed by the AngularTS namespace contract.
  * @type {(!ng.Scope|undefined)}
  */
-ng.WasmTarget.prototype.$parent;
+ng.WasmTarget.prototype.parent;
 
 /**
- * Public WasmTarget.$scopename member exposed by the AngularTS namespace contract.
+ * Public WasmTarget.scopeName member exposed by the AngularTS namespace contract.
  * @type {(string|undefined)}
  */
-ng.WasmTarget.prototype.$scopename;
+ng.WasmTarget.prototype.scopeName;
 
 /**
  * Intercepts and handles property assignments on the target object. Scopeable objects are stored as raw model values and proxied lazily when read.
- * @param {!Object} target
- * @param {string} property
- * @param {?} value
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {string} property The name of the property being set.
+ * @param {?} value The new value being assigned to the property.
+ * @param {!ng.Scope} proxy The proxy intercepting property access.
  * @return {boolean}
  */
 ng.WasmTarget.prototype.set = function(target, property, value, proxy) {};
 
 /**
  * Intercepts property access on the target object. It checks for specific properties (`watch` and `sync`) and binds their methods. For other properties, it returns the value directly.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
- * @param {!ng.Scope} proxy
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being accessed.
+ * @param {!ng.Scope} proxy The proxy object being invoked.
  * @return {?}
  */
 ng.WasmTarget.prototype.get = function(target, property, proxy) {};
 
 /**
  * Public WasmTarget.deleteProperty member exposed by the AngularTS namespace contract.
- * @param {!Object} target
- * @param {(number|string|symbol)} property
+ * @param {!Object} target The target object.
+ * @param {(number|string|symbol)} property The name of the property being deleted.
  * @return {boolean}
  */
 ng.WasmTarget.prototype.deleteProperty = function(target, property) {};
@@ -8463,89 +8558,89 @@ ng.WasmTarget.prototype.deleteProperty = function(target, property) {};
 /**
  * Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws.
  * @template T
- * @param {function(): T} fn
+ * @param {function(): T} fn Value supplied for the fn parameter.
  * @return {T}
  */
-ng.WasmTarget.prototype.$batch = function(fn) {};
+ng.WasmTarget.prototype.batch = function(fn) {};
 
 /**
  * Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected.
- * @param {string} watchProp
- * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn
- * @param {(boolean|undefined)} lazy
- * @param {(boolean|undefined)} directLeaf
+ * @param {string} watchProp An expression to be watched in the context of this model.
+ * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
+ * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+ * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
  * @return {(function(): void|undefined)}
  */
-ng.WasmTarget.prototype.$watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.WasmTarget.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
 
 /**
  * Creates a prototypically inherited child scope.
- * @param {(!ng.Scope|undefined)} childInstance
+ * @param {(!ng.Scope|undefined)} childInstance Value supplied for the childInstance parameter.
  * @return {!ng.Scope}
  */
-ng.WasmTarget.prototype.$new = function(childInstance) {};
+ng.WasmTarget.prototype.new = function(childInstance) {};
 
 /**
  * Creates an isolate child scope that does not inherit watchable properties directly.
- * @param {(!ng.Scope|undefined)} instance
+ * @param {(!ng.Scope|undefined)} instance Value supplied for the instance parameter.
  * @return {!ng.Scope}
  */
-ng.WasmTarget.prototype.$newIsolate = function(instance) {};
+ng.WasmTarget.prototype.newIsolate = function(instance) {};
 
 /**
  * Creates a transcluded child scope linked to this scope and an optional parent instance.
- * @param {(!ng.Scope|undefined)} parentInstance
+ * @param {(!ng.Scope|undefined)} parentInstance Value supplied for the parentInstance parameter.
  * @return {!ng.Scope}
  */
-ng.WasmTarget.prototype.$transcluded = function(parentInstance) {};
+ng.WasmTarget.prototype.transcluded = function(parentInstance) {};
 
 /**
  * Merges enumerable properties from the provided object into the current scope target.
- * @param {?} newTarget
+ * @param {?} newTarget Value supplied for the newTarget parameter.
  * @return {void}
  */
-ng.WasmTarget.prototype.$merge = function(newTarget) {};
+ng.WasmTarget.prototype.merge = function(newTarget) {};
 
 /**
  * Registers an event listener on this scope and returns a deregistration function.
- * @param {string} name
- * @param {function(...?): ?} listener
+ * @param {string} name Value supplied for the name parameter.
+ * @param {function(...?): ?} listener Value supplied for the listener parameter.
  * @return {function(): void}
  */
-ng.WasmTarget.prototype.$on = function(name, listener) {};
+ng.WasmTarget.prototype.on = function(name, listener) {};
 
 /**
  * Emits an event upward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.WasmTarget.prototype.$emit = function(name, var_args) {};
+ng.WasmTarget.prototype.emit = function(name, var_args) {};
 
 /**
  * Broadcasts an event downward through the scope hierarchy.
- * @param {string} name
- * @param {...?} var_args
+ * @param {string} name Value supplied for the name parameter.
+ * @param {...?} var_args Value supplied for the args parameter.
  * @return {!ng.ScopeEvent}
  */
-ng.WasmTarget.prototype.$broadcast = function(name, var_args) {};
+ng.WasmTarget.prototype.broadcast = function(name, var_args) {};
 
 /**
- * Public WasmTarget.$destroy member exposed by the AngularTS namespace contract.
+ * Destroys this scope and its descendants.
  * @return {void}
  */
-ng.WasmTarget.prototype.$destroy = function() {};
+ng.WasmTarget.prototype.destroy = function() {};
 
 /**
  * Searches this scope tree for a scope with the given id.
- * @param {(number|string)} id
+ * @param {(number|string)} id Value supplied for the id parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.WasmTarget.prototype.$getById = function(id) {};
+ng.WasmTarget.prototype.getById = function(id) {};
 
 /**
  * Searches the scope tree for a scope registered under the provided name.
- * @param {string} name
+ * @param {string} name Value supplied for the name parameter.
  * @return {(!ng.Scope|undefined)}
  */
-ng.WasmTarget.prototype.$searchByName = function(name) {};
+ng.WasmTarget.prototype.searchByName = function(name) {};

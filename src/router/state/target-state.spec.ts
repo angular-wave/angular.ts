@@ -52,7 +52,7 @@ describe("TargetState", () => {
 
     expect(targetState.name()).toBe("found");
     expect(targetState.identifier()).toBe("found");
-    expect(targetState.$state()).toBe(foundDefinition);
+    expect(targetState._state()).toBe(foundDefinition);
     expect(targetState.state()).toBe(foundDefinition.self);
     expect(targetState.exists()).toBeTrue();
     expect(targetState.valid()).toBeTrue();
@@ -140,7 +140,7 @@ describe("TargetState", () => {
   it("retains definition when state does not exist", () => {
     const targetState = new TargetState(createRegistry(), "missing", {});
 
-    expect(targetState.$state()).toBeUndefined();
+    expect(targetState._state()).toBeUndefined();
     expect(targetState.state()).toBeUndefined();
   });
 });

@@ -692,7 +692,7 @@ async function handleTransitionRejection(
   const routerState = stateService._routerState;
 
   if (isInstanceOf(error, Rejection)) {
-    const isLatest = routerState._lastStartedTransitionId <= trans.$id;
+    const isLatest = routerState._lastStartedTransitionId <= trans.id;
 
     if (error.type === RejectType._IGNORED) {
       if (isLatest) {

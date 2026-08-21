@@ -5,12 +5,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.github.angular-wave</groupId>
-  <artifactId>angular-ts-jsinterop</artifactId>
+  <artifactId>angular-ts-java</artifactId>
   <version>0.32.0</version>
   <packaging>jar</packaging>
 
-  <name>AngularTS JsInterop Bindings</name>
-  <description>Java JsInterop bindings generated from AngularTS Closure externs.</description>
+  <name>AngularTS Java Bindings</name>
+  <description>Typed Java and J2CL bindings generated from AngularTS Closure externs.</description>
   <url>https://github.com/angular-wave/angular.ts</url>
 
   <licenses>
@@ -32,7 +32,7 @@
     <connection>scm:git:https://github.com/angular-wave/angular.ts.git</connection>
     <developerConnection>scm:git:https://github.com/angular-wave/angular.ts.git</developerConnection>
     <url>https://github.com/angular-wave/angular.ts</url>
-    <tag>v0.32.0</tag>
+    <tag>v${project.version}</tag>
   </scm>
 
   <properties>
@@ -42,25 +42,30 @@
     <angular.ts.root>${project.basedir}/../../..</angular.ts.root>
     <angular.ts.externs>${project.basedir}/../externs/angular.js</angular.ts.externs>
     <angular.ts.browser.externs>${project.basedir}/externs/browser.externs.js</angular.ts.browser.externs>
+    <angular.ts.name.mapping>${project.basedir}/jsinterop-name-mapping.txt</angular.ts.name.mapping>
+    <angular.ts.processor.sources>${project.basedir}/src/processor/java</angular.ts.processor.sources>
 
     <jsinterop.generator.version>v20250910</jsinterop.generator.version>
     <jsinterop.generator.jar>${project.build.directory}/tools/jsinterop-generator/ClosureJsinteropGenerator_deploy.jar</jsinterop.generator.jar>
     <jsinterop.packagePrefix>org.angular.ts</jsinterop.packagePrefix>
     <jsinterop.extensionTypePrefix>AngularTs</jsinterop.extensionTypePrefix>
     <jsinterop.globalScopeClassName>AngularTsGlobals</jsinterop.globalScopeClassName>
-    <jsinterop.generated.srcjar>${project.build.directory}/generated-sources/angular-ts-jsinterop-src.jar</jsinterop.generated.srcjar>
-    <jsinterop.generated.depfile>${project.build.directory}/generated-sources/angular-ts-jsinterop.jdeps</jsinterop.generated.depfile>
+    <jsinterop.generated.srcjar>${project.build.directory}/generated-sources/angular-ts-java-src.jar</jsinterop.generated.srcjar>
+    <jsinterop.generated.depfile>${project.build.directory}/generated-sources/angular-ts-java.jdeps</jsinterop.generated.depfile>
     <jsinterop.generated.sources>${project.build.directory}/generated-sources/jsinterop</jsinterop.generated.sources>
 
     <jsinterop.annotations.version>2.0.2</jsinterop.annotations.version>
     <jsinterop.base.version>1.1.1</jsinterop.base.version>
+    <elemental2.version>1.2.3</elemental2.version>
     <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
     <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
     <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+    <junit.version>5.12.1</junit.version>
     <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
     <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
     <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
-    <central-publishing-maven-plugin.version>0.8.0</central-publishing-maven-plugin.version>
+    <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
   </properties>
 
   <dependencies>
@@ -76,13 +81,24 @@
     </dependency>
     <dependency>
       <groupId>com.google.elemental2</groupId>
+      <artifactId>elemental2-core</artifactId>
+      <version>${elemental2.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.elemental2</groupId>
       <artifactId>elemental2-dom</artifactId>
-      <version>1.2.3</version>
+      <version>${elemental2.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.elemental2</groupId>
       <artifactId>elemental2-promise</artifactId>
-      <version>1.2.3</version>
+      <version>${elemental2.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -140,7 +156,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>generate-angular-ts-jsinterop</id>
+            <id>generate-angular-ts-java</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>exec</goal>
@@ -158,11 +174,12 @@
                 <argument>${jsinterop.extensionTypePrefix}</argument>
                 <argument>${jsinterop.globalScopeClassName}</argument>
                 <argument>${jsinterop.generated.sources}</argument>
+                <argument>${angular.ts.name.mapping}</argument>
               </arguments>
             </configuration>
           </execution>
           <execution>
-            <id>verify-angular-ts-jsinterop</id>
+            <id>verify-angular-ts-java</id>
             <phase>process-sources</phase>
             <goals>
               <goal>exec</goal>
@@ -192,6 +209,7 @@
             <configuration>
               <sources>
                 <source>${jsinterop.generated.sources}</source>
+                <source>${angular.ts.processor.sources}</source>
               </sources>
             </configuration>
           </execution>
@@ -204,7 +222,18 @@
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
           <release>${maven.compiler.release}</release>
+          <proc>none</proc>
+          <showWarnings>true</showWarnings>
+          <failOnWarning>true</failOnWarning>
+          <compilerArgs>
+            <arg>-Xlint:all</arg>
+          </compilerArgs>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
       </plugin>
     </plugins>
   </build>
@@ -233,7 +262,9 @@
             <artifactId>maven-javadoc-plugin</artifactId>
             <version>${maven-javadoc-plugin.version}</version>
             <configuration>
-              <failOnError>false</failOnError>
+              <doclint>all,-missing</doclint>
+              <failOnError>true</failOnError>
+              <failOnWarnings>true</failOnWarnings>
               <quiet>true</quiet>
             </configuration>
             <executions>
@@ -268,7 +299,9 @@
             <extensions>true</extensions>
             <configuration>
               <publishingServerId>central</publishingServerId>
-              <autoPublish>false</autoPublish>
+              <deploymentName>${project.artifactId}:${project.version}</deploymentName>
+              <autoPublish>true</autoPublish>
+              <waitUntil>published</waitUntil>
             </configuration>
           </plugin>
         </plugins>

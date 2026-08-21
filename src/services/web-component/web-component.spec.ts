@@ -66,7 +66,7 @@ describe("$webComponent", () => {
 
     const elementScope = getScope(element);
 
-    expect(elementScope.$parent.$id).toBe(rootScope.$id);
+    expect(elementScope.parent.id).toBe(rootScope.id);
     expect(element.shadowRoot.textContent).toContain("hello/root/2/true/ready");
 
     element.title = "bye";
@@ -100,7 +100,7 @@ describe("$webComponent", () => {
         });
 
         expect(scope.title).toBe("manual");
-        expect(scope.$parent.$id).toBe($rootScope.$id);
+        expect(scope.parent.id).toBe($rootScope.id);
         expect(getScope(host)).toBe(scope);
       },
     ]);
@@ -121,7 +121,7 @@ describe("$webComponent", () => {
         );
 
         expect(scope.title).toBe("isolated");
-        expect(scope.$parent.$id).toBe($rootScope.$id);
+        expect(scope.parent.id).toBe($rootScope.id);
       },
     ]);
   });
@@ -207,7 +207,7 @@ describe("$webComponent", () => {
     destroyWebComponentRuntimeState(state);
 
     expect(events).toEqual(["cleanup", "disconnected"]);
-    expect(scope.$handler._destroyed).toBeTrue();
+    expect(scope._handler._destroyed).toBeTrue();
     expect(element.shadowRoot.textContent).toBe("");
     expect(() =>
       service.createElementScope(document.createElement("div")),
@@ -261,7 +261,7 @@ describe("$webComponent", () => {
 
   it("ignores scopes that were already destroyed during runtime teardown", () => {
     const state = createWebComponentRuntimeState();
-    const destroyedScope = { $handler: { _destroyed: true } };
+    const destroyedScope = { _handler: { _destroyed: true } };
     state.scopes.add(destroyedScope);
 
     destroyWebComponentRuntimeState(state);
@@ -272,14 +272,14 @@ describe("$webComponent", () => {
   it("destroys active scopes that are not connected to a host", () => {
     const state = createWebComponentRuntimeState();
     const scope = {
-      $handler: { _destroyed: false },
-      $destroy: jasmine.createSpy("$destroy"),
+      _handler: { _destroyed: false },
+      destroy: jasmine.createSpy("destroy"),
     };
 
     state.scopes.add(scope);
     destroyWebComponentRuntimeState(state);
 
-    expect(scope.$destroy).toHaveBeenCalledOnceWith();
+    expect(scope.destroy).toHaveBeenCalledOnceWith();
   });
 
   it("destroys the owned scope after disconnect", async () => {
@@ -297,7 +297,7 @@ describe("$webComponent", () => {
       },
       template: "<span>{{title}}</span>",
       connected({ scope }) {
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
           events.push("destroy");
         });
 
@@ -321,14 +321,43 @@ describe("$webComponent", () => {
 
     const scope = getScope(element);
 
-    expect(scope.$handler._destroyed).toBe(false);
+    expect(scope._handler._destroyed).toBe(false);
 
     element.remove();
 
     await wait(10);
 
     expect(events).toEqual(["cleanup", "disconnected", "destroy"]);
-    expect(scope.$handler._destroyed).toBe(true);
+    expect(scope._handler._destroyed).toBe(true);
+  });
+
+  it("reuses the active scope when reconnected before teardown", async () => {
+    const tagName = nextTagName("reconnect-card");
+    const moduleName = nextModuleName();
+    const angular = new Angular();
+    const firstContainer = document.createElement("div");
+    const secondContainer = document.createElement("div");
+
+    angular.module(moduleName, []).appComponent(tagName, {
+      template: "<span>connected</span>",
+    });
+
+    app.append(firstContainer, secondContainer);
+    angular.bootstrap(app, [moduleName]);
+
+    const element = document.createElement(tagName);
+    firstContainer.appendChild(element);
+
+    await wait();
+
+    const scope = getScope(element);
+
+    secondContainer.appendChild(element);
+
+    await wait(10);
+
+    expect(getScope(element)).toBe(scope);
+    expect(scope._handler._destroyed).toBeFalse();
   });
 
   it("dispatches native DOM events from scoped components", async () => {
@@ -490,7 +519,7 @@ describe("$webComponent", () => {
 
     const child = element.shadowRoot.querySelector(childTagName);
 
-    expect(child.scope.$parent.$id).toBe(element.scope.$id);
+    expect(child.scope.parent.id).toBe(element.scope.id);
     expect(child.shadowRoot.textContent).toContain("ready");
   });
 

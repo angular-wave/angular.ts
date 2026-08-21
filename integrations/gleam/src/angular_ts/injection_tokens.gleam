@@ -8,182 +8,227 @@ import angular_ts/token.{type Token}
 import angular_ts/unsafe as js
 import angular_ts/wasm
 
+/// Returns the typed token for the `$angular` AngularTS injectable.
 pub fn angular() -> Token(namespace.AngularService) {
   token.new("$angular")
 }
 
+/// Returns the typed token for the `$scope` AngularTS injectable.
 pub fn scope() -> Token(namespace.ScopeService) {
   token.new("$scope")
 }
 
+/// Returns the typed token for the `$element` AngularTS injectable.
 pub fn element() -> Token(namespace.ElementService) {
   token.new("$element")
 }
 
+/// Returns the typed token for the `$anchorScroll` AngularTS injectable.
 pub fn anchor_scroll() -> Token(namespace.AnchorScrollService) {
   token.new("$anchorScroll")
 }
 
+/// Returns the typed token for the `$animate` AngularTS injectable.
 pub fn animate() -> Token(namespace.AnimateService) {
   token.new("$animate")
 }
 
+/// Returns the typed token for the `$aria` AngularTS injectable.
 pub fn aria() -> Token(namespace.AriaService) {
   token.new("$aria")
 }
 
+/// Returns the typed token for the `$compile` AngularTS injectable.
 pub fn compile() -> Token(namespace.CompileService) {
   token.new("$compile")
 }
 
+/// Returns the typed token for the `$cookie` AngularTS injectable.
 pub fn cookie() -> Token(namespace.CookieService) {
   token.new("$cookie")
 }
 
+/// Returns the typed token for the `$controller` AngularTS injectable.
 pub fn controller() -> Token(namespace.ControllerService) {
   token.new("$controller")
 }
 
+/// Returns the typed token for the `$document` AngularTS injectable.
 pub fn document() -> Token(namespace.DocumentService) {
   token.new("$document")
 }
 
+/// Returns the typed token for the `$eventBus` AngularTS injectable.
 pub fn event_bus() -> Token(namespace.EventBusService) {
   token.new("$eventBus")
 }
 
+/// Returns the typed token for the `$exceptionHandler` AngularTS injectable.
 pub fn exception_handler() -> Token(namespace.ExceptionHandlerService) {
   token.new("$exceptionHandler")
 }
 
+/// Returns the typed token for the `$filter` AngularTS injectable.
 pub fn filter() -> Token(namespace.FilterService) {
   token.new("$filter")
 }
 
+/// Returns the typed token for the `$htmlCanvas` AngularTS injectable.
 pub fn html_canvas() -> Token(namespace.HtmlCanvasService) {
   token.new("$htmlCanvas")
 }
 
+/// Returns the typed token for the `$http` AngularTS injectable.
 pub fn http() -> Token(namespace.HttpService) {
   token.new("$http")
 }
 
+/// Returns the typed token for the `$httpParamSerializer` AngularTS injectable.
 pub fn http_param_serializer() -> Token(namespace.HttpParamSerializerService) {
   token.new("$httpParamSerializer")
 }
 
+/// Returns the typed token for the `$interpolate` AngularTS injectable.
 pub fn interpolate() -> Token(namespace.InterpolateService) {
   token.new("$interpolate")
 }
 
+/// Returns the typed token for the `$location` AngularTS injectable.
 pub fn location() -> Token(namespace.LocationService) {
   token.new("$location")
 }
 
+/// Returns the typed token for the `$log` AngularTS injectable.
 pub fn log() -> Token(namespace.LogService) {
   token.new("$log")
 }
 
+/// Returns the typed token for the `$machine` AngularTS injectable.
 pub fn machine() -> Token(namespace.MachineService) {
   token.new("$machine")
 }
 
+/// Returns the typed token for the `$parse` AngularTS injectable.
 pub fn parse() -> Token(namespace.ParseService) {
   token.new("$parse")
 }
 
+/// Returns the typed token for the `$rest` AngularTS injectable.
 pub fn rest() -> Token(namespace.RestFactory) {
   token.new("$rest")
 }
 
+/// Returns the typed token for the `$rootScope` AngularTS injectable.
 pub fn root_scope() -> Token(namespace.RootScopeService) {
   token.new("$rootScope")
 }
 
+/// Returns the typed token for the `$rootElement` AngularTS injectable.
 pub fn root_element() -> Token(namespace.RootElementService) {
   token.new("$rootElement")
 }
 
+/// Returns the typed token for the `$sce` AngularTS injectable.
 pub fn sce() -> Token(namespace.SceService) {
   token.new("$sce")
 }
 
+/// Returns the typed token for the `$sceDelegate` AngularTS injectable.
 pub fn sce_delegate() -> Token(namespace.SceDelegateService) {
   token.new("$sceDelegate")
 }
 
+/// Returns the typed token for the `$security` AngularTS injectable.
 pub fn security() -> Token(namespace.SecurityPolicy) {
   token.new("$security")
 }
 
+/// Returns the typed token for the `$serviceWorker` AngularTS injectable.
 pub fn service_worker() -> Token(namespace.ServiceWorkerService) {
   token.new("$serviceWorker")
 }
 
+/// Returns the typed token for the `$state` AngularTS injectable.
 pub fn state() -> Token(namespace.StateService(js.JsValue)) {
   token.new("$state")
 }
 
+/// Returns the typed token for the `$stateRegistry` AngularTS injectable.
 pub fn state_registry() -> Token(namespace.StateRegistryService) {
   token.new("$stateRegistry")
 }
 
+/// Returns the typed token for the `$storage` AngularTS injectable.
 pub fn storage() -> Token(js.JsValue) {
   token.new("$storage")
 }
 
+/// Returns the typed token for the `$stream` AngularTS injectable.
 pub fn stream() -> Token(namespace.StreamService) {
   token.new("$stream")
 }
 
+/// Returns the typed token for the `$sse` AngularTS injectable.
 pub fn sse() -> Token(namespace.SseService) {
   token.new("$sse")
 }
 
+/// Returns the typed token for the `$templateCache` AngularTS injectable.
 pub fn template_cache() -> Token(namespace.TemplateCacheService) {
   token.new("$templateCache")
 }
 
+/// Returns the typed token for the `$templateRequest` AngularTS injectable.
 pub fn template_request() -> Token(namespace.TemplateRequestService) {
   token.new("$templateRequest")
 }
 
+/// Returns the typed token for the `$transitions` AngularTS injectable.
 pub fn transitions() -> Token(namespace.TransitionsService) {
   token.new("$transitions")
 }
 
+/// Returns the typed token for the `$window` AngularTS injectable.
 pub fn window() -> Token(namespace.WindowService) {
   token.new("$window")
 }
 
+/// Returns the typed token for the `$webComponent` AngularTS injectable.
 pub fn web_component() -> Token(namespace.WebComponentService) {
   token.new("$webComponent")
 }
 
+/// Returns the typed token for the `$webTransport` AngularTS injectable.
 pub fn web_transport() -> Token(namespace.WebTransportService) {
   token.new("$webTransport")
 }
 
+/// Returns the typed token for the `$websocket` AngularTS injectable.
 pub fn websocket() -> Token(namespace.WebSocketService) {
   token.new("$websocket")
 }
 
+/// Returns the typed token for the `$worker` AngularTS injectable.
 pub fn worker() -> Token(namespace.WorkerService) {
   token.new("$worker")
 }
 
+/// Returns the typed token for the `$wasm` AngularTS injectable.
 pub fn wasm() -> Token(wasm.WasmService) {
   token.new("$wasm")
 }
 
+/// Returns the typed token for the `$workflow` AngularTS injectable.
 pub fn workflow() -> Token(namespace.WorkflowService) {
   token.new("$workflow")
 }
 
+/// Returns the typed token for the `$workflowSupervisor` AngularTS injectable.
 pub fn workflow_supervisor() -> Token(js.JsValue) {
   token.new("$workflowSupervisor")
 }
 
+/// Returns the typed token for the `$injector` AngularTS injectable.
 pub fn injector() -> Token(namespace.InjectorService(js.JsValue)) {
   token.new("$injector")
 }

@@ -124,15 +124,15 @@ export interface AriaConfig {
 
 type AriaNgModelController = Omit<
   ng.NgModelController,
-  "$isEmpty" | "$validators" | "$watch" | "$viewValue"
+  "isEmpty" | "validators" | "watch" | "viewValue"
 > & {
-  $isEmpty: (value: unknown) => boolean;
-  $validators: Partial<Record<string, unknown>>;
-  $watch: {
-    (expr: "$modelValue", listener: (value: string) => void): void;
+  isEmpty: (value: unknown) => boolean;
+  validators: Partial<Record<string, unknown>>;
+  watch: {
+    (expr: "modelValue", listener: (value: string) => void): void;
     (expr: string, listener: (value: unknown) => void): void;
   };
-  $viewValue: unknown;
+  viewValue: unknown;
 };
 
 /**
@@ -381,7 +381,7 @@ export function createAriaService(
         !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
         !hasNormalizedAttr(elem, ariaCamelName)
       ) {
-        scope.$watch(
+        scope.watch(
           getNormalizedAttr(elem, attrName) ?? "",
           (boolVal: unknown) => {
             // ensure boolean value
@@ -399,6 +399,7 @@ export function createAriaService(
       return config[key];
     },
     _diagnoseInteractive: diagnoseInteractive,
+    /** @internal */
     _diagnostics() {
       return diagnostics;
     },
@@ -637,7 +638,7 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
     });
     observer.observe(elem, { attributes: true });
 
-    let deregisterDestroy: (() => void) | undefined = scope.$on(
+    let deregisterDestroy: (() => void) | undefined = scope.on(
       "$destroy",
       deregister,
     );
@@ -678,7 +679,7 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
               "aria-checked",
 
               (
-                getNormalizedAttr(elem, "value") == ngModel.$viewValue
+                getNormalizedAttr(elem, "value") == ngModel.viewValue
               ).toString(),
             );
           }
@@ -686,7 +687,7 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
           function getCheckboxReaction() {
             elem.setAttribute(
               "aria-checked",
-              (!ngModel.$isEmpty(ngModel.$viewValue)).toString(),
+              (!ngModel.isEmpty(ngModel.viewValue)).toString(),
             );
           }
 
@@ -700,8 +701,8 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
               if (
                 shouldAttachAttr("aria-checked", "ariaChecked", elem, false)
               ) {
-                ngModel.$watch(
-                  "$modelValue",
+                ngModel.watch(
+                  "modelValue",
                   shape === "radio" ? getRadioReaction : getCheckboxReaction,
                 );
               }
@@ -762,7 +763,7 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
                 }
 
                 if (needsAriaValuenow) {
-                  ngModel.$watch("$modelValue", (newVal: string) => {
+                  ngModel.watch("modelValue", (newVal: string) => {
                     elem.setAttribute("aria-valuenow", newVal);
                   });
                 }
@@ -777,10 +778,10 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
 
           if (
             !hasNormalizedAttr(elem, "ngRequired") &&
-            ngModel.$validators.required &&
+            ngModel.validators.required &&
             shouldAttachAttr("aria-required", "ariaRequired", elem, false)
           ) {
-            // ngModel.$error.required is undefined on custom controls
+            // ngModel.error.required is undefined on custom controls
             const updateAriaRequired = () => {
               elem.setAttribute(
                 "aria-required",
@@ -793,7 +794,7 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive {
           }
 
           if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
-            ngModel.$watch("$invalid", (newVal: unknown) => {
+            ngModel.watch("invalid", (newVal: unknown) => {
               elem.setAttribute("aria-invalid", (!!newVal).toString());
             });
           }

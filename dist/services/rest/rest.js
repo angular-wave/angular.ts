@@ -97,6 +97,7 @@ class CachedRestBackend {
             ...(result.stale ? { stale: true } : {}),
         };
     }
+    /** @internal */
     async _invalidate(request) {
         await this._cache.deletePrefix(`GET ${request.url}`);
         if (request.collectionUrl && request.collectionUrl !== request.url) {

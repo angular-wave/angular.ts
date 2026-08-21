@@ -54,7 +54,28 @@ export const angular = new Angular();
 
 export { AngularRuntime, createAngular } from "./runtime/index.ts";
 export { afterRender, queueAfterRender } from "./core/render/after-render.ts";
+export {
+  attrs,
+  each,
+  event,
+  props,
+  tag,
+  tagNS,
+  tags,
+} from "./core/compile/programmatic-view.ts";
 export { defineWorkflow } from "./services/workflow/workflow.ts";
+export type {
+  ComponentViewProperties,
+  ComponentViewPropertyValue,
+  ComponentViewTag,
+  ComponentViewTags,
+} from "./core/compile/programmatic-view.ts";
+export type {
+  ComponentView,
+  ComponentViewChild,
+  ComponentViewContext,
+  ComponentViewPrimitive,
+} from "./interface.ts";
 
 export type {
   AfterRenderCallback,

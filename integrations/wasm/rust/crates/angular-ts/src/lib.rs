@@ -10,6 +10,8 @@ pub mod scope;
 pub mod services;
 pub mod token;
 #[cfg(target_arch = "wasm32")]
+pub mod view;
+#[cfg(target_arch = "wasm32")]
 pub mod wasm;
 pub mod wasm_types;
 
@@ -43,6 +45,11 @@ pub use services::{
 #[cfg(target_arch = "wasm32")]
 pub use services::{HttpServiceExt, TemplateRequestServiceExt};
 pub use token::{token, Token};
+#[cfg(target_arch = "wasm32")]
+pub use view::{
+    ComponentView, ComponentViewChild, ComponentViewContext, ComponentViewPrimitive,
+    ComponentViewProperties, ComponentViewPropertyValue, ComponentViewTag, ComponentViewTags,
+};
 #[cfg(target_arch = "wasm32")]
 pub use wasm::{WasmScope, Watch};
 pub use wasm_types::{

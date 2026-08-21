@@ -143,6 +143,21 @@ function elementAcceptsData(node) {
             return false;
     }
 }
+const elementDisposers = new WeakMap();
+/** Registers cleanup that runs when an element is deallocated. */
+function addElementDisposer(element, disposer) {
+    let disposers = elementDisposers.get(element);
+    if (!disposers) {
+        disposers = new Set();
+        elementDisposers.set(element, disposers);
+    }
+    disposers.add(disposer);
+    return () => {
+        disposers.delete(disposer);
+        if (disposers.size === 0)
+            elementDisposers.delete(element);
+    };
+}
 /** Deallocates cached data for an element and its descendant tree. */
 function dealoc(element, onlyDescendants = false) {
     if (!element ||
@@ -588,6 +603,12 @@ function setNormalizedAttr(element, normalizedName, value, options) {
     };
 }
 function cleanSingleElementData(node) {
+    const disposers = elementDisposers.get(node);
+    if (disposers) {
+        elementDisposers.delete(node);
+        for (const dispose of disposers)
+            dispose();
+    }
     if (node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
         getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY) !== undefined) {
         node.dispatchEvent(new Event("$destroy"));
@@ -736,4 +757,4 @@ function extractElementNode(element) {
     return undefined;
 }
 
-export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getOrSetCacheData, getScope, getTranscludedHostElement, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setNormalizedAttr, setScope, setTranscludedHostElement, snakeToCamel, startingTag };
+export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, addElementDisposer, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getOrSetCacheData, getScope, getTranscludedHostElement, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setNormalizedAttr, setScope, setTranscludedHostElement, snakeToCamel, startingTag };

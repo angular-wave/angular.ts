@@ -31,6 +31,14 @@
     "js/ng.ClassValue"
     "js/ng.CompileService"
     "js/ng.Component"
+    "js/ng.ComponentView"
+    "js/ng.ComponentViewChild"
+    "js/ng.ComponentViewContext"
+    "js/ng.ComponentViewPrimitive"
+    "js/ng.ComponentViewProperties"
+    "js/ng.ComponentViewPropertyValue"
+    "js/ng.ComponentViewTag"
+    "js/ng.ComponentViewTags"
     "js/ng.ConnectionConfig"
     "js/ng.ConnectionEvent"
     "js/ng.Controller"
@@ -41,8 +49,15 @@
     "js/ng.CookieStoreOptions"
     "js/ng.CurrencyFilterOptions"
     "js/ng.Directive"
+    "js/ng.DirectiveCompileFn"
+    "js/ng.DirectiveController"
     "js/ng.DirectiveFactory"
+    "js/ng.DirectiveFactoryFn"
+    "js/ng.DirectiveLinkFn"
+    "js/ng.DirectivePrePost"
     "js/ng.DirectiveRestrict"
+    "js/ng.DirectiveView"
+    "js/ng.DirectiveViewContext"
     "js/ng.DocumentService"
     "js/ng.ElementScopeOptions"
     "js/ng.ElementService"
@@ -246,7 +261,15 @@
      "js/ng.ClassMap" "Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values add the class; `false`, `null`, and `undefined` remove it."
      "js/ng.ClassValue" "Public shape accepted by `ng-class` for class binding expressions."
      "js/ng.CompileService" "Entry point for the `$compile` service."
-     "js/ng.Component" "Defines a component's configuration object (a simplified directive definition object)."
+     "js/ng.Component" "Public AngularTS Component contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ComponentView" "Public AngularTS ComponentView contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ComponentViewChild" "DOM content accepted from programmatic component and directive views. Functions are reactive child readers, arrays are flattened recursively, and existing nodes are moved rather than cloned. `null`, `undefined`, and `false` render no DOM content. Document fragments contribute their children."
+     "js/ng.ComponentViewContext" "Public AngularTS ComponentViewContext contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ComponentViewPrimitive" "Primitive text value accepted as a programmatic view child."
+     "js/ng.ComponentViewProperties" "Public AngularTS ComponentViewProperties contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ComponentViewPropertyValue" "Public AngularTS ComponentViewPropertyValue contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ComponentViewTag" "Public AngularTS ComponentViewTag contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ComponentViewTags" "Typed HTML tag factories. Calling the object with a namespace URI returns factories for namespaced elements such as SVG and MathML."
      "js/ng.ConnectionConfig" "Public AngularTS ConnectionConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ConnectionEvent" "Public AngularTS ConnectionEvent contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Controller" "AngularTS component lifecycle interface. Directive controllers have a well-defined lifecycle. Each controller can implement \"lifecycle hooks\". These are methods that will be called by Angular at certain points in the life cycle of the directive. https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks https://docs.angularjs.org/guide/component"
@@ -257,8 +280,15 @@
      "js/ng.CookieStoreOptions" "Serialization options for cookie-backed stores."
      "js/ng.CurrencyFilterOptions" "Public AngularTS CurrencyFilterOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Directive" "Public AngularTS Directive contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.DirectiveCompileFn" "Public AngularTS DirectiveCompileFn contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.DirectiveController" "A controller instance or object map used in directives."
      "js/ng.DirectiveFactory" "Directive registration factory that returns either a directive definition object or a link function."
+     "js/ng.DirectiveFactoryFn" "Public AngularTS DirectiveFactoryFn contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.DirectiveLinkFn" "Public AngularTS DirectiveLinkFn contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.DirectivePrePost" "Defines optional pre/post link functions in directive compile phase."
      "js/ng.DirectiveRestrict" "Supported directive matching locations."
+     "js/ng.DirectiveView" "Public AngularTS DirectiveView contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.DirectiveViewContext" "Public AngularTS DirectiveViewContext contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.DocumentService" "The **`Document`** interface represents any web page loaded in the browser and serves as an entry point into the web page's content, which is the DOM tree. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document)"
      "js/ng.ElementScopeOptions" "Public AngularTS ElementScopeOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ElementService" "**`Element`** is the most general base class from which all element objects (i.e., objects that represent elements) in a Document inherit. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element)"
@@ -319,7 +349,7 @@
      "js/ng.Policy" "Public AngularTS Policy contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.PolicyContext" "Public AngularTS PolicyContext contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.PolicyDecision" "Public AngularTS PolicyDecision contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.ProviderDefinition" "A user-defined service recipe accepted by {@link ng.NgModule.provider}. Object recipes define an injectable `$get` factory directly. Injectable functions and classes are instantiated first and must produce an object with an injectable `$get` factory."
+     "js/ng.ProviderDefinition" "A user-defined service recipe accepted by {@link ng.NgModule.provider}. Object recipes define an injectable `get` factory directly. Injectable functions and classes are instantiated first and must produce an object with an injectable `get` factory."
      "js/ng.RealtimeProtocolEventDetail" "Public AngularTS RealtimeProtocolEventDetail contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RealtimeProtocolMessage" "Public AngularTS RealtimeProtocolMessage contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ResolvesOf" "Public AngularTS ResolvesOf contract exposed through the global ng namespace for Closure-annotated applications."
@@ -347,7 +377,7 @@
      "js/ng.Scope" "Reactive scope object used by AngularTS templates, directives, event propagation, listener registration, and queued change delivery."
      "js/ng.ScopeElement" "Public AngularTS ScopeElement contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ScopeElementConstructor" "Public AngularTS ScopeElementConstructor contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.ScopeEvent" "Event object passed to `$emit` and `$broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods."
+     "js/ng.ScopeEvent" "Event object passed to `emit` and `broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods."
      "js/ng.ScopeService" "Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior."
      "js/ng.SecurityConfig" "Public AngularTS SecurityConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SecurityCredentialsConfig" "Public AngularTS SecurityCredentialsConfig contract exposed through the global ng namespace for Closure-annotated applications."
@@ -458,6 +488,8 @@
     "angular-service-get-scope-by-name"
     "angular-service-injector"
     "angular-service-register-ng-module"
+    "angular-service-tags"
+    "angular-tags"
     "animate-service-add-class"
     "animate-service-animate"
     "animate-service-cancel"
@@ -489,16 +521,16 @@
     "http-service-delete"
     "http-service-get"
     "http-service-head"
-    "injection-token-map-dollarhttp"
-    "injection-token-map-dollarhttp-param-serializer"
-    "injection-token-map-dollarinterpolate"
-    "injection-token-map-dollarmachine"
-    "injection-token-map-dollarsse"
-    "injection-token-map-dollartemplate-request"
-    "injection-token-map-dollarweb-transport"
-    "injection-token-map-dollarwebsocket"
-    "injection-token-map-dollarworkflow"
-    "injection-token-map-dollarworkflow-supervisor"
+    "injection-token-map-http"
+    "injection-token-map-http-param-serializer"
+    "injection-token-map-interpolate"
+    "injection-token-map-machine"
+    "injection-token-map-sse"
+    "injection-token-map-template-request"
+    "injection-token-map-web-transport"
+    "injection-token-map-websocket"
+    "injection-token-map-workflow"
+    "injection-token-map-workflow-supervisor"
     "injector-service-has"
     "injector-service-load-new-modules"
     "interpolate-service-call"
@@ -522,26 +554,26 @@
     "log-service-warn"
     "machine-restore"
     "machine-snapshot"
-    "model-dollarbroadcast"
-    "model-dollardestroy"
-    "model-dollaremit"
-    "model-dollarnew"
-    "model-dollarnew-isolate"
-    "model-dollarsearch-by-name"
-    "model-dollartranscluded"
-    "ng-model-controller-dollarcommit-view-value"
-    "ng-model-controller-dollaroverride-model-options"
-    "ng-model-controller-dollarprocess-model-value"
-    "ng-model-controller-dollarrender"
-    "ng-model-controller-dollarrollback-view-value"
-    "ng-model-controller-dollarset-custom-validity"
-    "ng-model-controller-dollarset-dirty"
-    "ng-model-controller-dollarset-native-validity"
-    "ng-model-controller-dollarset-pristine"
-    "ng-model-controller-dollarset-touched"
-    "ng-model-controller-dollarset-untouched"
-    "ng-model-controller-dollarset-validity"
-    "ng-model-controller-dollarvalidate"
+    "model-broadcast"
+    "model-destroy"
+    "model-emit"
+    "model-new"
+    "model-new-isolate"
+    "model-search-by-name"
+    "model-transcluded"
+    "ng-model-controller-commit-view-value"
+    "ng-model-controller-override-model-options"
+    "ng-model-controller-process-model-value"
+    "ng-model-controller-render"
+    "ng-model-controller-rollback-view-value"
+    "ng-model-controller-set-custom-validity"
+    "ng-model-controller-set-dirty"
+    "ng-model-controller-set-native-validity"
+    "ng-model-controller-set-pristine"
+    "ng-model-controller-set-touched"
+    "ng-model-controller-set-untouched"
+    "ng-model-controller-set-validity"
+    "ng-model-controller-validate"
     "ng-module-animation"
     "ng-module-app-component"
     "ng-module-component"
@@ -565,13 +597,13 @@
     "rest-cache-store-get"
     "rest-cache-store-set"
     "rest-service-list"
-    "root-scope-service-dollarbroadcast"
-    "root-scope-service-dollardestroy"
-    "root-scope-service-dollaremit"
-    "root-scope-service-dollarnew"
-    "root-scope-service-dollarnew-isolate"
-    "root-scope-service-dollarsearch-by-name"
-    "root-scope-service-dollartranscluded"
+    "root-scope-service-broadcast"
+    "root-scope-service-destroy"
+    "root-scope-service-emit"
+    "root-scope-service-new"
+    "root-scope-service-new-isolate"
+    "root-scope-service-search-by-name"
+    "root-scope-service-transcluded"
     "router-module-app-component"
     "router-module-component"
     "router-module-config"
@@ -583,25 +615,25 @@
     "sce-service-parse-as-media-url"
     "sce-service-parse-as-resource-url"
     "sce-service-parse-as-url"
-    "scope-dollarbroadcast"
-    "scope-dollardestroy"
-    "scope-dollaremit"
-    "scope-dollarmerge"
-    "scope-dollarnew"
-    "scope-dollarnew-isolate"
-    "scope-dollarsearch-by-name"
-    "scope-dollartranscluded"
+    "scope-broadcast"
+    "scope-destroy"
     "scope-element-attribute-changed-callback"
     "scope-element-connected-callback"
     "scope-element-disconnected-callback"
+    "scope-emit"
     "scope-event-prevent-default"
-    "scope-service-dollarbroadcast"
-    "scope-service-dollardestroy"
-    "scope-service-dollaremit"
-    "scope-service-dollarnew"
-    "scope-service-dollarnew-isolate"
-    "scope-service-dollarsearch-by-name"
-    "scope-service-dollartranscluded"
+    "scope-merge"
+    "scope-new"
+    "scope-new-isolate"
+    "scope-search-by-name"
+    "scope-service-broadcast"
+    "scope-service-destroy"
+    "scope-service-emit"
+    "scope-service-new"
+    "scope-service-new-isolate"
+    "scope-service-search-by-name"
+    "scope-service-transcluded"
+    "scope-transcluded"
     "security-policy-check"
     "service-worker-service-ready"
     "service-worker-service-unregister"
@@ -623,8 +655,6 @@
     "stream-service-read-text"
     "transition-abort"
     "transition-apply-view-configs"
-    "transition-dollarfrom"
-    "transition-dollarto"
     "transition-dynamic"
     "transition-entering"
     "transition-error"
@@ -641,13 +671,13 @@
     "wasm-resource-bind"
     "wasm-resource-dispose"
     "wasm-service-load"
-    "wasm-target-dollarbroadcast"
-    "wasm-target-dollardestroy"
-    "wasm-target-dollaremit"
-    "wasm-target-dollarnew"
-    "wasm-target-dollarnew-isolate"
-    "wasm-target-dollarsearch-by-name"
-    "wasm-target-dollartranscluded"
+    "wasm-target-broadcast"
+    "wasm-target-destroy"
+    "wasm-target-emit"
+    "wasm-target-new"
+    "wasm-target-new-isolate"
+    "wasm-target-search-by-name"
+    "wasm-target-transcluded"
     "web-socket-connection-close"
     "web-socket-connection-reconnect"
     "web-transport-connection-close"
@@ -665,10 +695,7 @@
 
 (def strict-property-reader-names
   "Extern properties with fully concrete ClojureScript reader signatures."
-  #{"angular-dollarevent-bus"
-    "angular-dollarinjector"
-    "angular-dollarroot-scope"
-    "angular-dollart"
+  #{"angular-current-injector"
     "angular-element-definition-angular"
     "angular-element-definition-element-module"
     "angular-element-definition-injector"
@@ -683,16 +710,21 @@
     "angular-element-options-providers"
     "angular-element-options-requires"
     "angular-element-options-subapp"
+    "angular-event-bus"
+    "angular-root-scope"
     "angular-scope-element"
-    "angular-service-dollarevent-bus"
-    "angular-service-dollarinjector"
-    "angular-service-dollarroot-scope"
-    "angular-service-dollart"
+    "angular-service-current-injector"
+    "angular-service-event-bus"
+    "angular-service-root-scope"
     "angular-service-scope-element"
     "angular-service-subapps"
+    "angular-service-tokens"
     "angular-service-version"
+    "angular-service-view"
     "angular-subapps"
+    "angular-tokens"
     "angular-version"
+    "angular-view"
     "animation-context-add-class"
     "animation-context-class-name"
     "animation-context-from"
@@ -731,6 +763,11 @@
     "component-controller-as"
     "component-replace"
     "component-require"
+    "component-view-context-controller"
+    "component-view-context-element"
+    "component-view-context-scope"
+    "component-view-context-transclude"
+    "component-view-properties-is"
     "connection-config-event-types"
     "connection-config-heartbeat-timeout"
     "connection-config-max-retries"
@@ -742,14 +779,20 @@
     "cookie-options-samesite"
     "cookie-options-secure"
     "cookie-store-options-cookie"
+    "directive-compile"
     "directive-controller-as"
     "directive-count"
     "directive-name"
+    "directive-pre-post-post"
+    "directive-pre-post-pre"
     "directive-priority"
     "directive-replace"
     "directive-restrict"
     "directive-template-namespace"
     "directive-terminal"
+    "directive-view-context-element"
+    "directive-view-context-scope"
+    "directive-view-context-transclude"
     "element-scope-options-isolate"
     "element-scope-options-parent-scope"
     "error-handling-config-object-max-depth"
@@ -802,32 +845,32 @@
     "http-response-xhr-status"
     "http-service-defaults"
     "http-service-pending-requests"
-    "injection-token-map-dollarangular"
-    "injection-token-map-dollaranimate"
-    "injection-token-map-dollararia"
-    "injection-token-map-dollarcookie"
-    "injection-token-map-dollardocument"
-    "injection-token-map-dollarelement"
-    "injection-token-map-dollarevent-bus"
-    "injection-token-map-dollarhtml-canvas"
-    "injection-token-map-dollarinjector"
-    "injection-token-map-dollarlocation"
-    "injection-token-map-dollarlog"
-    "injection-token-map-dollarroot-element"
-    "injection-token-map-dollarroot-scope"
-    "injection-token-map-dollarsce"
-    "injection-token-map-dollarsce-delegate"
-    "injection-token-map-dollarscope"
-    "injection-token-map-dollarsecurity"
-    "injection-token-map-dollarservice-worker"
-    "injection-token-map-dollarstate"
-    "injection-token-map-dollarstate-registry"
-    "injection-token-map-dollarstream"
-    "injection-token-map-dollartemplate-cache"
-    "injection-token-map-dollartransitions"
-    "injection-token-map-dollarwasm"
-    "injection-token-map-dollarweb-component"
-    "injection-token-map-dollarwindow"
+    "injection-token-map-angular"
+    "injection-token-map-animate"
+    "injection-token-map-aria"
+    "injection-token-map-cookie"
+    "injection-token-map-document"
+    "injection-token-map-element"
+    "injection-token-map-event-bus"
+    "injection-token-map-html-canvas"
+    "injection-token-map-injector"
+    "injection-token-map-location"
+    "injection-token-map-log"
+    "injection-token-map-root-element"
+    "injection-token-map-root-scope"
+    "injection-token-map-sce"
+    "injection-token-map-sce-delegate"
+    "injection-token-map-scope"
+    "injection-token-map-security"
+    "injection-token-map-service-worker"
+    "injection-token-map-state"
+    "injection-token-map-state-registry"
+    "injection-token-map-stream"
+    "injection-token-map-template-cache"
+    "injection-token-map-transitions"
+    "injection-token-map-wasm"
+    "injection-token-map-web-component"
+    "injection-token-map-window"
     "interpolate-config-end-symbol"
     "interpolate-config-start-symbol"
     "interpolation-function-exp"
@@ -856,32 +899,29 @@
     "model-change-keys"
     "model-change-origin"
     "model-change-snapshot-version"
-    "model-dollarid"
-    "model-dollarparent"
-    "model-dollarproxy"
-    "model-dollarroot"
-    "model-dollarscopename"
-    "model-dollartarget"
+    "model-id"
+    "model-parent"
     "model-restore-options-mode"
     "model-restore-options-origin"
+    "model-root"
+    "model-scope-name"
     "model-sync-options-failure"
-    "ng-model-controller-dollarasync-validators"
-    "ng-model-controller-dollardirty"
-    "ng-model-controller-dollarerror"
-    "ng-model-controller-dollarformatters"
-    "ng-model-controller-dollarinvalid"
-    "ng-model-controller-dollaroptions"
-    "ng-model-controller-dollarparsers"
-    "ng-model-controller-dollarpending"
-    "ng-model-controller-dollarpristine"
-    "ng-model-controller-dollartarget"
-    "ng-model-controller-dollartouched"
-    "ng-model-controller-dollaruntouched"
-    "ng-model-controller-dollarvalid"
-    "ng-model-controller-dollarvalidation-message"
-    "ng-model-controller-dollarvalidators"
-    "ng-model-controller-dollarvalidity"
-    "ng-model-controller-dollarview-change-listeners"
+    "ng-model-controller-async-validators"
+    "ng-model-controller-dirty"
+    "ng-model-controller-error"
+    "ng-model-controller-formatters"
+    "ng-model-controller-invalid"
+    "ng-model-controller-options"
+    "ng-model-controller-parsers"
+    "ng-model-controller-pending"
+    "ng-model-controller-pristine"
+    "ng-model-controller-touched"
+    "ng-model-controller-untouched"
+    "ng-model-controller-valid"
+    "ng-model-controller-validation-message"
+    "ng-model-controller-validators"
+    "ng-model-controller-validity"
+    "ng-model-controller-view-change-listeners"
     "ng-module-name"
     "policy-context-meta"
     "policy-decision-meta"
@@ -912,12 +952,10 @@
     "rest-revalidate-event-key"
     "rest-revalidate-event-request"
     "rest-revalidate-event-response"
-    "root-scope-service-dollarid"
-    "root-scope-service-dollarparent"
-    "root-scope-service-dollarproxy"
-    "root-scope-service-dollarroot"
-    "root-scope-service-dollarscopename"
-    "root-scope-service-dollartarget"
+    "root-scope-service-id"
+    "root-scope-service-parent"
+    "root-scope-service-root"
+    "root-scope-service-scope-name"
     "route-contract-params"
     "route-contract-resolves"
     "router-config-case-insensitive"
@@ -937,12 +975,6 @@
     "router-module-declaration-url"
     "router-module-declaration-views"
     "router-module-name"
-    "scope-dollarid"
-    "scope-dollarparent"
-    "scope-dollarproxy"
-    "scope-dollarroot"
-    "scope-dollarscopename"
-    "scope-dollartarget"
     "scope-element-constructor-inputs"
     "scope-element-constructor-isolate"
     "scope-element-constructor-template"
@@ -953,12 +985,14 @@
     "scope-event-name"
     "scope-event-stopped"
     "scope-event-target-scope"
-    "scope-service-dollarid"
-    "scope-service-dollarparent"
-    "scope-service-dollarproxy"
-    "scope-service-dollarroot"
-    "scope-service-dollarscopename"
-    "scope-service-dollartarget"
+    "scope-id"
+    "scope-parent"
+    "scope-root"
+    "scope-scope-name"
+    "scope-service-id"
+    "scope-service-parent"
+    "scope-service-root"
+    "scope-service-scope-name"
     "security-config-allow-insecure-origins"
     "security-config-credentials"
     "security-config-fallback"
@@ -1012,7 +1046,7 @@
     "state-policy-declaration-transition"
     "state-service-current"
     "state-service-params"
-    "transition-dollarid"
+    "transition-id"
     "transition-promise"
     "transition-success"
     "wasm-binding-disposed"
@@ -1034,12 +1068,10 @@
     "wasm-resource-module"
     "wasm-resource-ready"
     "wasm-resource-status"
-    "wasm-target-dollarid"
-    "wasm-target-dollarparent"
-    "wasm-target-dollarproxy"
-    "wasm-target-dollarroot"
-    "wasm-target-dollarscopename"
-    "wasm-target-dollartarget"
+    "wasm-target-id"
+    "wasm-target-parent"
+    "wasm-target-root"
+    "wasm-target-scope-name"
     "web-component-config-defaults"
     "web-component-context-host"
     "web-component-context-injector"
@@ -1120,59 +1152,59 @@
   ^js/ng.Angular js/angular)
 
 (defn injectable
-  "Create an AngularTS array-annotated injectable."
-  ^js/ng.Injectable [^js/Array deps factory]
-  (let [annotated (.slice deps)]
+  "Create an AngularTS array-annotated injectable from a ClojureScript collection."
+  ^js/ng.Injectable [deps factory]
+  (let [annotated (to-array deps)]
     (.push annotated factory)
     annotated))
 
 (defn angular-call
-  "Await result. Accepts a single string: `\"<target>.<expression>\"`\n\nParams:\n- input: {string}\n\nReturns: {!Promise<?>}"
+  "Await result. Accepts a single string: `\"<target>.<expression>\"`\n\nParams:\n- input: {string} Value supplied for the input parameter.\n\nReturns: {!Promise<?>}"
   ^js/Promise [^js/ng.Angular target ^string input]
   (.call target input))
 
 (defn angular-dispatch-event
-  "Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.\n\nParams:\n- event: {!Event}\n\nReturns: {boolean}"
+  "Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.\n\nParams:\n- event: {!Event} Value supplied for the event parameter.\n\nReturns: {boolean}"
   ^boolean [^js/ng.Angular target ^js/Event event]
   (.dispatchEvent target event))
 
 (defn angular-emit
-  "Fire-and-forget. Accepts a single string: `\"<target>.<expression>\"`\n\nParams:\n- input: {string}\n\nReturns: {void}"
+  "Fire-and-forget. Accepts a single string: `\"<target>.<expression>\"`\n\nParams:\n- input: {string} Value supplied for the input parameter.\n\nReturns: {void}"
   [^js/ng.Angular target ^string input]
   (.emit target input))
 
 (defn angular-error-handling-config
-  "Global framework error-handling configuration.\n\nParams:\n- config: {(!ng.ErrorHandlingConfig|undefined)}\n\nReturns: {!ng.ErrorHandlingConfig}"
+  "Global framework error-handling configuration.\n\nParams:\n- config: {(!ng.ErrorHandlingConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.ErrorHandlingConfig}"
   ^js/ng.ErrorHandlingConfig [^js/ng.Angular target ^js/ng.ErrorHandlingConfig config]
   (.errorHandlingConfig target config))
 
 (defn angular-get-controller
-  "Retrieve the controller instance cached on a compiled DOM element.\n\nParams:\n- element: {!Element}\n- name: {(string|undefined)}\n\nReturns: {(!ng.Scope|undefined)}"
+  "Retrieve the controller instance cached on a compiled DOM element.\n\nParams:\n- element: {!Element} The DOM element to get data from.\n- name: {(string|undefined)} Controller name.\n\nReturns: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.Angular target ^js/Element element ^string name]
   (.getController target element name))
 
 (defn angular-get-injector
-  "Retrieve the injector cached on a bootstrapped DOM element.\n\nParams:\n- element: {!Element}\n\nReturns: {!ng.InjectorService<?>}"
+  "Retrieve the injector cached on a bootstrapped DOM element.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n\nReturns: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.Angular target ^js/Element element]
   (.getInjector target element))
 
 (defn angular-get-scope
-  "Retrieve the scope cached on a compiled DOM element.\n\nParams:\n- element: {!Element}\n\nReturns: {!ng.Scope}"
+  "Retrieve the scope cached on a compiled DOM element.\n\nParams:\n- element: {!Element} The DOM element to get data from.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.Angular target ^js/Element element]
   (.getScope target element))
 
 (defn angular-get-scope-by-name
-  "Find a scope by its registered `$scopename`.\n\nParams:\n- name: {string}\n\nReturns: {(!ng.Scope|undefined)}"
+  "Find a scope by its registered `scopeName`.\n\nParams:\n- name: {string} Scope name to search for.\n\nReturns: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.Angular target ^string name]
   (.getScopeByName target name))
 
 (defn angular-injector
-  "Create a standalone injector without bootstrapping the DOM.\n\nParams:\n- modules: {!Array<(string|!ng.Injectable)>}\n\nReturns: {!ng.InjectorService<?>}"
+  "Create a standalone injector without bootstrapping the DOM.\n\nParams:\n- modules: {!Array<(string|!ng.Injectable)>} Module names or config functions to load.\n\nReturns: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.Angular target ^js/Array modules]
   (.injector target modules))
 
 (defn angular-module
-  "The `angular.module` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. `angular.module` is used to configure the auto.$injector `$injector`. ```js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an injector and load your modules like this: ```js let injector = angular.injector(['ng', 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or `bootstrap()` to simplify this process.\n\nParams:\n- name: {string}\n- requires: {(!Array<string>|undefined)}\n- configFn: {(!ng.Injectable|undefined)}\n\nReturns: {!ng.NgModule}"
+  "The `angular.module` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. `angular.module` is used to configure the auto.$injector `$injector`. ```js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an injector and load your modules like this: ```js let injector = angular.injector(['ng', 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or `bootstrap()` to simplify this process.\n\nParams:\n- name: {string} The name of the module to create or retrieve.\n- requires: {(!Array<string>|undefined)} If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.\n- configFn: {(!ng.Injectable|undefined)} Optional configuration function for the module that gets passed to `NgModule.config()`.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.Angular target ^string name ^js/Array requires ^js/ng.Injectable configFn]
   (.module target name requires configFn))
 
@@ -1182,47 +1214,47 @@
   (.registerNgModule target))
 
 (defn angular-service-call
-  "Await result. Accepts a single string: `\"<target>.<expression>\"`\n\nParams:\n- input: {string}\n\nReturns: {!Promise<?>}"
+  "Await result. Accepts a single string: `\"<target>.<expression>\"`\n\nParams:\n- input: {string} Value supplied for the input parameter.\n\nReturns: {!Promise<?>}"
   ^js/Promise [^js/ng.AngularService target ^string input]
   (.call target input))
 
 (defn angular-service-dispatch-event
-  "Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.\n\nParams:\n- event: {!Event}\n\nReturns: {boolean}"
+  "Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.\n\nParams:\n- event: {!Event} Value supplied for the event parameter.\n\nReturns: {boolean}"
   ^boolean [^js/ng.AngularService target ^js/Event event]
   (.dispatchEvent target event))
 
 (defn angular-service-emit
-  "Fire-and-forget. Accepts a single string: `\"<target>.<expression>\"`\n\nParams:\n- input: {string}\n\nReturns: {void}"
+  "Fire-and-forget. Accepts a single string: `\"<target>.<expression>\"`\n\nParams:\n- input: {string} Value supplied for the input parameter.\n\nReturns: {void}"
   [^js/ng.AngularService target ^string input]
   (.emit target input))
 
 (defn angular-service-error-handling-config
-  "Global framework error-handling configuration.\n\nParams:\n- config: {(!ng.ErrorHandlingConfig|undefined)}\n\nReturns: {!ng.ErrorHandlingConfig}"
+  "Global framework error-handling configuration.\n\nParams:\n- config: {(!ng.ErrorHandlingConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.ErrorHandlingConfig}"
   ^js/ng.ErrorHandlingConfig [^js/ng.AngularService target ^js/ng.ErrorHandlingConfig config]
   (.errorHandlingConfig target config))
 
 (defn angular-service-get-controller
-  "Retrieve the controller instance cached on a compiled DOM element.\n\nParams:\n- element: {!Element}\n- name: {(string|undefined)}\n\nReturns: {(!ng.Scope|undefined)}"
+  "Retrieve the controller instance cached on a compiled DOM element.\n\nParams:\n- element: {!Element} The DOM element to get data from.\n- name: {(string|undefined)} Controller name.\n\nReturns: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.AngularService target ^js/Element element ^string name]
   (.getController target element name))
 
 (defn angular-service-get-injector
-  "Retrieve the injector cached on a bootstrapped DOM element.\n\nParams:\n- element: {!Element}\n\nReturns: {!ng.InjectorService<?>}"
+  "Retrieve the injector cached on a bootstrapped DOM element.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n\nReturns: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.AngularService target ^js/Element element]
   (.getInjector target element))
 
 (defn angular-service-get-scope
-  "Retrieve the scope cached on a compiled DOM element.\n\nParams:\n- element: {!Element}\n\nReturns: {!ng.Scope}"
+  "Retrieve the scope cached on a compiled DOM element.\n\nParams:\n- element: {!Element} The DOM element to get data from.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.AngularService target ^js/Element element]
   (.getScope target element))
 
 (defn angular-service-get-scope-by-name
-  "Find a scope by its registered `$scopename`.\n\nParams:\n- name: {string}\n\nReturns: {(!ng.Scope|undefined)}"
+  "Find a scope by its registered `scopeName`.\n\nParams:\n- name: {string} Scope name to search for.\n\nReturns: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.AngularService target ^string name]
   (.getScopeByName target name))
 
 (defn angular-service-injector
-  "Create a standalone injector without bootstrapping the DOM.\n\nParams:\n- modules: {!Array<(!Array<function(...?): ?>|function(...?): ?|string)>}\n\nReturns: {!ng.InjectorService<?>}"
+  "Create a standalone injector without bootstrapping the DOM.\n\nParams:\n- modules: {!Array<(!Array<function(...?): ?>|function(...?): ?|string)>} Module names or config functions to load.\n\nReturns: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.AngularService target ^js/Array modules]
   (.injector target modules))
 
@@ -1231,48 +1263,58 @@
   ^js/ng.NgModule [^js/ng.AngularService target]
   (.registerNgModule target))
 
+(defn angular-service-tags
+  "JSX-free real-DOM tag factories for programmatic component views.\n\nParams:\n- namespaceUri: {string} Value supplied for the namespaceUri parameter.\n\nReturns: {!Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}"
+  ^js/Object [^js/ng.AngularService target ^string namespaceUri]
+  (.tags target namespaceUri))
+
+(defn angular-tags
+  "JSX-free real-DOM tag factories for programmatic component views.\n\nParams:\n- namespaceUri: {string} Value supplied for the namespaceUri parameter.\n\nReturns: {!Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}"
+  ^js/Object [^js/ng.Angular target ^string namespaceUri]
+  (.tags target namespaceUri))
+
 (defn animate-service-add-class
-  "Public AnimateService.addClass member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element}\n- className: {string}\n- options: {(!ng.AnimationOptions|undefined)}\n\nReturns: {!ng.AnimationHandle}"
+  "Public AnimateService.addClass member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n- className: {string} Value supplied for the className parameter.\n- options: {(!ng.AnimationOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!ng.AnimationHandle}"
   ^js/ng.AnimationHandle [^js/ng.AnimateService target ^js/Element element ^string className ^js/ng.AnimationOptions options]
   (.addClass target element className options))
 
 (defn animate-service-animate
-  "Public AnimateService.animate member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element}\n- from: {!Object<string, (number|string)>}\n- to: {(!Object<string, (number|string)>|undefined)}\n- className: {(string|undefined)}\n- options: {(!ng.AnimationOptions|undefined)}\n\nReturns: {!ng.AnimationHandle}"
+  "Public AnimateService.animate member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n- from: {!Object<string, (number|string)>} Value supplied for the from parameter.\n- to: {(!Object<string, (number|string)>|undefined)} Value supplied for the to parameter.\n- className: {(string|undefined)} Value supplied for the className parameter.\n- options: {(!ng.AnimationOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!ng.AnimationHandle}"
   ^js/ng.AnimationHandle [^js/ng.AnimateService target ^js/Element element ^js/Object from ^js/Object to ^string className ^js/ng.AnimationOptions options]
   (.animate target element from to className options))
 
 (defn animate-service-cancel
-  "Public AnimateService.cancel member exposed by the AngularTS namespace contract.\n\nParams:\n- handle: {(!ng.AnimationHandle|undefined)}\n\nReturns: {void}"
+  "Public AnimateService.cancel member exposed by the AngularTS namespace contract.\n\nParams:\n- handle: {(!ng.AnimationHandle|undefined)} Value supplied for the handle parameter.\n\nReturns: {void}"
   [^js/ng.AnimateService target ^js/ng.AnimationHandle handle]
   (.cancel target handle))
 
 (defn animate-service-define
-  "Public AnimateService.define member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- preset: {!ng.AnimationPreset}\n\nReturns: {void}"
+  "Public AnimateService.define member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- preset: {!ng.AnimationPreset} Value supplied for the preset parameter.\n\nReturns: {void}"
   [^js/ng.AnimateService target ^string name ^js/ng.AnimationPreset preset]
   (.define target name preset))
 
 (defn animate-service-enter
-  "Public AnimateService.enter member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element}\n- parent: {(!Object|null|undefined)}\n- after: {(!Object|null|undefined)}\n- options: {(!ng.AnimationOptions|undefined)}\n\nReturns: {!ng.AnimationHandle}"
+  "Public AnimateService.enter member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n- parent: {(!Object|null|undefined)} Value supplied for the parent parameter.\n- after: {(!Object|null|undefined)} Value supplied for the after parameter.\n- options: {(!ng.AnimationOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!ng.AnimationHandle}"
   ^js/ng.AnimationHandle [^js/ng.AnimateService target ^js/Element element ^js/Object parent ^js/Object after ^js/ng.AnimationOptions options]
   (.enter target element parent after options))
 
 (defn animate-service-leave
-  "Public AnimateService.leave member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element}\n- options: {(!ng.AnimationOptions|undefined)}\n\nReturns: {!ng.AnimationHandle}"
+  "Public AnimateService.leave member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n- options: {(!ng.AnimationOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!ng.AnimationHandle}"
   ^js/ng.AnimationHandle [^js/ng.AnimateService target ^js/Element element ^js/ng.AnimationOptions options]
   (.leave target element options))
 
 (defn animate-service-move
-  "Public AnimateService.move member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element}\n- parent: {(!Object|null)}\n- after: {(!Object|null|undefined)}\n- options: {(!ng.AnimationOptions|undefined)}\n\nReturns: {!ng.AnimationHandle}"
+  "Public AnimateService.move member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n- parent: {(!Object|null)} Value supplied for the parent parameter.\n- after: {(!Object|null|undefined)} Value supplied for the after parameter.\n- options: {(!ng.AnimationOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!ng.AnimationHandle}"
   ^js/ng.AnimationHandle [^js/ng.AnimateService target ^js/Element element ^js/Object parent ^js/Object after ^js/ng.AnimationOptions options]
   (.move target element parent after options))
 
 (defn animate-service-remove-class
-  "Public AnimateService.removeClass member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element}\n- className: {string}\n- options: {(!ng.AnimationOptions|undefined)}\n\nReturns: {!ng.AnimationHandle}"
+  "Public AnimateService.removeClass member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n- className: {string} Value supplied for the className parameter.\n- options: {(!ng.AnimationOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!ng.AnimationHandle}"
   ^js/ng.AnimationHandle [^js/ng.AnimateService target ^js/Element element ^string className ^js/ng.AnimationOptions options]
   (.removeClass target element className options))
 
 (defn animate-service-set-class
-  "Public AnimateService.setClass member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element}\n- add: {string}\n- remove: {string}\n- options: {(!ng.AnimationOptions|undefined)}\n\nReturns: {!ng.AnimationHandle}"
+  "Public AnimateService.setClass member exposed by the AngularTS namespace contract.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n- add: {string} Value supplied for the add parameter.\n- remove: {string} Value supplied for the remove parameter.\n- options: {(!ng.AnimationOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!ng.AnimationHandle}"
   ^js/ng.AnimationHandle [^js/ng.AnimateService target ^js/Element element ^string add ^string remove ^js/ng.AnimationOptions options]
   (.setClass target element add remove options))
 
@@ -1282,7 +1324,7 @@
   (.cancel target))
 
 (defn animation-handle-complete
-  "Public AnimationHandle.complete member exposed by the AngularTS namespace contract.\n\nParams:\n- status: {(boolean|undefined)}\n\nReturns: {void}"
+  "Public AnimationHandle.complete member exposed by the AngularTS namespace contract.\n\nParams:\n- status: {(boolean|undefined)} Value supplied for the status parameter.\n\nReturns: {void}"
   [^js/ng.AnimationHandle target ^boolean status]
   (.complete target status))
 
@@ -1302,7 +1344,7 @@
   (.play target))
 
 (defn cookie-service-get
-  "Retrieves a raw cookie value.\n\nParams:\n- key: {string}\n\nReturns: {(null|string)}"
+  "Retrieves a raw cookie value.\n\nParams:\n- key: {string} Cookie name to read.\n\nReturns: {(null|string)}"
   ^string [^js/ng.CookieService target ^string key]
   (.get target key))
 
@@ -1312,12 +1354,12 @@
   (.getAll target))
 
 (defn cookie-service-put
-  "Sets a raw cookie value.\n\nParams:\n- key: {string}\n- value: {string}\n- options: {(!ng.CookieOptions|undefined)}\n\nReturns: {void}"
+  "Sets a raw cookie value.\n\nParams:\n- key: {string} Cookie name to write.\n- value: {string} String value to write.\n- options: {(!ng.CookieOptions|undefined)} Cookie attributes for this write.\n\nReturns: {void}"
   [^js/ng.CookieService target ^string key ^string value ^js/ng.CookieOptions options]
   (.put target key value options))
 
 (defn cookie-service-remove
-  "Removes a cookie by setting an expired date.\n\nParams:\n- key: {string}\n- options: {(!ng.CookieOptions|undefined)}\n\nReturns: {void}"
+  "Removes a cookie by setting an expired date.\n\nParams:\n- key: {string} Cookie name to remove.\n- options: {(!ng.CookieOptions|undefined)} Cookie attributes that must match the existing cookie.\n\nReturns: {void}"
   [^js/ng.CookieService target ^string key ^js/ng.CookieOptions options]
   (.remove target key options))
 
@@ -1327,7 +1369,7 @@
   (.dispose target))
 
 (defn event-bus-service-get-count
-  "Get the number of subscribers for a topic. This is the public diagnostic surface for `$eventBus`. It reports active registered listeners only; topic listings, leak reports, and reactive diagnostics are intentionally not exposed.\n\nParams:\n- topic: {string}\n\nReturns: {number}"
+  "Get the number of subscribers for a topic. This is the public diagnostic surface for `$eventBus`. It reports active registered listeners only; topic listings, leak reports, and reactive diagnostics are intentionally not exposed.\n\nParams:\n- topic: {string} Topic name to inspect.\n\nReturns: {number}"
   ^number [^js/ng.EventBusService target ^string topic]
   (.getCount target topic))
 
@@ -1337,7 +1379,7 @@
   (.isDisposed target))
 
 (defn event-bus-service-publish
-  "Publish a value to a topic asynchronously. All listeners are invoked in the order they were added. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their scope is destroyed before the queued delivery runs.\n\nParams:\n- topic: {string}\n- var_args: {...?}\n\nReturns: {boolean}"
+  "Publish a value to a topic asynchronously. All listeners are invoked in the order they were added. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their scope is destroyed before the queued delivery runs.\n\nParams:\n- topic: {string} The topic to publish.\n- var_args: {...?} Arguments to pass to listeners.\n\nReturns: {boolean}"
   (^boolean [^js/ng.EventBusService target ^string topic]
    (.publish target topic))
   (^boolean [^js/ng.EventBusService target ^string topic value]
@@ -1353,17 +1395,17 @@
   (.reset target))
 
 (defn html-canvas-service-invalidate
-  "Public HtmlCanvasService.invalidate member exposed by the AngularTS namespace contract.\n\nParams:\n- canvas: {!Object}\n\nReturns: {void}"
+  "Public HtmlCanvasService.invalidate member exposed by the AngularTS namespace contract.\n\nParams:\n- canvas: {!Object} Value supplied for the canvas parameter.\n\nReturns: {void}"
   [^js/ng.HtmlCanvasService target ^js/Object canvas]
   (.invalidate target canvas))
 
 (defn html-canvas-service-register-root
-  "Public HtmlCanvasService.registerRoot member exposed by the AngularTS namespace contract.\n\nParams:\n- canvas: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Object}"
+  "Public HtmlCanvasService.registerRoot member exposed by the AngularTS namespace contract.\n\nParams:\n- canvas: {!Object} Value supplied for the canvas parameter.\n- options: {(!Object|undefined)} Value supplied for the options parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.HtmlCanvasService target ^js/Object canvas ^js/Object options]
   (.registerRoot target canvas options))
 
 (defn html-canvas-service-request-paint
-  "Public HtmlCanvasService.requestPaint member exposed by the AngularTS namespace contract.\n\nParams:\n- canvas: {!Object}\n\nReturns: {void}"
+  "Public HtmlCanvasService.requestPaint member exposed by the AngularTS namespace contract.\n\nParams:\n- canvas: {!Object} Value supplied for the canvas parameter.\n\nReturns: {void}"
   [^js/ng.HtmlCanvasService target ^js/Object canvas]
   (.requestPaint target canvas))
 
@@ -1373,87 +1415,87 @@
   (.headers target))
 
 (defn http-service-call
-  "Invokes the callable HttpService contract.\n\nParams:\n- config: {!ng.HttpRequestConfig}\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
+  "Invokes the callable HttpService contract.\n\nParams:\n- config: {!ng.HttpRequestConfig} Value supplied for the config parameter.\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
   ^js/Promise [^js/ng.HttpService target ^js/ng.HttpRequestConfig config]
   (.call target config))
 
 (defn http-service-delete
-  "Send a `DELETE` request.\n\nParams:\n- url: {string}\n- config: {(!ng.HttpRequestOptions|undefined)}\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
+  "Send a `DELETE` request.\n\nParams:\n- url: {string} Value supplied for the url parameter.\n- config: {(!ng.HttpRequestOptions|undefined)} Value supplied for the config parameter.\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
   ^js/Promise [^js/ng.HttpService target ^string url ^js/ng.HttpRequestOptions config]
   (.delete target url config))
 
 (defn http-service-get
-  "Send a `GET` request.\n\nParams:\n- url: {string}\n- config: {(!ng.HttpRequestOptions|undefined)}\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
+  "Send a `GET` request.\n\nParams:\n- url: {string} Value supplied for the url parameter.\n- config: {(!ng.HttpRequestOptions|undefined)} Value supplied for the config parameter.\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
   ^js/Promise [^js/ng.HttpService target ^string url ^js/ng.HttpRequestOptions config]
   (.get target url config))
 
 (defn http-service-head
-  "Send a `HEAD` request.\n\nParams:\n- url: {string}\n- config: {(!ng.HttpRequestOptions|undefined)}\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
+  "Send a `HEAD` request.\n\nParams:\n- url: {string} Value supplied for the url parameter.\n- config: {(!ng.HttpRequestOptions|undefined)} Value supplied for the config parameter.\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
   ^js/Promise [^js/ng.HttpService target ^string url ^js/ng.HttpRequestOptions config]
   (.head target url config))
 
-(defn injection-token-map-dollarhttp
-  "Public InjectionTokenMap.$http member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!ng.HttpRequestConfig}\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
+(defn injection-token-map-http
+  "Public InjectionTokenMap.$http member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!ng.HttpRequestConfig} Value supplied for the config parameter.\n\nReturns: {!Promise<!ng.HttpResponse<T>>}"
   ^js/Promise [^js/ng.InjectionTokenMap target ^js/ng.HttpRequestConfig config]
   (.$http target config))
 
-(defn injection-token-map-dollarhttp-param-serializer
-  "Public InjectionTokenMap.$httpParamSerializer member exposed by the AngularTS namespace contract.\n\nParams:\n- params: {(!Object<string, ?>|undefined)}\n\nReturns: {string}"
+(defn injection-token-map-http-param-serializer
+  "Public InjectionTokenMap.$httpParamSerializer member exposed by the AngularTS namespace contract.\n\nParams:\n- params: {(!Object<string, ?>|undefined)} Value supplied for the params parameter.\n\nReturns: {string}"
   ^string [^js/ng.InjectionTokenMap target ^js/Object params]
   (.$httpParamSerializer target params))
 
-(defn injection-token-map-dollarinterpolate
-  "Public InjectionTokenMap.$interpolate member exposed by the AngularTS namespace contract.\n\nParams:\n- text: {string}\n- mustHaveExpression: {(boolean|undefined)}\n- trustedContext: {(string|undefined)}\n- allOrNothing: {(boolean|undefined)}\n\nReturns: {(!ng.InterpolationFunction|undefined)}"
+(defn injection-token-map-interpolate
+  "Public InjectionTokenMap.$interpolate member exposed by the AngularTS namespace contract.\n\nParams:\n- text: {string} Value supplied for the text parameter.\n- mustHaveExpression: {(boolean|undefined)} Value supplied for the mustHaveExpression parameter.\n- trustedContext: {(string|undefined)} Value supplied for the trustedContext parameter.\n- allOrNothing: {(boolean|undefined)} Value supplied for the allOrNothing parameter.\n\nReturns: {(!ng.InterpolationFunction|undefined)}"
   ^js/ng.InterpolationFunction [^js/ng.InjectionTokenMap target ^string text ^boolean mustHaveExpression ^string trustedContext ^boolean allOrNothing]
   (.$interpolate target text mustHaveExpression trustedContext allOrNothing))
 
-(defn injection-token-map-dollarmachine
-  "Public InjectionTokenMap.$machine member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object}\n\nReturns: {!ng.Machine<!Object>}"
+(defn injection-token-map-machine
+  "Public InjectionTokenMap.$machine member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object} Value supplied for the config parameter.\n\nReturns: {!ng.Machine<!Object>}"
   ^js/ng.Machine [^js/ng.InjectionTokenMap target ^js/Object config]
   (.$machine target config))
 
-(defn injection-token-map-dollarsse
-  "Public InjectionTokenMap.$sse member exposed by the AngularTS namespace contract.\n\nParams:\n- url: {string}\n- config: {(!ng.SseConfig|undefined)}\n\nReturns: {!ng.SseConnection}"
+(defn injection-token-map-sse
+  "Public InjectionTokenMap.$sse member exposed by the AngularTS namespace contract.\n\nParams:\n- url: {string} Value supplied for the url parameter.\n- config: {(!ng.SseConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.SseConnection}"
   ^js/ng.SseConnection [^js/ng.InjectionTokenMap target ^string url ^js/ng.SseConfig config]
   (.$sse target url config))
 
-(defn injection-token-map-dollartemplate-request
-  "Public InjectionTokenMap.$templateRequest member exposed by the AngularTS namespace contract.\n\nParams:\n- templateUrl: {string}\n\nReturns: {!Promise<string>}"
+(defn injection-token-map-template-request
+  "Public InjectionTokenMap.$templateRequest member exposed by the AngularTS namespace contract.\n\nParams:\n- templateUrl: {string} Value supplied for the templateUrl parameter.\n\nReturns: {!Promise<string>}"
   ^js/Promise [^js/ng.InjectionTokenMap target ^string templateUrl]
   (.$templateRequest target templateUrl))
 
-(defn injection-token-map-dollarweb-transport
-  "Public InjectionTokenMap.$webTransport member exposed by the AngularTS namespace contract.\n\nParams:\n- url: {string}\n- config: {(!ng.WebTransportConfig|undefined)}\n\nReturns: {!ng.WebTransportConnection}"
+(defn injection-token-map-web-transport
+  "Public InjectionTokenMap.$webTransport member exposed by the AngularTS namespace contract.\n\nParams:\n- url: {string} Value supplied for the url parameter.\n- config: {(!ng.WebTransportConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.WebTransportConnection}"
   ^js/ng.WebTransportConnection [^js/ng.InjectionTokenMap target ^string url ^js/ng.WebTransportConfig config]
   (.$webTransport target url config))
 
-(defn injection-token-map-dollarwebsocket
-  "Public InjectionTokenMap.$websocket member exposed by the AngularTS namespace contract.\n\nParams:\n- url: {string}\n- config: {(!ng.WebSocketConfig|undefined)}\n\nReturns: {!ng.WebSocketConnection}"
+(defn injection-token-map-websocket
+  "Public InjectionTokenMap.$websocket member exposed by the AngularTS namespace contract.\n\nParams:\n- url: {string} Value supplied for the url parameter.\n- config: {(!ng.WebSocketConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.WebSocketConnection}"
   ^js/ng.WebSocketConnection [^js/ng.InjectionTokenMap target ^string url ^js/ng.WebSocketConfig config]
   (.$websocket target url config))
 
-(defn injection-token-map-dollarworkflow
-  "Public InjectionTokenMap.$workflow member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object}\n\nReturns: {!ng.Workflow<TContract>}"
+(defn injection-token-map-workflow
+  "Public InjectionTokenMap.$workflow member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object} Value supplied for the config parameter.\n\nReturns: {!ng.Workflow<TContract>}"
   ^js/ng.Workflow [^js/ng.InjectionTokenMap target ^js/Object config]
   (.$workflow target config))
 
-(defn injection-token-map-dollarworkflow-supervisor
-  "Public InjectionTokenMap.$workflowSupervisor member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object}\n\nReturns: {!ng.WorkflowSupervisor<TWorkflows>}"
+(defn injection-token-map-workflow-supervisor
+  "Public InjectionTokenMap.$workflowSupervisor member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object} Value supplied for the config parameter.\n\nReturns: {!ng.WorkflowSupervisor<TWorkflows>}"
   ^js/ng.WorkflowSupervisor [^js/ng.InjectionTokenMap target ^js/Object config]
   (.$workflowSupervisor target config))
 
 (defn injector-service-has
-  "Public InjectorService.has member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n\nReturns: {boolean}"
+  "Public InjectorService.has member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n\nReturns: {boolean}"
   ^boolean [^js/ng.InjectorService target ^string name]
   (.has target name))
 
 (defn injector-service-load-new-modules
-  "Public InjectorService.loadNewModules member exposed by the AngularTS namespace contract.\n\nParams:\n- mods: {!Array<(!Array<function(...?): ?>|function(...?): ?|string)>}\n\nReturns: {void}"
+  "Public InjectorService.loadNewModules member exposed by the AngularTS namespace contract.\n\nParams:\n- mods: {!Array<(!Array<function(...?): ?>|function(...?): ?|string)>} Value supplied for the mods parameter.\n\nReturns: {void}"
   [^js/ng.InjectorService target ^js/Array mods]
   (.loadNewModules target mods))
 
 (defn interpolate-service-call
-  "Invokes the callable InterpolateService contract.\n\nParams:\n- text: {string}\n- mustHaveExpression: {(boolean|undefined)}\n- trustedContext: {(string|undefined)}\n- allOrNothing: {(boolean|undefined)}\n\nReturns: {(!ng.InterpolationFunction|undefined)}"
+  "Invokes the callable InterpolateService contract.\n\nParams:\n- text: {string} Value supplied for the text parameter.\n- mustHaveExpression: {(boolean|undefined)} Value supplied for the mustHaveExpression parameter.\n- trustedContext: {(string|undefined)} Value supplied for the trustedContext parameter.\n- allOrNothing: {(boolean|undefined)} Value supplied for the allOrNothing parameter.\n\nReturns: {(!ng.InterpolationFunction|undefined)}"
   ^js/ng.InterpolationFunction [^js/ng.InterpolateService target ^string text ^boolean mustHaveExpression ^string trustedContext ^boolean allOrNothing]
   (.call target text mustHaveExpression trustedContext allOrNothing))
 
@@ -1493,12 +1535,12 @@
   (.hash target))
 
 (defn location-service-parse
-  "Parse given HTML5 (regular) URL string into properties\n\nParams:\n- url: {string}\n\nReturns: {void}"
+  "Parse given HTML5 (regular) URL string into properties\n\nParams:\n- url: {string} HTML5 URL\n\nReturns: {void}"
   [^js/ng.LocationService target ^string url]
   (.parse target url))
 
 (defn location-service-parse-link-url
-  "Attempts to parse a clicked link into an app-relative URL update.\n\nParams:\n- url: {string}\n- relHref: {(null|string)}\n\nReturns: {boolean}"
+  "Attempts to parse a clicked link into an app-relative URL update.\n\nParams:\n- url: {string} Value supplied for the url parameter.\n- relHref: {(null|string)} Value supplied for the relHref parameter.\n\nReturns: {boolean}"
   ^boolean [^js/ng.LocationService target ^string url ^string relHref]
   (.parseLinkUrl target url relHref))
 
@@ -1513,7 +1555,7 @@
   (.search target))
 
 (defn location-service-set-url
-  "Change path, search and hash, when called with parameter and return `$location`.\n\nParams:\n- url: {string}\n\nReturns: {!ng.LocationService}"
+  "Change path, search and hash, when called with parameter and return `$location`.\n\nParams:\n- url: {string} New URL without base prefix (e.g. `/path?a=b#hash`).\n\nReturns: {!ng.LocationService}"
   ^js/ng.LocationService [^js/ng.LocationService target ^string url]
   (.setUrl target url))
 
@@ -1523,7 +1565,7 @@
   (.url target))
 
 (defn log-service-debug
-  "Log a debug message.\n\nParams:\n- var_args: {...?}\n\nReturns: {void}"
+  "Log a debug message.\n\nParams:\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {void}"
   ([^js/ng.LogService target]
    (.debug target))
   ([^js/ng.LogService target value]
@@ -1534,7 +1576,7 @@
    (.debug target value extra more)))
 
 (defn log-service-error
-  "Log an error message.\n\nParams:\n- var_args: {...?}\n\nReturns: {void}"
+  "Log an error message.\n\nParams:\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {void}"
   ([^js/ng.LogService target]
    (.error target))
   ([^js/ng.LogService target value]
@@ -1545,7 +1587,7 @@
    (.error target value extra more)))
 
 (defn log-service-info
-  "Log an info message.\n\nParams:\n- var_args: {...?}\n\nReturns: {void}"
+  "Log an info message.\n\nParams:\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {void}"
   ([^js/ng.LogService target]
    (.info target))
   ([^js/ng.LogService target value]
@@ -1556,7 +1598,7 @@
    (.info target value extra more)))
 
 (defn log-service-log
-  "Log a general message.\n\nParams:\n- var_args: {...?}\n\nReturns: {void}"
+  "Log a general message.\n\nParams:\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {void}"
   ([^js/ng.LogService target]
    (.log target))
   ([^js/ng.LogService target value]
@@ -1567,7 +1609,7 @@
    (.log target value extra more)))
 
 (defn log-service-warn
-  "Log a warning message.\n\nParams:\n- var_args: {...?}\n\nReturns: {void}"
+  "Log a warning message.\n\nParams:\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {void}"
   ([^js/ng.LogService target]
    (.warn target))
   ([^js/ng.LogService target value]
@@ -1578,7 +1620,7 @@
    (.warn target value extra more)))
 
 (defn machine-restore
-  "Public Machine.restore member exposed by the AngularTS namespace contract.\n\nParams:\n- snapshot: {?}\n\nReturns: {void}"
+  "Public Machine.restore member exposed by the AngularTS namespace contract.\n\nParams:\n- snapshot: {?} Value supplied for the snapshot parameter.\n\nReturns: {void}"
   [^js/ng.Machine target ^js/Object snapshot]
   (.restore target snapshot))
 
@@ -1587,302 +1629,302 @@
   ^js/ng.MachineSnapshot [^js/ng.Machine target]
   (.snapshot target))
 
-(defn model-dollarbroadcast
-  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
+(defn model-broadcast
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.Model target ^string name]
-   (.$broadcast target name))
+   (.broadcast target name))
   (^js/ng.ScopeEvent [^js/ng.Model target ^string name value]
-   (.$broadcast target name value))
+   (.broadcast target name value))
   (^js/ng.ScopeEvent [^js/ng.Model target ^string name value extra]
-   (.$broadcast target name value extra))
+   (.broadcast target name value extra))
   (^js/ng.ScopeEvent [^js/ng.Model target ^string name value extra more]
-   (.$broadcast target name value extra more)))
+   (.broadcast target name value extra more)))
 
-(defn model-dollardestroy
-  "Public Model.$destroy member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+(defn model-destroy
+  "Destroys this scope and its descendants.\n\nReturns: {void}"
   [^js/ng.Model target]
-  (.$destroy target))
+  (.destroy target))
 
-(defn model-dollaremit
-  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
+(defn model-emit
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.Model target ^string name]
-   (.$emit target name))
+   (.emit target name))
   (^js/ng.ScopeEvent [^js/ng.Model target ^string name value]
-   (.$emit target name value))
+   (.emit target name value))
   (^js/ng.ScopeEvent [^js/ng.Model target ^string name value extra]
-   (.$emit target name value extra))
+   (.emit target name value extra))
   (^js/ng.ScopeEvent [^js/ng.Model target ^string name value extra more]
-   (.$emit target name value extra more)))
+   (.emit target name value extra more)))
 
-(defn model-dollarnew
-  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn model-new
+  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)} Value supplied for the childInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.Model target ^js/ng.Scope childInstance]
-  (.$new target childInstance))
+  (.new target childInstance))
 
-(defn model-dollarnew-isolate
-  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn model-new-isolate
+  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)} Value supplied for the instance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.Model target ^js/ng.Scope instance]
-  (.$newIsolate target instance))
+  (.newIsolate target instance))
 
-(defn model-dollarsearch-by-name
-  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string}\n\nReturns: {(!ng.Scope|undefined)}"
+(defn model-search-by-name
+  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n\nReturns: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.Model target ^string name]
-  (.$searchByName target name))
+  (.searchByName target name))
 
-(defn model-dollartranscluded
-  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn model-transcluded
+  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)} Value supplied for the parentInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.Model target ^js/ng.Scope parentInstance]
-  (.$transcluded target parentInstance))
+  (.transcluded target parentInstance))
 
-(defn ng-model-controller-dollarcommit-view-value
-  "Commit a pending update to the `$modelValue`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in `ng-model-options`. this method is rarely needed as `NgModelController` usually handles calling this in response to input events.\n\nReturns: {void}"
+(defn ng-model-controller-commit-view-value
+  "Commit a pending update to the `modelValue`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in `ng-model-options`. this method is rarely needed as `NgModelController` usually handles calling this in response to input events.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$commitViewValue target))
+  (.commitViewValue target))
 
-(defn ng-model-controller-dollaroverride-model-options
-  "Override the current model options settings programmatically. The previous `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See `ngModelOptions` for information about what options can be specified and how model option inheritance works. <div class=\"alert alert-warning\"> **Note:** this function only affects the options set on the `ngModelController`, and not the options on the `ngModelOptions` directive from which they might have been obtained initially. </div> <div class=\"alert alert-danger\"> **Note:** it is not possible to override the `getterSetter` option. </div>\n\nParams:\n- options: {!Object}\n\nReturns: {void}"
+(defn ng-model-controller-override-model-options
+  "Override the current model options settings programmatically. The previous `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See `ngModelOptions` for information about what options can be specified and how model option inheritance works. <div class=\"alert alert-warning\"> **Note:** this function only affects the options set on the `ngModelController`, and not the options on the `ngModelOptions` directive from which they might have been obtained initially. </div> <div class=\"alert alert-danger\"> **Note:** it is not possible to override the `getterSetter` option. </div>\n\nParams:\n- options: {!Object} a hash of settings to override the previous options\n\nReturns: {void}"
   [^js/ng.NgModelController target ^js/Object options]
-  (.$overrideModelOptions target options))
+  (.overrideModelOptions target options))
 
-(defn ng-model-controller-dollarprocess-model-value
-  "Runs the model -> view pipeline on the current {@link NgModelController.$modelValue$modelValue}. The following actions are performed by this method: - the `$modelValue` is run through the {@link NgModelController.$formatters$formatters} and the result is set to the {@link NgModelController.$viewValue$viewValue} - the `ng-empty` or `ng-not-empty` class is set on the element - if the `$viewValue` has changed: - {@link NgModelController.$render$render} is called on the control - the {@link NgModelController.$validators$validators} are run and the validation status is set. This method is called by ngModel internally when the bound scope value changes. Application developers usually do not have to call this function themselves. This function can be used when the `$viewValue` or the rendered DOM value are not correctly formatted and the `$modelValue` must be run through the `$formatters` again.\n\nReturns: {void}"
+(defn ng-model-controller-process-model-value
+  "Runs the model -> view pipeline on the current {@link NgModelController.modelValuemodelValue}. The following actions are performed by this method: - the `modelValue` is run through the {@link NgModelController.formattersformatters} and the result is set to the {@link NgModelController.viewValueviewValue} - the `ng-empty` or `ng-not-empty` class is set on the element - if the `viewValue` has changed: - {@link NgModelController.renderrender} is called on the control - the {@link NgModelController.validatorsvalidators} are run and the validation status is set. This method is called by ngModel internally when the bound scope value changes. Application developers usually do not have to call this function themselves. This function can be used when the `viewValue` or the rendered DOM value are not correctly formatted and the `modelValue` must be run through the `formatters` again.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$processModelValue target))
+  (.processModelValue target))
 
-(defn ng-model-controller-dollarrender
-  "Called when the view needs to be updated. It is expected that the user of the ng-model directive will implement this method. The `$render()` method is invoked in the following situations: * `$rollbackViewValue()` is called. If we are rolling back the view value to the last committed value then `$render()` is called to update the input control. * The value referenced by `ng-model` is changed programmatically and both the `$modelValue` and the `$viewValue` are different from last time. Since `ng-model` does not do a deep watch, `$render()` is only invoked if the values of `$modelValue` and `$viewValue` are actually different from their previous values. If `$modelValue` or `$viewValue` are objects (rather than a string or number) then `$render()` will not be invoked if you only change a property on the objects.\n\nReturns: {void}"
+(defn ng-model-controller-render
+  "Called when the view needs to be updated. It is expected that the user of the ng-model directive will implement this method. The `render()` method is invoked in the following situations: * `rollbackViewValue()` is called. If we are rolling back the view value to the last committed value then `render()` is called to update the input control. * The value referenced by `ng-model` is changed programmatically and both the `modelValue` and the `viewValue` are different from last time. Since `ng-model` does not do a deep watch, `render()` is only invoked if the values of `modelValue` and `viewValue` are actually different from their previous values. If `modelValue` or `viewValue` are objects (rather than a string or number) then `render()` will not be invoked if you only change a property on the objects.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$render target))
+  (.render target))
 
-(defn ng-model-controller-dollarrollback-view-value
-  "Cancel an update and reset the input element's value to prevent an update to the `$modelValue`, which may be caused by a pending debounced event or because the input is waiting for some future event. If you have an input that uses `ng-model-options` to set up debounced updates or updates that depend on special events such as `blur`, there can be a period when the `$viewValue` is out of sync with the ngModel's `$modelValue`. In this case, you can use `$rollbackViewValue()` to manually cancel the debounced / future update and reset the input to the last committed view value. It is also possible that you run into difficulties if you try to update the ngModel's `$modelValue` programmatically before these debounced/future events have resolved/occurred, because AngularTS's dirty checking mechanism is not able to tell whether the model has actually changed or not. The `$rollbackViewValue()` method should be called before programmatically changing the model of an input which may have such events pending. This is important in order to make sure that the input field will be updated with the new model value and any pending operations are cancelled.\n\nReturns: {void}"
+(defn ng-model-controller-rollback-view-value
+  "Cancel an update and reset the input element's value to prevent an update to the `modelValue`, which may be caused by a pending debounced event or because the input is waiting for some future event. If you have an input that uses `ng-model-options` to set up debounced updates or updates that depend on special events such as `blur`, there can be a period when the `viewValue` is out of sync with the ngModel's `modelValue`. In this case, you can use `rollbackViewValue()` to manually cancel the debounced / future update and reset the input to the last committed view value. It is also possible that you run into difficulties if you try to update the ngModel's `modelValue` programmatically before these debounced/future events have resolved/occurred, because AngularTS's dirty checking mechanism is not able to tell whether the model has actually changed or not. The `rollbackViewValue()` method should be called before programmatically changing the model of an input which may have such events pending. This is important in order to make sure that the input field will be updated with the new model value and any pending operations are cancelled.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$rollbackViewValue target))
+  (.rollbackViewValue target))
 
-(defn ng-model-controller-dollarset-custom-validity
-  "Sets the control's single native custom-validity message. Native controls expose this through `ValidityState.customError`; an empty message clears the custom error.\n\nParams:\n- message: {string}\n\nReturns: {void}"
+(defn ng-model-controller-set-custom-validity
+  "Sets the control's single native custom-validity message. Native controls expose this through `ValidityState.customError`; an empty message clears the custom error.\n\nParams:\n- message: {string} Value supplied for the message parameter.\n\nReturns: {void}"
   [^js/ng.NgModelController target ^string message]
-  (.$setCustomValidity target message))
+  (.setCustomValidity target message))
 
-(defn ng-model-controller-dollarset-dirty
+(defn ng-model-controller-set-dirty
   "Sets the control to its dirty state. This method can be called to remove the `ng-pristine` class and set the control to its dirty state (`ng-dirty` class). A model is considered to be dirty when the control has been changed from when first compiled.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$setDirty target))
+  (.setDirty target))
 
-(defn ng-model-controller-dollarset-native-validity
-  "Public NgModelController.$setNativeValidity member exposed by the AngularTS namespace contract.\n\nParams:\n- state: {(boolean|null)}\n\nReturns: {void}"
+(defn ng-model-controller-set-native-validity
+  "Public NgModelController.setNativeValidity member exposed by the AngularTS namespace contract.\n\nParams:\n- state: {(boolean|null)} Value supplied for the state parameter.\n\nReturns: {void}"
   [^js/ng.NgModelController target ^boolean state]
-  (.$setNativeValidity target state))
+  (.setNativeValidity target state))
 
-(defn ng-model-controller-dollarset-pristine
+(defn ng-model-controller-set-pristine
   "Sets the control to its pristine state. This method can be called to remove the `ng-dirty` class and set the control to its pristine state (`ng-pristine` class). A model is considered to be pristine when the control has not been changed from when first compiled.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$setPristine target))
+  (.setPristine target))
 
-(defn ng-model-controller-dollarset-touched
+(defn ng-model-controller-set-touched
   "Sets the control to its touched state. This method can be called to remove the `ng-untouched` class and set the control to its touched state (`ng-touched` class). A model is considered to be touched when the user has first focused the control element and then shifted focus away from the control (blur event).\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$setTouched target))
+  (.setTouched target))
 
-(defn ng-model-controller-dollarset-untouched
+(defn ng-model-controller-set-untouched
   "Sets the control to its untouched state. This method can be called to remove the `ng-touched` class and set the control to its untouched state (`ng-untouched` class). Upon compilation, a model is set as untouched by default, however this function can be used to restore that state if the model has already been touched by the user.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$setUntouched target))
+  (.setUntouched target))
 
-(defn ng-model-controller-dollarset-validity
-  "Updates the validation state of the control and propagates it to the parent form.\n\nParams:\n- validationErrorKey: {string}\n- state: {(boolean|null|undefined)}\n\nReturns: {void}"
+(defn ng-model-controller-set-validity
+  "Updates the validation state of the control and propagates it to the parent form.\n\nParams:\n- validationErrorKey: {string} Value supplied for the validationErrorKey parameter.\n- state: {(boolean|null|undefined)} Value supplied for the state parameter.\n\nReturns: {void}"
   [^js/ng.NgModelController target ^string validationErrorKey ^boolean state]
-  (.$setValidity target validationErrorKey state))
+  (.setValidity target validationErrorKey state))
 
-(defn ng-model-controller-dollarvalidate
-  "Runs each of the registered validators (first synchronous validators and then asynchronous validators). If the validity changes to invalid, the model will be set to `undefined`, unless `ngModelOptions.allowInvalid` is `true`. If the validity changes to valid, it will set the model to the last available valid `$modelValue`, i.e. either the last parsed value or the last value set from the scope.\n\nReturns: {void}"
+(defn ng-model-controller-validate
+  "Runs each of the registered validators (first synchronous validators and then asynchronous validators). If the validity changes to invalid, the model will be set to `undefined`, unless `ngModelOptions.allowInvalid` is `true`. If the validity changes to valid, it will set the model to the last available valid `modelValue`, i.e. either the last parsed value or the last value set from the scope.\n\nReturns: {void}"
   [^js/ng.NgModelController target]
-  (.$validate target))
+  (.validate target))
 
 (defn ng-module-animation
-  "Public NgModule.animation member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- animationFactory: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
+  "Public NgModule.animation member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- animationFactory: {!ng.Injectable} Value supplied for the animationFactory parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Injectable animationFactory]
   (.animation target name animationFactory))
 
 (defn ng-module-app-component
-  "Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.\n\nParams:\n- name: {string}\n- options: {!ng.AppComponentOptions<T>}\n\nReturns: {!ng.NgModule}"
+  "Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.\n\nParams:\n- name: {string} Custom element tag name.\n- options: {!ng.AppComponentOptions<T>} App component options.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.AppComponentOptions options]
   (.appComponent target name options))
 
 (defn ng-module-component
-  "Public NgModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- options: {!ng.Component}\n\nReturns: {!ng.NgModule}"
+  "Public NgModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- options: {!ng.Component} Value supplied for the options parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Component options]
   (.component target name options))
 
 (defn ng-module-config
-  "Declare built-in AngularTS service configuration during the config phase.\n\nParams:\n- config: {!Object}\n\nReturns: {!ng.NgModule}"
+  "Declare built-in AngularTS service configuration during the config phase.\n\nParams:\n- config: {!Object} Built-in config map.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^js/Object config]
   (.config target config))
 
 (defn ng-module-controller
-  "The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry.\n\nParams:\n- name: {string}\n- ctlFn: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
+  "The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry.\n\nParams:\n- name: {string} Controller name\n- ctlFn: {!ng.Injectable} Controller constructor fn (optionally decorated with DI annotations in the array notation)\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Injectable ctlFn]
   (.controller target name ctlFn))
 
 (defn ng-module-decorator
-  "Public NgModule.decorator member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- decorFn: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
+  "Public NgModule.decorator member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- decorFn: {!ng.Injectable} Value supplied for the decorFn parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Injectable decorFn]
   (.decorator target name decorFn))
 
 (defn ng-module-directive
-  "Public NgModule.directive member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- directiveFactory: {!ng.DirectiveFactory}\n\nReturns: {!ng.NgModule}"
+  "Public NgModule.directive member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- directiveFactory: {!ng.DirectiveFactory} Value supplied for the directiveFactory parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.DirectiveFactory directiveFactory]
   (.directive target name directiveFactory))
 
 (defn ng-module-factory
-  "Public NgModule.factory member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- providerFunction: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
+  "Public NgModule.factory member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- providerFunction: {!ng.Injectable} Value supplied for the providerFunction parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Injectable providerFunction]
   (.factory target name providerFunction))
 
 (defn ng-module-machine
-  "Register a named reactive state machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.\n\nParams:\n- name: {string}\n- config: {(!Array<function(): !Object>|!Object|function(): !Object)}\n\nReturns: {!ng.NgModule}"
+  "Register a named reactive state machine as an injectable service. The machine is created by `$machine` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope.\n\nParams:\n- name: {string} Injectable name.\n- config: {(!Array<function(): !Object>|!Object|function(): !Object)} Machine configuration or a resolvable config factory.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/Object config]
   (.machine target name config))
 
 (defn ng-module-provider
-  "Public NgModule.provider member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- providerType: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
+  "Public NgModule.provider member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- providerType: {!ng.Injectable} Value supplied for the providerType parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Injectable providerType]
   (.provider target name providerType))
 
 (defn ng-module-run
-  "Public NgModule.run member exposed by the AngularTS namespace contract.\n\nParams:\n- block: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
+  "Public NgModule.run member exposed by the AngularTS namespace contract.\n\nParams:\n- block: {!ng.Injectable} Value supplied for the block parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^js/ng.Injectable block]
   (.run target block))
 
 (defn ng-module-service
-  "Public NgModule.service member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- serviceFunction: {!ng.Injectable}\n\nReturns: {!ng.NgModule}"
+  "Public NgModule.service member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- serviceFunction: {!ng.Injectable} Value supplied for the serviceFunction parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Injectable serviceFunction]
   (.service target name serviceFunction))
 
 (defn ng-module-sse
-  "Register a pre-configured SSE connection as an injectable service. The connection is created by `$sse` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- config: {(!Array<function(...?): !ng.SseConfig>|!ng.SseConfig|function(...?): !ng.SseConfig|undefined)}\n\nReturns: {!ng.NgModule}"
+  "Register a pre-configured SSE connection as an injectable service. The connection is created by `$sse` when the named service is requested.\n\nParams:\n- name: {string} Injectable name.\n- url: {string} SSE endpoint.\n- config: {(!Array<function(...?): !ng.SseConfig>|!ng.SseConfig|function(...?): !ng.SseConfig|undefined)} SSE connection options, optionally produced by DI.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/Object config]
   (.sse target name url config))
 
 (defn ng-module-web-component
-  "Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.\n\nParams:\n- name: {string}\n- elementClass: {!ng.ScopeElementConstructor<T>}\n\nReturns: {!ng.NgModule}"
+  "Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.\n\nParams:\n- name: {string} Custom element tag name.\n- elementClass: {!ng.ScopeElementConstructor<T>} Custom element class.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.ScopeElementConstructor elementClass]
   (.webComponent target name elementClass))
 
 (defn ng-module-web-transport
-  "Register a pre-configured WebTransport connection as an injectable service. The connection is created by `$webTransport` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- config: {(!Array<function(...?): !ng.WebTransportConfig>|!ng.WebTransportConfig|function(...?): !ng.WebTransportConfig|undefined)}\n\nReturns: {!ng.NgModule}"
+  "Register a pre-configured WebTransport connection as an injectable service. The connection is created by `$webTransport` when the named service is requested.\n\nParams:\n- name: {string} Injectable name.\n- url: {string} WebTransport endpoint.\n- config: {(!Array<function(...?): !ng.WebTransportConfig>|!ng.WebTransportConfig|function(...?): !ng.WebTransportConfig|undefined)} WebTransport connection options, optionally produced by DI.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/Object config]
   (.webTransport target name url config))
 
 (defn ng-module-websocket
-  "Register a pre-configured WebSocket connection as an injectable service. The connection is created by `$websocket` when the named service is requested.\n\nParams:\n- name: {string}\n- url: {string}\n- config: {(!Array<function(...?): !ng.WebSocketConfig>|!ng.WebSocketConfig|function(...?): !ng.WebSocketConfig|undefined)}\n\nReturns: {!ng.NgModule}"
+  "Register a pre-configured WebSocket connection as an injectable service. The connection is created by `$websocket` when the named service is requested.\n\nParams:\n- name: {string} Injectable name.\n- url: {string} WebSocket endpoint.\n- config: {(!Array<function(...?): !ng.WebSocketConfig>|!ng.WebSocketConfig|function(...?): !ng.WebSocketConfig|undefined)} WebSocket connection options, optionally produced by DI.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^string url ^js/Object config]
   (.websocket target name url config))
 
 (defn ng-module-workflow
-  "Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.\n\nParams:\n- name: {string}\n- config: {(!Array<function(): TDefinition>|TDefinition|function(): TDefinition)}\n\nReturns: {!ng.NgModule}"
+  "Register a named workflow as an injectable service. The workflow is created by `$workflow` when the named service is requested. Workflow behavior remains local to its `WorkflowConfig`; the provider does not apply global workflow defaults.\n\nParams:\n- name: {string} Injectable name.\n- config: {(!Array<function(): TDefinition>|TDefinition|function(): TDefinition)} Workflow configuration or a resolvable config factory.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/Object config]
   (.workflow target name config))
 
 (defn rest-backend-request
-  "Execute one normalized REST request.\n\nParams:\n- request: {!ng.RestRequest}\n\nReturns: {!Promise<!ng.RestResponse<T>>}"
+  "Execute one normalized REST request.\n\nParams:\n- request: {!ng.RestRequest} Request produced by `RestService`.\n\nReturns: {!Promise<!ng.RestResponse<T>>}"
   ^js/Promise [^js/ng.RestBackend target ^js/ng.RestRequest request]
   (.request target request))
 
 (defn rest-cache-store-delete
-  "Delete one cached REST response.\n\nParams:\n- key: {string}\n\nReturns: {!Promise<void>}"
+  "Delete one cached REST response.\n\nParams:\n- key: {string} Exact cache key to remove.\n\nReturns: {!Promise<void>}"
   ^js/Promise [^js/ng.RestCacheStore target ^string key]
   (.delete target key))
 
 (defn rest-cache-store-delete-prefix
-  "Delete cached REST responses whose keys start with the prefix. `CachedRestBackend` uses prefixes such as `GET /api/users` to invalidate collection and entity entries after successful writes.\n\nParams:\n- prefix: {string}\n\nReturns: {!Promise<void>}"
+  "Delete cached REST responses whose keys start with the prefix. `CachedRestBackend` uses prefixes such as `GET /api/users` to invalidate collection and entity entries after successful writes.\n\nParams:\n- prefix: {string} Value supplied for the prefix parameter.\n\nReturns: {!Promise<void>}"
   ^js/Promise [^js/ng.RestCacheStore target ^string prefix]
   (.deletePrefix target prefix))
 
 (defn rest-cache-store-get
-  "Read a cached REST response by deterministic key.\n\nParams:\n- key: {string}\n\nReturns: {!Promise<(!ng.RestResponse<T>|undefined)>}"
+  "Read a cached REST response by deterministic key.\n\nParams:\n- key: {string} Opaque cache key supplied by {@link CachedRestBackend}.\n\nReturns: {!Promise<(!ng.RestResponse<T>|undefined)>}"
   ^js/Promise [^js/ng.RestCacheStore target ^string key]
   (.get target key))
 
 (defn rest-cache-store-set
-  "Store a REST response by deterministic key.\n\nParams:\n- key: {string}\n- response: {!ng.RestResponse<T>}\n\nReturns: {!Promise<void>}"
+  "Store a REST response by deterministic key.\n\nParams:\n- key: {string} Opaque cache key supplied by {@link CachedRestBackend}.\n- response: {!ng.RestResponse<T>} Response to persist.\n\nReturns: {!Promise<void>}"
   ^js/Promise [^js/ng.RestCacheStore target ^string key ^js/ng.RestResponse response]
   (.set target key response))
 
 (defn rest-service-list
-  "Fetch a collection. Parameters are used for URI template expansion and are also forwarded to `$http` as query params. Non-array responses resolve to an empty array.\n\nParams:\n- params: {(!Object<string, ?>|undefined)}\n\nReturns: {!Promise<!Array<T>>}"
+  "Fetch a collection. Parameters are used for URI template expansion and are also forwarded to `$http` as query params. Non-array responses resolve to an empty array.\n\nParams:\n- params: {(!Object<string, ?>|undefined)} Value supplied for the params parameter.\n\nReturns: {!Promise<!Array<T>>}"
   ^js/Promise [^js/ng.RestService target ^js/Object params]
   (.list target params))
 
-(defn root-scope-service-dollarbroadcast
-  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
+(defn root-scope-service-broadcast
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name]
-   (.$broadcast target name))
+   (.broadcast target name))
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name value]
-   (.$broadcast target name value))
+   (.broadcast target name value))
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name value extra]
-   (.$broadcast target name value extra))
+   (.broadcast target name value extra))
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name value extra more]
-   (.$broadcast target name value extra more)))
+   (.broadcast target name value extra more)))
 
-(defn root-scope-service-dollardestroy
-  "Public RootScopeService.$destroy member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+(defn root-scope-service-destroy
+  "Destroys this scope and its descendants.\n\nReturns: {void}"
   [^js/ng.RootScopeService target]
-  (.$destroy target))
+  (.destroy target))
 
-(defn root-scope-service-dollaremit
-  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
+(defn root-scope-service-emit
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name]
-   (.$emit target name))
+   (.emit target name))
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name value]
-   (.$emit target name value))
+   (.emit target name value))
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name value extra]
-   (.$emit target name value extra))
+   (.emit target name value extra))
   (^js/ng.ScopeEvent [^js/ng.RootScopeService target ^string name value extra more]
-   (.$emit target name value extra more)))
+   (.emit target name value extra more)))
 
-(defn root-scope-service-dollarnew
-  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn root-scope-service-new
+  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)} Value supplied for the childInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.RootScopeService target ^js/ng.Scope childInstance]
-  (.$new target childInstance))
+  (.new target childInstance))
 
-(defn root-scope-service-dollarnew-isolate
-  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn root-scope-service-new-isolate
+  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)} Value supplied for the instance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.RootScopeService target ^js/ng.Scope instance]
-  (.$newIsolate target instance))
+  (.newIsolate target instance))
 
-(defn root-scope-service-dollarsearch-by-name
-  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string}\n\nReturns: {(!ng.Scope|undefined)}"
+(defn root-scope-service-search-by-name
+  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n\nReturns: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.RootScopeService target ^string name]
-  (.$searchByName target name))
+  (.searchByName target name))
 
-(defn root-scope-service-dollartranscluded
-  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn root-scope-service-transcluded
+  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)} Value supplied for the parentInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.RootScopeService target ^js/ng.Scope parentInstance]
-  (.$transcluded target parentInstance))
+  (.transcluded target parentInstance))
 
 (defn router-module-app-component
-  "Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.\n\nParams:\n- name: {string}\n- options: {!ng.AppComponentOptions<T>}\n\nReturns: {!ng.NgModule}"
+  "Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope.\n\nParams:\n- name: {string} Custom element tag name.\n- options: {!ng.AppComponentOptions<T>} App component options.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.RouterModule target ^string name ^js/ng.AppComponentOptions options]
   (.appComponent target name options))
 
 (defn router-module-component
-  "Public RouterModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string}\n- options: {!ng.Component}\n\nReturns: {!ng.NgModule}"
+  "Public RouterModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- options: {!ng.Component} Value supplied for the options parameter.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.RouterModule target ^string name ^js/ng.Component options]
   (.component target name options))
 
 (defn router-module-config
-  "Declare built-in AngularTS service configuration during the config phase.\n\nParams:\n- config: {!Object}\n\nReturns: {!ng.NgModule}"
+  "Declare built-in AngularTS service configuration during the config phase.\n\nParams:\n- config: {!Object} Built-in config map.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.RouterModule target ^js/Object config]
   (.config target config))
 
 (defn router-module-router
-  "Register a router tree while preserving this module's route map.\n\nParams:\n- declaration: {!Object}\n\nReturns: {!Object}"
+  "Register a router tree while preserving this module's route map.\n\nParams:\n- declaration: {!Object} Value supplied for the declaration parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.RouterModule target ^js/Object declaration]
   (.router target declaration))
 
 (defn router-module-web-component
-  "Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.\n\nParams:\n- name: {string}\n- elementClass: {!ng.ScopeElementConstructor<T>}\n\nReturns: {!ng.NgModule}"
+  "Register a user-authored native custom element backed by an AngularTS scope. The element class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring.\n\nParams:\n- name: {string} Custom element tag name.\n- elementClass: {!ng.ScopeElementConstructor<T>} Custom element class.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.RouterModule target ^string name ^js/ng.ScopeElementConstructor elementClass]
   (.webComponent target name elementClass))
 
@@ -1892,84 +1934,48 @@
   (.isEnabled target))
 
 (defn sce-service-parse
-  "Public SceService.parse member exposed by the AngularTS namespace contract.\n\nParams:\n- type: {string}\n- expression: {string}\n\nReturns: {!Object}"
+  "Public SceService.parse member exposed by the AngularTS namespace contract.\n\nParams:\n- type: {string} Value supplied for the type parameter.\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.SceService target ^string type ^string expression]
   (.parse target type expression))
 
 (defn sce-service-parse-as-html
-  "Public SceService.parseAsHtml member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string}\n\nReturns: {!Object}"
+  "Public SceService.parseAsHtml member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.SceService target ^string expression]
   (.parseAsHtml target expression))
 
 (defn sce-service-parse-as-media-url
-  "Public SceService.parseAsMediaUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string}\n\nReturns: {!Object}"
+  "Public SceService.parseAsMediaUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.SceService target ^string expression]
   (.parseAsMediaUrl target expression))
 
 (defn sce-service-parse-as-resource-url
-  "Public SceService.parseAsResourceUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string}\n\nReturns: {!Object}"
+  "Public SceService.parseAsResourceUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.SceService target ^string expression]
   (.parseAsResourceUrl target expression))
 
 (defn sce-service-parse-as-url
-  "Public SceService.parseAsUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string}\n\nReturns: {!Object}"
+  "Public SceService.parseAsUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.SceService target ^string expression]
   (.parseAsUrl target expression))
 
-(defn scope-dollarbroadcast
-  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
+(defn scope-broadcast
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name]
-   (.$broadcast target name))
+   (.broadcast target name))
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value]
-   (.$broadcast target name value))
+   (.broadcast target name value))
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value extra]
-   (.$broadcast target name value extra))
+   (.broadcast target name value extra))
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value extra more]
-   (.$broadcast target name value extra more)))
+   (.broadcast target name value extra more)))
 
-(defn scope-dollardestroy
-  "Public Scope.$destroy member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+(defn scope-destroy
+  "Destroys this scope and its descendants.\n\nReturns: {void}"
   [^js/ng.Scope target]
-  (.$destroy target))
-
-(defn scope-dollaremit
-  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
-  (^js/ng.ScopeEvent [^js/ng.Scope target ^string name]
-   (.$emit target name))
-  (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value]
-   (.$emit target name value))
-  (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value extra]
-   (.$emit target name value extra))
-  (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value extra more]
-   (.$emit target name value extra more)))
-
-(defn scope-dollarmerge
-  "Merges enumerable properties from the provided object into the current scope target.\n\nParams:\n- newTarget: {!Object}\n\nReturns: {void}"
-  [^js/ng.Scope target ^js/Object newTarget]
-  (.$merge target newTarget))
-
-(defn scope-dollarnew
-  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.Scope target ^js/ng.Scope childInstance]
-  (.$new target childInstance))
-
-(defn scope-dollarnew-isolate
-  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.Scope target ^js/ng.Scope instance]
-  (.$newIsolate target instance))
-
-(defn scope-dollarsearch-by-name
-  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string}\n\nReturns: {(!ng.Scope|undefined)}"
-  ^js/ng.Scope [^js/ng.Scope target ^string name]
-  (.$searchByName target name))
-
-(defn scope-dollartranscluded
-  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.Scope target ^js/ng.Scope parentInstance]
-  (.$transcluded target parentInstance))
+  (.destroy target))
 
 (defn scope-element-attribute-changed-callback
-  "Public ScopeElement.attributeChangedCallback member exposed by the AngularTS namespace contract.\n\nParams:\n- attribute: {string}\n- oldValue: {(null|string)}\n- newValue: {(null|string)}\n\nReturns: {void}"
+  "Public ScopeElement.attributeChangedCallback member exposed by the AngularTS namespace contract.\n\nParams:\n- attribute: {string} Value supplied for the attribute parameter.\n- oldValue: {(null|string)} Value supplied for the oldValue parameter.\n- newValue: {(null|string)} Value supplied for the newValue parameter.\n\nReturns: {void}"
   [^js/ng.ScopeElement target ^string attribute ^string oldValue ^string newValue]
   (.attributeChangedCallback target attribute oldValue newValue))
 
@@ -1983,60 +1989,96 @@
   [^js/ng.ScopeElement target]
   (.disconnectedCallback target))
 
+(defn scope-emit
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
+  (^js/ng.ScopeEvent [^js/ng.Scope target ^string name]
+   (.emit target name))
+  (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value]
+   (.emit target name value))
+  (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value extra]
+   (.emit target name value extra))
+  (^js/ng.ScopeEvent [^js/ng.Scope target ^string name value extra more]
+   (.emit target name value extra more)))
+
 (defn scope-event-prevent-default
   "Public ScopeEvent.preventDefault member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
   [^js/ng.ScopeEvent target]
   (.preventDefault target))
 
-(defn scope-service-dollarbroadcast
-  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
-  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name]
-   (.$broadcast target name))
-  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value]
-   (.$broadcast target name value))
-  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra]
-   (.$broadcast target name value extra))
-  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra more]
-   (.$broadcast target name value extra more)))
+(defn scope-merge
+  "Merges enumerable properties from the provided object into the current scope target.\n\nParams:\n- newTarget: {!Object} Value supplied for the newTarget parameter.\n\nReturns: {void}"
+  [^js/ng.Scope target ^js/Object newTarget]
+  (.merge target newTarget))
 
-(defn scope-service-dollardestroy
-  "Public ScopeService.$destroy member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+(defn scope-new
+  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)} Value supplied for the childInstance parameter.\n\nReturns: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.Scope target ^js/ng.Scope childInstance]
+  (.new target childInstance))
+
+(defn scope-new-isolate
+  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)} Value supplied for the instance parameter.\n\nReturns: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.Scope target ^js/ng.Scope instance]
+  (.newIsolate target instance))
+
+(defn scope-search-by-name
+  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n\nReturns: {(!ng.Scope|undefined)}"
+  ^js/ng.Scope [^js/ng.Scope target ^string name]
+  (.searchByName target name))
+
+(defn scope-service-broadcast
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name]
+   (.broadcast target name))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value]
+   (.broadcast target name value))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra]
+   (.broadcast target name value extra))
+  (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra more]
+   (.broadcast target name value extra more)))
+
+(defn scope-service-destroy
+  "Destroys this scope and its descendants.\n\nReturns: {void}"
   [^js/ng.ScopeService target]
-  (.$destroy target))
+  (.destroy target))
 
-(defn scope-service-dollaremit
-  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
+(defn scope-service-emit
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name]
-   (.$emit target name))
+   (.emit target name))
   (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value]
-   (.$emit target name value))
+   (.emit target name value))
   (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra]
-   (.$emit target name value extra))
+   (.emit target name value extra))
   (^js/ng.ScopeEvent [^js/ng.ScopeService target ^string name value extra more]
-   (.$emit target name value extra more)))
+   (.emit target name value extra more)))
 
-(defn scope-service-dollarnew
-  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn scope-service-new
+  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)} Value supplied for the childInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.ScopeService target ^js/ng.Scope childInstance]
-  (.$new target childInstance))
+  (.new target childInstance))
 
-(defn scope-service-dollarnew-isolate
-  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn scope-service-new-isolate
+  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)} Value supplied for the instance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.ScopeService target ^js/ng.Scope instance]
-  (.$newIsolate target instance))
+  (.newIsolate target instance))
 
-(defn scope-service-dollarsearch-by-name
-  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string}\n\nReturns: {(!ng.Scope|undefined)}"
+(defn scope-service-search-by-name
+  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n\nReturns: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.ScopeService target ^string name]
-  (.$searchByName target name))
+  (.searchByName target name))
 
-(defn scope-service-dollartranscluded
-  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn scope-service-transcluded
+  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)} Value supplied for the parentInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.ScopeService target ^js/ng.Scope parentInstance]
-  (.$transcluded target parentInstance))
+  (.transcluded target parentInstance))
+
+(defn scope-transcluded
+  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)} Value supplied for the parentInstance parameter.\n\nReturns: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.Scope target ^js/ng.Scope parentInstance]
+  (.transcluded target parentInstance))
 
 (defn security-policy-check
-  "Public SecurityPolicy.check member exposed by the AngularTS namespace contract.\n\nParams:\n- context: {!Object}\n\nReturns: {!Object}"
+  "Public SecurityPolicy.check member exposed by the AngularTS namespace contract.\n\nParams:\n- context: {!Object} Value supplied for the context parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.SecurityPolicy target ^js/Object context]
   (.check target context))
 
@@ -2076,7 +2118,7 @@
   (.getAll target))
 
 (defn state-registry-service-register
-  "Public StateRegistryService.register member exposed by the AngularTS namespace contract.\n\nParams:\n- stateDefinition: {!ng.StateDeclaration}\n\nReturns: {!ng.StateDeclaration}"
+  "Public StateRegistryService.register member exposed by the AngularTS namespace contract.\n\nParams:\n- stateDefinition: {!ng.StateDeclaration} Value supplied for the stateDefinition parameter.\n\nReturns: {!ng.StateDeclaration}"
   ^js/ng.StateDeclaration [^js/ng.StateRegistryService target ^js/ng.StateDeclaration stateDefinition]
   (.register target stateDefinition))
 
@@ -2091,42 +2133,42 @@
   (.get target))
 
 (defn storage-backend-get
-  "Read a stored serialized value.\n\nParams:\n- key: {string}\n\nReturns: {(string|undefined)}"
+  "Read a stored serialized value.\n\nParams:\n- key: {string} Value supplied for the key parameter.\n\nReturns: {(string|undefined)}"
   ^string [^js/ng.StorageBackend target ^string key]
   (.get target key))
 
 (defn storage-backend-remove
-  "Remove a stored value.\n\nParams:\n- key: {string}\n\nReturns: {void}"
+  "Remove a stored value.\n\nParams:\n- key: {string} Value supplied for the key parameter.\n\nReturns: {void}"
   [^js/ng.StorageBackend target ^string key]
   (.remove target key))
 
 (defn storage-backend-set
-  "Store a serialized value.\n\nParams:\n- key: {string}\n- value: {string}\n\nReturns: {void}"
+  "Store a serialized value.\n\nParams:\n- key: {string} Value supplied for the key parameter.\n- value: {string} Value supplied for the value parameter.\n\nReturns: {void}"
   [^js/ng.StorageBackend target ^string key ^string value]
   (.set target key value))
 
 (defn stream-service-consume-json-lines
-  "Decodes newline-delimited JSON without retaining parsed values.\n\nParams:\n- stream: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Promise<void>}"
+  "Decodes newline-delimited JSON without retaining parsed values.\n\nParams:\n- stream: {!Object} Value supplied for the stream parameter.\n- options: {(!Object|undefined)} Value supplied for the options parameter.\n\nReturns: {!Promise<void>}"
   ^js/Promise [^js/ng.StreamService target ^js/Object stream ^js/Object options]
   (.consumeJsonLines target stream options))
 
 (defn stream-service-consume-text
-  "Decodes a byte stream and calls `onChunk` without retaining decoded text.\n\nParams:\n- stream: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Promise<void>}"
+  "Decodes a byte stream and calls `onChunk` without retaining decoded text.\n\nParams:\n- stream: {!Object} Value supplied for the stream parameter.\n- options: {(!Object|undefined)} Value supplied for the options parameter.\n\nReturns: {!Promise<void>}"
   ^js/Promise [^js/ng.StreamService target ^js/Object stream ^js/Object options]
   (.consumeText target stream options))
 
 (defn stream-service-read-json-lines
-  "Decodes newline-delimited JSON and returns all parsed values.\n\nParams:\n- stream: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Promise<!Array<T>>}"
+  "Decodes newline-delimited JSON and returns all parsed values.\n\nParams:\n- stream: {!Object} Value supplied for the stream parameter.\n- options: {(!Object|undefined)} Value supplied for the options parameter.\n\nReturns: {!Promise<!Array<T>>}"
   ^js/Promise [^js/ng.StreamService target ^js/Object stream ^js/Object options]
   (.readJsonLines target stream options))
 
 (defn stream-service-read-lines
-  "Decodes a byte stream and emits complete lines.\n\nParams:\n- stream: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Promise<!Array<string>>}"
+  "Decodes a byte stream and emits complete lines.\n\nParams:\n- stream: {!Object} Value supplied for the stream parameter.\n- options: {(!Object|undefined)} Value supplied for the options parameter.\n\nReturns: {!Promise<!Array<string>>}"
   ^js/Promise [^js/ng.StreamService target ^js/Object stream ^js/Object options]
   (.readLines target stream options))
 
 (defn stream-service-read-text
-  "Decodes a byte stream into text chunks.\n\nParams:\n- stream: {!Object}\n- options: {(!Object|undefined)}\n\nReturns: {!Promise<string>}"
+  "Decodes a byte stream into text chunks.\n\nParams:\n- stream: {!Object} Value supplied for the stream parameter.\n- options: {(!Object|undefined)} Value supplied for the options parameter.\n\nReturns: {!Promise<string>}"
   ^js/Promise [^js/ng.StreamService target ^js/Object stream ^js/Object options]
   (.readText target stream options))
 
@@ -2139,16 +2181,6 @@
   "Public Transition.applyViewConfigs member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
   [^js/ng.Transition target]
   (.applyViewConfigs target))
-
-(defn transition-dollarfrom
-  "Public Transition.$from member exposed by the AngularTS namespace contract.\n\nReturns: {!Object}"
-  ^js/Object [^js/ng.Transition target]
-  (.$from target))
-
-(defn transition-dollarto
-  "Public Transition.$to member exposed by the AngularTS namespace contract.\n\nReturns: {!Object}"
-  ^js/Object [^js/ng.Transition target]
-  (.$to target))
 
 (defn transition-dynamic
   "Returns true if the transition is dynamic. A transition is dynamic if no states are entered nor exited, but at least one dynamic parameter has changed.\n\nReturns: {boolean}"
@@ -2181,12 +2213,12 @@
   (.isActive target))
 
 (defn transition-params
-  "Public Transition.params member exposed by the AngularTS namespace contract.\n\nParams:\n- pathname: {(string|undefined)}\n\nReturns: {!Object<string, ?>}"
+  "Public Transition.params member exposed by the AngularTS namespace contract.\n\nParams:\n- pathname: {(string|undefined)} Value supplied for the pathname parameter.\n\nReturns: {!Object<string, ?>}"
   ^js/Object [^js/ng.Transition target ^string pathname]
   (.params target pathname))
 
 (defn transition-redirect
-  "Creates a new transition that is a redirection of the current one. This transition can be returned from a [[TransitionService]] hook to redirect a transition to a new state and/or set of parameters.\n\nParams:\n- targetState: {!Object}\n\nReturns: {!ng.Transition<!Object<string, !Object>, !Object>}"
+  "Creates a new transition that is a redirection of the current one. This transition can be returned from a [[TransitionService]] hook to redirect a transition to a new state and/or set of parameters.\n\nParams:\n- targetState: {!Object} the new target state for the redirected transition\n\nReturns: {!ng.Transition<!Object<string, !Object>, !Object>}"
   ^js/ng.Transition [^js/ng.Transition target ^js/Object targetState]
   (.redirect target targetState))
 
@@ -2216,9 +2248,9 @@
   (.dispose target))
 
 (defn wasm-resource-bind
-  "Public WasmResource.bind member exposed by the AngularTS namespace contract.\n\nParams:\n- target: {TTarget}\n- options: {(!ng.WasmBindingOptions|undefined)}\n\nReturns: {!Promise<!ng.WasmBinding<TTarget>>}"
-  ^js/Promise [^js/ng.WasmResource target ^js/ng.Scope target ^js/ng.WasmBindingOptions options]
-  (.bind target target options))
+  "Public WasmResource.bind member exposed by the AngularTS namespace contract.\n\nParams:\n- target: {TTarget} Value supplied for the target parameter.\n- options: {(!ng.WasmBindingOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!Promise<!ng.WasmBinding<TTarget>>}"
+  ^js/Promise [^js/ng.WasmResource _target ^js/ng.Scope target ^js/ng.WasmBindingOptions options]
+  (.bind _target target options))
 
 (defn wasm-resource-dispose
   "Public WasmResource.dispose member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
@@ -2226,56 +2258,56 @@
   (.dispose target))
 
 (defn wasm-service-load
-  "Loads one module and returns its owned resource.\n\nParams:\n- options: {!ng.WasmLoadOptions}\n\nReturns: {!ng.WasmResource<TExports>}"
+  "Loads one module and returns its owned resource.\n\nParams:\n- options: {!ng.WasmLoadOptions} Value supplied for the options parameter.\n\nReturns: {!ng.WasmResource<TExports>}"
   ^js/ng.WasmResource [^js/ng.WasmService target ^js/ng.WasmLoadOptions options]
   (.load target options))
 
-(defn wasm-target-dollarbroadcast
-  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
+(defn wasm-target-broadcast
+  "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.WasmTarget target ^string name]
-   (.$broadcast target name))
+   (.broadcast target name))
   (^js/ng.ScopeEvent [^js/ng.WasmTarget target ^string name value]
-   (.$broadcast target name value))
+   (.broadcast target name value))
   (^js/ng.ScopeEvent [^js/ng.WasmTarget target ^string name value extra]
-   (.$broadcast target name value extra))
+   (.broadcast target name value extra))
   (^js/ng.ScopeEvent [^js/ng.WasmTarget target ^string name value extra more]
-   (.$broadcast target name value extra more)))
+   (.broadcast target name value extra more)))
 
-(defn wasm-target-dollardestroy
-  "Public WasmTarget.$destroy member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+(defn wasm-target-destroy
+  "Destroys this scope and its descendants.\n\nReturns: {void}"
   [^js/ng.WasmTarget target]
-  (.$destroy target))
+  (.destroy target))
 
-(defn wasm-target-dollaremit
-  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string}\n- var_args: {...?}\n\nReturns: {!ng.ScopeEvent}"
+(defn wasm-target-emit
+  "Emits an event upward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.WasmTarget target ^string name]
-   (.$emit target name))
+   (.emit target name))
   (^js/ng.ScopeEvent [^js/ng.WasmTarget target ^string name value]
-   (.$emit target name value))
+   (.emit target name value))
   (^js/ng.ScopeEvent [^js/ng.WasmTarget target ^string name value extra]
-   (.$emit target name value extra))
+   (.emit target name value extra))
   (^js/ng.ScopeEvent [^js/ng.WasmTarget target ^string name value extra more]
-   (.$emit target name value extra more)))
+   (.emit target name value extra more)))
 
-(defn wasm-target-dollarnew
-  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn wasm-target-new
+  "Creates a prototypically inherited child scope.\n\nParams:\n- childInstance: {(!ng.Scope|undefined)} Value supplied for the childInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.WasmTarget target ^js/ng.Scope childInstance]
-  (.$new target childInstance))
+  (.new target childInstance))
 
-(defn wasm-target-dollarnew-isolate
-  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn wasm-target-new-isolate
+  "Creates an isolate child scope that does not inherit watchable properties directly.\n\nParams:\n- instance: {(!ng.Scope|undefined)} Value supplied for the instance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.WasmTarget target ^js/ng.Scope instance]
-  (.$newIsolate target instance))
+  (.newIsolate target instance))
 
-(defn wasm-target-dollarsearch-by-name
-  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string}\n\nReturns: {(!ng.Scope|undefined)}"
+(defn wasm-target-search-by-name
+  "Searches the scope tree for a scope registered under the provided name.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n\nReturns: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.WasmTarget target ^string name]
-  (.$searchByName target name))
+  (.searchByName target name))
 
-(defn wasm-target-dollartranscluded
-  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)}\n\nReturns: {!ng.Scope}"
+(defn wasm-target-transcluded
+  "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)} Value supplied for the parentInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.WasmTarget target ^js/ng.Scope parentInstance]
-  (.$transcluded target parentInstance))
+  (.transcluded target parentInstance))
 
 (defn web-socket-connection-close
   "Close the WebSocket connection and stop reconnect attempts.\n\nReturns: {void}"
@@ -2288,7 +2320,7 @@
   (.reconnect target))
 
 (defn web-transport-connection-close
-  "Close the WebTransport session.\n\nParams:\n- closeInfo: {(!Object|undefined)}\n\nReturns: {void}"
+  "Close the WebTransport session.\n\nParams:\n- closeInfo: {(!Object|undefined)} Value supplied for the closeInfo parameter.\n\nReturns: {void}"
   [^js/ng.WebTransportConnection target ^js/Object closeInfo]
   (.close target closeInfo))
 
@@ -2298,12 +2330,12 @@
   (.createBidirectionalStream target))
 
 (defn web-transport-connection-send-text
-  "Send UTF-8 text as one unreliable datagram.\n\nParams:\n- data: {string}\n\nReturns: {!Promise<void>}"
+  "Send UTF-8 text as one unreliable datagram.\n\nParams:\n- data: {string} Value supplied for the data parameter.\n\nReturns: {!Promise<void>}"
   ^js/Promise [^js/ng.WebTransportConnection target ^string data]
   (.sendText target data))
 
 (defn worker-handle-model
-  "Adapt this handle to the standard model synchronization contract.\n\nParams:\n- channel: {(string|undefined)}\n\nReturns: {!ng.ModelSyncTarget<T>}"
+  "Adapt this handle to the standard model synchronization contract.\n\nParams:\n- channel: {(string|undefined)} Value supplied for the channel parameter.\n\nReturns: {!ng.ModelSyncTarget<T>}"
   ^js/ng.ModelSyncTarget [^js/ng.WorkerHandle target ^string channel]
   (.model target channel))
 
@@ -2333,7 +2365,7 @@
   (.persist target))
 
 (defn workflow-supervisor-persistence-load
-  "Public WorkflowSupervisorPersistence.load member exposed by the AngularTS namespace contract.\n\nParams:\n- id: {string}\n\nReturns: {!Promise<(TSnapshot|undefined)>}"
+  "Public WorkflowSupervisorPersistence.load member exposed by the AngularTS namespace contract.\n\nParams:\n- id: {string} Value supplied for the id parameter.\n\nReturns: {!Promise<(TSnapshot|undefined)>}"
   ^js/Promise [^js/ng.WorkflowSupervisorPersistence target ^string id]
   (.load target id))
 
@@ -2347,25 +2379,10 @@
   ^js/ng.WorkflowSupervisorSnapshot [^js/ng.WorkflowSupervisor target]
   (.snapshot target))
 
-(defn angular-dollarevent-bus
-  "Application-wide event bus, available after bootstrap providers are created.\n\nType: {!ng.EventBusService}"
-  ^js/ng.EventBusService [^js/ng.Angular target]
-  (.-$eventBus target))
-
-(defn angular-dollarinjector
+(defn angular-current-injector
   "Application injector, available after `bootstrap()` or `injector()` completes.\n\nType: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.Angular target]
-  (.-$injector target))
-
-(defn angular-dollarroot-scope
-  "Root scope for the bootstrapped application.\n\nType: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.Angular target]
-  (.-$rootScope target))
-
-(defn angular-dollart
-  "Public injection token names keyed by token value.\n\nType: {!Object}"
-  ^js/Object [^js/ng.Angular target]
-  (.-$t target))
+  (.-currentInjector target))
 
 (defn angular-element-definition-angular
   "AngularTS runtime instance that owns the element injector.\n\nType: {!ng.Angular}"
@@ -2437,30 +2454,35 @@
   ^boolean [^js/ng.AngularElementOptions target]
   (.-subapp target))
 
+(defn angular-event-bus
+  "Application-wide event bus, available after bootstrap providers are created.\n\nType: {!ng.EventBusService}"
+  ^js/ng.EventBusService [^js/ng.Angular target]
+  (.-eventBus target))
+
+(defn angular-root-scope
+  "Root scope for the bootstrapped application.\n\nType: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.Angular target]
+  (.-rootScope target))
+
 (defn angular-scope-element
   "Base class for user-authored AngularTS custom elements.\n\nType: {!ng.ScopeElement}"
   ^js/ng.ScopeElement [^js/ng.Angular target]
   (.-ScopeElement target))
 
-(defn angular-service-dollarevent-bus
-  "Application-wide event bus, available after bootstrap providers are created.\n\nType: {!ng.EventBusService}"
-  ^js/ng.EventBusService [^js/ng.AngularService target]
-  (.-$eventBus target))
-
-(defn angular-service-dollarinjector
+(defn angular-service-current-injector
   "Application injector, available after `bootstrap()` or `injector()` completes.\n\nType: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.AngularService target]
-  (.-$injector target))
+  (.-currentInjector target))
 
-(defn angular-service-dollarroot-scope
+(defn angular-service-event-bus
+  "Application-wide event bus, available after bootstrap providers are created.\n\nType: {!ng.EventBusService}"
+  ^js/ng.EventBusService [^js/ng.AngularService target]
+  (.-eventBus target))
+
+(defn angular-service-root-scope
   "Root scope for the bootstrapped application.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.AngularService target]
-  (.-$rootScope target))
-
-(defn angular-service-dollart
-  "Public injection token names keyed by token value.\n\nType: {!Object}"
-  ^js/Object [^js/ng.AngularService target]
-  (.-$t target))
+  (.-rootScope target))
 
 (defn angular-service-scope-element
   "Base class for user-authored AngularTS custom elements.\n\nType: {!ng.ScopeElement}"
@@ -2472,20 +2494,40 @@
   ^js/Array [^js/ng.AngularService target]
   (.-subapps target))
 
+(defn angular-service-tokens
+  "Public injection token names keyed by token value.\n\nType: {!Object}"
+  ^js/Object [^js/ng.AngularService target]
+  (.-tokens target))
+
 (defn angular-service-version
   "AngularTS version string replaced at build time.\n\nType: {string}"
   ^string [^js/ng.AngularService target]
   (.-version target))
+
+(defn angular-service-view
+  "Explicit programmatic-view binding and element helpers.\n\nType: {!Object}"
+  ^js/Object [^js/ng.AngularService target]
+  (.-view target))
 
 (defn angular-subapps
   "Sub-application instances created when multiple `ng-app` roots are initialized.\n\nType: {!Array<!ng.Angular>}"
   ^js/Array [^js/ng.Angular target]
   (.-subapps target))
 
+(defn angular-tokens
+  "Public injection token names keyed by token value.\n\nType: {!Object}"
+  ^js/Object [^js/ng.Angular target]
+  (.-tokens target))
+
 (defn angular-version
   "AngularTS version string replaced at build time.\n\nType: {string}"
   ^string [^js/ng.Angular target]
   (.-version target))
+
+(defn angular-view
+  "Explicit programmatic-view binding and element helpers.\n\nType: {!Object}"
+  ^js/Object [^js/ng.Angular target]
+  (.-view target))
 
 (defn animation-context-add-class
   "Public AnimationContext.addClass member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
@@ -2673,9 +2715,34 @@
   (.-replace target))
 
 (defn component-require
-  "Requires the controllers of other directives and binds them to this component's controller. The object keys specify the property names under which the required controllers (object values) will be bound. Note that the required controllers will not be available during the instantiation of the controller, but they are guaranteed to be available just before the $onInit method is executed!\n\nType: {(!Object<string, string>|undefined)}"
+  "Requires the controllers of other directives and binds them to this component's controller. The object keys specify the property names under which the required controllers (object values) will be bound. Note that the required controllers will not be available during the instantiation of the controller, but they are guaranteed to be available just before the onInit method is executed!\n\nType: {(!Object<string, string>|undefined)}"
   ^js/Object [^js/ng.Component target]
   (.-require target))
+
+(defn component-view-context-controller
+  "Component controller after bindings and `onInit` have run.\n\nType: {!Object}"
+  ^js/Object [^js/ng.ComponentViewContext target]
+  (.-controller target))
+
+(defn component-view-context-element
+  "Native component host element.\n\nType: {!HTMLElement}"
+  ^js/HTMLElement [^js/ng.ComponentViewContext target]
+  (.-element target))
+
+(defn component-view-context-scope
+  "Scope that owns the generated DOM and reactive child readers.\n\nType: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.ComponentViewContext target]
+  (.-scope target))
+
+(defn component-view-context-transclude
+  "Component transclusion function, when transclusion is enabled.\n\nType: {(!ng.TranscludeFn|undefined)}"
+  ^js/ng.TranscludeFn [^js/ng.ComponentViewContext target]
+  (.-transclude target))
+
+(defn component-view-properties-is
+  "Public ComponentViewProperties.is member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.ComponentViewProperties target]
+  (.-is target))
 
 (defn connection-config-event-types
   "Additional EventSource event names to subscribe to\n\nType: {(!Array<string>|undefined)}"
@@ -2732,6 +2799,11 @@
   ^js/ng.CookieOptions [^js/ng.CookieStoreOptions target]
   (.-cookie target))
 
+(defn directive-compile
+  "Compile function for the directive\n\nType: {(!ng.DirectiveCompileFn|undefined)}"
+  ^js/ng.DirectiveCompileFn [^js/ng.Directive target]
+  (.-compile target))
+
 (defn directive-controller-as
   "Alias name for the controller in templates\n\nType: {(string|undefined)}"
   ^string [^js/ng.Directive target]
@@ -2746,6 +2818,16 @@
   "Optional name (usually inferred)\n\nType: {(string|undefined)}"
   ^string [^js/ng.Directive target]
   (.-name target))
+
+(defn directive-pre-post-post
+  "Public DirectivePrePost.post member exposed by the AngularTS namespace contract.\n\nType: {(!ng.DirectiveLinkFn|undefined)}"
+  ^js/ng.DirectiveLinkFn [^js/ng.DirectivePrePost target]
+  (.-post target))
+
+(defn directive-pre-post-pre
+  "Public DirectivePrePost.pre member exposed by the AngularTS namespace contract.\n\nType: {(!ng.DirectiveLinkFn|undefined)}"
+  ^js/ng.DirectiveLinkFn [^js/ng.DirectivePrePost target]
+  (.-pre target))
 
 (defn directive-priority
   "Priority of the directive\n\nType: {(number|undefined)}"
@@ -2771,6 +2853,21 @@
   "Stops further directive processing if true\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.Directive target]
   (.-terminal target))
+
+(defn directive-view-context-element
+  "Native element matched by the directive.\n\nType: {!Element}"
+  ^js/Element [^js/ng.DirectiveViewContext target]
+  (.-element target))
+
+(defn directive-view-context-scope
+  "Scope that owns the generated DOM and reactive child readers.\n\nType: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.DirectiveViewContext target]
+  (.-scope target))
+
+(defn directive-view-context-transclude
+  "Directive transclusion function, when transclusion is enabled.\n\nType: {(!ng.TranscludeFn|undefined)}"
+  ^js/ng.TranscludeFn [^js/ng.DirectiveViewContext target]
+  (.-transclude target))
 
 (defn element-scope-options-isolate
   "Use an isolate child scope.\n\nType: {(boolean|undefined)}"
@@ -3032,132 +3129,132 @@
   ^js/Array [^js/ng.HttpService target]
   (.-pendingRequests target))
 
-(defn injection-token-map-dollarangular
+(defn injection-token-map-angular
   "Public InjectionTokenMap.$angular member exposed by the AngularTS namespace contract.\n\nType: {!ng.Angular}"
   ^js/ng.Angular [^js/ng.InjectionTokenMap target]
   (.-$angular target))
 
-(defn injection-token-map-dollaranimate
+(defn injection-token-map-animate
   "Public InjectionTokenMap.$animate member exposed by the AngularTS namespace contract.\n\nType: {!ng.AnimateService}"
   ^js/ng.AnimateService [^js/ng.InjectionTokenMap target]
   (.-$animate target))
 
-(defn injection-token-map-dollararia
+(defn injection-token-map-aria
   "Public InjectionTokenMap.$aria member exposed by the AngularTS namespace contract.\n\nType: {!ng.AriaService}"
   ^js/ng.AriaService [^js/ng.InjectionTokenMap target]
   (.-$aria target))
 
-(defn injection-token-map-dollarcookie
+(defn injection-token-map-cookie
   "Public InjectionTokenMap.$cookie member exposed by the AngularTS namespace contract.\n\nType: {!ng.CookieService}"
   ^js/ng.CookieService [^js/ng.InjectionTokenMap target]
   (.-$cookie target))
 
-(defn injection-token-map-dollardocument
+(defn injection-token-map-document
   "Public InjectionTokenMap.$document member exposed by the AngularTS namespace contract.\n\nType: {!Document}"
   ^js/Document [^js/ng.InjectionTokenMap target]
   (.-$document target))
 
-(defn injection-token-map-dollarelement
+(defn injection-token-map-element
   "Public InjectionTokenMap.$element member exposed by the AngularTS namespace contract.\n\nType: {!Element}"
   ^js/Element [^js/ng.InjectionTokenMap target]
   (.-$element target))
 
-(defn injection-token-map-dollarevent-bus
+(defn injection-token-map-event-bus
   "Public InjectionTokenMap.$eventBus member exposed by the AngularTS namespace contract.\n\nType: {!ng.EventBusService}"
   ^js/ng.EventBusService [^js/ng.InjectionTokenMap target]
   (.-$eventBus target))
 
-(defn injection-token-map-dollarhtml-canvas
+(defn injection-token-map-html-canvas
   "Public InjectionTokenMap.$htmlCanvas member exposed by the AngularTS namespace contract.\n\nType: {!ng.HtmlCanvasService}"
   ^js/ng.HtmlCanvasService [^js/ng.InjectionTokenMap target]
   (.-$htmlCanvas target))
 
-(defn injection-token-map-dollarinjector
+(defn injection-token-map-injector
   "Public InjectionTokenMap.$injector member exposed by the AngularTS namespace contract.\n\nType: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.InjectionTokenMap target]
   (.-$injector target))
 
-(defn injection-token-map-dollarlocation
+(defn injection-token-map-location
   "Public InjectionTokenMap.$location member exposed by the AngularTS namespace contract.\n\nType: {!ng.LocationService}"
   ^js/ng.LocationService [^js/ng.InjectionTokenMap target]
   (.-$location target))
 
-(defn injection-token-map-dollarlog
+(defn injection-token-map-log
   "Public InjectionTokenMap.$log member exposed by the AngularTS namespace contract.\n\nType: {!ng.LogService}"
   ^js/ng.LogService [^js/ng.InjectionTokenMap target]
   (.-$log target))
 
-(defn injection-token-map-dollarroot-element
+(defn injection-token-map-root-element
   "Public InjectionTokenMap.$rootElement member exposed by the AngularTS namespace contract.\n\nType: {!HTMLElement}"
   ^js/HTMLElement [^js/ng.InjectionTokenMap target]
   (.-$rootElement target))
 
-(defn injection-token-map-dollarroot-scope
+(defn injection-token-map-root-scope
   "Public InjectionTokenMap.$rootScope member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.InjectionTokenMap target]
   (.-$rootScope target))
 
-(defn injection-token-map-dollarsce
+(defn injection-token-map-sce
   "Public InjectionTokenMap.$sce member exposed by the AngularTS namespace contract.\n\nType: {!ng.SceService}"
   ^js/ng.SceService [^js/ng.InjectionTokenMap target]
   (.-$sce target))
 
-(defn injection-token-map-dollarsce-delegate
+(defn injection-token-map-sce-delegate
   "Public InjectionTokenMap.$sceDelegate member exposed by the AngularTS namespace contract.\n\nType: {!ng.SceDelegateService}"
   ^js/ng.SceDelegateService [^js/ng.InjectionTokenMap target]
   (.-$sceDelegate target))
 
-(defn injection-token-map-dollarscope
+(defn injection-token-map-scope
   "Public InjectionTokenMap.$scope member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.InjectionTokenMap target]
   (.-$scope target))
 
-(defn injection-token-map-dollarsecurity
+(defn injection-token-map-security
   "Public InjectionTokenMap.$security member exposed by the AngularTS namespace contract.\n\nType: {!ng.SecurityPolicy}"
   ^js/ng.SecurityPolicy [^js/ng.InjectionTokenMap target]
   (.-$security target))
 
-(defn injection-token-map-dollarservice-worker
+(defn injection-token-map-service-worker
   "Public InjectionTokenMap.$serviceWorker member exposed by the AngularTS namespace contract.\n\nType: {!ng.ServiceWorkerService}"
   ^js/ng.ServiceWorkerService [^js/ng.InjectionTokenMap target]
   (.-$serviceWorker target))
 
-(defn injection-token-map-dollarstate
+(defn injection-token-map-state
   "Public InjectionTokenMap.$state member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
   ^js/Object [^js/ng.InjectionTokenMap target]
   (.-$state target))
 
-(defn injection-token-map-dollarstate-registry
+(defn injection-token-map-state-registry
   "Public InjectionTokenMap.$stateRegistry member exposed by the AngularTS namespace contract.\n\nType: {!ng.StateRegistryService}"
   ^js/ng.StateRegistryService [^js/ng.InjectionTokenMap target]
   (.-$stateRegistry target))
 
-(defn injection-token-map-dollarstream
+(defn injection-token-map-stream
   "Public InjectionTokenMap.$stream member exposed by the AngularTS namespace contract.\n\nType: {!ng.StreamService}"
   ^js/ng.StreamService [^js/ng.InjectionTokenMap target]
   (.-$stream target))
 
-(defn injection-token-map-dollartemplate-cache
+(defn injection-token-map-template-cache
   "Public InjectionTokenMap.$templateCache member exposed by the AngularTS namespace contract.\n\nType: {!Map<string, string>}"
   ^js/Map [^js/ng.InjectionTokenMap target]
   (.-$templateCache target))
 
-(defn injection-token-map-dollartransitions
+(defn injection-token-map-transitions
   "Public InjectionTokenMap.$transitions member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
   ^js/Object [^js/ng.InjectionTokenMap target]
   (.-$transitions target))
 
-(defn injection-token-map-dollarwasm
+(defn injection-token-map-wasm
   "Public InjectionTokenMap.$wasm member exposed by the AngularTS namespace contract.\n\nType: {!ng.WasmService}"
   ^js/ng.WasmService [^js/ng.InjectionTokenMap target]
   (.-$wasm target))
 
-(defn injection-token-map-dollarweb-component
+(defn injection-token-map-web-component
   "Public InjectionTokenMap.$webComponent member exposed by the AngularTS namespace contract.\n\nType: {!ng.WebComponentService}"
   ^js/ng.WebComponentService [^js/ng.InjectionTokenMap target]
   (.-$webComponent target))
 
-(defn injection-token-map-dollarwindow
+(defn injection-token-map-window
   "Public InjectionTokenMap.$window member exposed by the AngularTS namespace contract.\n\nType: {!Window}"
   ^js/Window [^js/ng.InjectionTokenMap target]
   (.-$window target))
@@ -3302,35 +3399,15 @@
   ^number [^js/ng.ModelChange target]
   (.-snapshotVersion target))
 
-(defn model-dollarid
-  "Public Model.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
+(defn model-id
+  "Public Model.id member exposed by the AngularTS namespace contract.\n\nType: {number}"
   ^number [^js/ng.Model target]
-  (.-$id target))
+  (.-id target))
 
-(defn model-dollarparent
-  "Public Model.$parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
+(defn model-parent
+  "Public Model.parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.Model target]
-  (.-$parent target))
-
-(defn model-dollarproxy
-  "Public Model.$proxy member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.Model target]
-  (.-$proxy target))
-
-(defn model-dollarroot
-  "Public Model.$root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.Model target]
-  (.-$root target))
-
-(defn model-dollarscopename
-  "Public Model.$scopename member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
-  ^string [^js/ng.Model target]
-  (.-$scopename target))
-
-(defn model-dollartarget
-  "Public Model.$target member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
-  ^js/Object [^js/ng.Model target]
-  (.-$target target))
+  (.-parent target))
 
 (defn model-restore-options-mode
   "Public ModelRestoreOptions.mode member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
@@ -3342,95 +3419,100 @@
   ^string [^js/ng.ModelRestoreOptions target]
   (.-origin target))
 
+(defn model-root
+  "Public Model.root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.Model target]
+  (.-root target))
+
+(defn model-scope-name
+  "Public Model.scopeName member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.Model target]
+  (.-scopeName target))
+
 (defn model-sync-options-failure
   "Public ModelSyncOptions.failure member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
   ^string [^js/ng.ModelSyncOptions target]
   (.-failure target))
 
-(defn ng-model-controller-dollarasync-validators
-  "Public NgModelController.$asyncValidators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function(?, ?): !Promise<?>>}"
+(defn ng-model-controller-async-validators
+  "Public NgModelController.asyncValidators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function(?, ?): !Promise<?>>}"
   ^js/Object [^js/ng.NgModelController target]
-  (.-$asyncValidators target))
+  (.-asyncValidators target))
 
-(defn ng-model-controller-dollardirty
-  "Public NgModelController.$dirty member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+(defn ng-model-controller-dirty
+  "Public NgModelController.dirty member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.NgModelController target]
-  (.-$dirty target))
+  (.-dirty target))
 
-(defn ng-model-controller-dollarerror
-  "Public NgModelController.$error member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, boolean>}"
+(defn ng-model-controller-error
+  "Public NgModelController.error member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, boolean>}"
   ^js/Object [^js/ng.NgModelController target]
-  (.-$error target))
+  (.-error target))
 
-(defn ng-model-controller-dollarformatters
-  "Public NgModelController.$formatters member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(?): ?>}"
+(defn ng-model-controller-formatters
+  "Public NgModelController.formatters member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(?): ?>}"
   ^js/Array [^js/ng.NgModelController target]
-  (.-$formatters target))
+  (.-formatters target))
 
-(defn ng-model-controller-dollarinvalid
-  "Public NgModelController.$invalid member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
+(defn ng-model-controller-invalid
+  "Public NgModelController.invalid member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.NgModelController target]
-  (.-$invalid target))
+  (.-invalid target))
 
-(defn ng-model-controller-dollaroptions
-  "Public NgModelController.$options member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+(defn ng-model-controller-options
+  "Public NgModelController.options member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
   ^js/Object [^js/ng.NgModelController target]
-  (.-$options target))
+  (.-options target))
 
-(defn ng-model-controller-dollarparsers
-  "Public NgModelController.$parsers member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(?): ?>}"
+(defn ng-model-controller-parsers
+  "Public NgModelController.parsers member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(?): ?>}"
   ^js/Array [^js/ng.NgModelController target]
-  (.-$parsers target))
+  (.-parsers target))
 
-(defn ng-model-controller-dollarpending
-  "Public NgModelController.$pending member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, boolean>|undefined)}"
+(defn ng-model-controller-pending
+  "Public NgModelController.pending member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, boolean>|undefined)}"
   ^js/Object [^js/ng.NgModelController target]
-  (.-$pending target))
+  (.-pending target))
 
-(defn ng-model-controller-dollarpristine
-  "Public NgModelController.$pristine member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+(defn ng-model-controller-pristine
+  "Public NgModelController.pristine member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.NgModelController target]
-  (.-$pristine target))
+  (.-pristine target))
 
-(defn ng-model-controller-dollartarget
-  "Public NgModelController.$target member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
-  ^js/Object [^js/ng.NgModelController target]
-  (.-$target target))
-
-(defn ng-model-controller-dollartouched
-  "Public NgModelController.$touched member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+(defn ng-model-controller-touched
+  "Public NgModelController.touched member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.NgModelController target]
-  (.-$touched target))
+  (.-touched target))
 
-(defn ng-model-controller-dollaruntouched
-  "Public NgModelController.$untouched member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+(defn ng-model-controller-untouched
+  "Public NgModelController.untouched member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.NgModelController target]
-  (.-$untouched target))
+  (.-untouched target))
 
-(defn ng-model-controller-dollarvalid
-  "Public NgModelController.$valid member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
+(defn ng-model-controller-valid
+  "Public NgModelController.valid member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.NgModelController target]
-  (.-$valid target))
+  (.-valid target))
 
-(defn ng-model-controller-dollarvalidation-message
-  "Public NgModelController.$validationMessage member exposed by the AngularTS namespace contract.\n\nType: {string}"
+(defn ng-model-controller-validation-message
+  "Public NgModelController.validationMessage member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.NgModelController target]
-  (.-$validationMessage target))
+  (.-validationMessage target))
 
-(defn ng-model-controller-dollarvalidators
-  "Public NgModelController.$validators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function(?, ?): ?>}"
+(defn ng-model-controller-validators
+  "Public NgModelController.validators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function(?, ?): ?>}"
   ^js/Object [^js/ng.NgModelController target]
-  (.-$validators target))
+  (.-validators target))
 
-(defn ng-model-controller-dollarvalidity
-  "Public NgModelController.$validity member exposed by the AngularTS namespace contract.\n\nType: {(!Object|null)}"
+(defn ng-model-controller-validity
+  "Public NgModelController.validity member exposed by the AngularTS namespace contract.\n\nType: {(!Object|null)}"
   ^js/Object [^js/ng.NgModelController target]
-  (.-$validity target))
+  (.-validity target))
 
-(defn ng-model-controller-dollarview-change-listeners
-  "Public NgModelController.$viewChangeListeners member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(): void>}"
+(defn ng-model-controller-view-change-listeners
+  "Public NgModelController.viewChangeListeners member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(): void>}"
   ^js/Array [^js/ng.NgModelController target]
-  (.-$viewChangeListeners target))
+  (.-viewChangeListeners target))
 
 (defn ng-module-name
   "Public NgModule.name member exposed by the AngularTS namespace contract.\n\nType: {string}"
@@ -3582,35 +3664,25 @@
   ^js/ng.RestResponse [^js/ng.RestRevalidateEvent target]
   (.-response target))
 
-(defn root-scope-service-dollarid
-  "Public RootScopeService.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
+(defn root-scope-service-id
+  "Public RootScopeService.id member exposed by the AngularTS namespace contract.\n\nType: {number}"
   ^number [^js/ng.RootScopeService target]
-  (.-$id target))
+  (.-id target))
 
-(defn root-scope-service-dollarparent
-  "Public RootScopeService.$parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
+(defn root-scope-service-parent
+  "Public RootScopeService.parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.RootScopeService target]
-  (.-$parent target))
+  (.-parent target))
 
-(defn root-scope-service-dollarproxy
-  "Public RootScopeService.$proxy member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
+(defn root-scope-service-root
+  "Public RootScopeService.root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.RootScopeService target]
-  (.-$proxy target))
+  (.-root target))
 
-(defn root-scope-service-dollarroot
-  "Public RootScopeService.$root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.RootScopeService target]
-  (.-$root target))
-
-(defn root-scope-service-dollarscopename
-  "Public RootScopeService.$scopename member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+(defn root-scope-service-scope-name
+  "Public RootScopeService.scopeName member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
   ^string [^js/ng.RootScopeService target]
-  (.-$scopename target))
-
-(defn root-scope-service-dollartarget
-  "Public RootScopeService.$target member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
-  ^js/Object [^js/ng.RootScopeService target]
-  (.-$target target))
+  (.-scopeName target))
 
 (defn route-contract-params
   "Public RouteContract.params member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, ?>|undefined)}"
@@ -3707,36 +3779,6 @@
   ^string [^js/ng.RouterModule target]
   (.-name target))
 
-(defn scope-dollarid
-  "Public Scope.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
-  ^number [^js/ng.Scope target]
-  (.-$id target))
-
-(defn scope-dollarparent
-  "Public Scope.$parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
-  ^js/ng.Scope [^js/ng.Scope target]
-  (.-$parent target))
-
-(defn scope-dollarproxy
-  "Public Scope.$proxy member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.Scope target]
-  (.-$proxy target))
-
-(defn scope-dollarroot
-  "Public Scope.$root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.Scope target]
-  (.-$root target))
-
-(defn scope-dollarscopename
-  "Public Scope.$scopename member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
-  ^string [^js/ng.Scope target]
-  (.-$scopename target))
-
-(defn scope-dollartarget
-  "Public Scope.$target member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
-  ^js/Object [^js/ng.Scope target]
-  (.-$target target))
-
 (defn scope-element-constructor-inputs
   "Declared DOM attributes/properties that sync into the scope.\n\nType: {(!Object<string, (!ng.WebComponentInputConfig|function((?|undefined)): number|function((?|undefined)): string|function((T|undefined)): boolean|function(?): ?)>|undefined)}"
   ^js/Object [^js/ng.ScopeElementConstructor target]
@@ -3787,35 +3829,45 @@
   ^js/Object [^js/ng.ScopeEvent target]
   (.-targetScope target))
 
-(defn scope-service-dollarid
-  "Public ScopeService.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
+(defn scope-id
+  "Public Scope.id member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.Scope target]
+  (.-id target))
+
+(defn scope-parent
+  "Public Scope.parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
+  ^js/ng.Scope [^js/ng.Scope target]
+  (.-parent target))
+
+(defn scope-root
+  "Public Scope.root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
+  ^js/ng.Scope [^js/ng.Scope target]
+  (.-root target))
+
+(defn scope-scope-name
+  "Public Scope.scopeName member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.Scope target]
+  (.-scopeName target))
+
+(defn scope-service-id
+  "Public ScopeService.id member exposed by the AngularTS namespace contract.\n\nType: {number}"
   ^number [^js/ng.ScopeService target]
-  (.-$id target))
+  (.-id target))
 
-(defn scope-service-dollarparent
-  "Public ScopeService.$parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
+(defn scope-service-parent
+  "Public ScopeService.parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.ScopeService target]
-  (.-$parent target))
+  (.-parent target))
 
-(defn scope-service-dollarproxy
-  "Public ScopeService.$proxy member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
+(defn scope-service-root
+  "Public ScopeService.root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.ScopeService target]
-  (.-$proxy target))
+  (.-root target))
 
-(defn scope-service-dollarroot
-  "Public ScopeService.$root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.ScopeService target]
-  (.-$root target))
-
-(defn scope-service-dollarscopename
-  "Public ScopeService.$scopename member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+(defn scope-service-scope-name
+  "Public ScopeService.scopeName member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
   ^string [^js/ng.ScopeService target]
-  (.-$scopename target))
-
-(defn scope-service-dollartarget
-  "Public ScopeService.$target member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
-  ^js/Object [^js/ng.ScopeService target]
-  (.-$target target))
+  (.-scopeName target))
 
 (defn security-config-allow-insecure-origins
   "HTTP origins explicitly permitted to carry credentials.\n\nType: {(!Array<string>|undefined)}"
@@ -4082,10 +4134,10 @@
   ^js/Object [^js/ng.StateService target]
   (.-params target))
 
-(defn transition-dollarid
-  "Public Transition.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
+(defn transition-id
+  "Public Transition.id member exposed by the AngularTS namespace contract.\n\nType: {number}"
   ^number [^js/ng.Transition target]
-  (.-$id target))
+  (.-id target))
 
 (defn transition-promise
   "Public Transition.promise member exposed by the AngularTS namespace contract.\n\nType: {!Promise<!ng.StateDeclaration>}"
@@ -4192,35 +4244,25 @@
   ^string [^js/ng.WasmResource target]
   (.-status target))
 
-(defn wasm-target-dollarid
-  "Public WasmTarget.$id member exposed by the AngularTS namespace contract.\n\nType: {number}"
+(defn wasm-target-id
+  "Public WasmTarget.id member exposed by the AngularTS namespace contract.\n\nType: {number}"
   ^number [^js/ng.WasmTarget target]
-  (.-$id target))
+  (.-id target))
 
-(defn wasm-target-dollarparent
-  "Public WasmTarget.$parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
+(defn wasm-target-parent
+  "Public WasmTarget.parent member exposed by the AngularTS namespace contract.\n\nType: {(!ng.Scope|undefined)}"
   ^js/ng.Scope [^js/ng.WasmTarget target]
-  (.-$parent target))
+  (.-parent target))
 
-(defn wasm-target-dollarproxy
-  "Public WasmTarget.$proxy member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
+(defn wasm-target-root
+  "Public WasmTarget.root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.WasmTarget target]
-  (.-$proxy target))
+  (.-root target))
 
-(defn wasm-target-dollarroot
-  "Public WasmTarget.$root member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
-  ^js/ng.Scope [^js/ng.WasmTarget target]
-  (.-$root target))
-
-(defn wasm-target-dollarscopename
-  "Public WasmTarget.$scopename member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+(defn wasm-target-scope-name
+  "Public WasmTarget.scopeName member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
   ^string [^js/ng.WasmTarget target]
-  (.-$scopename target))
-
-(defn wasm-target-dollartarget
-  "Public WasmTarget.$target member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
-  ^js/Object [^js/ng.WasmTarget target]
-  (.-$target target))
+  (.-scopeName target))
 
 (defn web-component-config-defaults
   "Defaults merged into every `appComponent(...)` declaration.\n\nType: {(!Object|undefined)}"
@@ -4596,13 +4638,15 @@
   "Retrieve or create an AngularTS module."
   (^js/ng.NgModule [^string name]
    (.module angular name))
-  (^js/ng.NgModule [^string name ^js/Array requires]
-   (.module angular name requires)))
+  (^js/ng.NgModule [^string name requires]
+   (.module angular name (to-array requires))))
 
 (defn controller
-  "Strict convenience wrapper for ng.NgModule.prototype.controller."
-  ^js/ng.NgModule [^js/ng.NgModule ng-module ^string name ^js/ng.Injectable ctl-fn]
-  (ng-module-controller ng-module name ctl-fn))
+  "Register an annotated controller or annotate a controller factory from a ClojureScript dependency collection."
+  (^js/ng.NgModule [^js/ng.NgModule ng-module ^string name ^js/ng.Injectable controller-factory]
+   (ng-module-controller ng-module name controller-factory))
+  (^js/ng.NgModule [^js/ng.NgModule ng-module ^string name deps controller-factory]
+   (ng-module-controller ng-module name (injectable deps controller-factory))))
 
 (defn directive
   "Strict convenience wrapper for ng.NgModule.prototype.directive."

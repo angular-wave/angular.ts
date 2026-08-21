@@ -589,12 +589,12 @@ function createServiceWorkerService(container, options) {
         value(handler) {
             if (destroyed)
                 return;
-            let binding = bindings.get(handler.$id);
+            let binding = bindings.get(handler.id);
             if (!binding) {
                 binding = {
                     _handler: handler,
                 };
-                bindings.set(handler.$id, binding);
+                bindings.set(handler.id, binding);
             }
         },
     });

@@ -65,13 +65,16 @@ class ParamType {
         return `{ParamType:${this.name ?? ""}}`;
     }
     /**
+     * @internal
+     *
      * Given an encoded string, or a decoded object, returns a decoded object
      * @param {unknown} val
      */
-    $normalize(val) {
+    _normalize(val) {
         return this.is(val) ? val : this.decode(val);
     }
-    $asArray(mode) {
+    /** @internal */
+    _asArray(mode) {
         if (!mode)
             return this;
         return new ArrayParamType(this, mode);
@@ -138,8 +141,9 @@ class ArrayParamType extends ParamType {
     decode(val) {
         return this._mapArray("decode", val);
     }
-    $normalize(val) {
-        return this._mapArray("$normalize", val);
+    /** @internal */
+    _normalize(val) {
+        return this._mapArray("_normalize", val);
     }
     is(val) {
         return this._mapArray("is", val, true);

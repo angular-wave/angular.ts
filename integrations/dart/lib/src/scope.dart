@@ -28,33 +28,24 @@ final class Scope<TState> implements interop.JsConvertible {
 
   JSObject get _rawObject => _scope as JSObject;
 
-  /// The scope proxy object.
-  Object? get $proxy => interop.getProperty(_rawObject, r'$proxy');
-
-  /// The scope handler object.
-  Object? get $handler => interop.getProperty(_rawObject, r'$handler');
-
-  /// The wrapped target model.
-  TState get $target => state;
-
   /// The scope id.
-  Object? get $id => interop.getProperty(_rawObject, r'$id');
+  Object? get id => interop.getProperty(_rawObject, r'id');
 
   /// The root scope.
-  Scope<Object?>? get $root {
-    final value = interop.getProperty(_rawObject, r'$root');
+  Scope<Object?>? get root {
+    final value = interop.getProperty(_rawObject, r'root');
     return value == null ? null : Scope<Object?>.unsafe(value);
   }
 
   /// The parent scope.
-  Scope<Object?>? get $parent {
-    final value = interop.getProperty(_rawObject, r'$parent');
+  Scope<Object?>? get parent {
+    final value = interop.getProperty(_rawObject, r'parent');
     return value == null ? null : Scope<Object?>.unsafe(value);
   }
 
   /// Optional scope name.
-  String? get $scopename {
-    final value = interop.getProperty(_rawObject, r'$scopename');
+  String? get scopeName {
+    final value = interop.getProperty(_rawObject, r'scopeName');
     return value == null ? null : (value as JSString).toDart;
   }
 
@@ -96,14 +87,14 @@ final class Scope<TState> implements interop.JsConvertible {
   }
 
   /// Registers a watcher.
-  Object? $watch(
+  Object? watch(
     String watchProp, [
     JSFunction? listenerFn,
     bool? lazy,
   ]) {
     return interop.callMethod(
       _rawObject,
-      r'$watch',
+      r'watch',
       watchProp.toJS,
       listenerFn,
       lazy?.toJS,
@@ -111,10 +102,10 @@ final class Scope<TState> implements interop.JsConvertible {
   }
 
   /// Creates a prototypically inherited child scope.
-  Scope<Object?> $new([Scope<Object?>? childInstance]) {
+  Scope<Object?> child([Scope<Object?>? childInstance]) {
     final value = interop.callMethod(
       _rawObject,
-      r'$new',
+      r'new',
       childInstance?.raw,
     );
 
@@ -122,10 +113,10 @@ final class Scope<TState> implements interop.JsConvertible {
   }
 
   /// Creates an isolate child scope.
-  Scope<Object?> $newIsolate([Scope<Object?>? instance]) {
+  Scope<Object?> isolateChild([Scope<Object?>? instance]) {
     final value = interop.callMethod(
       _rawObject,
-      r'$newIsolate',
+      r'newIsolate',
       instance?.raw,
     );
 
@@ -133,10 +124,10 @@ final class Scope<TState> implements interop.JsConvertible {
   }
 
   /// Creates a transcluded child scope.
-  Scope<Object?> $transcluded([Scope<Object?>? parentInstance]) {
+  Scope<Object?> transcluded([Scope<Object?>? parentInstance]) {
     final value = interop.callMethod(
       _rawObject,
-      r'$transcluded',
+      r'transcluded',
       parentInstance?.raw,
     );
 
@@ -144,20 +135,20 @@ final class Scope<TState> implements interop.JsConvertible {
   }
 
   /// Merges enumerable properties into this scope target.
-  void $merge(Object newTarget) {
-    interop.callMethod(_rawObject, r'$merge', interop.dartToJs(newTarget));
+  void merge(Object newTarget) {
+    interop.callMethod(_rawObject, r'merge', interop.dartToJs(newTarget));
   }
 
   /// Registers a scope event listener.
-  Object? $on(String name, JSFunction listener) {
-    return interop.callMethod(_rawObject, r'$on', name.toJS, listener);
+  Object? on(String name, JSFunction listener) {
+    return interop.callMethod(_rawObject, r'on', name.toJS, listener);
   }
 
   /// Emits an event upward through the scope hierarchy.
-  Object? $emit(String name, [Object? arg1, Object? arg2, Object? arg3]) {
+  Object? emit(String name, [Object? arg1, Object? arg2, Object? arg3]) {
     return interop.callMethod(
       _rawObject,
-      r'$emit',
+      r'emit',
       name.toJS,
       interop.dartToJs(arg1),
       interop.dartToJs(arg2),
@@ -166,10 +157,10 @@ final class Scope<TState> implements interop.JsConvertible {
   }
 
   /// Broadcasts an event downward through the scope hierarchy.
-  Object? $broadcast(String name, [Object? arg1, Object? arg2, Object? arg3]) {
+  Object? broadcast(String name, [Object? arg1, Object? arg2, Object? arg3]) {
     return interop.callMethod(
       _rawObject,
-      r'$broadcast',
+      r'broadcast',
       name.toJS,
       interop.dartToJs(arg1),
       interop.dartToJs(arg2),
@@ -178,15 +169,15 @@ final class Scope<TState> implements interop.JsConvertible {
   }
 
   /// Destroys this scope.
-  void $destroy() {
-    interop.callMethod(_rawObject, r'$destroy');
+  void destroy() {
+    interop.callMethod(_rawObject, 'destroy');
   }
 
   /// Searches this scope tree by id.
-  Scope<Object?>? $getById(Object id) {
+  Scope<Object?>? getById(Object id) {
     final value = interop.callMethod(
       _rawObject,
-      r'$getById',
+      r'getById',
       interop.dartToJs(id),
     );
 
@@ -194,8 +185,8 @@ final class Scope<TState> implements interop.JsConvertible {
   }
 
   /// Searches this scope tree by name.
-  Scope<Object?>? $searchByName(String name) {
-    final value = interop.callMethod(_rawObject, r'$searchByName', name.toJS);
+  Scope<Object?>? searchByName(String name) {
+    final value = interop.callMethod(_rawObject, r'searchByName', name.toJS);
     return value == null ? null : Scope<Object?>.unsafe(value);
   }
 }

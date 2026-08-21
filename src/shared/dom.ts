@@ -217,6 +217,29 @@ function elementAcceptsData(node: Element | Node | Window): boolean {
   }
 }
 
+const elementDisposers = new WeakMap<Element, Set<() => void>>();
+
+/** Registers cleanup that runs when an element is deallocated. */
+export function addElementDisposer(
+  element: Element,
+  disposer: () => void,
+): () => void {
+  let disposers = elementDisposers.get(element);
+
+  if (!disposers) {
+    disposers = new Set();
+    elementDisposers.set(element, disposers);
+  }
+
+  disposers.add(disposer);
+
+  return () => {
+    disposers.delete(disposer);
+
+    if (disposers.size === 0) elementDisposers.delete(element);
+  };
+}
+
 /** Deallocates cached data for an element and its descendant tree. */
 export function dealoc(
   element:
@@ -814,6 +837,14 @@ export function setNormalizedAttr(
 }
 
 function cleanSingleElementData(node: Element): void {
+  const disposers = elementDisposers.get(node);
+
+  if (disposers) {
+    elementDisposers.delete(node);
+
+    for (const dispose of disposers) dispose();
+  }
+
   if (
     node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
     getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY) !== undefined

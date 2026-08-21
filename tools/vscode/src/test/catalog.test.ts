@@ -79,7 +79,6 @@ test("built-in catalog covers roadmap core directive groups", () => {
     "ng-post",
     "ng-sse",
     "ng-viewport",
-    "ng-wasm",
     "ng-worker",
     "ng-web-transport",
     "ng-required",

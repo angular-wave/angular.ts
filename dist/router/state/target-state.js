@@ -72,8 +72,8 @@ class TargetState {
     params() {
         return this._params;
     }
-    /** The internal state object (if it was found) */
-    $state() {
+    /** @internal The internal state object, if it was found. */
+    _state() {
         return this._definition;
     }
     /** The internal state declaration (if it was found) */

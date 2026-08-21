@@ -79,7 +79,7 @@ function ngViewportDirective($parse) {
                 });
                 mutationObserver.observe(parent, { childList: true });
             }
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 observer.disconnect();
                 if (mutationObserver)
                     mutationObserver.disconnect();

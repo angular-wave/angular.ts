@@ -968,45 +968,45 @@ final case class ErrorHandlingConfig(
 
 @js.native
 trait NgModelController extends js.Object:
-  var $viewValue: js.Any = js.native
-  var $modelValue: js.Any = js.native
-  val $validators: js.Dictionary[ModelValidator] = js.native
-  val $asyncValidators: js.Dictionary[AsyncModelValidator] = js.native
-  val $parsers: js.Array[ModelParser] = js.native
-  val $formatters: js.Array[ModelFormatter] = js.native
-  val $viewChangeListeners: js.Array[ModelViewChangeListener] = js.native
-  val $untouched: Boolean = js.native
-  val $touched: Boolean = js.native
-  val $pristine: Boolean = js.native
-  val $dirty: Boolean = js.native
-  val $valid: js.UndefOr[Boolean] = js.native
-  val $invalid: js.UndefOr[Boolean] = js.native
-  val $validity: dom.ValidityState | Null = js.native
-  val $validationMessage: String = js.native
-  val $error: js.Dictionary[Boolean] = js.native
-  val $pending: js.UndefOr[js.Dictionary[Boolean]] = js.native
-  val $name: String | Double = js.native
-  val $target: js.Object = js.native
-  val $options: js.Object = js.native
-  def $setValidity(
+  var viewValue: js.Any = js.native
+  var modelValue: js.Any = js.native
+  val validators: js.Dictionary[ModelValidator] = js.native
+  val asyncValidators: js.Dictionary[AsyncModelValidator] = js.native
+  val parsers: js.Array[ModelParser] = js.native
+  val formatters: js.Array[ModelFormatter] = js.native
+  val viewChangeListeners: js.Array[ModelViewChangeListener] = js.native
+  val untouched: Boolean = js.native
+  val touched: Boolean = js.native
+  val pristine: Boolean = js.native
+  val dirty: Boolean = js.native
+  val valid: js.UndefOr[Boolean] = js.native
+  val invalid: js.UndefOr[Boolean] = js.native
+  val validity: dom.ValidityState | Null = js.native
+  val validationMessage: String = js.native
+  val error: js.Dictionary[Boolean] = js.native
+  val pending: js.UndefOr[js.Dictionary[Boolean]] = js.native
+  val controlName: String | Double = js.native
+  val _target: js.Object = js.native
+  val options: js.Object = js.native
+  def setValidity(
       validationErrorKey: String,
       state: PublicValidationState,
   ): Unit = js.native
-  def $setNativeValidity(state: Boolean | Null): Unit = js.native
-  def $setCustomValidity(message: String): Unit = js.native
-  def $render(): Unit = js.native
-  def $isEmpty(value: js.Any): Boolean = js.native
-  def $setPristine(): Unit = js.native
-  def $setDirty(): Unit = js.native
-  def $setUntouched(): Unit = js.native
-  def $setTouched(): Unit = js.native
-  def $rollbackViewValue(): Unit = js.native
-  def $validate(): Unit = js.native
-  def $commitViewValue(): Unit = js.native
-  def $setViewValue(value: js.Any): Unit = js.native
-  def $setViewValue(value: js.Any, trigger: String): Unit = js.native
-  def $overrideModelOptions(options: js.Object): Unit = js.native
-  def $processModelValue(): Unit = js.native
+  def setNativeValidity(state: Boolean | Null): Unit = js.native
+  def setCustomValidity(message: String): Unit = js.native
+  def render(): Unit = js.native
+  def isEmpty(value: js.Any): Boolean = js.native
+  def setPristine(): Unit = js.native
+  def setDirty(): Unit = js.native
+  def setUntouched(): Unit = js.native
+  def setTouched(): Unit = js.native
+  def rollbackViewValue(): Unit = js.native
+  def validate(): Unit = js.native
+  def commitViewValue(): Unit = js.native
+  def setViewValue(value: js.Any): Unit = js.native
+  def setViewValue(value: js.Any, trigger: String): Unit = js.native
+  def overrideModelOptions(options: js.Object): Unit = js.native
+  def processModelValue(): Unit = js.native
 
 @js.native
 trait PolicyContext extends js.Object:
@@ -1130,32 +1130,32 @@ final case class ModelSyncTarget[A <: js.Object](
 
 @js.native
 trait ModelLifecycle[A <: js.Object] extends js.Object:
-  def $snapshot(): A = js.native
-  def $restore(snapshot: A): Unit = js.native
-  def $restore(snapshot: A, options: js.Object): Unit = js.native
-  def $sync(target: js.Object): js.Function0[Unit] = js.native
-  def $sync(target: js.Object, options: js.Object): js.Function0[Unit] =
+  def snapshot(): A = js.native
+  def restore(snapshot: A): Unit = js.native
+  def restore(snapshot: A, options: js.Object): Unit = js.native
+  def sync(target: js.Object): js.Function0[Unit] = js.native
+  def sync(target: js.Object, options: js.Object): js.Function0[Unit] =
     js.native
-  def $sync(target: js.Function): js.Function0[Unit] = js.native
-  def $sync(target: js.Function, options: js.Object): js.Function0[Unit] =
+  def sync(target: js.Function): js.Function0[Unit] = js.native
+  def sync(target: js.Function, options: js.Object): js.Function0[Unit] =
     js.native
 
 object ModelLifecycle:
   extension [A <: js.Object](model: ModelLifecycle[A])
     def restore(snapshot: A, options: ModelRestoreOptions): Unit =
-      model.$restore(snapshot, options.toJS)
+      model.restore(snapshot, options.toJS)
 
     def sync(
         target: ModelSyncTarget[A],
         options: ModelSyncOptions = ModelSyncOptions(),
     ): js.Function0[Unit] =
-      model.$sync(target.toJS, options.toJS)
+      model.sync(target.toJS, options.toJS)
 
     def sync(
         target: InjectableFactory[js.Object],
         options: ModelSyncOptions,
     ): js.Function0[Unit] =
-      model.$sync(target.annotated, options.toJS)
+      model.sync(target.annotated, options.toJS)
 
 @js.native
 trait StorageLike extends js.Object:

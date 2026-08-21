@@ -32,7 +32,7 @@ function setNativeCustomValidityIssue(ctrl, key, message) {
             selected = issue;
         }
     });
-    ctrl.$setCustomValidity(selected?.message ?? "");
+    ctrl.setCustomValidity(selected?.message ?? "");
 }
 function readValidatorAttr(element, normalizedName) {
     return element instanceof Element
@@ -55,7 +55,7 @@ function observeValidatorAttr(scope, element, normalizedName, callback) {
         }
     });
     observer.observe(element, { attributes: true });
-    let deregisterDestroy = scope.$on("$destroy", deregister);
+    let deregisterDestroy = scope.on("$destroy", deregister);
     function deregister() {
         observer.disconnect();
         deregisterDestroy?.();
@@ -67,10 +67,10 @@ function observeValidatorAttr(scope, element, normalizedName, callback) {
  *
  * @param ngRequired AngularTS expression. If it evaluates to `true`, it sets the
  *                                `required` attribute to the element and adds the `required`
- *                                {@link ngModel.NgModelController#$validators `validator`}.
+ *                                {@link ngModel.NgModelController#validators `validator`}.
  *
  *
- * ngRequired adds the required {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
+ * ngRequired adds the required {@link ngModel.NgModelController#validators `validator`} to {@link ngModel `ngModel`}.
  * It is most often used for {@link input `input`} and {@link select `select`} controls, but can also be
  * applied to custom controls.
  *
@@ -80,10 +80,10 @@ function observeValidatorAttr(scope, element, normalizedName, callback) {
  * for more info.
  *
  * The validator will set the `required` error key to true if the `required` attribute is set and
- * calling {@link ngModel.NgModelController#$isEmpty `NgModelController.$isEmpty`} with the
- * {@link ngModel.NgModelController#$viewValue `ngModel.$viewValue`} returns `true`. For example, the
- * `$isEmpty()` implementation for `input[text]` checks the length of the `$viewValue`. When developing
- * custom controls, `$isEmpty()` can be overwritten to account for a $viewValue that is not string-based.
+ * calling {@link ngModel.NgModelController#isEmpty `NgModelController.isEmpty`} with the
+ * {@link ngModel.NgModelController#viewValue `ngModel.viewValue`} returns `true`. For example, the
+ * `isEmpty()` implementation for `input[text]` checks the length of the `viewValue`. When developing
+ * custom controls, `isEmpty()` can be overwritten to account for a viewValue that is not string-based.
  *
  */
 const requiredDirective = [
@@ -107,7 +107,7 @@ const requiredDirective = [
                     setNormalizedAttr(elm, "required", required);
                 }
                 const nativeControl = elm;
-                ctrl.$setNativeValidity(!nativeControl.willValidate ||
+                ctrl.setNativeValidity(!nativeControl.willValidate ||
                     nativeControl.validity?.valid !== false);
             };
             if (!ngRequired) {
@@ -116,18 +116,18 @@ const requiredDirective = [
                 setNormalizedAttr(elm, "required", true);
             }
             syncNativeRequired(Boolean(value));
-            ctrl.$validators.required = (_modelValue, viewValue) => {
-                return !value || !ctrl.$isEmpty(viewValue);
+            ctrl.validators.required = (_modelValue, viewValue) => {
+                return !value || !ctrl.isEmpty(viewValue);
             };
             const setRequiredValue = (nextValue) => {
                 if (value !== nextValue) {
                     value = nextValue;
                     syncNativeRequired(Boolean(value));
-                    ctrl.$validate();
+                    ctrl.validate();
                 }
             };
             if (ngRequiredGetter && ngRequired) {
-                scope.$watch(ngRequired, (nextValue) => {
+                scope.watch(ngRequired, (nextValue) => {
                     setRequiredValue(Boolean(nextValue));
                 });
             }
@@ -146,10 +146,10 @@ const requiredDirective = [
  *
  *
  *
- * ngPattern adds the pattern {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
+ * ngPattern adds the pattern {@link ngModel.NgModelController#validators `validator`} to {@link ngModel `ngModel`}.
  * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
  *
- * The validator sets the `pattern` error key if the {@link ngModel.NgModelController#$viewValue `ngModel.$viewValue`}
+ * The validator sets the `pattern` error key if the {@link ngModel.NgModelController#viewValue `ngModel.viewValue`}
  * does not match a RegExp which is obtained from the `ngPattern` attribute value:
  * - the value is an AngularTS expression:
  *   - If the expression evaluates to a RegExp object, then this is used directly.
@@ -227,16 +227,16 @@ const patternDirective = [
                         : undefined;
                     if (validateOnChange &&
                         oldRegexp?.toString() !== regexp?.toString()) {
-                        modelCtrl.$validate();
+                        modelCtrl.validate();
                     }
                 }
                 observeValidatorAttr(scope, elm, "pattern", refreshRegexp);
-                modelCtrl.$validators.pattern = (_modelValue, viewValue) => {
+                modelCtrl.validators.pattern = (_modelValue, viewValue) => {
                     if (ngPattern) {
                         refreshRegexp(undefined, false);
                     }
                     // HTML5 pattern constraint validates the input value, so we validate the viewValue
-                    const valid = modelCtrl.$isEmpty(viewValue) ||
+                    const valid = modelCtrl.isEmpty(viewValue) ||
                         isUndefined(regexp) ||
                         regexp.test(String(viewValue));
                     setNativeCustomValidityIssue(modelCtrl, "pattern", valid ? null : "Value does not match the required pattern.");
@@ -249,14 +249,14 @@ const patternDirective = [
 /**
  * @param ngMaxlength AngularTS expression that must evaluate to a `Number` or `String`
  *                                 parsable into a `Number`. Used as value for the `maxlength`
- *                                 {@link ngModel.NgModelController#$validators validator}.
+ *                                 {@link ngModel.NgModelController#validators validator}.
  *
  *
  *
- * ngMaxlength adds the maxlength {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
+ * ngMaxlength adds the maxlength {@link ngModel.NgModelController#validators `validator`} to {@link ngModel `ngModel`}.
  * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
  *
- * The validator sets the `maxlength` error key if the {@link ngModel.NgModelController#$viewValue `ngModel.$viewValue`}
+ * The validator sets the `maxlength` error key if the {@link ngModel.NgModelController#viewValue `ngModel.viewValue`}
  * is longer than the integer obtained by evaluating the AngularTS expression given in the
  * `ngMaxlength` attribute value.
  *
@@ -294,12 +294,12 @@ const maxlengthDirective = [
                 if (maxlength !== newValue) {
                     maxlengthParsed = parseLength(newValue);
                     maxlength = newValue;
-                    ctrl.$validate();
+                    ctrl.validate();
                 }
             });
-            ctrl.$validators.maxlength = function (_modelValue, viewValue) {
+            ctrl.validators.maxlength = function (_modelValue, viewValue) {
                 const valid = maxlengthParsed < 0 ||
-                    ctrl.$isEmpty(viewValue) ||
+                    ctrl.isEmpty(viewValue) ||
                     (isString(viewValue) && viewValue.length <= maxlengthParsed);
                 setNativeCustomValidityIssue(ctrl, "maxlength", valid
                     ? null
@@ -313,14 +313,14 @@ const maxlengthDirective = [
  *
  * @param ngMinlength AngularTS expression that must evaluate to a `Number` or `String`
  *                                 parsable into a `Number`. Used as value for the `minlength`
- *                                 {@link ngModel.NgModelController#$validators validator}.
+ *                                 {@link ngModel.NgModelController#validators validator}.
  *
  *
  *
- * ngMinlength adds the minlength {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
+ * ngMinlength adds the minlength {@link ngModel.NgModelController#validators `validator`} to {@link ngModel `ngModel`}.
  * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
  *
- * The validator sets the `minlength` error key if the {@link ngModel.NgModelController#$viewValue `ngModel.$viewValue`}
+ * The validator sets the `minlength` error key if the {@link ngModel.NgModelController#viewValue `ngModel.viewValue`}
  * is shorter than the integer obtained by evaluating the AngularTS expression given in the
  * `ngMinlength` attribute value.
  *
@@ -356,11 +356,11 @@ const minlengthDirective = [
                 if (minlength !== newValue) {
                     minlengthParsed = parseLength(newValue) || -1;
                     minlength = newValue;
-                    ctrl.$validate();
+                    ctrl.validate();
                 }
             });
-            ctrl.$validators.minlength = function (modelValue, viewValue) {
-                const valid = ctrl.$isEmpty(viewValue) ||
+            ctrl.validators.minlength = function (modelValue, viewValue) {
+                const valid = ctrl.isEmpty(viewValue) ||
                     (isString(viewValue) && viewValue.length >= minlengthParsed) ||
                     (Array.isArray(viewValue) && viewValue.length >= minlengthParsed);
                 setNativeCustomValidityIssue(ctrl, "minlength", valid

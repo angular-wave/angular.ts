@@ -63,8 +63,8 @@ interface ScopeEventBusRetentionState {
 }
 
 type ScopeLifecycleContext = ng.Scope & {
-  $on(name: "$destroy", listener: () => unknown): () => void;
-  $handler?: {
+  on(name: "$destroy", listener: () => unknown): () => void;
+  _handler?: {
     _destroyed?: boolean;
   };
 };
@@ -72,11 +72,11 @@ type ScopeLifecycleContext = ng.Scope & {
 function isScopeLifecycleContext(
   value: unknown,
 ): value is ScopeLifecycleContext {
-  return isProxy(value) && typeof value.$on === "function";
+  return isProxy(value) && typeof value.on === "function";
 }
 
 function isDestroyedScopeLifecycleContext(value: unknown): boolean {
-  return isScopeLifecycleContext(value) && value.$handler._destroyed;
+  return isScopeLifecycleContext(value) && value._handler._destroyed;
 }
 
 /**
@@ -206,7 +206,7 @@ export class EventBus {
 
     this._getScopeRetentionState(context as ScopeLifecycleContext);
 
-    let removeDestroyListener: (() => void) | undefined = context.$on(
+    let removeDestroyListener: (() => void) | undefined = context.on(
       "$destroy",
       () => {
         cleanup();
@@ -293,6 +293,7 @@ export class EventBus {
     return this._unsubscribe(topic, fn, context);
   }
 
+  /** @internal */
   private _unsubscribe<TContext>(
     topic: string,
     fn: EventBusListener<TContext>,
@@ -435,6 +436,7 @@ export class EventBus {
     }
   }
 
+  /** @internal */
   private _queuePausedScopeDelivery(
     topic: string,
     args: unknown[],
@@ -459,6 +461,7 @@ export class EventBus {
     this._flushScopeDeliveryQueue(scopeState);
   }
 
+  /** @internal */
   private _flushScopeDeliveryQueue(state: ScopeEventBusRetentionState): void {
     if (state._flushing || state._paused || state._pending.length === 0) {
       return;
@@ -471,6 +474,7 @@ export class EventBus {
     });
   }
 
+  /** @internal */
   private async _drainScopeDeliveryQueue(
     state: ScopeEventBusRetentionState,
   ): Promise<void> {
@@ -492,6 +496,7 @@ export class EventBus {
     }
   }
 
+  /** @internal */
   private _getScopeRetentionState(
     scope: ScopeLifecycleContext,
   ): ScopeEventBusRetentionState {
@@ -501,7 +506,7 @@ export class EventBus {
 
     let nextState!: ScopeEventBusRetentionState;
 
-    const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+    const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
       if (!shouldHandleViewRetentionPause(args, "schedulers")) {
         return;
       }
@@ -509,7 +514,7 @@ export class EventBus {
       nextState._paused = true;
     });
 
-    const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+    const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
       if (!shouldHandleViewRetentionPause(args, "schedulers")) {
         return;
       }
@@ -520,7 +525,7 @@ export class EventBus {
       this._flushScopeDeliveryQueue(nextState);
     });
 
-    const deregisterDestroy = scope.$on("$destroy", () => {
+    const deregisterDestroy = scope.on("$destroy", () => {
       nextState._pending = [];
       nextState._deregisterPause();
       nextState._deregisterResume();

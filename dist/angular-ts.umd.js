@@ -168,7 +168,7 @@
      * @returns The unproxied value.
      */
     function deProxy(val) {
-        return isProxy(val) ? val.$target : val;
+        return isProxy(val) ? val._target : val;
     }
     const ngError$1 = createErrorFactory("ng");
     let uid$1 = 0;
@@ -369,7 +369,7 @@
      * Returns whether a value looks like an Angular scope object.
      */
     function isScope(obj) {
-        return isObject(obj) && isFunction(obj.$watch);
+        return isObject(obj) && isFunction(obj.watch);
     }
     /**
      * Returns whether a value is a `File`.
@@ -1033,7 +1033,7 @@
         }
         if (!isString(obj)) {
             const seen = [];
-            const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
+            const copyObj = structuredClone(isProxy(obj) ? obj._target : obj);
             return JSON.stringify(copyObj, (key, val) => {
                 const replace = toJsonReplacer(key, val);
                 if (isObject(replace)) {
@@ -1368,6 +1368,21 @@
             default:
                 return false;
         }
+    }
+    const elementDisposers = new WeakMap();
+    /** Registers cleanup that runs when an element is deallocated. */
+    function addElementDisposer(element, disposer) {
+        let disposers = elementDisposers.get(element);
+        if (!disposers) {
+            disposers = new Set();
+            elementDisposers.set(element, disposers);
+        }
+        disposers.add(disposer);
+        return () => {
+            disposers.delete(disposer);
+            if (disposers.size === 0)
+                elementDisposers.delete(element);
+        };
     }
     /** Deallocates cached data for an element and its descendant tree. */
     function dealoc(element, onlyDescendants = false) {
@@ -1775,6 +1790,12 @@
         };
     }
     function cleanSingleElementData(node) {
+        const disposers = elementDisposers.get(node);
+        if (disposers) {
+            elementDisposers.delete(node);
+            for (const dispose of disposers)
+                dispose();
+        }
         if (node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
             getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY) !== undefined) {
             node.dispatchEvent(new Event("$destroy"));
@@ -2061,7 +2082,7 @@
         /** @internal */
         _factory(serviceName) {
             const provider = this._providerInjector.get(serviceName + providerSuffix);
-            return this.invoke(provider.$get, provider, undefined, serviceName);
+            return this.invoke(provider.get, provider, undefined, serviceName);
         }
         /**
          *
@@ -2172,7 +2193,7 @@
         const protoInstanceInjector = new InjectorService(providerInjector);
         providerCache.$injectorProvider = {
             // $injectionProvider return instance injector
-            $get: () => protoInstanceInjector,
+            get: () => protoInstanceInjector,
         };
         let instanceInjector = protoInstanceInjector;
         const providerRegistry = {
@@ -2213,8 +2234,8 @@
             else {
                 newProvider = providerDefinition;
             }
-            if (!newProvider.$get) {
-                throw $injectorError$1("pget", "Provider '{0}' must define $get factory method.", name);
+            if (!newProvider.get) {
+                throw $injectorError$1("pget", "Provider '{0}' must define get factory method.", name);
             }
             providerCache[name + providerSuffix] = newProvider;
             return newProvider;
@@ -2224,10 +2245,10 @@
          */
         function factory(name, factoryFn) {
             return provider(name, {
-                $get() {
+                get() {
                     const result = instanceInjector.invoke(factoryFn, this);
                     if (isUndefined(result)) {
-                        throw $injectorError$1("undef", "Provider '{0}' must return a value from $get factory method.", name);
+                        throw $injectorError$1("undef", "Provider '{0}' must return a value from get factory method.", name);
                     }
                     return result;
                 },
@@ -2253,7 +2274,7 @@
          */
         function value(name, val) {
             return (providerCache[name + providerSuffix] = {
-                $get: () => val,
+                get: () => val,
             });
         }
         /**
@@ -2271,8 +2292,8 @@
          */
         function decorator(serviceName, decorFn) {
             const origProvider = providerInjector.get(serviceName + providerSuffix);
-            const origGet = origProvider.$get;
-            origProvider.$get = function () {
+            const origGet = origProvider.get;
+            origProvider.get = function () {
                 const origInstance = instanceInjector.invoke(origGet, origProvider);
                 return instanceInjector.invoke(decorFn, null, createServiceDecorationInvocationLocals(origInstance));
             };
@@ -2286,7 +2307,7 @@
          */
         function store(name, ctor, type, backendOrConfig) {
             return provider(name, {
-                $get: [
+                get: [
                     _injector,
                     ($injector) => {
                         switch (type) {
@@ -2453,15 +2474,15 @@
             this._destroyed = false;
         }
         has(name) {
-            this.assertActive();
+            this._assertActive();
             return this._controllers.has(name);
         }
         get(name) {
-            this.assertActive();
+            this._assertActive();
             return this._controllers.get(name);
         }
         register(name, constructor) {
-            this.assertActive();
+            this._assertActive();
             if (isString(name)) {
                 assertNotHasOwnProperty(name, "controller");
                 this._controllers.set(name, normalizeControllerDef(constructor, name));
@@ -2481,7 +2502,8 @@
             this._destroyed = true;
             this._controllers.clear();
         }
-        assertActive() {
+        /** @internal */
+        _assertActive() {
             if (this._destroyed) {
                 throw new Error("Controller registry has already been disposed.");
             }
@@ -2493,7 +2515,7 @@
         }
         const scope = locals.$scope;
         scope[identifier] = instance;
-        scope.$controllerIdentifier = identifier;
+        scope._controllerIdentifier = identifier;
     }
     /** @internal */
     function createControllerService(registry, $injector) {
@@ -2523,18 +2545,18 @@
                 instance = createObject(meta.prototype ?? null);
                 const exportName = constructorName ?? meta.name;
                 if (identifier) {
-                    instance.$controllerIdentifier = identifier;
+                    instance._controllerIdentifier = identifier;
                     addIdentifier(locals, identifier, instance, exportName);
                 }
-                if (instance.constructor?.$scopename && locals?.$scope) {
-                    locals.$scope.$scopename =
-                        instance.constructor.$scopename;
+                if (instance.constructor?.scopeName && locals?.$scope) {
+                    locals.$scope.scopeName =
+                        instance.constructor.scopeName;
                 }
                 const initialize = ((instanceOverride) => {
                     if (instanceOverride) {
                         instance = instanceOverride;
                         if (identifier) {
-                            instance.$controllerIdentifier = identifier;
+                            instance._controllerIdentifier = identifier;
                             addIdentifier(locals, identifier, instance, exportName);
                         }
                     }
@@ -2542,7 +2564,7 @@
                     if (result !== instance && (isObject(result) || isFunction(result))) {
                         instance = result;
                         if (identifier) {
-                            instance.$controllerIdentifier = identifier;
+                            instance._controllerIdentifier = identifier;
                             addIdentifier(locals, identifier, instance, exportName);
                         }
                     }
@@ -2612,6 +2634,7 @@
         assertActive() {
             this._assertActive();
         }
+        /** @internal */
         _bind(name, factory) {
             if (!this._providerRegistry)
                 return;
@@ -2620,6 +2643,7 @@
             this._providerRegistry.factory(name + SUFFIX, factory);
             this._boundFactories.set(name, factory);
         }
+        /** @internal */
         _assertActive() {
             if (this._destroyed) {
                 throw new Error("Filter registry has been destroyed");
@@ -2660,6 +2684,141 @@
         _UpdateExpression: 18,
     };
 
+    const scopeExpressionObservers = new WeakMap();
+    let activeScopeExpressionObserver;
+    function trackScopeExpressionRead(target, property) {
+        const observer = activeScopeExpressionObserver;
+        if (!observer || observer._disposed)
+            return;
+        let properties = observer._nextPropertiesByTarget.get(target);
+        if (!properties) {
+            properties = new Set();
+            observer._nextPropertiesByTarget.set(target, properties);
+        }
+        if (properties.has(property))
+            return;
+        properties.add(property);
+        observer._nextDependencies.push({ _target: target, _property: property });
+    }
+    function unregisterScopeExpressionDependencies(observer) {
+        for (let index = 0; index < observer._dependencies.length; index++) {
+            const dependency = observer._dependencies[index];
+            const observersByProperty = scopeExpressionObservers.get(dependency._target);
+            const observers = observersByProperty?.get(dependency._property);
+            observers?.delete(observer);
+            if (observers?.size === 0) {
+                observersByProperty?.delete(dependency._property);
+            }
+            if (observersByProperty?.size === 0) {
+                scopeExpressionObservers.delete(dependency._target);
+            }
+        }
+        observer._dependencies.length = 0;
+    }
+    function registerScopeExpressionDependencies(observer) {
+        unregisterScopeExpressionDependencies(observer);
+        observer._dependencies = observer._nextDependencies;
+        observer._nextDependencies = [];
+        observer._nextPropertiesByTarget = new WeakMap();
+        for (let index = 0; index < observer._dependencies.length; index++) {
+            const dependency = observer._dependencies[index];
+            let observersByProperty = scopeExpressionObservers.get(dependency._target);
+            if (!observersByProperty) {
+                observersByProperty = new Map();
+                scopeExpressionObservers.set(dependency._target, observersByProperty);
+            }
+            let observers = observersByProperty.get(dependency._property);
+            if (!observers) {
+                observers = new Set();
+                observersByProperty.set(dependency._property, observers);
+            }
+            observers.add(observer);
+        }
+    }
+    function runScopeExpressionObserver(observer) {
+        if (observer._disposed || observer._owner._destroyed)
+            return;
+        const previousObserver = activeScopeExpressionObserver;
+        let value;
+        activeScopeExpressionObserver = observer;
+        try {
+            value = observer._read();
+        }
+        catch (error) {
+            observer._owner._exceptionHandler(error);
+            return;
+        }
+        finally {
+            activeScopeExpressionObserver = previousObserver;
+        }
+        registerScopeExpressionDependencies(observer);
+        try {
+            observer._listener(value);
+        }
+        catch (error) {
+            observer._owner._exceptionHandler(error);
+        }
+    }
+    function scheduleScopeExpressionObserver(observer) {
+        if (observer._scheduled || observer._disposed)
+            return;
+        observer._scheduled = true;
+        observer._owner._scheduleCallback(() => {
+            observer._scheduled = false;
+            runScopeExpressionObserver(observer);
+        });
+    }
+    function scheduleScopeExpressionObservers(target, property) {
+        const observersByProperty = scopeExpressionObservers.get(target);
+        if (!observersByProperty)
+            return;
+        const observers = new Set();
+        const invalidateWholeTarget = isArray(target) ||
+            isMapTarget(target) ||
+            isSetTarget(target) ||
+            isDateTarget(target);
+        if (invalidateWholeTarget) {
+            for (const propertyObservers of observersByProperty.values()) {
+                for (const observer of propertyObservers)
+                    observers.add(observer);
+            }
+        }
+        else {
+            const propertyObservers = observersByProperty.get(property);
+            if (propertyObservers) {
+                for (const observer of propertyObservers)
+                    observers.add(observer);
+            }
+        }
+        for (const observer of observers) {
+            scheduleScopeExpressionObserver(observer);
+        }
+    }
+    /** @internal Observes the Scope-backed values read while evaluating a function. */
+    function observeScopeExpression(scope, read, listener) {
+        const owner = scope._handler;
+        const observer = {
+            _owner: owner,
+            _read: read,
+            _listener: listener,
+            _dependencies: [],
+            _nextDependencies: [],
+            _nextPropertiesByTarget: new WeakMap(),
+            _scheduled: false,
+            _disposed: false,
+        };
+        const dispose = () => {
+            if (observer._disposed)
+                return;
+            observer._disposed = true;
+            unregisterScopeExpressionDependencies(observer);
+            observer._deregisterDestroy?.();
+            observer._deregisterDestroy = undefined;
+        };
+        observer._deregisterDestroy = scope.on("$destroy", dispose);
+        runScopeExpressionObserver(observer);
+        return dispose;
+    }
     const scheduledBindingTask = {
         _kind: "bindings",
     };
@@ -2716,6 +2875,14 @@
     const arrayMutationMeta = new WeakMap();
     const arraySwapCandidates = new WeakMap();
     let arrayMutationVersion = 0;
+    const SET_MUTATION_KEYS = ["add", "delete", "clear"];
+    const MAP_MUTATION_METHODS = [
+        "set",
+        "delete",
+        "clear",
+        "getOrInsert",
+        "getOrInsertComputed",
+    ];
     function toArrayMutationLength(value) {
         const numericValue = Number(value);
         if (!Number.isFinite(numericValue) || Number.isNaN(numericValue)) {
@@ -2901,7 +3068,7 @@
         }
     }
     function clearArrayMutationMeta(proxy) {
-        const target = proxy.$target;
+        const target = proxy._target;
         if (isArray(target)) {
             arrayMutationMeta.delete(target);
         }
@@ -2914,7 +3081,7 @@
             clearArrayMutationMeta(proxy);
             return;
         }
-        const target = proxy.$target;
+        const target = proxy._target;
         if (isArray(target)) {
             arrayMutationMeta.set(target, meta);
         }
@@ -2926,12 +3093,12 @@
         if (!value) {
             return undefined;
         }
-        const target = isProxy(value) ? value.$target : value;
+        const target = isProxy(value) ? value._target : value;
         return isArray(target) ? arrayMutationMeta.get(target) : undefined;
     }
     function warnAsyncBatchCallback() {
         try {
-            console.warn("$batch callback returned a Promise. Async mutations after await are not batched.");
+            console.warn("batch callback returned a Promise. Async mutations after await are not batched.");
         }
         catch {
             // Warning delivery should not affect the batched mutation contract.
@@ -2943,7 +3110,7 @@
         defaultParse = parse;
         appContext.setScopeRuntime({ exceptionHandler, parse });
         const rootScope = createScope();
-        rootScope.$handler._setRuntimeDependencies({ exceptionHandler, parse });
+        rootScope._handler._setRuntimeDependencies({ exceptionHandler, parse });
         appContext.createRoot({ rootScope });
         return rootScope;
     }
@@ -3079,7 +3246,7 @@
         }
     }
     /**
-     * Collects all keys that should trigger a grouped `$watch` expression.
+     * Collects all keys that should trigger a grouped `watch` expression.
      * This keeps interpolation arrays reactive for both direct property changes
      * (`todo.done`) and object reassignments (`todo = nextTodo` in `ng-repeat`).
      */
@@ -3260,8 +3427,8 @@
     }
     const mapPrototype = Map.prototype;
     const setPrototype = Set.prototype;
-    const mapMutationMethods = new Set(["set", "delete", "clear", "getOrInsert", "getOrInsertComputed"].filter((key) => isFunction(mapPrototype[key])));
-    const setMutationMethods = new Set(["add", "delete", "clear"].filter((key) => isFunction(setPrototype[key])));
+    const mapMutationMethods = new Set(MAP_MUTATION_METHODS.filter((key) => isFunction(mapPrototype[key])));
+    const setMutationMethods = new Set(SET_MUTATION_KEYS.filter((key) => isFunction(setPrototype[key])));
     const mapValueMutationWatchKeys = getPrototypeMethodNames(mapPrototype, (key) => !mapMutationMethods.has(key) && key !== "has" && key !== "keys");
     const mapMembershipMutationWatchKeys = getPrototypeMethodNames(mapPrototype, (key) => !mapMutationMethods.has(key));
     if (isFunction(mapPrototype.includes) &&
@@ -3320,7 +3487,7 @@
     const scopeCache = new WeakSet();
     const scopeProxyCache = new WeakMap();
     const scopeProxyTargets = new WeakMap();
-    const destroyedScopeCleanupQueue = [];
+    let destroyedScopeCleanupQueue = [];
     let destroyedScopeCleanupQueued = false;
     function queueDestroyedScopeCleanup(scope) {
         destroyedScopeCleanupQueue.push(scope);
@@ -3332,7 +3499,8 @@
     }
     function flushDestroyedScopeCleanup() {
         destroyedScopeCleanupQueued = false;
-        const queue = destroyedScopeCleanupQueue.splice(0);
+        const queue = destroyedScopeCleanupQueue;
+        destroyedScopeCleanupQueue = [];
         for (let i = 0, l = queue.length; i < l; i++) {
             queue[i]._cleanupDestroyedScope();
         }
@@ -3340,7 +3508,7 @@
     function unwrapScopeValue(value) {
         if (!isProxy(value))
             return value;
-        return scopeProxyTargets.get(value) ?? value.$target;
+        return scopeProxyTargets.get(value) ?? value._target;
     }
     function getAssignedScopeValue(value) {
         const rawValue = unwrapScopeValue(value);
@@ -3557,18 +3725,18 @@
             this._listenerStats = context?._listenerStats ?? {
                 _nestedCandidateCount: 0,
             };
-            this.$handler = this;
-            this.$target = null;
+            this._handler = this;
+            this._target = null;
             this._children = [];
             this._childIndices = new WeakMap();
             this._childTargets = new WeakMap();
-            this.$id = nextId();
-            this.$root = context ? context.$root : this;
-            this.$parent = parent ?? (this.$root === this ? undefined : context);
+            this.id = nextId();
+            this.root = context ? context.root : this;
+            this.parent = parent ?? (this.root === this ? undefined : context);
             this._destroyed = false;
             this._scheduled = [];
             this._arrayOwnerListenersScheduled = false;
-            this.$scopename = undefined;
+            this.scopeName = undefined;
             this._ownedForeignListeners = [];
             this._ownedWatchers = [];
             this._listenerScheduler =
@@ -3582,26 +3750,26 @@
                 context?._collectionMethodWrappers ?? new WeakMap();
             this._modelChangeTracker = context?._modelChangeTracker;
             this._propertyMap = {
-                $broadcast: this.$broadcast.bind(this),
-                $batch: this.$batch.bind(this),
+                broadcast: this.broadcast.bind(this),
+                batch: this.batch.bind(this),
                 _children: this._children,
-                $destroy: this.$destroy.bind(this),
-                $emit: this.$emit.bind(this),
-                $getById: this.$getById.bind(this),
-                $handler: this,
-                $id: this.$id,
-                $isRoot: this._isRoot.bind(this),
-                $merge: this.$merge.bind(this),
-                $new: this.$new.bind(this),
-                $newIsolate: this.$newIsolate.bind(this),
-                $on: this.$on.bind(this),
-                $parent: this.$parent,
-                $proxy: this.$proxy,
-                $root: this.$root,
-                $scopename: this.$scopename,
-                $searchByName: this.$searchByName.bind(this),
-                $transcluded: this.$transcluded.bind(this),
-                $watch: this.$watch.bind(this),
+                destroy: this.destroy.bind(this),
+                emit: this.emit.bind(this),
+                getById: this.getById.bind(this),
+                _handler: this,
+                id: this.id,
+                _isRoot: this._isRoot.bind(this),
+                merge: this.merge.bind(this),
+                new: this.new.bind(this),
+                newIsolate: this.newIsolate.bind(this),
+                on: this.on.bind(this),
+                parent: this.parent,
+                _proxy: this._proxy,
+                root: this.root,
+                scopeName: this.scopeName,
+                searchByName: this.searchByName.bind(this),
+                transcluded: this.transcluded.bind(this),
+                watch: this.watch.bind(this),
             };
         }
         /** @internal Updates runtime services for this scope tree. */
@@ -3609,7 +3777,7 @@
             this._parse = runtime.parse;
             this._exceptionHandler = runtime.exceptionHandler;
             this._children.forEach((child) => {
-                child.$handler._setRuntimeDependencies(runtime);
+                child._handler._setRuntimeDependencies(runtime);
             });
         }
         /** @internal Destroys displaced direct child scopes found in the provided value or collection. */
@@ -3622,20 +3790,20 @@
             visited.add(objectValue);
             const childScope = this._childTargets.get(objectValue);
             if (childScope) {
-                if (childScope.$handler._destroyed)
+                if (childScope._handler._destroyed)
                     return;
-                childScope.$destroy();
+                childScope.destroy();
                 return;
             }
             if (isProxy(value)) {
                 const scopeValue = value;
                 if (this._children.includes(scopeValue)) {
-                    if (scopeValue.$handler._destroyed)
+                    if (scopeValue._handler._destroyed)
                         return;
-                    scopeValue.$destroy();
+                    scopeValue.destroy();
                     return;
                 }
-                const targetValue = scopeValue.$target;
+                const targetValue = scopeValue._target;
                 if (!targetValue) {
                     return;
                 }
@@ -3671,8 +3839,8 @@
             if (property === "undefined") {
                 return false;
             }
-            if (property === "$scopename") {
-                this.$scopename = String(value);
+            if (property === "scopeName") {
+                this.scopeName = String(value);
                 return true;
             }
             const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
@@ -3680,8 +3848,8 @@
                 target[property] = value;
                 return true;
             }
-            this.$proxy = proxy;
-            this.$target = target;
+            this._proxy = proxy;
+            this._target = target;
             const oldValue = target[property];
             const rawOldValue = unwrapScopeValue(oldValue);
             const assignedValue = getAssignedScopeValue(value);
@@ -3807,7 +3975,7 @@
                 if (isUndefined(rawValue)) {
                     this._destroyDisplacedValue(oldValue);
                     let called = false;
-                    const oldTarget = oldValue.$target;
+                    const oldTarget = oldValue._target;
                     const keyList = keys(oldTarget);
                     const tgt = oldTarget;
                     for (let i = 0, l = keyList.length; i < l; i++) {
@@ -3869,8 +4037,8 @@
                 }
                 if (valueChanged) {
                     const hasDirectPropertyListeners = this._watchers.has(property);
-                    const parentForeignListeners = this.$parent
-                        ? this.$parent._foreignListeners
+                    const parentForeignListeners = this.parent
+                        ? this.parent._foreignListeners
                         : undefined;
                     const hasForeignPropertyListeners = this._foreignListeners.has(property) ||
                         (isObject(parentForeignListeners) &&
@@ -3897,7 +4065,7 @@
                         }
                         return true;
                     }
-                    let expectedTarget = this.$target;
+                    let expectedTarget = this._target;
                     const directListeners = [];
                     const nestedListeners = [];
                     const seenListenerIds = new Set();
@@ -3993,11 +4161,11 @@
                         }
                         else {
                             this._scheduleListener(directListeners, (list) => {
-                                const scheduled = [];
+                                let scheduled;
                                 for (let i = 0, l = list.length; i < l; i++) {
                                     const x = list[i];
                                     if (!x._watchProp) {
-                                        scheduled.push(x);
+                                        scheduled?.push(x);
                                         continue;
                                     }
                                     const expectedParent = x._watchParentFn?.(x._originalTarget);
@@ -4007,10 +4175,13 @@
                                             expectedTarget === x._originalTarget) ||
                                         (x._watchProp.includes("[") &&
                                             expectedTarget === x._originalTarget)) {
-                                        scheduled.push(x);
+                                        scheduled?.push(x);
+                                    }
+                                    else {
+                                        scheduled ?? (scheduled = list.slice(0, i));
                                     }
                                 }
-                                return scheduled;
+                                return scheduled ?? list;
                             }, property);
                         }
                     }
@@ -4036,13 +4207,13 @@
                         trackArraySwapMutation(proxy, property, oldValue, value, target.length);
                     }
                     let _foreignListeners = this._foreignListeners.get(property);
-                    if (!_foreignListeners && this.$parent?._foreignListeners) {
-                        _foreignListeners = this.$parent._foreignListeners.get(property);
+                    if (!_foreignListeners && this.parent?._foreignListeners) {
+                        _foreignListeners = this.parent._foreignListeners.get(property);
                     }
                     if (_foreignListeners) {
                         let scheduled = _foreignListeners;
                         // filter for repeaters
-                        const hashKey = getHashKey(this.$target);
+                        const hashKey = getHashKey(this._target);
                         if (isDefined(hashKey)) {
                             scheduled =
                                 this._foreignListenersByHash.get(property)?.get(hashKey) ?? [];
@@ -4092,12 +4263,13 @@
          * @returns The value of the property or a method if accessing `watch` or `sync`.
          */
         get(target, property, proxy) {
-            if (property === "$scopename" && this.$scopename)
-                return this.$scopename;
+            if (property === "scopeName" && this.scopeName)
+                return this.scopeName;
             if (property === "$$watchersCount")
                 return calculateWatcherCount(this);
             if (property === isProxySymbol)
                 return true;
+            trackScopeExpressionRead(target, property);
             if (this._destroyed &&
                 typeof property !== "symbol" &&
                 hasOwn(this._propertyMap, property)) {
@@ -4119,20 +4291,24 @@
                     ? targetProp
                     : getCachedScopeProxy(targetProp, this));
             if (isProxy(scopedTargetProp)) {
-                this.$proxy = scopedTargetProp;
+                this._proxy = scopedTargetProp;
             }
             else {
-                this.$proxy = proxy;
+                this._proxy = proxy;
             }
-            if (this._propertyMap.$target !== target) {
-                this._propertyMap.$target = target;
+            if (this._propertyMap._target !== target) {
+                this._propertyMap._target = target;
             }
-            if (this._propertyMap.$proxy !== proxy) {
-                this._propertyMap.$proxy = proxy;
+            if (this._propertyMap._proxy !== proxy) {
+                this._propertyMap._proxy = proxy;
             }
-            if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
-                this.$target = target;
-                return this._propertyMap[property];
+            const scopeMember = typeof property !== "symbol" ? this._propertyMap[property] : undefined;
+            const targetShadowsScopeData = isString(property) && !property.startsWith("_") && property in target;
+            if (typeof property !== "symbol" &&
+                hasOwn(this._propertyMap, property) &&
+                !targetShadowsScopeData) {
+                this._target = target;
+                return scopeMember;
             }
             if (isNativeScopedTarget(target)) {
                 if (isFunction(targetProp) && property !== "constructor") {
@@ -4223,9 +4399,11 @@
                 arrayIdentityMethods.has(property)) {
                 return (...args) => Reflect.apply(targetProp, target, unwrapArrayMutationArgs(args));
             }
-            if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
-                this.$target = target;
-                return this._propertyMap[property];
+            if (typeof property !== "symbol" &&
+                hasOwn(this._propertyMap, property) &&
+                !targetShadowsScopeData) {
+                this._target = target;
+                return scopeMember;
             }
             else {
                 // we are a simple getter
@@ -4428,7 +4606,7 @@
                 if (!foreignProxy) {
                     continue;
                 }
-                if (existing?._handler === foreignProxy.$handler &&
+                if (existing?._handler === foreignProxy._handler &&
                     existing._key === descriptor._key) {
                     descriptor._parent = parent;
                     continue;
@@ -4437,10 +4615,10 @@
                     existing._handler._deregisterForeignKey(existing._key, listener._id);
                     this._untrackOwnedForeignListener(existing._handler, existing._key, listener._id);
                 }
-                foreignProxy.$handler._registerForeignKey(descriptor._key, listener, listener._parse(descriptor._watchProp)(listener._originalTarget));
-                this._trackOwnedForeignListener(foreignProxy.$handler, descriptor._key, listener._id);
+                foreignProxy._handler._registerForeignKey(descriptor._key, listener, listener._parse(descriptor._watchProp)(listener._originalTarget));
+                this._trackOwnedForeignListener(foreignProxy._handler, descriptor._key, listener._id);
                 descriptor._dependency = {
-                    _handler: foreignProxy.$handler,
+                    _handler: foreignProxy._handler,
                     _key: descriptor._key,
                     _id: listener._id,
                 };
@@ -4479,7 +4657,7 @@
             if (potentialScopeProxy && this._foreignProxies.has(potentialScopeProxy)) {
                 foreignProxy = potentialScopeProxy;
             }
-            else if (potentialScopeProxy && potentialScopeProxy.$handler !== this) {
+            else if (potentialScopeProxy && potentialScopeProxy._handler !== this) {
                 foreignProxy = potentialScopeProxy;
             }
             else {
@@ -4508,7 +4686,7 @@
             for (let i = 1, l = parts.length; i < l; i++) {
                 cursor = cursor[parts[i]];
             }
-            if (isProxy(cursor) && cursor.$handler !== this) {
+            if (isProxy(cursor) && cursor._handler !== this) {
                 return cursor;
             }
             return undefined;
@@ -4539,8 +4717,8 @@
         deleteProperty(target, property) {
             const propertyExisted = hasOwn(target, property);
             if (isArray(target)) {
-                clearArrayMutationMeta(this.$proxy);
-                clearArraySwapCandidate(this.$proxy);
+                clearArrayMutationMeta(this._proxy);
+                clearArraySwapCandidate(this._proxy);
             }
             // Currently deletes $model
             if (isProxy(target[property])) {
@@ -4709,7 +4887,7 @@
          * queued while the callback runs and flushed once after the outermost batch
          * exits. Mutations are not rolled back if the callback throws.
          */
-        $batch(fn) {
+        batch(fn) {
             const scheduler = this._listenerScheduler;
             scheduler._batchDepth++;
             try {
@@ -4761,8 +4939,8 @@
                 listeners = genericListeners;
             }
             const target = filter
-                ? this.$target
-                : (filterOrTarget ?? this.$target);
+                ? this._target
+                : (filterOrTarget ?? this._target);
             this._enqueueScheduledTask({
                 _kind: "listener",
                 _listeners: listeners,
@@ -4775,6 +4953,9 @@
         /** @internal Records a whole-model change when this scope backs an app model. */
         _recordModelChange(property, target) {
             this._modelChangeTracker?.record(property, target);
+            if (isObject(target)) {
+                scheduleScopeExpressionObservers(target, property);
+            }
         }
         /**
          * Registers a watcher for a property along with a listener function. The listener
@@ -4786,7 +4967,7 @@
          * @returns A function to deregister the watcher, or undefined if no listener function is provided.
          * @throws Error when `watchProp` is not a string expression.
          */
-        $watch(watchProp, listenerFn, lazy = false, directLeaf = false) {
+        watch(watchProp, listenerFn, lazy = false, directLeaf = false) {
             assert(isString(watchProp), "Watched property required");
             watchProp = watchProp.trim();
             const get = this._parse(watchProp);
@@ -4798,7 +4979,7 @@
                         while (isFunction(res)) {
                             res = res();
                         }
-                        listenerFn(res, this.$target);
+                        listenerFn(res, this._target);
                     });
                 }
                 return () => {
@@ -4810,18 +4991,18 @@
                 throw new Error("Unable to determine watched expression");
             }
             if (!listenerFn) {
-                let res = get(this.$target);
+                let res = get(this._target);
                 while (isFunction(res)) {
-                    res = callFunction(res, undefined, this.$target);
+                    res = callFunction(res, undefined, this._target);
                 }
                 return undefined;
             }
             const listener = {
-                _originalTarget: this.$target,
+                _originalTarget: this._target,
                 _listenerFn: listenerFn,
                 _watchFn: get,
                 _parse: this._parse,
-                _scopeId: this.$id,
+                _scopeId: this.id,
                 _id: nextUid(),
                 _property: [],
             };
@@ -5043,7 +5224,7 @@
                 }
             }
             // if the target is an object, then start observing it
-            const listenerObject = listener._watchFn(this.$target);
+            const listenerObject = listener._watchFn(this._target);
             if (isObject(listenerObject)) {
                 if (!key && keySet.length > 0) {
                     [key] = keySet;
@@ -5091,22 +5272,22 @@
             };
         }
         /** Creates a prototypically inherited child scope. */
-        $new(childInstance) {
+        new(childInstance) {
             let child;
             if (childInstance) {
                 const proto = Object.getPrototypeOf(childInstance);
                 // If child is plain object, or already inherits from target, set prototype to target
-                if (proto === Object.prototype || proto === this.$target) {
-                    Object.setPrototypeOf(childInstance, this.$target);
+                if (proto === Object.prototype || proto === this._target) {
+                    Object.setPrototypeOf(childInstance, this._target);
                 }
                 else {
-                    // If child has some other prototype, preserve it but link to this.$target
-                    Object.setPrototypeOf((proto ?? childInstance), this.$target);
+                    // If child has some other prototype, preserve it but link to this._target
+                    Object.setPrototypeOf((proto ?? childInstance), this._target);
                 }
                 child = childInstance;
             }
             else {
-                child = createObject(this.$target);
+                child = createObject(this._target);
             }
             const proxy = new Proxy(child, new Scope(this));
             scopeProxyTargets.set(proxy, child);
@@ -5116,9 +5297,9 @@
             return proxy;
         }
         /** Creates an isolate child scope that does not inherit watchable properties directly. */
-        $newIsolate(instance) {
+        newIsolate(instance) {
             const child = instance ?? nullObject();
-            const proxy = new Proxy(child, new Scope(this, this.$root));
+            const proxy = new Proxy(child, new Scope(this, this.root));
             scopeProxyTargets.set(proxy, child);
             this._children.push(proxy);
             this._childIndices.set(proxy, this._children.length - 1);
@@ -5126,8 +5307,8 @@
             return proxy;
         }
         /** Creates a transcluded child scope linked to this scope and an optional parent instance. */
-        $transcluded(parentInstance) {
-            const child = createObject(this.$target);
+        transcluded(parentInstance) {
+            const child = createObject(this._target);
             const proxy = new Proxy(child, new Scope(this, parentInstance));
             scopeProxyTargets.set(proxy, child);
             this._children.push(proxy);
@@ -5197,19 +5378,18 @@
         }
         /** @internal Registers inherited property listeners with the owning parent scope. */
         _registerInheritedKey(key) {
-            if (hasOwn(this.$target, key)) {
+            if (hasOwn(this._target, key)) {
                 return;
             }
-            const parent = this.$parent
-                ?.$handler;
+            const parent = this.parent
+                ?._handler;
             let owner = parent;
             while (owner && owner !== this) {
-                if (hasOwn(owner.$target, key)) {
+                if (hasOwn(owner._target, key)) {
                     Scope._registerForeignKeyOwner(owner, key);
                     return;
                 }
-                owner = owner.$parent
-                    ?.$handler;
+                owner = owner.parent?._handler;
             }
             if (parent) {
                 Scope._registerForeignKeyOwner(parent, key);
@@ -5217,7 +5397,7 @@
         }
         /** @internal Registers one inherited key against a resolved parent scope owner. */
         static _registerForeignKeyOwner(owner, key) {
-            const ownerValue = owner.$target[key];
+            const ownerValue = owner._target[key];
             if (isObject(ownerValue) && !isNonScope(ownerValue)) {
                 const ownerTarget = ownerValue;
                 addObjectListenerKey(owner._objectListeners, ownerTarget, key);
@@ -5444,16 +5624,16 @@
             }
         }
         /** Merges enumerable properties from the provided object into the current scope target. */
-        $merge(newTarget) {
+        merge(newTarget) {
             const newTargetRecord = newTarget;
             const keyList = keys(newTargetRecord);
             for (let i = 0, l = keyList.length; i < l; i++) {
                 const key = keyList[i];
-                this.set(this.$target, key, newTargetRecord[key], this.$proxy);
+                this.set(this._target, key, newTargetRecord[key], this._proxy);
             }
         }
         /** Registers an event listener on this scope and returns a deregistration function. */
-        $on(name, listener) {
+        on(name, listener) {
             let namedListeners = this._listeners.get(name);
             if (!namedListeners) {
                 namedListeners = [];
@@ -5471,18 +5651,18 @@
             };
         }
         /** Emits an event upward through the scope hierarchy. */
-        $emit(name, ...args) {
+        emit(name, ...args) {
             return this._eventHelper({ name, event: undefined, broadcast: false }, ...args);
         }
         /** Broadcasts an event downward through the scope hierarchy. */
-        $broadcast(name, ...args) {
+        broadcast(name, ...args) {
             return this._eventHelper({ name, event: undefined, broadcast: true }, ...args);
         }
         /**
          * @internal
          * Internal event propagation helper.
          *
-         * Propagates either upward (`$emit`) or downward (`$broadcast`) and
+         * Propagates either upward (`emit`) or downward (`broadcast`) and
          * constructs the shared event object on first use.
          */
         _eventHelper({ name, event, broadcast, }, ...args) {
@@ -5490,13 +5670,13 @@
             const initialChildren = initialChildCount > 0 ? this._children.slice() : undefined;
             if (event) {
                 event.currentScope = this
-                    .$target;
+                    ._target;
             }
             else {
                 event = {
                     name,
-                    targetScope: this.$target,
-                    currentScope: this.$target,
+                    targetScope: this._target,
+                    currentScope: this._target,
                     stopped: false,
                     stopPropagation() {
                         assertDefined(event).stopped = true;
@@ -5538,11 +5718,11 @@
                     const children = initialChildren;
                     for (let i = 0; i < children.length; i++) {
                         const child = children[i];
-                        const childHandler = child.$handler;
+                        const childHandler = child._handler;
                         if (childHandler._destroyed || !this._children.includes(child)) {
                             continue;
                         }
-                        event = child.$handler._eventHelper({ name, event: currentEvent, broadcast }, ...args);
+                        event = child._handler._eventHelper({ name, event: currentEvent, broadcast }, ...args);
                         if (isScopeEventStopped(currentEvent)) {
                             break;
                         }
@@ -5551,8 +5731,8 @@
                 return event;
             }
             else {
-                if (this.$parent) {
-                    return this.$parent.$handler._eventHelper({ name, event: currentEvent, broadcast }, ...args);
+                if (this.parent) {
+                    return this.parent._handler._eventHelper({ name, event: currentEvent, broadcast }, ...args);
                 }
                 else {
                     return currentEvent;
@@ -5561,31 +5741,27 @@
         }
         /** @internal Returns whether this scope instance is the root scope. */
         _isRoot() {
-            return this.$root === this;
+            return this.root === this;
         }
-        $destroy() {
-            this._destroy(false);
-        }
-        /** @internal Destroys this scope, optionally skipping event rebroadcast. */
-        _destroy(skipBroadcast = false) {
+        destroy(skipBroadcast = false) {
             if (this._destroyed)
                 return;
             if (!skipBroadcast &&
                 (this._listeners.has("$destroy") || this._children.length > 0)) {
-                this.$broadcast("$destroy");
+                this.broadcast("$destroy");
             }
             if (this._children.length > 0) {
                 const children = this._children.slice();
                 for (let i = 0, l = children.length; i < l; i++) {
                     const child = children[i];
-                    const childHandler = child.$handler;
+                    const childHandler = child._handler;
                     if (childHandler._destroyed || !this._children.includes(child)) {
                         continue;
                     }
-                    childHandler._destroy(true);
+                    childHandler.destroy(true);
                 }
             }
-            const scopeId = this.$id;
+            const scopeId = this.id;
             const ownedWatchers = this._ownedWatchers;
             for (let i = 0, l = ownedWatchers.length; i < l; i++) {
                 const ref = ownedWatchers[i];
@@ -5606,17 +5782,17 @@
                 this._foreignListenersByHash.clear();
             }
             else {
-                const parent = this.$parent;
+                const parent = this.parent;
                 if (!parent) {
                     this._listeners.clear();
                     this._destroyed = true;
                     return;
                 }
-                const parentHandler = parent.$handler;
+                const parentHandler = parent._handler;
                 const children = parentHandler._children;
-                const childProxy = this.$proxy;
+                const childProxy = this._proxy;
                 const childIndex = parentHandler._childIndices.get(childProxy);
-                const childTarget = this.$target;
+                const childTarget = this._target;
                 if (childTarget) {
                     parentHandler._childTargets.delete(childTarget);
                 }
@@ -5632,7 +5808,7 @@
                 }
                 else {
                     for (let i = 0, l = children.length; i < l; i++) {
-                        if (children[i].$id === scopeId) {
+                        if (children[i].id === scopeId) {
                             const movedChild = children[l - 1];
                             parentHandler._childIndices.delete(children[i]);
                             if (i !== l - 1) {
@@ -5677,22 +5853,22 @@
                 this._watcherIndexes = new Map();
                 this._watchersByHash = new Map();
             }
-            this.$target = null;
-            this.$proxy = undefined;
+            this._target = null;
+            this._proxy = undefined;
             if (!this._isRoot()) {
-                this.$parent = undefined;
-                this.$root = undefined;
+                this.parent = undefined;
+                this.root = undefined;
             }
             this._propertyMap = {
-                $destroy: this._propertyMap.$destroy,
-                $handler: this,
-                $id: this.$id,
-                $isRoot: this._propertyMap.$isRoot,
-                $parent: this.$parent,
-                $proxy: this.$proxy,
-                $root: this.$root,
-                $scopename: this.$scopename,
-                $target: this.$target,
+                destroy: this._propertyMap.destroy,
+                _handler: this,
+                id: this.id,
+                _isRoot: this._propertyMap._isRoot,
+                parent: this.parent,
+                _proxy: this._proxy,
+                root: this.root,
+                scopeName: this.scopeName,
+                _target: this._target,
                 _children: this._children,
             };
         }
@@ -5706,7 +5882,7 @@
                 return;
             }
             try {
-                const value = sourceHandler.$proxy[sourceProperty];
+                const value = sourceHandler._proxy[sourceProperty];
                 if (isFunction(value) || isArray(value)) {
                     this._notifyListener(listener, sourceHandler, sourceHandler, sourceProperty);
                     return;
@@ -5733,7 +5909,7 @@
                             }
                             hasDirectForeignSource = dependency._handler === sourceHandler;
                             hasStableForeignSource =
-                                hasDirectForeignSource || dependency._handler.$target === target;
+                                hasDirectForeignSource || dependency._handler._target === target;
                             if (!hasStableForeignSource && isString(sourceProperty)) {
                                 const parentPath = getForeignProxyParentPath(descriptors[i]._watchProp);
                                 hasStableForeignSource =
@@ -5752,7 +5928,7 @@
                     listener._directLeaf &&
                     sourceHandler &&
                     sourceProperty !== undefined) {
-                    const value = sourceHandler.$proxy[sourceProperty];
+                    const value = sourceHandler._proxy[sourceProperty];
                     if (!isFunction(value) && !isArray(value)) {
                         _listenerFn(value, _originalTarget);
                         return;
@@ -5809,17 +5985,17 @@
             }
         }
         /** Searches this scope tree for a scope with the given id. */
-        $getById(id) {
+        getById(id) {
             if (isString(id)) {
                 id = parseInt(id, 10);
             }
-            if (this.$id === id) {
+            if (this.id === id) {
                 return this;
             }
             else {
                 let res = undefined;
                 for (const child of this._children) {
-                    const found = child.$getById(id);
+                    const found = child.getById(id);
                     if (found) {
                         res = found;
                         break;
@@ -5829,14 +6005,14 @@
             }
         }
         /** Searches the scope tree for a scope registered under the provided name. */
-        $searchByName(name) {
-            const stack = [this.$root];
+        searchByName(name) {
+            const stack = [this.root];
             while (stack.length) {
                 const scope = stack.pop();
                 if (!scope) {
                     continue;
                 }
-                if (scope.$scopename === name) {
+                if (scope.scopeName === name) {
                     return scope;
                 }
                 if (scope._children.length) {
@@ -5871,8 +6047,8 @@
             if (!node) {
                 continue;
             }
-            if (!ids.has(node.$id)) {
-                ids.add(node.$id);
+            if (!ids.has(node.id)) {
+                ids.add(node.id);
                 for (let i = 0, l = node._children.length; i < l; i++) {
                     stack.push(node._children[i]);
                 }
@@ -6012,7 +6188,7 @@
     /**
      * Queue one post-render callback that is owned by a scope.
      *
-     * This internal helper lets compile-owned controller `$afterRender` callbacks
+     * This internal helper lets compile-owned controller `afterRender` callbacks
      * defer while a retained route subtree is inactive. The public `afterRender`
      * utility intentionally remains scope-free.
      */
@@ -6110,13 +6286,13 @@
             _paused: false,
             _pending: new Map(),
         };
-        const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+        const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
             state._paused = true;
         });
-        const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+        const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
@@ -6125,7 +6301,7 @@
             state._paused = false;
             flushPausedScopeAfterRenderEntries(state);
         });
-        const deregisterDestroy = scope.$on("$destroy", () => {
+        const deregisterDestroy = scope.on("$destroy", () => {
             state._pending.clear();
             deregisterPause();
             deregisterResume();
@@ -6161,7 +6337,7 @@
         else {
             target.addEventListener(type, listener, options);
         }
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
             if (options === undefined) {
                 target.removeEventListener(type, listener);
             }
@@ -6343,7 +6519,7 @@
                     attributes: true,
                     attributeFilter: [source],
                 });
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     observer.disconnect();
                 });
             },
@@ -6462,6 +6638,12 @@
         ensureFragmentArray(parent, "childFragments").push(child);
         compiledFragmentParents.set(child, parent);
     }
+    function addCompiledFragmentDisposer(record, disposer) {
+        if (record.disposed) {
+            throw new Error(`Cannot register disposal work on disposed compiled fragment '${record.id}'.`);
+        }
+        ensureFragmentArray(record, "disposers").push(disposer);
+    }
     function addCompiledFragmentAsyncWork(record, work) {
         if (record.disposed) {
             throw new Error(`Cannot register async work on disposed compiled fragment '${record.id}'.`);
@@ -6517,7 +6699,7 @@
             disposer();
         }, errors);
         disposeReverse(getFragmentArray(record, "childScopes"), (scope) => {
-            scope.$destroy();
+            scope.destroy();
         }, errors);
         for (const node of record.nodes) {
             if (compiledFragmentsByNode.get(node) === record) {
@@ -6662,7 +6844,7 @@
         const root = record.root;
         if (!parentScope || !root || parentScope === root.rootScope)
             return;
-        const deregister = parentScope.$on("$destroy", () => {
+        const deregister = parentScope.on("$destroy", () => {
             compiledFragmentScopeDestroyDeregisters.delete(record);
             disposeCompiledFragmentRecord(record, false);
         });
@@ -6682,7 +6864,7 @@
             const nextState = {
                 records: new Set(),
                 destroying: false,
-                deregisterDestroy: root.rootScope.$on("$destroy", () => {
+                deregisterDestroy: root.rootScope.on("$destroy", () => {
                     disposeRootCompiledFragments(root, nextState);
                 }),
             };
@@ -6728,14 +6910,14 @@
             paused: false,
             pending: [],
             deferredPrefixCount: 0,
-            deregisterPause: parentScope.$on("$viewRetentionPause", (...args) => {
+            deregisterPause: parentScope.on("$viewRetentionPause", (...args) => {
                 if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                     return;
                 }
                 state.paused = true;
                 state.deferredPrefixCount = 0;
             }),
-            deregisterResume: parentScope.$on("$viewRetentionResume", (...args) => {
+            deregisterResume: parentScope.on("$viewRetentionResume", (...args) => {
                 if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                     return;
                 }
@@ -6791,6 +6973,713 @@
         return { $element: element };
     }
 
+    const PROGRAMMATIC_VIEW_MARKER = "ng-programmatic-view";
+    const PROGRAMMATIC_VIEW_TEMPLATE = `<!--${PROGRAMMATIC_VIEW_MARKER}-->`;
+    const bindingMetadata = Symbol("programmatic-view-binding");
+    const attributeGroup = Symbol("programmatic-view-attributes");
+    const propertyGroup = Symbol("programmatic-view-properties");
+    function markBinding(value, metadata) {
+        Object.defineProperty(value, bindingMetadata, { value: metadata });
+        return value;
+    }
+    function getBindingMetadata(value) {
+        return isFunction(value)
+            ? value[bindingMetadata]
+            : undefined;
+    }
+    /** Marks a listener explicitly and optionally supplies native listener options. */
+    function event(listener, options) {
+        const wrapper = function (value) {
+            if (isFunction(listener)) {
+                Reflect.apply(listener, this, [value]);
+            }
+            else {
+                listener.handleEvent(value);
+            }
+        };
+        return markBinding(wrapper, { _kind: "event", _options: options });
+    }
+    /** Forces the enclosed values to use DOM attribute semantics. */
+    function attrs(values) {
+        return { [attributeGroup]: values };
+    }
+    /** Assigns the enclosed values as literal DOM properties. */
+    function props(values) {
+        return { [propertyGroup]: values };
+    }
+    /**
+     * Creates a keyed reactive collection. Existing DOM is retained while items
+     * with stable keys move or change identity. Renderers receive an item reader so
+     * nested reactive bindings follow same-key replacements.
+     */
+    function each(read, key, render) {
+        const binding = {
+            _read: read,
+            _key: key,
+            _render: render,
+        };
+        const wrapper = () => {
+            const items = read();
+            return items === null || items === undefined
+                ? []
+                : Array.from(items, (item) => render(() => item));
+        };
+        return markBinding(wrapper, { _kind: "keyed-child", _binding: binding });
+    }
+    const pendingBindings = new WeakMap();
+    const tagProxyCache = new Map();
+    function addPendingBinding(node, binding) {
+        let bindings = pendingBindings.get(node);
+        if (!bindings) {
+            bindings = [];
+            pendingBindings.set(node, bindings);
+        }
+        bindings.push(binding);
+    }
+    function isProperties(value) {
+        if (!value || typeof value !== "object" || value instanceof Node) {
+            return false;
+        }
+        const prototype = Object.getPrototypeOf(value);
+        return prototype === Object.prototype || prototype === null;
+    }
+    function isPropertyGroup(value) {
+        return Boolean(value &&
+            typeof value === "object" &&
+            (attributeGroup in value || propertyGroup in value));
+    }
+    function setDomProperty(element, name, value) {
+        if (name in element && Reflect.set(element, name, value)) {
+            return;
+        }
+        if (value === null || value === undefined || value === false) {
+            element.removeAttribute(name);
+            return;
+        }
+        element.setAttribute(name, value === true
+            ? ""
+            : typeof value === "string"
+                ? value
+                : String(value));
+    }
+    const booleanAttributes = new Set([
+        "allowfullscreen",
+        "async",
+        "autofocus",
+        "autoplay",
+        "checked",
+        "controls",
+        "default",
+        "defer",
+        "disabled",
+        "formnovalidate",
+        "hidden",
+        "inert",
+        "ismap",
+        "itemscope",
+        "loop",
+        "multiple",
+        "muted",
+        "nomodule",
+        "novalidate",
+        "open",
+        "playsinline",
+        "readonly",
+        "required",
+        "reversed",
+        "selected",
+    ]);
+    const deferredStaticProperties = new Set(["innerhtml", "outerhtml", "srcdoc"]);
+    function setDomAttribute(element, name, value) {
+        if (value === null ||
+            value === undefined ||
+            (value === false && booleanAttributes.has(name.toLowerCase()))) {
+            element.removeAttribute(name);
+            return;
+        }
+        element.setAttribute(name, value === true && booleanAttributes.has(name.toLowerCase())
+            ? ""
+            : String(value));
+    }
+    function setExplicitDomProperty(element, name, value) {
+        if (!Reflect.set(element, name, value)) {
+            throw new TypeError(`DOM property '${name}' cannot be assigned.`);
+        }
+    }
+    function setDomValue(element, name, value, target) {
+        if (target === "attribute") {
+            setDomAttribute(element, name, value);
+        }
+        else if (target === "property") {
+            setExplicitDomProperty(element, name, value);
+        }
+        else {
+            setDomProperty(element, name, value);
+        }
+    }
+    function applyProperty(element, propertyName, propertyValue, target) {
+        if (target === "property") {
+            if (deferredStaticProperties.has(propertyName.toLowerCase())) {
+                addPendingBinding(element, {
+                    _kind: "static-property",
+                    _name: propertyName,
+                    _value: propertyValue,
+                    _target: target,
+                });
+            }
+            else {
+                setExplicitDomProperty(element, propertyName, propertyValue);
+            }
+            return;
+        }
+        const metadata = getBindingMetadata(propertyValue);
+        const normalizedEventProperty = propertyName.startsWith("on")
+            ? `on${propertyName.slice(2).toLowerCase()}`
+            : "";
+        const explicitEvent = metadata?._kind === "event";
+        const conventionalEvent = Boolean(target === "auto" &&
+            normalizedEventProperty &&
+            normalizedEventProperty in element);
+        if (explicitEvent || conventionalEvent) {
+            if (propertyValue !== null &&
+                propertyValue !== undefined &&
+                !isFunction(propertyValue) &&
+                !(typeof propertyValue === "object" &&
+                    typeof propertyValue.handleEvent === "function")) {
+                throw new TypeError(`Event property '${propertyName}' must be an event listener.`);
+            }
+            if (propertyValue !== null && propertyValue !== undefined) {
+                addPendingBinding(element, {
+                    _kind: "event",
+                    _name: explicitEvent
+                        ? propertyName.startsWith("on")
+                            ? propertyName.slice(2).toLowerCase()
+                            : propertyName
+                        : normalizedEventProperty.slice(2),
+                    _listener: propertyValue,
+                    _options: metadata?._kind === "event" ? metadata._options : undefined,
+                });
+            }
+        }
+        else if (isFunction(propertyValue)) {
+            addPendingBinding(element, {
+                _kind: "property",
+                _name: propertyName,
+                _read: propertyValue,
+                _target: target === "auto" ? "property" : target,
+            });
+        }
+        else if (deferredStaticProperties.has(propertyName.toLowerCase())) {
+            addPendingBinding(element, {
+                _kind: "static-property",
+                _name: propertyName,
+                _value: propertyValue,
+                _target: target,
+            });
+        }
+        else {
+            setDomValue(element, propertyName, propertyValue, target);
+        }
+    }
+    function materializeChild(value, nodes) {
+        if (isArray(value)) {
+            for (let index = 0; index < value.length; index++) {
+                materializeChild(value[index], nodes);
+            }
+            return;
+        }
+        if (value instanceof DocumentFragment) {
+            const children = Array.from(value.childNodes);
+            for (let index = 0; index < children.length; index++) {
+                nodes.push(children[index]);
+            }
+            return;
+        }
+        if (value instanceof Node) {
+            nodes.push(value);
+            return;
+        }
+        if (isFunction(value)) {
+            const metadata = getBindingMetadata(value);
+            if (metadata?._kind === "keyed-child") {
+                const anchor = document.createComment("ng-view-each");
+                addPendingBinding(anchor, {
+                    _kind: "keyed-child",
+                    _binding: metadata._binding,
+                });
+                nodes.push(anchor);
+                return;
+            }
+        }
+        if (isFunction(value)) {
+            const anchor = document.createComment("ng-view-binding");
+            addPendingBinding(anchor, {
+                _kind: "child",
+                _read: value,
+            });
+            nodes.push(anchor);
+            return;
+        }
+        if (value !== null && value !== undefined && value !== false) {
+            nodes.push(document.createTextNode(String(value)));
+        }
+    }
+    function materializeComponentView(value) {
+        const nodes = [];
+        materializeChild(value, nodes);
+        return nodes;
+    }
+    function appendChildren(element, children) {
+        for (let index = 0; index < children.length; index++) {
+            const nodes = materializeComponentView(children[index]);
+            for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
+                element.appendChild(nodes[nodeIndex]);
+            }
+        }
+    }
+    function createTag(namespaceUri, name, ...args) {
+        const properties = isProperties(args[0]) ? args[0] : undefined;
+        const children = properties ? args.slice(1) : args;
+        const customElementName = properties?.is;
+        const element = namespaceUri
+            ? document.createElementNS(namespaceUri, name, customElementName ? { is: customElementName } : undefined)
+            : document.createElement(name, customElementName ? { is: customElementName } : undefined);
+        if (properties) {
+            for (const [propertyName, propertyValue] of Object.entries(properties)) {
+                if (propertyName === "is")
+                    continue;
+                applyProperty(element, propertyName, propertyValue, "auto");
+            }
+            if (isPropertyGroup(properties)) {
+                const attributeValues = properties[attributeGroup];
+                const propertyValues = properties[propertyGroup];
+                if (attributeValues) {
+                    for (const [name, value] of Object.entries(attributeValues)) {
+                        applyProperty(element, name, value, "attribute");
+                    }
+                }
+                if (propertyValues) {
+                    for (const [name, value] of Object.entries(propertyValues)) {
+                        applyProperty(element, name, value, "property");
+                    }
+                }
+            }
+        }
+        appendChildren(element, children);
+        return element;
+    }
+    function tag(name, ...args) {
+        return createTag(undefined, name, ...args);
+    }
+    /** Creates one namespaced element without parsing markup. */
+    function tagNS(namespaceUri, name, ...args) {
+        return createTag(namespaceUri, name, ...args);
+    }
+    function getTagProxy(namespaceUri) {
+        const cacheKey = namespaceUri ?? "";
+        const cached = tagProxyCache.get(cacheKey);
+        if (cached)
+            return cached;
+        const tagFunctions = new Map();
+        const proxy = new Proxy(Object.create(null), {
+            get(_target, property) {
+                if (typeof property !== "string")
+                    return undefined;
+                if (property === "then")
+                    return undefined;
+                let tagFunction = tagFunctions.get(property);
+                if (!tagFunction) {
+                    tagFunction = (...args) => createTag(namespaceUri, property, ...args);
+                    tagFunctions.set(property, tagFunction);
+                }
+                return tagFunction;
+            },
+        });
+        tagProxyCache.set(cacheKey, proxy);
+        return proxy;
+    }
+    const htmlTags = getTagProxy();
+    const tags = new Proxy(((namespaceUri) => getTagProxy(namespaceUri)), {
+        get(_target, property) {
+            if (property === "then")
+                return undefined;
+            return Reflect.get(htmlTags, property);
+        },
+    });
+    function uniqueRecords(nodes) {
+        const records = [];
+        const seen = new Set();
+        for (let index = 0; index < nodes.length; index++) {
+            const record = getCompiledFragmentRecord(nodes[index]);
+            if (record && !seen.has(record)) {
+                seen.add(record);
+                records.push(record);
+            }
+        }
+        return records;
+    }
+    function disposeLinkedChildren(children) {
+        const disposedRecords = new Set();
+        for (let index = children.length - 1; index >= 0; index--) {
+            const child = children[index];
+            for (let recordIndex = child._records.length - 1; recordIndex >= 0; recordIndex--) {
+                const record = child._records[recordIndex];
+                if (!record.disposed && !disposedRecords.has(record)) {
+                    disposedRecords.add(record);
+                    record.dispose();
+                }
+            }
+            for (let nodeIndex = child._nodes.length - 1; nodeIndex >= 0; nodeIndex--) {
+                const node = child._nodes[nodeIndex];
+                node.parentNode?.removeChild(node);
+            }
+        }
+        children.length = 0;
+    }
+    function linkChildValue(value, parent, anchor, runtime) {
+        return linkMaterializedChildren(materializeComponentView(value), parent, anchor, runtime);
+    }
+    function linkMaterializedChildren(rawNodes, parent, anchor, runtime) {
+        const children = [];
+        for (let index = 0; index < rawNodes.length; index++) {
+            const rawNode = rawNodes[index];
+            parent.insertBefore(rawNode, anchor);
+            const linkedNodes = runtime._linkNode(rawNode, parent, anchor);
+            for (let nodeIndex = 0; nodeIndex < linkedNodes.length; nodeIndex++) {
+                const linkedNode = linkedNodes[nodeIndex];
+                parent.insertBefore(linkedNode, anchor);
+                activateProgrammaticBindings([linkedNode], runtime);
+            }
+            children.push({
+                _nodes: linkedNodes,
+                _records: uniqueRecords(linkedNodes),
+            });
+        }
+        return children;
+    }
+    function activateChildBinding(anchor, read, runtime) {
+        const linkedChildren = [];
+        const stop = observeScopeExpression(runtime._scope, read, (value) => {
+            const parent = anchor.parentNode;
+            if (!parent)
+                return;
+            if (linkedChildren.length === 1 &&
+                linkedChildren[0]._nodes.length === 1 &&
+                linkedChildren[0]._nodes[0] instanceof Text &&
+                value !== null &&
+                value !== undefined &&
+                value !== false &&
+                !isFunction(value) &&
+                !isArray(value) &&
+                !(value instanceof Node)) {
+                linkedChildren[0]._nodes[0].data = String(value);
+                return;
+            }
+            disposeLinkedChildren(linkedChildren);
+            linkedChildren.push(...linkChildValue(value, parent, anchor, runtime));
+        });
+        return () => {
+            stop();
+            disposeLinkedChildren(linkedChildren);
+        };
+    }
+    function activateKeyedChildBinding(anchor, binding, runtime) {
+        let states = new Map();
+        const stop = observeScopeExpression(runtime._scope, binding._read, (value) => {
+            const parent = anchor.parentNode;
+            if (!parent)
+                return;
+            const items = value === null || value === undefined
+                ? []
+                : Array.from(value);
+            const descriptors = [];
+            const descriptorByKey = new Map();
+            for (let index = 0; index < items.length; index++) {
+                const item = items[index];
+                const key = binding._key(item);
+                if (descriptorByKey.has(key)) {
+                    throw new TypeError(`Duplicate programmatic view key '${String(key)}'.`);
+                }
+                descriptorByKey.set(key, item);
+                const previous = states.get(key);
+                const holder = previous
+                    ? previous._holder
+                    : createScope({ value: item }, runtime._scope._handler);
+                descriptors.push({
+                    _key: key,
+                    _value: item,
+                    _holder: holder,
+                    _nodes: previous
+                        ? []
+                        : materializeComponentView(binding._render(() => holder.value)),
+                });
+            }
+            const nextStates = new Map();
+            for (const [key, state] of states) {
+                if (!descriptorByKey.has(key)) {
+                    disposeLinkedChildren(state._children);
+                }
+            }
+            for (let index = 0; index < descriptors.length; index++) {
+                const descriptor = descriptors[index];
+                const previous = states.get(descriptor._key);
+                const children = previous
+                    ? previous._children
+                    : linkMaterializedChildren(descriptor._nodes, parent, anchor, runtime);
+                if (previous && !Object.is(previous._value, descriptor._value)) {
+                    descriptor._holder.value = descriptor._value;
+                }
+                const state = {
+                    _key: descriptor._key,
+                    _value: descriptor._value,
+                    _holder: descriptor._holder,
+                    _children: children,
+                };
+                nextStates.set(state._key, state);
+            }
+            states = nextStates;
+            let cursor = anchor;
+            const orderedStates = Array.from(states.values());
+            for (let stateIndex = orderedStates.length - 1; stateIndex >= 0; stateIndex--) {
+                const children = orderedStates[stateIndex]._children;
+                for (let childIndex = children.length - 1; childIndex >= 0; childIndex--) {
+                    const nodes = children[childIndex]._nodes;
+                    for (let nodeIndex = nodes.length - 1; nodeIndex >= 0; nodeIndex--) {
+                        const node = nodes[nodeIndex];
+                        if (node.nextSibling !== cursor)
+                            parent.insertBefore(node, cursor);
+                        cursor = node;
+                    }
+                }
+            }
+        });
+        return () => {
+            stop();
+            for (const state of states.values()) {
+                disposeLinkedChildren(state._children);
+            }
+            states.clear();
+        };
+    }
+    function activateNodeBindings(node, runtime, disposers) {
+        const bindings = pendingBindings.get(node);
+        if (bindings) {
+            pendingBindings.delete(node);
+            for (let index = 0; index < bindings.length; index++) {
+                const binding = bindings[index];
+                if (binding._kind === "event") {
+                    const eventTarget = node;
+                    const listener = function (eventValue) {
+                        try {
+                            if (isFunction(binding._listener)) {
+                                Reflect.apply(binding._listener, this, [eventValue]);
+                            }
+                            else {
+                                binding._listener.handleEvent(eventValue);
+                            }
+                        }
+                        catch (error) {
+                            runtime._exceptionHandler(error);
+                        }
+                    };
+                    eventTarget.addEventListener(binding._name, listener, binding._options);
+                    disposers.push(() => {
+                        eventTarget.removeEventListener(binding._name, listener, binding._options);
+                    });
+                }
+                else if (binding._kind === "static-property") {
+                    try {
+                        const sanitizedValue = runtime._sanitizeProperty(node, binding._name, binding._value);
+                        setDomValue(node, binding._name, sanitizedValue, binding._target);
+                    }
+                    catch (error) {
+                        runtime._exceptionHandler(error);
+                    }
+                }
+                else if (binding._kind === "property") {
+                    let hasValue = false;
+                    let previousValue;
+                    disposers.push(observeScopeExpression(runtime._scope, binding._read, (value) => {
+                        const sanitizedValue = runtime._sanitizeProperty(node, binding._name, value);
+                        if (hasValue && Object.is(previousValue, sanitizedValue))
+                            return;
+                        hasValue = true;
+                        previousValue = sanitizedValue;
+                        setDomValue(node, binding._name, sanitizedValue, binding._target);
+                    }));
+                }
+                else if (binding._kind === "child") {
+                    disposers.push(activateChildBinding(node, binding._read, runtime));
+                }
+                else {
+                    disposers.push(activateKeyedChildBinding(node, binding._binding, runtime));
+                }
+            }
+        }
+        const childNodes = Array.from(node.childNodes);
+        for (let index = 0; index < childNodes.length; index++) {
+            activateNodeBindings(childNodes[index], runtime, disposers);
+        }
+    }
+    function activateProgrammaticBindings(nodes, runtime) {
+        const disposers = [];
+        for (let index = 0; index < nodes.length; index++) {
+            activateNodeBindings(nodes[index], runtime, disposers);
+        }
+        const dispose = () => {
+            for (let index = disposers.length - 1; index >= 0; index--) {
+                disposers[index]();
+            }
+            disposers.length = 0;
+        };
+        const release = runtime._ownDisposer(dispose);
+        disposers.push(release);
+        const owner = uniqueRecords(nodes).at(0);
+        if (owner)
+            addCompiledFragmentDisposer(owner, dispose);
+        return dispose;
+    }
+    function findMarker(element) {
+        for (let node = element.firstChild; node; node = node.nextSibling) {
+            if (node instanceof Comment &&
+                node.data.trim() === PROGRAMMATIC_VIEW_MARKER) {
+                return node;
+            }
+        }
+        return undefined;
+    }
+    function normalizeLinkResult(result) {
+        return isArray(result) ? result : [result];
+    }
+    function createProgrammaticDirectiveCompile(options) {
+        return (() => {
+            const pre = (scope, element, requiredControllers, transclude) => {
+                const marker = findMarker(element);
+                if (!marker) {
+                    throw new Error(`Programmatic component '${options.name}' has no view marker.`);
+                }
+                if (!options.hasRequire) {
+                    transclude = requiredControllers;
+                    requiredControllers = undefined;
+                }
+                const controller = getCacheData(element, `$${options.name}Controller`);
+                const $compile = options.injector.get(_compile);
+                const $exceptionHandler = options.injector.get(_exceptionHandler);
+                const cleanups = [];
+                let destroyed = false;
+                const disposeView = () => {
+                    destroyed = true;
+                    for (let index = cleanups.length - 1; index >= 0; index--) {
+                        try {
+                            cleanups[index]();
+                        }
+                        catch (error) {
+                            $exceptionHandler(error);
+                        }
+                    }
+                    cleanups.length = 0;
+                };
+                cleanups.push(addElementDisposer(element, disposeView));
+                cleanups.push(scope.on("$destroy", disposeView));
+                const context = {
+                    controller,
+                    required: requiredControllers,
+                    scope,
+                    element,
+                    transclude,
+                    onDestroy(cleanup) {
+                        if (!isFunction(cleanup)) {
+                            throw new TypeError("Programmatic view cleanup must be a function.");
+                        }
+                        if (destroyed) {
+                            try {
+                                cleanup();
+                            }
+                            catch (error) {
+                                $exceptionHandler(error);
+                            }
+                            return () => { };
+                        }
+                        const entry = () => {
+                            cleanup();
+                        };
+                        cleanups.push(entry);
+                        let active = true;
+                        return () => {
+                            if (!active)
+                                return;
+                            active = false;
+                            const index = cleanups.indexOf(entry);
+                            if (index !== -1)
+                                cleanups.splice(index, 1);
+                        };
+                    },
+                };
+                const value = Reflect.apply(options.view, controller ?? null, [
+                    context,
+                ]);
+                const rawNodes = materializeComponentView(value);
+                const bindingDisposers = new Set();
+                cleanups.push(() => {
+                    for (const dispose of Array.from(bindingDisposers))
+                        dispose();
+                    bindingDisposers.clear();
+                });
+                const runtime = {
+                    _scope: scope,
+                    _sanitizeProperty: options.sanitizeProperty,
+                    _exceptionHandler: $exceptionHandler,
+                    /** @internal Registers a binding disposer owned by this view. */
+                    _ownDisposer(disposer) {
+                        bindingDisposers.add(disposer);
+                        return () => {
+                            bindingDisposers.delete(disposer);
+                        };
+                    },
+                    /** @internal Links one generated node against the owning scope. */
+                    _linkNode(node, parent) {
+                        try {
+                            const linked = $compile(node)(scope, undefined, {
+                                _futureParentElement: parent,
+                                _ownsNodes: true,
+                            });
+                            return normalizeLinkResult(linked);
+                        }
+                        catch (error) {
+                            node.parentNode?.removeChild(node);
+                            $exceptionHandler(error);
+                            return [];
+                        }
+                    },
+                };
+                const boundary = marker.nextSibling;
+                linkMaterializedChildren(rawNodes, element, boundary, runtime);
+            };
+            const post = (_scope, element) => {
+                findMarker(element)?.remove();
+            };
+            return { pre, post };
+        });
+    }
+    function sanitizeProgrammaticSrcset(value, valueOf, trustMediaUrl) {
+        const unwrapped = valueOf(value);
+        if (!unwrapped)
+            return unwrapped;
+        if (typeof unwrapped !== "string") {
+            throw new TypeError("A programmatic srcset binding must produce a string.");
+        }
+        return unwrapped
+            .split(",")
+            .map((candidate) => {
+            const trimmed = candidate.trim();
+            const separator = trimmed.search(/\s/);
+            const url = separator === -1 ? trimmed : trimmed.slice(0, separator);
+            const descriptor = separator === -1 ? "" : trimmed.slice(separator);
+            return `${String(trustMediaUrl(url))}${descriptor}`;
+        })
+            .join(", ");
+    }
+
     const compileAttributeObserverScopes = new WeakMap();
     const attributeObserverScopeStates = new WeakMap();
     const lazyAnimateByInjector = new WeakMap();
@@ -6813,7 +7702,7 @@
             return;
         arrayFrom(callbacks).forEach((registration) => {
             const { _scope, _callback } = registration;
-            if (_scope?.$handler._destroyed) {
+            if (_scope?._handler._destroyed) {
                 return;
             }
             if (_scope) {
@@ -6824,13 +7713,13 @@
         });
     }
     function queueAttributeObserverCallback(scope, callback, value) {
-        if (scope.$handler._destroyed) {
+        if (scope._handler._destroyed) {
             return;
         }
         const state = getAttributeObserverScopeState(scope);
         if (state._paused) {
             state._pending.push(() => {
-                if (scope.$handler._destroyed)
+                if (scope._handler._destroyed)
                     return;
                 callback(toObservedAttributeValue(value));
             });
@@ -6860,13 +7749,13 @@
         if (state)
             return state;
         let nextState;
-        const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+        const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
             nextState._paused = true;
         });
-        const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+        const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
@@ -6876,7 +7765,7 @@
             nextState._paused = false;
             flushAttributeObserverScopeQueue(nextState);
         });
-        const deregisterDestroy = scope.$on("$destroy", () => {
+        const deregisterDestroy = scope.on("$destroy", () => {
             nextState._pending.length = 0;
             nextState._deregisterPause();
             nextState._deregisterResume();
@@ -6958,7 +7847,7 @@
     /** @internal */
     class CompileAttributeState {
         constructor($injector, $exceptionHandler, stateToCopy) {
-            this.$normalize = directiveNormalize;
+            this._normalize = directiveNormalize;
             this._getAnimate = getLazyAnimate($injector);
             this._exceptionHandler = $exceptionHandler;
             this._attributeNames = {};
@@ -7048,7 +7937,7 @@
         }
         let deregisterDestroy;
         if (scope) {
-            deregisterDestroy = scope.$on("$destroy", () => {
+            deregisterDestroy = scope.on("$destroy", () => {
                 deregister();
             });
         }
@@ -7352,6 +8241,19 @@
                 }
                 return bindings;
             }
+            function sanitizeProgrammaticProperty($injector, element, propertyName, value) {
+                const elementName = element.localName.toLowerCase();
+                const normalizedPropertyName = propertyName.toLowerCase();
+                const security = $injector.get(_sce);
+                if (normalizedPropertyName === "srcset" &&
+                    (elementName === "img" || elementName === "source")) {
+                    return sanitizeProgrammaticSrcset(value, security.valueOf.bind(security), security.getTrustedMediaUrl.bind(security));
+                }
+                const trustedContext = (PROP_CONTEXTS[`${elementName}|${normalizedPropertyName}`] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]);
+                return trustedContext
+                    ? security.getTrusted(trustedContext, value)
+                    : value;
+            }
             function instantiateDirectiveDefinitions(name, $injector, $exceptionHandler) {
                 const directives = [];
                 const factories = directiveFactoryRegistry[name];
@@ -7365,6 +8267,47 @@
                             : directive;
                         if (!normalizedDirective.compile && normalizedDirective.link) {
                             normalizedDirective.compile = valueFn(normalizedDirective.link);
+                        }
+                        if (normalizedDirective.view) {
+                            if (normalizedDirective.template !== undefined ||
+                                normalizedDirective.templateUrl !== undefined) {
+                                throw $compileError$1("multiview", "Directive '{0}' cannot define view together with template or templateUrl.", name);
+                            }
+                            if (normalizedDirective.replace) {
+                                throw $compileError$1("viewreplace", "Programmatic directive '{0}' cannot use replace.", name);
+                            }
+                            const originalCompile = normalizedDirective.compile;
+                            const viewCompile = createProgrammaticDirectiveCompile({
+                                name,
+                                view: normalizedDirective.view,
+                                hasRequire: normalizedDirective.require != null,
+                                injector: $injector,
+                                sanitizeProperty: (element, propertyName, value) => sanitizeProgrammaticProperty($injector, element, propertyName, value),
+                            });
+                            normalizedDirective.template = PROGRAMMATIC_VIEW_TEMPLATE;
+                            normalizedDirective.compile = function (...args) {
+                                const viewLinks = viewCompile.apply(this, args);
+                                const originalLinks = originalCompile?.apply(this, args);
+                                const originalPre = isFunction(originalLinks)
+                                    ? undefined
+                                    : originalLinks?.pre;
+                                const originalPost = isFunction(originalLinks)
+                                    ? originalLinks
+                                    : originalLinks?.post;
+                                const pre = function (...linkArgs) {
+                                    if (viewLinks.pre)
+                                        Reflect.apply(viewLinks.pre, this, linkArgs);
+                                    if (originalPre)
+                                        Reflect.apply(originalPre, this, linkArgs);
+                                };
+                                const post = function (...linkArgs) {
+                                    if (viewLinks.post)
+                                        Reflect.apply(viewLinks.post, this, linkArgs);
+                                    if (originalPost)
+                                        Reflect.apply(originalPost, this, linkArgs);
+                                };
+                                return { pre, post };
+                            };
                         }
                         normalizedDirective.priority = normalizedDirective.priority || 0;
                         normalizedDirective.index = index;
@@ -7467,6 +8410,15 @@
                     return this;
                 }
                 const componentOptions = assertDefined(options);
+                const componentName = name;
+                if (componentOptions.view &&
+                    (componentOptions.template !== undefined ||
+                        componentOptions.templateUrl !== undefined)) {
+                    throw $compileError$1("multiview", "Component '{0}' cannot define view together with template or templateUrl.", name);
+                }
+                if (componentOptions.view && componentOptions.replace) {
+                    throw $compileError$1("viewreplace", "Programmatic component '{0}' cannot use replace.", name);
+                }
                 (componentBindingRegistry[name] ?? (componentBindingRegistry[name] = [])).push({
                     ...(componentOptions.bindings ?? {}),
                 });
@@ -7486,9 +8438,11 @@
                         }
                         return fn;
                     };
-                    const template = !componentOptions.template && !componentOptions.templateUrl
-                        ? ""
-                        : componentOptions.template;
+                    const template = componentOptions.view
+                        ? PROGRAMMATIC_VIEW_TEMPLATE
+                        : !componentOptions.template && !componentOptions.templateUrl
+                            ? ""
+                            : componentOptions.template;
                     const ddo = {
                         controller,
                         controllerAs: identifierForController(componentOptions.controller) ??
@@ -7502,6 +8456,15 @@
                         restrict: "E",
                         replace: componentOptions.replace,
                         require: componentOptions.require,
+                        compile: componentOptions.view
+                            ? createProgrammaticDirectiveCompile({
+                                name: componentName,
+                                view: componentOptions.view,
+                                hasRequire: componentOptions.require != null,
+                                injector: $injector,
+                                sanitizeProperty: (element, propertyName, value) => sanitizeProgrammaticProperty($injector, element, propertyName, value),
+                            })
+                            : undefined,
                     };
                     // Copy annotations (starting with $) over to the DDO
                     for (const key in componentOptions) {
@@ -7716,12 +8679,12 @@
                             state._changes = undefined;
                             return;
                         }
-                        if (state._destAny.$onChanges && state._changes) {
-                            callFunction(state._destAny.$onChanges, state._destAny, state._changes);
+                        if (state._destAny.onChanges && state._changes) {
+                            callFunction(state._destAny.onChanges, state._destAny, state._changes);
                         }
                         state._changes = undefined;
                     }
-                    /** Flushes queued `$onChanges` hooks in one deferred turn. */
+                    /** Flushes queued `onChanges` hooks in one deferred turn. */
                     function flushDirectiveBindingOnChangesQueue(queueState) {
                         queueState._scheduled = false;
                         const queue = queueState._queue;
@@ -7743,17 +8706,17 @@
                         queueMicrotask(queueState._flush);
                     }
                     function scheduleControllerAfterRender(controllerInstance, scope) {
-                        const controllerTarget = (controllerInstance.$target ??
+                        const controllerTarget = (controllerInstance._target ??
                             controllerInstance);
-                        if (!isFunction(controllerTarget.$afterRender)) {
+                        if (!isFunction(controllerTarget.afterRender)) {
                             return;
                         }
-                        queueScopedAfterRender(controllerTarget, scope.$proxy, () => {
+                        queueScopedAfterRender(controllerTarget, scope._proxy, () => {
                             if (scope._destroyed || controllerInstance._destroyed) {
                                 return;
                             }
                             try {
-                                callFunction(assertDefined(controllerTarget.$afterRender), controllerTarget);
+                                callFunction(assertDefined(controllerTarget.afterRender), controllerTarget);
                             }
                             catch (err) {
                                 $exceptionHandler(err);
@@ -7770,7 +8733,7 @@
                     }
                     function recordDirectiveBindingChange(state, key, currentValue, initial) {
                         scheduleControllerAfterRender(state._destAny, state._scope);
-                        if (!isFunction(state._destAny.$onChanges)) {
+                        if (!isFunction(state._destAny.onChanges)) {
                             return;
                         }
                         scheduleDirectiveBindingOnChangesQueue(state._onChangesQueue);
@@ -7832,10 +8795,10 @@
                             return;
                         }
                         callFunction(state._parentSet, undefined, state._scopeTarget, (state._lastValue = val));
-                        const attributeWatchers = state._scope.$handler._watchers.get(String(state._attrExpression));
+                        const attributeWatchers = state._scope._handler._watchers.get(String(state._attrExpression));
                         if (attributeWatchers) {
                             for (let i = 0, l = attributeWatchers.length; i < l; i++) {
-                                attributeWatchers[i]._listenerFn(val, state._scope.$target);
+                                attributeWatchers[i]._listenerFn(val, state._scope._target);
                             }
                         }
                         scheduleControllerAfterRender(state._destAny, state._scope);
@@ -7869,8 +8832,8 @@
                         }
                         const currentValue = state._literal || val === null || typeof val !== "object"
                             ? val
-                            : createScope(val, state._bindingChangeState._scope.$handler);
-                        const destinationTarget = state._destAny.$target;
+                            : createScope(val, state._bindingChangeState._scope._handler);
+                        const destinationTarget = state._destAny._target;
                         if (!state._firstChange &&
                             simpleCompare(state._lastParentValue, val) &&
                             simpleCompare(destinationTarget[state._scopeName], currentValue)) {
@@ -7966,7 +8929,7 @@
                             // for transclusion, which caused us to lose a layer of element on which
                             // we could hold the new transclusion scope, so we will create it manually
                             // here.
-                            scope = scope.$parent?.$new() ?? scope.$new();
+                            scope = scope.parent?.new() ?? scope.new();
                         }
                         options = options ?? {};
                         let { _parentBoundTranscludeFn } = options;
@@ -7990,7 +8953,10 @@
                             $linkNode = nodes;
                         }
                         const linkedNodeCount = getTemplateNodeCount($linkNode);
-                        const ownsLinkedNodes = state._ownsNodes || !!cloneConnectFn || state._namespace !== "html";
+                        const ownsLinkedNodes = state._ownsNodes ||
+                            options._ownsNodes === true ||
+                            !!cloneConnectFn ||
+                            state._namespace !== "html";
                         const singleLinkedNode = linkedNodeCount === 1
                             ? getTemplateNodeAt($linkNode, 0)
                             : null;
@@ -8039,7 +9005,7 @@
                         executeTemplateLinkMappings(plan, stableNodeList, scope, _parentBoundTranscludeFn ?? null);
                     }
                     function invokeBoundTransclude(state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
-                        transcludedScope ?? (transcludedScope = state._scope.$transcluded(containingScope));
+                        transcludedScope ?? (transcludedScope = state._scope.transcluded(containingScope));
                         return state._transcludeFn(transcludedScope, cloneFn, {
                             _parentBoundTranscludeFn: state._previousBoundTranscludeFn,
                             _transcludeControllers: controllers,
@@ -8089,7 +9055,7 @@
                         let childScope;
                         let childBoundTranscludeFn;
                         if (nodeLinkPlan) {
-                            childScope = nodeLinkPlan._newScope ? scope.$new() : scope;
+                            childScope = nodeLinkPlan._newScope ? scope.new() : scope;
                             if (nodeLinkPlan._transcludeOnThisElement) {
                                 childBoundTranscludeFn = createBoundTranscludeFn(scope, nodeLinkPlan._transclude, _parentBoundTranscludeFn ?? null);
                             }
@@ -8531,7 +9497,7 @@
                     /** Shared post-link executor for text interpolation directives. */
                     function textInterpolateLinkFn(linkState, scope, node) {
                         if (linkState._singleExpression) {
-                            scope.$watch(linkState._watchExpression, (value) => {
+                            scope.watch(linkState._watchExpression, (value) => {
                                 applyTextInterpolationValue(node, stringify$1(value));
                             });
                             return;
@@ -8542,7 +9508,7 @@
                             _node: node,
                         };
                         handleTextInterpolationWatch(bindingState);
-                        scope.$watch(linkState._watchExpression, () => {
+                        scope.watch(linkState._watchExpression, () => {
                             handleTextInterpolationWatch(bindingState);
                         });
                     }
@@ -8605,7 +9571,7 @@
                         }
                         const value = interpolateFn(bindingState._scope);
                         if (bindingState._lastValue === value &&
-                            "$index" in bindingState._scope.$target) {
+                            "$index" in bindingState._scope._target) {
                             return;
                         }
                         bindingState._lastValue = value;
@@ -8643,7 +9609,7 @@
                         if (expressions.length > 0) {
                             const targetScope = getCompileAttributeObserverScope(node, name) ?? scope;
                             const watchExpression = buildInterpolationWatchExpression(expressions);
-                            targetScope.$watch(watchExpression, () => {
+                            targetScope.watch(watchExpression, () => {
                                 handleAttrInterpolationWatch(bindingState);
                             });
                         }
@@ -8680,10 +9646,10 @@
                             _element: $element,
                         };
                         updatePropertyDirectiveValue(bindingState);
-                        scope.$watch(linkState._propName, () => {
+                        scope.watch(linkState._propName, () => {
                             handlePropertyDirectiveValueWatch(bindingState);
                         });
-                        scope.$watch(linkState._attrExpression, (val) => {
+                        scope.watch(linkState._attrExpression, (val) => {
                             handlePropertyDirectiveAttrWatch(bindingState, val);
                         });
                     }
@@ -8806,7 +9772,7 @@
                             addCompiledFragmentAsyncWork(fragmentRecord, asyncWork);
                             linkQueue[linkQueue.length - 1] = asyncWork;
                         }
-                        const removeOnDestroy = scope.$on("$destroy", () => {
+                        const removeOnDestroy = scope.on("$destroy", () => {
                             removeOnDestroy();
                             removeDelayedTemplateLinkQueueEntry(delayedState, scope, node, fragmentRecord, asyncWork, boundTranscludeFn);
                         });
@@ -8976,10 +9942,10 @@
                             : undefined;
                         controllerScope = scope;
                         if (nodeLinkState._newIsolateScopeDirective) {
-                            isolateScope = scope.$newIsolate();
+                            isolateScope = scope.newIsolate();
                         }
                         else if (nodeLinkState._newScopeDirective) {
-                            controllerScope = scope.$parent;
+                            controllerScope = scope.parent;
                         }
                         controllerScope = controllerScope ?? scope;
                         let transcludeFn = nodeLinkState._transcludeFn;
@@ -8993,7 +9959,7 @@
                                 _elementNode: elementNode,
                             };
                             const currentTranscludeState = transcludeState;
-                            scope.$on("$destroy", () => {
+                            scope.on("$destroy", () => {
                                 releaseControllersBoundTranscludeState(currentTranscludeState);
                             });
                             transcludeFn = createControllersBoundTranscludeFn(transcludeState);
@@ -9006,12 +9972,12 @@
                             }
                         }
                         if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
-                            isolateScope.$target._isolateBindings =
+                            isolateScope._target._isolateBindings =
                                 nodeLinkState._newIsolateScopeDirective._isolateBindings;
-                            scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope.$target
+                            scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope._target
                                 ._isolateBindings, nodeLinkState._newIsolateScopeDirective, elementNode);
                             if (scopeBindingInfo._removeWatches) {
-                                isolateScope.$on("$destroy", scopeBindingInfo._removeWatches);
+                                isolateScope.on("$destroy", scopeBindingInfo._removeWatches);
                             }
                         }
                         for (const name in elementControllers) {
@@ -9019,17 +9985,17 @@
                             const controller = assertDefined(elementControllers[name]);
                             const bindings = assertDefined(controllerDirective._bindings)
                                 ._bindToController;
-                            const reactiveControllerInstance = controllerScope.$newIsolate(controller._instance);
+                            const reactiveControllerInstance = controllerScope.newIsolate(controller._instance);
                             const controllerInstance = controller(reactiveControllerInstance);
                             if (controllerInstance === reactiveControllerInstance) {
                                 controller._instance = reactiveControllerInstance;
                             }
                             else {
-                                reactiveControllerInstance.$destroy?.();
-                                controller._instance = controllerScope.$newIsolate(controllerInstance);
+                                reactiveControllerInstance.destroy?.();
+                                controller._instance = controllerScope.newIsolate(controllerInstance);
                             }
                             const controllerIdentifier = controllerDirective.controllerAs ??
-                                controllerInstance.$controllerIdentifier;
+                                controllerInstance._controllerIdentifier;
                             if (isString(controllerIdentifier)) {
                                 controller._scope[controllerIdentifier] =
                                     controller._instance;
@@ -9058,18 +10024,18 @@
                             const controllerDirective = controllerDirectives[name];
                             const controller = assertDefined(elementControllers[name]);
                             const controllerInstance = controller._instance;
-                            if (isFunction(controllerInstance.$onChanges)) {
+                            if (isFunction(controllerInstance.onChanges)) {
                                 try {
-                                    callFunction(controllerInstance.$onChanges, controllerInstance, assertDefined(controller._bindingInfo)._initialChanges);
+                                    callFunction(controllerInstance.onChanges, controllerInstance, assertDefined(controller._bindingInfo)._initialChanges);
                                 }
                                 catch (err) {
                                     $exceptionHandler(err);
                                 }
                             }
-                            if (isFunction(controllerInstance.$onInit)) {
+                            if (isFunction(controllerInstance.onInit)) {
                                 try {
-                                    const controllerTarget = controllerInstance.$target ?? controllerInstance;
-                                    callFunction(controllerTarget.$onInit, controllerTarget);
+                                    const controllerTarget = controllerInstance._target ?? controllerInstance;
+                                    callFunction(controllerTarget.onInit, controllerTarget);
                                 }
                                 catch (err) {
                                     $exceptionHandler(err);
@@ -9087,16 +10053,16 @@
                             if (lifecycleRecord) {
                                 $compileLifecycle._emitControllerCreated(lifecycleRecord);
                             }
-                            if (isFunction(controllerInstance.$onDestroy)) {
-                                controllerScope.$on("$destroy", () => {
-                                    callFunction(assertDefined(controllerInstance.$onDestroy), controllerInstance);
+                            if (isFunction(controllerInstance.onDestroy)) {
+                                controllerScope.on("$destroy", () => {
+                                    callFunction(assertDefined(controllerInstance.onDestroy), controllerInstance);
                                 });
                             }
-                            controllerScope.$on("$destroy", () => {
+                            controllerScope.on("$destroy", () => {
                                 const wasDestroyed = controllerInstance._destroyed;
                                 controllerInstance._destroyed = true;
-                                if (!wasDestroyed && isFunction(controllerInstance.$destroy)) {
-                                    callFunction(controllerInstance.$destroy, controllerInstance);
+                                if (!wasDestroyed && isFunction(controllerInstance.destroy)) {
+                                    callFunction(controllerInstance.destroy, controllerInstance);
                                 }
                                 if (lifecycleRecord) {
                                     $compileLifecycle._emitControllerDestroyed(lifecycleRecord);
@@ -9143,8 +10109,8 @@
                         for (const name in elementControllers) {
                             const controller = assertDefined(elementControllers[name]);
                             const controllerInstance = controller._instance;
-                            if (isFunction(controllerInstance.$postLink)) {
-                                callFunction(controllerInstance.$postLink, controllerInstance);
+                            if (isFunction(controllerInstance.postLink)) {
+                                callFunction(controllerInstance.postLink, controllerInstance);
                             }
                             scheduleControllerAfterRender(controllerInstance, controllerScope);
                         }
@@ -10185,8 +11151,8 @@
                         const removeWatchCollection = [];
                         const initialChanges = {};
                         const destAny = destination;
-                        const scopeTarget = scope.$target;
-                        const destinationTarget = assertDefined(destAny.$target);
+                        const scopeTarget = scope._target;
+                        const destinationTarget = assertDefined(destAny._target);
                         const bindingChangeState = {
                             _destAny: destAny,
                             _onChangesQueue: onChangesQueueState,
@@ -10302,7 +11268,7 @@
                                             ? callFunction(parentGet, undefined, scopeTarget)
                                             : undefined;
                                         lastValue = destinationTarget[scopeName] = isArray(initialValue)
-                                            ? createScope(initialValue, destination.$handler)
+                                            ? createScope(initialValue, destination._handler)
                                             : initialValue;
                                         const twoWayBindingState = {
                                             _attrExpression: attr,
@@ -10322,12 +11288,12 @@
                                         if (typeof twoWayAttrExpression === "string") {
                                             const syncParentValue = $parse(twoWayAttrExpression, (parentValue) => syncTwoWayParentValue(twoWayBindingState, parentValue));
                                             // make it lazy as we dont want to trigger the two way data binding at this point
-                                            removeWatch = scope.$watch(twoWayAttrExpression, (val) => {
+                                            removeWatch = scope.watch(twoWayAttrExpression, (val) => {
                                                 handleTwoWayExpressionChange(twoWayBindingState, syncParentValue, val);
                                             }, true);
                                             removeWatchCollection.push(removeWatch);
                                         }
-                                        removeWatch = destination.$watch(attrName, (val) => {
+                                        removeWatch = destination._handler.watch(attrName, (val) => {
                                             handleTwoWayDestinationChange(twoWayBindingState, val);
                                         }, true);
                                         removeWatchCollection.push(removeWatch);
@@ -10351,12 +11317,12 @@
                                         const initialOneWayValue = parentGet
                                             ? callFunction(parentGet, undefined, scopeTarget)
                                             : undefined;
-                                        assertDefined(destAny.$target)[scopeName] =
+                                        assertDefined(destAny._target)[scopeName] =
                                             parentGet?._literal ||
                                                 initialOneWayValue === null ||
                                                 typeof initialOneWayValue !== "object"
                                                 ? initialOneWayValue
-                                                : createScope(initialOneWayValue, scope.$handler);
+                                                : createScope(initialOneWayValue, scope._handler);
                                         const oneWayBindingState = {
                                             _bindingChangeState: bindingChangeState,
                                             _destAny: destAny,
@@ -10370,11 +11336,11 @@
                                         oneWayBindingState._lastInputs =
                                             evaluateOneWayBindingInputs(oneWayBindingState);
                                         initialChanges[scopeName] = {
-                                            currentValue: assertDefined(destAny.$target)[scopeName],
+                                            currentValue: assertDefined(destAny._target)[scopeName],
                                             firstChange: oneWayBindingState._firstChange,
                                         };
                                         if (typeof oneWayAttrExpression === "string") {
-                                            removeWatch = scope.$watch(oneWayAttrExpression, (val) => {
+                                            removeWatch = scope.watch(oneWayAttrExpression, (val) => {
                                                 handleOneWayBindingChange(oneWayBindingState, val);
                                             }, true);
                                             removeWatchCollection.push(removeWatch);
@@ -10397,7 +11363,7 @@
                                             _parentGet: parentGet,
                                             _scopeTarget: scopeTarget,
                                         };
-                                        assertDefined(destAny.$target)[scopeName] = function (locals) {
+                                        assertDefined(destAny._target)[scopeName] = function (locals) {
                                             return invokeExpressionBinding(expressionBindingState, locals);
                                         };
                                         break;
@@ -10489,7 +11455,7 @@
         return stableNodeList;
     }
     /**
-     * Serializes one or more interpolation inputs into the watch expression used by `$watch`.
+     * Serializes one or more interpolation inputs into the watch expression used by `watch`.
      * Single expressions stay unchanged; multi-input interpolations are packed into an array expression.
      */
     function buildInterpolationWatchExpression(expressions) {
@@ -10621,7 +11587,7 @@
             this.setExceptionHandler(runtime.exceptionHandler);
             this._scopeRuntime = runtime;
             this._reactiveModels.forEach((model) => {
-                model.$handler._setRuntimeDependencies(runtime);
+                model._handler._setRuntimeDependencies(runtime);
             });
         }
         runWithRoot(root, operation) {
@@ -10653,7 +11619,7 @@
                     if (root.destroyed) {
                         return;
                     }
-                    root.rootScope.$destroy();
+                    root.rootScope.destroy();
                 },
             };
             this._roots.push(root);
@@ -10661,7 +11627,7 @@
             if (root.rootElement) {
                 this._rootsByElement.set(root.rootElement, root);
             }
-            root.rootScope.$on("$destroy", () => {
+            root.rootScope.on("$destroy", () => {
                 this._markRootDestroyed(root);
             });
             this._notify(this._attachHooks, root);
@@ -10718,7 +11684,7 @@
             }
             const model = createScope(target, undefined, this.modelScheduler._listenerScheduler);
             if (this._scopeRuntime) {
-                model.$handler._setRuntimeDependencies(this._scopeRuntime);
+                model._handler._setRuntimeDependencies(this._scopeRuntime);
             }
             attachModelLifecycle(this, model, options);
             this._reactiveModels.add(model);
@@ -10766,7 +11732,7 @@
             }
             const reactiveModels = Array.from(this._reactiveModels);
             for (let i = 0, l = reactiveModels.length; i < l; i++) {
-                reactiveModels[i].$destroy();
+                reactiveModels[i].destroy();
             }
             this.modelScheduler.destroy();
             this._models.clear();
@@ -10858,8 +11824,8 @@
         return prototype === Object.prototype || prototype === null;
     }
     function attachModelLifecycle(context, model, options) {
-        const handler = model.$handler;
-        const target = model.$target;
+        const handler = model._handler;
+        const target = model._target;
         const syncRecords = new Set();
         const pendingKeys = new Set();
         let pendingOrigin;
@@ -10914,21 +11880,21 @@
             },
         };
         handler._modelChangeTracker = tracker;
-        model.$on("$destroy", () => {
+        model.on("$destroy", () => {
             context._releaseReactive(model);
             for (const record of Array.from(syncRecords)) {
                 disposeModelSyncRecord(context, syncRecords, record);
             }
         });
-        handler._propertyMap.$snapshot = snapshot;
-        handler._propertyMap.$restore = (incoming, restoreOptions = {}) => {
+        handler._propertyMap.snapshot = snapshot;
+        handler._propertyMap.restore = (incoming, restoreOptions = {}) => {
             assertPlainModelSnapshot(incoming);
             const normalizedRestoreOptions = normalizeModelRestoreOptions(restoreOptions);
             const next = cloneModelData(incoming);
             const previousOrigin = currentOrigin;
             currentOrigin = normalizedRestoreOptions.origin;
             try {
-                model.$batch(() => {
+                model.batch(() => {
                     if (normalizedRestoreOptions.mode !== "merge") {
                         const currentKeys = Object.keys(target);
                         for (let i = 0, l = currentKeys.length; i < l; i++) {
@@ -10948,7 +11914,7 @@
                 currentOrigin = previousOrigin;
             }
         };
-        handler._propertyMap.$sync = (input, syncOptions = {}) => {
+        handler._propertyMap.sync = (input, syncOptions = {}) => {
             const origin = createModelSyncOrigin(options.name, nextSyncId++);
             const failure = normalizeModelSyncFailureMode(syncOptions);
             const syncTarget = resolveModelSyncTarget(input, options.injector);
@@ -10967,7 +11933,7 @@
                         }
                         try {
                             const normalizedRestoreOptions = normalizeModelRestoreOptions(restoreOptions);
-                            model.$restore(incoming, {
+                            model.restore(incoming, {
                                 ...normalizedRestoreOptions,
                                 origin: normalizedRestoreOptions.origin ?? origin,
                             });
@@ -10994,7 +11960,7 @@
                         if (record.disposed || incoming == null) {
                             return;
                         }
-                        model.$restore(incoming, { origin });
+                        model.restore(incoming, { origin });
                     };
                     if (isPromiseLike(result)) {
                         Promise.resolve(result)
@@ -11154,6 +12120,7 @@
             get pending() {
                 return listenerScheduler._queue.length - listenerScheduler._index;
             },
+            /** @internal */
             get _listenerScheduler() {
                 return listenerScheduler;
             },
@@ -11187,7 +12154,7 @@
     }
 
     function getWatchableContext(context) {
-        return isFunction(context?.$watch)
+        return isFunction(context?.watch)
             ? context
             : undefined;
     }
@@ -11315,7 +12282,7 @@
                             if (cb) {
                                 const watchable = getWatchableContext(context);
                                 if (watchable) {
-                                    callFunction(watchable.$watch, watchable, watchProp, () => {
+                                    callFunction(watchable.watch, watchable, watchProp, () => {
                                         cb(compute(context));
                                     }, false, true);
                                 }
@@ -11354,7 +12321,7 @@
                                 const watchProp = expressions[i].trim();
                                 const watchable = getWatchableContext(context);
                                 if (watchable) {
-                                    callFunction(watchable.$watch, watchable, watchProp, () => {
+                                    callFunction(watchable.watch, watchable, watchProp, () => {
                                         const watchedValues = new Array(expressions.length);
                                         for (let j = 0; j < expressions.length; j++) {
                                             watchedValues[j] = parseFns[j](context);
@@ -11609,6 +12576,7 @@
             get destroyed() {
                 return destroyed;
             },
+            /** @internal */
             _installAnimationRegistry(registry) {
                 if (destroyed) {
                     registry.destroy();
@@ -12234,8 +13202,8 @@
          * Mutating the model proxy schedules every affected observer.
          *
          * The injected `Model<T>` value is proxy-backed. It exposes scope-proxy
-         * methods such as `$watch`, `$batch`, `$merge`, `$on`, `$emit`, `$broadcast`,
-         * and `$destroy`, plus `$snapshot`, `$restore`, and `$sync` for model
+         * methods such as `watch`, `batch`, `merge`, `on`, `emit`, `broadcast`,
+         * and `destroy`, plus `snapshot`, `restore`, and `sync` for model
          * lifecycle and synchronization.
          *
          * Prefer the factory form for nontrivial initial state:
@@ -12688,7 +13656,7 @@
             /** Global framework error-handling configuration. */
             this.errorHandlingConfig = errorHandlingConfig;
             /** Public injection token names keyed by token value. */
-            this.$t = {};
+            this.tokens = {};
             const runtimeOptions = normalizeRuntimeOptions(options);
             this._subapp = runtimeOptions.subapp;
             const hostRuntime = runtimeOptions.subapp
@@ -12703,7 +13671,7 @@
             this._moduleRegistry = hostRuntime?._moduleRegistry ?? {};
             if (runtimeInjectionTokens) {
                 values(runtimeInjectionTokens).forEach((token) => {
-                    this.$t[token] = token;
+                    this.tokens[token] = token;
                 });
             }
             if (!runtimeOptions.subapp) {
@@ -12742,10 +13710,10 @@
          */
         dispatchEvent(event) {
             const customEvent = event;
-            const $parse = this.$injector.get(_parse);
+            const $parse = this.currentInjector.get(_parse);
             const injectable = customEvent.type;
-            const target = this.$injector.has(injectable)
-                ? this.$injector.get(injectable)
+            const target = this.currentInjector.has(injectable)
+                ? this.currentInjector.get(injectable)
                 : this.getScopeByName(injectable);
             if (!target) {
                 const { detail } = customEvent;
@@ -12865,8 +13833,8 @@
                 (scope, el, compile, $injector) => {
                     const appContext = this._composition.appContext;
                     this._appContext = appContext;
-                    this.$rootScope = scope;
-                    this.$injector = $injector;
+                    this.rootScope = scope;
+                    this.currentInjector = $injector;
                     this._injectorCreated = true;
                     const rootElement = el;
                     appContext.attachRoot(scope, {
@@ -12875,11 +13843,11 @@
                     });
                     rootScopeCleanupByElement.set(rootElement, () => {
                         const existingScope = getInheritedData(rootElement, _scope);
-                        if (existingScope?.$handler && !existingScope.$handler._destroyed) {
-                            existingScope.$destroy();
+                        if (existingScope?._handler && !existingScope._handler._destroyed) {
+                            existingScope.destroy();
                         }
-                        else if (!scope.$handler._destroyed) {
-                            scope.$destroy();
+                        else if (!scope._handler._destroyed) {
+                            scope.destroy();
                         }
                         if (rootScopeCleanupByElement.get(rootElement)) {
                             rootScopeCleanupByElement.delete(rootElement);
@@ -12888,7 +13856,7 @@
                     setCacheData(el, _injector, $injector);
                     const compileFn = compile(el);
                     compileFn(scope);
-                    scope.$on("$destroy", () => {
+                    scope.on("$destroy", () => {
                         if (rootScopeCleanupByElement.get(rootElement)) {
                             rootScopeCleanupByElement.delete(rootElement);
                         }
@@ -12905,12 +13873,12 @@
          */
         injector(modules) {
             if (this._injectorCreated) {
-                this.$injector.loadNewModules(modules);
-                return this.$injector;
+                this.currentInjector.loadNewModules(modules);
+                return this.currentInjector;
             }
-            this.$injector = createInjector(modules, undefined, (name) => this.module(name));
+            this.currentInjector = createInjector(modules, undefined, (name) => this.module(name));
             this._injectorCreated = true;
-            return this.$injector;
+            return this.currentInjector;
         }
         /**
          * Find `ng-app` roots under the provided element and bootstrap them.
@@ -12954,20 +13922,21 @@
             });
         }
         /**
-         * Find a scope by its registered `$scopename`.
+         * Find a scope by its registered `scopeName`.
          *
          * @param name - Scope name to search for.
          * @returns The matching scope proxy, or `undefined`.
          */
         getScopeByName(name) {
             validateIsString(name, "name");
-            const $rootScope = this.$injector.get(_rootScope);
-            const scope = $rootScope.$searchByName(name);
-            return scope ? scope.$proxy : undefined;
+            const $rootScope = this.currentInjector.get(_rootScope);
+            const scope = $rootScope.searchByName(name);
+            return scope ? scope._proxy : undefined;
         }
         /**
          * Splits `"target.expression"` into the dispatch target and parse expression.
          */
+        /** @internal */
         static _splitInvocation(input) {
             if (!isString(input)) {
                 throw new TypeError("Invocation must be a string.");
@@ -13116,7 +14085,7 @@
             this._destroyed = false;
         }
         register(name, preset) {
-            this.assertActive();
+            this._assertActive();
             if (!name || !isString(name)) {
                 throw $animateError("noname", "Animation name must be a string.");
             }
@@ -13124,11 +14093,11 @@
             this._registrations.set(normalizedName, preset);
         }
         get(name) {
-            this.assertActive();
+            this._assertActive();
             return this._registrations.get(name);
         }
         has(name) {
-            this.assertActive();
+            this._assertActive();
             return this._registrations.has(name);
         }
         destroy() {
@@ -13137,7 +14106,8 @@
             this._destroyed = true;
             this._registrations.clear();
         }
-        assertActive() {
+        /** @internal */
+        _assertActive() {
             if (this._destroyed) {
                 throw new Error("Animation registry has already been disposed.");
             }
@@ -13548,19 +14518,19 @@
         };
         Object.defineProperty(machineTarget, SCOPE_PROXY_BIND, {
             value(handler, proxy) {
-                let binding = bindings.get(handler.$id);
+                let binding = bindings.get(handler.id);
                 if (!binding) {
                     binding = {
                         _handler: handler,
                         _proxy: proxy,
                     };
-                    bindings.set(handler.$id, binding);
+                    bindings.set(handler.id, binding);
                 }
                 activeBinding = binding;
             },
         });
-        if (scope?.$handler) {
-            return createScope(machineTarget, scope.$handler);
+        if (scope?._handler) {
+            return createScope(machineTarget, scope._handler);
         }
         return machineTarget;
         function getActiveMachine() {
@@ -13874,7 +14844,7 @@
         if (!scope || scope._destroyed) {
             return fn();
         }
-        return scope.$batch(fn);
+        return scope.batch(fn);
     }
     function normalizeMachineArgs(scopeOrConfig, maybeConfig) {
         if (maybeConfig) {
@@ -14628,13 +15598,13 @@
             };
             Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
                 value(handler, proxy) {
-                    let binding = bindings.get(handler.$id);
+                    let binding = bindings.get(handler.id);
                     if (!binding) {
                         binding = {
                             _handler: handler,
                             _proxy: proxy,
                         };
-                        bindings.set(handler.$id, binding);
+                        bindings.set(handler.id, binding);
                     }
                 },
             });
@@ -14849,6 +15819,7 @@
                 const controller = new AbortController();
                 let cancel;
                 const state = {
+                    /** @internal */
                     _cancel(diagnostic) {
                         cancel(diagnostic);
                     },
@@ -15765,7 +16736,16 @@
         return Object(value);
     }
     function readProperty(value, key) {
-        return asPropertyBag(value)?.[key];
+        const bag = asPropertyBag(value);
+        if (!bag)
+            return undefined;
+        if (isProxy(value)) {
+            const target = asPropertyBag(deProxy(value));
+            // Expressions address model data, not the Scope API layered over its proxy.
+            if (target && !(key in target))
+                return undefined;
+        }
+        return bag[key];
     }
     function writeProperty(value, key, propertyValue) {
         const bag = asPropertyBag(value);
@@ -15775,7 +16755,7 @@
     }
     function getProxyTarget(value) {
         const bag = asPropertyBag(value);
-        return bag && "$proxy" in bag ? (bag.$proxy ?? value) : value;
+        return bag?._proxy ?? value;
     }
     function evaluateLogicalOrValue(leftValue, rightValue) {
         if (leftValue)
@@ -17150,6 +18130,7 @@
             };
             this._index = 0;
         }
+        /** @internal */
         _tokenAt(index = this._index) {
             return this._tokens[index];
         }
@@ -17777,7 +18758,7 @@
             _status: "settled",
             _value: value,
         });
-        const handler = $rootScope.$handler;
+        const handler = $rootScope._handler;
         handler._scheduleWatchKeys(["async"]);
     }
 
@@ -18504,7 +19485,7 @@
                 if (config[ariaCamelName] &&
                     !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
                     !hasNormalizedAttr(elem, ariaCamelName)) {
-                    scope.$watch(getNormalizedAttr(elem, attrName) ?? "", (boolVal) => {
+                    scope.watch(getNormalizedAttr(elem, attrName) ?? "", (boolVal) => {
                         // ensure boolean value
                         boolVal = negate ? !boolVal : !!boolVal;
                         elem.setAttribute(ariaAttr, String(boolVal));
@@ -18518,6 +19499,7 @@
                 return config[key];
             },
             _diagnoseInteractive: diagnoseInteractive,
+            /** @internal */
             _diagnostics() {
                 return diagnostics;
             },
@@ -18680,7 +19662,7 @@
                 }
             });
             observer.observe(elem, { attributes: true });
-            let deregisterDestroy = scope.$on("$destroy", deregister);
+            let deregisterDestroy = scope.on("$destroy", deregister);
             function deregister() {
                 observer.disconnect();
                 deregisterDestroy?.();
@@ -18700,10 +19682,10 @@
                         const needsTabIndex = shouldAttachAttr("tabindex", "tabindex", elem, false);
                         function getRadioReaction() {
                             // Strict comparison would cause a BC
-                            elem.setAttribute("aria-checked", (getNormalizedAttr(elem, "value") == ngModel.$viewValue).toString());
+                            elem.setAttribute("aria-checked", (getNormalizedAttr(elem, "value") == ngModel.viewValue).toString());
                         }
                         function getCheckboxReaction() {
-                            elem.setAttribute("aria-checked", (!ngModel.$isEmpty(ngModel.$viewValue)).toString());
+                            elem.setAttribute("aria-checked", (!ngModel.isEmpty(ngModel.viewValue)).toString());
                         }
                         switch (shape) {
                             case "radio":
@@ -18712,7 +19694,7 @@
                                     elem.setAttribute("role", shape);
                                 }
                                 if (shouldAttachAttr("aria-checked", "ariaChecked", elem, false)) {
-                                    ngModel.$watch("$modelValue", shape === "radio" ? getRadioReaction : getCheckboxReaction);
+                                    ngModel.watch("modelValue", shape === "radio" ? getRadioReaction : getCheckboxReaction);
                                 }
                                 if (needsTabIndex) {
                                     elem.setAttribute("tabindex", "0");
@@ -18750,7 +19732,7 @@
                                         observeAriaAttribute(scope, elem, "ngMax", updateAriaMax);
                                     }
                                     if (needsAriaValuenow) {
-                                        ngModel.$watch("$modelValue", (newVal) => {
+                                        ngModel.watch("modelValue", (newVal) => {
                                             elem.setAttribute("aria-valuenow", newVal);
                                         });
                                     }
@@ -18762,9 +19744,9 @@
                                 break;
                         }
                         if (!hasNormalizedAttr(elem, "ngRequired") &&
-                            ngModel.$validators.required &&
+                            ngModel.validators.required &&
                             shouldAttachAttr("aria-required", "ariaRequired", elem, false)) {
-                            // ngModel.$error.required is undefined on custom controls
+                            // ngModel.error.required is undefined on custom controls
                             const updateAriaRequired = () => {
                                 elem.setAttribute("aria-required", hasNormalizedAttr(elem, "required").toString());
                             };
@@ -18772,7 +19754,7 @@
                             observeAriaAttribute(scope, elem, "required", updateAriaRequired);
                         }
                         if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
-                            ngModel.$watch("$invalid", (newVal) => {
+                            ngModel.watch("invalid", (newVal) => {
                                 elem.setAttribute("aria-invalid", (!!newVal).toString());
                             });
                         }
@@ -18843,7 +19825,7 @@
             return;
         /** Mirrors the watched scope expression into the underlying boolean attribute. */
         const defaultLinkFn = (scope, element, expression) => {
-            scope.$watch(expression, (value) => {
+            scope.watch(expression, (value) => {
                 setNormalizedAttr(element, i, !!value);
             });
         };
@@ -18888,7 +19870,7 @@
                         }
                     }
                     return (scope, element) => {
-                        scope.$watch(expression, (value) => {
+                        scope.watch(expression, (value) => {
                             setNormalizedAttr(element, ngAttr, value);
                         });
                     };
@@ -18988,7 +19970,7 @@
                                 }
                             });
                             observer.observe(element, { attributes: true });
-                            let deregisterDestroy = scope.$on("$destroy", deregister);
+                            let deregisterDestroy = scope.on("$destroy", deregister);
                             function deregister() {
                                 observer.disconnect();
                                 deregisterDestroy?.();
@@ -19008,7 +19990,7 @@
                 const expression = getNormalizedAttr(element, "ngBind");
                 if (!isString(expression))
                     return;
-                scope.$watch(expression, (value) => {
+                scope.watch(expression, (value) => {
                     const text = stringify$1(deProxy(value));
                     element.textContent = isString(text) ? text : "";
                 }, hasNormalizedAttr(element, "lazy"), true);
@@ -19035,7 +20017,7 @@
                     }
                 });
                 observer.observe(element, { attributes: true });
-                let deregisterDestroy = scope.$on("$destroy", deregister);
+                let deregisterDestroy = scope.on("$destroy", deregister);
                 function deregister() {
                     observer.disconnect();
                     deregisterDestroy?.();
@@ -19057,7 +20039,7 @@
                 return (
                 /** Watches the expression and writes the resulting HTML into the element. */
                 (scope, element) => {
-                    scope.$watch(expression, (val) => {
+                    scope.watch(expression, (val) => {
                         const html = isUndefined(val) || isNull(val) ? "" : stringify$1(deProxy(val));
                         element.innerHTML = isString(html) ? html : "";
                     }, false, true);
@@ -19086,7 +20068,7 @@
                 $eventBus.subscribe(channel, (value) => {
                     if (hasTemplateContent) {
                         if (isObject(value)) {
-                            scope.$merge(value);
+                            scope.merge(value);
                         }
                     }
                     else {
@@ -19115,7 +20097,7 @@
                 if (expression === undefined) {
                     return;
                 }
-                scope.$watch(expression, (val) => {
+                scope.watch(expression, (val) => {
                     ngClassWatchAction(toClassString(val));
                 });
                 /** Applies the net class change between two class strings. */
@@ -19291,7 +20273,7 @@
     const ngElError = createErrorFactory("ngEl");
     ngElDirective.$inject = [_parse];
     /**
-     * Exposes the current element on `scope.$target` or an assignable expression.
+     * Exposes the current element on `scope._target` or an assignable expression.
      */
     function ngElDirective($parse) {
         return {
@@ -19328,7 +20310,7 @@
         };
     }
     function bindKeyedElement(scope, element, key) {
-        const target = scope.$target;
+        const target = scope._target;
         target[key] = element;
         return () => {
             deleteProperty(target, key);
@@ -19347,7 +20329,7 @@
             removeDestroyListener();
             observer?.disconnect();
         };
-        removeDestroyListener = scope.$on("$destroy", cleanupOnce);
+        removeDestroyListener = scope.on("$destroy", cleanupOnce);
         const parent = element.parentNode;
         if (!parent) {
             return;
@@ -19369,29 +20351,29 @@
 
     const nullFormCtrl = {
         $nonscope: true,
-        $addControl: () => {
+        addControl: () => {
             /* empty */
         },
-        $getControls: () => [],
+        getControls: () => [],
         _renameControl: (control, name) => {
-            control.$name = name;
+            control.controlName = name;
         },
-        $removeControl: () => {
+        removeControl: () => {
             /* empty */
         },
-        $setValidity: () => {
+        setValidity: () => {
             /* empty */
         },
-        $setNativeValidity: () => {
+        setNativeValidity: () => {
             /* empty */
         },
-        $setDirty: () => {
+        setDirty: () => {
             /* empty */
         },
-        $setPristine: () => {
+        setPristine: () => {
             /* empty */
         },
-        $setSubmitted: () => {
+        setSubmitted: () => {
             /* empty */
         },
         _setSubmitted: () => {
@@ -19420,18 +20402,18 @@
         return null;
     }
     /**
-     * @property $dirty True if user has already interacted with the form.
-     * @property $valid True if all containing groups and controls are valid.
-     * @property $invalid True if at least one containing control or group is invalid.
-     * @property $submitted True if user has submitted the form even if its invalid.
+     * @property dirty True if user has already interacted with the form.
+     * @property valid True if all containing groups and controls are valid.
+     * @property invalid True if at least one containing control or group is invalid.
+     * @property submitted True if user has submitted the form even if its invalid.
      *
-     * @property $pending An object hash, containing references to controls or groups with
+     * @property pending An object hash, containing references to controls or groups with
      *  pending validators, where:
      *
      *  - keys are validations tokens (error names).
      *  - values are arrays of controls or forms that have a pending validator for the given error name.
      *
-     * @property $error An object hash, containing references to controls or groups with failing
+     * @property error An object hash, containing references to controls or groups with failing
      *  validators, where:
      *
      *  - keys are AngularTS/custom validation tokens (error names),
@@ -19455,51 +20437,51 @@
             const interpolatedName = $interpolate(getNormalizedAttr($element, "name") ??
                 getNormalizedAttr($element, "ngForm") ??
                 "")?.($scope);
-            this.$name = isString(interpolatedName) ? interpolatedName : "";
+            this.controlName = isString(interpolatedName) ? interpolatedName : "";
             /** True if user has already interacted with the form. */
-            this.$dirty = false;
+            this.dirty = false;
             /** True if user has not interacted with the form yet. */
-            this.$pristine = true;
-            this.$valid = true;
-            this.$invalid = false;
-            this.$submitted = false;
+            this.pristine = true;
+            this.valid = true;
+            this.invalid = false;
+            this.submitted = false;
             this._parentForm = nullFormCtrl;
             this._element = $element;
             this._getAnimate = createLazyAnimate($injector);
-            this.$error = {};
+            this.error = {};
             this._customErrorControls = new Map();
             this._pendingCustomValidatorControls = new Map();
             this._validCustomValidatorControls = new Map();
-            this.$pending = undefined;
+            this.pending = undefined;
             this._classCache = {};
             const isValid = this._element.classList.contains(VALID_CLASS);
             this._classCache[VALID_CLASS] = isValid;
             this._classCache[INVALID_CLASS] = !isValid;
             this._validityPropagationId = nextValidityPropagationId++;
-            this.$target = { _parentForm: nullFormCtrl };
+            this._target = { _parentForm: nullFormCtrl };
         }
         /**
-         * Rollback all form controls pending updates to the `$modelValue`.
+         * Rollback all form controls pending updates to the `modelValue`.
          *
          * Updates may be pending by a debounced event or because the input is waiting for a some future
          * event defined in `ng-model-options`. This method is typically needed by the reset button of
          * a form that uses `ng-model-options` to pend updates.
          */
-        $rollbackViewValue() {
+        rollbackViewValue() {
             this._controls.forEach((control) => {
-                control.$rollbackViewValue();
+                control.rollbackViewValue();
             });
         }
         /**
-         * Commit all form controls pending updates to the `$modelValue`.
+         * Commit all form controls pending updates to the `modelValue`.
          *
          * Updates may be pending by a debounced event or because the input is waiting for a some future
          * event defined in `ng-model-options`. This method is rarely needed as `NgModelController`
          * usually handles calling this in response to input events.
          */
-        $commitViewValue() {
+        commitViewValue() {
             this._controls.forEach((control) => {
-                control.$commitViewValue();
+                control.commitViewValue();
             });
         }
         /** @internal */
@@ -19515,43 +20497,43 @@
          * when they are linked.
          *
          * Note that the current state of the control will not be reflected on the new parent form. This
-         * is not an issue with normal use, as freshly compiled and linked controls are in a `$pristine`
+         * is not an issue with normal use, as freshly compiled and linked controls are in a `pristine`
          * state.
          *
          * However, if the method is used programmatically, for example by adding dynamically created controls,
          * or controls that have been previously removed without destroying their corresponding DOM element,
          * it's the developers responsibility to make sure the current state propagates to the parent form.
          *
-         * For example, if an input control is added that is already `$dirty` and has `$error` properties,
-         * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
+         * For example, if an input control is added that is already `dirty` and has `error` properties,
+         * calling `setDirty()` and `validate()` afterwards will propagate the state to the parent form.
          */
-        $addControl(control) {
+        addControl(control) {
             // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
             // and not added to the scope.  Now we throw an error.
-            assertNotHasOwnProperty(String(control.$name), "input");
+            assertNotHasOwnProperty(String(control.controlName), "input");
             this._validityPropagationId = nextValidityPropagationId++;
             this._controls.push(control);
-            if (control.$name) {
-                this[String(control.$name)] = control;
+            if (control.controlName) {
+                this[String(control.controlName)] = control;
             }
-            control.$target._parentForm = this;
+            control._target._parentForm = this;
         }
         /**
          * This method returns a **shallow copy** of the controls that are currently part of this form.
          * The controls can be instances of {@link form.FormController `FormController`}
          * ({@link ngForm "child-forms"}) and of {@link ngModel.NgModelController `NgModelController`}.
-         * If you need access to the controls of child-forms, you have to call `$getControls()`
+         * If you need access to the controls of child-forms, you have to call `getControls()`
          * recursively on them.
          * This can be used for example to iterate over all controls to validate them.
          *
          * The controls can be accessed normally, but adding to, or removing controls from the array has
-         * no effect on the form. Instead, use {@link form.FormController#$addControl `$addControl()`} and
-         * {@link form.FormController#$removeControl `$removeControl()`} for this use-case.
+         * no effect on the form. Instead, use {@link form.FormController#addControl `addControl()`} and
+         * {@link form.FormController#removeControl `removeControl()`} for this use-case.
          * Likewise, adding a control to, or removing a control from the form is not reflected
-         * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
+         * in the shallow copy. That means you should get a fresh copy from `getControls()` every time
          * you need access to the controls.
          */
-        $getControls() {
+        getControls() {
             return shallowCopy(this._controls);
         }
         /** @internal Returns the registered public control reference for a raw/proxied controller. */
@@ -19571,7 +20553,7 @@
          */
         /** @internal */
         _renameControl(control, newName) {
-            const oldName = control.$name;
+            const oldName = control.controlName;
             this._validityPropagationId = nextValidityPropagationId++;
             const formRecord = this;
             const oldKey = String(oldName);
@@ -19579,7 +20561,7 @@
                 deleteProperty(formRecord, oldKey);
             }
             formRecord[String(newName)] = control;
-            control.$name = newName;
+            control.controlName = newName;
         }
         /**
          * Deregister a control from the form.
@@ -19587,26 +20569,26 @@
          * Input elements using ngModelController do this automatically when they are destroyed.
          *
          * Note that only the removed control's validation state (`$errors`etc.) will be removed from the
-         * form. `$dirty`, `$submitted` states will not be changed, because the expected behavior can be
-         * different from case to case. For example, removing the only `$dirty` control from a form may or
-         * may not mean that the form is still `$dirty`.
+         * form. `dirty`, `submitted` states will not be changed, because the expected behavior can be
+         * different from case to case. For example, removing the only `dirty` control from a form may or
+         * may not mean that the form is still `dirty`.
          */
-        $removeControl(control) {
+        removeControl(control) {
             this._validityPropagationId = nextValidityPropagationId++;
-            if (control.$name &&
-                this[String(control.$name)] === control) {
-                deleteProperty(this, String(control.$name));
+            if (control.controlName &&
+                this[String(control.controlName)] === control) {
+                deleteProperty(this, String(control.controlName));
             }
             new Set([
                 ...this._pendingCustomValidatorControls.keys(),
                 ...this._customErrorControls.keys(),
                 ...this._validCustomValidatorControls.keys(),
             ]).forEach((name) => {
-                this.$setValidity(name, null, control);
+                this.setValidity(name, null, control);
             });
             arrayRemove(this._controls, control);
-            this.$setNativeValidity(true, control);
-            control.$target._parentForm = nullFormCtrl;
+            this.setNativeValidity(true, control);
+            control._target._parentForm = nullFormCtrl;
         }
         /**
          * Sets the form to a dirty state.
@@ -19614,7 +20596,7 @@
          * This method can be called to add the 'ng-dirty' class and set the form to a dirty
          * state (ng-dirty class). This method will also propagate to parent forms.
          */
-        $setDirty() {
+        setDirty() {
             if (this._isAnimated) {
                 this._getAnimate().setClass(this._element, DIRTY_CLASS, PRISTINE_CLASS);
             }
@@ -19623,15 +20605,15 @@
                 this._element.classList.remove(PRISTINE_CLASS);
                 this._element.classList.add(DIRTY_CLASS);
             }
-            this.$dirty = true;
-            this.$pristine = false;
-            this._parentForm.$setDirty();
+            this.dirty = true;
+            this.pristine = false;
+            this._parentForm.setDirty();
         }
         /**
          * Sets the form to its pristine state.
          *
-         * This method sets the form's `$pristine` state to true, the `$dirty` state to false, removes
-         * the `ng-dirty` class and adds the `ng-pristine` class. Additionally, it sets the `$submitted`
+         * This method sets the form's `pristine` state to true, the `dirty` state to false, removes
+         * the `ng-dirty` class and adds the `ng-pristine` class. Additionally, it sets the `submitted`
          * state to false.
          *
          * This method will also propagate to all the controls contained in this form.
@@ -19639,7 +20621,7 @@
          * Setting a form back to a pristine state is often useful when we want to 'reuse' a form after
          * saving or resetting it.
          */
-        $setPristine() {
+        setPristine() {
             if (this._isAnimated) {
                 this._getAnimate().setClass(this._element, PRISTINE_CLASS, `${DIRTY_CLASS} ${SUBMITTED_CLASS}`);
             }
@@ -19648,11 +20630,11 @@
                 this._element.classList.remove(DIRTY_CLASS, SUBMITTED_CLASS);
                 this._element.classList.add(PRISTINE_CLASS);
             }
-            this.$dirty = false;
-            this.$pristine = true;
-            this.$submitted = false;
+            this.dirty = false;
+            this.pristine = true;
+            this.submitted = false;
             this._controls.forEach((control) => {
-                control.$setPristine();
+                control.setPristine();
             });
         }
         /**
@@ -19664,16 +20646,16 @@
          * Setting a form controls back to their untouched state is often useful when setting the form
          * back to its pristine state.
          */
-        $setUntouched() {
+        setUntouched() {
             this._controls.forEach((control) => {
-                control.$setUntouched();
+                control.setUntouched();
             });
         }
         /**
-         * Sets the form to its `$submitted` state. This will also set `$submitted` on all child and
+         * Sets the form to its `submitted` state. This will also set `submitted` on all child and
          * parent forms of the form.
          */
-        $setSubmitted() {
+        setSubmitted() {
             if (this._parentForm === nullFormCtrl) {
                 this._setSubmitted();
                 return;
@@ -19692,7 +20674,7 @@
             else {
                 this._element.classList.add(SUBMITTED_CLASS);
             }
-            this.$submitted = true;
+            this.submitted = true;
             this._controls.forEach((control) => {
                 const maybeSetSubmitted = control
                     ._setSubmitted;
@@ -19758,8 +20740,8 @@
         }
         /** @internal */
         _syncPublicCustomValidityObjects() {
-            this.$error = FormController._publicCustomValidityObject(this._customErrorControls);
-            this.$pending = this._pendingCustomValidatorControls.size
+            this.error = FormController._publicCustomValidityObject(this._customErrorControls);
+            this.pending = this._pendingCustomValidatorControls.size
                 ? FormController._publicCustomValidityObject(this._pendingCustomValidatorControls)
                 : undefined;
         }
@@ -19767,23 +20749,23 @@
          * Change the validity state of the form, and notify the parent form (if any).
          *
          * Application developers will rarely need to call this method directly. It is used internally, by
-         * {@link ngModel.NgModelController#$setValidity NgModelController.$setValidity()}, to propagate a
+         * {@link ngModel.NgModelController#setValidity NgModelController.setValidity()}, to propagate a
          * control's validity state to the parent `FormController`.
          *
          * @param validationErrorKey - Name of the validator. The `validationErrorKey` will be
-         *        assigned to either `$error[validationErrorKey]` or `$pending[validationErrorKey]` (for
-         *        unfulfilled `$asyncValidators`), so that it is available for data-binding. The
+         *        assigned to either `error[validationErrorKey]` or `pending[validationErrorKey]` (for
+         *        unfulfilled `asyncValidators`), so that it is available for data-binding. The
          *        `validationErrorKey` should be in camelCase and will get converted into dash-case for
          *        class name. Example: `myError` will result in `ng-valid-my-error` and
-         *        `ng-invalid-my-error` classes and can be bound to as `{{ someForm.$error.myError }}`.
+         *        `ng-invalid-my-error` classes and can be bound to as `{{ someForm.error.myError }}`.
          * @param state - Whether the current state is valid (true), invalid (false), pending
-         *        (undefined),  or skipped (null). Pending is used for unfulfilled `$asyncValidators`.
+         *        (undefined),  or skipped (null). Pending is used for unfulfilled `asyncValidators`.
          *        Skipped is used by AngularTS when validators do not run because of parse errors and when
-         *        `$asyncValidators` do not run because any of the `$validators` failed.
+         *        `asyncValidators` do not run because any of the `validators` failed.
          * @param controller - The controller whose validity state is
          *        triggering the change.
          */
-        $setValidity(validationErrorKey, state, controller = this) {
+        setValidity(validationErrorKey, state, controller = this) {
             const customState = toCustomValidationState(state);
             if (customState === "pending") {
                 this._setCustomValidityBucket(this._pendingCustomValidatorControls, validationErrorKey, controller);
@@ -19804,23 +20786,23 @@
                 this._unsetCustomValidityBucket(this._validCustomValidatorControls, validationErrorKey, controller);
             }
             this._syncPublicCustomValidityObjects();
-            if (this.$pending) {
+            if (this.pending) {
                 cachedToggleClass(this, PENDING_CLASS, true);
-                this.$valid = this.$invalid = undefined;
+                this.valid = this.invalid = undefined;
                 toggleValidationCss(this, "", null);
             }
             else {
                 cachedToggleClass(this, PENDING_CLASS, false);
-                this.$valid = isObjectEmpty(this.$error) && this._hasNativeValidity();
-                this.$invalid = !this.$valid;
-                toggleValidationCss(this, "", this.$valid);
+                this.valid = isObjectEmpty(this.error) && this._hasNativeValidity();
+                this.invalid = !this.valid;
+                toggleValidationCss(this, "", this.valid);
             }
             // Re-read after syncing map-backed custom-validity buckets.
             let combinedState;
-            if (this.$pending?.[validationErrorKey]) {
+            if (this.pending?.[validationErrorKey]) {
                 combinedState = "pending";
             }
-            else if (this.$error[validationErrorKey]) {
+            else if (this.error[validationErrorKey]) {
                 combinedState = "invalid";
             }
             else if (this._validCustomValidatorControls.has(validationErrorKey)) {
@@ -19831,7 +20813,7 @@
             }
             const publicCombinedState = toPublicValidationState(combinedState);
             toggleValidationCss(this, validationErrorKey, publicCombinedState);
-            this._parentForm.$setValidity(validationErrorKey, publicCombinedState, this);
+            this._parentForm.setValidity(validationErrorKey, publicCombinedState, this);
             /**
              * Updates the CSS validity classes for the controller and validation key.
              */
@@ -19849,20 +20831,20 @@
                 return deProxy(control)._hasNativeValidity();
             });
         }
-        $setNativeValidity(state, controller) {
+        setNativeValidity(state, controller) {
             this._validityPropagationId = nextValidityPropagationId++;
             const isNativeValid = this._hasNativeValidity();
-            if (!this.$pending) {
-                this.$valid = isObjectEmpty(this.$error) && isNativeValid;
-                this.$invalid = !this.$valid;
-                cachedToggleClass(this, VALID_CLASS, this.$valid);
-                cachedToggleClass(this, INVALID_CLASS, this.$invalid);
+            if (!this.pending) {
+                this.valid = isObjectEmpty(this.error) && isNativeValid;
+                this.invalid = !this.valid;
+                cachedToggleClass(this, VALID_CLASS, this.valid);
+                cachedToggleClass(this, INVALID_CLASS, this.invalid);
             }
-            this._parentForm.$setNativeValidity(isNativeValid, this);
+            this._parentForm.setNativeValidity(isNativeValid, this);
         }
     }
     FormController.$nonscope = true;
-    /* @ignore */ FormController.$inject = [_element, _scope, _injector, _interpolate];
+    FormController.$inject = [_element, _scope, _injector, _interpolate];
     /**
      * Helper directive that makes it possible to create control groups inside a
      * {@link ng.directive:form `form`} directive.
@@ -19955,8 +20937,8 @@
                                 if (formElementParam instanceof HTMLFormElement) {
                                     const shouldPreventSubmit = !hasNormalizedAttr(formElementParam, "action");
                                     const handleFormSubmission = function (event) {
-                                        controller.$commitViewValue();
-                                        controller.$setSubmitted();
+                                        controller.commitViewValue();
+                                        controller.setSubmitted();
                                         if (shouldPreventSubmit) {
                                             event.preventDefault();
                                         }
@@ -19984,7 +20966,7 @@
                                         }
                                     };
                                     const resetRegisteredControlsToDefaults = (formController) => {
-                                        formController.$getControls().forEach((control) => {
+                                        formController.getControls().forEach((control) => {
                                             const actualControl = deProxy(control);
                                             if (actualControl instanceof FormController) {
                                                 resetRegisteredControlsToDefaults(actualControl);
@@ -20000,7 +20982,7 @@
                                             syncingNativeReset = false;
                                         }
                                         controller._syncNativeViewValue("reset");
-                                        controller.$setNativeValidity();
+                                        controller.setNativeValidity();
                                     };
                                     const scheduleNativeResetSync = () => {
                                         setTimeout(() => {
@@ -20050,9 +21032,9 @@
                                     });
                                 }
                                 const parentFormCtrl = ctrls[1] ?? controller._parentForm;
-                                parentFormCtrl.$addControl(controller);
+                                parentFormCtrl.addControl(controller);
                                 const parsedSetter = nameAttr
-                                    ? getSetter(String(controller.$name))
+                                    ? getSetter(String(controller.controlName))
                                     : undefined;
                                 const setter = parsedSetter
                                     ? (scopeParam, value) => {
@@ -20073,20 +21055,20 @@
                                             }
                                             const newValue = getNormalizedAttr(formElementParam, nameAttr);
                                             const nextName = newValue ?? "";
-                                            if (controller.$name === nextName)
+                                            if (controller.controlName === nextName)
                                                 return;
-                                            scope.$target[String(controller.$name)] = undefined;
+                                            scope._target[String(controller.controlName)] = undefined;
                                             controller._parentForm._renameControl(controller, nextName);
-                                            if (scope.$target !== controller._parentForm &&
+                                            if (scope._target !== controller._parentForm &&
                                                 controller._parentForm !== nullFormCtrl) ;
                                             else {
-                                                scope.$target[nextName] =
+                                                scope._target[nextName] =
                                                     controller;
                                             }
                                         }
                                     });
                                     observer.observe(formElementParam, { attributes: true });
-                                    let deregisterDestroy = scope.$on("$destroy", deregister);
+                                    let deregisterDestroy = scope.on("$destroy", deregister);
                                     function deregister() {
                                         observer.disconnect();
                                         deregisterDestroy?.();
@@ -20094,8 +21076,8 @@
                                     }
                                 }
                                 formElementParam.addEventListener("$destroy", () => {
-                                    const parentForm = controller.$target._parentForm;
-                                    parentForm.$removeControl(controller);
+                                    const parentForm = controller._target._parentForm;
+                                    parentForm.removeControl(controller);
                                     setter(scope, undefined);
                                     extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards
                                 });
@@ -21267,7 +22249,7 @@
         const ownedFragments = new Set();
         const activeAnimations = new Set();
         const placeholders = new Set();
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
             destroyed = true;
             activeAnimations.forEach((animation) => {
                 animation.cancel();
@@ -21697,7 +22679,7 @@
                             }
                         });
                         observer.observe(element, { attributes: true });
-                        let deregisterDestroy = scope.$on("$destroy", deregister);
+                        let deregisterDestroy = scope.on("$destroy", deregister);
                         function deregister() {
                             observer.disconnect();
                             deregisterDestroy?.();
@@ -21711,7 +22693,7 @@
                         resolveDestroy = resolve;
                     });
                     const destroyController = new AbortController();
-                    scope.$on("$destroy", () => {
+                    scope.on("$destroy", () => {
                         resolveDestroy?.();
                         resolveDestroy = undefined;
                         destroyController.abort("scope destroyed");
@@ -21958,7 +22940,7 @@
                                     };
                                     const source = $sse(sseUrl, config);
                                     sourceRef.current = source;
-                                    scope.$on("$destroy", () => {
+                                    scope.on("$destroy", () => {
                                         $log.info(`${attrName}: closing SSE connection`);
                                         dispatchSseEvent("close", { source });
                                         source.close();
@@ -22004,7 +22986,7 @@
                     let blockFragments = [];
                     let previousNodes = [];
                     let previousFragments = [];
-                    $scope.$watch(expression, (value) => {
+                    $scope.watch(expression, (value) => {
                         if (value) {
                             if (!childScope) {
                                 $transclude((clone, newScope) => {
@@ -22035,7 +23017,7 @@
                                 previousFragments = [];
                             }
                             if (childScope) {
-                                childScope.$destroy();
+                                childScope.destroy();
                                 childScope = null;
                             }
                             if (blockNodes.length) {
@@ -22154,7 +23136,7 @@
                             const leavingFragment = currentFragment;
                             const animate = getAnimateForNode(getAnimate, currentElement);
                             if (animate) {
-                                currentScope?.$destroy();
+                                currentScope?.destroy();
                                 animate.leave(currentElement).done((response) => {
                                     if (response) {
                                         leavingFragment?.dispose();
@@ -22170,7 +23152,7 @@
                                 else {
                                     removeElement(currentElement);
                                 }
-                                currentScope?.$destroy();
+                                currentScope?.destroy();
                             }
                             currentScope = null;
                             previousElement = currentElement;
@@ -22179,11 +23161,11 @@
                             currentFragment = null;
                         }
                         else if (currentScope) {
-                            currentScope.$destroy();
+                            currentScope.destroy();
                             currentScope = null;
                         }
                     };
-                    scope.$watch(srcExp, (src) => {
+                    scope.watch(srcExp, (src) => {
                         const afterAnimation = function (response) {
                             if (response) {
                                 maybeScroll();
@@ -22191,14 +23173,14 @@
                         };
                         const thisChangeId = ++changeCounter;
                         if (src) {
-                            scope.$emit("$includeContentRequested", src);
+                            scope.emit("$includeContentRequested", src);
                             $templateRequest(src)
                                 .then((response) => {
                                 if (scope._destroyed)
                                     return;
                                 if (thisChangeId !== changeCounter)
                                     return undefined;
-                                const newScope = scope.$new();
+                                const newScope = scope.new();
                                 ctrl.template = response;
                                 // Note: This will also link all children of ng-include that were contained in the original
                                 // html. If that content contains controllers, ... they could pollute/change the scope.
@@ -22222,7 +23204,7 @@
                                 currentScope = newScope;
                                 currentElement = clone;
                                 currentFragment = assertDefined(getCompiledFragmentRecordFromNodes(clone));
-                                currentScope.$emit("$includeContentLoaded", src);
+                                currentScope.emit("$includeContentLoaded", src);
                                 onloadFn?.(scope);
                                 return undefined;
                             })
@@ -22231,7 +23213,7 @@
                                     return undefined;
                                 if (thisChangeId === changeCounter) {
                                     cleanupLastIncludeContent();
-                                    scope.$emit("$includeContentError", src);
+                                    scope.emit("$includeContentError", src);
                                 }
                                 $exceptionHandler(isInstanceOf(err, Error) ? err : new Error(String(err)));
                                 return undefined;
@@ -22292,7 +23274,7 @@
     }
     function unwrapNgModelController(ctrl) {
         while (isProxy(ctrl)) {
-            ctrl = ctrl.$target;
+            ctrl = ctrl._target;
         }
         return ctrl;
     }
@@ -22372,19 +23354,19 @@
         const eventRemovers = new Set();
         let composing = false;
         function syncNativeValidity() {
-            ctrl.$setNativeValidity(!element.willValidate || element.validity.valid);
+            ctrl.setNativeValidity(!element.willValidate || element.validity.valid);
         }
         function syncViewToModel(trigger) {
-            ctrl.$setViewValue(readViewValue(element, valueKind), trigger);
+            ctrl.setViewValue(readViewValue(element, valueKind), trigger);
             syncNativeValidity();
         }
         function syncModelToView() {
-            writeViewValue(element, type, valueKind, ctrl.$viewValue);
+            writeViewValue(element, type, valueKind, ctrl.viewValue);
             syncNativeValidity();
         }
         function syncNativeViewValue(trigger = "input") {
-            ctrl.$setViewValue(readViewValue(element, valueKind), trigger);
-            ctrl.$commitViewValue();
+            ctrl.setViewValue(readViewValue(element, valueKind), trigger);
+            ctrl.commitViewValue();
             syncNativeValidity();
         }
         function disconnect() {
@@ -22408,16 +23390,16 @@
                 ctrl._hasNativeValidators = true;
                 ctrl._setNativeCustomValidity = setNativeCustomValidity;
                 ctrl._syncNativeViewValue = syncNativeViewValue;
-                Object.defineProperty(ctrl, "$validity", {
+                Object.defineProperty(ctrl, "validity", {
                     configurable: true,
                     get: () => element.validity,
                 });
-                Object.defineProperty(ctrl, "$validationMessage", {
+                Object.defineProperty(ctrl, "validationMessage", {
                     configurable: true,
                     get: () => element.validationMessage,
                 });
-                ctrl.$isEmpty = (value) => isEmptyViewValue(valueKind, value);
-                ctrl.$render = () => {
+                ctrl.isEmpty = (value) => isEmptyViewValue(valueKind, value);
+                ctrl.render = () => {
                     syncModelToView();
                 };
                 syncNativeValidity();
@@ -22557,7 +23539,7 @@
                     const value = event.detail;
                     if (hasTemplateContent) {
                         if (isObject(value)) {
-                            scope.$merge(value);
+                            scope.merge(value);
                         }
                     }
                     else if (isString(value)) {
@@ -22565,7 +23547,7 @@
                     }
                 };
                 element.addEventListener(channel, fn);
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     element.removeEventListener(channel, fn);
                 });
             },
@@ -22579,14 +23561,14 @@
             this._scope = $scope;
             this._parse = $parse;
             this.parentCtrl = null;
-            this.$options = defaultModelOptions;
+            this.options = defaultModelOptions;
         }
-        $onInit() {
+        onInit() {
             const parentOptions = this.parentCtrl
-                ? this.parentCtrl.$options
+                ? this.parentCtrl.options
                 : defaultModelOptions;
             const modelOptionsDefinition = this._parse(getNormalizedAttr(this._element, "ngModelOptions") ?? "")(this._scope);
-            this.$options = parentOptions.createChild(modelOptionsDefinition);
+            this.options = parentOptions.createChild(modelOptionsDefinition);
         }
     }
     NgModelOptionsController.$nonscope = true;
@@ -22605,7 +23587,7 @@
             let inheritAll = false;
             const mergedOptions = assign({}, options);
             for (const [key, option] of Object.entries(mergedOptions)) {
-                if (option === "$inherit") {
+                if (option === "_inherit") {
                     if (key === "*") {
                         inheritAll = true;
                     }
@@ -22679,7 +23661,7 @@
             }
         });
         observer.observe(element, { attributes: true });
-        let deregisterDestroy = scope.$on("$destroy", deregister);
+        let deregisterDestroy = scope.on("$destroy", deregister);
         function deregister() {
             observer.disconnect();
             deregisterDestroy?.();
@@ -22688,39 +23670,39 @@
         return deregister;
     }
     /**
-     * @property $viewValue The actual value from the control's view.
+     * @property viewValue The actual value from the control's view.
      *
-     * @property $modelValue The value in the model that the control is bound to.
-     * @property $parsers Array of functions to execute, as a pipeline, whenever
-     *  the control updates the ngModelController with a new `$viewValue` from the DOM, usually via user input.
+     * @property modelValue The value in the model that the control is bound to.
+     * @property parsers Array of functions to execute, as a pipeline, whenever
+     *  the control updates the ngModelController with a new `viewValue` from the DOM, usually via user input.
      *
-     * @property $formatters Array of functions to execute, as a pipeline, whenever
-        the bound ngModel expression changes programmatically. The `$formatters` are not called when the
+     * @property formatters Array of functions to execute, as a pipeline, whenever
+        the bound ngModel expression changes programmatically. The `formatters` are not called when the
         value of the control is changed by user interaction.
      *
-     * @property $validators A collection of validators that are applied whenever the model value changes.
+     * @property validators A collection of validators that are applied whenever the model value changes.
      * The key value within the object refers to the name of the validator while the function refers to the validation operation.
      * The validation operation is provided with the model value as an argument and must return a true or false value depending on the response of that validation.
      *
-     * @property $asyncValidators A collection of validations that are expected to perform an asynchronous validation (e.g. a HTTP request).
+     * @property asyncValidators A collection of validations that are expected to perform an asynchronous validation (e.g. a HTTP request).
      *  The validation function that is provided is expected to return a promise when it is run during the model validation process
      *
-     * @property $viewChangeListeners Array of functions to execute whenever
-     *     a change to {@link NgModelController.$viewValue `$viewValue`} has caused a change
-     *     to {@link NgModelController.$modelValue `$modelValue`}.
+     * @property viewChangeListeners Array of functions to execute whenever
+     *     a change to {@link NgModelController.viewValue `viewValue`} has caused a change
+     *     to {@link NgModelController.modelValue `modelValue`}.
      *     It is called with no arguments, and its return value is ignored.
-     *     This can be used in place of additional $watches against the model value.
+     *     This can be used in place of additional observers on the model value.
      *
-     * @property $error An object hash with all failing validator ids as keys.
-     * @property $pending An object hash with all pending validator ids as keys.
+     * @property error An object hash with all failing validator ids as keys.
+     * @property pending An object hash with all pending validator ids as keys.
      *
-     * @property $untouched True if control has not lost focus yet.
-     * @property $touched True if control has lost focus.
-     * @property $pristine True if user has not interacted with the control yet.
-     * @property $dirty True if user has already interacted with the control.
-     * @property $valid True if there is no error.
-     * @property $invalid True if at least one error on the control.
-     * @property $name The name attribute of the control.
+     * @property untouched True if control has not lost focus yet.
+     * @property touched True if control has lost focus.
+     * @property pristine True if user has not interacted with the control yet.
+     * @property dirty True if user has already interacted with the control.
+     * @property valid True if there is no error.
+     * @property invalid True if at least one error on the control.
+     * @property name The name attribute of the control.
      */
     class NgModelController {
         /**
@@ -22733,35 +23715,35 @@
             /** @internal */
             this._updateEventHandler = (ev) => {
                 if (!isUndefined(this._pendingViewValue)) {
-                    this.$viewValue = this._pendingViewValue;
+                    this.viewValue = this._pendingViewValue;
                 }
                 this._debounceViewValueCommit(ev.type);
             };
             this._isAnimated = hasAnimate($element);
-            this.$viewValue = Number.NaN;
-            this.$modelValue = Number.NaN;
+            this.viewValue = Number.NaN;
+            this.modelValue = Number.NaN;
             this._rawModelValue = undefined; // stores the parsed modelValue / model set from scope regardless of validity.
-            this.$validators = {};
-            this.$asyncValidators = {};
-            this.$parsers = [];
-            this.$formatters = [];
-            this.$viewChangeListeners = [];
-            this.$untouched = true;
-            this.$touched = false;
-            this.$pristine = true;
-            this.$dirty = false;
-            this.$valid = true;
-            this.$invalid = false;
-            this.$validity = null;
-            this.$validationMessage = "";
-            this.$error = {}; // keep invalid keys here
+            this.validators = {};
+            this.asyncValidators = {};
+            this.parsers = [];
+            this.formatters = [];
+            this.viewChangeListeners = [];
+            this.untouched = true;
+            this.touched = false;
+            this.pristine = true;
+            this.dirty = false;
+            this.valid = true;
+            this.invalid = false;
+            this.validity = null;
+            this.validationMessage = "";
+            this.error = {}; // keep invalid keys here
             this._customValidationStates = new Map();
             this._validationStates = this._customValidationStates;
-            this.$pending = undefined; // keep pending keys here
+            this.pending = undefined; // keep pending keys here
             const interpolatedName = $interpolate(readModelAttr($element, "name") ?? "", false)?.($scope);
-            this.$name = isString(interpolatedName) ? interpolatedName : "";
+            this.controlName = isString(interpolatedName) ? interpolatedName : "";
             this._parentForm = nullFormCtrl;
-            this.$options = defaultModelOptions;
+            this.options = defaultModelOptions;
             this._updateEvents = "";
             this._modelExpression = readModelAttr($element, "ngModel") ?? "";
             this._parsedNgModel = $parse(this._modelExpression);
@@ -22794,7 +23776,7 @@
         /**
          * Updates the validation state of the control and propagates it to the parent form.
          */
-        $setValidity(validationErrorKey, state) {
+        setValidity(validationErrorKey, state) {
             if (this._destroyed) {
                 return;
             }
@@ -22822,16 +23804,16 @@
                 this._customValidationStates.set(validationErrorKey, "skipped");
             }
             this._syncPublicCustomValidationObjects();
-            if (this.$pending) {
+            if (this.pending) {
                 cachedToggleClass(this, PENDING_CLASS, true);
-                this.$valid = this.$invalid = undefined;
+                this.valid = this.invalid = undefined;
                 toggleValidationCss(this, "", null);
             }
             else {
                 cachedToggleClass(this, PENDING_CLASS, false);
-                this.$valid = isObjectEmpty(this.$error) && (this._nativeValid ?? true);
-                this.$invalid = !this.$valid;
-                toggleValidationCss(this, "", this.$valid);
+                this.valid = isObjectEmpty(this.error) && (this._nativeValid ?? true);
+                this.invalid = !this.valid;
+                toggleValidationCss(this, "", this.valid);
             }
             // Re-read after syncing the custom-validation state map.
             const combinedState = this._combinedValidityState(validationErrorKey);
@@ -22842,10 +23824,10 @@
                 return;
             }
             toggleValidationCss(this, validationErrorKey, combinedState);
-            this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+            this._parentForm.setValidity(validationErrorKey, combinedState, this);
             this._lastValidityParentVersions[validationErrorKey] = parentVersion;
         }
-        $setNativeValidity(state) {
+        setNativeValidity(state) {
             if (this._destroyed) {
                 return;
             }
@@ -22855,14 +23837,14 @@
                 return;
             }
             this._nativeValid = nextState;
-            if (!this.$pending) {
-                this.$valid = isObjectEmpty(this.$error) && nextState;
-                this.$invalid = !this.$valid;
+            if (!this.pending) {
+                this.valid = isObjectEmpty(this.error) && nextState;
+                this.invalid = !this.valid;
                 cachedToggleClass(this, PENDING_CLASS, false);
-                cachedToggleClass(this, VALID_CLASS, this.$valid);
-                cachedToggleClass(this, INVALID_CLASS, this.$invalid);
+                cachedToggleClass(this, VALID_CLASS, this.valid);
+                cachedToggleClass(this, INVALID_CLASS, this.invalid);
             }
-            this._parentForm.$setNativeValidity(nextState, this);
+            this._parentForm.setNativeValidity(nextState, this);
         }
         /** @internal */
         _hasNativeValidity() {
@@ -22874,7 +23856,7 @@
          * Native controls expose this through `ValidityState.customError`; an empty
          * message clears the custom error.
          */
-        $setCustomValidity(message) {
+        setCustomValidity(message) {
             if (this._destroyed) {
                 return;
             }
@@ -22906,8 +23888,8 @@
                     pending[key] = true;
                 }
             });
-            this.$error = errors;
-            this.$pending = isObjectEmpty(pending) ? undefined : pending;
+            this.error = errors;
+            this.pending = isObjectEmpty(pending) ? undefined : pending;
         }
         /** @internal Returns the current parent form chain version for validity propagation. */
         _validityParentVersion() {
@@ -22923,7 +23905,7 @@
         }
         /** @internal */
         _initGetterSetters() {
-            if (this.$options.getOption("getterSetter")) {
+            if (this.options.getOption("getterSetter")) {
                 const invokeModelGetter = this._parse(`${this._modelExpression}()`);
                 const invokeModelSetter = this._parse(`${this._modelExpression}(_$p)`);
                 this._ngModelGet = ($scope) => {
@@ -22950,19 +23932,19 @@
          * Called when the view needs to be updated. It is expected that the user of the ng-model
          * directive will implement this method.
          *
-         * The `$render()` method is invoked in the following situations:
+         * The `render()` method is invoked in the following situations:
          *
-         * * `$rollbackViewValue()` is called.  If we are rolling back the view value to the last
-         *   committed value then `$render()` is called to update the input control.
-         * * The value referenced by `ng-model` is changed programmatically and both the `$modelValue` and
-         *   the `$viewValue` are different from last time.
+         * * `rollbackViewValue()` is called.  If we are rolling back the view value to the last
+         *   committed value then `render()` is called to update the input control.
+         * * The value referenced by `ng-model` is changed programmatically and both the `modelValue` and
+         *   the `viewValue` are different from last time.
          *
-         * Since `ng-model` does not do a deep watch, `$render()` is only invoked if the values of
-         * `$modelValue` and `$viewValue` are actually different from their previous values. If `$modelValue`
-         * or `$viewValue` are objects (rather than a string or number) then `$render()` will not be
+         * Since `ng-model` does not do a deep watch, `render()` is only invoked if the values of
+         * `modelValue` and `viewValue` are actually different from their previous values. If `modelValue`
+         * or `viewValue` are objects (rather than a string or number) then `render()` will not be
          * invoked if you only change a property on the objects.
          */
-        $render() {
+        render() {
             /* empty */
         }
         /**
@@ -22970,7 +23952,7 @@
          *
          * For instance, the required directive does this to work out if the input has data or not.
          *
-         * The default `$isEmpty` function checks whether the value is `undefined`, `''`, `null` or `NaN`.
+         * The default `isEmpty` function checks whether the value is `undefined`, `''`, `null` or `NaN`.
          *
          * You can override this for input directives whose concept of being empty is different from the
          * default. The `checkboxInputType` directive does this because in its case a value of `false`
@@ -22979,7 +23961,7 @@
          * @param  value The value of the input to check for emptiness.
          * @returns True if `value` is "empty".
          */
-        $isEmpty(value) {
+        isEmpty(value) {
             return (isUndefined(value) || value === "" || isNull(value) || Number.isNaN(value));
         }
         /** @internal */
@@ -22994,7 +23976,7 @@
             if (this._destroyed) {
                 return;
             }
-            if (this.$isEmpty(value)) {
+            if (this.isEmpty(value)) {
                 const animate = this._getAnimateIfEnabled();
                 if (animate) {
                     animate.setClass(this._element, EMPTY_CLASS, NOT_EMPTY_CLASS);
@@ -23022,9 +24004,9 @@
          * state (`ng-pristine` class). A model is considered to be pristine when the control
          * has not been changed from when first compiled.
          */
-        $setPristine() {
-            this.$dirty = false;
-            this.$pristine = true;
+        setPristine() {
+            this.dirty = false;
+            this.pristine = true;
             if (this._destroyed)
                 return;
             const animate = this._getAnimateIfEnabled();
@@ -23043,9 +24025,9 @@
          * state (`ng-dirty` class). A model is considered to be dirty when the control has been changed
          * from when first compiled.
          */
-        $setDirty() {
-            this.$dirty = true;
-            this.$pristine = false;
+        setDirty() {
+            this.dirty = true;
+            this.pristine = false;
             if (this._destroyed) {
                 return;
             }
@@ -23057,7 +24039,7 @@
                 this._element.classList.remove(PRISTINE_CLASS);
                 this._element.classList.add(DIRTY_CLASS);
             }
-            this._parentForm.$setDirty();
+            this._parentForm.setDirty();
         }
         /**
          * Sets the control to its untouched state.
@@ -23067,9 +24049,9 @@
          * by default, however this function can be used to restore that state if the model has
          * already been touched by the user.
          */
-        $setUntouched() {
-            this.$touched = false;
-            this.$untouched = true;
+        setUntouched() {
+            this.touched = false;
+            this.untouched = true;
             if (this._destroyed) {
                 return;
             }
@@ -23089,9 +24071,9 @@
          * touched state (`ng-touched` class). A model is considered to be touched when the user has
          * first focused the control element and then shifted focus away from the control (blur event).
          */
-        $setTouched() {
-            this.$touched = true;
-            this.$untouched = false;
+        setTouched() {
+            this.touched = true;
+            this.untouched = false;
             if (this._destroyed) {
                 return;
             }
@@ -23105,22 +24087,22 @@
             }
         }
         /**
-         * Cancel an update and reset the input element's value to prevent an update to the `$modelValue`,
+         * Cancel an update and reset the input element's value to prevent an update to the `modelValue`,
          * which may be caused by a pending debounced event or because the input is waiting for some
          * future event.
          *
          * If you have an input that uses `ng-model-options` to set up debounced updates or updates that
-         * depend on special events such as `blur`, there can be a period when the `$viewValue` is out of
-         * sync with the ngModel's `$modelValue`.
+         * depend on special events such as `blur`, there can be a period when the `viewValue` is out of
+         * sync with the ngModel's `modelValue`.
          *
-         * In this case, you can use `$rollbackViewValue()` to manually cancel the debounced / future update
+         * In this case, you can use `rollbackViewValue()` to manually cancel the debounced / future update
          * and reset the input to the last committed view value.
          *
-         * It is also possible that you run into difficulties if you try to update the ngModel's `$modelValue`
+         * It is also possible that you run into difficulties if you try to update the ngModel's `modelValue`
          * programmatically before these debounced/future events have resolved/occurred, because AngularTS's
          * dirty checking mechanism is not able to tell whether the model has actually changed or not.
          *
-         * The `$rollbackViewValue()` method should be called before programmatically changing the model of an
+         * The `rollbackViewValue()` method should be called before programmatically changing the model of an
          * input which may have such events pending. This is important in order to make sure that the
          * input field will be updated with the new model value and any pending operations are cancelled.
          *
@@ -23136,7 +24118,7 @@
          *         if (e.keyCode === 27) {
          *           e.preventDefault();
          *           if (rollback) {
-         *             $scope.myForm[value].$rollbackViewValue();
+         *             $scope.myForm[value].rollbackViewValue();
          *           }
          *           $scope.model[value] = '';
          *         }
@@ -23163,14 +24145,14 @@
          *
          *       <form name="myForm" ng-model-options="{ updateOn: 'blur' }">
          *         <div>
-         *           <p id="inputDescription1">Without $rollbackViewValue():</p>
+         *           <p id="inputDescription1">Without rollbackViewValue():</p>
          *           <input name="value1" aria-describedby="inputDescription1" ng-model="model.value1"
          *                  ng-keydown="setEmpty($event, 'value1')">
          *           value1: "{{ model.value1 }}"
          *         </div>
          *
          *         <div>
-         *           <p id="inputDescription2">With $rollbackViewValue():</p>
+         *           <p id="inputDescription2">With rollbackViewValue():</p>
          *           <input name="value2" aria-describedby="inputDescription2" ng-model="model.value2"
          *                  ng-keydown="setEmpty($event, 'value2', true)">
          *           value2: "{{ model.value2 }}"
@@ -23189,13 +24171,13 @@
               </file>
          * </example>
          */
-        $rollbackViewValue() {
+        rollbackViewValue() {
             if (this._pendingDebounce) {
                 clearTimeout(this._pendingDebounce);
             }
             this._pendingViewValue = undefined;
-            this.$viewValue = this._lastCommittedViewValue;
-            this.$render();
+            this.viewValue = this._lastCommittedViewValue;
+            this.render();
         }
         /**
          * Runs each of the registered validators (first synchronous validators and then
@@ -23203,38 +24185,38 @@
          * If the validity changes to invalid, the model will be set to `undefined`,
          * unless `ngModelOptions.allowInvalid` is `true`.
          * If the validity changes to valid, it will set the model to the last available valid
-         * `$modelValue`, i.e. either the last parsed value or the last value set from the scope.
+         * `modelValue`, i.e. either the last parsed value or the last value set from the scope.
          */
-        $validate() {
-            // ignore $validate before model is initialized
-            if (isNumberNaN(this.$modelValue)) {
+        validate() {
+            // ignore validate before model is initialized
+            if (isNumberNaN(this.modelValue)) {
                 return;
             }
             const viewValue = this._lastCommittedViewValue;
-            // Note: we use the _rawModelValue as $modelValue might have been
+            // Note: we use the _rawModelValue as modelValue might have been
             // set to undefined during a view -> model update that found validation
             // errors. We can't parse the view here, since that could change
             // the model although neither viewValue nor the model on the scope changed
             const modelValue = this._rawModelValue;
-            const prevValid = this.$valid;
-            const prevModelValue = this.$modelValue;
-            const allowInvalid = this.$options.getOption("allowInvalid");
+            const prevValid = this.valid;
+            const prevModelValue = this.modelValue;
+            const allowInvalid = this.options.getOption("allowInvalid");
             this._runValidators(modelValue, viewValue, (allValid) => {
                 // If there was no change in validity, don't update the model
                 // This prevents changing an invalid modelValue to undefined
                 if (!allowInvalid && prevValid !== allValid) {
                     if (allValid &&
-                        this.$isEmpty(viewValue) &&
-                        !this.$isEmpty(modelValue) &&
+                        this.isEmpty(viewValue) &&
+                        !this.isEmpty(modelValue) &&
                         isUndefined(prevModelValue)) {
                         return;
                     }
-                    // Note: Don't check this.$valid here, as we could have
+                    // Note: Don't check this.valid here, as we could have
                     // external validators (e.g. calculated on the server),
-                    // that just call $setValidity and need the model value
+                    // that just call setValidity and need the model value
                     // to calculate their validity.
-                    this.$modelValue = allValid ? modelValue : undefined;
-                    if (this.$modelValue !== prevModelValue) {
+                    this.modelValue = allValid ? modelValue : undefined;
+                    if (this.modelValue !== prevModelValue) {
                         this._writeModelToScope();
                     }
                 }
@@ -23254,14 +24236,14 @@
                 }
                 else {
                     if (!this._parserValid) {
-                        keys(this.$validators).forEach((name) => {
+                        keys(this.validators).forEach((name) => {
                             setValidity(name, null);
                         });
-                        keys(this.$asyncValidators).forEach((name) => {
+                        keys(this.asyncValidators).forEach((name) => {
                             setValidity(name, null);
                         });
                     }
-                    // Set the parse error last, to prevent unsetting it, should a $validators key == parserName
+                    // Set the parse error last, to prevent unsetting it, should a validators key == parserName
                     setValidity(errorKey, this._parserValid);
                     return this._parserValid;
                 }
@@ -23269,13 +24251,13 @@
             };
             const processSyncValidators = () => {
                 let syncValidatorsValid = true;
-                for (const [name, validator] of entries(this.$validators)) {
+                for (const [name, validator] of entries(this.validators)) {
                     const result = Boolean(validator(modelValue, viewValue));
                     syncValidatorsValid = syncValidatorsValid && result;
                     setValidity(name, result);
                 }
                 if (!syncValidatorsValid) {
-                    keys(this.$asyncValidators).forEach((name) => {
+                    keys(this.asyncValidators).forEach((name) => {
                         setValidity(name, null);
                     });
                     return false;
@@ -23285,7 +24267,7 @@
             const processAsyncValidators = () => {
                 const validatorPromises = [];
                 let allValid = true;
-                entries(this.$asyncValidators).forEach(([name, validator]) => {
+                entries(this.asyncValidators).forEach(([name, validator]) => {
                     const promise = validator(modelValue, viewValue);
                     if (!isPromiseLike(promise)) {
                         throw ngModelError("nopromise", "Expected asynchronous validator to return a promise but got '{0}' instead.", promise);
@@ -23317,7 +24299,7 @@
              */
             const setValidity = (name, isValid) => {
                 if (localValidationRunId === this._currentValidationRunId) {
-                    this.$setValidity(name, isValid);
+                    this.setValidity(name, isValid);
                 }
             };
             /**
@@ -23340,13 +24322,13 @@
             processAsyncValidators();
         }
         /**
-         * Commit a pending update to the `$modelValue`.
+         * Commit a pending update to the `modelValue`.
          *
          * Updates may be pending by a debounced event or because the input is waiting for a some future
          * event defined in `ng-model-options`. this method is rarely needed as `NgModelController`
          * usually handles calling this in response to input events.
          */
-        $commitViewValue() {
+        commitViewValue() {
             if (this._destroyed) {
                 return;
             }
@@ -23354,20 +24336,20 @@
             // If the view value has not changed then we should just exit, except in the case where there is
             // a native validator on the element. In this case the validation state may have changed even though
             // the viewValue has stayed empty.
-            if (this._lastCommittedViewValue === this.$viewValue &&
-                (this.$viewValue !== "" || !this._hasNativeValidators)) {
+            if (this._lastCommittedViewValue === this.viewValue &&
+                (this.viewValue !== "" || !this._hasNativeValidators)) {
                 return;
             }
             if (isUndefined(this._lastCommittedViewValue) &&
-                Number.isNaN(this.$viewValue)) {
+                Number.isNaN(this.viewValue)) {
                 return;
             }
-            this._updateEmptyClasses(this.$viewValue);
-            this._lastCommittedViewValue = this.$viewValue;
+            this._updateEmptyClasses(this.viewValue);
+            this._lastCommittedViewValue = this.viewValue;
             this._pendingViewValue = undefined;
             // change to dirty
-            if (this.$pristine) {
-                this.$setDirty();
+            if (this.pristine) {
+                this.setDirty();
             }
             this._parseAndValidate();
         }
@@ -23376,55 +24358,55 @@
             let modelValue = this._lastCommittedViewValue;
             this._parserValid = isUndefined(modelValue) ? undefined : true;
             // Reset any previous parse error
-            this.$setValidity(this._parserName, null);
+            this.setValidity(this._parserName, null);
             this._parserName = "parse";
             if (this._parserValid) {
-                for (let i = 0; i < this.$parsers.length; i++) {
-                    modelValue = this.$parsers[i](modelValue);
+                for (let i = 0; i < this.parsers.length; i++) {
+                    modelValue = this.parsers[i](modelValue);
                     if (isUndefined(modelValue)) {
                         this._parserValid = false;
                         break;
                     }
                 }
             }
-            if (isNumberNaN(this.$modelValue)) {
-                // this.$modelValue has not been touched yet...
-                this.$modelValue = this._ngModelGet(this._scope);
+            if (isNumberNaN(this.modelValue)) {
+                // this.modelValue has not been touched yet...
+                this.modelValue = this._ngModelGet(this._scope);
             }
-            const prevModelValue = this.$modelValue;
-            const allowInvalid = this.$options.getOption("allowInvalid");
+            const prevModelValue = this.modelValue;
+            const allowInvalid = this.options.getOption("allowInvalid");
             this._rawModelValue = modelValue;
             const writeToModelIfNeeded = () => {
-                if (this.$modelValue != prevModelValue) {
-                    if (isNull(this.$modelValue) && prevModelValue === "")
+                if (this.modelValue != prevModelValue) {
+                    if (isNull(this.modelValue) && prevModelValue === "")
                         return;
                     this._writeModelToScope();
                 }
             };
             if (allowInvalid) {
-                this.$modelValue = modelValue;
+                this.modelValue = modelValue;
                 writeToModelIfNeeded();
             }
             // Pass the _lastCommittedViewValue here, because the cached viewValue might be out of date.
-            // This can happen if e.g. $setViewValue is called from inside a parser
+            // This can happen if e.g. setViewValue is called from inside a parser
             this._runValidators(modelValue, this._lastCommittedViewValue, (allValid) => {
                 if (!allowInvalid) {
-                    // Note: Don't check this.$valid here, as we could have
+                    // Note: Don't check this.valid here, as we could have
                     // external validators (e.g. calculated on the server),
-                    // that just call $setValidity and need the model value
+                    // that just call setValidity and need the model value
                     // to calculate their validity.
-                    // if (this.$modelValue ?? this.$modelValue[isProxySymbol]) {
-                    //   delete this.$modelValue;
+                    // if (this.modelValue ?? this.modelValue[isProxySymbol]) {
+                    //   delete this.modelValue;
                     // }
-                    this.$modelValue = allValid ? modelValue : undefined;
+                    this.modelValue = allValid ? modelValue : undefined;
                     writeToModelIfNeeded();
                 }
             });
         }
         /** @internal */
         _writeModelToScope() {
-            callFunction(this._ngModelSet, undefined, this._scope, this.$modelValue);
-            values(this.$viewChangeListeners).forEach((listener) => {
+            callFunction(this._ngModelSet, undefined, this._scope, this.modelValue);
+            values(this.viewChangeListeners).forEach((listener) => {
                 try {
                     listener();
                 }
@@ -23441,50 +24423,50 @@
          * directive calls it when the value of the input changes and `select`
          * calls it when an option is selected.
          *
-         * When `$setViewValue` is called, the new `value` will be staged for committing through the `$parsers`
-         * and `$validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged
-         * value is sent directly for processing through the `$parsers` pipeline. After this, the `$validators` and
-         * `$asyncValidators` are called and the value is applied to `$modelValue`.
+         * When `setViewValue` is called, the new `value` will be staged for committing through the `parsers`
+         * and `validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged
+         * value is sent directly for processing through the `parsers` pipeline. After this, the `validators` and
+         * `asyncValidators` are called and the value is applied to `modelValue`.
          * Finally, the value is set to the **expression** specified in the `ng-model` attribute and
-         * all the registered change listeners, in the `$viewChangeListeners` list are called.
+         * all the registered change listeners, in the `viewChangeListeners` list are called.
          *
          * In case the `ngModelOptions` directive is used with `updateOn`
          * and the `default` trigger is not listed, all those actions will remain pending until one of the
          * `updateOn` events is triggered on the DOM element.
          * All these actions will be debounced if the `ngModelOptions`
          * directive is used with a custom debounce for this particular event.
-         * Note that a `$digest` is only triggered once the `updateOn` events are fired, or if `debounce`
-         * is specified, once the timer runs out.
+         * The model commit and its reactive notifications run when an `updateOn`
+         * event fires, or after the configured debounce timer expires.
          *
          * Standard native inputs pass through browser-native values, such as strings
          * from text-like controls, booleans from checkboxes, and `FileList | null`
          * from file inputs.
          * However, custom controls might also pass objects to this method. In this case, we should make
-         * a copy of the object before passing it to `$setViewValue`. This is because `ngModel` does not
+         * a copy of the object before passing it to `setViewValue`. This is because `ngModel` does not
          * perform a deep watch of objects, it only looks for a change of identity. If you only change
          * the property of the object then ngModel will not realize that the object has changed and
-         * will not invoke the `$parsers` and `$validators` pipelines. For this reason, you should
-         * not change properties of the copy once it has been passed to `$setViewValue`.
+         * will not invoke the `parsers` and `validators` pipelines. For this reason, you should
+         * not change properties of the copy once it has been passed to `setViewValue`.
          * Otherwise you may cause the model value on the scope to change incorrectly.
          *
          * <div class="alert alert-info">
          * In any case, the value passed to the method should always reflect the current value
-         * of the control. For example, if you are calling `$setViewValue` for an input element,
+         * of the control. For example, if you are calling `setViewValue` for an input element,
          * you should pass the input DOM value. Otherwise, the control and the scope model become
-         * out of sync. It's also important to note that `$setViewValue` does not call `$render` or change
+         * out of sync. It's also important to note that `setViewValue` does not call `render` or change
          * the control's DOM value in any way. If we want to change the control's DOM value
          * programmatically, we should update the `ngModel` scope expression. Its new value will be
-         * picked up by the model controller, which will run it through the `$formatters`, `$render` it
-         * to update the DOM, and finally call `$validate` on it.
+         * picked up by the model controller, which will run it through the `formatters`, `render` it
+         * to update the DOM, and finally call `validate` on it.
          * </div>
          *
          * @param  value value from the view.
          * @param  [trigger] Event that triggered the update.
          */
-        $setViewValue(value, trigger) {
-            this.$viewValue = value;
+        setViewValue(value, trigger) {
+            this.viewValue = value;
             this._pendingViewValue = value;
-            if (this.$options.getOption("updateOnDefault")) {
+            if (this.options.getOption("updateOnDefault")) {
                 this._debounceViewValueCommit(trigger);
             }
         }
@@ -23493,9 +24475,9 @@
          */
         /** @internal */
         _debounceViewValueCommit(trigger) {
-            let debounceDelay = this.$options.getOption("debounce");
+            let debounceDelay = this.options.getOption("debounce");
             const debounceDelayMap = typeof debounceDelay === "object" ? debounceDelay : {};
-            const updateOn = this.$options.getOption("updateOn");
+            const updateOn = this.options.getOption("updateOn");
             if (trigger) {
                 const debounceVal = debounceDelayMap[trigger];
                 if (isNumber(debounceVal)) {
@@ -23512,17 +24494,17 @@
             if (this._pendingDebounce) {
                 clearTimeout(this._pendingDebounce);
             }
-            const pendingViewValue = this.$viewValue;
+            const pendingViewValue = this.viewValue;
             const normalizedDebounceDelay = isNumber(debounceDelay) ? debounceDelay : 0;
             if (normalizedDebounceDelay > 0) {
                 // this fails if debounceDelay is an object
                 this._pendingDebounce = setTimeout(() => {
-                    this.$viewValue = pendingViewValue;
-                    this.$commitViewValue();
+                    this.viewValue = pendingViewValue;
+                    this.commitViewValue();
                 }, normalizedDebounceDelay);
             }
             else {
-                this.$commitViewValue();
+                this.commitViewValue();
             }
         }
         /**
@@ -23549,41 +24531,41 @@
          * @param  options a hash of settings to override the previous options
          *
          */
-        $overrideModelOptions(options) {
+        overrideModelOptions(options) {
             this._removeUpdateOnEventListeners();
-            this.$options = this.$options.createChild(options);
-            this._updateEvents = this.$options._options.updateOn ?? "";
+            this.options = this.options.createChild(options);
+            this._updateEvents = this.options._options.updateOn ?? "";
             this._setUpdateOnEvents();
         }
         /**
          * Runs the model -> view pipeline on the current
-         * {@link NgModelController.$modelValue $modelValue}.
+         * {@link NgModelController.modelValue modelValue}.
          *
          * The following actions are performed by this method:
          *
-         * - the `$modelValue` is run through the {@link NgModelController.$formatters $formatters}
-         * and the result is set to the {@link NgModelController.$viewValue $viewValue}
+         * - the `modelValue` is run through the {@link NgModelController.formatters formatters}
+         * and the result is set to the {@link NgModelController.viewValue viewValue}
          * - the `ng-empty` or `ng-not-empty` class is set on the element
-         * - if the `$viewValue` has changed:
-         *   - {@link NgModelController.$render $render} is called on the control
-         *   - the {@link NgModelController.$validators $validators} are run and
+         * - if the `viewValue` has changed:
+         *   - {@link NgModelController.render render} is called on the control
+         *   - the {@link NgModelController.validators validators} are run and
          *   the validation status is set.
          *
          * This method is called by ngModel internally when the bound scope value changes.
          * Application developers usually do not have to call this function themselves.
          *
-         * This function can be used when the `$viewValue` or the rendered DOM value are not correctly
-         * formatted and the `$modelValue` must be run through the `$formatters` again.
+         * This function can be used when the `viewValue` or the rendered DOM value are not correctly
+         * formatted and the `modelValue` must be run through the `formatters` again.
          *
          * @example
          * Consider a text input with an autocomplete list (for fruit), where the items are
          * objects with a name and an id.
          * A user enters `ap` and then selects `Apricot` from the list.
-         * Based on this, the autocomplete widget will call `$setViewValue({name: 'Apricot', id: 443})`,
+         * Based on this, the autocomplete widget will call `setViewValue({name: 'Apricot', id: 443})`,
          * but the rendered value will still be `ap`.
-         * The widget can then call `ctrl.$processModelValue()` to run the model -> view
+         * The widget can then call `ctrl.processModelValue()` to run the model -> view
          * pipeline again, which formats the object to the string `Apricot`,
-         * then updates the `$viewValue`, and finally renders it in the DOM.
+         * then updates the `viewValue`, and finally renders it in the DOM.
          *
          * <example module="inputExample" name="ng-model-process">
            <file name="index.html">
@@ -23619,14 +24601,14 @@
                   let that = this;
                   let ngModel;
          *
-                  that.$postLink = function() {
+                  that.postLink = function() {
                     ngModel = $element.querySelectorAll('input').controller('ngModel');
          *
-                    ngModel.$formatters.push(function(value) {
+                    ngModel.formatters.push(function(value) {
                       return (value && value.name) || value;
                     });
          *
-                    ngModel.$parsers.push(function(value) {
+                    ngModel.parsers.push(function(value) {
                       let match = value;
                       for (let i = 0; i < that.items.length; i++) {
                         if (that.items[i].name === value) {
@@ -23640,8 +24622,8 @@
                   };
          *
                   that.selectItem = function(item) {
-                    ngModel.$setViewValue(item);
-                    ngModel.$processModelValue();
+                    ngModel.setViewValue(item);
+                    ngModel.processModelValue();
                     that.onSelect({item: item});
                   };
                 }]
@@ -23660,49 +24642,47 @@
          * </example>
          *
          */
-        $processModelValue() {
+        processModelValue() {
             if (this._destroyed) {
                 return;
             }
             const viewValue = this._format();
-            if (this.$viewValue !== viewValue) {
+            if (this.viewValue !== viewValue) {
                 this._updateEmptyClasses(viewValue);
-                this.$viewValue = this._lastCommittedViewValue = viewValue;
-                this.$render();
+                this.viewValue = this._lastCommittedViewValue = viewValue;
+                this.render();
                 // It is possible that model and view value have been updated during render
-                this._runValidators(this.$modelValue, this.$viewValue, () => {
+                this._runValidators(this.modelValue, this.viewValue, () => {
                     /* empty */
                 });
             }
         }
         /**
-         * This method is called internally to run the $formatters on the $modelValue
+         * This method is called internally to run the formatters on the modelValue
          */
         /** @internal */
         _format() {
-            const formatters = this.$formatters;
+            const formatters = this.formatters;
             let idx = formatters.length;
-            let viewValue = this.$modelValue;
+            let viewValue = this.modelValue;
             while (idx--) {
                 viewValue = formatters[idx](viewValue);
             }
             return viewValue;
         }
         /**
-         * @ignore This method is called internally when the bound scope value changes.
+         * This method is called internally when the bound scope value changes.
+         *
+         * @internal
          */
-        /** @internal */
         _setModelValue(modelValue) {
             if (this._destroyed) {
                 return;
             }
-            this.$modelValue = this._rawModelValue = modelValue;
+            this.modelValue = this._rawModelValue = modelValue;
             this._parserValid = undefined;
-            this.$processModelValue();
+            this.processModelValue();
         }
-        /**
-         * @ignore
-         */
         /** @internal */
         _removeAllEventListeners() {
             this._eventRemovers.forEach((removeCallback) => {
@@ -23728,7 +24708,7 @@
                     });
                 });
             }
-            this._updateEvents = this.$options.getOption("updateOn");
+            this._updateEvents = this.options.getOption("updateOn");
             if (this._updateEvents) {
                 this._updateEvents.split(" ").forEach((ev) => {
                     this._element.addEventListener(ev, this._updateEventHandler);
@@ -23739,8 +24719,8 @@
             }
         }
     }
-    /* @ignore */ NgModelController.$nonscope = true;
-    /* @ignore */ NgModelController.$inject = [
+    NgModelController.$nonscope = true;
+    NgModelController.$inject = [
         _scope,
         _exceptionHandler,
         _element,
@@ -23753,24 +24733,24 @@
      */
     function setupModelWatcher(ctrl) {
         // model -> value
-        // Note: we cannot use a normal scope.$watch as we want to detect the following:
+        // Note: we cannot use a normal scope.watch as we want to detect the following:
         // 1. scope value is 'a'
         // 2. user enters 'b'
         // 3. ng-change kicks in and reverts scope value to 'a'
         //    -> scope value did not change since the last digest as
         //       ng-change executes in apply phase
         // 4. view should be changed back to 'a'
-        return (ctrl._scope.$watch("value", () => {
+        return (ctrl._scope.watch("value", () => {
             const modelValue = callFunction(ctrl._ngModelGet, undefined, ctrl._scope);
-            if (isUndefined(modelValue) && Number.isNaN(ctrl.$modelValue)) {
+            if (isUndefined(modelValue) && Number.isNaN(ctrl.modelValue)) {
                 return;
             }
             // if scope model value and ngModel value are out of sync
             // This cannot be moved to the action function, because it would not catch the
             // case where the model is changed in the ngChange function or the model setter
-            if (modelValue !== ctrl.$modelValue &&
+            if (modelValue !== ctrl.modelValue &&
                 // checks for NaN is needed to allow setting the model to NaN when there's an asyncValidator
-                (!Number.isNaN(ctrl.$modelValue) || !Number.isNaN(modelValue))) {
+                (!Number.isNaN(ctrl.modelValue) || !Number.isNaN(modelValue))) {
                 ctrl._setModelValue(modelValue);
             }
         }) ??
@@ -23799,23 +24779,22 @@
                         const [modelCtrl, parentFormCtrl, optionsCtrl] = ctrls;
                         const formCtrl = parentFormCtrl ?? modelCtrl._parentForm;
                         if (optionsCtrl) {
-                            modelCtrl.$options = optionsCtrl.$options;
+                            modelCtrl.options = optionsCtrl.options;
                         }
                         modelCtrl._initGetterSetters();
                         // notify others, especially parent forms
-                        formCtrl.$addControl(modelCtrl);
+                        formCtrl.addControl(modelCtrl);
                         const handleNameChange = (newValue) => {
                             const nextName = newValue ?? "";
-                            if (modelCtrl.$name !== nextName) {
+                            if (modelCtrl.controlName !== nextName) {
                                 modelCtrl._parentForm._renameControl(modelCtrl, nextName);
                             }
                         };
                         const deregisterNameObserver = observeModelAttr(scope, preElement, "name", handleNameChange);
-                        const deregisterWatch = (scope.$watch(modelCtrl._modelExpression, (val) => {
+                        const deregisterWatch = (scope.watch(modelCtrl._modelExpression, (val) => {
                             const modelValue = deProxy(val);
-                            if (modelValue === modelCtrl.$modelValue ||
-                                (Number.isNaN(modelValue) &&
-                                    Number.isNaN(modelCtrl.$modelValue))) {
+                            if (modelValue === modelCtrl.modelValue ||
+                                (Number.isNaN(modelValue) && Number.isNaN(modelCtrl.modelValue))) {
                                 return;
                             }
                             modelCtrl._setModelValue(modelValue);
@@ -23823,21 +24802,21 @@
                             (() => {
                                 /* empty */
                             }));
-                        scope.$on("$destroy", () => {
+                        scope.on("$destroy", () => {
                             modelCtrl._destroyed = true;
                             if (modelCtrl._pendingDebounce) {
                                 clearTimeout(modelCtrl._pendingDebounce);
                                 modelCtrl._pendingDebounce = undefined;
                             }
                             modelCtrl._removeAllEventListeners();
-                            modelCtrl.$viewChangeListeners.length = 0;
+                            modelCtrl.viewChangeListeners.length = 0;
                             modelCtrl._deregisterModelWatcher();
                             modelCtrl._deregisterModelWatcher = () => {
                                 /* empty */
                             };
                             modelCtrl._element = undefined;
                             deregisterNameObserver();
-                            modelCtrl._parentForm.$removeControl(modelCtrl);
+                            modelCtrl._parentForm.removeControl(modelCtrl);
                             modelCtrl._parentForm = nullFormCtrl;
                             deregisterWatch();
                         });
@@ -23848,18 +24827,18 @@
                         const changeFn = change ? modelCtrl._parse(change) : undefined;
                         modelCtrl._setUpdateOnEvents();
                         function setTouched() {
-                            modelCtrl.$setTouched();
+                            modelCtrl.setTouched();
                         }
                         const blurListener = () => {
-                            if (modelCtrl.$touched)
+                            if (modelCtrl.touched)
                                 return;
                             setTouched();
                         };
                         elementPost.addEventListener("blur", blurListener);
-                        scope.$on("$destroy", () => {
+                        scope.on("$destroy", () => {
                             elementPost.removeEventListener("blur", blurListener);
                         });
-                        modelCtrl.$viewChangeListeners.push(() => {
+                        modelCtrl.viewChangeListeners.push(() => {
                             if (changeFn) {
                                 callFunction(changeFn, undefined, scope);
                             }
@@ -23889,7 +24868,7 @@
             this._default = undefined;
             this._multipleExpression = parseAttrTruthy($parse, multipleExpression);
             this._ngMessagesMultipleExpression = parseAttrTruthy($parse, ngMessagesMultipleExpression);
-            this._scope.$watch(collectionExpression ?? "", this._render.bind(this));
+            this._scope.watch(collectionExpression ?? "", this._render.bind(this));
         }
         /** @internal */
         _getAttachId() {
@@ -24074,7 +25053,7 @@
         };
     }
     function isDestroyedScope(scope) {
-        return scope._destroyed || scope.$root.$handler._destroyed;
+        return scope._destroyed || scope.root._handler._destroyed;
     }
     function insertCompiledMessageTemplate(anchor, scope) {
         return (contents) => {
@@ -24135,7 +25114,7 @@
                             if (dynamicExp) {
                                 const dynamicFn = $parse(dynamicExp);
                                 assignRecords(dynamicFn(scope));
-                                scope.$watch(dynamicExp, assignRecords);
+                                scope.watch(dynamicExp, assignRecords);
                             }
                             else {
                                 assignRecords(staticExp);
@@ -24174,7 +25153,7 @@
                                                 ngMessagesCtrl.deregister(commentNode, isDefault);
                                                 messageCtrl.detach();
                                             }
-                                            newScope?.$destroy();
+                                            newScope?.destroy();
                                         });
                                     });
                                 }
@@ -24197,7 +25176,7 @@
                         // Normally this is done when the attached element is destroyed; but if this directive
                         // gets removed before we attach the message to the DOM there is nothing to watch
                         // in which case we must deregister when the containing scope is destroyed.
-                        scope.$on("$destroy", () => {
+                        scope.on("$destroy", () => {
                             ngMessagesCtrl.deregister(commentNode, isDefault);
                         });
                     };
@@ -24406,19 +25385,19 @@
                         if (optionEl.value === "") {
                             selectCtrl._hasEmptyOption = true;
                             selectCtrl._emptyOption = optionEl;
-                            ngModelCtrl.$render();
+                            ngModelCtrl.render();
                             optionEl.addEventListener("$destroy", () => {
-                                const needsRerender = selectCtrl.$isEmptyOptionSelected();
+                                const needsRerender = selectCtrl.isEmptyOptionSelected();
                                 selectCtrl._hasEmptyOption = false;
                                 selectCtrl._emptyOption = undefined;
                                 if (needsRerender)
-                                    ngModelCtrl.$render();
+                                    ngModelCtrl.render();
                             });
                         }
                     };
                 }
             }
-            scope.$watch(ngOptions._getWatchables, updateOptions);
+            scope.watch(ngOptions._getWatchables, updateOptions);
             function _addOptionElement(option, parent) {
                 const optionElement = optionTemplate.cloneNode(false);
                 parent.appendChild(optionElement);
@@ -24478,15 +25457,15 @@
                     }
                 });
                 selectNode.appendChild(listFragment);
-                ngModelCtrl.$render();
-                if (!ngModelCtrl.$isEmpty(previousValue)) {
+                ngModelCtrl.render();
+                if (!ngModelCtrl.isEmpty(previousValue)) {
                     const nextValue = selectCtrl._readValue();
                     const isNotPrimitive = multiple;
                     if (isNotPrimitive
                         ? !equals(previousValue, nextValue)
                         : previousValue !== nextValue) {
-                        ngModelCtrl.$setViewValue(nextValue);
-                        ngModelCtrl.$render();
+                        ngModelCtrl.setViewValue(nextValue);
+                        ngModelCtrl.render();
                     }
                 }
             }
@@ -24564,7 +25543,7 @@
                 element.addEventListener("pointerup", releasePointer);
                 element.addEventListener("pointercancel", releasePointer);
                 element.addEventListener("lostpointercapture", forgetPointer);
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     element.removeEventListener("pointerdown", capturePointer);
                     element.removeEventListener("pointerup", releasePointer);
                     element.removeEventListener("pointercancel", releasePointer);
@@ -24616,7 +25595,7 @@
             }
         });
         observer.observe(optionElement, { attributes: true });
-        let deregisterDestroy = optionScope.$on("$destroy", deregister);
+        let deregisterDestroy = optionScope.on("$destroy", deregister);
         function deregister() {
             observer.disconnect();
             deregisterDestroy?.();
@@ -24634,7 +25613,7 @@
      * regular or `ngOptions`-backed select element.
      */
     class SelectController {
-        /** @ignore */
+        /** @internal */
         constructor($element, $scope) {
             this._element = $element;
             this._scope = $scope;
@@ -24652,7 +25631,7 @@
             this._deferredQueue = [];
             this._deferredDrainScheduled = false;
             this._deferredDraining = false;
-            $scope.$on("$destroy", () => {
+            $scope.on("$destroy", () => {
                 this._renderUnknownOption = () => {
                     /* empty */
                 };
@@ -24663,7 +25642,7 @@
          * element, i.e. an option that signifies that the select is empty or the
          * selection is `null`.
          */
-        $hasEmptyOption() {
+        hasEmptyOption() {
             return this._hasEmptyOption;
         }
         /**
@@ -24672,18 +25651,17 @@
          * The unknown option is added and automatically selected whenever the
          * select model does not match any option.
          */
-        $isUnknownOptionSelected() {
+        isUnknownOptionSelected() {
             return this._element.options[0] === this._unknownOption;
         }
         /**
          * Returns `true` if the select element has an empty option and that option
          * is currently selected.
          */
-        $isEmptyOptionSelected() {
+        isEmptyOptionSelected() {
             return (this._hasEmptyOption &&
                 this._element.options[this._element.selectedIndex] === this._emptyOption);
         }
-        /** @ignore */
         /** @internal */
         _renderUnknownOption(val) {
             const unknownVal = this._generateUnknownOptionValue(val);
@@ -24693,7 +25671,6 @@
             this._unknownOption.setAttribute("selected", "selected");
             this._element.value = unknownVal;
         }
-        /** @ignore */
         /** @internal */
         _updateUnknownOption(val) {
             const unknownVal = this._generateUnknownOptionValue(val);
@@ -24702,7 +25679,6 @@
             this._unknownOption.setAttribute("selected", "selected");
             this._element.value = unknownVal;
         }
-        /** @ignore */
         /** @internal */
         _generateUnknownOptionValue(val) {
             if (isUndefined(val)) {
@@ -24710,13 +25686,11 @@
             }
             return `? ${hashKey(val)} ?`;
         }
-        /** @ignore */
         /** @internal */
         _removeUnknownOption() {
             if (this._unknownOption.parentElement)
                 removeElement(this._unknownOption);
         }
-        /** @ignore */
         /** @internal */
         _selectEmptyOption() {
             if (this._emptyOption) {
@@ -24725,21 +25699,18 @@
                 this._emptyOption.setAttribute("selected", "selected");
             }
         }
-        /** @ignore */
         /** @internal */
         _unselectEmptyOption() {
             if (this._hasEmptyOption && this._emptyOption) {
                 this._emptyOption.selected = false;
             }
         }
-        /** @ignore */
         /** @internal */
         _readValue() {
             const val = this._element.value;
             const realVal = val in this._selectValueMap ? this._selectValueMap[val] : val;
             return this._hasOption(realVal) ? deProxy(realVal) : null;
         }
-        /** @ignore */
         /** @internal */
         _writeValue(value) {
             const writeValue = deProxy(value);
@@ -24763,7 +25734,6 @@
                 this._selectUnknownOrEmptyOption(writeValue);
             }
         }
-        /** @ignore */
         /** @internal */
         _addOption(value, element) {
             const optionValue = deProxy(value);
@@ -24777,18 +25747,17 @@
             const count = this._optionsMap.get(optionValue) ?? 0;
             this._optionsMap.set(optionValue, count + 1);
             this._scheduleRender();
-            const currentViewValue = this._ngModelCtrl.$viewValue;
-            const currentModelValue = this._ngModelCtrl.$modelValue;
+            const currentViewValue = this._ngModelCtrl.viewValue;
+            const currentModelValue = this._ngModelCtrl.modelValue;
             if (currentViewValue === optionValue ||
                 currentModelValue === optionValue ||
                 ((isNullOrUndefined(currentViewValue) || currentViewValue === "") &&
                     optionValue === "")) {
                 this._scheduleDeferred(() => {
-                    this._ngModelCtrl.$render();
+                    this._ngModelCtrl.render();
                 });
             }
         }
-        /** @ignore */
         /** @internal */
         _scheduleDeferred(fn, ownerScope = this._scope) {
             this._deferredQueue.push(() => {
@@ -24807,7 +25776,6 @@
                 });
             });
         }
-        /** @ignore */
         /** @internal */
         _drainDeferredQueue() {
             if (this._deferredQueue.length === 0) {
@@ -24825,7 +25793,6 @@
                 this._deferredDraining = false;
             }
         }
-        /** @ignore */
         /** @internal */
         _removeOption(value) {
             const optionValue = deProxy(value);
@@ -24843,13 +25810,11 @@
                 }
             }
         }
-        /** @ignore */
         /** @internal */
         _hasOption(value) {
             const optionValue = deProxy(value);
             return !!this._optionsMap.get(optionValue);
         }
-        /** @ignore */
         /** @internal */
         _selectUnknownOrEmptyOption(value) {
             if (isNullOrUndefined(value) && this._emptyOption) {
@@ -24863,7 +25828,6 @@
                 this._renderUnknownOption(value);
             }
         }
-        /** @ignore */
         /** @internal */
         _scheduleRender() {
             if (this._renderScheduled) {
@@ -24873,14 +25837,13 @@
             this._renderScheduled = true;
             this._scheduleDeferred(() => {
                 this._renderScheduled = false;
-                this._ngModelCtrl.$render();
+                this._ngModelCtrl.render();
                 if (this._renderRescheduleRequested) {
                     this._renderRescheduleRequested = false;
                     this._scheduleRender();
                 }
             });
         }
-        /** @ignore */
         /** @internal */
         _scheduleViewValueUpdate(renderAfter = false) {
             if (this._updateScheduled) {
@@ -24890,16 +25853,15 @@
             this._updateScheduled = true;
             this._scheduleDeferred(() => {
                 this._updateScheduled = false;
-                this._ngModelCtrl.$setViewValue(this._readValue());
+                this._ngModelCtrl.setViewValue(this._readValue());
                 if (renderAfter)
-                    this._ngModelCtrl.$render();
+                    this._ngModelCtrl.render();
                 if (this._updateRescheduleRequested) {
                     this._updateRescheduleRequested = false;
                     this._scheduleViewValueUpdate(renderAfter);
                 }
             });
         }
-        /** @ignore */
         /** @internal */
         _registerOption(optionScope, optionElement, interpolateValueFn, interpolateTextFn, ngValueExpression, initialValue, hasNgValue = false) {
             let oldVal;
@@ -24930,7 +25892,7 @@
                     }
                 };
                 syncNgValue(undefined);
-                optionScope.$watch(stringify$1(ngValueExpression ?? ""), syncNgValue);
+                optionScope.watch(stringify$1(ngValueExpression ?? ""), syncNgValue);
                 observeOptionElementAttr(optionScope, optionElement, "value", (observedValue) => {
                     if (observedValue !== optionElement.getAttribute("value")) {
                         return oldVal;
@@ -24966,7 +25928,7 @@
                     registeredValue = initialTextValue;
                     this._addOption(String(initialTextValue), optionElement);
                 }
-                optionScope.$watch("value", () => {
+                optionScope.watch("value", () => {
                     const newVal = interpolateTextFn(optionScope);
                     if (!registeredValue) {
                         setOptionElementAttr(optionElement, "value", String(newVal));
@@ -24992,8 +25954,8 @@
                         this._scheduleViewValueUpdate(true);
                     }
                     else {
-                        this._ngModelCtrl.$setViewValue(null);
-                        this._ngModelCtrl.$render();
+                        this._ngModelCtrl.setViewValue(null);
+                        this._ngModelCtrl.render();
                     }
                 }
             });
@@ -25019,7 +25981,7 @@
             });
         }
     }
-    /* @ignore */ SelectController.$inject = [_element, _scope];
+    SelectController.$inject = [_element, _scope];
 
     function readSelectAttr(element, normalizedName) {
         return getNormalizedAttr(element, normalizedName);
@@ -25052,12 +26014,12 @@
             }
             selectCtrl._ngModelCtrl = ngModelCtrl;
             const syncNativeValidity = () => {
-                ngModelCtrl.$setNativeValidity(!selectElement.willValidate || selectElement.validity.valid);
+                ngModelCtrl.setNativeValidity(!selectElement.willValidate || selectElement.validity.valid);
             };
             selectElement.addEventListener("change", () => {
                 selectCtrl._removeUnknownOption();
                 const viewValue = selectCtrl._readValue();
-                ngModelCtrl.$setViewValue(viewValue);
+                ngModelCtrl.setViewValue(viewValue);
                 syncNativeValidity();
             });
             if (hasNormalizedAttr(element, "multiple")) {
@@ -25089,15 +26051,15 @@
                 };
                 let lastView;
                 let lastViewRef = NaN;
-                _scope.$watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
-                    if (lastViewRef === ngModelCtrl.$viewValue &&
-                        !equals(lastView, ngModelCtrl.$viewValue)) {
-                        lastView = shallowCopy(ngModelCtrl.$viewValue);
-                        ngModelCtrl.$render();
+                _scope.watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
+                    if (lastViewRef === ngModelCtrl.viewValue &&
+                        !equals(lastView, ngModelCtrl.viewValue)) {
+                        lastView = shallowCopy(ngModelCtrl.viewValue);
+                        ngModelCtrl.render();
                     }
-                    lastViewRef = ngModelCtrl.$viewValue;
+                    lastViewRef = ngModelCtrl.viewValue;
                 });
-                ngModelCtrl.$isEmpty = function (value) {
+                ngModelCtrl.isEmpty = function (value) {
                     return !value || value.length === 0;
                 };
             }
@@ -25108,10 +26070,10 @@
                 return;
             const selectElement = element;
             const syncNativeValidity = () => {
-                ngModelCtrl.$setNativeValidity(!selectElement.willValidate || selectElement.validity.valid);
+                ngModelCtrl.setNativeValidity(!selectElement.willValidate || selectElement.validity.valid);
             };
-            ngModelCtrl.$render = function () {
-                selectCtrl._writeValue(ngModelCtrl.$viewValue);
+            ngModelCtrl.render = function () {
+                selectCtrl._writeValue(ngModelCtrl.viewValue);
                 syncNativeValidity();
             };
             syncNativeValidity();
@@ -25207,7 +26169,7 @@
                     }
                     const targetScope = deProxy(scope);
                     setter(targetScope, refValue);
-                    scope.$on("$destroy", () => {
+                    scope.on("$destroy", () => {
                         setter(targetScope, null);
                     });
                 };
@@ -25282,7 +26244,7 @@
             "$even",
         ];
         function scopeUsesRepeatPositionLocals(scope) {
-            const watchers = scope.$handler._watchers;
+            const watchers = scope._handler._watchers;
             for (let i = 0; i < repeatPositionLocalKeys.length; i++) {
                 if (watchers.has(repeatPositionLocalKeys[i])) {
                     return true;
@@ -25298,10 +26260,10 @@
                 scope[keyIdentifier] = key;
             }
             if (value && (typeof value === "object" || typeof value === "function")) {
-                setHashKey(scope.$target, hashKey(value));
+                setHashKey(scope._target, hashKey(value));
             }
             else {
-                setHashKey(scope.$target, null);
+                setHashKey(scope._target, null);
             }
             if (!updatePositionLocals) {
                 return;
@@ -25331,10 +26293,10 @@
             }
         }
         function initializeScope(scope, index, valueIdentifier, value, keyIdentifier, key, arrayLength) {
-            const target = scope.$target;
+            const target = scope._target;
             target[valueIdentifier] = value;
             if (isProxy(value)) {
-                scope.$handler._foreignProxies.add(value);
+                scope._handler._foreignProxies.add(value);
             }
             if (keyIdentifier) {
                 target[keyIdentifier] = key;
@@ -25593,7 +26555,7 @@
                 const valueIdentifier = valueAlias || itemIdentifier;
                 if (aliasAs &&
                     (!/^[$a-zA-Z_][$a-zA-Z0-9_]*$/.test(aliasAs) ||
-                        /^(null|undefined|this|\$index|\$first|\$middle|\$last|\$even|\$odd|\$parent|\$root|\$id)$/.test(aliasAs))) {
+                        /^(null|undefined|this|\$index|\$first|\$middle|\$last|\$even|\$odd|parent|root|id)$/.test(aliasAs))) {
                     throw ngRepeatError("badident", "alias '{0}' is invalid --- must be a valid JS identifier which is not a reserved name.", aliasAs);
                 }
                 const swap = callBackOnce(() => {
@@ -25716,7 +26678,7 @@
                     let lastBlockMap = nullObject();
                     let lastBlockOrder = [];
                     let lastSeenArrayMutationVersion = 0;
-                    $scope.$watch(rhs, (collection) => {
+                    $scope.watch(rhs, (collection) => {
                         swap();
                         let index = 0;
                         previousNode = repeatElement;
@@ -25832,7 +26794,7 @@
                             const lastNode = getBlockEnd(lastBlock);
                             if (firstNode && lastNode) {
                                 for (let i = 0; i < lastBlockOrder.length; i++) {
-                                    lastBlockOrder[i]._scope?.$destroy();
+                                    lastBlockOrder[i]._scope?.destroy();
                                 }
                                 removeNodeRangeFast(firstNode, lastNode);
                                 lastBlockMap = nextBlockMap;
@@ -25849,7 +26811,7 @@
                             const lastRemovedNode = getBlockEnd(lastRemovedBlock);
                             if (firstRemovedNode && lastRemovedNode) {
                                 for (let removedIndex = tailDeleteRetainedLength; removedIndex < lastBlockOrder.length; removedIndex++) {
-                                    lastBlockOrder[removedIndex]._scope?.$destroy();
+                                    lastBlockOrder[removedIndex]._scope?.destroy();
                                 }
                                 removeNodeRangeFast(firstRemovedNode, lastRemovedNode);
                                 const retainedLastIndex = tailDeleteRetainedLength - 1;
@@ -25879,7 +26841,7 @@
                             const lastNode = getBlockEnd(lastBlock);
                             if (firstNode && lastNode) {
                                 for (let i = 0; i < lastBlockOrder.length; i++) {
-                                    lastBlockOrder[i]._scope?.$destroy();
+                                    lastBlockOrder[i]._scope?.destroy();
                                 }
                                 removeNodeRangeFast(firstNode, lastNode);
                                 lastBlockMap = nullObject();
@@ -25908,7 +26870,7 @@
                                 });
                             }
                             else {
-                                block._scope?.$destroy();
+                                block._scope?.destroy();
                                 removeBlockNodes(blockNodes);
                             }
                             if (blockNodes.length && blockNodes[0].parentNode) {
@@ -25917,7 +26879,7 @@
                                 }
                             }
                             if (hasAnimate && elementsToRemove) {
-                                block._scope?.$destroy();
+                                block._scope?.destroy();
                             }
                         }
                         let startIndex = 0;
@@ -25992,7 +26954,7 @@
                                 }
                             }
                             else {
-                                const childScope = $scope.$transcluded();
+                                const childScope = $scope.transcluded();
                                 initializeScope(childScope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
                                 if ($transclude) {
                                     callFunction($transclude, undefined, childScope, attachTranscludedBlock.bind(null, block, value, previousNode, nextBlockMap));
@@ -26018,7 +26980,7 @@
             link($scope, element) {
                 const scopeName = getNormalizedAttr(element, "ngScope");
                 if (typeof scopeName === "string") {
-                    $scope.$scopename = scopeName;
+                    $scope.scopeName = scopeName;
                 }
             },
         };
@@ -26082,7 +27044,7 @@
                     subtree: true,
                     characterData: true,
                 });
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     observer.disconnect();
                 });
                 updateModel(element.innerHTML);
@@ -26105,7 +27067,7 @@
                 if (expression === undefined) {
                     return;
                 }
-                scope.$watch(expression, (value) => {
+                scope.watch(expression, (value) => {
                     // we're adding a temporary, animation-specific class for ng-hide since this way
                     // we can control when the element is actually displayed on screen without having
                     // to have a global/greedy CSS selector that breaks when other animations are run.
@@ -26141,7 +27103,7 @@
                 if (expression === undefined) {
                     return;
                 }
-                scope.$watch(expression, (value) => {
+                scope.watch(expression, (value) => {
                     // The comment inside of the ngShowDirective explains why we add and
                     // remove a temporary class for the show/hide animation
                     const animate = getAnimateForNode(getAnimate, element);
@@ -26175,8 +27137,8 @@
                     return;
                 }
                 let oldStyles = null;
-                scope.$watch(expression, (newStyles) => {
-                    const target = newStyles?.$target ?? newStyles;
+                scope.watch(expression, (newStyles) => {
+                    const target = newStyles?._target ?? newStyles;
                     if (oldStyles) {
                         keys(oldStyles).forEach((key) => {
                             element.style.removeProperty(key);
@@ -26239,7 +27201,7 @@
                     }
                     for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
                         const selected = selectedElements[i]._clone;
-                        selectedScopes[i].$destroy();
+                        selectedScopes[i].destroy();
                         const leaveAnimate = getAnimateForNode(getAnimate, selected);
                         if (leaveAnimate) {
                             const handle = leaveAnimate.leave(selected);
@@ -26327,10 +27289,10 @@
                         applySwitchValue(nextValue);
                     }
                 }
-                const removePauseHandler = scope.$on("$viewRetentionPause", onPause);
-                const removeResumeHandler = scope.$on("$viewRetentionResume", onResume);
-                scope.$watch(watchExpr, applyOrQueueSwitch);
-                scope.$on("$destroy", () => {
+                const removePauseHandler = scope.on("$viewRetentionPause", onPause);
+                const removeResumeHandler = scope.on("$viewRetentionResume", onResume);
+                scope.watch(watchExpr, applyOrQueueSwitch);
+                scope.on("$destroy", () => {
                     removePauseHandler();
                     removeResumeHandler();
                 });
@@ -26415,7 +27377,7 @@
                         const nodes = normalizeNodes(clone);
                         if (hasRenderableContent(nodes)) {
                             const destroyScope = () => {
-                                transcludedScope?.$destroy();
+                                transcludedScope?.destroy();
                             };
                             const lastNode = nodes[nodes.length - 1];
                             if (transcludedScope &&
@@ -26431,7 +27393,7 @@
                         }
                         else {
                             useFallbackContent();
-                            transcludedScope?.$destroy();
+                            transcludedScope?.destroy();
                         }
                     }
                     function useFallbackContent() {
@@ -26496,7 +27458,7 @@
                 selected = issue;
             }
         });
-        ctrl.$setCustomValidity(selected?.message ?? "");
+        ctrl.setCustomValidity(selected?.message ?? "");
     }
     function readValidatorAttr(element, normalizedName) {
         return element instanceof Element
@@ -26519,7 +27481,7 @@
             }
         });
         observer.observe(element, { attributes: true });
-        let deregisterDestroy = scope.$on("$destroy", deregister);
+        let deregisterDestroy = scope.on("$destroy", deregister);
         function deregister() {
             observer.disconnect();
             deregisterDestroy?.();
@@ -26531,10 +27493,10 @@
      *
      * @param ngRequired AngularTS expression. If it evaluates to `true`, it sets the
      *                                `required` attribute to the element and adds the `required`
-     *                                {@link ngModel.NgModelController#$validators `validator`}.
+     *                                {@link ngModel.NgModelController#validators `validator`}.
      *
      *
-     * ngRequired adds the required {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
+     * ngRequired adds the required {@link ngModel.NgModelController#validators `validator`} to {@link ngModel `ngModel`}.
      * It is most often used for {@link input `input`} and {@link select `select`} controls, but can also be
      * applied to custom controls.
      *
@@ -26544,10 +27506,10 @@
      * for more info.
      *
      * The validator will set the `required` error key to true if the `required` attribute is set and
-     * calling {@link ngModel.NgModelController#$isEmpty `NgModelController.$isEmpty`} with the
-     * {@link ngModel.NgModelController#$viewValue `ngModel.$viewValue`} returns `true`. For example, the
-     * `$isEmpty()` implementation for `input[text]` checks the length of the `$viewValue`. When developing
-     * custom controls, `$isEmpty()` can be overwritten to account for a $viewValue that is not string-based.
+     * calling {@link ngModel.NgModelController#isEmpty `NgModelController.isEmpty`} with the
+     * {@link ngModel.NgModelController#viewValue `ngModel.viewValue`} returns `true`. For example, the
+     * `isEmpty()` implementation for `input[text]` checks the length of the `viewValue`. When developing
+     * custom controls, `isEmpty()` can be overwritten to account for a viewValue that is not string-based.
      *
      */
     const requiredDirective = [
@@ -26571,7 +27533,7 @@
                         setNormalizedAttr(elm, "required", required);
                     }
                     const nativeControl = elm;
-                    ctrl.$setNativeValidity(!nativeControl.willValidate ||
+                    ctrl.setNativeValidity(!nativeControl.willValidate ||
                         nativeControl.validity?.valid !== false);
                 };
                 if (!ngRequired) {
@@ -26580,18 +27542,18 @@
                     setNormalizedAttr(elm, "required", true);
                 }
                 syncNativeRequired(Boolean(value));
-                ctrl.$validators.required = (_modelValue, viewValue) => {
-                    return !value || !ctrl.$isEmpty(viewValue);
+                ctrl.validators.required = (_modelValue, viewValue) => {
+                    return !value || !ctrl.isEmpty(viewValue);
                 };
                 const setRequiredValue = (nextValue) => {
                     if (value !== nextValue) {
                         value = nextValue;
                         syncNativeRequired(Boolean(value));
-                        ctrl.$validate();
+                        ctrl.validate();
                     }
                 };
                 if (ngRequiredGetter && ngRequired) {
-                    scope.$watch(ngRequired, (nextValue) => {
+                    scope.watch(ngRequired, (nextValue) => {
                         setRequiredValue(Boolean(nextValue));
                     });
                 }
@@ -26610,10 +27572,10 @@
      *
      *
      *
-     * ngPattern adds the pattern {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
+     * ngPattern adds the pattern {@link ngModel.NgModelController#validators `validator`} to {@link ngModel `ngModel`}.
      * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
      *
-     * The validator sets the `pattern` error key if the {@link ngModel.NgModelController#$viewValue `ngModel.$viewValue`}
+     * The validator sets the `pattern` error key if the {@link ngModel.NgModelController#viewValue `ngModel.viewValue`}
      * does not match a RegExp which is obtained from the `ngPattern` attribute value:
      * - the value is an AngularTS expression:
      *   - If the expression evaluates to a RegExp object, then this is used directly.
@@ -26691,16 +27653,16 @@
                             : undefined;
                         if (validateOnChange &&
                             oldRegexp?.toString() !== regexp?.toString()) {
-                            modelCtrl.$validate();
+                            modelCtrl.validate();
                         }
                     }
                     observeValidatorAttr(scope, elm, "pattern", refreshRegexp);
-                    modelCtrl.$validators.pattern = (_modelValue, viewValue) => {
+                    modelCtrl.validators.pattern = (_modelValue, viewValue) => {
                         if (ngPattern) {
                             refreshRegexp(undefined, false);
                         }
                         // HTML5 pattern constraint validates the input value, so we validate the viewValue
-                        const valid = modelCtrl.$isEmpty(viewValue) ||
+                        const valid = modelCtrl.isEmpty(viewValue) ||
                             isUndefined(regexp) ||
                             regexp.test(String(viewValue));
                         setNativeCustomValidityIssue(modelCtrl, "pattern", valid ? null : "Value does not match the required pattern.");
@@ -26713,14 +27675,14 @@
     /**
      * @param ngMaxlength AngularTS expression that must evaluate to a `Number` or `String`
      *                                 parsable into a `Number`. Used as value for the `maxlength`
-     *                                 {@link ngModel.NgModelController#$validators validator}.
+     *                                 {@link ngModel.NgModelController#validators validator}.
      *
      *
      *
-     * ngMaxlength adds the maxlength {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
+     * ngMaxlength adds the maxlength {@link ngModel.NgModelController#validators `validator`} to {@link ngModel `ngModel`}.
      * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
      *
-     * The validator sets the `maxlength` error key if the {@link ngModel.NgModelController#$viewValue `ngModel.$viewValue`}
+     * The validator sets the `maxlength` error key if the {@link ngModel.NgModelController#viewValue `ngModel.viewValue`}
      * is longer than the integer obtained by evaluating the AngularTS expression given in the
      * `ngMaxlength` attribute value.
      *
@@ -26758,12 +27720,12 @@
                     if (maxlength !== newValue) {
                         maxlengthParsed = parseLength(newValue);
                         maxlength = newValue;
-                        ctrl.$validate();
+                        ctrl.validate();
                     }
                 });
-                ctrl.$validators.maxlength = function (_modelValue, viewValue) {
+                ctrl.validators.maxlength = function (_modelValue, viewValue) {
                     const valid = maxlengthParsed < 0 ||
-                        ctrl.$isEmpty(viewValue) ||
+                        ctrl.isEmpty(viewValue) ||
                         (isString(viewValue) && viewValue.length <= maxlengthParsed);
                     setNativeCustomValidityIssue(ctrl, "maxlength", valid
                         ? null
@@ -26777,14 +27739,14 @@
      *
      * @param ngMinlength AngularTS expression that must evaluate to a `Number` or `String`
      *                                 parsable into a `Number`. Used as value for the `minlength`
-     *                                 {@link ngModel.NgModelController#$validators validator}.
+     *                                 {@link ngModel.NgModelController#validators validator}.
      *
      *
      *
-     * ngMinlength adds the minlength {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
+     * ngMinlength adds the minlength {@link ngModel.NgModelController#validators `validator`} to {@link ngModel `ngModel`}.
      * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
      *
-     * The validator sets the `minlength` error key if the {@link ngModel.NgModelController#$viewValue `ngModel.$viewValue`}
+     * The validator sets the `minlength` error key if the {@link ngModel.NgModelController#viewValue `ngModel.viewValue`}
      * is shorter than the integer obtained by evaluating the AngularTS expression given in the
      * `ngMinlength` attribute value.
      *
@@ -26820,11 +27782,11 @@
                     if (minlength !== newValue) {
                         minlengthParsed = parseLength(newValue) || -1;
                         minlength = newValue;
-                        ctrl.$validate();
+                        ctrl.validate();
                     }
                 });
-                ctrl.$validators.minlength = function (modelValue, viewValue) {
-                    const valid = ctrl.$isEmpty(viewValue) ||
+                ctrl.validators.minlength = function (modelValue, viewValue) {
+                    const valid = ctrl.isEmpty(viewValue) ||
                         (isString(viewValue) && viewValue.length >= minlengthParsed) ||
                         (Array.isArray(viewValue) && viewValue.length >= minlengthParsed);
                     setNativeCustomValidityIssue(ctrl, "minlength", valid
@@ -26930,7 +27892,7 @@
                     });
                     mutationObserver.observe(parent, { childList: true });
                 }
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     observer.disconnect();
                     if (mutationObserver)
                         mutationObserver.disconnect();
@@ -27053,7 +28015,7 @@
                     }
                     evaluate(attr("onError"), {
                         $connection: connection,
-                        $error: error,
+                        error: error,
                         ...locals,
                     });
                 }
@@ -27208,7 +28170,7 @@
                                 $attempt: event.attempt,
                                 $connection: event.connection,
                                 $count: event.attempt,
-                                $error: event.error,
+                                error: event.error,
                                 $url: event.url,
                             });
                             await userOnReconnect?.(event);
@@ -27226,7 +28188,7 @@
                         handleError(error);
                     });
                 });
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     void streamReader?.cancel("scope destroyed");
                     closeConnection("scope destroyed");
                 });
@@ -27631,7 +28593,7 @@
         Object.defineProperty(handle, SCOPE_PROXY_BIND, {
             value(handler) {
                 if (!terminated)
-                    bindings.set(handler.$id, handler);
+                    bindings.set(handler.id, handler);
             },
         });
         return handle;
@@ -27778,13 +28740,13 @@
         if (state)
             return state;
         let nextState;
-        const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+        const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
             nextState._paused = true;
         });
-        const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+        const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
@@ -27794,7 +28756,7 @@
             nextState._paused = false;
             flushScopeWorkerQueue(nextState);
         });
-        const deregisterDestroy = scope.$on("$destroy", () => {
+        const deregisterDestroy = scope.on("$destroy", () => {
             nextState._pending.length = 0;
             nextState._paused = false;
             nextState._flushing = false;
@@ -27876,7 +28838,7 @@
                         }
                     });
                     observer.observe(element, { attributes: true });
-                    let deregisterDestroy = scope.$on("$destroy", deregister);
+                    let deregisterDestroy = scope.on("$destroy", deregister);
                     function deregister() {
                         observer.disconnect();
                         deregisterDestroy?.();
@@ -27906,7 +28868,7 @@
                         $log.error(`[ng-worker:${workerLabel}]`, err);
                         const onError = attr("onError");
                         if (isDefined(onError)) {
-                            $parse(onError)(scope, { $error: err });
+                            $parse(onError)(scope, { error: err });
                         }
                     });
                 };
@@ -27957,7 +28919,7 @@
                         })();
                     });
                 };
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     element.removeEventListener(eventName, listener);
                     if (intervalId !== undefined) {
                         clearInterval(intervalId);
@@ -28082,13 +29044,16 @@
             return `{ParamType:${this.name ?? ""}}`;
         }
         /**
+         * @internal
+         *
          * Given an encoded string, or a decoded object, returns a decoded object
          * @param {unknown} val
          */
-        $normalize(val) {
+        _normalize(val) {
             return this.is(val) ? val : this.decode(val);
         }
-        $asArray(mode) {
+        /** @internal */
+        _asArray(mode) {
             if (!mode)
                 return this;
             return new ArrayParamType(this, mode);
@@ -28155,8 +29120,9 @@
         decode(val) {
             return this._mapArray("decode", val);
         }
-        $normalize(val) {
-            return this._mapArray("$normalize", val);
+        /** @internal */
+        _normalize(val) {
+            return this._mapArray("_normalize", val);
         }
         is(val) {
             return this._mapArray("is", val, true);
@@ -28324,7 +29290,7 @@
             const config = getParamDeclaration(id, location, state);
             type = getType(config, type, location, id, urlConfig._paramTypes);
             const arrayMode = getArrayMode(id, location, config);
-            type = arrayMode ? type.$asArray(arrayMode) : type;
+            type = arrayMode ? type._asArray(arrayMode) : type;
             const isOptional = config.value !== undefined || location === DefType._SEARCH;
             const dynamic = !!config.dynamic;
             const raw = !!config.raw;
@@ -28367,7 +29333,7 @@
                 ? this._getDefaultValue()
                 : source === "url"
                     ? this.type.decode(value)
-                    : this.type.$normalize(value);
+                    : this.type._normalize(value);
         }
         /** @internal */
         _getDefaultValue() {
@@ -28398,7 +29364,7 @@
             if ((isUndefined(value) || value === null) && this.isOptional)
                 return true;
             // The value was not of the correct ParamType, and could not be decoded to the correct ParamType
-            const normalized = this.type.$normalize(value);
+            const normalized = this.type._normalize(value);
             if (!this.type.is(normalized))
                 return false;
             // The value was of the correct type, but when encoded, did not match the ParamType's regexp
@@ -28634,15 +29600,17 @@
             assign(this, params);
         }
         /**
+         * @internal
+         *
          * Merges a set of parameters with all parameters inherited between the common parents of the
          * current state and a given destination state.
          *
          * @param {Object} newParams The set of parameters which will be composited with inherited params.
-         * @param {StateObject} $current Internal definition of object representing the current state.
-         * @param {StateObject} $to Internal definition of object representing state to transition to.
+         * @param {StateObject} _current Internal definition of object representing the current state.
+         * @param {StateObject} to Internal definition of object representing state to transition to.
          */
-        $inherit(newParams, $current, $to) {
-            const parents = ancestors($current, $to);
+        _inherit(newParams, _current, to) {
+            const parents = ancestors(_current, to);
             const inherited = {};
             const inheritList = new Set();
             for (const parent of parents) {
@@ -29680,8 +30648,8 @@
      */
     function stateContext(el) {
         const $ngView = getInheritedData(el, "$ngView");
-        const path = $ngView?.$cfg
-            ?._path;
+        const path = $ngView
+            ?._config?._path;
         return path ? path[path.length - 1].state.name : undefined;
     }
     /**
@@ -29781,7 +30749,7 @@
                         void $state
                             .go(target._ngState, target._ngStateParams, target._ngStateOpts)
                             .then(() => {
-                            scope.$emit("$updateBrowser");
+                            scope.emit("$updateBrowser");
                             return undefined;
                         })
                             .catch(() => undefined);
@@ -29800,7 +30768,7 @@
      */
     function defaultOpts(el, $state) {
         return {
-            relative: stateContext(el) ?? $state.$current,
+            relative: stateContext(el) ?? $state._current,
             inherit: true,
             source: "ng-state",
         };
@@ -29821,7 +30789,7 @@
         if (keyboardHookFn) {
             element.addEventListener("keydown", keyboardHookFn);
         }
-        scope.$on("$destroy", function () {
+        scope.on("$destroy", function () {
             // const off = element.off ? "off" : "unbind";
             for (const event of eventNames) {
                 element.removeEventListener(event, hookFn);
@@ -29860,7 +30828,7 @@
         element.addEventListener("pointerleave", cancel);
         element.addEventListener("focus", schedule);
         element.addEventListener("blur", cancel);
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
             cancel();
             element.removeEventListener("pointerenter", schedule);
             element.removeEventListener("pointerleave", cancel);
@@ -29943,7 +30911,7 @@
                             return;
                         }
                         watchDeregFns[field] =
-                            scope.$watch(expr, (newval) => {
+                            scope.watch(expr, (newval) => {
                                 rawDef[rawDefKeyByAttr[field]] =
                                     newval;
                                 update();
@@ -29961,7 +30929,7 @@
                         }
                     });
                     observer.observe(element, { attributes: true });
-                    let deregisterDestroy = scope.$on("$destroy", deregister);
+                    let deregisterDestroy = scope.on("$destroy", deregister);
                     function deregister() {
                         observer.disconnect();
                         deregisterDestroy?.();
@@ -29980,12 +30948,12 @@
                     }
                 });
                 modifierObserver.observe(element, { attributes: true });
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     modifierObserver.disconnect();
                 });
                 update();
-                scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
-                scope.$on("$destroy", $transitions.onSuccess({}, update));
+                scope.on("$destroy", $stateRegistry.onStatesChanged(update));
+                scope.on("$destroy", $transitions.onSuccess({}, update));
                 bindPrefetchEvents(element, scope, $state, rawDef);
                 if (!type._clickable)
                     return;
@@ -30062,14 +31030,14 @@
                         })
                             .catch(() => undefined);
                     }
-                    $scope.$on("$destroy", setupEventListeners());
+                    $scope.on("$destroy", setupEventListeners());
                     if (routerState._transition) {
                         updateAfterTransition(routerState._transition);
                     }
                     function setupEventListeners() {
                         const deregisterStatesChangedListener = $stateRegistry.onStatesChanged(handleStatesChanged);
                         const deregisterOnStartListener = $transitions.onStart({}, updateAfterTransition);
-                        const deregisterStateChangeSuccessListener = $scope.$on("$stateChangeSuccess", update);
+                        const deregisterStateChangeSuccessListener = $scope.on("$stateChangeSuccess", update);
                         return function cleanUp() {
                             deregisterStatesChangedListener();
                             deregisterOnStartListener();
@@ -30455,7 +31423,7 @@
             }
         }
     }
-    /** @ignore incrementing id */
+    /** @internal Incrementing callback identifier. */
     let canExitId = 0;
     /**
      * Registers component/controller transition lifecycle callbacks for an active view.
@@ -30472,16 +31440,16 @@
             return;
         }
         registeredScopes.add($scope);
-        // Call $onInit() ASAP
-        const onInit = controllerInstance.$onInit;
+        // Call onInit() ASAP
+        const onInit = controllerInstance.onInit;
         if (isFunction(onInit) && !cfg._viewDecl.component) {
             onInit();
         }
         const viewState = cfg._path[cfg._path.length - 1].state.self;
         const hookOptions = { bind: controllerInstance };
-        // Add component/controller-level hook for $onParamsChanged
-        if (isFunction(controllerInstance.$onParamsChanged)) {
-            const onParamsChanged = controllerInstance.$onParamsChanged;
+        // Add component/controller-level hook for onParamsChanged
+        if (isFunction(controllerInstance.onParamsChanged)) {
+            const onParamsChanged = controllerInstance.onParamsChanged;
             const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
             const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
             // Fire callback on any successful transition
@@ -30535,23 +31503,23 @@
                 cfg._viewDecl._ngViewName ?? "$default",
                 cfg._viewDecl._ngViewContextAnchor ?? "^",
             ].join("::");
-            const rootScope = $scope.$root;
+            const rootScope = $scope.root;
             const registryProp = "__ngRouterParamsChangedHooks__";
             const hookRegistry = (rootScope[registryProp] ??
                 (rootScope[registryProp] = new Map()));
             hookRegistry.get(hookRegistryKey)?.();
             const deregisterParamsHook = $transitions.onSuccess({}, paramsUpdated, hookOptions);
             hookRegistry.set(hookRegistryKey, deregisterParamsHook);
-            $scope.$on("$destroy", () => {
+            $scope.on("$destroy", () => {
                 if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
                     hookRegistry.delete(hookRegistryKey);
                 }
                 deregisterParamsHook();
             });
         }
-        // Add component/controller-level hook for $canExit
-        if (isFunction(controllerInstance.$canExit)) {
-            const canExit = controllerInstance.$canExit;
+        // Add component/controller-level hook for canExit
+        if (isFunction(controllerInstance.canExit)) {
+            const canExit = controllerInstance.canExit;
             const id = canExitId++;
             /**
              * Returns true if any transition in the redirect chain already answered truthy.
@@ -30575,7 +31543,7 @@
                 return promise;
             };
             const criteria = { exiting: viewState.name };
-            $scope.$on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
+            $scope.on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
         }
     }
 
@@ -30767,7 +31735,7 @@
                 dependencies.compileLifecycle.onControllerCreated((record) => {
                     this._componentControllerCreated(record);
                 });
-            this._deregisterRootDestroy = dependencies.rootScope.$on("$destroy", () => {
+            this._deregisterRootDestroy = dependencies.rootScope.on("$destroy", () => {
                 this._destroyRetainedViews();
                 this._deregisterCompileLifecycle?.();
                 this._deregisterCompileLifecycle = undefined;
@@ -30787,9 +31755,9 @@
             const { host, rootNodes, scope, config, initial, activeNgView, animation } = options;
             const $compile = assertDefined(this._compile);
             const viewData = {
-                $cfg: config,
+                _config: config,
                 $ngView: activeNgView,
-                $filled: true,
+                _filled: true,
             };
             for (let i = 0; i < rootNodes.length; i++) {
                 const node = rootNodes[i];
@@ -30801,7 +31769,7 @@
                 ? new ResolveContext(config._path, assertDefined(this._injector))
                 : undefined;
             if (host.childNodes.length || this._filledHosts.has(host)) {
-                scope.$broadcast("$destroy");
+                scope.broadcast("$destroy");
             }
             else {
                 this._filledHosts.add(host);
@@ -30817,7 +31785,7 @@
             const locals = resolveContext
                 ? createResolveInvocationLocals(resolveContext)
                 : undefined;
-            const targetScope = scope.$target;
+            const targetScope = scope._target;
             targetScope.$resolve = locals;
             const controller = plan?._hasController ? config?._controller : undefined;
             if (controller) {
@@ -30831,8 +31799,8 @@
                 registerViewControllerCallbacks(assertDefined(this._transitions), controllerInstance, scope, controllerConfig);
             }
             link(scope);
-            if (scope.$handler._destroyed) {
-                scope.$broadcast("$destroy");
+            if (scope._handler._destroyed) {
+                scope.broadcast("$destroy");
             }
         }
         /** @internal */
@@ -30850,7 +31818,7 @@
                 config,
                 scope,
             });
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 this._componentContexts.delete(id);
             });
         }
@@ -30907,8 +31875,8 @@
         }
         /** @internal */
         _destroyRetainedView(entry, reason) {
-            if (!entry._scope.$handler._destroyed) {
-                entry._scope.$destroy();
+            if (!entry._scope._handler._destroyed) {
+                entry._scope.destroy();
             }
             if (entry._fragment && !entry._fragment.disposed) {
                 entry._fragment.dispose();
@@ -31219,7 +32187,7 @@
         const $view = $state._viewService;
         const rootContext = $view._rootViewContext();
         const rootData = {
-            $cfg: { _viewDecl: { _context: rootContext } },
+            _config: { _viewDecl: { _context: rootContext } },
             $ngView: {},
         };
         const directive = {
@@ -31248,7 +32216,7 @@
                     let configUpdateVersion = 0;
                     let destroyed = false;
                     let initialTemplate;
-                    const inheritedContext = inherited.$cfg._viewDecl._context;
+                    const inheritedContext = inherited._config._viewDecl._context;
                     const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
                     const activeNgView = {
                         _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
@@ -31257,6 +32225,7 @@
                         _fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
                         _config: null,
                         _configUpdated: configUpdatedCallback,
+                        /** @internal */
                         get _creationContext() {
                             return (inheritedContext ??
                                 inherited.$ngView._creationContext ??
@@ -31304,7 +32273,7 @@
                     if (!viewConfig) {
                         updateView();
                     }
-                    scope.$on("$destroy", function () {
+                    scope.on("$destroy", function () {
                         destroyed = true;
                         configUpdateVersion++;
                         viewConfig = undefined;
@@ -31329,10 +32298,10 @@
                             const retainedAnimation = currentAnimation;
                             const retainedConfig = currentConfig;
                             if (retention._pause === "schedulers") {
-                                retainedScope.$broadcast("$viewRetentionPause", retainedConfig);
+                                retainedScope.broadcast("$viewRetentionPause", retainedConfig);
                             }
                             removeElement(retainedElement, true);
-                            retainedAnimation.$$animLeave.resolve(undefined);
+                            retainedAnimation._animationLeaveDeferred.resolve(undefined);
                             currentEl = null;
                             currentScope = null;
                             currentNodes = [];
@@ -31351,7 +32320,7 @@
                             return;
                         }
                         if (currentScope) {
-                            currentScope.$destroy();
+                            currentScope.destroy();
                             currentScope = null;
                         }
                         if (currentEl) {
@@ -31360,9 +32329,9 @@
                             if (destroyedScope &&
                                 elementScope &&
                                 elementScope !== destroyedScope &&
-                                elementScope.$parent === destroyedScope &&
-                                !elementScope.$handler._destroyed) {
-                                elementScope.$destroy();
+                                elementScope.parent === destroyedScope &&
+                                !elementScope._handler._destroyed) {
+                                elementScope.destroy();
                             }
                             if (currentFragment && !currentFragment.disposed) {
                                 currentFragment.dispose();
@@ -31370,7 +32339,7 @@
                             else {
                                 removeElement(currentEl);
                             }
-                            _viewData?.$$animLeave.resolve(undefined);
+                            _viewData?._animationLeaveDeferred.resolve(undefined);
                             currentEl = null;
                         }
                         currentNodes = [];
@@ -31386,13 +32355,13 @@
                             restoreRetainedView(config, retained);
                             return;
                         }
-                        const newScope = scope.$new();
+                        const newScope = scope.new();
                         const animEnter = withResolvers();
                         const animLeave = withResolvers();
                         const $ngViewAnim = {
-                            $animEnter: animEnter.promise,
-                            $animLeave: animLeave.promise,
-                            $$animLeave: animLeave,
+                            _animationEnter: animEnter.promise,
+                            _animationLeave: animLeave.promise,
+                            _animationLeaveDeferred: animLeave,
                         };
                         /**
                          * Fired once the view **begins loading**, *before* the DOM is rendered.
@@ -31400,7 +32369,7 @@
                          * @param event Event object.
                          * @param viewName Name of the view.
                          */
-                        newScope.$emit("$viewContentLoading", name);
+                        newScope.emit("$viewContentLoading", name);
                         let enteredElement = null;
                         let enteredNodes = [];
                         let enteredFragment = null;
@@ -31412,7 +32381,7 @@
                             }
                             initialTemplate ?? (initialTemplate = elementClone.innerHTML);
                             const viewData = {
-                                $cfg: config,
+                                _config: config,
                                 $ngView: activeNgView,
                             };
                             for (let i = 0; i < cloneNodes.length; i++) {
@@ -31438,7 +32407,7 @@
                         });
                         if (currentScope !== newScope)
                             return;
-                        if (newScope.$handler._destroyed) {
+                        if (newScope._handler._destroyed) {
                             return;
                         }
                         const host = assertDefined(enteredElement);
@@ -31448,36 +32417,36 @@
                             rootNodes: enteredNodes,
                             scope: newScope,
                             config,
-                            initial: viewData?.$initial ?? initialTemplate ?? "",
+                            initial: viewData?._initial ?? initialTemplate ?? "",
                             activeNgView,
                             animation: $ngViewAnim,
                         });
                         currentConfig = config;
-                        newScope.$emit("$viewContentAnimationEnded");
+                        newScope.emit("$viewContentAnimationEnded");
                         /**
                          * Fired once the view is **loaded**, *after* the DOM is rendered.
                          *
                          * @param event Event object.
                          */
-                        newScope.$emit("$viewContentLoaded", config ?? viewConfig);
+                        newScope.emit("$viewContentLoaded", config ?? viewConfig);
                         onloadFn?.(newScope);
                     }
                     function restoreRetainedView(config, retained) {
                         const viewData = {
-                            $cfg: config,
+                            _config: config,
                             $ngView: activeNgView,
-                            $filled: true,
+                            _filled: true,
                         };
                         for (let i = 0; i < retained._nodes.length; i++) {
                             const node = retained._nodes[i];
                             setCacheData(node, "$ngViewAnim", retained._animation);
                             setCacheData(node, "$ngView", viewData);
                         }
-                        retained._scope.$emit("$viewContentLoading", name);
+                        retained._scope.emit("$viewContentLoading", name);
                         $element.after(...retained._nodes);
                         cleanupLastView();
                         if (config._retention?._pause === "schedulers") {
-                            retained._scope.$broadcast("$viewRetentionResume", config);
+                            retained._scope.broadcast("$viewRetentionResume", config);
                         }
                         currentEl = retained._element;
                         currentScope = retained._scope;
@@ -31485,8 +32454,8 @@
                         currentFragment = assertDefined(retained._fragment);
                         currentAnimation = retained._animation;
                         currentConfig = config;
-                        retained._scope.$emit("$viewContentAnimationEnded");
-                        retained._scope.$emit("$viewContentLoaded", config);
+                        retained._scope.emit("$viewContentAnimationEnded");
+                        retained._scope.emit("$viewContentLoaded", config);
                         onloadFn?.(retained._scope);
                     }
                 };
@@ -31509,9 +32478,9 @@
                     pre(_scope, $element) {
                         const data = getCacheData($element, "$ngView");
                         if (data) {
-                            data.$initial ?? (data.$initial = initial);
+                            data._initial ?? (data._initial = initial);
                         }
-                        if (data?.$cfg && !data.$filled) {
+                        if (data?._config && !data._filled) {
                             dealoc($element, true);
                         }
                     },
@@ -31667,6 +32636,7 @@
         fqn() {
             return this._pathName();
         }
+        /** @internal */
         _pathName() {
             return (this.path ?? [])
                 .map((state) => state.name)
@@ -32231,7 +33201,7 @@
             this._matcher = new StateMatcher(this._states);
             this._builder = new StateBuilder(this._matcher, routerState, compileRegistry);
             this._queue = [];
-            this.registerRoot();
+            this._registerRoot();
             routerState._currentState = this._root;
             routerState._current = routerState._currentState.self;
         }
@@ -32255,9 +33225,9 @@
             });
         }
         /**
-         * @private
+         * @internal
          */
-        registerRoot() {
+        _registerRoot() {
             const rootStateDef = {
                 name: "",
                 url: "^",
@@ -32596,7 +33566,7 @@
      */
     function buildPath(targetState) {
         const toParams = targetState.params();
-        const stateObject = targetState.$state();
+        const stateObject = targetState._state();
         if (!stateObject) {
             throw new Error("Target state does not resolve to a state object");
         }
@@ -32798,8 +33768,8 @@
         params() {
             return this._params;
         }
-        /** The internal state object (if it was found) */
-        $state() {
+        /** @internal The internal state object, if it was found. */
+        _state() {
             return this._definition;
         }
         /** The internal state declaration (if it was found) */
@@ -32912,7 +33882,7 @@
         constructor(type, message, detail) {
             super(message);
             this.name = "Rejection";
-            this.$id = id++;
+            this.id = id++;
             this.type = type;
             this.message = message;
             this.detail = detail;
@@ -32944,7 +33914,7 @@
             return isInstanceOf(detail, Rejection) ? detail : Rejection.errored(detail);
         }
         toString() {
-            return `Transition Rejection($id: ${String(this.$id)} type: ${String(this.type)}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
+            return `Transition Rejection(id: ${String(this.id)} type: ${String(this.type)}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
         }
         /**
          * Returns a rejected promise tagged with this rejection instance.
@@ -33106,6 +34076,7 @@
          * Executes the underlying hook callback and normalizes its result into
          * the router's rejection / redirect model.
          */
+        /** @internal */
         _invokeHook() {
             const hook = this._registeredHook;
             if (hook._deregistered)
@@ -33132,6 +34103,7 @@
         /**
          * Converts raw hook return values into transition outcomes.
          */
+        /** @internal */
         _handleHookResult(result) {
             const notCurrent = this._getNotCurrentRejection();
             if (notCurrent)
@@ -33389,7 +34361,7 @@
             // current() is assumed to come from targetState.options, but provide a naive implementation otherwise.
             this._options = assign({}, targetState._options);
             (_a = this._options).current ?? (_a.current = () => this);
-            this.$id = transitionService._transitionCount++;
+            this.id = transitionService._transitionCount++;
             const toPath = buildToPath(fromPath, targetState);
             this._treeChanges = treeChanges(fromPath, toPath, this._options.reloadState);
             const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
@@ -33404,20 +34376,16 @@
             });
             applyViewConfigs(this._transitionService._view, this._treeChanges.to, enteringStates);
         }
-        /**
-         * @returns {StateObject} the internal from [State] object
-         */
-        $from() {
+        /** @internal */
+        _from() {
             const fromPath = this._treeChanges.from;
             const fromNode = fromPath.length
                 ? fromPath[fromPath.length - 1]
                 : undefined;
             return assertDefined(fromNode).state;
         }
-        /**
-         * @returns {StateObject} the internal to [State] object
-         */
-        $to() {
+        /** @internal */
+        _to() {
             const toPath = this._treeChanges.to;
             const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
             return assertDefined(toNode).state;
@@ -33430,7 +34398,7 @@
          * @returns {StateDeclaration} The state declaration object for the Transition's ("from state").
          */
         from() {
-            return this.$from().self;
+            return this._from().self;
         }
         /**
          * Returns the "to state"
@@ -33440,7 +34408,7 @@
          * @returns {StateDeclaration} The state declaration object for the Transition's target state ("to state").
          */
         to() {
-            return this.$to().self;
+            return this._to().self;
         }
         params(pathname = "to") {
             const path = this._treeChanges[pathname] ?? [];
@@ -33603,7 +34571,7 @@
         /** @internal */
         async _startTransition() {
             const { _routerState } = this;
-            _routerState._lastStartedTransitionId = this.$id;
+            _routerState._lastStartedTransitionId = this.id;
             _routerState._transition = this;
             _routerState._lastStartedTransition = this;
             return Promise.resolve();
@@ -33654,7 +34622,7 @@
          * @internal
          */
         error() {
-            const state = this.$to();
+            const state = this._to();
             if (state.self.abstract) {
                 return Rejection.invalid(`Cannot transition to abstract state '${state.name}'`);
             }
@@ -33684,7 +34652,7 @@
             const fromStateOrName = this.from();
             const toStateOrName = this.to();
             // (X) means the to state is invalid.
-            const id = this.$id, from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName, fromParams = stringify(avoidEmptyHash(pathParams$1(this._treeChanges.from))), toValid = this.valid() ? "" : "(X) ", to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName, toParams = stringify(avoidEmptyHash(this.params()));
+            const id = this.id, from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName, fromParams = stringify(avoidEmptyHash(pathParams$1(this._treeChanges.from))), toValid = this.valid() ? "" : "(X) ", to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName, toParams = stringify(avoidEmptyHash(this.params()));
             return `Transition#${String(id)}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
         }
     }
@@ -34297,7 +35265,7 @@
                 params: transition.params("to"),
             },
             transition: {
-                id: String(transition.$id),
+                id: String(transition.id),
             },
             routePolicy: buildEffectiveNavigationPolicy(transition),
             userAgent: typeof navigator === "undefined" ? undefined : navigator.userAgent,
@@ -34630,7 +35598,7 @@
         const options = transition._options;
         const stateService = this._stateService;
         const routerState = this._routerState;
-        const navigable = stateService.$current?.navigable;
+        const navigable = stateService._current?.navigable;
         if (options.source !== "url" && options.location && navigable?._url) {
             const urlOptions = {
                 replace: options.location === "replace",
@@ -34648,7 +35616,7 @@
     function registerUpdateGlobalState(transitionService) {
         const updateGlobalState = (trans) => {
             const routerState = trans._routerState;
-            const current = trans.$to();
+            const current = trans._to();
             routerState._setSuccessfulTransition(trans);
             routerState._currentState = current;
             routerState._current = current.self;
@@ -35188,7 +36156,7 @@
     async function handleTransitionRejection(stateService, trans, error) {
         const routerState = stateService._routerState;
         if (isInstanceOf(error, Rejection)) {
-            const isLatest = routerState._lastStartedTransitionId <= trans.$id;
+            const isLatest = routerState._lastStartedTransitionId <= trans.id;
             if (error.type === RejectType._IGNORED) {
                 if (isLatest) {
                     routerState._urlRuntime._update();
@@ -35238,10 +36206,8 @@
         get current() {
             return this._routerState._current;
         }
-        /**
-         * The current [[StateObject]] (an internal API)
-         */
-        get $current() {
+        /** @internal The current internal state object. */
+        get _current() {
             return this._routerState._currentState;
         }
         constructor(stateRegistry, routerState, transitionService, exceptionHandler) {
@@ -35265,7 +36231,7 @@
             this._stateRegistry = $stateRegistry;
             this._viewService = viewService;
             this._routerState._stateService = this;
-            $rootScope.$on("$locationChangeSuccess", (evt) => {
+            $rootScope.on("$locationChangeSuccess", (evt) => {
                 this._routerState._sync(evt);
             });
             this._transitionService._initRuntimeHooks(this, viewService);
@@ -35493,6 +36459,7 @@
             }
             return this.transitionTo(target.identifier(), target.params(), target.options());
         }
+        /** @internal */
         _getStatePolicyFromStateName(stateName, readPolicy) {
             const stateNameString = diagnosticStateName(stateName);
             if (stateNameString) {
@@ -35513,6 +36480,7 @@
             }
             return undefined;
         }
+        /** @internal */
         _getTransitionFallbackFromStateName(stateName) {
             const routeFallback = this._getStatePolicyFromStateName(stateName, (state) => state.policy?.transition?.fallbackTo);
             if (routeFallback) {
@@ -35528,6 +36496,7 @@
                 }
                 : undefined;
         }
+        /** @internal */
         _getTransitionErrorBoundaryPolicyFromStateName(stateName) {
             const routePolicy = this._getStatePolicyFromStateName(stateName, (state) => {
                 return (state.policy?.transition?.error ??
@@ -35543,6 +36512,7 @@
                 }
                 : undefined;
         }
+        /** @internal */
         _buildLazyFallbackTarget(toState, target) {
             if (isString(target)) {
                 return this.target(target, toState.params(), toState.options());
@@ -35554,6 +36524,7 @@
             }
             return undefined;
         }
+        /** @internal */
         async _buildLazyErrorBoundaryTarget(toState, policyState, policy, error) {
             if (isString(policy)) {
                 return this.target(policy, toState.params(), toState.options());
@@ -35596,6 +36567,7 @@
             }
             throw new Error("Route error boundary policy must return TargetState, redirect target, or undefined.");
         }
+        /** @internal */
         async _recoverLazyLoadFailure(toState, error) {
             const errorPolicy = this._getTransitionErrorBoundaryPolicyFromStateName(toState.name());
             if (errorPolicy) {
@@ -35641,9 +36613,11 @@
             });
             return this.transitionTo(fallbackTarget.identifier(), fallbackTarget.params(), fallbackTarget.options());
         }
+        /** @internal */
         _getTransitionRetryPolicyFromStateName(stateName) {
             return getTransitionRetryPolicyFromStateName(this, stateName);
         }
+        /** @internal */
         async _shouldRetryLazyLoad(retryPolicy, attempt, error, targetName) {
             if (!retryPolicy)
                 return false;
@@ -35681,6 +36655,7 @@
             });
             return allowed;
         }
+        /** @internal */
         _normalizeRetryPolicy(value) {
             if (value === true)
                 return 2;
@@ -35719,8 +36694,8 @@
          * Convenience method for transitioning to a new state.
          *
          * `$state.go` calls `$state.transitionTo` internally but automatically sets options to
-         * `{ location: true, inherit: true, relative: $state.$current }`.
-         * This allows you to use either an absolute or relative `to` argument (because of `relative: $state.$current`).
+         * `{ location: true, inherit: true, relative: $state._current }`.
+         * This allows you to use either an absolute or relative `to` argument (because of `relative: $state._current`).
          * It also allows you to specify * only the parameters you'd like to update, while letting unspecified parameters
          * inherit from the current parameter values (because of `inherit: true`).
          *
@@ -35754,7 +36729,7 @@
          * @returns A promise representing the state of the new transition.
          */
         go(to, params, options) {
-            const defautGoOpts = { relative: this.$current, inherit: true };
+            const defautGoOpts = { relative: this._current, inherit: true };
             const transOpts = defaults(options, defautGoOpts, defaultTransOpts);
             return this.transitionTo(to, params, transOpts);
         }
@@ -35805,12 +36780,12 @@
          * Set `exact` to require the current state itself instead of an ancestor.
          */
         matches(stateOrName, params, options) {
-            const relative = options?.relative ?? this.$current;
+            const relative = options?.relative ?? this._current;
             const glob = !options?.exact && isString(stateOrName)
                 ? Glob.fromString(stateOrName)
                 : undefined;
             if (glob) {
-                const currentName = this.$current?.name;
+                const currentName = this._current?.name;
                 if (!currentName || !glob.matches(currentName))
                     return false;
                 stateOrName = currentName;
@@ -35819,11 +36794,11 @@
             if (!isDefined(state))
                 return false;
             if (options?.exact) {
-                if (this.$current !== state)
+                if (this._current !== state)
                     return false;
             }
             else {
-                const include = this.$current?.includes;
+                const include = this._current?.includes;
                 if (!include || !isDefined(include[state.name]))
                     return false;
             }
@@ -35851,12 +36826,12 @@
          */
         href(stateOrName, params, options) {
             params = params ?? {};
-            const relative = options?.relative ?? this.$current;
+            const relative = options?.relative ?? this._current;
             const state = this._stateRegistry._matcher.find(stateOrName, relative);
             if (!isDefined(state))
                 return null;
             if (options?.inherit !== false)
-                params = this._routerState._params.$inherit(params, assertDefined(this.$current), state);
+                params = this._routerState._params._inherit(params, assertDefined(this._current), state);
             const nav = options?.lossy !== false ? state.navigable : state;
             if (!nav || isNullOrUndefined(nav._url)) {
                 return null;
@@ -35871,7 +36846,7 @@
                 return reg.get();
             if (stateOrName === undefined)
                 return undefined;
-            return reg.get(stateOrName, base ?? this.$current);
+            return reg.get(stateOrName, base ?? this._current);
         }
     }
     function normalizeStateDeclaration(nameOrDefinition, definition) {
@@ -36111,6 +37086,7 @@
     }
     /** @internal */
     const routerRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, { runtime, providers }) {
             const locationState = requireProvider(providers, _location);
             const securityPolicy = requireProvider(providers, _security);
@@ -36283,7 +37259,7 @@
                 clearPendingLoadListeners();
                 if (!enabled || destroyed)
                     return;
-                removeLocationListener = $rootScope.$on("$locationChangeSuccess", (_event, newValue, oldValue) => {
+                removeLocationListener = $rootScope.on("$locationChangeSuccess", (_event, newValue, oldValue) => {
                     const newUrl = urlResolve(newValue);
                     const oldUrl = urlResolve(oldValue);
                     if (newUrl.hash === oldUrl.hash && newUrl.hash === "")
@@ -36305,7 +37281,7 @@
         };
         state.instances.add(instance);
         instance.setAutoScrolling(state.autoScrollingEnabled);
-        removeDestroyListener = $rootScope.$on("$destroy", () => {
+        removeDestroyListener = $rootScope.on("$destroy", () => {
             instance.destroy();
         });
         return scroll;
@@ -36513,7 +37489,7 @@
     const $locationError = createErrorFactory("$location");
     const locationCleanupByRootElement = new WeakMap();
     /**
-     * @ignore
+     * @internal
      */
     function isLinkRewritingEnabled(rewriteLinks) {
         return !!rewriteLinks;
@@ -36833,14 +37809,13 @@
                 },
             };
             this._urlChangeListeners = [];
-            /** @private */
             this._urlChangeInit = false;
             this._cachedState = null;
             this._lastHistoryState = null;
             this._destroyed = false;
             this._window = browserWindow;
             this._lastBrowserUrl = browserWindow.location.href;
-            this.cacheState();
+            this._cacheState();
         }
         /// ///////////////////////////////////////////////////////////
         // URL API
@@ -36864,7 +37839,7 @@
                 this._lastBrowserUrl = url;
                 this._lastHistoryState = state;
                 this._window.history.pushState(state, "", url);
-                this.cacheState();
+                this._cacheState();
             }
             return this;
         }
@@ -36887,9 +37862,9 @@
         /**
          * Caches the current state.
          *
-         * @private
+         * @internal
          */
-        cacheState() {
+        _cacheState() {
             const currentState = this._window.history.state ?? null;
             if (!equals(currentState, this.lastCachedState)) {
                 this._cachedState = currentState;
@@ -36903,7 +37878,7 @@
          */
         _fireStateOrUrlChange() {
             const prevLastHistoryState = this._lastHistoryState;
-            this.cacheState();
+            this._cacheState();
             if (this._lastBrowserUrl === this.getBrowserUrl() &&
                 prevLastHistoryState === this._cachedState) {
                 return;
@@ -36969,7 +37944,7 @@
                     $exceptionHandler(err);
                 }
             };
-            const broadcastRootScopeEvent = (name, ...args) => $rootScope.$broadcast(name, ...args);
+            const broadcastRootScopeEvent = (name, ...args) => $rootScope.broadcast(name, ...args);
             const clickHandler = ((event) => {
                 const { rewriteLinks } = this.config.html5Mode;
                 // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
@@ -37035,7 +38010,7 @@
             };
             this._serviceCleanup = cleanupLocation;
             locationCleanupByRootElement.set($rootElement, cleanupLocation);
-            $rootScope.$on("$destroy", () => {
+            $rootScope.on("$destroy", () => {
                 cleanupLocation();
             });
             // rewrite hashbang url <> html5 url
@@ -37109,7 +38084,7 @@
             };
             $location._updateBrowser = updateBrowser;
             updateBrowser();
-            $rootScope.$on("$updateBrowser", updateBrowser);
+            $rootScope.on("$updateBrowser", updateBrowser);
             return $location;
             function afterLocationChange(oldUrl, oldState) {
                 if (destroyed)
@@ -37162,7 +38137,7 @@
      * ///////////////////////////
      */
     /**
-     * @ignore
+     * @internal
      * Encodes a URL path by encoding each path segment individually using `encodeUriSegment`,
      * while preserving forward slashes (`/`) as segment separators.
      *
@@ -37198,7 +38173,7 @@
         return segments.join("/");
     }
     /**
-     * @ignore
+     * @internal
      * Decodes each segment of a URL path.
      *
      * Splits the input path by "/", decodes each segment using decodeURIComponent,
@@ -37222,7 +38197,7 @@
         return segments.join("/");
     }
     /**
-     * @ignore
+     * @internal
      * Normalizes a URL path by encoding the path segments, query parameters, and hash fragment.
      *
      * - Path segments are encoded using `encodePath`, which encodes each segment individually.
@@ -37255,7 +38230,7 @@
         return path + (search ? `?${search}` : "") + hash;
     }
     /**
-     * @ignore
+     * @internal
      * Parses an application URL into isolated path, search, and hash values.
      *
      * @param url - The URL string to parse.
@@ -37286,7 +38261,7 @@
         };
     }
     /**
-     * @ignore
+     * @internal
      * Returns the substring of `url` after the `base` string if `url` starts with `base`.
      * Returns `undefined` if `url` does not start with `base`.
      * @returns Text from `url` after `base`, or `undefined` if it does not begin with the expected string.
@@ -37298,7 +38273,7 @@
         return undefined;
     }
     /**
-     * @ignore
+     * @internal
      * Removes the hash fragment (including the '#') from the given URL string.
      *
      * @param url - The URL string to process.
@@ -37309,7 +38284,7 @@
         return index === -1 ? url : url.substring(0, index);
     }
     /**
-     * @ignore
+     * @internal
      * Removes the file name (and any hash) from a URL, returning the base directory path.
      *
      * For example:
@@ -37326,7 +38301,7 @@
         return url.substring(0, stripHash(url).lastIndexOf("/") + 1);
     }
     /**
-     * @ignore
+     * @internal
      * Extracts the base server URL (scheme, host, and optional port) from a full URL.
      *
      * If no path is present, returns the full URL.
@@ -37347,7 +38322,7 @@
         return slashIndex === -1 ? url : url.substring(0, slashIndex);
     }
     /**
-     * @ignore
+     * @internal
      * Determines if two URLs are equal despite potential differences in encoding,
      * trailing slashes, or empty hash fragments, such as between $location.absUrl() and $browser.url().
      *
@@ -37359,7 +38334,7 @@
         return normalizeUrl(x) === normalizeUrl(y);
     }
     /**
-     * @ignore
+     * @internal
      * Normalizes a URL by resolving it via a DOM anchor element,
      * removing trailing slashes (except root), and trimming empty hashes.
      *
@@ -37574,10 +38549,10 @@
     }
 
     function isScopeLifecycleContext(value) {
-        return isProxy(value) && typeof value.$on === "function";
+        return isProxy(value) && typeof value.on === "function";
     }
     function isDestroyedScopeLifecycleContext(value) {
-        return isScopeLifecycleContext(value) && value.$handler._destroyed;
+        return isScopeLifecycleContext(value) && value._handler._destroyed;
     }
     /**
      * Application-wide asynchronous publish/subscribe utility.
@@ -37658,7 +38633,7 @@
                 return unsubscribe;
             }
             this._getScopeRetentionState(context);
-            let removeDestroyListener = context.$on("$destroy", () => {
+            let removeDestroyListener = context.on("$destroy", () => {
                 cleanup();
             });
             const cleanup = () => {
@@ -37691,6 +38666,7 @@
         unsubscribe(topic, fn, context) {
             return this._unsubscribe(topic, fn, context);
         }
+        /** @internal */
         _unsubscribe(topic, fn, context) {
             if (this._disposed)
                 return false;
@@ -37793,6 +38769,7 @@
                 }
             }
         }
+        /** @internal */
         _queuePausedScopeDelivery(topic, args, listenerIndex, entry) {
             if (!entry._scopeLifecycleContext)
                 return;
@@ -37807,6 +38784,7 @@
             });
             this._flushScopeDeliveryQueue(scopeState);
         }
+        /** @internal */
         _flushScopeDeliveryQueue(state) {
             if (state._flushing || state._paused || state._pending.length === 0) {
                 return;
@@ -37816,6 +38794,7 @@
                 void this._drainScopeDeliveryQueue(state);
             });
         }
+        /** @internal */
         async _drainScopeDeliveryQueue(state) {
             if (state._paused) {
                 state._flushing = false;
@@ -37831,18 +38810,19 @@
                 ]);
             }
         }
+        /** @internal */
         _getScopeRetentionState(scope) {
             let state = this._scopeRetentionStates.get(scope);
             if (state)
                 return state;
             let nextState;
-            const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+            const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
                 if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                     return;
                 }
                 nextState._paused = true;
             });
-            const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+            const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
                 if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                     return;
                 }
@@ -37851,7 +38831,7 @@
                 nextState._paused = false;
                 this._flushScopeDeliveryQueue(nextState);
             });
-            const deregisterDestroy = scope.$on("$destroy", () => {
+            const deregisterDestroy = scope.on("$destroy", () => {
                 nextState._pending = [];
                 nextState._deregisterPause();
                 nextState._deregisterResume();
@@ -39134,12 +40114,12 @@
             value(handler) {
                 if (destroyed)
                     return;
-                let binding = bindings.get(handler.$id);
+                let binding = bindings.get(handler.id);
                 if (!binding) {
                     binding = {
                         _handler: handler,
                     };
-                    bindings.set(handler.$id, binding);
+                    bindings.set(handler.id, binding);
                 }
             },
         });
@@ -40368,8 +41348,8 @@
             disconnectScopeElement(host);
         }
         for (const scope of Array.from(state.scopes)) {
-            if (!scope.$handler._destroyed)
-                scope.$destroy();
+            if (!scope._handler._destroyed)
+                scope.destroy();
         }
         for (const definition of state.definitions) {
             scopeElementDefinitions.delete(definition);
@@ -40393,10 +41373,10 @@
                 getInheritedData(host.parentNode ?? host, _scope) ??
                 rootScope);
             const scope = options.isolate
-                ? parentScope.$newIsolate(initialState)
-                : parentScope.$new(initialState);
+                ? parentScope.newIsolate(initialState)
+                : parentScope.new(initialState);
             state.scopes.add(scope);
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 state.scopes.delete(scope);
             });
             setScope(host, scope);
@@ -40542,7 +41522,7 @@
     }
     function connectScopeElement(host) {
         const existingScope = scopeElementScopes.get(host);
-        if (existingScope && !existingScope.$handler._destroyed)
+        if (existingScope && !existingScope._handler._destroyed)
             return;
         const definition = getScopeElementDefinition(host);
         if (!definition)
@@ -40582,8 +41562,8 @@
         const context = scopeElementContexts.get(host);
         const element = host;
         element.disconnected?.();
-        if (!scope.$handler._destroyed) {
-            scope.$destroy();
+        if (!scope._handler._destroyed) {
+            scope.destroy();
         }
         scopeElementScopes.delete(host);
         scopeElementContexts.delete(host);
@@ -40867,6 +41847,7 @@
                 this._settleClosed();
             }
         }
+        /** @internal */
         _open(attempt = 0, previousError) {
             let transport;
             try {
@@ -40902,6 +41883,7 @@
                 this._handleNativeClose(error, transport);
             });
         }
+        /** @internal */
         async _notifyReconnect(attempt, error) {
             if (!this._config.onReconnect)
                 return;
@@ -40920,6 +41902,7 @@
                 this._log.error("WebTransport reconnect hook failed", nextError);
             }
         }
+        /** @internal */
         _handleNativeClose(error, transport = this.transport) {
             if (transport !== this.transport || this._closedSettled)
                 return;
@@ -40939,6 +41922,7 @@
             this._config.onClose?.();
             this._settleClosed();
         }
+        /** @internal */
         _scheduleReconnect(error) {
             if (this._closedSettled || !this._config.reconnect)
                 return false;
@@ -40954,6 +41938,7 @@
             }, delay);
             return true;
         }
+        /** @internal */
         _resolveRetryDelay(attempt, error) {
             const retryDelay = this._config.retryDelay ?? 1000;
             const delay = isFunction(retryDelay)
@@ -40961,6 +41946,7 @@
                 : retryDelay;
             return isNumber(delay) && Number.isFinite(delay) && delay > 0 ? delay : 0;
         }
+        /** @internal */
         _settleClosed(error) {
             if (this._closedSettled)
                 return;
@@ -40973,12 +41959,14 @@
                 this._closedResolve();
             }
         }
+        /** @internal */
         _clearReconnectTimer() {
             if (!this._reconnectTimer)
                 return;
             clearTimeout(this._reconnectTimer);
             this._reconnectTimer = undefined;
         }
+        /** @internal */
         async _readDatagrams(transport) {
             if (!this._config.onDatagram && !this._config.onProtocolMessage)
                 return;
@@ -41020,6 +42008,7 @@
                 reader.releaseLock();
             }
         }
+        /** @internal */
         _toBytes(data) {
             if (isString(data)) {
                 return this._encoder.encode(data);
@@ -41188,6 +42177,7 @@
     }
     /** Providers required by scopes, expressions, controllers, and compile. */
     const controllerRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             return registry.factory(name, [
                 _injector,
@@ -41196,6 +42186,7 @@
         },
     };
     const exceptionHandlerRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const state = context.runtime.exceptionHandlerState;
             context.runtime.configRegistry.register(name, (value) => {
@@ -41205,6 +42196,7 @@
         },
     };
     const interpolateRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const state = context.runtime.interpolateState;
             context.runtime.configRegistry.register(name, (value) => {
@@ -41218,6 +42210,7 @@
         },
     };
     const parseRuntimeRegistration = {
+        /** @internal */
         _register(registry, name) {
             return registry.factory(name, [
                 _injector,
@@ -41226,6 +42219,7 @@
         },
     };
     const rootScopeRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             return registry.factory(name, [
                 _exceptionHandler,
@@ -41243,16 +42237,19 @@
     };
     /** Reactive state and command orchestration providers for full app runtimes. */
     const machineRuntimeRegistration = {
+        /** @internal */
         _register(registry, name) {
             return registry.factory(name, createMachineService);
         },
     };
     const workflowRuntimeRegistration = {
+        /** @internal */
         _register(registry, name) {
             return registry.factory(name, createWorkflowService);
         },
     };
     const workflowSupervisorRuntimeRegistration = {
+        /** @internal */
         _register(registry, name) {
             return registry.factory(name, [
                 _workflow,
@@ -41266,6 +42263,7 @@
         [_workflowSupervisor]: workflowSupervisorRuntimeRegistration,
     };
     const storageRuntimeRegistration = {
+        /** @internal */
         _register(registry, name) {
             return registry.factory(name, () => createPersistentProxy);
         },
@@ -41274,6 +42272,7 @@
         [_storage]: storageRuntimeRegistration,
     };
     const filterRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const filterRegistry = context.runtime.filterRegistry;
             filterRegistry.attach(registry);
@@ -41302,6 +42301,7 @@
     };
     /** Browser services that are useful in normal apps but optional for small runtimes. */
     const anchorScrollRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const state = createAnchorScrollRuntimeState();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41320,6 +42320,7 @@
         },
     };
     const cookieRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             let defaults = {};
             context.runtime.configRegistry.register(name, (value) => {
@@ -41335,6 +42336,7 @@
         },
     };
     const templateCacheRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             let cache = new Map();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41346,6 +42348,7 @@
         },
     };
     const templateRequestRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             let httpOptions = createTemplateRequestHttpOptions();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41360,11 +42363,13 @@
         },
     };
     const httpParamSerializerRuntimeRegistration = {
+        /** @internal */
         _register(registry, name) {
             return registry.factory(name, createHttpParamSerializer);
         },
     };
     const httpRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = createHttpRuntimeConfiguration();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41381,6 +42386,7 @@
         },
     };
     const ariaRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const state = createAriaRuntimeState();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41396,6 +42402,7 @@
         },
     };
     const locationRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const state = createLocationRuntimeState(context.platform.window);
             context.runtime.configRegistry.register(name, (value) => {
@@ -41414,6 +42421,7 @@
         },
     };
     const logRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = createLogRuntimeConfiguration();
             const securityPolicy = context.providers.get(_security);
@@ -41450,6 +42458,7 @@
     };
     /** Strict contextual escaping providers. */
     const sceRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = new SceConfiguration();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41466,6 +42475,7 @@
         },
     };
     const sceDelegateRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = new SceDelegateConfiguration();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41492,6 +42502,7 @@
         },
     };
     const securityRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = createSecurityRuntimeConfiguration();
             const policy = createSecurityPolicy(configuration, () => context.platform.window.location.href);
@@ -41509,6 +42520,7 @@
     };
     /** Native animation service composition. */
     const animateRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const animationRegistry = context.runtime.animationRegistry;
             if (!animationRegistry) {
@@ -41528,11 +42540,13 @@
         [_state]: routerRuntimeRegistration,
     };
     const streamRuntimeRegistration = {
+        /** @internal */
         _register(registry, name) {
             return registry.factory(name, createStreamService);
         },
     };
     const eventBusRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const state = createEventBusRuntimeState();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41546,14 +42560,15 @@
                 _angular,
                 ($exceptionHandler, angular) => {
                     const host = angular;
-                    const service = createEventBusService(state, $exceptionHandler, host.$eventBus);
-                    host.$eventBus = service;
+                    const service = createEventBusService(state, $exceptionHandler, host.eventBus);
+                    host.eventBus = service;
                     return service;
                 },
             ]);
         },
     };
     const restRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             let defaults = {};
             context.runtime.configRegistry.register(name, (value) => {
@@ -41569,6 +42584,7 @@
         },
     };
     const websocketRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = createWebSocketRuntimeConfiguration();
             const runtimeWindow = context.platform.window;
@@ -41585,6 +42601,7 @@
         },
     };
     const sseRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = createSseRuntimeConfiguration();
             const runtimeWindow = context.platform.window;
@@ -41601,6 +42618,7 @@
         },
     };
     const webTransportRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = createWebTransportRuntimeConfiguration();
             const runtimeWindow = context.platform.window;
@@ -41617,6 +42635,7 @@
         },
     };
     const workerRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const state = createWorkerRuntimeState();
             const runtimeWindow = context.platform.window;
@@ -41631,6 +42650,7 @@
         },
     };
     const webComponentRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const state = createWebComponentRuntimeState();
             context.runtime.configRegistry.register(name, (value) => {
@@ -41648,6 +42668,7 @@
         },
     };
     const serviceWorkerRuntimeRegistration = {
+        /** @internal */
         _register(registry, name, context) {
             const configuration = createServiceWorkerRuntimeConfiguration();
             let service;
@@ -41859,6 +42880,10 @@
             super(...arguments);
             /** Base class for user-authored AngularTS custom elements. */
             this.ScopeElement = ScopeElement;
+            /** JSX-free real-DOM tag factories for programmatic component views. */
+            this.tags = tags;
+            /** Explicit programmatic-view binding and element helpers. */
+            this.view = { attrs, each, event, props, tag, tagNS };
         }
     }
 
@@ -41989,8 +43014,15 @@
     exports.AngularRuntime = AngularRuntime;
     exports.afterRender = afterRender;
     exports.angular = angular;
+    exports.attrs = attrs;
     exports.createAngular = createAngular;
     exports.defineWorkflow = defineWorkflow;
+    exports.each = each;
+    exports.event = event;
+    exports.props = props;
     exports.queueAfterRender = queueAfterRender;
+    exports.tag = tag;
+    exports.tagNS = tagNS;
+    exports.tags = tags;
 
 }));

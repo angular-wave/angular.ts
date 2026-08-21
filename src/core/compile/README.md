@@ -79,7 +79,7 @@ The main flow is:
 5. At link time, create inherited or isolate scopes as needed.
 6. Instantiate controllers, initialize bindings, run pre-link functions, link
    children, and run post-link functions.
-7. Run deferred `$onChanges`, `$onInit`, `$postLink`, and destruction cleanup
+7. Run deferred `onChanges`, `onInit`, `postLink`, and destruction cleanup
    hooks through the controller and binding machinery.
 
 Important invariants:
@@ -159,7 +159,7 @@ requests.
 - Compile functions run synchronously while building the template plan.
 - Public link functions run synchronously unless they hit a pending
   `templateUrl` plan.
-- `$onChanges` hooks are queued and flushed with `queueMicrotask`.
+- `onChanges` hooks are queued and flushed with `queueMicrotask`.
 - `templateUrl` linking resumes when `$templateRequest` or `fetch` resolves.
 - Transclusion callbacks run when a directive calls `$transclude`.
 - Text, attribute, and property interpolation update from scope watchers.
@@ -183,7 +183,7 @@ requests.
 - `CompiledFragmentRecord`: private root-owned record for linked node lifecycle,
   nested ownership, async cancellation, and deterministic disposal.
 - `DirectiveBindingChangeState` and `OnChangesQueueState`: batch and deliver
-  `$onChanges` records.
+  `onChanges` records.
 - `CompileAttributeState`: compiler-only state that records normalized names back
   to their DOM attribute names. Access should stay behind helper functions.
 
@@ -273,7 +273,7 @@ instantiation.
 bound.
 
 `DirectiveBindingChangeState`
-: Tracks pending `$onChanges` delivery for one controller or isolate scope
+: Tracks pending `onChanges` delivery for one controller or isolate scope
 target.
 
 `DelayedTemplateLinkState`

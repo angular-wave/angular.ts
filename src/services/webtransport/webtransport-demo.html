@@ -121,7 +121,7 @@
             on-open="notice = 'Datagram session open'"
             on-message="datagramEvents = [$message].concat(datagramEvents)"
             on-reconnect="reconnects = $attempt"
-            on-error="notice = $error.message || 'Datagram error'"
+            on-error="notice = error.message || 'Datagram error'"
           ></div>
 
           <form class="form-grid" ng-submit="send()">
@@ -166,7 +166,7 @@
             data-reconnect="true"
             data-retry-delay="1000"
             on-message="streamEvents = [$message].concat(streamEvents)"
-            on-error="notice = $error.message || 'Stream error'"
+            on-error="notice = error.message || 'Stream error'"
           ></div>
 
           <div class="item-list">

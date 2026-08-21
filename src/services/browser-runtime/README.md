@@ -109,7 +109,7 @@ Policy:
 
 - A resource always exposes one stable shape: `status`, `ready`, `error`,
   `instance`, `module`, `exports`, `bind`, and `dispose`.
-- Binding names default to `$scopename` or `$id`. Guest facades resolve a name
+- Binding names default to `scopeName` or `id`. Guest facades resolve a name
   once and use its numeric handle afterward.
 - The service does not persist Wasm memory, replay scope writes, or own worker
   isolation policy.

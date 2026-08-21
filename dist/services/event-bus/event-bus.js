@@ -2,10 +2,10 @@ import { nullObject, shouldHandleViewRetentionPause, isProxy } from '../../share
 import { normalizePolicyDecision } from '../../core/policy/policy.js';
 
 function isScopeLifecycleContext(value) {
-    return isProxy(value) && typeof value.$on === "function";
+    return isProxy(value) && typeof value.on === "function";
 }
 function isDestroyedScopeLifecycleContext(value) {
-    return isScopeLifecycleContext(value) && value.$handler._destroyed;
+    return isScopeLifecycleContext(value) && value._handler._destroyed;
 }
 /**
  * Application-wide asynchronous publish/subscribe utility.
@@ -86,7 +86,7 @@ class EventBus {
             return unsubscribe;
         }
         this._getScopeRetentionState(context);
-        let removeDestroyListener = context.$on("$destroy", () => {
+        let removeDestroyListener = context.on("$destroy", () => {
             cleanup();
         });
         const cleanup = () => {
@@ -119,6 +119,7 @@ class EventBus {
     unsubscribe(topic, fn, context) {
         return this._unsubscribe(topic, fn, context);
     }
+    /** @internal */
     _unsubscribe(topic, fn, context) {
         if (this._disposed)
             return false;
@@ -221,6 +222,7 @@ class EventBus {
             }
         }
     }
+    /** @internal */
     _queuePausedScopeDelivery(topic, args, listenerIndex, entry) {
         if (!entry._scopeLifecycleContext)
             return;
@@ -235,6 +237,7 @@ class EventBus {
         });
         this._flushScopeDeliveryQueue(scopeState);
     }
+    /** @internal */
     _flushScopeDeliveryQueue(state) {
         if (state._flushing || state._paused || state._pending.length === 0) {
             return;
@@ -244,6 +247,7 @@ class EventBus {
             void this._drainScopeDeliveryQueue(state);
         });
     }
+    /** @internal */
     async _drainScopeDeliveryQueue(state) {
         if (state._paused) {
             state._flushing = false;
@@ -259,18 +263,19 @@ class EventBus {
             ]);
         }
     }
+    /** @internal */
     _getScopeRetentionState(scope) {
         let state = this._scopeRetentionStates.get(scope);
         if (state)
             return state;
         let nextState;
-        const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+        const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
             nextState._paused = true;
         });
-        const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+        const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
@@ -279,7 +284,7 @@ class EventBus {
             nextState._paused = false;
             this._flushScopeDeliveryQueue(nextState);
         });
-        const deregisterDestroy = scope.$on("$destroy", () => {
+        const deregisterDestroy = scope.on("$destroy", () => {
             nextState._pending = [];
             nextState._deregisterPause();
             nextState._deregisterResume();

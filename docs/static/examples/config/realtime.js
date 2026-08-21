@@ -46,7 +46,7 @@ window.angular
         this.cleanupOwner = realtimePolicyDemo.cleanupOwner;
         this.nativeEscapeHatch = realtimePolicyDemo.nativeEscapeHatch;
         this.cleanupExample =
-          "$scope.$on('$destroy', () => connection.close())";
+          "$scope.on('$destroy', () => connection.close())";
       }
     },
   );

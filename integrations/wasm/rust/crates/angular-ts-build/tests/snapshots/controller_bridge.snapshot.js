@@ -2,7 +2,7 @@ let nextWasmScopeId = 0;
 
 const createComponent = (controllerName, options) => {
   const controller = requireExport(controllerName);
-  const { inject, syncProperties, methods, controllerAs, kind, name, export: exportName, ...component } = options;
+  const { inject, syncProperties, methods, controllerAs, kind, name, export: exportName, view, ...component } = options;
   const angularController = createController(controllerName, {
     inject,
     syncProperties,
@@ -17,6 +17,7 @@ const createComponent = (controllerName, options) => {
   }
   return {
     ...component,
+    ...(view ? { view: requireExport(view) } : {}),
     ...(controllerAs ? { controllerAs } : {}),
     controller: angularController,
   };
@@ -88,7 +89,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       this.syncScope();
     }
 
-    $onInit() {
+    onInit() {
       const inner = this[innerSlot];
 
       if (inner && typeof inner.onInit === "function") {
@@ -98,7 +99,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       }
     }
 
-    $onDestroy() {
+    onDestroy() {
       const inner = this[innerSlot];
 
       if (inner && typeof inner.onDestroy === "function") {
@@ -187,7 +188,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
     }
 
     syncRustProperties() {
-      const target = this[controllerProxySlot] || this.$proxy || this;
+      const target = this[controllerProxySlot] || this._proxy || this;
 
       for (const property of syncProperties) {
         const next = this[innerSlot][property];

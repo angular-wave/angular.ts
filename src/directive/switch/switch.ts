@@ -103,7 +103,7 @@ export function ngSwitchDirective(
         for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
           const selected = selectedElements[i]._clone as HTMLElement;
 
-          selectedScopes[i].$destroy();
+          selectedScopes[i].destroy();
 
           const leaveAnimate = getAnimateForNode(getAnimate, selected);
 
@@ -227,11 +227,11 @@ export function ngSwitchDirective(
         }
       }
 
-      const removePauseHandler = scope.$on("$viewRetentionPause", onPause);
-      const removeResumeHandler = scope.$on("$viewRetentionResume", onResume);
+      const removePauseHandler = scope.on("$viewRetentionPause", onPause);
+      const removeResumeHandler = scope.on("$viewRetentionResume", onResume);
 
-      scope.$watch(watchExpr, applyOrQueueSwitch);
-      scope.$on("$destroy", () => {
+      scope.watch(watchExpr, applyOrQueueSwitch);
+      scope.on("$destroy", () => {
         removePauseHandler();
         removeResumeHandler();
       });

@@ -1,46 +1,43 @@
 (ns angular-ts.demo.todo
-  (:require [angular-ts.generated :as ng]
+  (:require [angular-ts.core :as ng]
             [clojure.string :as string]
             [goog.object :as gobj]))
 
-(defn- make-todo
-  ^js/Object [^number id ^string task ^boolean done]
-  (js-obj "id" id "task" task "done" done))
+(defn- new-todo ^js/Object [^string task]
+  (js-obj "task" task "done" false))
 
-(defn- done?
-  ^boolean [^js/Object todo]
-  (gobj/get todo "done"))
+(defn- add!
+  [^js/Object controller]
+  (when-let [task (some-> (gobj/get controller "newTodo")
+                          str
+                          string/trim
+                          not-empty)]
+    (gobj/set controller "tasks"
+              (-> (gobj/get controller "tasks")
+                  vec
+                  (conj (new-todo task))
+                  to-array))
+    (gobj/set controller "newTodo" "")))
 
-(defn create-todo-controller
-  ^js/Object []
-  (let [next-id (atom 2)
-        state (js-obj
-                "newTodo" ""
-                "tasks" #js [(make-todo 1 "Learn AngularTS from ClojureScript" false)
-                              (make-todo 2 "Compile with Closure ADVANCED" false)])]
-    (gobj/set state "submit"
-      (fn [^js/Event event]
-        (.preventDefault event)
-        (this-as this
-          (let [value (string/trim (str (or (gobj/get this "newTodo") "")))]
-            (when-not (string/blank? value)
-              (let [^js/Array tasks (gobj/get this "tasks")]
-                (gobj/set this "tasks"
-                  (.concat tasks #js [(make-todo (swap! next-id inc) value false)]))
-                (gobj/set this "newTodo" "")))))))
-    (gobj/set state "setDone"
-      (fn [^js/Object todo ^boolean done?]
-        (gobj/set todo "done" done?)))
-    (gobj/set state "archive"
-      (fn []
-        (this-as this
-          (let [^js/Array tasks (gobj/get this "tasks")]
-            (gobj/set this "tasks"
-              (.filter tasks (fn [todo] (not (done? todo)))))))))
-	    state))
+(defn- archive!
+  [^js/Object controller]
+  (gobj/set controller "tasks"
+            (->> (gobj/get controller "tasks")
+                 (remove #(gobj/get % "done"))
+                 to-array)))
 
-(defonce registered?
-  (let [module (ng/module "cljsTodo" #js [])
-        controller (ng/injectable #js [] create-todo-controller)]
-    (ng/ng-module-controller module "TodoCtrl" controller)
-    true))
+(defn- create-todo-model ^js/Object []
+  (js-obj
+   "newTodo" ""
+   "tasks" #js [(new-todo "Learn AngularTS from ClojureScript")
+                (new-todo "Compile with Closure ADVANCED")]))
+
+(defn- create-todo-controller ^js/Object [^js/ng.Model model]
+  (gobj/set model "add" #(add! model))
+  (gobj/set model "archive" #(archive! model))
+  model)
+
+(defonce app
+  (-> (ng/module "cljsTodo" [])
+      (ng/model "todoModel" [] create-todo-model)
+      (ng/controller "TodoCtrl" ["todoModel"] create-todo-controller)))

@@ -59,7 +59,7 @@ window.angular
         this.lastTick = 0;
         this.animationFrame = 0;
 
-        $scope.$on('$destroy', () => {
+        $scope.on('$destroy', () => {
           cancelAnimationFrame(this.animationFrame);
         });
       }

@@ -1,4 +1,4 @@
-.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check internal-composition-check internal-composition-report types generated-check public-namespace-api update-public-namespace-api docs-examples-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
+.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go public-namespace-api update-public-namespace-api docs-examples-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -103,6 +103,12 @@ vscode-smoke: ensure-vscode-deps
 underscore-property-key-check:
 	@node ./utils/check-underscore-property-keys.mjs
 
+dollar-prefixed-api-check:
+	@node ./utils/check-dollar-prefixed-api.mjs
+
+private-method-check:
+	@node ./utils/check-private-methods.mjs
+
 internal-composition-check:
 	@node ./utils/check-internal-composition.mjs
 
@@ -115,6 +121,8 @@ check: ensure-deps
 	@$(MAKE) underscore-property-key-check
 	@$(MAKE) internal-composition-check
 	@$(MAKE) generated-check
+	@$(MAKE) dollar-prefixed-api-check
+	@$(MAKE) private-method-check
 	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
 	@$(MAKE) test-types
@@ -159,11 +167,37 @@ types: ensure-deps
 	@./node_modules/.bin/tsc --project tsconfig.types.json
 	@npx prettier ./@types --write --cache --log-level=silent
 
-generated-check: types
+generated-check: integrations-generated-check
+
+integrations-generated-check: types
+	@$(MAKE) --keep-going --jobs=7 --output-sync=target \
+		generated-check-closure \
+		generated-check-dart \
+		generated-check-gleam \
+		generated-check-kotlin \
+		generated-check-scala \
+		generated-check-wasm-contracts \
+		generated-check-wasm-go
+
+generated-check-closure:
 	@$(MAKE) -f integrations/closure/Makefile generate-check
+
+generated-check-dart:
 	@$(MAKE) -C integrations/dart generate-check
+
+generated-check-gleam:
 	@$(MAKE) -C integrations/gleam generate-check
-	@$(MAKE) -C integrations/kotlin generate-check
+
+generated-check-kotlin:
+	@$(MAKE) -C integrations/kotlin generate-check-local
+
+generated-check-scala:
+	@node integrations/scala/tool/generate_ng_namespace_parity.mjs --check
+
+generated-check-wasm-contracts:
+	@$(MAKE) wasm-contracts-check
+
+generated-check-wasm-go:
 	@$(MAKE) -C integrations/wasm/go generate-check
 
 public-namespace-api: types

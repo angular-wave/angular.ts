@@ -30,6 +30,16 @@ export function set_bool(target, key, value) {
   return target;
 }
 
+export function get_property(target, key) {
+  return target[key];
+}
+
+export function programmatic_tag(namespaceUri, name, properties, children) {
+  const tags = namespaceUri === "" ? getAngular().tags : getAngular().tags(namespaceUri);
+
+  return tags[name](Object.fromEntries(properties), ...children);
+}
+
 export function call_method1(target, method, arg1) {
   return target[method](arg1);
 }
@@ -56,6 +66,14 @@ export function call_function2(target, arg1, arg2) {
 
 export function annotated_array(tokens, factory) {
   return [...tokens, factory];
+}
+
+export function wrap_factory_property(factory, key, value) {
+  return (...args) => {
+    const definition = factory(...args);
+    definition[key] = value;
+    return definition;
+  };
 }
 
 export function angular_module(name, requires) {

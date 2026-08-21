@@ -86,7 +86,7 @@ export class StateRegistryRuntime implements StateRegistryService {
 
     this._queue = [];
 
-    this.registerRoot();
+    this._registerRoot();
 
     routerState._currentState = this._root;
     routerState._current = routerState._currentState.self;
@@ -117,9 +117,9 @@ export class StateRegistryRuntime implements StateRegistryService {
   }
 
   /**
-   * @private
+   * @internal
    */
-  registerRoot(): void {
+  private _registerRoot(): void {
     const rootStateDef: StateDeclaration = {
       name: "",
       url: "^",

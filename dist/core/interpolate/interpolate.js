@@ -3,7 +3,7 @@ import { isDefined, stringify, callFunction, isFunction, deProxy, isUndefined, c
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 
 function getWatchableContext(context) {
-    return isFunction(context?.$watch)
+    return isFunction(context?.watch)
         ? context
         : undefined;
 }
@@ -131,7 +131,7 @@ function createInterpolateService(state, $parse, security) {
                         if (cb) {
                             const watchable = getWatchableContext(context);
                             if (watchable) {
-                                callFunction(watchable.$watch, watchable, watchProp, () => {
+                                callFunction(watchable.watch, watchable, watchProp, () => {
                                     cb(compute(context));
                                 }, false, true);
                             }
@@ -170,7 +170,7 @@ function createInterpolateService(state, $parse, security) {
                             const watchProp = expressions[i].trim();
                             const watchable = getWatchableContext(context);
                             if (watchable) {
-                                callFunction(watchable.$watch, watchable, watchProp, () => {
+                                callFunction(watchable.watch, watchable, watchProp, () => {
                                     const watchedValues = new Array(expressions.length);
                                     for (let j = 0; j < expressions.length; j++) {
                                         watchedValues[j] = parseFns[j](context);

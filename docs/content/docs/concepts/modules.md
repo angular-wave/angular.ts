@@ -48,7 +48,7 @@ Registers a factory function whose return value becomes the singleton. The funct
 
 #### .provider(name, type)
 
-Registers a full provider. The provider's `$get` method is called to produce the service instance. Providers can expose configuration methods accessible during the config phase.
+Registers a full provider. The provider's `get` method is called to produce the service instance. Providers can expose configuration methods accessible during the config phase.
 
 #### .value(name, val)
 

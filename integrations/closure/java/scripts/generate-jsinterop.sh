@@ -10,6 +10,7 @@ PACKAGE_PREFIX="${6:?package prefix is required}"
 EXTENSION_TYPE_PREFIX="${7:?extension type prefix is required}"
 GLOBAL_SCOPE_CLASS_NAME="${8:?global scope class name is required}"
 OUTPUT_SOURCES_DIR="${9:?output sources directory is required}"
+NAME_MAPPING_FILE="${10:?name mapping file is required}"
 if [[ -n "${JSINTEROP_GENERATOR_JAVA:-}" ]]; then
   JAVA_CMD="${JSINTEROP_GENERATOR_JAVA}"
 elif [[ -n "${TOOLCHAIN_JAVA_HOME:-}" ]]; then
@@ -58,6 +59,7 @@ OUTPUT_SRCJAR_ABS="$(cd "$(dirname "${OUTPUT_SRCJAR}")" && pwd)/$(basename "${OU
   --package_prefix "${PACKAGE_PREFIX}" \
   --extension_type_prefix "${EXTENSION_TYPE_PREFIX}" \
   --global_scope_class_name "${GLOBAL_SCOPE_CLASS_NAME}" \
+  --name_mapping_file "${NAME_MAPPING_FILE}" \
   "${BROWSER_EXTERNS_FILE}" \
   "${JSINTEROP_EXTERNS}"
 
@@ -71,10 +73,26 @@ mkdir -p "${OUTPUT_SOURCES_DIR}/META-INF/externs"
   cat "${EXTERNS_FILE}"
   cat <<'EOF'
 
+/** @record */
+function Keyframe() {}
+
 /** @constructor */
 function ElementInternals() {}
+
+/** @type {?} */
+ElementInternals.prototype.setFormValue;
+
+/** @type {?} */
+HTMLElement.prototype.formStateRestoreCallback;
 EOF
 } > "${OUTPUT_SOURCES_DIR}/META-INF/externs/angular-ts.externs.js"
 
 "${NODE:-node}" "${SCRIPT_DIR}/normalize-generated-jsinterop-java.mjs" \
+  "${OUTPUT_SOURCES_DIR}"
+
+"${NODE:-node}" "${SCRIPT_DIR}/refine-generated-jsinterop-types.mjs" \
+  "${OUTPUT_SOURCES_DIR}"
+
+"${NODE:-node}" "${SCRIPT_DIR}/apply-jsinterop-javadocs.mjs" \
+  "${EXTERNS_FILE}" \
   "${OUTPUT_SOURCES_DIR}"

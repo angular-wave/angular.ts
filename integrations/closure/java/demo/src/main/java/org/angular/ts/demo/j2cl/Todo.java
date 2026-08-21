@@ -2,7 +2,6 @@ package org.angular.ts.demo.j2cl;
 
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import org.angular.ts.annotation.AngularTemplateApi;
 
@@ -10,11 +9,8 @@ import org.angular.ts.annotation.AngularTemplateApi;
 @JsType(namespace = JsPackage.GLOBAL, name = "J2clTodo")
 @AngularTemplateApi
 public final class Todo {
-  @JsProperty
   public final double id;
-  @JsProperty
   public final String task;
-  @JsProperty
   public boolean done;
 
   @JsConstructor

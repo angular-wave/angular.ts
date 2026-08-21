@@ -106,7 +106,7 @@ class AnimationRegistry {
         this._destroyed = false;
     }
     register(name, preset) {
-        this.assertActive();
+        this._assertActive();
         if (!name || !isString(name)) {
             throw $animateError("noname", "Animation name must be a string.");
         }
@@ -114,11 +114,11 @@ class AnimationRegistry {
         this._registrations.set(normalizedName, preset);
     }
     get(name) {
-        this.assertActive();
+        this._assertActive();
         return this._registrations.get(name);
     }
     has(name) {
-        this.assertActive();
+        this._assertActive();
         return this._registrations.has(name);
     }
     destroy() {
@@ -127,7 +127,8 @@ class AnimationRegistry {
         this._destroyed = true;
         this._registrations.clear();
     }
-    assertActive() {
+    /** @internal */
+    _assertActive() {
         if (this._destroyed) {
             throw new Error("Animation registry has already been disposed.");
         }

@@ -15,30 +15,32 @@ export class AngularTsDiagnosticsProvider implements vscode.Disposable {
 
   constructor(private readonly index: AngularTsWorkspaceIndex) {
     this.disposables.push(
-      vscode.workspace.onDidOpenTextDocument((document) => this.update(document)),
+      vscode.workspace.onDidOpenTextDocument((document) => this._update(document)),
       vscode.workspace.onDidChangeTextDocument((event) =>
-        this.update(event.document),
+        this._update(event.document),
       ),
       vscode.workspace.onDidCloseTextDocument((document) =>
         this.collection.delete(document.uri),
       ),
-      this.index.onDidChange(() => this.updateAll()),
+      this.index.onDidChange(() => this._updateAll()),
     );
 
-    this.updateAll();
+    this._updateAll();
   }
 
   dispose(): void {
     this.disposables.forEach((disposable) => disposable.dispose());
   }
 
-  private updateAll(): void {
+  /** @internal */
+  private _updateAll(): void {
     for (const document of vscode.workspace.textDocuments) {
-      this.update(document);
+      this._update(document);
     }
   }
 
-  private update(document: vscode.TextDocument): void {
+  /** @internal */
+  private _update(document: vscode.TextDocument): void {
     if (!isEnabled() || !isSupportedDocument(document.languageId)) {
       this.collection.delete(document.uri);
       return;

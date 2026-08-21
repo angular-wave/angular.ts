@@ -13,9 +13,9 @@ logical-group `FormController` instances.
   `ngForm` groups.
 - Register, rename, list, and remove child controls.
 - Aggregate child custom validity into map-backed buckets, derive public
-  `$error` and `$pending`, and maintain `$valid` / `$invalid`.
+  `error` and `pending`, and maintain `valid` / `invalid`.
 - Aggregate native validity directly from registered controls without copying
-  browser validity keys into `$error`.
+  browser validity keys into `error`.
 - Propagate dirty, pristine, submitted, commit, rollback, and validity state
   through parent/child form chains.
 - Publish named forms and controls on the form controller and related scope.
@@ -34,10 +34,10 @@ logical-group `FormController` instances.
   `FormControlController`, and `ParentFormController`: shared type contracts
   used by form and model controllers.
 
-Public controller methods include `$addControl`, `$getControls`,
-`_renameControl`, `$removeControl`, `$setValidity`, `$setDirty`,
-`$setPristine`, `$setUntouched`, `$setSubmitted`, `_setSubmitted`,
-`$commitViewValue`, and `$rollbackViewValue`.
+Public controller methods include `addControl`, `getControls`,
+`_renameControl`, `removeControl`, `setValidity`, `setDirty`,
+`setPristine`, `setUntouched`, `setSubmitted`, `_setSubmitted`,
+`commitViewValue`, and `rollbackViewValue`.
 
 ## Core Model
 
@@ -52,7 +52,7 @@ The main flow is:
 2. Pre-link registers the controller with the nearest parent form.
 3. Named forms are published onto scope, and named child controls are published
    onto the form controller.
-4. Child controls call `$setValidity()` as their validators change state.
+4. Child controls call `setValidity()` as their validators change state.
 5. The form updates local validity buckets, CSS classes, and aggregate boolean
    state.
 6. The form propagates the combined validity state to its parent form.
@@ -64,14 +64,14 @@ Important invariants:
 - Parent forms aggregate child form and model-control validity.
 - Removing a control clears that control from pending, invalid, and valid
   custom-validity buckets, but does not reset form dirty or submitted state.
-- `$getControls()` returns a shallow copy; callers must use registration APIs
+- `getControls()` returns a shallow copy; callers must use registration APIs
   to mutate membership.
 - Native form submission commits pending child view values before marking
   submitted.
 - Logical `ngForm` groups aggregate state but do not own native submit, reset,
   or `FormData` behavior.
 - Dynamic control names must update both the controller property and child
-  `$name`.
+  `controlName`.
 
 ## Lifecycle
 
@@ -95,7 +95,7 @@ so later child destruction does not keep propagating through a destroyed form.
 - Submit handling runs synchronously on the native `submit` event for real
   `<form>` elements.
 - Reset handling reads native control values after the browser reset has run.
-- `$commitViewValue()` and `$rollbackViewValue()` iterate child controls in
+- `commitViewValue()` and `rollbackViewValue()` iterate child controls in
   registration order.
 - Validity updates propagate immediately from child to parent.
 - CSS class changes run synchronously, but may delegate to `$animate` when
@@ -112,15 +112,15 @@ so later child destruction does not keep propagating through a destroyed form.
   pending async validation for that key.
 - `_validCustomValidatorControls`: map from validation key to controls
   currently valid for that key.
-- `$error`: public object derived from `_customErrorControls`.
-- `$pending`: public object derived from `_pendingCustomValidatorControls`, or
+- `error`: public object derived from `_customErrorControls`.
+- `pending`: public object derived from `_pendingCustomValidatorControls`, or
   `undefined` when no async validators are pending.
 - Native validity: queried directly from registered controls when aggregate
-  `$valid` / `$invalid` state is recalculated.
+  `valid` / `invalid` state is recalculated.
 - `_classCache`: cache that prevents redundant CSS class toggles.
 - `_validityPropagationId`: version used by model controllers to detect parent
   validity-chain changes.
-- `$target`: scope/proxy target object carrying `_parentForm` for parent
+- `_target`: scope/proxy target object carrying `_parentForm` for parent
   registration.
 
 ## Integration Points
@@ -149,9 +149,9 @@ so later child destruction does not keep propagating through a destroyed form.
   submitted state unchanged.
 - Controls named `hasOwnProperty` are rejected to avoid prototype-pollution
   hazards.
-- `$setSubmitted()` walks to the root form and marks the root and descendants
+- `setSubmitted()` walks to the root form and marks the root and descendants
   submitted.
-- `$setPristine()` clears submitted state on the form it is called on and
+- `setPristine()` clears submitted state on the form it is called on and
   propagates pristine state to child controls.
 
 ## Destruction And Cleanup
@@ -161,7 +161,7 @@ form from the parent, clears scope publication, and replaces controller methods
 with the no-op `nullFormCtrl` surface so later child destruction cannot mutate
 ancestor forms through a destroyed controller.
 
-`$removeControl()` also removes the child from all custom-validity buckets,
+`removeControl()` also removes the child from all custom-validity buckets,
 removes it from `_controls`, and sets the child's parent form back to
 `nullFormCtrl`.
 
@@ -180,7 +180,7 @@ removes it from `_controls`, and sets the child's parent form back to
 : Name type used for form and control publication.
 
 `PublicValidationState`
-: Transitional `$setValidity()` state accepted for compatibility.
+: Transitional `setValidity()` state accepted for compatibility.
 
 `CustomValidationState`
 : Internal named custom-validation state used before deriving public objects.

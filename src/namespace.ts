@@ -121,12 +121,27 @@ import type {
   InjectionTokenMap as TInjectionTokenMap,
   AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
   Component as TComponent,
+  ComponentView as TComponentView,
+  ComponentViewChild as TComponentViewChild,
+  ComponentViewContext as TComponentViewContext,
+  ComponentViewPrimitive as TComponentViewPrimitive,
   Controller as TController,
   ControllerConstructor as TControllerConstructor,
   Injectable as TInjectable,
+  DirectiveCompileFn as TDirectiveCompileFn,
+  DirectiveController as TDirectiveController,
+  DirectivePrePost as TDirectivePrePost,
+  DirectiveView as TDirectiveView,
+  DirectiveViewContext as TDirectiveViewContext,
   ProviderDefinition as TProviderDefinition,
   Expression as TExpression,
 } from "./interface.ts";
+import type {
+  ComponentViewProperties as TComponentViewProperties,
+  ComponentViewPropertyValue as TComponentViewPropertyValue,
+  ComponentViewTag as TComponentViewTag,
+  ComponentViewTags as TComponentViewTags,
+} from "./core/compile/programmatic-view.ts";
 import type {
   SseConnection as TSseConnection,
   SseService as TSseService,
@@ -297,6 +312,23 @@ declare global {
 
     export type Component = TComponent;
 
+    export type ComponentView = TComponentView;
+
+    export type ComponentViewChild = TComponentViewChild;
+
+    export type ComponentViewContext = TComponentViewContext;
+
+    export type ComponentViewPrimitive = TComponentViewPrimitive;
+
+    export type ComponentViewProperties = TComponentViewProperties;
+
+    export type ComponentViewPropertyValue = TComponentViewPropertyValue;
+
+    export type ComponentViewTag<TElement extends Element = HTMLElement> =
+      TComponentViewTag<TElement>;
+
+    export type ComponentViewTags = TComponentViewTags;
+
     export type Controller = TController;
 
     export type ClassMap = TClassMap;
@@ -311,7 +343,23 @@ declare global {
 
     export type DirectiveFactoryFn = TDirectiveFactoryFn;
 
+    export type DirectiveCompileFn = TDirectiveCompileFn;
+
+    export type DirectiveController = TDirectiveController;
+
     export type DirectiveLinkFn<T = unknown> = TDirectiveLinkFn<T>;
+
+    export type DirectivePrePost = TDirectivePrePost;
+
+    export type DirectiveView<
+      TController = unknown,
+      TRequired = TDirectiveController,
+    > = TDirectiveView<TController, TRequired>;
+
+    export type DirectiveViewContext<
+      TController = unknown,
+      TRequired = TDirectiveController,
+    > = TDirectiveViewContext<TController, TRequired>;
 
     export type NgModule = TNgModule;
 

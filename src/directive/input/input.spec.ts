@@ -31,7 +31,7 @@ describe("input directive", () => {
   });
 
   it("preserves exact text input values", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML = '<input type="text" ng-model="name" />';
     $compile(app)(scope);
@@ -46,7 +46,7 @@ describe("input directive", () => {
   });
 
   it("keeps number input values as strings by default", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML = '<input type="number" ng-model="age" />';
     $compile(app)(scope);
@@ -61,7 +61,7 @@ describe("input directive", () => {
   });
 
   it("uses native validity for email", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML =
       '<form name="form"><input type="email" name="email" ng-model="email" /></form>';
@@ -73,21 +73,21 @@ describe("input directive", () => {
     browserTrigger(input, "input");
     await wait();
 
-    expect(scope.form.email.$invalid).toBeTrue();
-    expect(scope.form.email.$error.native).toBeUndefined();
-    expect(scope.form.email.$validity.typeMismatch).toBeTrue();
+    expect(scope.form.email.invalid).toBeTrue();
+    expect(scope.form.email.error.native).toBeUndefined();
+    expect(scope.form.email.validity.typeMismatch).toBeTrue();
     expect(scope.email).toBe("not email");
 
     input.value = "ada@example.com";
     browserTrigger(input, "input");
     await wait();
 
-    expect(scope.form.email.$valid).toBeTrue();
+    expect(scope.form.email.valid).toBeTrue();
     expect(scope.email).toBe("ada@example.com");
   });
 
   it("exposes native validity on the model controller", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML = '<input type="email" ng-model="email" />';
     $compile(app)(scope);
@@ -99,13 +99,13 @@ describe("input directive", () => {
     browserTrigger(input, "input");
     await wait();
 
-    expect(ctrl.$validity.typeMismatch).toBeTrue();
-    expect(ctrl.$validity.valid).toBe(input.validity.valid);
-    expect(ctrl.$validationMessage).toBe(input.validationMessage);
+    expect(ctrl.validity.typeMismatch).toBeTrue();
+    expect(ctrl.validity.valid).toBe(input.validity.valid);
+    expect(ctrl.validationMessage).toBe(input.validationMessage);
   });
 
   it("sets a single native custom validity message from the model controller", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML = '<input type="text" ng-model="name" />';
     $compile(app)(scope);
@@ -113,26 +113,26 @@ describe("input directive", () => {
     const input = app.querySelector("input") as HTMLInputElement;
     const ctrl = getController(input, "ngModel");
 
-    ctrl.$setCustomValidity("Use a display name.");
+    ctrl.setCustomValidity("Use a display name.");
     await wait();
 
     expect(input.validity.customError).toBeTrue();
-    expect(ctrl.$validity.customError).toBeTrue();
-    expect(ctrl.$validationMessage).toBe("Use a display name.");
-    expect(ctrl.$invalid).toBeTrue();
-    expect(ctrl.$error.customError).toBeUndefined();
+    expect(ctrl.validity.customError).toBeTrue();
+    expect(ctrl.validationMessage).toBe("Use a display name.");
+    expect(ctrl.invalid).toBeTrue();
+    expect(ctrl.error.customError).toBeUndefined();
 
-    ctrl.$setCustomValidity("");
+    ctrl.setCustomValidity("");
     await wait();
 
     expect(input.validity.customError).toBeFalse();
-    expect(ctrl.$validity.valid).toBeTrue();
-    expect(ctrl.$validationMessage).toBe("");
-    expect(ctrl.$valid).toBeTrue();
+    expect(ctrl.validity.valid).toBeTrue();
+    expect(ctrl.validationMessage).toBe("");
+    expect(ctrl.valid).toBeTrue();
   });
 
   it("uses native min, max, and step validity for numbers", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML =
       '<form name="form"><input type="number" name="age" min="10" max="20" step="2" ng-model="age" /></form>';
@@ -144,28 +144,28 @@ describe("input directive", () => {
     browserTrigger(input, "input");
     await wait();
 
-    expect(scope.form.age.$error.native).toBeUndefined();
-    expect(scope.form.age.$validity.rangeUnderflow).toBeTrue();
+    expect(scope.form.age.error.native).toBeUndefined();
+    expect(scope.form.age.validity.rangeUnderflow).toBeTrue();
     expect(scope.age).toBe("9");
 
     input.value = "11";
     browserTrigger(input, "input");
     await wait();
 
-    expect(scope.form.age.$error.native).toBeUndefined();
-    expect(scope.form.age.$validity.stepMismatch).toBeTrue();
+    expect(scope.form.age.error.native).toBeUndefined();
+    expect(scope.form.age.validity.stepMismatch).toBeTrue();
     expect(scope.age).toBe("11");
 
     input.value = "12";
     browserTrigger(input, "input");
     await wait();
 
-    expect(scope.form.age.$valid).toBeTrue();
+    expect(scope.form.age.valid).toBeTrue();
     expect(scope.age).toBe("12");
   });
 
   it("uses boolean checkbox models", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML = '<input type="checkbox" ng-model="enabled" />';
     $compile(app)(scope);
@@ -186,7 +186,7 @@ describe("input directive", () => {
   });
 
   it("uses native radio string values", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML =
       '<input type="radio" name="color" value="red" ng-model="color" />' +
@@ -221,7 +221,7 @@ describe("input directive", () => {
       ["week", "2026-W20", "input", "2026-W20"],
     ].forEach(([type, value, event, expected]) => {
       it(`updates ${type} models from native ${event} events`, async () => {
-        const scope = $rootScope.$new();
+        const scope = $rootScope.new();
 
         app.innerHTML = `<input type="${type}" ng-model="value" />`;
         $compile(app)(scope);
@@ -237,7 +237,7 @@ describe("input directive", () => {
     });
 
     it("updates checkbox models from native change events", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       app.innerHTML = '<input type="checkbox" ng-model="value" />';
       $compile(app)(scope);
@@ -252,7 +252,7 @@ describe("input directive", () => {
     });
 
     it("updates radio models from native change events", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       app.innerHTML =
         '<input type="radio" value="selected" ng-model="value" />';
@@ -268,7 +268,7 @@ describe("input directive", () => {
     });
 
     it("updates file models from native change events", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       app.innerHTML = '<input type="file" ng-model="value" />';
       $compile(app)(scope);
@@ -286,7 +286,7 @@ describe("input directive", () => {
     });
 
     it("writes hidden models without installing view-to-model updates", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.value = "from model";
       app.innerHTML = '<input type="hidden" ng-model="value" />';
@@ -307,7 +307,7 @@ describe("input directive", () => {
 
     ["button", "image", "reset", "submit"].forEach((type) => {
       it(`does not bind ${type} controls as value inputs`, async () => {
-        const scope = $rootScope.$new();
+        const scope = $rootScope.new();
 
         app.innerHTML = `<input type="${type}" ng-model="value" value="clicked" />`;
         $compile(app)(scope);

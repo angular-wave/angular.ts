@@ -5,7 +5,7 @@ import { getNormalizedAttr } from '../../shared/dom.js';
 const ngElError = createErrorFactory("ngEl");
 ngElDirective.$inject = [_parse];
 /**
- * Exposes the current element on `scope.$target` or an assignable expression.
+ * Exposes the current element on `scope._target` or an assignable expression.
  */
 function ngElDirective($parse) {
     return {
@@ -42,7 +42,7 @@ function bindExpressionElement(scope, element, assign) {
     };
 }
 function bindKeyedElement(scope, element, key) {
-    const target = scope.$target;
+    const target = scope._target;
     target[key] = element;
     return () => {
         deleteProperty(target, key);
@@ -61,7 +61,7 @@ function registerElementCleanup(scope, element, cleanup) {
         removeDestroyListener();
         observer?.disconnect();
     };
-    removeDestroyListener = scope.$on("$destroy", cleanupOnce);
+    removeDestroyListener = scope.on("$destroy", cleanupOnce);
     const parent = element.parentNode;
     if (!parent) {
         return;

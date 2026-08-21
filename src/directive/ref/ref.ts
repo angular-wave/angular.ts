@@ -72,7 +72,7 @@ export function ngRefDirective($parse: ng.ParseService): ng.Directive {
 
         setter(targetScope, refValue);
 
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
           setter(targetScope, null);
         });
       };

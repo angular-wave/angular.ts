@@ -6,6 +6,15 @@ import {
 import { $injectTokens } from "./injection-tokens.ts";
 import { registerNgModule } from "./ng.ts";
 import { ScopeElement } from "./services/web-component/web-component.ts";
+import {
+  attrs,
+  each,
+  event,
+  props,
+  tag,
+  tagNS,
+  tags,
+} from "./core/compile/programmatic-view.ts";
 
 configureBuiltinRuntime(registerNgModule);
 configureRuntimeInjectionTokens($injectTokens);
@@ -17,6 +26,12 @@ configureRuntimeInjectionTokens($injectTokens);
 export class Angular extends AngularRuntime {
   /** Base class for user-authored AngularTS custom elements. */
   public readonly ScopeElement = ScopeElement;
+
+  /** JSX-free real-DOM tag factories for programmatic component views. */
+  public readonly tags = tags;
+
+  /** Explicit programmatic-view binding and element helpers. */
+  public readonly view = { attrs, each, event, props, tag, tagNS };
 }
 
 export { configureBuiltinRuntime, configureRuntimeInjectionTokens };

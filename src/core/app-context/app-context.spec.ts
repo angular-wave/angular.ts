@@ -111,7 +111,7 @@ describe("AppContext", () => {
     const root = context.createRoot({ rootScope: createRootScope() });
     const calls: string[] = [];
 
-    root.rootScope.$broadcast("$viewRetentionPause", {
+    root.rootScope.broadcast("$viewRetentionPause", {
       _pause: "schedulers",
     });
     context.modelScheduler.schedule(() => {
@@ -122,7 +122,7 @@ describe("AppContext", () => {
 
     expect(calls).toEqual(["model-during-retention-pause"]);
 
-    root.rootScope.$broadcast("$viewRetentionResume", {
+    root.rootScope.broadcast("$viewRetentionResume", {
       _pause: "schedulers",
     });
     context.modelScheduler.schedule(() => {
@@ -264,7 +264,7 @@ describe("AppContext", () => {
     const rootElement = document.createElement("main");
     const record = context.createRoot({ rootScope, rootElement });
 
-    rootScope.$destroy();
+    rootScope.destroy();
 
     expect(record.destroyed).toBeTrue();
     expect(context.roots).toEqual([]);
@@ -312,6 +312,7 @@ describe("AppContext", () => {
     record.destroy();
     (
       context as unknown as {
+        /** @internal */
         _markRootDestroyed(root: typeof record): void;
       }
     )._markRootDestroyed(record);
@@ -357,14 +358,14 @@ describe("AppContext", () => {
     expect(context.isDestroyed()).toBeTrue();
     expect(first.destroyed).toBeTrue();
     expect(second.destroyed).toBeTrue();
-    expect(firstScope.$handler._destroyed).toBeTrue();
-    expect(secondScope.$handler._destroyed).toBeTrue();
+    expect(firstScope._handler._destroyed).toBeTrue();
+    expect(secondScope._handler._destroyed).toBeTrue();
     expect(first.scheduler.destroyed).toBeTrue();
     expect(second.scheduler.destroyed).toBeTrue();
     expect(context.modelScheduler.destroyed).toBeTrue();
     expect(context.modelScheduler.pending).toBe(0);
-    expect(model.$handler._destroyed).toBeTrue();
-    expect(detached.$handler._destroyed).toBeTrue();
+    expect(model._handler._destroyed).toBeTrue();
+    expect(detached._handler._destroyed).toBeTrue();
     expect(context.roots).toEqual([]);
     expect(context.models.size).toBe(0);
     expect(context.getModel("session")).toBeUndefined();
@@ -395,10 +396,10 @@ describe("AppContext", () => {
     context._releaseReactive(transferred);
     context.destroy();
 
-    expect(transferred.$handler._destroyed).toBeFalse();
+    expect(transferred._handler._destroyed).toBeFalse();
     expect(transferred.status).toBe("ready");
 
-    transferred.$destroy();
+    transferred.destroy();
   });
 
   it("should reject new app resources after full context destroy", () => {
@@ -510,10 +511,10 @@ describe("AppContext", () => {
     const session = context.createReactive({ token: "" });
     const values: string[] = [];
 
-    expect(user.$handler._listenerScheduler).toBe(
+    expect(user._handler._listenerScheduler).toBe(
       context.modelScheduler._listenerScheduler,
     );
-    expect(session.$handler._listenerScheduler).toBe(
+    expect(session._handler._listenerScheduler).toBe(
       context.modelScheduler._listenerScheduler,
     );
 
@@ -655,8 +656,8 @@ describe("AppContext", () => {
       position: { x: 1, y: 2 },
     }));
 
-    const snapshot = model.$snapshot();
-    const target = model.$target as unknown as {
+    const snapshot = model.snapshot();
+    const target = model._target as unknown as {
       name: string;
       position: { x: number; y: number };
     };
@@ -668,10 +669,10 @@ describe("AppContext", () => {
     expect(snapshot).not.toBe(target);
     expect(snapshot.position).not.toBe(target.position);
     expect(
-      Object.prototype.hasOwnProperty.call(snapshot, "$handler"),
+      Object.prototype.hasOwnProperty.call(snapshot, "_handler"),
     ).toBeFalse();
     expect(
-      Object.prototype.hasOwnProperty.call(model.$target, "$snapshot"),
+      Object.prototype.hasOwnProperty.call(model._target, "snapshot"),
     ).toBeFalse();
   });
 
@@ -683,13 +684,13 @@ describe("AppContext", () => {
     }));
     const writes: Array<{ snapshot: unknown; change: unknown }> = [];
 
-    model.$sync({
+    model.sync({
       write(snapshot, change) {
         writes.push({ snapshot, change });
       },
     });
 
-    model.$restore({
+    model.restore({
       name: "Lin",
       position: { x: 5, y: 6 },
     } as never);
@@ -712,7 +713,7 @@ describe("AppContext", () => {
       },
     ]);
 
-    model.$restore({ score: 9 } as never, { mode: "merge" });
+    model.restore({ score: 9 } as never, { mode: "merge" });
     context.modelScheduler.flush();
 
     expect(model.name).toBe("Lin");
@@ -735,25 +736,25 @@ describe("AppContext", () => {
     const model = context.registerModel("counter", () => ({ value: 0 }));
 
     for (const snapshot of [null, [], new Date()]) {
-      expect(() => model.$restore(snapshot as never)).toThrowError(
+      expect(() => model.restore(snapshot as never)).toThrowError(
         "Model restore snapshot must be a plain object.",
       );
     }
 
-    expect(() => model.$restore({ value: 1 }, null as never)).toThrowError(
+    expect(() => model.restore({ value: 1 }, null as never)).toThrowError(
       "Model restore options must be an object.",
     );
-    expect(() => model.$restore({ value: 1 }, [] as never)).toThrowError(
+    expect(() => model.restore({ value: 1 }, [] as never)).toThrowError(
       "Model restore options must be an object.",
     );
     expect(() =>
-      model.$restore({ value: 1 }, { mode: "append" } as never),
+      model.restore({ value: 1 }, { mode: "append" } as never),
     ).toThrowError('Model restore mode must be "replace" or "merge".');
     expect(() =>
-      model.$restore({ value: 1 }, { origin: 1 } as never),
+      model.restore({ value: 1 }, { origin: 1 } as never),
     ).toThrowError("Model restore origin must be a string.");
 
-    model.$restore(
+    model.restore(
       Object.assign(Object.create(null) as { value: number }, { value: 2 }),
       { mode: "replace", origin: "test" },
     );
@@ -768,7 +769,7 @@ describe("AppContext", () => {
     }));
     const writes: Array<{ snapshot: unknown; change: unknown }> = [];
 
-    model.$sync({
+    model.sync({
       write(snapshot, change) {
         writes.push({ snapshot, change });
       },
@@ -796,7 +797,7 @@ describe("AppContext", () => {
 
       return undefined as never;
     });
-    model.$sync({
+    model.sync({
       write() {
         throw new Error("sync failure");
       },
@@ -818,7 +819,7 @@ describe("AppContext", () => {
 
       return undefined as never;
     });
-    model.$sync(
+    model.sync(
       {
         write() {
           throw new Error("sync failure");
@@ -837,7 +838,7 @@ describe("AppContext", () => {
   it("should throw model sync target failures when configured", () => {
     const model = context.registerModel("player", () => ({ health: 10 }));
 
-    model.$sync(
+    model.sync(
       {
         write() {
           throw new Error("sync failure");
@@ -859,7 +860,7 @@ describe("AppContext", () => {
     const writes: unknown[] = [];
     const model = context.registerModel("counter", () => ({ value: 0 }));
 
-    model.$sync({
+    model.sync({
       restore() {
         return { value: 1 };
       },
@@ -892,7 +893,7 @@ describe("AppContext", () => {
     const mirrorWrites: unknown[] = [];
     const model = context.registerModel("counter", () => ({ value: 0 }));
 
-    model.$sync({
+    model.sync({
       receive(apply) {
         applyRemote = apply;
 
@@ -902,7 +903,7 @@ describe("AppContext", () => {
         sourceWrites.push({ snapshot, change });
       },
     });
-    model.$sync({
+    model.sync({
       write(snapshot, change) {
         mirrorWrites.push({ snapshot, change });
       },
@@ -930,7 +931,7 @@ describe("AppContext", () => {
     const dispose = jasmine.createSpy("dispose");
     const receiveDispose = jasmine.createSpy("receiveDispose");
     const write = jasmine.createSpy("write");
-    const stop = model.$sync({
+    const stop = model.sync({
       receive() {
         return receiveDispose;
       },
@@ -956,8 +957,8 @@ describe("AppContext", () => {
 
       return undefined as never;
     });
-    model.$sync({ receive: () => undefined });
-    model.$sync({
+    model.sync({ receive: () => undefined });
+    model.sync({
       write: () => Promise.reject(new Error("async write failure")),
     });
 
@@ -979,7 +980,7 @@ describe("AppContext", () => {
 
       return undefined as never;
     });
-    model.$sync({
+    model.sync({
       receive() {
         throw new Error("receive failure");
       },
@@ -987,7 +988,7 @@ describe("AppContext", () => {
         throw new Error("restore failure");
       },
     });
-    model.$sync({
+    model.sync({
       restore: () => Promise.reject(new Error("async restore failure")),
     });
 
@@ -1011,7 +1012,7 @@ describe("AppContext", () => {
 
       return undefined as never;
     });
-    model.$sync({
+    model.sync({
       restore: () => "invalid" as never,
       receive(apply) {
         applyRemote = apply;
@@ -1019,7 +1020,7 @@ describe("AppContext", () => {
         return 1 as never;
       },
     });
-    model.$sync({
+    model.sync({
       restore: async () => [] as never,
     });
 
@@ -1047,7 +1048,7 @@ describe("AppContext", () => {
 
       return undefined as never;
     });
-    model.$sync(
+    model.sync(
       {
         receive(apply) {
           applyIgnored = apply;
@@ -1057,7 +1058,7 @@ describe("AppContext", () => {
       },
       { failure: "ignore" },
     );
-    model.$sync(
+    model.sync(
       {
         receive(apply) {
           applyThrown = apply;
@@ -1083,9 +1084,9 @@ describe("AppContext", () => {
     });
     const model = context.registerModel("counter", () => ({ value: 0 }));
 
-    model.$sync({ restore: async () => ({ value: 1 }) });
-    model.$sync({ restore: async () => null });
-    const stopLate = model.$sync({ restore: () => lateRestore });
+    model.sync({ restore: async () => ({ value: 1 }) });
+    model.sync({ restore: async () => null });
+    const stopLate = model.sync({ restore: () => lateRestore });
 
     stopLate();
     resolveLate({ value: 9 });
@@ -1099,7 +1100,7 @@ describe("AppContext", () => {
   it("should ignore inbound updates after target disposal", () => {
     let applyRemote!: (snapshot: { value: number }) => void;
     const model = context.registerModel("counter", () => ({ value: 0 }));
-    const stop = model.$sync({
+    const stop = model.sync({
       receive(apply) {
         applyRemote = apply;
 
@@ -1123,7 +1124,7 @@ describe("AppContext", () => {
 
       return undefined as never;
     });
-    const stop = model.$sync({
+    const stop = model.sync({
       receive() {
         return () => {
           throw new Error("receive dispose failure");
@@ -1134,7 +1135,7 @@ describe("AppContext", () => {
       },
     });
 
-    model.$destroy();
+    model.destroy();
     stop();
 
     expect(errors.map((error) => (error as Error).message)).toEqual([
@@ -1152,13 +1153,13 @@ describe("AppContext", () => {
       injector: invalidInjector,
     });
 
-    expect(() => detached.$sync("namedTarget" as never)).toThrowError(
+    expect(() => detached.sync("namedTarget" as never)).toThrowError(
       "Model sync targets must be objects or injectable factories, not service-name strings.",
     );
-    expect(() => detached.$sync((() => ({})) as never)).toThrowError(
+    expect(() => detached.sync((() => ({})) as never)).toThrowError(
       "Injectable model sync targets require the model to be created by an injector.",
     );
-    expect(() => injected.$sync((() => ({})) as never)).toThrowError(
+    expect(() => injected.sync((() => ({})) as never)).toThrowError(
       "Injectable model sync target must resolve to an object.",
     );
 
@@ -1171,7 +1172,7 @@ describe("AppContext", () => {
       { injector: emptyInjector },
     );
 
-    expect(() => emptyInjected.$sync((() => ({})) as never)).toThrowError(
+    expect(() => emptyInjected.sync((() => ({})) as never)).toThrowError(
       "Injectable model sync target must implement restore, write, receive, or dispose.",
     );
 
@@ -1183,7 +1184,7 @@ describe("AppContext", () => {
       injector: validInjector,
     });
     const injectableTarget = () => ({ write });
-    const stopInjected = valid.$sync(injectableTarget as never);
+    const stopInjected = valid.sync(injectableTarget as never);
 
     valid.value = 1;
     context.modelScheduler.flush();
@@ -1193,7 +1194,7 @@ describe("AppContext", () => {
 
     stopInjected();
 
-    const stop = detached.$sync({ write: () => undefined });
+    const stop = detached.sync({ write: () => undefined });
 
     detached.value = 1;
     context.modelScheduler.flush();
@@ -1203,35 +1204,35 @@ describe("AppContext", () => {
   it("should validate direct model sync targets and options", () => {
     const model = context.registerModel("player", () => ({ health: 10 }));
 
-    expect(() => model.$sync({})).toThrowError(
+    expect(() => model.sync({})).toThrowError(
       "Model sync target must implement restore, write, receive, or dispose.",
     );
-    expect(() => model.$sync(new Date() as never)).toThrowError(
+    expect(() => model.sync(new Date() as never)).toThrowError(
       "Model sync target must implement restore, write, receive, or dispose.",
     );
 
     for (const operation of ["restore", "write", "receive", "dispose"]) {
-      expect(() => model.$sync({ [operation]: true } as never)).toThrowError(
+      expect(() => model.sync({ [operation]: true } as never)).toThrowError(
         `Model sync target ${operation} must be a function.`,
       );
     }
 
     const target = { write: () => undefined };
 
-    expect(() => model.$sync(target, null as never)).toThrowError(
+    expect(() => model.sync(target, null as never)).toThrowError(
       "Model sync options must be an object.",
     );
-    expect(() => model.$sync(target, [] as never)).toThrowError(
+    expect(() => model.sync(target, [] as never)).toThrowError(
       "Model sync options must be an object.",
     );
     expect(() =>
-      model.$sync(target, { failure: "retry" } as never),
+      model.sync(target, { failure: "retry" } as never),
     ).toThrowError(
       'Model sync failure must be "report", "throw", or "ignore".',
     );
 
     const dispose = jasmine.createSpy("dispose");
-    const stop = model.$sync({ dispose }, { failure: "report" });
+    const stop = model.sync({ dispose }, { failure: "report" });
 
     stop();
 

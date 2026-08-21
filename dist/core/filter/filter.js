@@ -37,6 +37,7 @@ class FilterRegistry {
     assertActive() {
         this._assertActive();
     }
+    /** @internal */
     _bind(name, factory) {
         if (!this._providerRegistry)
             return;
@@ -45,6 +46,7 @@ class FilterRegistry {
         this._providerRegistry.factory(name + SUFFIX, factory);
         this._boundFactories.set(name, factory);
     }
+    /** @internal */
     _assertActive() {
         if (this._destroyed) {
             throw new Error("Filter registry has been destroyed");

@@ -12,7 +12,7 @@ The public machine API uses a declarative state-tree and event contract.
 - Create reactive machines from `$machine(config)`.
 - Expose state transitions through `send()`, guarded `can()`, and `matches()`.
 - Keep `state` and `data` observable when a scope proxy wraps a machine.
-- Coalesce transition updates through the active scope's `$batch()` scheduler.
+- Coalesce transition updates through the active scope's `batch()` scheduler.
 - Preserve machine instances across destroyed observing scopes.
 - Snapshot and restore durable state and data without restoring transition
   functions or hooks.
@@ -80,7 +80,7 @@ The main flow for `send()` is:
 2. Pick an active, non-destroyed scope binding when one exists.
 3. Resolve one static or functional `to` target.
 4. Evaluate the optional transition guard and policy against that target inside
-   the scope's `$batch()` scheduler.
+   the scope's `batch()` scheduler.
 5. Run state-tree `before`/`update` when authorization passes.
 6. Apply the previously resolved target, or the current state when `to` is
    omitted.
@@ -313,7 +313,7 @@ Runtime guarantees:
   `denied`.
 - State-tree guard data is readonly at the type level; update contexts remain
   mutable.
-- Transition work is wrapped in `$batch()` when an active live scope binding is
+- Transition work is wrapped in `batch()` when an active live scope binding is
   available.
 - Nested `machine.send()` calls from hooks are included in the outer batch.
 - Binding schedules happen after a transition starts, even when a transition or
@@ -346,7 +346,7 @@ For same-state transitions, only `hooks.transition` runs.
 ## Integration Points
 
 - Scope proxy binding: `SCOPE_PROXY_BIND` registers observing scope handlers.
-- Scope batching: `$batch()` suppresses intermediate observer flushes while a
+- Scope batching: `batch()` suppresses intermediate observer flushes while a
   transition runs.
 - Scope scheduling: `_scheduleWatchKeys()` and `_checkListenersForAllKeys()`
   propagate machine and nested data mutations to templates.

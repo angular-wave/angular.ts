@@ -7,7 +7,7 @@ description: "Use $eventBus for application-wide publish/subscribe messaging and
 AngularTS has two messaging models:
 
 - `$eventBus` is an application-wide `EventBus` instance for decoupled communication, including messages from non-Angular code.
-- Scope events (`$scope.$on`, `$scope.$emit`, `$scope.$broadcast`) travel through the scope tree and are best for parent/child communication.
+- Scope events (`$scope.on`, `$scope.emit`, `$scope.broadcast`) travel through the scope tree and are best for parent/child communication.
 
 Exact `$eventBus` method signatures live in TypeDoc:
 
@@ -24,7 +24,7 @@ class CartService {
   constructor(private $eventBus: ng.EventBusService) {}
 
   addItem(product: Product, quantity: number) {
-    this.$eventBus.publish("cart:item-added", { product, quantity });
+    this.eventBus.publish("cart:item-added", { product, quantity });
   }
 }
 
@@ -40,7 +40,7 @@ class HeaderController {
       view.cartCount += 1;
     });
 
-    $scope.$on("$destroy", unsubscribe);
+    $scope.on("$destroy", unsubscribe);
   }
 }
 ```
@@ -63,7 +63,7 @@ class AnalyticsBootstrap {
 }
 
 window.onAnalyticsReady = (sdk) => {
-  angular.$eventBus.publish("analytics:ready", sdk);
+  angular.eventBus.publish("analytics:ready", sdk);
 };
 ```
 
@@ -124,25 +124,25 @@ Use scope events when the relationship is already expressed by the scope tree.
 
 | Method | Direction | Use for |
 | --- | --- | --- |
-| `$scope.$broadcast(event, args)` | Down to descendants | Parent notifying child scopes |
-| `$scope.$emit(event, args)` | Up toward `$rootScope` | Child notifying parents |
-| `$scope.$on(event, handler)` | Current scope listener | Local event handling and cleanup |
+| `$scope.broadcast(event, args)` | Down to descendants | Parent notifying child scopes |
+| `$scope.emit(event, args)` | Up toward `$rootScope` | Child notifying parents |
+| `$scope.on(event, handler)` | Current scope listener | Local event handling and cleanup |
 
 ```typescript
-$scope.$broadcast("filter:changed", { status: "active" });
+$scope.broadcast("filter:changed", { status: "active" });
 
-$scope.$on("filter:changed", (_event, filter) => {
+$scope.on("filter:changed", (_event, filter) => {
   this.applyFilter(filter);
 });
 
-$scope.$emit("child:ready");
+$scope.emit("child:ready");
 ```
 
 Scope listeners are synchronous and return a deregistration function. Pair them with `$destroy` when the listener can outlive the current view.
 
 ```typescript
-const off = $scope.$on("filter:changed", handler);
-$scope.$on("$destroy", off);
+const off = $scope.on("filter:changed", handler);
+$scope.on("$destroy", off);
 ```
 
 ## Choosing a messaging model

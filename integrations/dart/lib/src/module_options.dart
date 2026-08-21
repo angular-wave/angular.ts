@@ -312,7 +312,7 @@ final class ProviderRegistration<TValue> implements unsafe.JsConvertible {
 
   /// The to js object.
   JSObject toJsObject() {
-    return unsafe.object({'$get': get.toAnnotatedArray()});
+    return unsafe.object({'get': get.toAnnotatedArray()});
   }
 
   @override

@@ -9,14 +9,14 @@ class NgModelOptionsController {
         this._scope = $scope;
         this._parse = $parse;
         this.parentCtrl = null;
-        this.$options = defaultModelOptions;
+        this.options = defaultModelOptions;
     }
-    $onInit() {
+    onInit() {
         const parentOptions = this.parentCtrl
-            ? this.parentCtrl.$options
+            ? this.parentCtrl.options
             : defaultModelOptions;
         const modelOptionsDefinition = this._parse(getNormalizedAttr(this._element, "ngModelOptions") ?? "")(this._scope);
-        this.$options = parentOptions.createChild(modelOptionsDefinition);
+        this.options = parentOptions.createChild(modelOptionsDefinition);
     }
 }
 NgModelOptionsController.$nonscope = true;
@@ -35,7 +35,7 @@ class ModelOptions {
         let inheritAll = false;
         const mergedOptions = assign({}, options);
         for (const [key, option] of Object.entries(mergedOptions)) {
-            if (option === "$inherit") {
+            if (option === "_inherit") {
                 if (key === "*") {
                     inheritAll = true;
                 }

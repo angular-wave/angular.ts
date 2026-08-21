@@ -1,5 +1,28 @@
 # AngularTS Internal style guide
 
+## Internal API visibility
+
+TypeScript implementation methods use three distinct visibility layers:
+
+- Class-local methods use `private _name()` and carry `@internal` JSDoc.
+- Framework-shared implementation methods use `_name()` and carry `@internal`
+  JSDoc, without `private` when another class must call them.
+- Public methods use an unprefixed name and must have user-facing documentation.
+
+The TypeScript `private` modifier enforces source-level access. The underscore
+marks properties for release-build mangling. The `@internal` annotation removes
+implementation declarations from generated types and TypeDoc.
+
+Do not use `@ignore`, `@private`, or `@protected` in TypeScript. These legacy
+TypeDoc annotations can hide documentation without removing the corresponding
+published declaration. Static injection metadata such as `$inject` and
+`$nonscope` remains visible as framework metadata and must not be disguised with
+visibility comments.
+
+Language integrations may use their language toolchain's visibility annotations.
+For example, Closure JavaScript `@private` is enforced by the Closure compiler
+and is not a TypeScript or TypeDoc annotation.
+
 ## 🔒 Assert Validation
 
 Asserts enforce **framework correctness**, not **application behavior**.

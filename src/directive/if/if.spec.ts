@@ -39,7 +39,7 @@ describe("ngIf", () => {
         "$compile",
         (_$rootScope_, _$compile_) => {
           $rootScope = _$rootScope_;
-          $scope = $rootScope.$new();
+          $scope = $rootScope.new();
           $compile = _$compile_;
           element = $compile("<div></div>")($scope);
         },
@@ -66,10 +66,10 @@ describe("ngIf", () => {
       const container = document.createElement("div");
       const anchor = document.createComment("ngIf");
       const rendered = document.createElement("span");
-      const childScope = { $destroy: jasmine.createSpy("$destroy") };
+      const childScope = { destroy: jasmine.createSpy("destroy") };
       let listener;
       const manualScope = {
-        $watch(_expression, callback) {
+        watch(_expression, callback) {
           listener = callback;
         },
       };
@@ -88,7 +88,7 @@ describe("ngIf", () => {
 
       listener(false);
       expect(container.contains(rendered)).toBeFalse();
-      expect(childScope.$destroy).toHaveBeenCalledOnceWith();
+      expect(childScope.destroy).toHaveBeenCalledOnceWith();
     });
 
     it("should immediately remove the element and replace it with comment node if condition is falsy", async () => {
@@ -239,11 +239,11 @@ describe("ngIf", () => {
       element.append(createElementFromHTML('<div ng-if="value"></div>'));
       $compile(element)($scope);
       await wait();
-      const childScope = $scope.$handler._children[0];
+      const childScope = $scope._handler._children[0];
 
       let destroyed = false;
 
-      childScope.$on("$destroy", () => {
+      childScope.on("$destroy", () => {
         destroyed = true;
       });
 
@@ -400,7 +400,7 @@ describe("ngIf", () => {
     expect(
       link(
         {
-          $watch: () => {},
+          watch: () => {},
         } as unknown as ng.Scope,
         element,
         undefined,
@@ -447,7 +447,7 @@ describe("ngIf", () => {
     await wait();
     expect(animate.leave).toHaveBeenCalledTimes(1);
 
-    localRootScope.$destroy();
+    localRootScope.destroy();
     root.remove();
   });
 
@@ -459,13 +459,13 @@ describe("ngIf", () => {
     const marker = document.createElement("span");
     const parent = document.createElement("div");
     const text = document.createTextNode("transcluded");
-    const childScope = { $destroy: jasmine.createSpy("$destroy") };
+    const childScope = { destroy: jasmine.createSpy("destroy") };
     let listener;
 
     parent.appendChild(marker);
     directive.compile(template)(
       {
-        $watch(_expression, callback) {
+        watch(_expression, callback) {
           listener = callback;
         },
       },
@@ -479,7 +479,7 @@ describe("ngIf", () => {
     listener(false);
 
     expect(parent.textContent).toBe("");
-    expect(childScope.$destroy).toHaveBeenCalledTimes(1);
+    expect(childScope.destroy).toHaveBeenCalledTimes(1);
   });
 
   it("retains an animated block when leave is cancelled", async () => {

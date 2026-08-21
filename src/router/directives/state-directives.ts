@@ -237,8 +237,8 @@ function normalizeParamsOnlyStateRef(ref: string): string {
 function stateContext(el: Node): string | undefined {
   const $ngView: unknown = getInheritedData(el, "$ngView");
 
-  const path = ($ngView as { $cfg?: { _path?: unknown } } | undefined)?.$cfg
-    ?._path as { state: { name: string } }[] | undefined;
+  const path = ($ngView as { _config?: { _path?: unknown } } | undefined)
+    ?._config?._path as { state: { name: string } }[] | undefined;
 
   return path ? path[path.length - 1].state.name : undefined;
 }
@@ -391,7 +391,7 @@ function clickHook(
           void $state
             .go(target._ngState, target._ngStateParams, target._ngStateOpts)
             .then(() => {
-              scope.$emit("$updateBrowser");
+              scope.emit("$updateBrowser");
 
               return undefined;
             })
@@ -411,10 +411,10 @@ function clickHook(
  */
 function defaultOpts(
   el: Node,
-  $state: { $current: StateObject | undefined },
+  $state: { _current: StateObject | undefined },
 ): StateRefOptions {
   return {
-    relative: stateContext(el) ?? $state.$current,
+    relative: stateContext(el) ?? $state._current,
     inherit: true,
     source: "ng-state",
   };
@@ -446,7 +446,7 @@ function bindEvents(
     element.addEventListener("keydown", keyboardHookFn);
   }
 
-  scope.$on("$destroy", function () {
+  scope.on("$destroy", function () {
     // const off = element.off ? "off" : "unbind";
     for (const event of eventNames) {
       element.removeEventListener(event, hookFn);
@@ -498,7 +498,7 @@ function bindPrefetchEvents(
   element.addEventListener("focus", schedule);
   element.addEventListener("blur", cancel);
 
-  scope.$on("$destroy", () => {
+  scope.on("$destroy", () => {
     cancel();
     element.removeEventListener("pointerenter", schedule);
     element.removeEventListener("pointerleave", cancel);
@@ -624,7 +624,7 @@ export function StateRefDynamicDirective(
           }
 
           watchDeregFns[field] =
-            scope.$watch(expr, (newval) => {
+            scope.watch(expr, (newval) => {
               (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] =
                 newval;
               update();
@@ -647,7 +647,7 @@ export function StateRefDynamicDirective(
         });
         observer.observe(element, { attributes: true });
 
-        let deregisterDestroy: (() => void) | undefined = scope.$on(
+        let deregisterDestroy: (() => void) | undefined = scope.on(
           "$destroy",
           deregister,
         );
@@ -677,13 +677,13 @@ export function StateRefDynamicDirective(
       });
 
       modifierObserver.observe(element, { attributes: true });
-      scope.$on("$destroy", () => {
+      scope.on("$destroy", () => {
         modifierObserver.disconnect();
       });
 
       update();
-      scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
-      scope.$on("$destroy", $transitions.onSuccess({}, update));
+      scope.on("$destroy", $stateRegistry.onStatesChanged(update));
+      scope.on("$destroy", $transitions.onSuccess({}, update));
       bindPrefetchEvents(element, scope, $state, rawDef);
 
       if (!type._clickable) return;
@@ -792,7 +792,7 @@ export function StateRefActiveDirective(
             })
             .catch(() => undefined);
         }
-        $scope.$on("$destroy", setupEventListeners());
+        $scope.on("$destroy", setupEventListeners());
 
         if (routerState._transition) {
           updateAfterTransition(routerState._transition);
@@ -806,7 +806,7 @@ export function StateRefActiveDirective(
             updateAfterTransition,
           );
 
-          const deregisterStateChangeSuccessListener = $scope.$on(
+          const deregisterStateChangeSuccessListener = $scope.on(
             "$stateChangeSuccess",
             update,
           );

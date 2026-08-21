@@ -629,7 +629,7 @@ describe("$worker", () => {
     const listener = jasmine.createSpy("listener");
     const schedule = jasmine.createSpy("schedule");
     const handler = {
-      $id: 41,
+      id: 41,
       _destroyed: false,
       _scheduleWatchKeys: schedule,
     };
@@ -639,7 +639,7 @@ describe("$worker", () => {
     connection[SCOPE_PROXY_BIND](handler, handler);
     connection[SCOPE_PROXY_BIND](
       {
-        $id: 42,
+        id: 42,
         _destroyed: true,
         _scheduleWatchKeys: destroyedSchedule,
       },

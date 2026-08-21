@@ -146,13 +146,13 @@ pub fn service(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
-/// Marks a method as the component `$onInit` lifecycle hook.
+/// Marks a method as the component `onInit` lifecycle hook.
 #[proc_macro_attribute]
 pub fn on_init(_attr: TokenStream, item: TokenStream) -> TokenStream {
     item
 }
 
-/// Marks a method as the component `$onDestroy` lifecycle hook.
+/// Marks a method as the component `onDestroy` lifecycle hook.
 #[proc_macro_attribute]
 pub fn on_destroy(_attr: TokenStream, item: TokenStream) -> TokenStream {
     item
@@ -206,7 +206,14 @@ fn expand_angular_module(args: KeyValueArgs, input: ItemFn) -> Result<proc_macro
 fn expand_component(args: KeyValueArgs, mut input: ItemStruct) -> Result<proc_macro2::TokenStream> {
     reject_unknown(
         &args,
-        &["selector", "name", "template", "template_url", "export"],
+        &[
+            "selector",
+            "name",
+            "template",
+            "template_url",
+            "view",
+            "export",
+        ],
     )?;
     assert_public(&input.vis, &input.ident, "component")?;
 
@@ -214,6 +221,7 @@ fn expand_component(args: KeyValueArgs, mut input: ItemStruct) -> Result<proc_ma
     let name = get_optional(&args, "name").unwrap_or_else(|| component_name(&selector));
     let inline_template = get_optional(&args, "template");
     let template_url = get_optional(&args, "template_url");
+    let view = get_optional(&args, "view");
     let ident = input.ident.clone();
     let injections = collect_injections(&input)?;
     let export_name =
@@ -221,23 +229,20 @@ fn expand_component(args: KeyValueArgs, mut input: ItemStruct) -> Result<proc_ma
 
     strip_field_attribute(&mut input, "inject");
 
-    let template = match (inline_template, template_url) {
-        (Some(template), None) => quote! {
+    let template = match (inline_template, template_url, view) {
+        (Some(template), None, None) => quote! {
             ::angular_ts::ComponentMetadata::inline_with_injections(#selector, #template, &[#(#injections),*])
         },
-        (None, Some(template_url)) => quote! {
+        (None, Some(template_url), None) => quote! {
             ::angular_ts::ComponentMetadata::template_url_with_injections(#selector, #template_url, &[#(#injections),*])
         },
-        (Some(_), Some(_)) => {
+        (None, None, Some(view)) => quote! {
+            ::angular_ts::ComponentMetadata::view_with_injections(#selector, #view, &[#(#injections),*])
+        },
+        _ => {
             return Err(Error::new(
                 Span::call_site(),
-                "`component` accepts either `template` or `template_url`, not both",
-            ));
-        }
-        (None, None) => {
-            return Err(Error::new(
-                Span::call_site(),
-                "`component` requires `template` or `template_url`",
+                "`component` accepts exactly one of `template`, `template_url`, or `view`",
             ));
         }
     };

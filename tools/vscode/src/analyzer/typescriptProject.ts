@@ -50,11 +50,11 @@ export class TypeScriptProjectService {
   ) {
     this.compilerOptions = { ...defaultCompilerOptions(), ...compilerOptions };
     for (const file of files) this.updateFile(file.fileName, file.text, file.version);
-    this.service = ts.createLanguageService(this.createHost());
+    this.service = ts.createLanguageService(this._createHost());
   }
 
   updateFile(fileName: string, text: string, version?: number): void {
-    const normalized = this.normalize(fileName);
+    const normalized = this._normalize(fileName);
     const existing = this.files.get(normalized);
     this.files.set(normalized, {
       fileName: normalized,
@@ -64,7 +64,7 @@ export class TypeScriptProjectService {
   }
 
   quickInfo(fileName: string, offset: number): TypeScriptQuickInfo | undefined {
-    const info = this.service.getQuickInfoAtPosition(this.normalize(fileName), offset);
+    const info = this.service.getQuickInfoAtPosition(this._normalize(fileName), offset);
     if (!info) return undefined;
 
     return {
@@ -77,9 +77,9 @@ export class TypeScriptProjectService {
 
   definitions(fileName: string, offset: number): TypeScriptDefinition[] {
     return (
-      this.service.getDefinitionAtPosition(this.normalize(fileName), offset) ?? []
+      this.service.getDefinitionAtPosition(this._normalize(fileName), offset) ?? []
     ).map((definition) => ({
-      fileName: this.normalize(definition.fileName),
+      fileName: this._normalize(definition.fileName),
       start: definition.textSpan.start,
       end: definition.textSpan.start + definition.textSpan.length,
     }));
@@ -87,7 +87,7 @@ export class TypeScriptProjectService {
 
   completions(fileName: string, offset: number): string[] {
     return (
-      this.service.getCompletionsAtPosition(this.normalize(fileName), offset, {})?.entries ??
+      this.service.getCompletionsAtPosition(this._normalize(fileName), offset, {})?.entries ??
       []
     ).map((entry) => entry.name);
   }
@@ -100,7 +100,7 @@ export class TypeScriptProjectService {
 
   semanticDiagnosticDetails(fileName: string): TypeScriptSemanticDiagnostic[] {
     return this.service
-      .getSemanticDiagnostics(this.normalize(fileName))
+      .getSemanticDiagnostics(this._normalize(fileName))
       .map((diagnostic) => ({
         message: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
         start: diagnostic.start ?? 0,
@@ -109,7 +109,7 @@ export class TypeScriptProjectService {
   }
 
   signatureHelp(fileName: string, offset: number): TypeScriptSignatureHelp | undefined {
-    const help = this.service.getSignatureHelpItems(this.normalize(fileName), offset, {});
+    const help = this.service.getSignatureHelpItems(this._normalize(fileName), offset, {});
     const item = help?.items[help.selectedItemIndex];
     if (!help || !item) return undefined;
 
@@ -123,7 +123,7 @@ export class TypeScriptProjectService {
     fileName: string,
     offset: number,
   ): TypeScriptStringLiteralUnion | undefined {
-    const normalized = this.normalize(fileName);
+    const normalized = this._normalize(fileName);
     const program = this.service.getProgram();
     const source = program?.getSourceFile(normalized);
     if (!program || !source) return undefined;
@@ -138,16 +138,17 @@ export class TypeScriptProjectService {
     return { values: [...new Set(values)] };
   }
 
-  private createHost(): ts.LanguageServiceHost {
+  /** @internal */
+  private _createHost(): ts.LanguageServiceHost {
     return {
       getCompilationSettings: () => this.compilerOptions,
       getCurrentDirectory: () => this.currentDirectory,
       getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
       getScriptFileNames: () => Array.from(this.files.keys()),
       getScriptVersion: (fileName) =>
-        String(this.files.get(this.normalize(fileName))?.version ?? 0),
+        String(this.files.get(this._normalize(fileName))?.version ?? 0),
       getScriptSnapshot: (fileName) => {
-        const normalized = this.normalize(fileName);
+        const normalized = this._normalize(fileName);
         const file = this.files.get(normalized);
         if (file) return ts.ScriptSnapshot.fromString(file.text);
 
@@ -155,18 +156,19 @@ export class TypeScriptProjectService {
         return ts.ScriptSnapshot.fromString(ts.sys.readFile(normalized) ?? "");
       },
       fileExists: (fileName) =>
-        this.files.has(this.normalize(fileName)) ||
-        ts.sys.fileExists(this.normalize(fileName)),
+        this.files.has(this._normalize(fileName)) ||
+        ts.sys.fileExists(this._normalize(fileName)),
       readFile: (fileName) =>
-        this.files.get(this.normalize(fileName))?.text ??
-        ts.sys.readFile(this.normalize(fileName)),
+        this.files.get(this._normalize(fileName))?.text ??
+        ts.sys.readFile(this._normalize(fileName)),
       readDirectory: ts.sys.readDirectory,
     };
   }
 
   private readonly compilerOptions: ts.CompilerOptions;
 
-  private normalize(fileName: string): string {
+  /** @internal */
+  private _normalize(fileName: string): string {
     return path.resolve(this.currentDirectory, fileName);
   }
 }

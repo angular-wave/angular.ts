@@ -447,7 +447,7 @@ describe("injector.modules", () => {
     const injector = createInjector(["myModule"]);
 
     class Foo {
-      /* @ignore */ static $inject = ["a", "b"];
+      static $inject = ["a", "b"];
       constructor(a, b) {
         this.c = a + b;
       }
@@ -676,11 +676,11 @@ describe("annotate", () => {
 describe("module provider registration", () => {
   beforeEach(() => (window.angular = new Angular()));
 
-  it("allows registering a provider and uses its $get", () => {
+  it("allows registering a provider and uses its get", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", {
-      $get: () => {
+      get: () => {
         return 42;
       },
     });
@@ -690,27 +690,27 @@ describe("module provider registration", () => {
     expect(injector.get("a")).toBe(42);
   });
 
-  it("injects the $get method of a provider", () => {
+  it("injects the get method of a provider", () => {
     const module = angular.module("myModule", []);
 
     module.constant("a", 1);
     module.provider("b", {
-      $get: annotated(["a"], (a) => a + 2),
+      get: annotated(["a"], (a) => a + 2),
     });
     const injector = createInjector(["myModule"]);
 
     expect(injector.get("b")).toBe(3);
   });
 
-  it("injects the $get method of a provider lazily", () => {
+  it("injects the get method of a provider lazily", () => {
     const module = angular.module("myModule", []);
 
     module.provider("b", {
-      $get: annotated(["a"], (a) => {
+      get: annotated(["a"], (a) => {
         return a + 2;
       }),
     });
-    module.provider("a", { $get: () => 1 });
+    module.provider("a", { get: () => 1 });
     const injector = createInjector(["myModule"]);
 
     expect(injector.get("b")).toBe(3);
@@ -722,7 +722,7 @@ describe("module provider registration", () => {
     module.provider(
       "a",
       class {
-        $get() {
+        get() {
           return {};
         }
       },
@@ -745,14 +745,14 @@ describe("module provider registration", () => {
     angular
       .module("myModule", [])
       .provider("s1", {
-        $get: annotated(["s6", "s5"], (s6, s5) => {
+        get: annotated(["s6", "s5"], (s6, s5) => {
           log.push("s1");
 
           return {};
         }),
       })
       .provider("s2", {
-        $get: annotated(["s3", "s4", "s5"], (s3, s4, s5) => {
+        get: annotated(["s3", "s4", "s5"], (s3, s4, s5) => {
           log.push("s2");
 
           return {};
@@ -760,28 +760,28 @@ describe("module provider registration", () => {
       })
 
       .provider("s3", {
-        $get: annotated(["s6"], (s6) => {
+        get: annotated(["s6"], (s6) => {
           log.push("s3");
 
           return {};
         }),
       })
       .provider("s4", {
-        $get: annotated(["s3", "s5"], (s3, s5) => {
+        get: annotated(["s3", "s5"], (s3, s5) => {
           log.push("s4");
 
           return {};
         }),
       })
       .provider("s5", {
-        $get: () => {
+        get: () => {
           log.push("s5");
 
           return {};
         },
       })
       .provider("s6", {
-        $get: () => {
+        get: () => {
           log.push("s6");
 
           return {};
@@ -809,7 +809,7 @@ describe("module provider registration", () => {
     const original = instance;
 
     module.provider("instance", {
-      $get: () => {
+      get: () => {
         return instance;
       },
     });
@@ -824,7 +824,7 @@ describe("module provider registration", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", {
-      $get: () => {
+      get: () => {
         throw "Failing instantiation!";
       },
     });
@@ -841,9 +841,9 @@ describe("module provider registration", () => {
   it("reports the complete circular dependency path", () => {
     const module = angular.module("myModule", []);
 
-    module.provider("a", { $get: annotated(["b"], (b) => undefined) });
-    module.provider("b", { $get: annotated(["c"], (c) => undefined) });
-    module.provider("c", { $get: annotated(["a"], (a) => undefined) });
+    module.provider("a", { get: annotated(["b"], (b) => undefined) });
+    module.provider("b", { get: annotated(["c"], (c) => undefined) });
+    module.provider("c", { get: annotated(["a"], (a) => undefined) });
     const injector = createInjector(["myModule"]);
 
     expect(() => {
@@ -855,7 +855,7 @@ describe("module provider registration", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", function AProvider() {
-      this.$get = () => {
+      this.get = () => {
         return 42;
       };
     });
@@ -871,7 +871,7 @@ describe("module provider registration", () => {
     module.provider(
       "a",
       annotated(["b"], function AProvider(b) {
-        this.$get = () => {
+        this.get = () => {
           return 1 + b;
         };
       }),
@@ -890,7 +890,7 @@ describe("module provider registration", () => {
       this.setValue = function (v) {
         value = v;
       };
-      this.$get = () => {
+      this.get = () => {
         return value;
       };
     });
@@ -898,7 +898,7 @@ describe("module provider registration", () => {
       "b",
       annotated(["aProvider"], function BProvider(aProvider) {
         aProvider.setValue(2);
-        this.$get = () => {
+        this.get = () => {
           /* empty */
         };
       }),
@@ -912,14 +912,14 @@ describe("module provider registration", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", function AProvider() {
-      this.$get = () => {
+      this.get = () => {
         return 1;
       };
     });
     module.provider(
       "b",
       annotated(["a"], function BProvider(a) {
-        this.$get = () => {
+        this.get = () => {
           return a;
         };
       }),
@@ -929,17 +929,17 @@ describe("module provider registration", () => {
     }).toThrow();
   });
 
-  it("does not inject a provider to a $get function", () => {
+  it("does not inject a provider to a get function", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", function AProvider() {
-      this.$get = () => {
+      this.get = () => {
         return 1;
       };
     });
     module.provider("b", function BProvider() {
-      this.$get = annotated(["aProvider"], function (aProvider) {
-        return aProvider.$get();
+      this.get = annotated(["aProvider"], function (aProvider) {
+        return aProvider.get();
       });
     });
     const injector = createInjector(["myModule"]);
@@ -953,7 +953,7 @@ describe("module provider registration", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", function AProvider() {
-      this.$get = () => {
+      this.get = () => {
         return 1;
       };
     });
@@ -968,7 +968,7 @@ describe("module provider registration", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", function AProvider() {
-      this.$get = () => {
+      this.get = () => {
         return 1;
       };
     });
@@ -985,7 +985,7 @@ describe("module provider registration", () => {
     module.provider(
       "a",
       annotated(["b"], function AProvider(b) {
-        this.$get = () => {
+        this.get = () => {
           return b;
         };
       }),
@@ -1001,7 +1001,7 @@ describe("module provider registration", () => {
 
     module.provider("a", function AProvider() {
       this.value = 42;
-      this.$get = () => {
+      this.get = () => {
         return this.value;
       };
     });
@@ -1010,7 +1010,7 @@ describe("module provider registration", () => {
       annotated(["$injector"], function BProvider($injector) {
         const aProvider = $injector.get("aProvider");
 
-        this.$get = () => {
+        this.get = () => {
           return aProvider.value;
         };
       }),
@@ -1028,7 +1028,7 @@ describe("provider registration", () => {
     const module = angular.module("myModule", []);
 
     module.provider("a", function () {
-      this.$get = function () {
+      this.get = function () {
         return "Father";
       };
     });
@@ -1036,8 +1036,8 @@ describe("provider registration", () => {
     module.provider(
       "b",
       annotated(["aProvider"], function (aProvider) {
-        this.$get = function () {
-          return `${aProvider.$get()} child`;
+        this.get = function () {
+          return `${aProvider.get()} child`;
         };
       }),
     );
@@ -1081,7 +1081,7 @@ describe("config/run", () => {
 
     module._config(annotated(["aProvider"], function (aProvider) {}));
     module.provider("a", function () {
-      this.$get = () => 42;
+      this.get = () => 42;
     });
     const injector = createInjector(["myModule"]);
 
@@ -1114,7 +1114,7 @@ describe("config/run", () => {
   it("injects run blocks with the instance injector", () => {
     const module = angular.module("myModule", []);
 
-    module.provider("a", { $get: () => 42 });
+    module.provider("a", { get: () => 42 });
     let gotA;
 
     module.run(
@@ -1129,7 +1129,7 @@ describe("config/run", () => {
   it("configures all modules before running any run blocks", () => {
     const module1 = angular.module("myModule", []);
 
-    module1.provider("a", { $get: () => 1 });
+    module1.provider("a", { get: () => 1 });
     let result;
 
     module1.run(
@@ -1139,7 +1139,7 @@ describe("config/run", () => {
     );
     const module2 = angular.module("myOtherModule", []);
 
-    module2.provider("b", { $get: () => 2 });
+    module2.provider("b", { get: () => 2 });
     createInjector(["myModule", "myOtherModule"]);
     expect(result).toBe(3);
   });
@@ -1560,14 +1560,13 @@ it("should define module", () => {
     .value("value", "value;")
     .factory("fn", () => "function;")
     .provider("service", function Provider() {
-      this.$get = () => "service;";
+      this.get = () => "service;";
     })
     ._config(
       annotated(
         ["valueProvider", "fnProvider", "serviceProvider"],
         function (valueProvider, fnProvider, serviceProvider) {
-          log +=
-            valueProvider.$get() + fnProvider.$get() + serviceProvider.$get();
+          log += valueProvider.get() + fnProvider.get() + serviceProvider.get();
         },
       ),
     );
@@ -1596,24 +1595,24 @@ describe("module", () => {
 
     angular
       .module("baseProviders", [])
-      .provider("a", { $get: () => "A" })
-      .provider("b", { $get: () => "AB" })
-      .provider("c", { $get: () => "ABC" });
+      .provider("a", { get: () => "A" })
+      .provider("b", { get: () => "AB" })
+      .provider("c", { get: () => "ABC" });
     angular.module("functionModules", [
       "baseProviders",
       annotated(["aProvider"], function (aProvider) {
-        values.a = aProvider.$get();
+        values.a = aProvider.get();
       }),
       extend(
         (serviceB) => {
-          values.b = serviceB.$get();
+          values.b = serviceB.get();
         },
         { $inject: ["bProvider"] },
       ),
       [
         "cProvider",
         function (serviceC) {
-          values.c = serviceC.$get();
+          values.c = serviceC.get();
         },
       ],
     ]);
@@ -1728,7 +1727,7 @@ describe("module", () => {
       )
       .provider("$a", function Provider$a() {
         log += "$aProvider;";
-        this.$get = () => {
+        this.get = () => {
           /* empty */
         };
       });
@@ -1741,7 +1740,7 @@ describe("module", () => {
       )
       .provider("$b", function Provider$b() {
         log += "$bProvider;";
-        this.$get = () => {
+        this.get = () => {
           /* empty */
         };
       });
@@ -1868,7 +1867,7 @@ describe("provider registration forms", () => {
     expect(
       createInjector([], (registry) => {
         registry.provider("value", {
-          $get: () => "abc",
+          get: () => "abc",
         });
       }).get("value"),
     ).toEqual("abc");
@@ -1876,7 +1875,7 @@ describe("provider registration forms", () => {
 
   it("should configure a provider type", () => {
     function Type() {}
-    Type.prototype.$get = function () {
+    Type.prototype.get = function () {
       expect(this instanceof Type).toBe(true);
 
       return "abc";
@@ -1892,7 +1891,7 @@ describe("provider registration forms", () => {
     function Type(PREFIX) {
       this.prefix = PREFIX;
     }
-    Type.prototype.$get = function () {
+    Type.prototype.get = function () {
       return `${this.prefix}def`;
     };
     expect(
@@ -1907,7 +1906,7 @@ describe("provider registration forms", () => {
     expect(
       createInjector([], (registry) => {
         registry.provider("value", function valueProvider() {
-          return { $get: annotated([], Array) };
+          return { get: annotated([], Array) };
         });
       }).get("value"),
     ).toEqual([]);
@@ -2464,7 +2463,7 @@ describe("explicit annotation injector", () => {
 
   it("should reject an unannotated provider factory dependency", () => {
     module.provider("test", function () {
-      this.$get = function ($rootScope) {
+      this.get = function ($rootScope) {
         return $rootScope;
       };
     });

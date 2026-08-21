@@ -117,7 +117,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
     const $view = $state._viewService;
     const rootContext = $view._rootViewContext();
     const rootData = {
-        $cfg: { _viewDecl: { _context: rootContext } },
+        _config: { _viewDecl: { _context: rootContext } },
         $ngView: {},
     };
     const directive = {
@@ -146,7 +146,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                 let configUpdateVersion = 0;
                 let destroyed = false;
                 let initialTemplate;
-                const inheritedContext = inherited.$cfg._viewDecl._context;
+                const inheritedContext = inherited._config._viewDecl._context;
                 const parentFqn = inheritedContext?.name ?? inherited.$ngView._fqn;
                 const activeNgView = {
                     _id: directive.count++, // Global sequential ID for ng-view tags added to DOM
@@ -155,6 +155,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                     _fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
                     _config: null,
                     _configUpdated: configUpdatedCallback,
+                    /** @internal */
                     get _creationContext() {
                         return (inheritedContext ??
                             inherited.$ngView._creationContext ??
@@ -202,7 +203,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                 if (!viewConfig) {
                     updateView();
                 }
-                scope.$on("$destroy", function () {
+                scope.on("$destroy", function () {
                     destroyed = true;
                     configUpdateVersion++;
                     viewConfig = undefined;
@@ -227,10 +228,10 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         const retainedAnimation = currentAnimation;
                         const retainedConfig = currentConfig;
                         if (retention._pause === "schedulers") {
-                            retainedScope.$broadcast("$viewRetentionPause", retainedConfig);
+                            retainedScope.broadcast("$viewRetentionPause", retainedConfig);
                         }
                         removeElement(retainedElement, true);
-                        retainedAnimation.$$animLeave.resolve(undefined);
+                        retainedAnimation._animationLeaveDeferred.resolve(undefined);
                         currentEl = null;
                         currentScope = null;
                         currentNodes = [];
@@ -249,7 +250,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         return;
                     }
                     if (currentScope) {
-                        currentScope.$destroy();
+                        currentScope.destroy();
                         currentScope = null;
                     }
                     if (currentEl) {
@@ -258,9 +259,9 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         if (destroyedScope &&
                             elementScope &&
                             elementScope !== destroyedScope &&
-                            elementScope.$parent === destroyedScope &&
-                            !elementScope.$handler._destroyed) {
-                            elementScope.$destroy();
+                            elementScope.parent === destroyedScope &&
+                            !elementScope._handler._destroyed) {
+                            elementScope.destroy();
                         }
                         if (currentFragment && !currentFragment.disposed) {
                             currentFragment.dispose();
@@ -268,7 +269,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         else {
                             removeElement(currentEl);
                         }
-                        _viewData?.$$animLeave.resolve(undefined);
+                        _viewData?._animationLeaveDeferred.resolve(undefined);
                         currentEl = null;
                     }
                     currentNodes = [];
@@ -284,13 +285,13 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         restoreRetainedView(config, retained);
                         return;
                     }
-                    const newScope = scope.$new();
+                    const newScope = scope.new();
                     const animEnter = withResolvers();
                     const animLeave = withResolvers();
                     const $ngViewAnim = {
-                        $animEnter: animEnter.promise,
-                        $animLeave: animLeave.promise,
-                        $$animLeave: animLeave,
+                        _animationEnter: animEnter.promise,
+                        _animationLeave: animLeave.promise,
+                        _animationLeaveDeferred: animLeave,
                     };
                     /**
                      * Fired once the view **begins loading**, *before* the DOM is rendered.
@@ -298,7 +299,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                      * @param event Event object.
                      * @param viewName Name of the view.
                      */
-                    newScope.$emit("$viewContentLoading", name);
+                    newScope.emit("$viewContentLoading", name);
                     let enteredElement = null;
                     let enteredNodes = [];
                     let enteredFragment = null;
@@ -310,7 +311,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         }
                         initialTemplate ?? (initialTemplate = elementClone.innerHTML);
                         const viewData = {
-                            $cfg: config,
+                            _config: config,
                             $ngView: activeNgView,
                         };
                         for (let i = 0; i < cloneNodes.length; i++) {
@@ -336,7 +337,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                     });
                     if (currentScope !== newScope)
                         return;
-                    if (newScope.$handler._destroyed) {
+                    if (newScope._handler._destroyed) {
                         return;
                     }
                     const host = assertDefined(enteredElement);
@@ -346,36 +347,36 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         rootNodes: enteredNodes,
                         scope: newScope,
                         config,
-                        initial: viewData?.$initial ?? initialTemplate ?? "",
+                        initial: viewData?._initial ?? initialTemplate ?? "",
                         activeNgView,
                         animation: $ngViewAnim,
                     });
                     currentConfig = config;
-                    newScope.$emit("$viewContentAnimationEnded");
+                    newScope.emit("$viewContentAnimationEnded");
                     /**
                      * Fired once the view is **loaded**, *after* the DOM is rendered.
                      *
                      * @param event Event object.
                      */
-                    newScope.$emit("$viewContentLoaded", config ?? viewConfig);
+                    newScope.emit("$viewContentLoaded", config ?? viewConfig);
                     onloadFn?.(newScope);
                 }
                 function restoreRetainedView(config, retained) {
                     const viewData = {
-                        $cfg: config,
+                        _config: config,
                         $ngView: activeNgView,
-                        $filled: true,
+                        _filled: true,
                     };
                     for (let i = 0; i < retained._nodes.length; i++) {
                         const node = retained._nodes[i];
                         setCacheData(node, "$ngViewAnim", retained._animation);
                         setCacheData(node, "$ngView", viewData);
                     }
-                    retained._scope.$emit("$viewContentLoading", name);
+                    retained._scope.emit("$viewContentLoading", name);
                     $element.after(...retained._nodes);
                     cleanupLastView();
                     if (config._retention?._pause === "schedulers") {
-                        retained._scope.$broadcast("$viewRetentionResume", config);
+                        retained._scope.broadcast("$viewRetentionResume", config);
                     }
                     currentEl = retained._element;
                     currentScope = retained._scope;
@@ -383,8 +384,8 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                     currentFragment = assertDefined(retained._fragment);
                     currentAnimation = retained._animation;
                     currentConfig = config;
-                    retained._scope.$emit("$viewContentAnimationEnded");
-                    retained._scope.$emit("$viewContentLoaded", config);
+                    retained._scope.emit("$viewContentAnimationEnded");
+                    retained._scope.emit("$viewContentLoaded", config);
                     onloadFn?.(retained._scope);
                 }
             };
@@ -407,9 +408,9 @@ function ViewDirectiveContentGuard() {
                 pre(_scope, $element) {
                     const data = getCacheData($element, "$ngView");
                     if (data) {
-                        data.$initial ?? (data.$initial = initial);
+                        data._initial ?? (data._initial = initial);
                     }
-                    if (data?.$cfg && !data.$filled) {
+                    if (data?._config && !data._filled) {
                         dealoc($element, true);
                     }
                 },

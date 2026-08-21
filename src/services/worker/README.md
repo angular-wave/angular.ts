@@ -99,7 +99,7 @@ also delivered to raw message subscribers.
 `model(channel)` returns a normal `ModelSyncTarget`:
 
 ```ts
-const stop = playerModel.$sync(playerWorker.model("player"));
+const stop = playerModel.sync(playerWorker.model("player"));
 ```
 
 The worker receives `angular-ts:worker:model:subscribe` when synchronization

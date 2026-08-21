@@ -9,6 +9,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import path from "node:path";
+import { createServer } from "node:net";
 import ts from "typescript";
 import { fileURLToPath } from "node:url";
 
@@ -51,9 +52,17 @@ await rm(tempDir, { recursive: true, force: true });
 await rm(reportDir, { recursive: true, force: true });
 await mkdir(tempDir, { recursive: true });
 
-const coveragePort = process.env.PW_COVERAGE_PORT ?? "4001";
+const [availableCoveragePort, availableApiPort] = await findAvailablePorts(2);
+const coveragePort = process.env.PW_COVERAGE_PORT ?? availableCoveragePort;
+const apiPort = process.env.PW_COVERAGE_API_PORT ?? availableApiPort;
+
+if (coveragePort === apiPort) {
+  throw new Error("Coverage web and API servers must use different ports.");
+}
+
 const env = {
   ...process.env,
+  PW_API_PORT: apiPort,
   PW_BASE_URL: `http://localhost:${coveragePort}`,
   PW_COVERAGE: "1",
   PORT: coveragePort,
@@ -125,6 +134,41 @@ if (coverageFiles.length > 0) {
 
 await assertReportExists(reportDir);
 process.exit(Math.max(testExitCode, coverageExitCode));
+
+async function findAvailablePorts(count) {
+  const servers = [];
+
+  try {
+    for (let index = 0; index < count; index++) {
+      const server = createServer();
+
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolve);
+      });
+      servers.push(server);
+    }
+
+    return servers.map((server) => {
+      const address = server.address();
+
+      if (!address || typeof address === "string") {
+        throw new Error("Unable to allocate a coverage server port.");
+      }
+
+      return String(address.port);
+    });
+  } finally {
+    await Promise.all(
+      servers.map(
+        (server) =>
+          new Promise((resolve, reject) => {
+            server.close((error) => (error ? reject(error) : resolve()));
+          }),
+      ),
+    );
+  }
+}
 
 async function assertReportExists(directory) {
   try {

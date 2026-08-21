@@ -19,7 +19,7 @@ integrations/wasm/ABI.md
 
 This plan covers `WasmScope` only. AssemblyScript should use the scope ABI for
 view-local controller/component state. App-owned state should use
-`app.model(...)` and host-side `model.$sync(...)` targets around an
+`app.model(...)` and host-side `model.sync(...)` targets around an
 AssemblyScript runtime; do not add model handles, model path writes, or model
 watch imports to the AssemblyScript facade unless the shared ABI adds that
 surface later.

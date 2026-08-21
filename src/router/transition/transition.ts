@@ -141,7 +141,7 @@ export class Transition<
     DefaultTransitionRouteContract<TRouteMap>,
 > {
   promise: Promise<StateDeclaration>;
-  $id: number;
+  id: number;
   /** @internal */
   _aborted?: boolean;
   /** @internal */
@@ -201,7 +201,7 @@ export class Transition<
     // current() is assumed to come from targetState.options, but provide a naive implementation otherwise.
     this._options = assign({}, targetState._options);
     this._options.current ??= () => this;
-    this.$id = transitionService._transitionCount++;
+    this.id = transitionService._transitionCount++;
     const toPath = buildToPath(fromPath, targetState);
 
     this._treeChanges = treeChanges(
@@ -233,10 +233,8 @@ export class Transition<
     );
   }
 
-  /**
-   * @returns {StateObject} the internal from [State] object
-   */
-  $from(): StateObject {
+  /** @internal */
+  _from(): StateObject {
     const fromPath = this._treeChanges.from;
 
     const fromNode = fromPath.length
@@ -246,10 +244,8 @@ export class Transition<
     return assertDefined(fromNode).state;
   }
 
-  /**
-   * @returns {StateObject} the internal to [State] object
-   */
-  $to(): StateObject {
+  /** @internal */
+  _to(): StateObject {
     const toPath = this._treeChanges.to;
 
     const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
@@ -265,7 +261,7 @@ export class Transition<
    * @returns {StateDeclaration} The state declaration object for the Transition's ("from state").
    */
   from(): StateDeclaration {
-    return this.$from().self;
+    return this._from().self;
   }
 
   /**
@@ -276,7 +272,7 @@ export class Transition<
    * @returns {StateDeclaration} The state declaration object for the Transition's target state ("to state").
    */
   to(): StateDeclaration {
-    return this.$to().self;
+    return this._to().self;
   }
 
   /**
@@ -507,7 +503,7 @@ export class Transition<
   async _startTransition(): Promise<void> {
     const { _routerState } = this;
 
-    _routerState._lastStartedTransitionId = this.$id;
+    _routerState._lastStartedTransitionId = this.id;
     _routerState._transition = this;
     _routerState._lastStartedTransition = this;
 
@@ -565,7 +561,7 @@ export class Transition<
    * @internal
    */
   error(): Error | undefined {
-    const state = this.$to();
+    const state = this._to();
 
     if (state.self.abstract) {
       return Rejection.invalid(
@@ -608,7 +604,7 @@ export class Transition<
     const toStateOrName = this.to();
 
     // (X) means the to state is invalid.
-    const id = this.$id,
+    const id = this.id,
       from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName,
       fromParams = stringify(
         avoidEmptyHash(pathParams(this._treeChanges.from)),

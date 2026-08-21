@@ -50,7 +50,7 @@ describe("$eventBus types", () => {
     eventBus.subscribe(
       "scope:changed",
       function () {
-        this.$on("$destroy", () => undefined);
+        this.on("$destroy", () => undefined);
       },
       scope,
     );

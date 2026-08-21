@@ -129,7 +129,7 @@ describe("ngListener", () => {
     element = $compile(`<div ng-listener="destroy"></div>`)($scope);
     await wait();
 
-    $scope.$destroy();
+    $scope.destroy();
     await wait();
 
     element.dispatchEvent(

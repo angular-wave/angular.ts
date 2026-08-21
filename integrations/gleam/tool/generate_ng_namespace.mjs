@@ -2,6 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import ts from "typescript";
+import {
+  documentationLines,
+  typeDocumentation,
+} from "../../shared/typescript-documentation.mjs";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const namespacePath = path.join(root, "@types/namespace.d.ts");
@@ -10,16 +14,17 @@ const outputPath = path.join(
   "integrations/gleam/src/angular_ts/namespace.gleam",
 );
 
-function extractNamespaceTypes(sourceText) {
-  const sourceFile = ts.createSourceFile(
-    namespacePath,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
-
+function extractNamespaceTypes(sourcePath) {
+  const program = ts.createProgram([sourcePath], {
+    noEmit: true,
+    skipLibCheck: true,
+    target: ts.ScriptTarget.Latest,
+  });
+  const checker = program.getTypeChecker();
+  const sourceFile = program.getSourceFile(sourcePath);
   const types = [];
+
+  if (!sourceFile) throw new Error(`Unable to load ${sourcePath}`);
 
   function visit(node, inNgNamespace = false) {
     if (ts.isModuleDeclaration(node)) {
@@ -33,7 +38,9 @@ function extractNamespaceTypes(sourceText) {
     }
 
     if (inNgNamespace && ts.isTypeAliasDeclaration(node)) {
+      const type = checker.getTypeFromTypeNode(node.type);
       types.push({
+        documentation: typeDocumentation(checker, node, type),
         name: node.name.escapedText.toString(),
         parameters: node.typeParameters?.map((parameter) =>
           parameter.name.escapedText.toString(),
@@ -65,6 +72,9 @@ function renderNamespaceModule(types) {
   for (const type of types) {
     const parameters = gleamTypeParameters(type.parameters);
     const suffix = parameters.length > 0 ? `(${parameters.join(", ")})` : "";
+    lines.push(
+      ...documentationLines(type.documentation).map((line) => `/// ${line}`),
+    );
     lines.push(`pub type ${type.name}${suffix}`);
     lines.push("");
   }
@@ -74,8 +84,7 @@ function renderNamespaceModule(types) {
   return `${lines.join("\n")}\n`;
 }
 
-const sourceText = fs.readFileSync(namespacePath, "utf8");
-const output = renderNamespaceModule(extractNamespaceTypes(sourceText));
+const output = renderNamespaceModule(extractNamespaceTypes(namespacePath));
 const check = process.argv.includes("--check");
 
 if (check) {

@@ -663,24 +663,24 @@ function createMachine<
 
   Object.defineProperty(machineTarget, SCOPE_PROXY_BIND, {
     value(handler: Scope, proxy: MachineInstance<TData, TEvents, TState>) {
-      let binding = bindings.get(handler.$id);
+      let binding = bindings.get(handler.id);
 
       if (!binding) {
         binding = {
           _handler: handler,
           _proxy: proxy,
         };
-        bindings.set(handler.$id, binding);
+        bindings.set(handler.id, binding);
       }
 
       activeBinding = binding;
     },
   });
 
-  if (scope?.$handler) {
+  if (scope?._handler) {
     return createScope(
       machineTarget,
-      scope.$handler as Scope,
+      scope._handler as Scope,
     ) as unknown as MachineInstance<TData, TEvents, TState>;
   }
 
@@ -1256,7 +1256,7 @@ function batch<T>(scope: Scope | undefined, fn: () => T): T {
     return fn();
   }
 
-  return scope.$batch(fn);
+  return scope.batch(fn);
 }
 
 function normalizeMachineArgs<

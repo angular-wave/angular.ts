@@ -122,7 +122,7 @@ class ViewService {
             dependencies.compileLifecycle.onControllerCreated((record) => {
                 this._componentControllerCreated(record);
             });
-        this._deregisterRootDestroy = dependencies.rootScope.$on("$destroy", () => {
+        this._deregisterRootDestroy = dependencies.rootScope.on("$destroy", () => {
             this._destroyRetainedViews();
             this._deregisterCompileLifecycle?.();
             this._deregisterCompileLifecycle = undefined;
@@ -142,9 +142,9 @@ class ViewService {
         const { host, rootNodes, scope, config, initial, activeNgView, animation } = options;
         const $compile = assertDefined(this._compile);
         const viewData = {
-            $cfg: config,
+            _config: config,
             $ngView: activeNgView,
-            $filled: true,
+            _filled: true,
         };
         for (let i = 0; i < rootNodes.length; i++) {
             const node = rootNodes[i];
@@ -156,7 +156,7 @@ class ViewService {
             ? new ResolveContext(config._path, assertDefined(this._injector))
             : undefined;
         if (host.childNodes.length || this._filledHosts.has(host)) {
-            scope.$broadcast("$destroy");
+            scope.broadcast("$destroy");
         }
         else {
             this._filledHosts.add(host);
@@ -172,7 +172,7 @@ class ViewService {
         const locals = resolveContext
             ? createResolveInvocationLocals(resolveContext)
             : undefined;
-        const targetScope = scope.$target;
+        const targetScope = scope._target;
         targetScope.$resolve = locals;
         const controller = plan?._hasController ? config?._controller : undefined;
         if (controller) {
@@ -186,8 +186,8 @@ class ViewService {
             registerViewControllerCallbacks(assertDefined(this._transitions), controllerInstance, scope, controllerConfig);
         }
         link(scope);
-        if (scope.$handler._destroyed) {
-            scope.$broadcast("$destroy");
+        if (scope._handler._destroyed) {
+            scope.broadcast("$destroy");
         }
     }
     /** @internal */
@@ -205,7 +205,7 @@ class ViewService {
             config,
             scope,
         });
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
             this._componentContexts.delete(id);
         });
     }
@@ -262,8 +262,8 @@ class ViewService {
     }
     /** @internal */
     _destroyRetainedView(entry, reason) {
-        if (!entry._scope.$handler._destroyed) {
-            entry._scope.$destroy();
+        if (!entry._scope._handler._destroyed) {
+            entry._scope.destroy();
         }
         if (entry._fragment && !entry._fragment.disposed) {
             entry._fragment.dispose();

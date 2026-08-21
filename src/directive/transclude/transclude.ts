@@ -79,7 +79,7 @@ export function ngTranscludeDirective(
 
           if (hasRenderableContent(nodes)) {
             const destroyScope = () => {
-              transcludedScope?.$destroy();
+              transcludedScope?.destroy();
             };
 
             const lastNode = nodes[nodes.length - 1];
@@ -99,7 +99,7 @@ export function ngTranscludeDirective(
             });
           } else {
             useFallbackContent();
-            transcludedScope?.$destroy();
+            transcludedScope?.destroy();
           }
         }
 

@@ -18,7 +18,7 @@ import type { TreeChanges } from "../transition/interface.ts";
 export function buildPath(targetState: TargetState): PathNode[] {
   const toParams = targetState.params();
 
-  const stateObject = targetState.$state();
+  const stateObject = targetState._state();
 
   if (!stateObject) {
     throw new Error("Target state does not resolve to a state object");

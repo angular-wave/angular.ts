@@ -42,7 +42,7 @@ describe("afterRender", () => {
       calls.push("before-pause");
     });
 
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
 
     queueScopedAfterRender({}, scope, () => {
       calls.push("during-pause");
@@ -55,7 +55,7 @@ describe("afterRender", () => {
 
     expect(calls).toEqual(["global"]);
 
-    scope.$broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionResume");
 
     await waitUntil(() => calls.length === 3);
 
@@ -71,7 +71,7 @@ describe("afterRender", () => {
     });
     await waitUntil(() => calls.length === 1);
 
-    scope.$broadcast("$viewRetentionPause", { _pause: "background" });
+    scope.broadcast("$viewRetentionPause", { _pause: "background" });
     queueScopedAfterRender({}, scope, () => {
       calls.push("scheduler-callback");
     });
@@ -88,16 +88,16 @@ describe("afterRender", () => {
     queueScopedAfterRender({}, scope, () => {
       calls.push("scheduler-callback");
     });
-    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
 
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(calls).toEqual([]);
 
-    scope.$broadcast("$viewRetentionResume", { _pause: "background" });
+    scope.broadcast("$viewRetentionResume", { _pause: "background" });
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(calls).toEqual([]);
 
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
 
     await waitUntil(() => calls.length === 1);
 
@@ -113,7 +113,7 @@ describe("afterRender", () => {
     });
     await waitUntil(() => calls.length === 1);
 
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
     queueScopedAfterRender({}, scope, () => {
       calls.push("scheduler-callback");
     });
@@ -132,8 +132,8 @@ describe("afterRender", () => {
     });
     await waitUntil(() => calls.length === 1);
 
-    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
 
     queueScopedAfterRender({}, scope, () => {
       calls.push("after-empty-resume");

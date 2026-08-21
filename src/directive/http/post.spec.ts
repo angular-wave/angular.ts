@@ -54,7 +54,7 @@ describe("ng-post", () => {
   });
 
   it("should replace innerHTML (default) on click", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-post="/mock/hello">Load</button>';
     $compile(el)(scope);
@@ -64,7 +64,7 @@ describe("ng-post", () => {
   });
 
   it("should replace innerHTML (default) on click when used with expression", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-post="/mock/{{a}}">Load</button>';
     scope.a = "hello";
@@ -75,7 +75,7 @@ describe("ng-post", () => {
   });
 
   it("should attach parameters of a form and replace innerHTML (default) on click", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML =
       '<form ng-post="/mock/posthtml"><input name="name" value="Bob" /><button type="submit">Load</button></form>';
@@ -86,7 +86,7 @@ describe("ng-post", () => {
   });
 
   it("should attach parameters from an associated form control", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML =
       '<form>{{ name }} <input name="name" value="Bob" /><button ng-post="/mock/json" on-success="name = $res.name" type="button">Load</button></form>';
@@ -97,7 +97,7 @@ describe("ng-post", () => {
   });
 
   it("should attach parameters from an external form attribute", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML =
       '<form id="external">{{ name }} <input name="name" value="Bob" /></form><div ng-post="/mock/json" on-success="name = $res.name" form="external">Load</div>';
@@ -108,7 +108,7 @@ describe("ng-post", () => {
   });
 
   it("should attach standalone named input values", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML =
       '<input ng-post="/mock/json" on-success="name = $res.name" name="name" value="Bob" />{{ name }}';
@@ -119,7 +119,7 @@ describe("ng-post", () => {
   });
 
   it("should warn and skip requests when no URL is specified", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     spyOn($log, "warn");
     el.innerHTML = '<button ng-post="">Load</button>';
@@ -132,7 +132,7 @@ describe("ng-post", () => {
   });
 
   it("should use json encoding by default", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML =
       '<form ng-post="/mock/json" on-success="name = $res.name"> {{ name }} <input name="name" value="Bob" /><button type="submit">Load</button></form>';
@@ -143,7 +143,7 @@ describe("ng-post", () => {
   });
 
   it("should use encoding in enctype", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = `
       <form ng-post="/mock/urlencoded" enctype="application/x-www-form-urlencoded">
@@ -157,7 +157,7 @@ describe("ng-post", () => {
   });
 
   it("should compile and swap streamed HTML responses", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     scope.first = "A";
     scope.second = "B";
@@ -170,7 +170,7 @@ describe("ng-post", () => {
   });
 
   it("should accept data-response-stream as a responseType shortcut", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     scope.first = "C";
     scope.second = "D";
@@ -183,7 +183,7 @@ describe("ng-post", () => {
   });
 
   it("should attach parameters of a form and replace innerHTML (default) on click in case of error", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML =
       '<form ng-post="/mock/posterror"><input name="name" value="Bob"><button type="submit">Load</button></form>';
@@ -195,7 +195,7 @@ describe("ng-post", () => {
   });
 
   it("should replace innerHTML on error", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-post="/mock/422">Load</button>';
     $compile(el)(scope);
@@ -206,7 +206,7 @@ describe("ng-post", () => {
   });
 
   it("should not trigger request if element is disabled", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-post="/mock/hello" disabled>Load</button>';
     $compile(el)(scope);
@@ -217,7 +217,7 @@ describe("ng-post", () => {
   });
 
   it("should replace innerHTML on status error without a body", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-post="/mock/401">Load</button>';
     $compile(el)(scope);
@@ -229,7 +229,7 @@ describe("ng-post", () => {
 
   describe("data-trigger", () => {
     it("should not trigger request on click if element has trigger attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-trigger="mouseover">Load</button>';
@@ -241,7 +241,7 @@ describe("ng-post", () => {
     });
 
     it("should trigger request on new event name if element has trigger attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-trigger="mouseover">Load</button>';
@@ -255,7 +255,7 @@ describe("ng-post", () => {
 
   describe("data-latch", () => {
     it("should trigger request on latch change", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/now" data-latch="{{ latch }}">Load</button>';
@@ -280,7 +280,7 @@ describe("ng-post", () => {
     });
 
     it("should still work with events with latch change", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/now" data-latch="{{ latch }}">Load</button>';
@@ -300,7 +300,7 @@ describe("ng-post", () => {
     });
 
     it("should still work with custom events with latch change", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/now" data-latch="{{ latch }}" data-trigger="mouseover">Load</button>';
@@ -320,7 +320,7 @@ describe("ng-post", () => {
     });
 
     it("should still work with ng-event directives with latch change", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/now" data-latch="{{ latch }}" ng-mouseover="latch = !latch">Load</button>';
@@ -342,7 +342,7 @@ describe("ng-post", () => {
 
   describe("data-swap", () => {
     it("should not change anything if swap is 'none'", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/div" data-swap="none" data-target="#found">Load</button><div id="found">Original</div>';
@@ -354,7 +354,7 @@ describe("ng-post", () => {
     });
 
     it("should replace outerHTML on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-swap="outerHTML">Load</button>';
@@ -366,7 +366,7 @@ describe("ng-post", () => {
     });
 
     it("should replace textcontent on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-swap="textContent">Load</button>';
@@ -378,7 +378,7 @@ describe("ng-post", () => {
     });
 
     it("should replace beforebegin on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/div" data-swap="beforebegin">Load</button>';
@@ -390,7 +390,7 @@ describe("ng-post", () => {
     });
 
     it("should replace beforeend on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/div" data-swap="beforeend">Load</button>';
@@ -402,7 +402,7 @@ describe("ng-post", () => {
     });
 
     it("should delete the target on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-swap="delete" data-target="#found">Load</button><div id="found"></div>';
@@ -416,7 +416,7 @@ describe("ng-post", () => {
 
   describe("data-target", () => {
     it("should remain unchanged if target is not found and log a warning", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       spyOn($log, "warn");
       el.innerHTML =
@@ -430,7 +430,7 @@ describe("ng-post", () => {
     });
 
     it("should replace target innerHTML (default) on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-target="#found">Load</button><div id="found"></div>';
@@ -442,7 +442,7 @@ describe("ng-post", () => {
     });
 
     it("should replace textcontent on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-swap="textContent" data-target="#found">Load</button><div id="found"></div>';
@@ -454,7 +454,7 @@ describe("ng-post", () => {
     });
 
     it("should replace beforebegin on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/div" data-swap="beforebegin" data-target="#found">Load</button><div id="found"></div>';
@@ -474,7 +474,7 @@ describe("ng-post", () => {
     });
 
     it("should replace beforeend on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/div" data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
@@ -488,7 +488,7 @@ describe("ng-post", () => {
     });
 
     it("should insert afterbegin on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/div" data-swap="afterbegin" data-target="#found">Load</button><div id="found"><div>World</div></div>';
@@ -502,7 +502,7 @@ describe("ng-post", () => {
     });
 
     it("should insert afterend on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/div" data-swap="afterend" data-target="#found">Load</button><div id="found"><div>World</div></div>';
@@ -516,7 +516,7 @@ describe("ng-post", () => {
 
   describe("data-delay", () => {
     it("should accept delay as a data attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-delay="1000">Load</button>';
@@ -533,7 +533,7 @@ describe("ng-post", () => {
 
   describe("data-throttle", () => {
     it("should accept throttle as a data attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/now" data-throttle="1000">Load</button>';
@@ -559,7 +559,7 @@ describe("ng-post", () => {
 
   describe("data-interval", () => {
     it("should accept delay as a data attribute and should stop on $destroy", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/now" data-interval="100">Load</button>';
@@ -577,7 +577,7 @@ describe("ng-post", () => {
 
       expect(thirdRes).toBeGreaterThan(secondRes);
 
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
 
       await wait();
       const finalRes = parseInt(el.innerText);
@@ -590,7 +590,7 @@ describe("ng-post", () => {
 
   describe("data-loading", () => {
     it("should update loading data attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML = '<button ng-post="/mock/now" data-loading>Load</button>';
       $compile(el)(scope);
@@ -606,7 +606,7 @@ describe("ng-post", () => {
 
   describe("data-loading-class", () => {
     it("should update class from data-loading-class attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/now" data-loading-class="red">Load</button>';
@@ -623,7 +623,7 @@ describe("ng-post", () => {
 
   describe("on-success", () => {
     it("should evaluate expression passing result", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" on-success="res = $res">Load</button>';
@@ -637,7 +637,7 @@ describe("ng-post", () => {
 
   describe("data-state-success", () => {
     it("should call stateService with success state", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/hello" data-state-success="success">Load</button><ng-view id="view"></ng-view>';
@@ -653,7 +653,7 @@ describe("ng-post", () => {
 
   describe("data-state-error", () => {
     it("should call stateService with error state", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/422" data-state-success="success" data-state-error="error">Load</button><ng-view id="view"></ng-view>';
@@ -669,7 +669,7 @@ describe("ng-post", () => {
 
   describe("on-error", () => {
     it("should evaluate expression passing result", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-post="/mock/422" on-error="res = $res">Load</button>';

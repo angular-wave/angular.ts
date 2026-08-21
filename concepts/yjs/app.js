@@ -15,7 +15,7 @@ window.angular
         this.document = documentModel;
         this.destroyRuntime = () => {};
         this.stopModelSync = () => {};
-        $scope.$on("$destroy", () => this.destroyRuntime());
+        $scope.on("$destroy", () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 
@@ -28,7 +28,7 @@ window.angular
       reset() {
         const initialText = "AngularTS owns app state. Yjs owns CRDT updates.";
 
-        this.document.$restore(
+        this.document.restore(
           {
             localText: initialText,
             remoteText: initialText,
@@ -62,7 +62,7 @@ window.angular
         localDoc.on("update", syncLocalToRemote);
         remoteDoc.on("update", syncRemoteToLocal);
         this.writeYText(localText, this.document.localText);
-        this.stopModelSync = this.document.$sync(
+        this.stopModelSync = this.document.sync(
           this.createYjsSyncTarget(localText, remoteText),
         );
         this.document.status = "synced";

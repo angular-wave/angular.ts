@@ -11,7 +11,7 @@ export function addScopeEventListener(
     target.addEventListener(type, listener, options);
   }
 
-  scope.$on("$destroy", (): void => {
+  scope.on("$destroy", (): void => {
     if (options === undefined) {
       target.removeEventListener(type, listener);
     } else {

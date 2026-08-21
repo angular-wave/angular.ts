@@ -1283,8 +1283,8 @@ export class NgModule {
    * Mutating the model proxy schedules every affected observer.
    *
    * The injected `Model<T>` value is proxy-backed. It exposes scope-proxy
-   * methods such as `$watch`, `$batch`, `$merge`, `$on`, `$emit`, `$broadcast`,
-   * and `$destroy`, plus `$snapshot`, `$restore`, and `$sync` for model
+   * methods such as `watch`, `batch`, `merge`, `on`, `emit`, `broadcast`,
+   * and `destroy`, plus `snapshot`, `restore`, and `sync` for model
    * lifecycle and synchronization.
    *
    * Prefer the factory form for nontrivial initial state:

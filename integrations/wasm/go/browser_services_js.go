@@ -31,7 +31,7 @@ func WrapRestFactory(value js.Value) RestFactory           { return RestFactory{
 func WrapMachineService(value js.Value) MachineService     { return MachineService{value: value} }
 func WrapWorkerService(value js.Value) WorkerService       { return WorkerService{value: value} }
 
-func (s RootScopeService) NewChild() js.Value { return s.value.Call("$new") }
+func (s RootScopeService) NewChild() js.Value { return s.value.Call("new") }
 
 func (s HttpService) Get(url string) js.Value { return s.value.Call("get", url) }
 func (s HttpService) GetWith(url string, config HttpRequestOptions) js.Value {

@@ -56,7 +56,7 @@ function ngPointerCaptureDirective() {
             element.addEventListener("pointerup", releasePointer);
             element.addEventListener("pointercancel", releasePointer);
             element.addEventListener("lostpointercapture", forgetPointer);
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 element.removeEventListener("pointerdown", capturePointer);
                 element.removeEventListener("pointerup", releasePointer);
                 element.removeEventListener("pointercancel", releasePointer);

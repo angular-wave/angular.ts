@@ -16,7 +16,7 @@ window.angular
         this.model = settingsModel;
         this.sync = syncModel;
         this.$cookie = $cookie;
-        this.stopSync = settingsModel.$sync([
+        this.stopSync = settingsModel.sync([
           '$cookie',
           ($cookieService) => ({
             restore: () => $cookieService.getObject('angular_ts_settings') ?? null,
@@ -29,12 +29,12 @@ window.angular
           }),
         ]);
 
-        $scope.$on('$destroy', this.stopSync);
+        $scope.on('$destroy', this.stopSync);
       }
 
       reset() {
         this.$cookie.remove('angular_ts_settings', { path: '/' });
-        this.model.$restore({
+        this.model.restore({
           theme: 'light',
           compact: false,
         });

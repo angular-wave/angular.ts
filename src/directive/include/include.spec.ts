@@ -139,14 +139,14 @@ describe("ngInclude", () => {
       async function runMalformedTransclusion(withClone) {
         let watchListener;
         const childScope = {
-          $destroy: jasmine.createSpy("$destroy"),
-          $emit: jasmine.createSpy("childEmit"),
+          destroy: jasmine.createSpy("destroy"),
+          emit: jasmine.createSpy("childEmit"),
         };
         const scope = {
           _destroyed: false,
-          $emit: jasmine.createSpy("emit"),
-          $new: () => childScope,
-          $watch(_expression, listener) {
+          emit: jasmine.createSpy("emit"),
+          new: () => childScope,
+          watch(_expression, listener) {
             watchListener = listener;
           },
         };
@@ -176,7 +176,7 @@ describe("ngInclude", () => {
         watchListener("templateUrl");
         await wait();
 
-        expect(childScope.$destroy).toHaveBeenCalledOnceWith();
+        expect(childScope.destroy).toHaveBeenCalledOnceWith();
         expect(errors).toHaveSize(1);
         if (clone) expect(clone.isConnected).toBeFalse();
       }
@@ -304,7 +304,7 @@ describe("ngInclude", () => {
       module.run([
         "$rootScope",
         ($rootScope) => {
-          $rootScope.$on("$includeContentRequested", (event) => {
+          $rootScope.on("$includeContentRequested", (event) => {
             called = true;
           });
         },
@@ -326,7 +326,7 @@ describe("ngInclude", () => {
       window.angular.module("myModule", []).run([
         "$rootScope",
         ($rootScope) => {
-          $rootScope.$on("$includeContentLoaded", () => {
+          $rootScope.on("$includeContentLoaded", () => {
             called = true;
           });
         },
@@ -351,8 +351,8 @@ describe("ngInclude", () => {
         "$rootScope",
         ($rootScope) => {
           $rootScope.url = "/mock/401";
-          $rootScope.$on("$includeContentLoaded", contentLoadedSpy);
-          $rootScope.$on("$includeContentError", contentErrorSpy);
+          $rootScope.on("$includeContentLoaded", contentLoadedSpy);
+          $rootScope.on("$includeContentError", contentErrorSpy);
         },
       ]);
 
@@ -847,7 +847,7 @@ describe("ngInclude", () => {
     //     });
     //     () => {
     //       let item;
-    //       const $scope = $rootScope.$new();
+    //       const $scope = $rootScope.new();
     //       element = $compile(
     //         html("<div>" + '<div ng-include="inc">Yo</div>' + "</div>"),
     //       )($scope);

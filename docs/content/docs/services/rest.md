@@ -149,7 +149,7 @@ to handle them consistently.
 
 `$rest` does not perform framework-property cleanup itself. With the default
 HTTP backend, `$http` deproxies scope payloads before JSON serialization, so
-proxy helpers such as `$target`, `$handler`, and `$proxy` do not reach the
+proxy helpers such as `_target`, `_handler`, and `_proxy` do not reach the
 server. Generated repeat identity is stored as internal metadata rather than on
 your model object, so it is not included in request bodies. Explicit
 application-owned properties remain part of the payload.

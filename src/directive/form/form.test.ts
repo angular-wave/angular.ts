@@ -91,12 +91,12 @@ test("form demo renders every MDN input type and live controller state", async (
     '[data-testid="inline-control-state"][data-control-state-for="emailInput"]',
   );
 
-  await expect(emailState).toContainText("$validity.typeMismatch: false");
+  await expect(emailState).toContainText("validity.typeMismatch: false");
 
   await page.locator("#emailInput").fill("not an email");
   await expect(page.getByTestId("form-valid")).toHaveText("false");
   await expect(page.getByTestId("form-invalid")).toHaveText("true");
-  await expect(emailState).toContainText("$invalid: true");
+  await expect(emailState).toContainText("invalid: true");
 
   await page.locator("#emailInput").fill("valid@example.com");
   await page.locator("#submitInput").click();

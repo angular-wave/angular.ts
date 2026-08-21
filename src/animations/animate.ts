@@ -261,7 +261,7 @@ export class AnimationRegistry {
   private _destroyed = false;
 
   register(name: string, preset: PresetRegistration): void {
-    this.assertActive();
+    this._assertActive();
 
     if (!name || !isString(name)) {
       throw $animateError("noname", "Animation name must be a string.");
@@ -273,13 +273,13 @@ export class AnimationRegistry {
   }
 
   get(name: string): PresetRegistration | undefined {
-    this.assertActive();
+    this._assertActive();
 
     return this._registrations.get(name);
   }
 
   has(name: string): boolean {
-    this.assertActive();
+    this._assertActive();
 
     return this._registrations.has(name);
   }
@@ -291,7 +291,8 @@ export class AnimationRegistry {
     this._registrations.clear();
   }
 
-  private assertActive(): void {
+  /** @internal */
+  private _assertActive(): void {
     if (this._destroyed) {
       throw new Error("Animation registry has already been disposed.");
     }

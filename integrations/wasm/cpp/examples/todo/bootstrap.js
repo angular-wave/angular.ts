@@ -105,7 +105,7 @@ app.controller("cppTodoController", [
     $scope.archive = () =>
       void ready.then(() => guest.exports.todo_archive_completed());
 
-    $scope.$on("$destroy", () => {
+    $scope.on("$destroy", () => {
       if (guest.status === "ready") guest.exports.todo_unbind();
     });
   },

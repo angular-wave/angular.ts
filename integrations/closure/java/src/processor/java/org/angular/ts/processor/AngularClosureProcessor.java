@@ -39,6 +39,7 @@ import org.angular.ts.annotation.AngularTemplateApi;
 })
 public final class AngularClosureProcessor extends AbstractProcessor {
   private static final String JS_METHOD = "jsinterop.annotations.JsMethod";
+  private static final String JS_IGNORE = "jsinterop.annotations.JsIgnore";
   private static final String JS_PROPERTY = "jsinterop.annotations.JsProperty";
   private static final String JS_TYPE = "jsinterop.annotations.JsType";
   private static final String GENERATED_MODULE = "angular.ts.generated.entrypoint";
@@ -144,13 +145,18 @@ public final class AngularClosureProcessor extends AbstractProcessor {
     List<? extends Element> enclosedElements = new ArrayList<>(type.getEnclosedElements());
     enclosedElements.sort(Comparator.comparing(element -> element.getSimpleName().toString()));
     for (Element member : enclosedElements) {
-      if (!member.getModifiers().contains(Modifier.PUBLIC)) {
+      if (!member.getModifiers().contains(Modifier.PUBLIC)
+          || member.getModifiers().contains(Modifier.STATIC)
+          || findAnnotation(member, JS_IGNORE) != null) {
         continue;
       }
       if (member.getKind() == ElementKind.FIELD && member instanceof VariableElement) {
         String property = readJsName(member, JS_PROPERTY, member.getSimpleName().toString());
-        if (property != null && validateMemberName(member, property)) {
-          members.put(property, MemberKind.PROPERTY);
+        if (property == null) {
+          property = member.getSimpleName().toString();
+        }
+        if (validateMemberName(member, property)) {
+          addMember(members, member, property, MemberKind.PROPERTY);
         }
         continue;
       }
@@ -162,13 +168,24 @@ public final class AngularClosureProcessor extends AbstractProcessor {
           continue;
         }
         String jsMethod = readJsName(member, JS_METHOD, member.getSimpleName().toString());
-        if (jsMethod != null && validateMemberName(member, jsMethod)) {
-          members.put(jsMethod, MemberKind.METHOD);
+        if (jsMethod == null) {
+          jsMethod = member.getSimpleName().toString();
+        }
+        if (validateMemberName(member, jsMethod)) {
+          addMember(members, member, jsMethod, MemberKind.METHOD);
         }
       }
     }
 
     return new JsTypeApi(type.getQualifiedName().toString(), name, members);
+  }
+
+  private void addMember(
+      Map<String, MemberKind> members, Element member, String name, MemberKind kind) {
+    MemberKind existing = members.putIfAbsent(name, kind);
+    if (existing != null) {
+      error(member, "Template API member name is overloaded or duplicated: " + name);
+    }
   }
 
   private boolean validateMemberName(Element member, String name) {

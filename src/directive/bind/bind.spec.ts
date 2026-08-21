@@ -249,14 +249,14 @@ describe("ng-bind", () => {
       const link = directive.compile(element);
 
       const scope = {
-        $watch: jasmine.createSpy("$watch").and.callFake((_expr, listener) => {
+        watch: jasmine.createSpy("watch").and.callFake((_expr, listener) => {
           listener("<span>trusted</span>");
         }),
       };
 
       link(scope, element);
 
-      expect(scope.$watch).toHaveBeenCalledWith(
+      expect(scope.watch).toHaveBeenCalledWith(
         "html",
         jasmine.any(Function),
         false,
@@ -346,7 +346,7 @@ describe("ng-bind", () => {
               $sce = _$sce_;
             },
           ]);
-        scope = $rootScope.$new();
+        scope = $rootScope.new();
       });
 
       afterEach(() => dealoc(element));
@@ -420,7 +420,7 @@ describe("ng-bind", () => {
           "$compile",
           "$sce",
           (_$rootScope_, _$compile_, _$sce_) => {
-            $rootScope = _$rootScope_.$new();
+            $rootScope = _$rootScope_.new();
             $compile = _$compile_;
             $sce = _$sce_;
           },

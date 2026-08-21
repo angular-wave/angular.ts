@@ -16,8 +16,8 @@ const eventBusModule = (angular) => {
         _angular,
         ($exceptionHandler, angular) => {
             const host = angular;
-            const service = createEventBusService(state, $exceptionHandler, host.$eventBus);
-            host.$eventBus = service;
+            const service = createEventBusService(state, $exceptionHandler, host.eventBus);
+            host.eventBus = service;
             return service;
         },
     ]);

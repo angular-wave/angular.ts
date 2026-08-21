@@ -20,7 +20,16 @@ function asPropertyBag(value) {
     return Object(value);
 }
 function readProperty(value, key) {
-    return asPropertyBag(value)?.[key];
+    const bag = asPropertyBag(value);
+    if (!bag)
+        return undefined;
+    if (isProxy(value)) {
+        const target = asPropertyBag(deProxy(value));
+        // Expressions address model data, not the Scope API layered over its proxy.
+        if (target && !(key in target))
+            return undefined;
+    }
+    return bag[key];
 }
 function writeProperty(value, key, propertyValue) {
     const bag = asPropertyBag(value);
@@ -30,7 +39,7 @@ function writeProperty(value, key, propertyValue) {
 }
 function getProxyTarget(value) {
     const bag = asPropertyBag(value);
-    return bag && "$proxy" in bag ? (bag.$proxy ?? value) : value;
+    return bag?._proxy ?? value;
 }
 function evaluateLogicalOrValue(leftValue, rightValue) {
     if (leftValue)

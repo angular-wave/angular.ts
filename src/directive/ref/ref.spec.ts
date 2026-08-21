@@ -62,7 +62,7 @@ describe("ngRef", () => {
 
         element.setAttribute("ng-ref", "elementRef");
 
-        const scope = $rootScope.$new();
+        const scope = $rootScope.new();
 
         const link = directive.compile(element);
 
@@ -70,7 +70,7 @@ describe("ngRef", () => {
 
         expect(scope.elementRef).toBe(element);
 
-        scope.$destroy();
+        scope.destroy();
 
         expect(scope.elementRef).toBeNull();
       });
@@ -159,25 +159,25 @@ describe("ngRef", () => {
     });
 
     it("should nullify plain element refs when the owner scope is destroyed", () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       $compile('<span ng-ref="mySpan">my text</span>')(scope);
 
       expect(scope.mySpan.textContent).toBe("my text");
 
-      scope.$destroy();
+      scope.destroy();
 
       expect(scope.mySpan).toBeNull();
     });
 
     it("should nullify component refs when the owner scope is destroyed", () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       $compile('<my-component ng-ref="myComponent"></my-component>')(scope);
 
       expect(scope.myComponent).toBe(myComponentController);
 
-      scope.$destroy();
+      scope.destroy();
 
       expect(scope.myComponent).toBeNull();
     });

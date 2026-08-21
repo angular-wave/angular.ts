@@ -33,7 +33,7 @@ export function ngObserveDirective(source: string, prop: string): ng.Directive {
           attributeFilter: [source],
         });
 
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
           observer.disconnect();
         });
       },

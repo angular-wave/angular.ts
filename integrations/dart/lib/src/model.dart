@@ -79,263 +79,176 @@ final class NgModelController {
   final JSObject raw;
 
   /// Current value from the control's view.
-  Object? get $viewValue => viewValue;
-
-  /// Current value from the control's view.
-  Object? get viewValue => unsafe.getProperty(raw, r'$viewValue');
+  Object? get viewValue => unsafe.getProperty(raw, r'viewValue');
 
   /// Current value stored in the bound model.
-  Object? get $modelValue => modelValue;
-
-  /// Current value stored in the bound model.
-  Object? get modelValue => unsafe.getProperty(raw, r'$modelValue');
+  Object? get modelValue => unsafe.getProperty(raw, r'modelValue');
 
   /// Synchronous validators keyed by validation name.
-  Object? get $validators => unsafe.getProperty(raw, r'$validators');
+  Object? get validators => unsafe.getProperty(raw, r'validators');
 
   /// Asynchronous validators keyed by validation name.
-  Object? get $asyncValidators => unsafe.getProperty(raw, r'$asyncValidators');
+  Object? get asyncValidators => unsafe.getProperty(raw, r'asyncValidators');
 
   /// View-to-model parser pipeline.
-  Object? get $parsers => unsafe.getProperty(raw, r'$parsers');
+  Object? get parsers => unsafe.getProperty(raw, r'parsers');
 
   /// Model-to-view formatter pipeline.
-  Object? get $formatters => unsafe.getProperty(raw, r'$formatters');
+  Object? get formatters => unsafe.getProperty(raw, r'formatters');
 
   /// Listeners called after view changes.
-  Object? get $viewChangeListeners =>
-      unsafe.getProperty(raw, r'$viewChangeListeners');
-
-  /// Whether the control has not lost focus yet.
-  bool? get $untouched => untouched;
+  Object? get viewChangeListeners =>
+      unsafe.getProperty(raw, r'viewChangeListeners');
 
   /// Whether the control has not lost focus yet.
   bool? get untouched {
-    final value = unsafe.getProperty(raw, r'$untouched');
+    final value = unsafe.getProperty(raw, r'untouched');
     return value == null ? null : (value as JSBoolean).toDart;
   }
-
-  /// Whether the control has lost focus.
-  bool? get $touched => touched;
 
   /// Whether the control has lost focus.
   bool? get touched {
-    final value = unsafe.getProperty(raw, r'$touched');
+    final value = unsafe.getProperty(raw, r'touched');
     return value == null ? null : (value as JSBoolean).toDart;
   }
-
-  /// Whether the user has not interacted with the control yet.
-  bool? get $pristine => pristine;
 
   /// Whether the user has not interacted with the control yet.
   bool? get pristine {
-    final value = unsafe.getProperty(raw, r'$pristine');
+    final value = unsafe.getProperty(raw, r'pristine');
     return value == null ? null : (value as JSBoolean).toDart;
   }
-
-  /// Whether the user has interacted with the control.
-  bool? get $dirty => dirty;
 
   /// Whether the user has interacted with the control.
   bool? get dirty {
-    final value = unsafe.getProperty(raw, r'$dirty');
+    final value = unsafe.getProperty(raw, r'dirty');
     return value == null ? null : (value as JSBoolean).toDart;
   }
-
-  /// Whether the control currently has no validation errors.
-  bool? get $valid => valid;
 
   /// Whether the control currently has no validation errors.
   bool? get valid {
-    final value = unsafe.getProperty(raw, r'$valid');
+    final value = unsafe.getProperty(raw, r'valid');
     return value == null ? null : (value as JSBoolean).toDart;
   }
 
   /// Whether the control currently has at least one validation error.
-  bool? get $invalid => invalid;
-
-  /// Whether the control currently has at least one validation error.
   bool? get invalid {
-    final value = unsafe.getProperty(raw, r'$invalid');
+    final value = unsafe.getProperty(raw, r'invalid');
     return value == null ? null : (value as JSBoolean).toDart;
   }
 
   /// Native validity state for the target control.
-  Object? get $validity => unsafe.getProperty(raw, r'$validity');
+  Object? get validity => unsafe.getProperty(raw, r'validity');
 
   /// Native validation message for the target control.
-  String? get $validationMessage {
-    final value = unsafe.getProperty(raw, r'$validationMessage');
+  String? get validationMessage {
+    final value = unsafe.getProperty(raw, r'validationMessage');
     return value == null ? null : (value as JSString).toDart;
   }
 
   /// Current validation error flags.
-  Object? get $error => unsafe.getProperty(raw, r'$error');
+  Object? get error => unsafe.getProperty(raw, r'error');
 
   /// Pending asynchronous validation flags.
-  Object? get $pending => unsafe.getProperty(raw, r'$pending');
+  Object? get pending => unsafe.getProperty(raw, r'pending');
 
   /// Control name.
-  Object? get $name => unsafe.getProperty(raw, r'$name');
-
-  /// Native form control target.
-  Object? get $target => unsafe.getProperty(raw, r'$target');
+  Object? get controlName => unsafe.getProperty(raw, 'controlName');
 
   /// Resolved model options.
-  Object? get $options => unsafe.getProperty(raw, r'$options');
+  Object? get options => unsafe.getProperty(raw, r'options');
 
   /// Updates the validation state for a named validation key.
-  void $setValidity(String validationErrorKey, Object? state) {
+  void setValidity(String validationErrorKey, Object? state) {
     unsafe.callMethod(
       raw,
-      r'$setValidity',
+      r'setValidity',
       validationErrorKey.toJS,
       unsafe.dartToJs(state),
     );
   }
 
-  /// Updates the validation state for a named validation key.
-  void setValidity(String validationErrorKey, bool? state) {
-    $setValidity(validationErrorKey, state);
-  }
-
   /// Updates the native validity state.
-  void $setNativeValidity(bool? state) {
-    unsafe.callMethod(raw, r'$setNativeValidity', state?.toJS);
+  void setNativeValidity(bool? state) {
+    unsafe.callMethod(raw, r'setNativeValidity', state?.toJS);
   }
 
   /// Sets the native custom validity message.
-  void $setCustomValidity(String message) {
-    unsafe.callMethod(raw, r'$setCustomValidity', message.toJS);
-  }
-
-  /// Renders the current model value into the view.
-  void $render() {
-    unsafe.callMethod(raw, r'$render');
+  void setCustomValidity(String message) {
+    unsafe.callMethod(raw, r'setCustomValidity', message.toJS);
   }
 
   /// Renders the current model value into the view.
   void render() {
-    $render();
+    unsafe.callMethod(raw, r'render');
   }
 
   /// Returns whether a value should be considered empty by the model.
-  bool $isEmpty(Object? value) {
+  bool isEmpty(Object? value) {
     final result = unsafe.callMethod(
       raw,
-      r'$isEmpty',
+      r'isEmpty',
       unsafe.dartToJs(value),
     );
 
     return (result as JSBoolean).toDart;
   }
 
-  /// Returns whether a value should be considered empty by the model.
-  bool isEmpty(Object? candidate) {
-    return $isEmpty(candidate);
-  }
-
-  /// Sets the control to pristine state.
-  void $setPristine() {
-    unsafe.callMethod(raw, r'$setPristine');
-  }
-
   /// Sets the control to pristine state.
   void setPristine() {
-    $setPristine();
-  }
-
-  /// Sets the control to dirty state.
-  void $setDirty() {
-    unsafe.callMethod(raw, r'$setDirty');
+    unsafe.callMethod(raw, r'setPristine');
   }
 
   /// Sets the control to dirty state.
   void setDirty() {
-    $setDirty();
-  }
-
-  /// Sets the control to untouched state.
-  void $setUntouched() {
-    unsafe.callMethod(raw, r'$setUntouched');
+    unsafe.callMethod(raw, r'setDirty');
   }
 
   /// Sets the control to untouched state.
   void setUntouched() {
-    $setUntouched();
-  }
-
-  /// Sets the control to touched state.
-  void $setTouched() {
-    unsafe.callMethod(raw, r'$setTouched');
+    unsafe.callMethod(raw, r'setUntouched');
   }
 
   /// Sets the control to touched state.
   void setTouched() {
-    $setTouched();
-  }
-
-  /// Cancels a pending view update and restores the last committed value.
-  void $rollbackViewValue() {
-    unsafe.callMethod(raw, r'$rollbackViewValue');
+    unsafe.callMethod(raw, r'setTouched');
   }
 
   /// Cancels a pending view update and restores the last committed value.
   void rollbackViewValue() {
-    $rollbackViewValue();
-  }
-
-  /// Runs model validation.
-  void $validate() {
-    unsafe.callMethod(raw, r'$validate');
+    unsafe.callMethod(raw, r'rollbackViewValue');
   }
 
   /// Runs model validation.
   void validate() {
-    $validate();
-  }
-
-  /// Commits the current view value into the model.
-  void $commitViewValue() {
-    unsafe.callMethod(raw, r'$commitViewValue');
+    unsafe.callMethod(raw, r'validate');
   }
 
   /// Commits the current view value into the model.
   void commitViewValue() {
-    $commitViewValue();
+    unsafe.callMethod(raw, r'commitViewValue');
   }
 
   /// Sets a new view value, optionally with the triggering event name.
-  void $setViewValue(Object? value, [String? trigger]) {
+  void setViewValue(Object? value, [String? trigger]) {
     unsafe.callMethod(
       raw,
-      r'$setViewValue',
+      r'setViewValue',
       unsafe.dartToJs(value),
       trigger?.toJS,
     );
   }
 
-  /// Sets a new view value, optionally with the triggering event name.
-  void setViewValue(Object? value, [String? trigger]) {
-    $setViewValue(value, trigger);
-  }
-
   /// Overrides resolved model options.
-  void $overrideModelOptions(Object? options) {
+  void overrideModelOptions(Object? options) {
     unsafe.callMethod(
       raw,
-      r'$overrideModelOptions',
+      r'overrideModelOptions',
       unsafe.dartToJs(options),
     );
   }
 
   /// Runs the model-to-view pipeline on the current model value.
-  void $processModelValue() {
-    unsafe.callMethod(raw, r'$processModelValue');
-  }
-
-  /// Runs the model-to-view pipeline on the current model value.
   void processModelValue() {
-    $processModelValue();
+    unsafe.callMethod(raw, r'processModelValue');
   }
 }

@@ -104,6 +104,7 @@ function registerBuiltInFilters(filterRegistry) {
 }
 /** Providers required by scopes, expressions, controllers, and compile. */
 const controllerRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         return registry.factory(name, [
             _injector,
@@ -112,6 +113,7 @@ const controllerRuntimeRegistration = {
     },
 };
 const exceptionHandlerRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const state = context.runtime.exceptionHandlerState;
         context.runtime.configRegistry.register(name, (value) => {
@@ -121,6 +123,7 @@ const exceptionHandlerRuntimeRegistration = {
     },
 };
 const interpolateRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const state = context.runtime.interpolateState;
         context.runtime.configRegistry.register(name, (value) => {
@@ -134,6 +137,7 @@ const interpolateRuntimeRegistration = {
     },
 };
 const parseRuntimeRegistration = {
+    /** @internal */
     _register(registry, name) {
         return registry.factory(name, [
             _injector,
@@ -142,6 +146,7 @@ const parseRuntimeRegistration = {
     },
 };
 const rootScopeRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         return registry.factory(name, [
             _exceptionHandler,
@@ -159,16 +164,19 @@ const ngCoreProviders = {
 };
 /** Reactive state and command orchestration providers for full app runtimes. */
 const machineRuntimeRegistration = {
+    /** @internal */
     _register(registry, name) {
         return registry.factory(name, createMachineService);
     },
 };
 const workflowRuntimeRegistration = {
+    /** @internal */
     _register(registry, name) {
         return registry.factory(name, createWorkflowService);
     },
 };
 const workflowSupervisorRuntimeRegistration = {
+    /** @internal */
     _register(registry, name) {
         return registry.factory(name, [
             _workflow,
@@ -182,6 +190,7 @@ const ngOrchestrationProviders = {
     [_workflowSupervisor]: workflowSupervisorRuntimeRegistration,
 };
 const storageRuntimeRegistration = {
+    /** @internal */
     _register(registry, name) {
         return registry.factory(name, () => createPersistentProxy);
     },
@@ -190,6 +199,7 @@ const ngStorageProviders = {
     [_storage]: storageRuntimeRegistration,
 };
 const filterRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const filterRegistry = context.runtime.filterRegistry;
         filterRegistry.attach(registry);
@@ -218,6 +228,7 @@ const ngBuiltInFilters = {
 };
 /** Browser services that are useful in normal apps but optional for small runtimes. */
 const anchorScrollRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const state = createAnchorScrollRuntimeState();
         context.runtime.configRegistry.register(name, (value) => {
@@ -236,6 +247,7 @@ const anchorScrollRuntimeRegistration = {
     },
 };
 const cookieRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         let defaults = {};
         context.runtime.configRegistry.register(name, (value) => {
@@ -251,6 +263,7 @@ const cookieRuntimeRegistration = {
     },
 };
 const templateCacheRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         let cache = new Map();
         context.runtime.configRegistry.register(name, (value) => {
@@ -262,6 +275,7 @@ const templateCacheRuntimeRegistration = {
     },
 };
 const templateRequestRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         let httpOptions = createTemplateRequestHttpOptions();
         context.runtime.configRegistry.register(name, (value) => {
@@ -276,11 +290,13 @@ const templateRequestRuntimeRegistration = {
     },
 };
 const httpParamSerializerRuntimeRegistration = {
+    /** @internal */
     _register(registry, name) {
         return registry.factory(name, createHttpParamSerializer);
     },
 };
 const httpRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = createHttpRuntimeConfiguration();
         context.runtime.configRegistry.register(name, (value) => {
@@ -297,6 +313,7 @@ const httpRuntimeRegistration = {
     },
 };
 const ariaRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const state = createAriaRuntimeState();
         context.runtime.configRegistry.register(name, (value) => {
@@ -312,6 +329,7 @@ const ariaRuntimeRegistration = {
     },
 };
 const locationRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const state = createLocationRuntimeState(context.platform.window);
         context.runtime.configRegistry.register(name, (value) => {
@@ -330,6 +348,7 @@ const locationRuntimeRegistration = {
     },
 };
 const logRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = createLogRuntimeConfiguration();
         const securityPolicy = context.providers.get(_security);
@@ -366,6 +385,7 @@ const ngBrowserProviders = {
 };
 /** Strict contextual escaping providers. */
 const sceRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = new SceConfiguration();
         context.runtime.configRegistry.register(name, (value) => {
@@ -382,6 +402,7 @@ const sceRuntimeRegistration = {
     },
 };
 const sceDelegateRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = new SceDelegateConfiguration();
         context.runtime.configRegistry.register(name, (value) => {
@@ -408,6 +429,7 @@ const sceDelegateRuntimeRegistration = {
     },
 };
 const securityRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = createSecurityRuntimeConfiguration();
         const policy = createSecurityPolicy(configuration, () => context.platform.window.location.href);
@@ -425,6 +447,7 @@ const ngSecurityProviders = {
 };
 /** Native animation service composition. */
 const animateRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const animationRegistry = context.runtime.animationRegistry;
         if (!animationRegistry) {
@@ -444,11 +467,13 @@ const ngRouterProviders = {
     [_state]: routerRuntimeRegistration,
 };
 const streamRuntimeRegistration = {
+    /** @internal */
     _register(registry, name) {
         return registry.factory(name, createStreamService);
     },
 };
 const eventBusRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const state = createEventBusRuntimeState();
         context.runtime.configRegistry.register(name, (value) => {
@@ -462,14 +487,15 @@ const eventBusRuntimeRegistration = {
             _angular,
             ($exceptionHandler, angular) => {
                 const host = angular;
-                const service = createEventBusService(state, $exceptionHandler, host.$eventBus);
-                host.$eventBus = service;
+                const service = createEventBusService(state, $exceptionHandler, host.eventBus);
+                host.eventBus = service;
                 return service;
             },
         ]);
     },
 };
 const restRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         let defaults = {};
         context.runtime.configRegistry.register(name, (value) => {
@@ -485,6 +511,7 @@ const restRuntimeRegistration = {
     },
 };
 const websocketRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = createWebSocketRuntimeConfiguration();
         const runtimeWindow = context.platform.window;
@@ -501,6 +528,7 @@ const websocketRuntimeRegistration = {
     },
 };
 const sseRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = createSseRuntimeConfiguration();
         const runtimeWindow = context.platform.window;
@@ -517,6 +545,7 @@ const sseRuntimeRegistration = {
     },
 };
 const webTransportRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = createWebTransportRuntimeConfiguration();
         const runtimeWindow = context.platform.window;
@@ -533,6 +562,7 @@ const webTransportRuntimeRegistration = {
     },
 };
 const workerRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const state = createWorkerRuntimeState();
         const runtimeWindow = context.platform.window;
@@ -547,6 +577,7 @@ const workerRuntimeRegistration = {
     },
 };
 const webComponentRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const state = createWebComponentRuntimeState();
         context.runtime.configRegistry.register(name, (value) => {
@@ -564,6 +595,7 @@ const webComponentRuntimeRegistration = {
     },
 };
 const serviceWorkerRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, context) {
         const configuration = createServiceWorkerRuntimeConfiguration();
         let service;

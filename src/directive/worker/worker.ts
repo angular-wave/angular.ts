@@ -41,7 +41,7 @@ function getScopeWorkerQueueState(scope: ng.Scope): ScopeWorkerQueueState {
 
   let nextState!: ScopeWorkerQueueState;
 
-  const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+  const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
     if (!shouldHandleViewRetentionPause(args, "schedulers")) {
       return;
     }
@@ -49,7 +49,7 @@ function getScopeWorkerQueueState(scope: ng.Scope): ScopeWorkerQueueState {
     nextState._paused = true;
   });
 
-  const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+  const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
     if (!shouldHandleViewRetentionPause(args, "schedulers")) {
       return;
     }
@@ -62,7 +62,7 @@ function getScopeWorkerQueueState(scope: ng.Scope): ScopeWorkerQueueState {
     flushScopeWorkerQueue(nextState);
   });
 
-  const deregisterDestroy = scope.$on("$destroy", () => {
+  const deregisterDestroy = scope.on("$destroy", () => {
     nextState._pending.length = 0;
     nextState._paused = false;
     nextState._flushing = false;
@@ -182,7 +182,7 @@ export function ngWorkerDirective(
         });
         observer.observe(element, { attributes: true });
 
-        let deregisterDestroy: (() => void) | undefined = scope.$on(
+        let deregisterDestroy: (() => void) | undefined = scope.on(
           "$destroy",
           deregister,
         );
@@ -224,7 +224,7 @@ export function ngWorkerDirective(
           const onError = attr("onError");
 
           if (isDefined(onError)) {
-            $parse(onError)(scope, { $error: err });
+            $parse(onError)(scope, { error: err });
           }
         });
       };
@@ -282,7 +282,7 @@ export function ngWorkerDirective(
         });
       };
 
-      scope.$on("$destroy", () => {
+      scope.on("$destroy", () => {
         element.removeEventListener(eventName, listener);
 
         if (intervalId !== undefined) {

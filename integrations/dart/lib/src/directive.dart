@@ -3,6 +3,7 @@ import 'dart:js_interop';
 import 'compile.dart';
 import 'component.dart';
 import 'injectable.dart';
+import 'programmatic_view.dart';
 import 'unsafe.dart' as unsafe;
 
 /// Supported directive restrict values.
@@ -89,6 +90,7 @@ final class Directive<TScope, TController> {
     this.require,
     this.templateNamespace,
     this.templateUrl,
+    this.view,
     this.transclude = const NoDirectiveTransclusion(),
     this.count,
     this.template,
@@ -134,6 +136,9 @@ final class Directive<TScope, TController> {
   /// The template url.
   final String? templateUrl;
 
+  /// Programmatic real-DOM view factory.
+  final ProgrammaticView<TController, JSAny?>? view;
+
   /// The transclude.
   final DirectiveTransclusion transclude;
 
@@ -170,6 +175,7 @@ final class Directive<TScope, TController> {
       if (template != null) 'template': template,
       if (templateNamespace != null) 'templateNamespace': templateNamespace,
       if (templateUrl != null) 'templateUrl': templateUrl,
+      if (view != null) 'view': unsafe.JsValue(programmaticViewToJs(view!)),
       if (transclude is! NoDirectiveTransclusion)
         'transclude': transclude.toJsValue(),
       if (count != null) 'count': count,

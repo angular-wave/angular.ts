@@ -23,7 +23,7 @@ describe("observe", () => {
         (_$compile_: any, _$rootScope_: any) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
-          $scope = $rootScope.$new();
+          $scope = $rootScope.new();
         },
       ]);
 
@@ -50,7 +50,7 @@ describe("observe", () => {
   }
 
   it("should set the scope property to the attribute value before any changes", () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     const element = createElementFromHTML(
       '<div ng-observe-sourceAttr="testProp"></div>',
@@ -100,7 +100,7 @@ describe("observe", () => {
 
   it("should disconnect the observer on scope destruction", async () => {
     await createDirective("test-attribute", "myProp");
-    $scope.$destroy();
+    $scope.destroy();
 
     expect(observerInstances.at(-1).disconnect).toHaveBeenCalled();
   });

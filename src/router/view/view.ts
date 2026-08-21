@@ -138,17 +138,17 @@ export interface ViewFillPlan {
 
 /** @internal */
 export interface NgViewAnimData {
-  $animEnter: Promise<void>;
-  $animLeave: Promise<void>;
-  $$animLeave: { resolve: (value: undefined) => void };
+  _animationEnter: Promise<void>;
+  _animationLeave: Promise<void>;
+  _animationLeaveDeferred: { resolve: (value: undefined) => void };
 }
 
 /** @internal */
 export interface NgViewData {
-  $cfg?: ViewConfig;
+  _config?: ViewConfig;
   $ngView: ActiveNgView;
-  $filled?: boolean;
-  $initial?: string;
+  _filled?: boolean;
+  _initial?: string;
 }
 
 interface ViewFillOptions {
@@ -366,7 +366,7 @@ export class ViewService {
       dependencies.compileLifecycle.onControllerCreated((record) => {
         this._componentControllerCreated(record);
       });
-    this._deregisterRootDestroy = dependencies.rootScope.$on("$destroy", () => {
+    this._deregisterRootDestroy = dependencies.rootScope.on("$destroy", () => {
       this._destroyRetainedViews();
       this._deregisterCompileLifecycle?.();
       this._deregisterCompileLifecycle = undefined;
@@ -391,9 +391,9 @@ export class ViewService {
     const $compile = assertDefined(this._compile);
 
     const viewData: NgViewData = {
-      $cfg: config,
+      _config: config,
       $ngView: activeNgView,
-      $filled: true,
+      _filled: true,
     };
 
     for (let i = 0; i < rootNodes.length; i++) {
@@ -411,7 +411,7 @@ export class ViewService {
         : undefined;
 
     if (host.childNodes.length || this._filledHosts.has(host)) {
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
     } else {
       this._filledHosts.add(host);
     }
@@ -433,7 +433,7 @@ export class ViewService {
       ? createResolveInvocationLocals(resolveContext)
       : undefined;
 
-    const targetScope = scope.$target as Record<string, unknown>;
+    const targetScope = scope._target as Record<string, unknown>;
 
     targetScope.$resolve = locals;
 
@@ -467,8 +467,8 @@ export class ViewService {
 
     link(scope);
 
-    if (scope.$handler._destroyed) {
-      scope.$broadcast("$destroy");
+    if (scope._handler._destroyed) {
+      scope.broadcast("$destroy");
     }
   }
 
@@ -495,7 +495,7 @@ export class ViewService {
       scope,
     });
 
-    scope.$on("$destroy", () => {
+    scope.on("$destroy", () => {
       this._componentContexts.delete(id);
     });
   }
@@ -580,8 +580,8 @@ export class ViewService {
       Partial<Pick<RetainedViewEntry, "_key" | "_config" | "_fragment">>,
     reason?: ViewRetentionDestroyReason,
   ): void {
-    if (!entry._scope.$handler._destroyed) {
-      entry._scope.$destroy();
+    if (!entry._scope._handler._destroyed) {
+      entry._scope.destroy();
     }
 
     if (entry._fragment && !entry._fragment.disposed) {

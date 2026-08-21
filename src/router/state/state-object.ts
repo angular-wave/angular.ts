@@ -146,6 +146,7 @@ export class StateObject {
     return this._pathName();
   }
 
+  /** @internal */
   private _pathName(): string {
     return (this.path ?? [])
       .map((state) => state.name)

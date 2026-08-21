@@ -24,7 +24,7 @@ function ngObserveDirective(source, prop) {
                 attributes: true,
                 attributeFilter: [source],
             });
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 observer.disconnect();
             });
         },

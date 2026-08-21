@@ -135,10 +135,8 @@ export class StateRuntime {
     return this._routerState._current;
   }
 
-  /**
-   * The current [[StateObject]] (an internal API)
-   */
-  get $current(): StateObject | undefined {
+  /** @internal The current internal state object. */
+  get _current(): StateObject | undefined {
     return this._routerState._currentState;
   }
 
@@ -178,7 +176,7 @@ export class StateRuntime {
     this._stateRegistry = $stateRegistry;
     this._viewService = viewService;
     this._routerState._stateService = this;
-    $rootScope.$on("$locationChangeSuccess", (evt: ng.ScopeEvent) => {
+    $rootScope.on("$locationChangeSuccess", (evt: ng.ScopeEvent) => {
       this._routerState._sync(evt);
     });
     this._transitionService._initRuntimeHooks(this, viewService);
@@ -537,6 +535,7 @@ export class StateRuntime {
     );
   }
 
+  /** @internal */
   _getStatePolicyFromStateName<TPolicy>(
     stateName: StateOrName,
     readPolicy: (state: StateDeclaration) => TPolicy | undefined,
@@ -571,6 +570,7 @@ export class StateRuntime {
     return undefined;
   }
 
+  /** @internal */
   _getTransitionFallbackFromStateName(stateName: StateOrName):
     | {
         state: StateDeclaration;
@@ -597,6 +597,7 @@ export class StateRuntime {
       : undefined;
   }
 
+  /** @internal */
   _getTransitionErrorBoundaryPolicyFromStateName(stateName: StateOrName):
     | {
         state: StateDeclaration;
@@ -631,6 +632,7 @@ export class StateRuntime {
       : undefined;
   }
 
+  /** @internal */
   _buildLazyFallbackTarget(
     toState: TargetState,
     target: StateTransitionFallbackTarget,
@@ -655,6 +657,7 @@ export class StateRuntime {
     return undefined;
   }
 
+  /** @internal */
   async _buildLazyErrorBoundaryTarget(
     toState: TargetState,
     policyState: StateDeclaration,
@@ -742,6 +745,7 @@ export class StateRuntime {
     );
   }
 
+  /** @internal */
   async _recoverLazyLoadFailure(
     toState: TargetState,
     error: unknown,
@@ -819,6 +823,7 @@ export class StateRuntime {
     );
   }
 
+  /** @internal */
   _getTransitionRetryPolicyFromStateName(stateName: StateOrName):
     | {
         state: StateDeclaration;
@@ -828,6 +833,7 @@ export class StateRuntime {
     return getTransitionRetryPolicyFromStateName(this, stateName);
   }
 
+  /** @internal */
   async _shouldRetryLazyLoad(
     retryPolicy:
       | {
@@ -890,6 +896,7 @@ export class StateRuntime {
     return allowed;
   }
 
+  /** @internal */
   _normalizeRetryPolicy(value: boolean | number): number | undefined {
     if (value === true) return 2;
     if (value === false) return 0;
@@ -933,8 +940,8 @@ export class StateRuntime {
    * Convenience method for transitioning to a new state.
    *
    * `$state.go` calls `$state.transitionTo` internally but automatically sets options to
-   * `{ location: true, inherit: true, relative: $state.$current }`.
-   * This allows you to use either an absolute or relative `to` argument (because of `relative: $state.$current`).
+   * `{ location: true, inherit: true, relative: $state._current }`.
+   * This allows you to use either an absolute or relative `to` argument (because of `relative: $state._current`).
    * It also allows you to specify * only the parameters you'd like to update, while letting unspecified parameters
    * inherit from the current parameter values (because of `inherit: true`).
    *
@@ -973,7 +980,7 @@ export class StateRuntime {
     params?: RawParams,
     options?: TransitionOptions,
   ): TransitionPromise {
-    const defautGoOpts = { relative: this.$current, inherit: true };
+    const defautGoOpts = { relative: this._current, inherit: true };
 
     const transOpts = defaults(
       options,
@@ -1061,7 +1068,7 @@ export class StateRuntime {
     params?: RawParams,
     options?: { exact?: boolean; relative?: StateOrName },
   ): boolean {
-    const relative = options?.relative ?? this.$current;
+    const relative = options?.relative ?? this._current;
 
     const glob =
       !options?.exact && isString(stateOrName)
@@ -1069,7 +1076,7 @@ export class StateRuntime {
         : undefined;
 
     if (glob) {
-      const currentName = this.$current?.name;
+      const currentName = this._current?.name;
 
       if (!currentName || !glob.matches(currentName)) return false;
       stateOrName = currentName;
@@ -1079,9 +1086,9 @@ export class StateRuntime {
     if (!isDefined(state)) return false;
 
     if (options?.exact) {
-      if (this.$current !== state) return false;
+      if (this._current !== state) return false;
     } else {
-      const include = this.$current?.includes;
+      const include = this._current?.includes;
 
       if (!include || !isDefined(include[state.name])) return false;
     }
@@ -1119,16 +1126,16 @@ export class StateRuntime {
     options?: HrefOptions,
   ): string | null {
     params = params ?? {};
-    const relative = options?.relative ?? this.$current;
+    const relative = options?.relative ?? this._current;
 
     const state = this._stateRegistry._matcher.find(stateOrName, relative);
 
     if (!isDefined(state)) return null;
 
     if (options?.inherit !== false)
-      params = this._routerState._params.$inherit(
+      params = this._routerState._params._inherit(
         params,
-        assertDefined(this.$current),
+        assertDefined(this._current),
         state,
       );
     const nav = options?.lossy !== false ? state.navigable : state;
@@ -1157,7 +1164,7 @@ export class StateRuntime {
     if (arguments.length === 0) return reg.get();
     if (stateOrName === undefined) return undefined;
 
-    return reg.get(stateOrName, base ?? this.$current);
+    return reg.get(stateOrName, base ?? this._current);
   }
 }
 

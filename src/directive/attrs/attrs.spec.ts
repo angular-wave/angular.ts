@@ -24,7 +24,7 @@ describe("ngSrcset", () => {
       "$rootScope",
       "$compile",
       ($rootScope: any, _$compile_: any) => {
-        $scope = $rootScope.$new();
+        $scope = $rootScope.new();
         $compile = _$compile_;
       },
     ]);

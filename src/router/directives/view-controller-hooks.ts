@@ -5,12 +5,12 @@ import type { PathNode } from "../path/path-node.ts";
 import type { ViewConfig } from "../view/view.ts";
 
 export type ViewControllerInstance = Record<string, unknown> & {
-  $onInit?: () => void;
-  $onParamsChanged?: (
+  onInit?: () => void;
+  onParamsChanged?: (
     params: Record<string, unknown>,
     trans: ng.Transition,
   ) => void;
-  $canExit?: (trans: ng.Transition) => unknown;
+  canExit?: (trans: ng.Transition) => unknown;
 };
 
 type CanExitTransition = ng.Transition & {
@@ -45,7 +45,7 @@ function appendParamSchema(
   }
 }
 
-/** @ignore incrementing id */
+/** @internal Incrementing callback identifier. */
 let canExitId = 0;
 
 /**
@@ -73,8 +73,8 @@ export function registerViewControllerCallbacks(
 
   registeredScopes.add($scope as object);
 
-  // Call $onInit() ASAP
-  const onInit = controllerInstance.$onInit;
+  // Call onInit() ASAP
+  const onInit = controllerInstance.onInit;
 
   if (isFunction(onInit) && !cfg._viewDecl.component) {
     onInit();
@@ -83,9 +83,9 @@ export function registerViewControllerCallbacks(
 
   const hookOptions = { bind: controllerInstance };
 
-  // Add component/controller-level hook for $onParamsChanged
-  if (isFunction(controllerInstance.$onParamsChanged)) {
-    const onParamsChanged = controllerInstance.$onParamsChanged as (
+  // Add component/controller-level hook for onParamsChanged
+  if (isFunction(controllerInstance.onParamsChanged)) {
+    const onParamsChanged = controllerInstance.onParamsChanged as (
       params: Record<string, unknown>,
       trans: ng.Transition,
     ) => void;
@@ -178,7 +178,7 @@ export function registerViewControllerCallbacks(
       cfg._viewDecl._ngViewContextAnchor ?? "^",
     ].join("::");
 
-    const rootScope = $scope.$root as ng.Scope &
+    const rootScope = $scope.root as ng.Scope &
       Record<string, Map<string, () => void> | undefined>;
 
     const registryProp = "__ngRouterParamsChangedHooks__";
@@ -199,7 +199,7 @@ export function registerViewControllerCallbacks(
 
     hookRegistry.set(hookRegistryKey, deregisterParamsHook);
 
-    $scope.$on("$destroy", () => {
+    $scope.on("$destroy", () => {
       if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
         hookRegistry.delete(hookRegistryKey);
       }
@@ -208,9 +208,9 @@ export function registerViewControllerCallbacks(
     });
   }
 
-  // Add component/controller-level hook for $canExit
-  if (isFunction(controllerInstance.$canExit)) {
-    const canExit = controllerInstance.$canExit as (
+  // Add component/controller-level hook for canExit
+  if (isFunction(controllerInstance.canExit)) {
+    const canExit = controllerInstance.canExit as (
       trans: ng.Transition,
     ) => boolean | undefined | TargetState;
 
@@ -248,7 +248,7 @@ export function registerViewControllerCallbacks(
 
     const criteria = { exiting: viewState.name };
 
-    $scope.$on(
+    $scope.on(
       "$destroy",
       $transitions.onBefore(criteria, wrappedHook, hookOptions),
     );

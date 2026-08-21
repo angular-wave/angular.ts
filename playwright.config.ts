@@ -7,6 +7,8 @@ import { defineConfig, devices } from "@playwright/test";
 // require('dotenv').config();
 const port = process.env.PORT || "4000";
 const baseUrl = process.env.PW_BASE_URL || `http://localhost:${port}`;
+const apiPort = process.env.PW_API_PORT || "3000";
+const apiUrl = `http://localhost:${apiPort}/`;
 const workerCount = Number(process.env.PLAYWRIGHT_WORKERS || "1");
 const isCI =
   "process" in globalThis &&
@@ -92,7 +94,7 @@ export default defineConfig({
     },
     {
       command: "cd utils/server && go run .",
-      url: "http://localhost:3000/",
+      url: apiUrl,
       reuseExistingServer:
         process.env.PW_COVERAGE !== "1" || process.env.PW_REUSE_SERVER === "1",
     },

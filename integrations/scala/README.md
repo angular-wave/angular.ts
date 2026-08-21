@@ -9,6 +9,12 @@ The integration is intentionally strict by default:
 - raw JavaScript interop is isolated under `angular.ts.unsafe`;
 - namespace parity is checked against `@types/namespace.d.ts`.
 
+The generated namespace parity reference includes the canonical TypeScript
+description for every public `ng` type and callable member, including parameter
+names, types, and descriptions. `make generate-check` rejects type or
+documentation drift while handwritten Scaladoc remains native to the curated
+Scala.js facade.
+
 The current slice is the package foundation plus typed coverage for core
 authoring, app models, routing, REST/cache policy, service workers, security,
 realtime transports, persistent stores, machine/workflow orchestration, and
@@ -75,6 +81,13 @@ AngularTS.bootstrap(document.body, Seq(app.name))
 `AngularTS.existingModule("demo")` only when intentionally looking up a module
 registered elsewhere.
 
+## Programmatic Views
+
+Set `Component.view` or `Directive.view` to a `ProgrammaticView`. Its typed
+context exposes `controller`, `required`, `scope`, `element`, and `transclude`.
+`AngularTS.tags.tag(...)` delegates to `angular.tags`, and
+`AngularTS.tags.namespace(...)` selects SVG or MathML factories.
+
 ## Unsafe Interop
 
 Use `angular.ts.unsafe` only when AngularTS exposes a deliberately dynamic
@@ -87,7 +100,7 @@ Scala facades for `WasmScope` are view-scope facades. They should represent
 DOM/root-scoped controller or component state, not shared app model state.
 Shared or durable state should be declared with `app.model(...)` and
 synchronized with external runtimes through host-side AngularTS services or
-typed `model.sync(...)`/`model.$sync(...)` targets.
+typed `model.sync(...)` targets.
 
 ## Current Scope
 
@@ -100,7 +113,6 @@ Implemented:
   components, directives, app components, persistent stores, and native
   web-component constructors
 - `NgModule.model(...)` for app-owned reactive model services
-- `NgModule.router(...)` for module-owned route trees and forests
 - `NgModule.router(...)` for module-owned route trees
 - `NgModule.lazyState(...)` for lazy router state namespaces
 - component/directive/app-component config builders
@@ -252,7 +264,7 @@ val socketSync = ModelSyncTarget[Player](
 ```
 
 Injected model values are still scope-backed, but shared synchronization should
-use `$snapshot`, `$restore`, or the typed `sync(...)` extension instead of DOM
+use `snapshot`, `restore`, or the typed `sync(...)` extension instead of DOM
 watchers.
 
 ## Native ScopeElement Guidance

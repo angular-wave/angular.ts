@@ -20,7 +20,7 @@ window.angular
       constructor(mapModel, $scope) {
         this.map = mapModel;
         this.destroyRuntime = () => {};
-        $scope.$on('$destroy', () => this.destroyRuntime());
+        $scope.on('$destroy', () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 

@@ -273,7 +273,7 @@ describe("ngProp*", () => {
 
   it("should process property bindings in pre-linking phase at priority 100", async () => {
     compileRegistry.directive("propLog", () => ({
-      compile($element, $snapshot) {
+      compile($element, snapshot) {
         logs.push(`compile=${$element.myName}`);
 
         return {

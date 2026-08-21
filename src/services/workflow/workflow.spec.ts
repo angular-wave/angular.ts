@@ -932,12 +932,12 @@ describe("$workflow", () => {
 
   it("forgets destroyed reactive workflow bindings", async () => {
     const workflow = $workflow(workflowConfig("destroyed-binding"));
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     scope.workflow = workflow;
     $compile("<span>{{ workflow.state }}</span>")(scope);
     await wait();
-    scope.$destroy();
+    scope.destroy();
 
     await workflow.run("build", "after-destroy.js");
     expect(workflow.state).toBe("complete");
@@ -1851,7 +1851,7 @@ describe("$workflow", () => {
 
     it("tracks, replaces, and disposes hosted fragments", () => {
       const target = document.createElement("div");
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
       const host = createWorkflowUiFragmentHost({
         compile: $compile,
         scope,
@@ -1862,7 +1862,7 @@ describe("$workflow", () => {
 
       expect(host.current).toBe(second);
       expect(first.disposed).toBeTrue();
-      scope.$destroy();
+      scope.destroy();
       expect(host.current).toBeNull();
       host.dispose();
       expect(() => host.render("<p>late</p>")).toThrow();

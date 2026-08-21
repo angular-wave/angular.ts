@@ -72,7 +72,7 @@ describe("ngWorker", () => {
       "$rootScope",
       (_$compile_, _$rootScope_) => {
         compile = _$compile_;
-        scope = _$rootScope_.$new();
+        scope = _$rootScope_.new();
       },
     ]);
   });
@@ -128,7 +128,7 @@ describe("ngWorker", () => {
     await wait();
     expect(scope.received).toEqual({ shared: true });
 
-    scope.$destroy();
+    scope.destroy();
     await wait();
     expect(workers[0].terminated).toBeFalse();
   });
@@ -160,7 +160,7 @@ describe("ngWorker", () => {
 
   it("normalizes request failures from named worker handles", async () => {
     compileWorker(
-      '<button ng-worker data-handle="rejectingWorker" data-request on-error="failures.push($error)">Run</button>',
+      '<button ng-worker data-handle="rejectingWorker" data-request on-error="failures.push(error)">Run</button>',
     );
     scope.failures = [];
 
@@ -210,7 +210,7 @@ describe("ngWorker", () => {
       '<button ng-worker="/workers/echo.js" data-params="{ x: 1 }" on-result="received = $result">Run</button>',
     );
 
-    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
     element.click();
     workers[0].onmessage({ data: { ok: true } });
     await wait();
@@ -218,7 +218,7 @@ describe("ngWorker", () => {
     expect(workers[0].sent).toEqual([]);
     expect(scope.received).toBeUndefined();
 
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
     await wait();
 
     expect(workers[0].sent).toEqual([{ x: 1 }]);
@@ -230,19 +230,19 @@ describe("ngWorker", () => {
       '<button ng-worker="/workers/echo.js" data-params="{ x: 1 }" on-result="received = $result">Run</button>',
     );
 
-    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
     element.dispatchEvent(new Event("click"));
     workers[0].onmessage({ data: { ok: true } });
 
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
-    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
 
     await wait();
 
     expect(workers[0].sent).toEqual([]);
     expect(scope.received).toBeUndefined();
 
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
     await wait();
 
     expect(workers[0].sent).toEqual([{ x: 1 }]);
@@ -254,21 +254,21 @@ describe("ngWorker", () => {
       '<button ng-worker="/workers/echo.js" data-params="{ x: 1 }">Run</button>',
     );
 
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
-    scope.$broadcast("$viewRetentionPause", { _pause: "background" });
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionPause", { _pause: "background" });
     element.dispatchEvent(new Event("click"));
     await wait();
 
     expect(workers[0].sent).toEqual([{ x: 1 }]);
 
-    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
     element.dispatchEvent(new Event("click"));
-    scope.$broadcast("$viewRetentionResume", { _pause: "background" });
+    scope.broadcast("$viewRetentionResume", { _pause: "background" });
     await wait();
 
     expect(workers[0].sent).toEqual([{ x: 1 }]);
 
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
     await wait();
 
     expect(workers[0].sent).toEqual([{ x: 1 }, { x: 1 }]);
@@ -279,13 +279,13 @@ describe("ngWorker", () => {
       '<button ng-worker="/workers/echo.js" data-params="{ x: 1 }" on-result="received = $result">Run</button>',
     );
 
-    scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+    scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
     element.dispatchEvent(new Event("click"));
     workers[0].onmessage({ data: { ok: true } });
     const staleMessageHandler = workers[0].onmessage;
 
-    scope.$destroy();
-    scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+    scope.destroy();
+    scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
     staleMessageHandler({ data: { ok: false } });
 
     await wait();
@@ -342,7 +342,7 @@ describe("ngWorker", () => {
 
   it("evaluates on-error expressions", async () => {
     compileWorker(
-      '<button ng-worker="/workers/echo.js" on-error="failed = $error.code">Run</button>',
+      '<button ng-worker="/workers/echo.js" on-error="failed = error.code">Run</button>',
     );
 
     workers[0].onerror(new ErrorEvent("error"));
@@ -439,7 +439,7 @@ describe("ngWorker", () => {
     await wait(60);
     expect(workers[0].sent.length).toBeGreaterThan(0);
 
-    scope.$destroy();
+    scope.destroy();
     await wait(20);
 
     expect(clearSpy).toHaveBeenCalled();
@@ -458,7 +458,7 @@ describe("ngWorker", () => {
     expect(workers[0].sent.length).toBe(0);
     expect(setIntervalSpy).toHaveBeenCalledWith(jasmine.any(Function), 1000);
 
-    scope.$destroy();
+    scope.destroy();
   });
 
   it("terminates worker when host scope is destroyed", async () => {
@@ -470,7 +470,7 @@ describe("ngWorker", () => {
 
     expect(workers[0].terminated).toBeFalse();
 
-    scope.$destroy();
+    scope.destroy();
     await wait();
 
     expect(workers[0].terminated).toBeTrue();

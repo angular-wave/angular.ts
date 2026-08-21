@@ -73,7 +73,7 @@ function ngRepeatDirective($injector) {
         "$even",
     ];
     function scopeUsesRepeatPositionLocals(scope) {
-        const watchers = scope.$handler._watchers;
+        const watchers = scope._handler._watchers;
         for (let i = 0; i < repeatPositionLocalKeys.length; i++) {
             if (watchers.has(repeatPositionLocalKeys[i])) {
                 return true;
@@ -89,10 +89,10 @@ function ngRepeatDirective($injector) {
             scope[keyIdentifier] = key;
         }
         if (value && (typeof value === "object" || typeof value === "function")) {
-            setHashKey(scope.$target, hashKey(value));
+            setHashKey(scope._target, hashKey(value));
         }
         else {
-            setHashKey(scope.$target, null);
+            setHashKey(scope._target, null);
         }
         if (!updatePositionLocals) {
             return;
@@ -122,10 +122,10 @@ function ngRepeatDirective($injector) {
         }
     }
     function initializeScope(scope, index, valueIdentifier, value, keyIdentifier, key, arrayLength) {
-        const target = scope.$target;
+        const target = scope._target;
         target[valueIdentifier] = value;
         if (isProxy(value)) {
-            scope.$handler._foreignProxies.add(value);
+            scope._handler._foreignProxies.add(value);
         }
         if (keyIdentifier) {
             target[keyIdentifier] = key;
@@ -384,7 +384,7 @@ function ngRepeatDirective($injector) {
             const valueIdentifier = valueAlias || itemIdentifier;
             if (aliasAs &&
                 (!/^[$a-zA-Z_][$a-zA-Z0-9_]*$/.test(aliasAs) ||
-                    /^(null|undefined|this|\$index|\$first|\$middle|\$last|\$even|\$odd|\$parent|\$root|\$id)$/.test(aliasAs))) {
+                    /^(null|undefined|this|\$index|\$first|\$middle|\$last|\$even|\$odd|parent|root|id)$/.test(aliasAs))) {
                 throw ngRepeatError("badident", "alias '{0}' is invalid --- must be a valid JS identifier which is not a reserved name.", aliasAs);
             }
             const swap = callBackOnce(() => {
@@ -507,7 +507,7 @@ function ngRepeatDirective($injector) {
                 let lastBlockMap = nullObject();
                 let lastBlockOrder = [];
                 let lastSeenArrayMutationVersion = 0;
-                $scope.$watch(rhs, (collection) => {
+                $scope.watch(rhs, (collection) => {
                     swap();
                     let index = 0;
                     previousNode = repeatElement;
@@ -623,7 +623,7 @@ function ngRepeatDirective($injector) {
                         const lastNode = getBlockEnd(lastBlock);
                         if (firstNode && lastNode) {
                             for (let i = 0; i < lastBlockOrder.length; i++) {
-                                lastBlockOrder[i]._scope?.$destroy();
+                                lastBlockOrder[i]._scope?.destroy();
                             }
                             removeNodeRangeFast(firstNode, lastNode);
                             lastBlockMap = nextBlockMap;
@@ -640,7 +640,7 @@ function ngRepeatDirective($injector) {
                         const lastRemovedNode = getBlockEnd(lastRemovedBlock);
                         if (firstRemovedNode && lastRemovedNode) {
                             for (let removedIndex = tailDeleteRetainedLength; removedIndex < lastBlockOrder.length; removedIndex++) {
-                                lastBlockOrder[removedIndex]._scope?.$destroy();
+                                lastBlockOrder[removedIndex]._scope?.destroy();
                             }
                             removeNodeRangeFast(firstRemovedNode, lastRemovedNode);
                             const retainedLastIndex = tailDeleteRetainedLength - 1;
@@ -670,7 +670,7 @@ function ngRepeatDirective($injector) {
                         const lastNode = getBlockEnd(lastBlock);
                         if (firstNode && lastNode) {
                             for (let i = 0; i < lastBlockOrder.length; i++) {
-                                lastBlockOrder[i]._scope?.$destroy();
+                                lastBlockOrder[i]._scope?.destroy();
                             }
                             removeNodeRangeFast(firstNode, lastNode);
                             lastBlockMap = nullObject();
@@ -699,7 +699,7 @@ function ngRepeatDirective($injector) {
                             });
                         }
                         else {
-                            block._scope?.$destroy();
+                            block._scope?.destroy();
                             removeBlockNodes(blockNodes);
                         }
                         if (blockNodes.length && blockNodes[0].parentNode) {
@@ -708,7 +708,7 @@ function ngRepeatDirective($injector) {
                             }
                         }
                         if (hasAnimate && elementsToRemove) {
-                            block._scope?.$destroy();
+                            block._scope?.destroy();
                         }
                     }
                     let startIndex = 0;
@@ -783,7 +783,7 @@ function ngRepeatDirective($injector) {
                             }
                         }
                         else {
-                            const childScope = $scope.$transcluded();
+                            const childScope = $scope.transcluded();
                             initializeScope(childScope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
                             if ($transclude) {
                                 callFunction($transclude, undefined, childScope, attachTranscludedBlock.bind(null, block, value, previousNode, nextBlockMap));

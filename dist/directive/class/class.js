@@ -22,7 +22,7 @@ function classDirective($injector) {
             if (expression === undefined) {
                 return;
             }
-            scope.$watch(expression, (val) => {
+            scope.watch(expression, (val) => {
                 ngClassWatchAction(toClassString(val));
             });
             /** Applies the net class change between two class strings. */

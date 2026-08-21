@@ -28,14 +28,14 @@ export const eventBusModule: RuntimeModule = (angular) => {
     _exceptionHandler,
     _angular,
     ($exceptionHandler: ng.ExceptionHandlerService, angular: ng.Angular) => {
-      const host = angular as ng.Angular & { $eventBus?: EventBus };
+      const host = angular as ng.Angular & { eventBus?: EventBus };
       const service = createEventBusService(
         state,
         $exceptionHandler,
-        host.$eventBus,
+        host.eventBus,
       );
 
-      host.$eventBus = service;
+      host.eventBus = service;
 
       return service;
     },

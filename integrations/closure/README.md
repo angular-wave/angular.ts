@@ -8,7 +8,8 @@ The Closure demo/compiler integration stays isolated from the core build. The
 generated externs are also shipped with the core package:
 
 - `externs/angular.js` describes the public AngularTS API and mirrors
-  the public `ng` namespace with documented structural Closure externs.
+  the public `ng` namespace with documented structural Closure externs. Every
+  callable member includes source parameter names, types, and descriptions.
 - The root `make release-build` target validates that file and copies it to
   `dist/externs/angular.js`, which is exported from npm as
   `@angular-wave/angular.ts/externs/angular.js`.
@@ -36,13 +37,17 @@ Supported direction:
 - Closure compiles user application code.
 - AngularTS is loaded as a prebuilt external global.
 
+Programmatic component and directive views are part of the generated extern
+surface. Closure sees documented `ng.ComponentView`, context, child, property,
+tag, and tag-collection contracts, including `angular.tags`.
+
 ## WASM Scope And App Models
 
 Closure externs may describe `WasmScope` because it is part of the public
 namespace. That type is the view-scope ABI only. Closure and ClojureScript
 facades should use it for DOM/root-scoped controller or component state.
 App-owned state belongs to `app.model(...)` and should synchronize with
-external runtimes through host-side AngularTS services or `model.$sync(...)`
+external runtimes through host-side AngularTS services or `model.sync(...)`
 targets. Do not add model handles or model watch imports unless the shared WASM
 ABI adds that surface.
 

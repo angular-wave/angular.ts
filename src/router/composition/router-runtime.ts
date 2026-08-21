@@ -177,6 +177,7 @@ export function createRouterRuntime(
 
 /** @internal */
 export const routerRuntimeRegistration: RuntimeRegistrationRecipe = {
+  /** @internal */
   _register(
     registry: ProviderRegistry,
     name: string,

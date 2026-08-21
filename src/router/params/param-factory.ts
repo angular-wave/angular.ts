@@ -4,6 +4,7 @@ import type { ParamTypeMap } from "./param-types.ts";
 
 export interface UrlParamConfig {
   _paramTypes: ParamTypeMap;
+  /** @internal */
   _getDefaultSquash(): boolean | string;
 }
 

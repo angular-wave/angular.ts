@@ -69,19 +69,19 @@ function createMachine(scopeOrConfig, maybeConfig) {
     };
     Object.defineProperty(machineTarget, SCOPE_PROXY_BIND, {
         value(handler, proxy) {
-            let binding = bindings.get(handler.$id);
+            let binding = bindings.get(handler.id);
             if (!binding) {
                 binding = {
                     _handler: handler,
                     _proxy: proxy,
                 };
-                bindings.set(handler.$id, binding);
+                bindings.set(handler.id, binding);
             }
             activeBinding = binding;
         },
     });
-    if (scope?.$handler) {
-        return createScope(machineTarget, scope.$handler);
+    if (scope?._handler) {
+        return createScope(machineTarget, scope._handler);
     }
     return machineTarget;
     function getActiveMachine() {
@@ -395,7 +395,7 @@ function batch(scope, fn) {
     if (!scope || scope._destroyed) {
         return fn();
     }
-    return scope.$batch(fn);
+    return scope.batch(fn);
 }
 function normalizeMachineArgs(scopeOrConfig, maybeConfig) {
     if (maybeConfig) {

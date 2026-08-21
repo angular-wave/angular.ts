@@ -40,14 +40,14 @@ function createScopeRetainedWorkState(scope: ng.Scope): ScopeRetainedWorkState {
     _flushing: false,
     _destroyed: false,
     _pending: [],
-    _deregisterPause: scope.$on("$viewRetentionPause", (...args) => {
+    _deregisterPause: scope.on("$viewRetentionPause", (...args) => {
       if (!shouldHandleViewRetentionPause(args, "schedulers")) {
         return;
       }
 
       state._paused = true;
     }),
-    _deregisterResume: scope.$on("$viewRetentionResume", (...args) => {
+    _deregisterResume: scope.on("$viewRetentionResume", (...args) => {
       if (!shouldHandleViewRetentionPause(args, "schedulers")) {
         return;
       }
@@ -57,7 +57,7 @@ function createScopeRetainedWorkState(scope: ng.Scope): ScopeRetainedWorkState {
       state._paused = false;
       flushScopeRetainedWorkQueue(state);
     }),
-    _deregisterDestroy: scope.$on("$destroy", () => {
+    _deregisterDestroy: scope.on("$destroy", () => {
       state._destroyed = true;
       state._paused = false;
       state._flushing = false;
@@ -100,7 +100,7 @@ function queueScopeRetainedWork(
   state: ScopeRetainedWorkState,
   task: () => void,
 ): void {
-  if (scope.$handler._destroyed || state._destroyed) {
+  if (scope._handler._destroyed || state._destroyed) {
     return;
   }
 

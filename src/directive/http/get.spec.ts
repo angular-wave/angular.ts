@@ -100,7 +100,7 @@ describe("ng-get", () => {
   });
 
   it("should use $animate.enter for animated element responses", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-get="/mock/div" animate="true">Load</button>';
     $compile(el)(scope);
@@ -111,7 +111,7 @@ describe("ng-get", () => {
   });
 
   it("should use $animate.leave before entering an animated replacement", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-get="/mock/div" animate="true">Load</button>';
     $compile(el)(scope);
@@ -128,7 +128,7 @@ describe("ng-get", () => {
   });
 
   it("should use $animate for animated outerHTML replacements", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML =
       '<button ng-get="/mock/div" animate="true" data-swap="outerHTML">Load</button>';
@@ -143,7 +143,7 @@ describe("ng-get", () => {
   });
 
   it("should not animate text-node responses", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-get="/mock/hello" animate="true">Load</button>';
     $compile(el)(scope);
@@ -154,7 +154,7 @@ describe("ng-get", () => {
   });
 
   it("should animate textContent swaps without losing the target parent", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML =
       '<button ng-get="/mock/hello" animate="true" data-swap="textContent">Load</button>';
@@ -170,7 +170,7 @@ describe("ng-get", () => {
   });
 
   it("should replace innerHTML (default) on click", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-get="/mock/hello">Load</button>';
     $compile(el)(scope);
@@ -180,7 +180,7 @@ describe("ng-get", () => {
   });
 
   it("should replace innerHTML (default) on click when used with expression", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-get="/mock/{{a}}">Load</button>';
     scope.a = "div";
@@ -191,7 +191,7 @@ describe("ng-get", () => {
   });
 
   it("should compile innerHTML", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-get="/mock/divexpr">Load</button>';
     scope.expr = "World";
@@ -202,7 +202,7 @@ describe("ng-get", () => {
   });
 
   it("should replace innerHTML on error", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-get="/mock/422">Load</button>';
     $compile(el)(scope);
@@ -213,7 +213,7 @@ describe("ng-get", () => {
 
   it("should not trigger request if element is disabled", async () => {
     el.innerHTML = '<button ng-get="/mock/hello" disabled>Load</button>';
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     $compile(el)(scope);
     browserTrigger(el.querySelector("button"), "click");
@@ -222,7 +222,7 @@ describe("ng-get", () => {
   });
 
   it("should replace innerHTML on status error without a body", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     el.innerHTML = '<button ng-get="/mock/401">Load</button>';
     $compile(el)(scope);
@@ -235,7 +235,7 @@ describe("ng-get", () => {
     it("should not trigger request on click if element has trigger attribute", async () => {
       el.innerHTML =
         '<button ng-get="/mock/hello" data-trigger="mouseover">Load</button>';
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "click");
@@ -246,7 +246,7 @@ describe("ng-get", () => {
     it("should trigger request on new event name if element has trigger attribute", async () => {
       el.innerHTML =
         '<button ng-get="/mock/hello" data-trigger="mouseover">Load</button>';
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       $compile(el)(scope);
       browserTrigger(el.querySelector("button"), "mouseover");
@@ -259,7 +259,7 @@ describe("ng-get", () => {
     it("should trigger request on latch change", async () => {
       el.innerHTML =
         '<button ng-get="/mock/now" data-latch="{{ latch }}">Load</button>';
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       $compile(el)(scope);
       await wait();
@@ -283,7 +283,7 @@ describe("ng-get", () => {
     it("should still work with events with latch change", async () => {
       el.innerHTML =
         '<button ng-get="/mock/now" data-latch="{{ latch }}">Load</button>';
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       $compile(el)(scope);
       await wait();
@@ -302,7 +302,7 @@ describe("ng-get", () => {
     it("should still work with custom events with latch change", async () => {
       el.innerHTML =
         '<button ng-get="/mock/now" data-latch="{{ latch }}" data-trigger="mouseover">Load</button>';
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       $compile(el)(scope);
       await wait();
@@ -321,7 +321,7 @@ describe("ng-get", () => {
     it("should still work with ng-event directives with latch change", async () => {
       el.innerHTML =
         '<button ng-get="/mock/now" data-latch="{{ latch }}" ng-mouseover="latch = !latch">Load</button>';
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       $compile(el)(scope);
       await wait();
@@ -340,7 +340,7 @@ describe("ng-get", () => {
 
   describe("data-swap", () => {
     it("should not change anything if swap is 'none'", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/div" data-swap="none" data-target="#found">Load</button><div id="found">Original</div>';
@@ -353,7 +353,7 @@ describe("ng-get", () => {
     });
 
     it("should replace outerHTML on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/hello" data-swap="outerHTML">Load</button>';
@@ -364,7 +364,7 @@ describe("ng-get", () => {
     });
 
     it("should replace textcontent on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/hello" data-swap="textContent">Load</button>';
@@ -375,7 +375,7 @@ describe("ng-get", () => {
     });
 
     it("should replace beforebegin on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/div" data-swap="beforebegin">Load</button>';
@@ -386,7 +386,7 @@ describe("ng-get", () => {
     });
 
     it("should replace beforeend on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/div" data-swap="beforeend">Load</button>';
@@ -397,7 +397,7 @@ describe("ng-get", () => {
     });
 
     it("should delete the target on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/hello" data-swap="delete" data-target="#found">Load</button><div id="found"></div>';
@@ -410,7 +410,7 @@ describe("ng-get", () => {
 
   describe("data-target", () => {
     it("should remain unchanged if target is not found and log a warning", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       spyOn($log, "warn");
       el.innerHTML =
@@ -423,7 +423,7 @@ describe("ng-get", () => {
     });
 
     it("should replace target innerHTML (default) on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/hello" data-target="#found">Load</button><div id="found"></div>';
@@ -434,7 +434,7 @@ describe("ng-get", () => {
     });
 
     it("should replace textcontent on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/hello" data-swap="textContent" data-target="#found">Load</button><div id="found"></div>';
@@ -445,7 +445,7 @@ describe("ng-get", () => {
     });
 
     it("should replace beforebegin on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/div" data-swap="beforebegin" data-target="#found">Load</button><div id="found"></div>';
@@ -465,7 +465,7 @@ describe("ng-get", () => {
     });
 
     it("should replace beforeend on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/div" data-swap="beforeend" data-target="#found">Load</button><div id="found"></div>';
@@ -480,7 +480,7 @@ describe("ng-get", () => {
     });
 
     it("should insert afterbegin on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/div" data-swap="afterbegin" data-target="#found">Load</button><div id="found"><div>World</div></div>';
@@ -495,7 +495,7 @@ describe("ng-get", () => {
     });
 
     it("should insert afterend on click", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/div" data-swap="afterend" data-target="#found">Load</button><div id="found"><div>World</div></div>';
@@ -512,7 +512,7 @@ describe("ng-get", () => {
 
   describe("streams", () => {
     it("should compile and swap streamed HTML responses", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.first = "A";
       scope.second = "B";
@@ -525,7 +525,7 @@ describe("ng-get", () => {
     });
 
     it("should accept stream as a responseType shortcut", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.first = "C";
       scope.second = "D";
@@ -538,7 +538,7 @@ describe("ng-get", () => {
     });
 
     it("should accept data-response-stream as a responseType shortcut", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.first = "E";
       scope.second = "F";
@@ -551,7 +551,7 @@ describe("ng-get", () => {
     });
 
     it("should abort stream consumption when the directive scope is destroyed", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       let signal;
 
@@ -573,7 +573,7 @@ describe("ng-get", () => {
 
       expect(signal.aborted).toBe(false);
 
-      scope.$destroy();
+      scope.destroy();
       resolveConsume();
 
       expect(signal.aborted).toBe(true);
@@ -582,7 +582,7 @@ describe("ng-get", () => {
 
   describe("ng-sse protocol", () => {
     it("should swap raw SSE message HTML", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-sse="/mock/sse-once" data-target="#feed">Start</button><div id="feed"></div>';
@@ -592,11 +592,11 @@ describe("ng-get", () => {
         () => el.querySelector("#feed").textContent === "Raw message",
       );
       expect(el.querySelector("#feed").textContent).toBe("Raw message");
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
     });
 
     it("should route structured SSE messages to their target", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-sse="/mock/sse-protocol">Start</button><div id="feed"></div><div id="side"></div>';
@@ -609,11 +609,11 @@ describe("ng-get", () => {
       );
       expect(el.querySelector("#feed").textContent).toBe("Feed");
       expect(el.querySelector("#side").textContent).toBe("Side");
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
     });
 
     it("should use data as HTML when structured SSE messages omit html", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-sse="/mock/sse-protocol-data">Start</button><div id="feed"></div>';
@@ -623,11 +623,11 @@ describe("ng-get", () => {
         () => el.querySelector("#feed").textContent === "Data fallback",
       );
       expect(el.querySelector("#feed").textContent).toBe("Data fallback");
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
     });
 
     it("should support registered custom SSE events", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       const received = [];
 
@@ -645,11 +645,11 @@ describe("ng-get", () => {
       );
       expect(received.length).toBe(1);
       expect(el.querySelector("#feed").textContent).toBe("Notice");
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
     });
 
     it("should dispatch lifecycle DOM events", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       const received = [];
 
@@ -670,7 +670,7 @@ describe("ng-get", () => {
           received.includes("message") &&
           received.includes("swapped"),
       );
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
       await waitUntil(() => received.includes("close"));
 
       expect(received).toContain("open");
@@ -680,7 +680,7 @@ describe("ng-get", () => {
     });
 
     it("should close the stream when a message event is cancelled", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-sse="/mock/sse-protocol">Start</button><div id="feed"></div><div id="side"></div>';
@@ -696,13 +696,13 @@ describe("ng-get", () => {
       await wait(250);
       expect(el.querySelector("#feed").textContent).toBe("");
       expect(el.querySelector("#side").textContent).toBe("");
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
     });
   });
 
   describe("data-delay", () => {
     it("should accept delay as a data attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/hello" data-delay="1000">Load</button>';
@@ -719,7 +719,7 @@ describe("ng-get", () => {
 
   describe("data-throttle", () => {
     it("should accept throttle as a data attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/now" data-throttle="1000">Load</button>';
@@ -745,7 +745,7 @@ describe("ng-get", () => {
 
   describe("data-interval", () => {
     it("should accept delay as a data attribute and should stop on $destroy", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/now" data-interval="100">Load</button>';
@@ -761,7 +761,7 @@ describe("ng-get", () => {
 
       expect(thirdRes).toBeGreaterThan(secondRes);
 
-      scope.$broadcast("$destroy");
+      scope.broadcast("$destroy");
 
       await wait();
       const finalRes = parseInt(el.innerText);
@@ -774,7 +774,7 @@ describe("ng-get", () => {
 
   describe("data-loading", () => {
     it("should update loading data attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML = '<button ng-get="/mock/now" data-loading>Load</button>';
       $compile(el)(scope);
@@ -789,7 +789,7 @@ describe("ng-get", () => {
 
   describe("data-loading-class", () => {
     it("should update class from data-loading-class attribute", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/now" data-loading-class="red">Load</button>';
@@ -805,7 +805,7 @@ describe("ng-get", () => {
 
   describe("on-success", () => {
     it("should evaluate expression passing result", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/hello" on-success="res = $res">Load</button>';
@@ -816,7 +816,7 @@ describe("ng-get", () => {
     });
 
     it("should require explicit assignment for object responses", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.name = "Alice";
       el.innerHTML =
@@ -834,7 +834,7 @@ describe("ng-get", () => {
 
   describe("data-state-success", () => {
     it("should call stateService with success state", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/hello" data-state-success="success">Load</button><ng-view id="view"></ng-view>';
@@ -849,7 +849,7 @@ describe("ng-get", () => {
 
   describe("data-state-error", () => {
     it("should call stateService with success state", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/422" data-state-success="success" data-state-error="error">Load</button><ng-view id="view"></ng-view>';
@@ -864,7 +864,7 @@ describe("ng-get", () => {
 
   describe("on-error", () => {
     it("should evaluate expression passing result", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       el.innerHTML =
         '<button ng-get="/mock/422" on-error="res = $res">Load</button>';

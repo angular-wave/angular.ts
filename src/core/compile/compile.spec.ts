@@ -1,6 +1,7 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
+import { tags } from "./programmatic-view.ts";
 import { CompileAttributeState } from "./compile.ts";
 import { createInjector } from "../di/injector.ts";
 import {
@@ -1231,7 +1232,7 @@ describe("$compile", () => {
     const el = $("<div my-directive></div>");
 
     $compile(el)($rootScope);
-    expect(givenScope.$parent.id).toBe($rootScope.id);
+    expect(givenScope.parent.id).toBe($rootScope.id);
   });
 
   it("makes new scope for element when directive rejects it", () => {
@@ -1274,7 +1275,7 @@ describe("$compile", () => {
     const el = $("<div my-directive my-other-directive></div>");
 
     $compile(el)($rootScope);
-    expect(givenScope.$parent.$id).toBe($rootScope.$id);
+    expect(givenScope.parent.id).toBe($rootScope.id);
   });
 
   it("adds new scope data for element with new scope", function () {
@@ -1311,7 +1312,7 @@ describe("$compile", () => {
 
     $compile(el)($rootScope);
     await wait();
-    expect($rootScope._children[0].$id).toBe(givenScope.$id);
+    expect($rootScope._children[0].id).toBe(givenScope.id);
   });
 
   it("creates an isolate scope when requested", () => {
@@ -1329,7 +1330,7 @@ describe("$compile", () => {
     const el = $("<div my-directive></div>");
 
     $compile(el)($rootScope);
-    expect(givenScope.$parent.$id).toBe($rootScope.$id);
+    expect(givenScope.parent.id).toBe($rootScope.id);
     expect($rootScope._children[0]).toBe(givenScope);
     expect(Object.getPrototypeOf(givenScope)).not.toBe($rootScope);
   });
@@ -1542,10 +1543,10 @@ describe("$compile", () => {
     const handlers = {};
     const values = [];
     const fakeScope = {
-      $handler: {
+      _handler: {
         _destroyed: true,
       },
-      $on(eventName, handler) {
+      on(eventName, handler) {
         handlers[eventName] = handler;
 
         return () => undefined;
@@ -1577,10 +1578,10 @@ describe("$compile", () => {
     const handlers = {};
     const values = [];
     const fakeScope = {
-      $handler: {
+      _handler: {
         _destroyed: false,
       },
-      $on(eventName, handler) {
+      on(eventName, handler) {
         handlers[eventName] = handler;
 
         return () => undefined;
@@ -1606,7 +1607,7 @@ describe("$compile", () => {
 
     expect(values).toEqual([]);
 
-    fakeScope.$handler._destroyed = true;
+    fakeScope._handler._destroyed = true;
     handlers.$viewRetentionResume();
 
     await wait();
@@ -1635,14 +1636,14 @@ describe("$compile", () => {
     $compile(el)($rootScope);
     expect(givenScope.anAttr).toEqual("42");
 
-    givenScope.$emit("$viewRetentionPause");
+    givenScope.emit("$viewRetentionPause");
     el.setAttribute("an-attr", "43");
 
     await wait();
 
     expect(givenScope.anAttr).toEqual("42");
 
-    givenScope.$emit("$viewRetentionResume");
+    givenScope.emit("$viewRetentionResume");
 
     await wait();
 
@@ -1670,28 +1671,28 @@ describe("$compile", () => {
     expect(givenScope.firstAttr).toEqual("one");
     expect(givenScope.secondAttr).toEqual("two");
 
-    givenScope.$emit("$viewRetentionResume", { _pause: "schedulers" });
-    givenScope.$emit("$viewRetentionPause", { _pause: "background" });
+    givenScope.emit("$viewRetentionResume", { _pause: "schedulers" });
+    givenScope.emit("$viewRetentionPause", { _pause: "background" });
     el.setAttribute("first-attr", "three");
 
     await wait();
 
     expect(givenScope.firstAttr).toEqual("three");
 
-    givenScope.$emit("$viewRetentionPause", { _pause: "schedulers" });
+    givenScope.emit("$viewRetentionPause", { _pause: "schedulers" });
     el.setAttribute("second-attr", "four");
 
     await wait();
 
     expect(givenScope.secondAttr).toEqual("two");
 
-    givenScope.$emit("$viewRetentionResume", { _pause: "background" });
+    givenScope.emit("$viewRetentionResume", { _pause: "background" });
 
     await wait();
 
     expect(givenScope.secondAttr).toEqual("two");
 
-    givenScope.$emit("$viewRetentionResume", { _pause: "schedulers" });
+    givenScope.emit("$viewRetentionResume", { _pause: "schedulers" });
 
     await wait();
 
@@ -1717,21 +1718,21 @@ describe("$compile", () => {
     $compile(el)($rootScope);
     expect(givenScope.anAttr).toEqual("42");
 
-    givenScope.$emit("$viewRetentionPause", { _pause: "schedulers" });
+    givenScope.emit("$viewRetentionPause", { _pause: "schedulers" });
     el.setAttribute("an-attr", "43");
 
     await wait();
 
     expect(givenScope.anAttr).toEqual("42");
 
-    givenScope.$emit("$viewRetentionResume", { _pause: "schedulers" });
-    givenScope.$emit("$viewRetentionPause", { _pause: "schedulers" });
+    givenScope.emit("$viewRetentionResume", { _pause: "schedulers" });
+    givenScope.emit("$viewRetentionPause", { _pause: "schedulers" });
 
     await wait();
 
     expect(givenScope.anAttr).toEqual("42");
 
-    givenScope.$emit("$viewRetentionResume", { _pause: "schedulers" });
+    givenScope.emit("$viewRetentionResume", { _pause: "schedulers" });
 
     await wait();
 
@@ -1842,7 +1843,7 @@ describe("$compile", () => {
 
       $compile(el)($rootScope);
       await wait();
-      expect($rootScope.$handler._watchers.size).toEqual(0);
+      expect($rootScope._handler._watchers.size).toEqual(0);
     });
 
     it("allows assigning to two-way scope expressions", async () => {
@@ -1938,7 +1939,7 @@ describe("$compile", () => {
 
       $compile(el)($rootScope);
       await wait();
-      expect(givenScope.myAttr.$target).toEqual([1, 2, 3]);
+      expect(givenScope.myAttr._target).toEqual([1, 2, 3]);
     });
   });
 
@@ -2049,7 +2050,7 @@ describe("$compile", () => {
 
       $compile(el)($rootScope);
       await wait();
-      expect($rootScope.$handler._watchers.size).toEqual(0);
+      expect($rootScope._handler._watchers.size).toEqual(0);
     });
   });
 
@@ -3230,10 +3231,10 @@ describe("$compile", () => {
 
       const linkFunction = $compile(el);
 
-      const firstScope = $rootScope.$new();
+      const firstScope = $rootScope.new();
 
       firstScope.order = "first";
-      const secondScope = $rootScope.$new();
+      const secondScope = $rootScope.new();
 
       secondScope.order = "second";
 
@@ -3612,8 +3613,8 @@ describe("$compile", () => {
             scope: true,
             link(scope, element, transclude) {
               element.append(transclude());
-              scope.$on("destroyNow", () => {
-                scope.$destroy();
+              scope.on("destroyNow", () => {
+                scope.destroy();
               });
             },
           };
@@ -3634,7 +3635,7 @@ describe("$compile", () => {
       await wait();
       expect(watchSpy.calls.count()).toBe(1);
 
-      $rootScope.$broadcast("destroyNow");
+      $rootScope.broadcast("destroyNow");
       await wait();
       expect(watchSpy.calls.count()).toBe(1);
     });
@@ -3649,7 +3650,7 @@ describe("$compile", () => {
             scope: {},
             template: "<div></div>",
             link(scope, element, transclude) {
-              const mySpecialScope = scope.$new();
+              const mySpecialScope = scope.new();
 
               mySpecialScope.specialAttr = 42;
               transclude(mySpecialScope);
@@ -3771,8 +3772,8 @@ describe("$compile", () => {
             scope: true,
             link(scope, element, transclude) {
               element.append(transclude());
-              scope.$on("destroyNow", () => {
-                scope.$destroy();
+              scope.on("destroyNow", () => {
+                scope.destroy();
               });
             },
           };
@@ -3793,7 +3794,7 @@ describe("$compile", () => {
       await wait();
       expect(watchSpy.calls.count()).toBe(1);
 
-      $rootScope.$broadcast("destroyNow");
+      $rootScope.broadcast("destroyNow");
       await wait();
       expect(watchSpy.calls.count()).toBe(1);
     });
@@ -3840,13 +3841,13 @@ describe("$compile", () => {
       reloadModules();
       const el = $("<div my-transcluder><div in-transclude></div></div>");
 
-      const childScope = $rootScope.$new();
+      const childScope = $rootScope.new();
 
       $compile(el)(childScope);
 
       expect(capturedTransclude).toBeDefined();
 
-      childScope.$destroy();
+      childScope.destroy();
 
       expect(capturedTransclude()).toBeUndefined();
     });
@@ -3858,7 +3859,7 @@ describe("$compile", () => {
       reloadModules();
       const el = $("<div>Hello</div>");
 
-      const myScope = $rootScope.$new();
+      const myScope = $rootScope.new();
 
       let gotEl, gotScope;
 
@@ -3876,7 +3877,7 @@ describe("$compile", () => {
       reloadModules();
       const el = $("<div>Hello</div>");
 
-      const myScope = $rootScope.$new();
+      const myScope = $rootScope.new();
 
       let gotClonedEl;
 
@@ -3893,7 +3894,7 @@ describe("$compile", () => {
       reloadModules();
       const el = $("<div>Hello</div>");
 
-      const myScope = $rootScope.$new();
+      const myScope = $rootScope.new();
 
       let gotClonedEl;
 
@@ -3924,7 +3925,7 @@ describe("$compile", () => {
       reloadModules();
       const el = $("<div my-directive></div>");
 
-      const myScope = $rootScope.$new();
+      const myScope = $rootScope.new();
 
       $compile(el)(myScope, () => {
         /* empty */
@@ -3940,7 +3941,7 @@ describe("$compile", () => {
             transclude: true,
             template: "<div in-template></div>",
             link(scope, element, transcludeFn) {
-              const myScope = scope.$new();
+              const myScope = scope.new();
 
               transcludeFn(myScope, function (transclNode) {
                 element.append(transclNode);
@@ -4313,6 +4314,113 @@ describe("$compile", () => {
   });
 
   describe("components", () => {
+    it("supports Scope-reactive programmatic views", async () => {
+      const { button, div, span } = tags;
+
+      myModule.component("myCounter", {
+        controller() {
+          this.count = 1;
+        },
+        view: ({ controller }) =>
+          div(
+            { class: "counter" },
+            span(() => controller.count),
+            button({ onclick: () => controller.count++ }, "+"),
+          ),
+      });
+
+      reloadModules();
+      const el = $("<my-counter></my-counter>");
+
+      $compile(el)($rootScope);
+
+      expect(el.querySelector("span").textContent).toBe("1");
+
+      el.querySelector("button").click();
+      await wait();
+
+      expect(el.querySelector("span").textContent).toBe("2");
+    });
+
+    it("compiles registered components returned by programmatic views", () => {
+      const { section } = tags;
+      const childComponent = tags["child-component"];
+
+      myModule
+        .component("childComponent", {
+          template: "<strong>child linked</strong>",
+        })
+        .component("parentComponent", {
+          view: () => section(childComponent()),
+        });
+
+      reloadModules();
+      const el = $("<parent-component></parent-component>");
+
+      $compile(el)($rootScope);
+
+      expect(el.querySelector("strong").textContent).toBe("child linked");
+    });
+
+    it("supports nullable reactive children and collection mutations", async () => {
+      const { div } = tags;
+
+      myModule.component("collectionStatus", {
+        controller() {
+          this.values = new Set();
+        },
+        view: ({ controller }) =>
+          div(() => (controller.values.has("ready") ? "ready" : null)),
+      });
+
+      reloadModules();
+      const el = $("<collection-status></collection-status>");
+
+      $compile(el)($rootScope);
+
+      expect(el.textContent).toBe("");
+
+      getController(el, "collectionStatus").values.add("ready");
+      await wait();
+
+      expect(el.textContent).toBe("ready");
+    });
+
+    it("removes programmatic event listeners when its fragment is disposed", () => {
+      const { button } = tags;
+      let clicks = 0;
+
+      myModule.component("ownedButton", {
+        view: () => button({ onclick: () => clicks++ }, "click"),
+      });
+
+      reloadModules();
+      const scope = $rootScope.new();
+      const el = $("<owned-button></owned-button>");
+
+      $compile(el)(scope);
+      const renderedButton = el.querySelector("button");
+
+      renderedButton.click();
+      expect(clicks).toBe(1);
+
+      scope.destroy();
+      renderedButton.click();
+
+      expect(clicks).toBe(1);
+    });
+
+    it("rejects competing component view definitions", () => {
+      myModule.component("invalidComponent", {
+        template: "template",
+        view: () => document.createElement("div"),
+      });
+
+      expect(() => {
+        reloadModules();
+      }).toThrowError(/cannot define view together with template/);
+    });
+
     it("are element directives with controllers", () => {
       let controllerInstantiated = false;
 
@@ -4366,26 +4474,26 @@ describe("$compile", () => {
         },
       );
 
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
       const el = $("<my-component></my-component>");
 
       $compile(el)(scope);
 
       expect(created.length).toBe(1);
       expect(created[0].element).toBe(el);
-      expect(created[0].scope.$id).toBeDefined();
+      expect(created[0].scope.id).toBeDefined();
       expect(created[0].controller.label).toBe("created");
       expect(created[0].directiveName).toBe("myComponent");
       expect(created[0].controllerAs).toBe("$ctrl");
 
-      created[0].scope.$destroy();
+      created[0].scope.destroy();
 
       expect(destroyed.length).toBe(1);
       expect(destroyed[0]).toBe(created[0]);
 
       deregisterCreated();
       deregisterDestroyed();
-      scope.$destroy();
+      scope.destroy();
     });
 
     it("cannot be applied to an attribute", async () => {
@@ -4421,8 +4529,8 @@ describe("$compile", () => {
 
       $compile(el)($rootScope);
       await wait();
-      expect(componentScope.$id).not.toBe($rootScope.$id);
-      expect(componentScope.$parent.$id).toBe($rootScope.$id);
+      expect(componentScope.id).not.toBe($rootScope.id);
+      expect(componentScope.parent.id).toBe($rootScope.id);
       expect(Object.getPrototypeOf(componentScope)).not.toBe($rootScope);
     });
 
@@ -4679,15 +4787,15 @@ describe("$compile", () => {
   });
 
   describe("lifecycle", () => {
-    it("calls $onInit after all ctrls created before linking", () => {
+    it("calls onInit after all ctrls created before linking", () => {
       const invocations = [];
 
       myModule
         .component("first", {
           controller() {
             invocations.push("first controller created");
-            this.$onInit = () => {
-              invocations.push("first controller $onInit");
+            this.onInit = () => {
+              invocations.push("first controller onInit");
             };
           },
         })
@@ -4695,8 +4803,8 @@ describe("$compile", () => {
           return {
             controller() {
               invocations.push("second controller created");
-              this.$onInit = () => {
-                invocations.push("second controller $onInit");
+              this.onInit = () => {
+                invocations.push("second controller onInit");
               };
             },
             link: {
@@ -4717,45 +4825,45 @@ describe("$compile", () => {
       expect(invocations).toEqual([
         "first controller created",
         "second controller created",
-        "first controller $onInit",
-        "second controller $onInit",
+        "first controller onInit",
+        "second controller onInit",
         "second prelink",
         "second postlink",
       ]);
     });
 
-    it("calls $onDestroy when the scope is destroyed", () => {
+    it("calls onDestroy when the scope is destroyed", () => {
       const destroySpy = jasmine.createSpy();
 
       myModule.component("myComponent", {
         controller() {
-          this.$onDestroy = destroySpy;
+          this.onDestroy = destroySpy;
         },
       });
       reloadModules();
       const el = $("<my-component></my-component>");
 
       $compile(el)($rootScope);
-      $rootScope.$destroy();
+      $rootScope.destroy();
       expect(destroySpy).toHaveBeenCalled();
     });
 
-    it("calls $postLink after all linking is done", () => {
+    it("calls postLink after all linking is done", () => {
       const invocations = [];
 
       myModule
         .component("first", {
           controller() {
-            this.$postLink = () => {
-              invocations.push("first controller $postLink");
+            this.postLink = () => {
+              invocations.push("first controller postLink");
             };
           },
         })
         .directive("second", () => {
           return {
             controller() {
-              this.$postLink = () => {
-                invocations.push("second controller $postLink");
+              this.postLink = () => {
+                invocations.push("second controller postLink");
               };
             },
             link: () => {
@@ -4770,12 +4878,12 @@ describe("$compile", () => {
       $compile(el)($rootScope);
       expect(invocations).toEqual([
         "second postlink",
-        "second controller $postLink",
-        "first controller $postLink",
+        "second controller postLink",
+        "first controller postLink",
       ]);
     });
 
-    it("calls $afterRender after structural children and DOM bindings are applied", async () => {
+    it("calls afterRender after structural children and DOM bindings are applied", async () => {
       let snapshot;
 
       myModule.component("itemList", {
@@ -4784,7 +4892,7 @@ describe("$compile", () => {
           this.ready = true;
           this.itemWidth = "40px";
           this.itemHeight = "20px";
-          this.$afterRender = () => {
+          this.afterRender = () => {
             const items = el.querySelectorAll(".item");
             const rect = items[0].getBoundingClientRect();
 
@@ -4821,7 +4929,7 @@ describe("$compile", () => {
       });
     });
 
-    it("coalesces $afterRender to one call per controller per binding flush", async () => {
+    it("coalesces afterRender to one call per controller per binding flush", async () => {
       const afterRenderSpy = jasmine.createSpy("afterRender");
 
       myModule.component("myComponent", {
@@ -4830,7 +4938,7 @@ describe("$compile", () => {
           second: "<",
         },
         controller() {
-          this.$afterRender = afterRenderSpy;
+          this.afterRender = afterRenderSpy;
         },
         template: "<span>{{ $ctrl.first }} {{ $ctrl.second }}</span>",
       });
@@ -4857,13 +4965,13 @@ describe("$compile", () => {
       expect(afterRenderSpy.calls.count()).toBe(1);
     });
 
-    it("calls $afterRender after Angular event expressions update DOM", async () => {
+    it("calls afterRender after Angular event expressions update DOM", async () => {
       let snapshot;
 
       myModule.component("pointerPanel", {
         controller() {
           this.size = 12;
-          this.$afterRender = () => {
+          this.afterRender = () => {
             const box = el.querySelector(".box");
 
             snapshot = {
@@ -4898,13 +5006,13 @@ describe("$compile", () => {
       });
     });
 
-    it("coalesces $afterRender after repeated Angular event expressions", async () => {
+    it("coalesces afterRender after repeated Angular event expressions", async () => {
       const afterRenderSpy = jasmine.createSpy("afterRender");
 
       myModule.component("dragCounter", {
         controller() {
           this.count = 0;
-          this.$afterRender = afterRenderSpy;
+          this.afterRender = afterRenderSpy;
         },
         template:
           '<button type="button" ng-on-pointermove="$ctrl.count = $ctrl.count + 1">Drag</button>' +
@@ -4932,13 +5040,13 @@ describe("$compile", () => {
       expect(afterRenderSpy.calls.count()).toBe(1);
     });
 
-    it("calls $afterRender after document event expressions update DOM", async () => {
+    it("calls afterRender after document event expressions update DOM", async () => {
       let snapshot = "";
 
       myModule.component("documentPointerPanel", {
         controller() {
           this.done = false;
-          this.$afterRender = () => {
+          this.afterRender = () => {
             snapshot = el.querySelector("span").textContent.trim();
           };
         },
@@ -4962,7 +5070,7 @@ describe("$compile", () => {
       expect(el.textContent).toContain("true");
     });
 
-    it("does not call $onChanges for two-way bindings", () => {
+    it("does not call onChanges for two-way bindings", () => {
       const changesSpy = jasmine.createSpy();
 
       myModule.component("myComponent", {
@@ -4970,7 +5078,7 @@ describe("$compile", () => {
           myBinding: "=",
         },
         controller() {
-          this.$onChanges = changesSpy;
+          this.onChanges = changesSpy;
         },
       });
       reloadModules();
@@ -4981,7 +5089,7 @@ describe("$compile", () => {
       expect(changesSpy.calls.mostRecent().args[0].myBinding).toBeUndefined();
     });
 
-    it("calls $onChanges when binding changes", async () => {
+    it("calls onChanges when binding changes", async () => {
       const changesSpy = jasmine.createSpy();
 
       myModule.component("myComponent", {
@@ -4989,7 +5097,7 @@ describe("$compile", () => {
           myBinding: "<",
         },
         controller() {
-          this.$onChanges = function (scope) {
+          this.onChanges = function (scope) {
             changesSpy(scope);
           };
         },
@@ -5012,7 +5120,7 @@ describe("$compile", () => {
       expect(lastChanges.myBinding.firstChange).toBe(true);
     });
 
-    it("calls $onChanges when attribute changes", async () => {
+    it("calls onChanges when attribute changes", async () => {
       const changesSpy = jasmine.createSpy();
 
       myModule.component("myComponent", {
@@ -5020,7 +5128,7 @@ describe("$compile", () => {
           myAttr: "@",
         },
         controller() {
-          this.$onChanges = function (val) {
+          this.onChanges = function (val) {
             changesSpy(val);
           };
         },
@@ -5040,7 +5148,7 @@ describe("$compile", () => {
       expect(lastChanges.myAttr.firstChange).toBe(true);
     });
 
-    it("calls $onChanges once with multiple changes", async () => {
+    it("calls onChanges once with multiple changes", async () => {
       const changesSpy = jasmine.createSpy();
 
       myModule.component("myComponent", {
@@ -5049,7 +5157,7 @@ describe("$compile", () => {
           myAttr: "@",
         },
         controller() {
-          this.$onChanges = function (val) {
+          this.onChanges = function (val) {
             changesSpy(val);
           };
         },
@@ -5079,7 +5187,7 @@ describe("$compile", () => {
       expect(lastChanges.myAttr.currentValue).toBe("fourtyThree");
     });
 
-    it("runs $onChanges that tracks first changes", async () => {
+    it("runs onChanges that tracks first changes", async () => {
       let $val;
 
       myModule.component("myComponent", {
@@ -5088,7 +5196,7 @@ describe("$compile", () => {
           yourBinding: "<",
         },
         controller() {
-          this.$onChanges = function (val) {
+          this.onChanges = function (val) {
             $val = val;
             this.innerValue = `myBinding is ${this.myBinding}`;
           };
@@ -5128,14 +5236,14 @@ describe("$compile", () => {
       expect($val.yourBinding.firstChange).toBe(false);
     });
 
-    it("runs $onChanges for all components in the same digest", async () => {
+    it("runs onChanges for all components in the same digest", async () => {
       const watchSpy = jasmine.createSpy();
 
       myModule
         .component("first", {
           bindings: { myBinding: "<" },
           controller() {
-            this.$onChanges = function () {
+            this.onChanges = function () {
               watchSpy();
             };
           },
@@ -5143,7 +5251,7 @@ describe("$compile", () => {
         .component("second", {
           bindings: { myBinding: "<" },
           controller() {
-            this.$onChanges = function () {
+            this.onChanges = function () {
               watchSpy();
             };
           },
@@ -5169,14 +5277,14 @@ describe("$compile", () => {
       expect(watchSpy.calls.count()).toBe(4);
     });
 
-    it("runs parent and child $onChanges in link order", async () => {
+    it("runs parent and child onChanges in link order", async () => {
       const events = [];
 
       myModule
         .component("parent", {
           bindings: { value: "<" },
           controller() {
-            this.$onChanges = (changes) => {
+            this.onChanges = (changes) => {
               events.push(`parent:${changes.value.currentValue}`);
             };
           },
@@ -5184,7 +5292,7 @@ describe("$compile", () => {
         .component("child", {
           bindings: { value: "<" },
           controller() {
-            this.$onChanges = (changes) => {
+            this.onChanges = (changes) => {
               events.push(`child:${changes.value.currentValue}`);
             };
           },
@@ -5201,14 +5309,14 @@ describe("$compile", () => {
       expect(events).toEqual(["parent:1", "child:1"]);
     });
 
-    it("runs templateUrl parent and child $onChanges after async initialization", async () => {
+    it("runs templateUrl parent and child onChanges after async initialization", async () => {
       const events = [];
 
       myModule
         .component("asyncParent", {
           bindings: { value: "<" },
           controller() {
-            this.$onChanges = (changes) => {
+            this.onChanges = (changes) => {
               events.push(`parent:${changes.value.currentValue}`);
             };
           },
@@ -5217,7 +5325,7 @@ describe("$compile", () => {
         .component("asyncChild", {
           bindings: { value: "<" },
           controller() {
-            this.$onChanges = (changes) => {
+            this.onChanges = (changes) => {
               events.push(`child:${changes.value.currentValue}`);
             };
           },
@@ -5345,19 +5453,19 @@ describe("$compile", () => {
       expect(target.classList.contains("active")).toBeTrue();
     });
 
-    it("does not deliver delayed $onChanges after the component scope is destroyed", async () => {
+    it("does not deliver delayed onChanges after the component scope is destroyed", async () => {
       const events = [];
       myModule.component("myComponent", {
         bindings: { value: "<" },
         controller() {
-          this.$onChanges = (changes) => {
+          this.onChanges = (changes) => {
             events.push(changes.value.currentValue);
           };
         },
       });
       reloadModules();
 
-      const componentScope = $rootScope.$new();
+      const componentScope = $rootScope.new();
 
       componentScope.value = 1;
       const el = $('<my-component value="value"></my-component>');
@@ -5367,7 +5475,7 @@ describe("$compile", () => {
       expect(events).toEqual([1]);
 
       queueMicrotask(() => {
-        componentScope.$destroy();
+        componentScope.destroy();
       });
       componentScope.value = 2;
       await wait();
@@ -6631,13 +6739,13 @@ describe("$compile", () => {
           "<div><b hello></b><b cau></b><b c-error></b><b l-error></b></div>",
         );
 
-        const e1 = template($rootScope.$new(), () => {
+        const e1 = template($rootScope.new(), () => {
           /* empty */
         }); // clone
 
         expect(e1.innerText).toEqual("");
 
-        const clone = $rootScope.$new();
+        const clone = $rootScope.new();
 
         const e2 = template(clone, () => {
           /* empty */
@@ -6663,12 +6771,12 @@ describe("$compile", () => {
         $rootScope.expr = "Elvis";
         const template = $compile("<div cau></div>");
 
-        const e1 = template($rootScope.$new(), () => {
+        const e1 = template($rootScope.new(), () => {
           /* empty */
         }); // clone
 
         expect(e1.innerText).toEqual("");
-        const e2 = template($rootScope.$new(), () => {
+        const e2 = template($rootScope.new(), () => {
           /* empty */
         }); // clone
 
@@ -6695,13 +6803,13 @@ describe("$compile", () => {
             "</div>",
         );
 
-        const e1 = template($rootScope.$new(), () => {
+        const e1 = template($rootScope.new(), () => {
           /* empty */
         }); // clone
 
         expect(e1.innerText).toEqual("");
 
-        const e2 = template($rootScope.$new(), () => {
+        const e2 = template($rootScope.new(), () => {
           /* empty */
         }); // clone
 
@@ -6724,12 +6832,12 @@ describe("$compile", () => {
         $rootScope.expr = "Elvis";
         const template = $compile('<div i-cau=""></div>');
 
-        const e1 = template($rootScope.$new(), () => {
+        const e1 = template($rootScope.new(), () => {
           /* empty */
         }); // clone
 
         expect(e1.innerText).toEqual("");
-        const e2 = template($rootScope.$new(), () => {
+        const e2 = template($rootScope.new(), () => {
           /* empty */
         }); // clone
 
@@ -7362,7 +7470,7 @@ describe("$compile", () => {
               compile() {
                 return {
                   pre(scope) {
-                    log.push(scope.$id);
+                    log.push(scope.id);
                   },
                 };
               },
@@ -7373,7 +7481,7 @@ describe("$compile", () => {
               compile() {
                 return function (scope) {
                   iscope = scope;
-                  log.push(scope.$id);
+                  log.push(scope.id);
                 };
               },
             }))
@@ -7383,7 +7491,7 @@ describe("$compile", () => {
               templateUrl: "tscope.html",
               compile() {
                 return function (scope) {
-                  log.push(scope.$id);
+                  log.push(scope.id);
                 };
               },
             }))
@@ -7393,7 +7501,7 @@ describe("$compile", () => {
               template: "<span></span>",
               compile() {
                 return function (scope) {
-                  log.push(scope.$id);
+                  log.push(scope.id);
                 };
               },
             }));
@@ -7404,7 +7512,7 @@ describe("$compile", () => {
             templateUrl: "trscope.html",
             compile() {
               return function (scope) {
-                log.push(scope.$id);
+                log.push(scope.id);
               };
             },
           }));
@@ -7415,7 +7523,7 @@ describe("$compile", () => {
             compile() {
               return function (scope) {
                 iscope = scope;
-                log.push(scope.$id);
+                log.push(scope.id);
               };
             },
           }));
@@ -7426,7 +7534,7 @@ describe("$compile", () => {
             compile() {
               return function (scope) {
                 iscope = scope;
-                log.push(scope.$id);
+                log.push(scope.id);
               };
             },
           }));
@@ -7436,7 +7544,7 @@ describe("$compile", () => {
           link: {
             pre(scope) {
               log.push(
-                `log-${scope.$id}-${(scope.$parent && scope.$parent.$id) || "no-parent"}`,
+                `log-${scope.id}-${(scope.parent && scope.parent.id) || "no-parent"}`,
               );
             },
           },
@@ -7509,14 +7617,14 @@ describe("$compile", () => {
         expect(log.length).toEqual(2);
         $rootScope.name = "abc";
         await wait();
-        expect(iscope.$parent.$id).toBe($rootScope.$id);
+        expect(iscope.parent.id).toBe($rootScope.id);
         expect(iscope.name).toBeUndefined();
       });
 
       it("should allow creation of new scopes for directives with templates", async () => {
         $templateCache.set(
           "tscope.html",
-          "<a log>{{name}}; scopeId: {{$id}}</a>",
+          "<a log>{{name}}; scopeId: {{id}}</a>",
         );
         element = $compile("<div><span tscope></span></div>")($rootScope);
         await wait();
@@ -7529,7 +7637,7 @@ describe("$compile", () => {
       it("should allow creation of new scopes for replace directives with templates", async () => {
         $templateCache.set(
           "trscope.html",
-          "<p><a log>{{name}}; scopeId: {{$id}}</a></p>",
+          "<p><a log>{{name}}; scopeId: {{id}}</a></p>",
         );
         element = $compile("<div><span trscope></span></div>")($rootScope);
         await wait();
@@ -7557,7 +7665,7 @@ describe("$compile", () => {
         await wait();
         expect(log.length).toEqual(2);
         $rootScope.name = "abc";
-        expect(iscope.$parent.$id).toBe($rootScope.$id);
+        expect(iscope.parent.id).toBe($rootScope.id);
         expect(iscope.name).toBeUndefined();
       });
 
@@ -7609,23 +7717,23 @@ describe("$compile", () => {
         describe("with new scope directives", () => {
           it("should return the new scope at the directive element", async () => {
             element = $compile("<div scope></div>")($rootScope);
-            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].parent.id).toBe($rootScope.id);
           });
 
           it("should return the new scope for children in the original template", async () => {
             element = $compile("<div scope><a></a></div>")($rootScope);
-            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].parent.id).toBe($rootScope.id);
           });
 
           it("should return the new scope for children in the directive template", () => {
             $templateCache.set("tscope.html", "<a></a>");
             element = $compile("<div tscope></div>")($rootScope);
-            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].parent.id).toBe($rootScope.id);
           });
 
           it("should return the new scope for children in the directive sync template", async () => {
             element = $compile("<div stscope></div>")($rootScope);
-            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].parent.id).toBe($rootScope.id);
           });
         });
 
@@ -7634,12 +7742,12 @@ describe("$compile", () => {
             expect($rootScope._children).toEqual([]);
             $compile("<div><div iscope></div></div>")($rootScope);
             await wait();
-            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].parent.id).toBe($rootScope.id);
           });
 
           it("should return the isolate scope for children in the original template", () => {
             element = $compile("<div iscope><a></a></div>")($rootScope);
-            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id); // xx
+            expect($rootScope._children[0].parent.id).toBe($rootScope.id); // xx
           });
 
           it("should return the isolate scope for children in directive template", async () => {
@@ -7647,7 +7755,7 @@ describe("$compile", () => {
             element = $compile("<div tiscope></div>")($rootScope);
             await wait();
             expect($rootScope._children[0]).toBeDefined(); // ??? this is the current behavior, not desired feature
-            expect($rootScope._children[0].$id).not.toBe($rootScope.$id);
+            expect($rootScope._children[0].id).not.toBe($rootScope.id);
           });
 
           it("should return the isolate scope for children in directive sync template", () => {
@@ -7712,7 +7820,7 @@ describe("$compile", () => {
             await wait();
             const scope = $rootScope._children[0];
 
-            expect(scope.$id).not.toBe($rootScope.$id);
+            expect(scope.id).not.toBe($rootScope.id);
             expect(scope.valueOf).toBeUndefined();
           });
 
@@ -7744,7 +7852,7 @@ describe("$compile", () => {
           expect(func).not.toThrow();
           const scope = $rootScope._children[0];
 
-          expect(scope.$id).not.toBe($rootScope.$id);
+          expect(scope.id).not.toBe($rootScope.id);
         });
 
         it('should handle "@" bindings when present', () => {
@@ -7757,7 +7865,7 @@ describe("$compile", () => {
           expect(func).not.toThrow();
           const scope = $rootScope._children[0];
 
-          expect(scope.$id).not.toBe($rootScope.$id);
+          expect(scope.id).not.toBe($rootScope.id);
         });
 
         it("should handle @ bindings on BOOLEAN attributes", async () => {
@@ -8246,8 +8354,8 @@ describe("$compile", () => {
         module = window.angular.module("test1", ["ng"]);
       });
 
-      describe("$onInit", () => {
-        it("should call `$onInit`, if provided, after all the controllers on the element have been initialized", async () => {
+      describe("onInit", () => {
+        it("should call `onInit`, if provided, after all the controllers on the element have been initialized", async () => {
           function check(args) {
             expect(getController(this.element, "d1").id).toEqual(1);
             expect(getController(this.element, "d2").id).toEqual(2);
@@ -8258,8 +8366,8 @@ describe("$compile", () => {
             this.element = $element;
           }
           Controller1.$inject = ["$element"];
-          Controller1.prototype.$onInit = jasmine
-            .createSpy("$onInit")
+          Controller1.prototype.onInit = jasmine
+            .createSpy("onInit")
             .and.callFake(check);
 
           function Controller2($element) {
@@ -8267,8 +8375,8 @@ describe("$compile", () => {
             this.element = $element;
           }
           Controller2.$inject = ["$element"];
-          Controller2.prototype.$onInit = jasmine
-            .createSpy("$onInit")
+          Controller2.prototype.onInit = jasmine
+            .createSpy("onInit")
             .and.callFake(check);
 
           module
@@ -8287,18 +8395,18 @@ describe("$compile", () => {
           element = $compile("<div d1 d2></div>")($rootScope);
           await wait();
 
-          expect(Controller1.prototype.$onInit).toHaveBeenCalled();
-          expect(Controller2.prototype.$onInit).toHaveBeenCalled();
+          expect(Controller1.prototype.onInit).toHaveBeenCalled();
+          expect(Controller2.prototype.onInit).toHaveBeenCalled();
         });
 
-        it("should continue to trigger other `$onInit` hooks if one throws an error", () => {
+        it("should continue to trigger other `onInit` hooks if one throws an error", () => {
           function ThrowingController() {
-            this.$onInit = function () {
+            this.onInit = function () {
               log.push("bad hook");
             };
           }
           function LoggingController() {
-            this.$onInit = function () {
+            this.onInit = function () {
               log.push("onInit");
             };
           }
@@ -8334,12 +8442,12 @@ describe("$compile", () => {
         });
       });
 
-      describe("$onDestroy", () => {
-        it("should call `$onDestroy`, if provided, on the controller when its scope is destroyed", async () => {
+      describe("onDestroy", () => {
+        it("should call `onDestroy`, if provided, on the controller when its scope is destroyed", async () => {
           function TestController() {
             this.count = 0;
           }
-          TestController.prototype.$onDestroy = function () {
+          TestController.prototype.onDestroy = function () {
             this.count++;
           };
 
@@ -8406,25 +8514,25 @@ describe("$compile", () => {
           ]).toEqual([1, 1, 1]);
         });
 
-        it("should call `$onDestroy` top-down (the same as `scope.$broadcast`)", async () => {
+        it("should call `onDestroy` top-down (the same as `scope.broadcast`)", async () => {
           let log = [];
 
           function ParentController() {
             log.push("parent created");
           }
-          ParentController.prototype.$onDestroy = () => {
+          ParentController.prototype.onDestroy = () => {
             log.push("parent destroyed");
           };
           function ChildController() {
             log.push("child created");
           }
-          ChildController.prototype.$onDestroy = () => {
+          ChildController.prototype.onDestroy = () => {
             log.push("child destroyed");
           };
           function GrandChildController() {
             log.push("grand child created");
           }
-          GrandChildController.prototype.$onDestroy = () => {
+          GrandChildController.prototype.onDestroy = () => {
             log.push("grand child destroyed");
           };
 
@@ -8473,17 +8581,17 @@ describe("$compile", () => {
         });
       });
 
-      describe("$postLink", () => {
-        it("should call `$postLink`, if provided, after the element has completed linking (i.e. post-link)", async () => {
+      describe("postLink", () => {
+        it("should call `postLink`, if provided, after the element has completed linking (i.e. post-link)", async () => {
           const log = [];
 
           function Controller1() {}
-          Controller1.prototype.$postLink = () => {
+          Controller1.prototype.postLink = () => {
             log.push("d1 view init");
           };
 
           function Controller2() {}
-          Controller2.prototype.$postLink = () => {
+          Controller2.prototype.postLink = () => {
             log.push("d2 view init");
           };
 
@@ -8534,10 +8642,10 @@ describe("$compile", () => {
         });
       });
 
-      describe("$onChanges", () => {
-        it("should call `$onChanges`, if provided, when a one-way (`<`) or interpolation (`@`) bindings are updated", async () => {
+      describe("onChanges", () => {
+        it("should call `onChanges`, if provided, when a one-way (`<`) or interpolation (`@`) bindings are updated", async () => {
           function TestController() {}
-          TestController.prototype.$onChanges = function (change) {
+          TestController.prototype.onChanges = function (change) {
             log.push(change);
           };
 
@@ -8555,7 +8663,7 @@ describe("$compile", () => {
             },
           ]);
           // Setup a watch to indicate some complicated updated logic
-          $rootScope.$watch("val", (val) => {
+          $rootScope.watch("val", (val) => {
             $rootScope.val2 = val * 2;
           });
           // Setup the directive with two bindings
@@ -8612,9 +8720,9 @@ describe("$compile", () => {
           });
         });
 
-        it("should trigger `$onChanges` even if the inner value already equals the new outer value", async () => {
+        it("should trigger `onChanges` even if the inner value already equals the new outer value", async () => {
           function TestController() {}
-          TestController.prototype.$onChanges = function (change) {
+          TestController.prototype.onChanges = function (change) {
             log.push(change);
           };
 
@@ -8655,9 +8763,9 @@ describe("$compile", () => {
           });
         });
 
-        it("should trigger `$onChanges` for literal expressions when expression input value changes (simple value)", async () => {
+        it("should trigger `onChanges` for literal expressions when expression input value changes (simple value)", async () => {
           function TestController() {}
-          TestController.prototype.$onChanges = function (change) {
+          TestController.prototype.onChanges = function (change) {
             log.push(change);
           };
 
@@ -8696,9 +8804,9 @@ describe("$compile", () => {
           });
         });
 
-        it("should trigger `$onChanges` for literal expressions when expression input value changes (complex value)", async () => {
+        it("should trigger `onChanges` for literal expressions when expression input value changes (complex value)", async () => {
           function TestController() {}
-          TestController.prototype.$onChanges = function (change) {
+          TestController.prototype.onChanges = function (change) {
             log.push(change);
           };
 
@@ -8742,9 +8850,9 @@ describe("$compile", () => {
           });
         });
 
-        it("should trigger `$onChanges` for literal expressions when expression input value changes instances, even when equal", async () => {
+        it("should trigger `onChanges` for literal expressions when expression input value changes instances, even when equal", async () => {
           function TestController() {}
-          TestController.prototype.$onChanges = function (change) {
+          TestController.prototype.onChanges = function (change) {
             log.push(change);
           };
 
@@ -8783,7 +8891,7 @@ describe("$compile", () => {
 
         it("should trigger an initial onChanges call for each binding with the `isFirstChange()` returning true", async () => {
           function TestController() {}
-          TestController.prototype.$onChanges = function (change) {
+          TestController.prototype.onChanges = function (change) {
             log.push(change);
           };
 
@@ -8831,7 +8939,7 @@ describe("$compile", () => {
 
         it("should trigger an initial onChanges call for each binding even if the hook is defined in the constructor", async () => {
           function TestController() {
-            this.$onChanges = function (change) {
+            this.onChanges = function (change) {
               log.push(change);
             };
           }
@@ -8877,9 +8985,9 @@ describe("$compile", () => {
           const prototypeSpy = jasmine.createSpy("prototype");
 
           function TestController() {
-            return { $onChanges: constructorSpy };
+            return { onChanges: constructorSpy };
           }
-          TestController.prototype.$onChanges = prototypeSpy;
+          TestController.prototype.onChanges = prototypeSpy;
 
           module.component("test", {
             bindings: { attr: "@" },
@@ -8915,11 +9023,11 @@ describe("$compile", () => {
           let log = [];
 
           function TestController1() {}
-          TestController1.prototype.$onChanges = function (change) {
+          TestController1.prototype.onChanges = function (change) {
             log.push(["TestController1", change]);
           };
           function TestController2() {}
-          TestController2.prototype.$onChanges = function (change) {
+          TestController2.prototype.onChanges = function (change) {
             log.push(["TestController2", change]);
           };
 
@@ -8966,16 +9074,16 @@ describe("$compile", () => {
           ]);
         });
 
-        it("should cope with changes occurring inside `$onChanges()` hooks", async () => {
+        it("should cope with changes occurring inside `onChanges()` hooks", async () => {
           function OuterController() {}
-          OuterController.prototype.$onChanges = function (change) {
+          OuterController.prototype.onChanges = function (change) {
             log.push(["OuterController", change]);
             // Make a change to the inner component
             this.b = this.prop1 * 2;
           };
 
           function InnerController() {}
-          InnerController.prototype.$onChanges = function (change) {
+          InnerController.prototype.onChanges = function (change) {
             log.push(["InnerController", change]);
           };
 
@@ -9033,14 +9141,14 @@ describe("$compile", () => {
           ]);
         });
 
-        it("should continue to trigger other `$onChanges` hooks if one throws an error", async () => {
+        it("should continue to trigger other `onChanges` hooks if one throws an error", async () => {
           function ThrowingController() {
-            this.$onChanges = function (change) {
+            this.onChanges = function (change) {
               throw new Error("bad hook");
             };
           }
           function LoggingController($log) {
-            this.$onChanges = function (change) {
+            this.onChanges = function (change) {
               log.push("onChange");
             };
           }
@@ -9090,9 +9198,9 @@ describe("$compile", () => {
           expect(log[3]).toEqual("onChange");
         });
 
-        it("should throw `$onChanges` errors immediately", async () => {
+        it("should throw `onChanges` errors immediately", async () => {
           function ThrowingController() {
-            this.$onChanges = function (change) {
+            this.onChanges = function (change) {
               throw new Error(`bad hook: ${this.prop}`);
             };
           }
@@ -9219,7 +9327,7 @@ describe("$compile", () => {
         await wait();
         expect(element.querySelector("input").value).toBe("from-parent");
         expect(componentScope).not.toBe(regularScope);
-        expect(componentScope.$parent.$id).toEqual(regularScope.$id);
+        expect(componentScope.parent.id).toEqual(regularScope.id);
       });
 
       it("should not give the isolate scope to other directive template", async () => {
@@ -9644,7 +9752,7 @@ describe("$compile", () => {
 
           let lastRefValueInParent;
 
-          $rootScope.$watch("name", (ref) => {
+          $rootScope.watch("name", (ref) => {
             lastRefValueInParent = ref;
           });
 
@@ -9869,16 +9977,16 @@ describe("$compile", () => {
                 this.input = "constructor";
                 log.push("constructor");
 
-                this.$onInit = () => {
-                  this.input = "$onInit";
-                  log.push("$onInit");
+                this.onInit = () => {
+                  this.input = "onInit";
+                  log.push("onInit");
                 };
 
-                this.$onChanges = function (changes) {
+                this.onChanges = function (changes) {
                   if (changes.input) {
                     log.push([
-                      "$onChanges",
-                      changes.input.currentValue.$target[0],
+                      "onChanges",
+                      changes.input.currentValue._target[0],
                     ]);
                   }
                 };
@@ -9903,22 +10011,22 @@ describe("$compile", () => {
             ]);
           });
 
-          it("should not update isolate again after $onInit", () => {
+          it("should not update isolate again after onInit", () => {
             $rootScope.name = "outer";
             $compile('<ow-component input="name"></ow-component>')($rootScope);
 
             expect($rootScope.name).toEqual("outer");
-            expect(component.input).toEqual("$onInit");
+            expect(component.input).toEqual("onInit");
 
-            expect(log).toEqual(["constructor", "$onInit"]);
+            expect(log).toEqual(["constructor", "onInit"]);
           });
 
-          it("should update isolate again after $onInit if the object reference has changed", async () => {
+          it("should update isolate again after onInit if the object reference has changed", async () => {
             $rootScope.name = ["outer"];
             $compile('<ow-component input="name"></ow-component>')($rootScope);
             await wait();
             expect($rootScope.name).toEqual(["outer"]);
-            expect(component.input).toEqual("$onInit");
+            expect(component.input).toEqual("onInit");
 
             $rootScope.name[0] = "inner";
             await wait();
@@ -9926,18 +10034,18 @@ describe("$compile", () => {
             expect(component.input).toEqual(["inner"]);
             expect(log).toEqual([
               "constructor",
-              ["$onChanges", "outer"],
-              "$onInit",
-              ["$onChanges", "inner"],
+              ["onChanges", "outer"],
+              "onInit",
+              ["onChanges", "inner"],
             ]);
           });
 
-          it("should update isolate again after $onInit if outer object reference changes even if equal", async () => {
+          it("should update isolate again after onInit if outer object reference changes even if equal", async () => {
             $rootScope.name = ["outer"];
             $compile('<ow-component input="name"></ow-component>')($rootScope);
             await wait();
             expect($rootScope.name).toEqual(["outer"]);
-            expect(component.input).toEqual("$onInit");
+            expect(component.input).toEqual("onInit");
 
             $rootScope.name = ["outer"];
             await wait();
@@ -9945,37 +10053,37 @@ describe("$compile", () => {
             expect(component.input).toEqual(["outer"]);
             expect(log).toEqual([
               "constructor",
-              ["$onChanges", "outer"],
-              "$onInit",
-              ["$onChanges", "outer"],
+              ["onChanges", "outer"],
+              "onInit",
+              ["onChanges", "outer"],
             ]);
           });
 
-          it("should not update isolate again after $onInit if outer is a literal", async () => {
+          it("should not update isolate again after onInit if outer is a literal", async () => {
             $rootScope.name = "outer";
             $compile('<ow-component input="[name]"></ow-component>')(
               $rootScope,
             );
 
-            expect(component.input).toEqual("$onInit");
+            expect(component.input).toEqual("onInit");
 
             // Outer change
             $rootScope.name = "re-outer";
             await wait();
             expect(component.input).toEqual(["re-outer"]);
-            expect(log).toEqual(["constructor", "$onInit"]);
+            expect(log).toEqual(["constructor", "onInit"]);
           });
 
-          it("should update isolate again after $onInit if outer has changed (before initial watchAction call)", async () => {
+          it("should update isolate again after onInit if outer has changed (before initial watchAction call)", async () => {
             $rootScope.name = "outer1";
             $compile('<ow-component input="name"></ow-component>')($rootScope);
 
-            expect(component.input).toEqual("$onInit");
+            expect(component.input).toEqual("onInit");
             $rootScope.name = "outer2";
             await wait();
             expect($rootScope.name).toEqual("outer2");
             expect(component.input).toEqual("outer2");
-            expect(log).toEqual(["constructor", "$onInit"]);
+            expect(log).toEqual(["constructor", "onInit"]);
           });
 
           it("should update isolate after a sibling directive changes the outer value during linking", async () => {
@@ -9983,12 +10091,12 @@ describe("$compile", () => {
             $compile('<ow-component input="name" change-input></ow-component>')(
               $rootScope,
             );
-            expect(component.input).toEqual("$onInit");
+            expect(component.input).toEqual("onInit");
 
             await wait();
             expect($rootScope.name).toEqual("outer2");
             expect(component.input).toEqual("outer2");
-            expect(log).toEqual(["constructor", "$onInit"]);
+            expect(log).toEqual(["constructor", "onInit"]);
           });
 
           it("should not break when isolate and origin both change to the same value", async () => {
@@ -10302,8 +10410,8 @@ describe("$compile", () => {
           expect(componentScope.owColref).toBe($rootScope.collection);
           expect(componentScope.owColrefAlias).toBe(componentScope.owColref);
 
-          componentScope.$target.owColref = undefined;
-          componentScope.$target.owColrefAlias = undefined;
+          componentScope._target.owColref = undefined;
+          componentScope._target.owColrefAlias = undefined;
 
           $rootScope.collection[0].name = "Joe";
           await wait();
@@ -10463,7 +10571,7 @@ describe("$compile", () => {
           controller: [
             "$scope",
             function controller($scope) {
-              this.$onInit = () => {
+              this.onInit = () => {
                 expect(this.data).toEqual({
                   foo: "bar",
                   baz: "biz",
@@ -10520,7 +10628,7 @@ describe("$compile", () => {
               expect(this.str).toBeUndefined();
               expect(this.fn).toBeUndefined();
               controllerCalled = true;
-              this.$onInit = () => {
+              this.onInit = () => {
                 expect(this.data).toEqual({
                   foo: "bar",
                   baz: "biz",
@@ -10563,7 +10671,7 @@ describe("$compile", () => {
           "(\n" +
             "class Foo {\n" +
             "  constructor($scope) {}\n" +
-            "  $onInit() {\n" +
+            "  onInit() {\n" +
             "    expect(this.data).toEqual({\n" +
             "      'foo': 'bar',\n" +
             "      'baz': 'biz'\n" +
@@ -10581,7 +10689,7 @@ describe("$compile", () => {
         );
         Controller.$inject = ["$scope"];
 
-        spyOn(Controller.prototype, "$onInit").and.callThrough();
+        spyOn(Controller.prototype, "onInit").and.callThrough();
 
         module.directive("fooDir", () => ({
           template: "<p>isolate</p>",
@@ -10607,7 +10715,7 @@ describe("$compile", () => {
             'dir-str="Hello, {{whom}}!" ' +
             'dir-fn="fn()"></div>',
         )($rootScope);
-        expect(Controller.prototype.$onInit).toHaveBeenCalled();
+        expect(Controller.prototype.onInit).toHaveBeenCalled();
         expect(controllerCalled).toBe(true);
       });
 
@@ -10650,7 +10758,7 @@ describe("$compile", () => {
           controller: [
             "$scope",
             function controller($scope) {
-              this.$onInit = () => {
+              this.onInit = () => {
                 expect(this.data).toEqual({
                   foo: "bar",
                   baz: "biz",
@@ -10826,17 +10934,17 @@ describe("$compile", () => {
 
                 myModule
                   .controller("myCtrl", function () {
-                    this.$onInit = function () {
-                      expect(this.$target.data).toEqual({
+                    this.onInit = function () {
+                      expect(this._target.data).toEqual({
                         foo: "bar",
                         baz: "biz",
                       });
-                      expect(this.$target.oneway).toEqual({
+                      expect(this._target.oneway).toEqual({
                         foo: "bar",
                         baz: "biz",
                       });
-                      expect(this.$target.str).toBe("Hello, world!");
-                      expect(this.$target.fn()).toBe("called!");
+                      expect(this._target.str).toBe("Hello, world!");
+                      expect(this._target.fn()).toBe("called!");
                     };
                     controllerCalled = true;
                   })
@@ -10888,7 +10996,7 @@ describe("$compile", () => {
             },
             controllerAs: "fooCtrl",
             controller() {
-              this.$onInit = () => {
+              this.onInit = () => {
                 expect(this.data).toEqual({ foo: "bar", baz: "biz" });
                 expect(this.oneway).toEqual({ foo: "bar", baz: "biz" });
                 expect(this.str).toBe("Hello, world!");
@@ -10906,7 +11014,7 @@ describe("$compile", () => {
             },
             controllerAs: "barCtrl",
             controller() {
-              this.$onInit = () => {
+              this.onInit = () => {
                 expect(this.data).toEqual({ foo2: "bar2", baz2: "biz2" });
                 expect(this.oneway).toEqual({ foo2: "bar2", baz2: "biz2" });
                 expect(this.str).toBe("Hello, second world!");
@@ -10955,7 +11063,7 @@ describe("$compile", () => {
             scope: {},
             controllerAs: "fooCtrl",
             controller() {
-              this.$onInit = () => {
+              this.onInit = () => {
                 expect(this.data).toEqual({ foo: "bar", baz: "biz" });
                 expect(this.oneway).toEqual({ foo: "bar", baz: "biz" });
                 expect(this.str).toBe("Hello, world!");
@@ -10973,7 +11081,7 @@ describe("$compile", () => {
             },
             controllerAs: "barCtrl",
             controller() {
-              this.$onInit = () => {
+              this.onInit = () => {
                 expect(this.data).toEqual({ foo2: "bar2", baz2: "biz2" });
                 expect(this.oneway).toEqual({ foo2: "bar2", baz2: "biz2" });
                 expect(this.str).toBe("Hello, second world!");
@@ -11021,12 +11129,12 @@ describe("$compile", () => {
             scope: true,
             controllerAs: "fooCtrl",
             controller() {
-              this.$onInit = () => {
-                // UNDEFINED BEHAVIOR IN JASMINE? unless using $target this test overwrites scope.$target!
-                expect(this.$target.data).toEqual({ foo: "bar", baz: "biz" });
-                expect(this.$target.oneway).toEqual({ foo: "bar", baz: "biz" });
-                expect(this.$target.str).toBe("Hello, world!");
-                expect(this.$target.fn()).toBe("called!");
+              this.onInit = () => {
+                // UNDEFINED BEHAVIOR IN JASMINE? unless using _target this test overwrites scope._target!
+                expect(this._target.data).toEqual({ foo: "bar", baz: "biz" });
+                expect(this._target.oneway).toEqual({ foo: "bar", baz: "biz" });
+                expect(this._target.str).toBe("Hello, world!");
+                expect(this._target.fn()).toBe("called!");
               };
               controller1Called = true;
             },
@@ -11041,16 +11149,16 @@ describe("$compile", () => {
             scope: true,
             controllerAs: "barCtrl",
             controller() {
-              this.$onInit = function () {
-                expect(this.$target.data).toEqual({
+              this.onInit = function () {
+                expect(this._target.data).toEqual({
                   foo2: "bar2",
                   baz2: "biz2",
                 });
-                expect(this.$target.oneway).toEqual({
+                expect(this._target.oneway).toEqual({
                   foo2: "bar2",
                   baz2: "biz2",
                 });
-                expect(this.$target.str).toBe("Hello, second world!");
+                expect(this._target.str).toBe("Hello, second world!");
                 expect(this.fn()).toBe("second called!");
               };
               controller2Called = true;
@@ -11363,7 +11471,7 @@ describe("$compile", () => {
             controller() {
               const self = this;
 
-              this.$onInit = () => {
+              this.onInit = () => {
                 this.prop = this.prop || "default";
               };
               this.getProp = () => {
@@ -11391,7 +11499,7 @@ describe("$compile", () => {
             controller() {
               const self = this;
 
-              this.$onInit = () => {
+              this.onInit = () => {
                 this.prop = this.prop || "default";
               };
               this.getProp = () => {
@@ -11720,11 +11828,11 @@ describe("$compile", () => {
         function MeController() {
           this.name = "Me";
         }
-        MeController.prototype.$onInit = function () {
+        MeController.prototype.onInit = function () {
           parentController = this.container;
           siblingController = this.friend;
         };
-        spyOn(MeController.prototype, "$onInit").and.callThrough();
+        spyOn(MeController.prototype, "onInit").and.callThrough();
 
         module
           .directive("me", () => ({
@@ -11745,7 +11853,7 @@ describe("$compile", () => {
           }));
         initInjector("test1");
         element = $compile("<parent><me sibling></me></parent>")($rootScope);
-        expect(MeController.prototype.$onInit).toHaveBeenCalled();
+        expect(MeController.prototype.onInit).toHaveBeenCalled();
         expect(parentController).toEqual(jasmine.any(ParentController));
         expect(siblingController).toEqual(jasmine.any(SiblingController));
       });
@@ -11763,13 +11871,13 @@ describe("$compile", () => {
         }
         function MeController() {}
 
-        MeController.prototype.$onInit = function () {
+        MeController.prototype.onInit = function () {
           onInitControllers = {
             container: this.container,
             friend: this.friend,
           };
         };
-        MeController.prototype.$onChanges = function (changes) {
+        MeController.prototype.onChanges = function (changes) {
           changeLog.push({
             containerName: this.container && this.container.name,
             friendName: this.friend && this.friend.name,
@@ -11944,11 +12052,11 @@ describe("$compile", () => {
         function MeController() {
           this.name = "Me";
         }
-        MeController.prototype.$onInit = function () {
+        MeController.prototype.onInit = function () {
           parentController = this.container;
           siblingController = this.friend;
         };
-        spyOn(MeController.prototype, "$onInit").and.callThrough();
+        spyOn(MeController.prototype, "onInit").and.callThrough();
 
         module
           .directive("me", () => ({
@@ -11968,7 +12076,7 @@ describe("$compile", () => {
         initInjector("test1");
         element = $compile("<parent><me sibling></me></parent>")($rootScope);
         await wait();
-        expect(MeController.prototype.$onInit).toHaveBeenCalled();
+        expect(MeController.prototype.onInit).toHaveBeenCalled();
         expect(parentController).toBeUndefined();
         expect(siblingController).toBeUndefined();
       });
@@ -11989,12 +12097,12 @@ describe("$compile", () => {
         function MeController() {
           meController = {
             name: "Me",
-            $onInit() {
+            onInit() {
               parentController = this.container;
               siblingController = this.friend;
             },
           };
-          spyOn(meController, "$onInit").and.callThrough();
+          spyOn(meController, "onInit").and.callThrough();
 
           return meController;
         }
@@ -12018,7 +12126,7 @@ describe("$compile", () => {
           }));
         initInjector("test1");
         element = $compile("<parent><me sibling></me></parent>")($rootScope);
-        expect(meController.$onInit).toHaveBeenCalled();
+        expect(meController.onInit).toHaveBeenCalled();
         expect(parentController).toEqual(jasmine.any(ParentController));
         expect(siblingController).toEqual(jasmine.any(SiblingController));
       });
@@ -12034,7 +12142,7 @@ describe("$compile", () => {
 
         function MeController() {
           this.name = "Me";
-          this.$onInit = () => {
+          this.onInit = () => {
             containerController = this.container;
             friendController = this.friend;
           };
@@ -12196,7 +12304,7 @@ describe("$compile", () => {
           .directive("scopeTester", () => ({
             link($scope, $element) {
               log.push(
-                `${$element.getAttribute("scope-tester")}=${$scope.$root.$id === $scope.$id ? "non-isolate" : "isolate"}`,
+                `${$element.getAttribute("scope-tester")}=${$scope.root.id === $scope.id ? "non-isolate" : "isolate"}`,
               );
             },
           }));
@@ -12988,15 +13096,15 @@ describe("$compile", () => {
 
           const template = $compile("<div><div isolate-red></div></div>");
 
-          const liveScope = $rootScope.$new();
+          const liveScope = $rootScope.new();
 
           element = template(liveScope, () => {});
           await wait();
           const cacheSize = Cache.size;
 
-          const destroyedScope = $rootScope.$new();
+          const destroyedScope = $rootScope.new();
 
-          destroyedScope.$destroy();
+          destroyedScope.destroy();
           const clone = template(destroyedScope, () => {});
 
           await wait();
@@ -13475,7 +13583,7 @@ describe("$compile", () => {
           module.directive("transclude", () => ({
             transclude: "content",
             link(scope, element, $transclude) {
-              scope.id = scope.$id;
+              scope.id = scope.id;
               capturedChildCtrl = scope;
               $transclude(scope, (clone) => {
                 element.append(clone);
@@ -13484,7 +13592,7 @@ describe("$compile", () => {
           }));
           bootstrap("<div transclude>{{id}}</div>", "test1");
           await wait();
-          expect(ELEMENT.textContent).toBe(`${capturedChildCtrl.$id}`);
+          expect(ELEMENT.textContent).toBe(`${capturedChildCtrl.id}`);
         });
 
         it("should expose the directive controller to transcluded children", () => {
@@ -13895,7 +14003,7 @@ describe("$compile", () => {
           });
 
           it("should not grow cache across nested transclusion updates", async () => {
-            const scope = $rootScope.$new();
+            const scope = $rootScope.new();
 
             element = $compile(
               '<div><ul><li ng-repeat="n in nums">{{n}} => <i ng-if="0 === n%2">Even</i><i ng-if="1 === n%2">Odd</i></li></ul></div>',
@@ -13936,7 +14044,7 @@ describe("$compile", () => {
               log.push("link");
               let cursor = element;
 
-              template(scope.$new(), (clone) => {
+              template(scope.new(), (clone) => {
                 cursor.after((cursor = clone));
               });
             };
@@ -14881,13 +14989,13 @@ describe("$compile", () => {
       element.appendChild(document.createTextNode("3{{ value }}"));
 
       const initialWatcherCount =
-        $rootScope.$handler._watchers.get("value")?.length || 0;
+        $rootScope._handler._watchers.get("value")?.length || 0;
 
       $compile(element)($rootScope);
       $rootScope.value = 0;
       await wait();
       const newWatcherCount =
-        $rootScope.$handler._watchers.get("value").length - initialWatcherCount;
+        $rootScope._handler._watchers.get("value").length - initialWatcherCount;
 
       expect(element.textContent).toBe("102030");
       expect(newWatcherCount).toBe(3);

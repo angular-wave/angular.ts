@@ -6,11 +6,14 @@ const __filename = fileURLToPath(import.meta.url);
 const integrationRoot = resolve(dirname(__filename), "..", "..");
 const cljsRoot = resolve(integrationRoot, "clojurescript");
 const externsPath = resolve(integrationRoot, "externs/angular.js");
+const coreFacadePath = resolve(cljsRoot, "src/angular_ts/core.cljs");
+const cljsPackagePath = resolve(cljsRoot, "package.json");
+const rootPackagePath = resolve(cljsRoot, "..", "..", "..", "package.json");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
-const expectedTypeTagCount = 212;
+const expectedTypeTagCount = 227;
 const expectedStrictWrapperCount = 225;
-const expectedStrictPropertyReaderCount = 449;
+const expectedStrictPropertyReaderCount = 451;
 const strictWrapperParamTagOverrides = new Map([
   ["NgModule.machine.config", "js/Object"],
   ["NgModule.workflow.config", "js/Object"],
@@ -28,6 +31,20 @@ const strictPropertyTagOverrides = new Map([
 ]);
 
 const source = readFileSync(externsPath, "utf8");
+const coreFacadeSource = readFileSync(coreFacadePath, "utf8");
+
+function validateShadowCljsVersion() {
+  const cljsPackage = JSON.parse(readFileSync(cljsPackagePath, "utf8"));
+  const rootPackage = JSON.parse(readFileSync(rootPackagePath, "utf8"));
+  const localVersion = cljsPackage.devDependencies?.["shadow-cljs"];
+  const rootVersion = rootPackage.devDependencies?.["shadow-cljs"];
+
+  if (!localVersion || localVersion !== rootVersion) {
+    throw new Error(
+      "The ClojureScript Shadow CLJS declaration must match the root dev dependency.",
+    );
+  }
+}
 
 function assertExtern(pattern, description) {
   if (!pattern.test(source)) {
@@ -93,10 +110,87 @@ function collectExternTypeDocs() {
 
 function toKebabCase(name) {
   return name
-    .replace(/\$/g, "dollar")
+    .replace(/^\$/, "")
+    .replace(/\$/g, "-")
     .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .replace(/_/g, "-")
     .toLowerCase();
+}
+
+function prototypeWrapperName(owner, member) {
+  return `${toKebabCase(owner)}-${toKebabCase(member)}`;
+}
+
+function collectNgModuleMethods() {
+  return new Set(
+    [...source.matchAll(/^ng\.NgModule\.prototype\.([A-Za-z_$][\w$]*)\s*=\s*function/gm)]
+      .map(([, name]) => toKebabCase(name)),
+  );
+}
+
+function collectCoreFacadeFunctions() {
+  const matches = [
+    ...coreFacadeSource.matchAll(/^\(defn\s+([^\s\[]+)/gm),
+  ];
+  const functions = new Map();
+
+  for (let index = 0; index < matches.length; index += 1) {
+    const match = matches[index];
+    const next = matches[index + 1];
+    const block = coreFacadeSource.slice(
+      match.index,
+      next?.index ?? coreFacadeSource.length,
+    );
+
+    functions.set(match[1], block);
+  }
+
+  return functions;
+}
+
+function validateCoreFacade() {
+  const ngModuleMethods = collectNgModuleMethods();
+  const facadeFunctions = collectCoreFacadeFunctions();
+  const facadeHelpers = new Set(["injectable", "module", "publish"]);
+  const missing = [...ngModuleMethods]
+    .filter((name) => !facadeFunctions.has(name))
+    .sort();
+  const stale = [...facadeFunctions.keys()]
+    .filter((name) => !ngModuleMethods.has(name) && !facadeHelpers.has(name))
+    .sort();
+  const undocumented = [...facadeFunctions]
+    .filter(([, block]) => !/^\(defn\s+[^\s\[]+\s+"[^"]+"/s.test(block))
+    .map(([name]) => name)
+    .sort();
+  const untyped = [...facadeFunctions]
+    .filter(
+      ([, block]) =>
+        !/^\(defn\s+[^\s\[]+\s+"[^"]+"\s+(?:\^[^\s]+\s+\[|\(\^[^\s]+\s+\[)/s.test(
+          block,
+        ),
+    )
+    .map(([name]) => name)
+    .sort();
+
+  if (!/^\(def\s+\^js\/ng\.Angular\s+angular\s+"[^"]+"/m.test(coreFacadeSource)) {
+    throw new Error("angular-ts.core/angular must retain its ng.Angular tag and documentation.");
+  }
+
+  if (missing.length || stale.length || undocumented.length || untyped.length) {
+    const failures = [
+      missing.length && `Missing fluent NgModule wrappers: ${missing.join(", ")}`,
+      stale.length && `Stale fluent NgModule wrappers: ${stale.join(", ")}`,
+      undocumented.length && `Undocumented fluent facade functions: ${undocumented.join(", ")}`,
+      untyped.length && `Untyped fluent facade functions: ${untyped.join(", ")}`,
+    ].filter(Boolean);
+
+    throw new Error(failures.join("\n"));
+  }
+
+  return {
+    functionCount: facadeFunctions.size,
+    ngModuleMethodCount: ngModuleMethods.size,
+  };
 }
 
 function stripOuterParens(value) {
@@ -339,7 +433,7 @@ function collectPrototypeMethods(ownerNames) {
       hasVarArgs,
       receiverTag: `js/ng.${owner}`,
       returnTag: returnInfo.tag,
-      wrapperName: `${toKebabCase(owner)}-${toKebabCase(method)}`,
+      wrapperName: prototypeWrapperName(owner, method),
     });
   }
 
@@ -377,7 +471,7 @@ function collectPrototypeProperties(ownerNames) {
       receiverTag: `js/ng.${owner}`,
       propertyTag,
       typeExpression,
-      readerName: `${toKebabCase(owner)}-${toKebabCase(property)}`,
+      readerName: prototypeWrapperName(owner, property),
     });
   }
 
@@ -391,8 +485,12 @@ function taggedArg(tag, name) {
 }
 
 function renderPrototypeWrapper(method) {
+  const receiver = uniqueName(
+    "target",
+    new Set(method.params.map(({ name }) => name)),
+  );
   const args = [
-    taggedArg(method.receiverTag, "target"),
+    taggedArg(method.receiverTag, receiver),
     ...method.params.map(({ tag, name }) => taggedArg(tag, name)),
   ];
   const callArgs = method.params.map(({ name }) => name).join(" ");
@@ -429,7 +527,7 @@ function renderPrototypeWrapper(method) {
       ].join(" ");
 
       arities.push(`  (${returnTag}[${arityArgs.join(" ")}]
-   (.${method.method} target${arityCallArgs ? ` ${arityCallArgs}` : ""}))`);
+   (.${method.method} ${receiver}${arityCallArgs ? ` ${arityCallArgs}` : ""}))`);
     }
 
     return `(defn ${method.wrapperName}
@@ -440,7 +538,13 @@ ${arities.join("\n")})`;
   return `(defn ${method.wrapperName}
   ${cljsString(description)}
   ${returnTag}[${args.join(" ")}]
-  (.${method.method} target${callArgs ? ` ${callArgs}` : ""}))`;
+  (.${method.method} ${receiver}${callArgs ? ` ${callArgs}` : ""}))`;
+}
+
+function uniqueName(preferred, reserved) {
+  let candidate = preferred;
+  while (reserved.has(candidate)) candidate = `_${candidate}`;
+  return candidate;
 }
 
 function renderPrototypePropertyReader(property) {
@@ -481,6 +585,8 @@ assertExtern(
 );
 
 const typeNames = collectExternTypes();
+validateShadowCljsVersion();
+const coreFacade = validateCoreFacade();
 const typeDocs = collectExternTypeDocs();
 const generatedMethods = collectPrototypeMethods(typeNames);
 const generatedProperties = collectPrototypeProperties(typeNames);
@@ -488,6 +594,10 @@ const generatedWrapperNames = generatedMethods.map(({ wrapperName }) => wrapperN
 const generatedPropertyReaderNames = generatedProperties.map(
   ({ readerName }) => readerName,
 );
+const generatedFacadeNames = [
+  ...generatedWrapperNames,
+  ...generatedPropertyReaderNames,
+];
 const missingTypeDocs = typeNames.filter((name) => !typeDocs.has(name));
 
 if (typeNames.length !== expectedTypeTagCount) {
@@ -510,8 +620,30 @@ if (generatedMethods.some(({ description }) => !description)) {
   process.exit(1);
 }
 
+if (generatedFacadeNames.some((name) => name.includes("dollar"))) {
+  console.error("Generated ClojureScript facade names must not encode `$` as `dollar`.");
+  process.exit(1);
+}
+
+const duplicateFacadeNames = generatedFacadeNames.filter(
+  (name, index) => generatedFacadeNames.indexOf(name) !== index,
+);
+
+if (duplicateFacadeNames.length > 0) {
+  console.error(
+    `Generated ClojureScript facade names must be unique: ${[
+      ...new Set(duplicateFacadeNames),
+    ].join(", ")}`,
+  );
+  process.exit(1);
+}
+
 const wrappersMissingParamDocs = generatedMethods.filter((method) => {
-  const documented = new Set(method.paramDocs.map(({ name }) => name));
+  const documented = new Set(
+    method.paramDocs
+      .filter(({ description }) => description.length > 0)
+      .map(({ name }) => name),
+  );
 
   return method.params.some(({ name }) => !documented.has(name));
 });
@@ -588,9 +720,9 @@ const output = `;; Generated from ../externs/angular.js by scripts/generate-cljs
   ^js/ng.Angular js/angular)
 
 (defn injectable
-  "Create an AngularTS array-annotated injectable."
-  ^js/ng.Injectable [^js/Array deps factory]
-  (let [annotated (.slice deps)]
+  "Create an AngularTS array-annotated injectable from a ClojureScript collection."
+  ^js/ng.Injectable [deps factory]
+  (let [annotated (to-array deps)]
     (.push annotated factory)
     annotated))
 
@@ -602,13 +734,15 @@ ${generatedProperties.map(renderPrototypePropertyReader).join("\n\n")}
   "Retrieve or create an AngularTS module."
   (^js/ng.NgModule [^string name]
    (.module angular name))
-  (^js/ng.NgModule [^string name ^js/Array requires]
-   (.module angular name requires)))
+  (^js/ng.NgModule [^string name requires]
+   (.module angular name (to-array requires))))
 
 (defn controller
-  "Strict convenience wrapper for ng.NgModule.prototype.controller."
-  ^js/ng.NgModule [^js/ng.NgModule ng-module ^string name ^js/ng.Injectable ctl-fn]
-  (ng-module-controller ng-module name ctl-fn))
+  "Register an annotated controller or annotate a controller factory from a ClojureScript dependency collection."
+  (^js/ng.NgModule [^js/ng.NgModule ng-module ^string name ^js/ng.Injectable controller-factory]
+   (ng-module-controller ng-module name controller-factory))
+  (^js/ng.NgModule [^js/ng.NgModule ng-module ^string name deps controller-factory]
+   (ng-module-controller ng-module name (injectable deps controller-factory))))
 
 (defn directive
   "Strict convenience wrapper for ng.NgModule.prototype.directive."
@@ -641,6 +775,10 @@ if (checkMode) {
       `${generatedMethods.length} typed method wrappers plus ` +
       `${generatedProperties.length} typed property readers.`,
   );
+  console.log(
+    `Validated ${coreFacade.functionCount} documented fluent facade functions ` +
+      `covering ${coreFacade.ngModuleMethodCount} NgModule methods.`,
+  );
 } else {
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, output);
@@ -648,5 +786,9 @@ if (checkMode) {
     `Generated ${outputPath} from ${typeNames.length} extern types and ` +
       `${generatedMethods.length} typed method wrappers plus ` +
       `${generatedProperties.length} typed property readers.`,
+  );
+  console.log(
+    `Validated ${coreFacade.functionCount} documented fluent facade functions ` +
+      `covering ${coreFacade.ngModuleMethodCount} NgModule methods.`,
   );
 }

@@ -41,13 +41,13 @@ describe("AppContext service reactivity without DOM", () => {
     expect(context.getCurrentRoot()).toBeUndefined();
 
     consumer.connection = connection;
-    consumer.$watch("connection.status", (value: string) => {
+    consumer.watch("connection.status", (value: string) => {
       observedStatuses.push(value);
     });
-    consumer.$watch("connection.stats.attempts", (value: number) => {
+    consumer.watch("connection.stats.attempts", (value: number) => {
       observedAttempts.push(value);
     });
-    consumer.$watch("connection.messages.length", (value: number) => {
+    consumer.watch("connection.messages.length", (value: number) => {
       observedMessageCounts.push(value);
     });
 
@@ -63,18 +63,18 @@ describe("AppContext service reactivity without DOM", () => {
     expect(observedStatuses).toEqual(["idle", "open"]);
     expect(observedAttempts).toEqual([0, 1]);
     expect(observedMessageCounts).toEqual([0, 1]);
-    expect(connection.$handler._listenerScheduler).toBe(
+    expect(connection._handler._listenerScheduler).toBe(
       context.modelScheduler._listenerScheduler,
     );
 
-    consumer.$destroy();
+    consumer.destroy();
 
-    expect(connection.$handler._foreignListeners.has("status")).toBeFalse();
+    expect(connection._handler._foreignListeners.has("status")).toBeFalse();
     expect(
-      connection.stats.$handler._foreignListeners.has("attempts"),
+      connection.stats._handler._foreignListeners.has("attempts"),
     ).toBeFalse();
     expect(
-      connection.messages.$handler._foreignListeners.has("length"),
+      connection.messages._handler._foreignListeners.has("length"),
     ).toBeFalse();
 
     connection.status = "closed";
@@ -89,7 +89,7 @@ describe("AppContext service reactivity without DOM", () => {
 
     context.destroy();
 
-    expect(connection.$handler._destroyed).toBeTrue();
+    expect(connection._handler._destroyed).toBeTrue();
   });
 
   it("schedules service-owned model work without root records", () => {
@@ -144,7 +144,7 @@ describe("AppContext service reactivity without DOM", () => {
     expect(angular._appContext.getModel("session") as unknown).toBe(session);
 
     consumer.session = session;
-    consumer.$watch("session.token", (value: string) => {
+    consumer.watch("session.token", (value: string) => {
       observedTokens.push(value);
     });
 
@@ -156,7 +156,7 @@ describe("AppContext service reactivity without DOM", () => {
 
     expect(observedTokens).toEqual(["", "abc"]);
 
-    rootScope.$destroy();
+    rootScope.destroy();
 
     expect(angular._appContext.getModel("session") as unknown).toBe(session);
 
@@ -166,10 +166,10 @@ describe("AppContext service reactivity without DOM", () => {
 
     expect(observedTokens).toEqual(["", "abc", "def"]);
 
-    consumer.$destroy();
+    consumer.destroy();
     angular._appContext.destroy();
 
-    expect(session.$handler._destroyed).toBeTrue();
+    expect(session._handler._destroyed).toBeTrue();
   });
 
   it("isolates service-owned model state between app contexts", () => {

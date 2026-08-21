@@ -2,6 +2,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import {
+  assertCallableDocumentation,
+  documentationLines,
+  parameterDocumentation,
+  signatureDocumentation,
+  symbolDocumentation,
+  typeDocumentation,
+} from "../../shared/typescript-documentation.mjs";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
 const namespacePath = path.join(repoRoot, "@types/namespace.d.ts");
@@ -89,6 +97,7 @@ function extractNamespaceTypes(sourcePath, overrides) {
       const type = checker.getTypeFromTypeNode(node.type);
 
       types.push({
+        documentation: typeDocumentation(checker, node, type),
         name: typeName,
         typeParameters:
           node.typeParameters?.map((parameter) =>
@@ -123,6 +132,11 @@ function collectMembers(checker, overrides, typeName, type) {
     !skippedByOverride(typeName, "call", manual, unsupported)
   ) {
     members.push({
+      documentation: signatureDocumentation(
+        checker,
+        callSignature,
+        `Calls the ng.${typeName} function.`,
+      ),
       kind: "invoke",
       name: "invoke",
       parameters: signatureParameters(checker, overrides, callSignature),
@@ -138,6 +152,11 @@ function collectMembers(checker, overrides, typeName, type) {
     if (skippedByOverride(typeName, property.name, manual, unsupported)) continue;
 
     const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration);
+    const documentation = symbolDocumentation(
+      checker,
+      property,
+      `The ${property.name} member of ng.${typeName}.`,
+    );
     const signatures = checker.getSignaturesOfType(
       propertyType,
       ts.SignatureKind.Call,
@@ -147,6 +166,7 @@ function collectMembers(checker, overrides, typeName, type) {
 
     if (ts.isMethodSignature(declaration) || forcedCallable || signature) {
       members.push({
+        documentation,
         kind: "function",
         name: renameMember(overrides, typeName, property.name),
         parameters: signature
@@ -158,6 +178,7 @@ function collectMembers(checker, overrides, typeName, type) {
       });
     } else {
       members.push({
+        documentation,
         kind: "property",
         name: renameMember(overrides, typeName, property.name),
         type: kotlinType(checker, overrides, propertyType),
@@ -191,6 +212,8 @@ function renderKotlin(types) {
     const typeParameters =
       type.typeParameters.length > 0 ? `<${type.typeParameters.join(", ")}>` : "";
 
+    lines.push(...renderKdoc(type.documentation));
+
     if (type.members.length === 0) {
       lines.push(`public external interface ${safeKotlinIdentifier(type.name)}${typeParameters}`);
       lines.push("");
@@ -200,7 +223,7 @@ function renderKotlin(types) {
     lines.push(`public external interface ${safeKotlinIdentifier(type.name)}${typeParameters} {`);
 
     for (const member of type.members) {
-      lines.push(`    ${renderMember(member)}`);
+      lines.push(...renderMember(member).split("\n").map((line) => `    ${line}`));
     }
 
     lines.push("}");
@@ -220,25 +243,45 @@ function safeKotlinIdentifier(value) {
 }
 
 function renderMember(member) {
+  if (member.kind !== "property") {
+    assertCallableDocumentation(member.name, member.documentation, member.parameters);
+  }
+
+  const documentation = renderKdoc(member.documentation, member.parameters).join("\n");
+
   if (member.kind === "function" && member.name === "toString" && member.parameters.length === 0) {
-    return "public override fun toString(): String";
+    return `${documentation}\npublic override fun toString(): String`;
   }
 
   if (member.kind === "property") {
-    return `public var ${safeKotlinIdentifier(member.name)}: ${member.type}`;
+    return `${documentation}\npublic var ${safeKotlinIdentifier(member.name)}: ${member.type}`;
   }
 
   const parameters = member.parameters
-    .map((parameter, index) => renderParameter(parameter, index))
+    .map((parameter) => renderParameter(parameter))
     .join(", ");
   const prefix = member.kind === "invoke" ? "public operator fun" : "public fun";
 
-  return `${prefix} ${safeKotlinIdentifier(member.name)}(${parameters}): ${member.returnType}`;
+  return `${documentation}\n${prefix} ${safeKotlinIdentifier(member.name)}(${parameters}): ${member.returnType}`;
 }
 
-function renderParameter(parameter, index) {
-  if (parameter.rest) return `vararg p${index}: ${parameter.restType}`;
-  return `p${index}: ${parameter.type} = definedExternally`;
+function renderKdoc(documentation, parameters = []) {
+  const lines = [
+    "/**",
+    ...documentationLines(documentation, 88).map((line) => ` * ${line}`),
+  ];
+
+  for (const parameter of parameters) {
+    lines.push(` * @param ${parameter.name} ${parameter.documentation}`);
+  }
+
+  lines.push(" */");
+  return lines;
+}
+
+function renderParameter(parameter) {
+  if (parameter.rest) return `vararg ${parameter.name}: ${parameter.restType}`;
+  return `${parameter.name}: ${parameter.type} = definedExternally`;
 }
 
 function signatureWithMostParameters(signatures) {
@@ -251,13 +294,17 @@ function signatureWithMostParameters(signatures) {
 }
 
 function signatureParameters(checker, overrides, signature) {
-  return signature.parameters.map((parameter) => {
+  const usedNames = new Set();
+
+  return signature.parameters.map((parameter, index) => {
     const declaration = parameter.valueDeclaration ?? parameter.declarations?.[0];
     const parameterType = declaration
       ? checker.getTypeOfSymbolAtLocation(parameter, declaration)
       : undefined;
 
     return {
+      documentation: parameterDocumentation(checker, parameter),
+      name: uniqueKotlinParameterName(parameter.name, index, usedNames),
       rest: Boolean(declaration && ts.isParameter(declaration) && declaration.dotDotDotToken),
       type: parameterType ? kotlinType(checker, overrides, parameterType) : "dynamic",
       restType: parameterType
@@ -265,6 +312,18 @@ function signatureParameters(checker, overrides, signature) {
         : "dynamic",
     };
   });
+}
+
+function uniqueKotlinParameterName(value, index, usedNames) {
+  let name = value.replace(/[^A-Za-z0-9_]/gu, "_");
+  if (!/^[A-Za-z_]/u.test(name)) name = `p${index}`;
+  if (kotlinReservedWords.has(name)) name = `${name}Value`;
+
+  let candidate = name;
+  let suffix = 2;
+  while (usedNames.has(candidate)) candidate = `${name}${suffix++}`;
+  usedNames.add(candidate);
+  return candidate;
 }
 
 function returnType(checker, overrides, typeName, memberName, signature) {

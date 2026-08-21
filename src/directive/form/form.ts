@@ -65,52 +65,52 @@ export interface ParentFormController {
   $nonscope?: boolean;
   /** @internal */
   _validityPropagationId?: number;
-  $addControl(control: FormControlController): void;
-  $getControls(): readonly FormControlController[];
+  addControl(control: FormControlController): void;
+  getControls(): readonly FormControlController[];
   /** @internal */
   _renameControl(control: FormControlController, name: ControlName): void;
-  $removeControl(control: FormControlController): void;
-  $setValidity(
+  removeControl(control: FormControlController): void;
+  setValidity(
     validationErrorKey: string,
     state: PublicValidationState,
     controller?: ValidityOwner,
   ): void;
-  $setNativeValidity(
+  setNativeValidity(
     state: boolean | null,
     controller?: FormControlController,
   ): void;
-  $setDirty(): void;
-  $setPristine(): void;
-  $setSubmitted(): void;
+  setDirty(): void;
+  setPristine(): void;
+  setSubmitted(): void;
   /** @internal */
   _setSubmitted(): void;
 }
 
 export const nullFormCtrl: ParentFormController = {
   $nonscope: true,
-  $addControl: () => {
+  addControl: () => {
     /* empty */
   },
-  $getControls: () => [],
+  getControls: () => [],
   _renameControl: (control, name) => {
-    control.$name = name;
+    control.controlName = name;
   },
-  $removeControl: () => {
+  removeControl: () => {
     /* empty */
   },
-  $setValidity: () => {
+  setValidity: () => {
     /* empty */
   },
-  $setNativeValidity: () => {
+  setNativeValidity: () => {
     /* empty */
   },
-  $setDirty: () => {
+  setDirty: () => {
     /* empty */
   },
-  $setPristine: () => {
+  setPristine: () => {
     /* empty */
   },
-  $setSubmitted: () => {
+  setSubmitted: () => {
     /* empty */
   },
   _setSubmitted: () => {
@@ -144,18 +144,18 @@ function toPublicValidationState(
 }
 
 /**
- * @property $dirty True if user has already interacted with the form.
- * @property $valid True if all containing groups and controls are valid.
- * @property $invalid True if at least one containing control or group is invalid.
- * @property $submitted True if user has submitted the form even if its invalid.
+ * @property dirty True if user has already interacted with the form.
+ * @property valid True if all containing groups and controls are valid.
+ * @property invalid True if at least one containing control or group is invalid.
+ * @property submitted True if user has submitted the form even if its invalid.
  *
- * @property $pending An object hash, containing references to controls or groups with
+ * @property pending An object hash, containing references to controls or groups with
  *  pending validators, where:
  *
  *  - keys are validations tokens (error names).
  *  - values are arrays of controls or forms that have a pending validator for the given error name.
  *
- * @property $error An object hash, containing references to controls or groups with failing
+ * @property error An object hash, containing references to controls or groups with failing
  *  validators, where:
  *
  *  - keys are AngularTS/custom validation tokens (error names),
@@ -171,7 +171,7 @@ function toPublicValidationState(
 // asks for $scope to fool the BC controller module
 export class FormController {
   static $nonscope = true;
-  /* @ignore */ static $inject = [_element, _scope, _injector, _interpolate];
+  static $inject = [_element, _scope, _injector, _interpolate];
 
   /** @internal */
   _isAnimated: boolean;
@@ -179,17 +179,17 @@ export class FormController {
   /** @internal */
   _controls: FormControlController[];
 
-  $name: ControlName;
+  controlName: ControlName;
 
-  $dirty: boolean;
+  dirty: boolean;
 
-  $pristine: boolean;
+  pristine: boolean;
 
-  $valid: boolean | undefined;
+  valid: boolean | undefined;
 
-  $invalid: boolean | undefined;
+  invalid: boolean | undefined;
 
-  $submitted: boolean;
+  submitted: boolean;
 
   /** @internal */
   _parentForm: ParentFormController;
@@ -200,7 +200,7 @@ export class FormController {
   /** @internal */
   _getAnimate: LazyAnimate;
 
-  $error: Partial<Record<string, ValidityOwner[]>>;
+  error: Partial<Record<string, ValidityOwner[]>>;
 
   /** @internal */
   _customErrorControls: Map<string, Set<ValidityOwner>>;
@@ -211,7 +211,7 @@ export class FormController {
   /** @internal */
   _validCustomValidatorControls: Map<string, Set<ValidityOwner>>;
 
-  $pending: Partial<Record<string, ValidityOwner[]>> | undefined;
+  pending: Partial<Record<string, ValidityOwner[]>> | undefined;
 
   /** @internal */
   _classCache: Record<string, boolean>;
@@ -219,7 +219,7 @@ export class FormController {
   /** @internal */
   _validityPropagationId: number;
 
-  $target: FormControlTarget;
+  _target: FormControlTarget;
 
   /**
    * Creates a form controller for a specific form element and its scope.
@@ -239,25 +239,25 @@ export class FormController {
         "",
     )?.($scope);
 
-    this.$name = isString(interpolatedName) ? interpolatedName : "";
+    this.controlName = isString(interpolatedName) ? interpolatedName : "";
 
     /** True if user has already interacted with the form. */
-    this.$dirty = false;
+    this.dirty = false;
 
     /** True if user has not interacted with the form yet. */
-    this.$pristine = true;
-    this.$valid = true;
-    this.$invalid = false;
-    this.$submitted = false;
+    this.pristine = true;
+    this.valid = true;
+    this.invalid = false;
+    this.submitted = false;
     this._parentForm = nullFormCtrl;
 
     this._element = $element;
     this._getAnimate = createLazyAnimate($injector);
-    this.$error = {};
+    this.error = {};
     this._customErrorControls = new Map();
     this._pendingCustomValidatorControls = new Map();
     this._validCustomValidatorControls = new Map();
-    this.$pending = undefined;
+    this.pending = undefined;
     this._classCache = {};
     const isValid = this._element.classList.contains(VALID_CLASS);
 
@@ -265,32 +265,32 @@ export class FormController {
     this._classCache[INVALID_CLASS] = !isValid;
     this._validityPropagationId = nextValidityPropagationId++;
 
-    this.$target = { _parentForm: nullFormCtrl };
+    this._target = { _parentForm: nullFormCtrl };
   }
 
   /**
-   * Rollback all form controls pending updates to the `$modelValue`.
+   * Rollback all form controls pending updates to the `modelValue`.
    *
    * Updates may be pending by a debounced event or because the input is waiting for a some future
    * event defined in `ng-model-options`. This method is typically needed by the reset button of
    * a form that uses `ng-model-options` to pend updates.
    */
-  $rollbackViewValue(): void {
+  rollbackViewValue(): void {
     this._controls.forEach((control) => {
-      control.$rollbackViewValue();
+      control.rollbackViewValue();
     });
   }
 
   /**
-   * Commit all form controls pending updates to the `$modelValue`.
+   * Commit all form controls pending updates to the `modelValue`.
    *
    * Updates may be pending by a debounced event or because the input is waiting for a some future
    * event defined in `ng-model-options`. This method is rarely needed as `NgModelController`
    * usually handles calling this in response to input events.
    */
-  $commitViewValue(): void {
+  commitViewValue(): void {
     this._controls.forEach((control) => {
-      control.$commitViewValue();
+      control.commitViewValue();
     });
   }
 
@@ -308,45 +308,45 @@ export class FormController {
    * when they are linked.
    *
    * Note that the current state of the control will not be reflected on the new parent form. This
-   * is not an issue with normal use, as freshly compiled and linked controls are in a `$pristine`
+   * is not an issue with normal use, as freshly compiled and linked controls are in a `pristine`
    * state.
    *
    * However, if the method is used programmatically, for example by adding dynamically created controls,
    * or controls that have been previously removed without destroying their corresponding DOM element,
    * it's the developers responsibility to make sure the current state propagates to the parent form.
    *
-   * For example, if an input control is added that is already `$dirty` and has `$error` properties,
-   * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
+   * For example, if an input control is added that is already `dirty` and has `error` properties,
+   * calling `setDirty()` and `validate()` afterwards will propagate the state to the parent form.
    */
-  $addControl(control: FormControlController): void {
+  addControl(control: FormControlController): void {
     // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
     // and not added to the scope.  Now we throw an error.
-    assertNotHasOwnProperty(String(control.$name), "input");
+    assertNotHasOwnProperty(String(control.controlName), "input");
     this._validityPropagationId = nextValidityPropagationId++;
     this._controls.push(control);
 
-    if (control.$name) {
-      (this as Record<string, unknown>)[String(control.$name)] = control;
+    if (control.controlName) {
+      (this as Record<string, unknown>)[String(control.controlName)] = control;
     }
-    control.$target._parentForm = this;
+    control._target._parentForm = this;
   }
 
   /**
    * This method returns a **shallow copy** of the controls that are currently part of this form.
    * The controls can be instances of {@link form.FormController `FormController`}
    * ({@link ngForm "child-forms"}) and of {@link ngModel.NgModelController `NgModelController`}.
-   * If you need access to the controls of child-forms, you have to call `$getControls()`
+   * If you need access to the controls of child-forms, you have to call `getControls()`
    * recursively on them.
    * This can be used for example to iterate over all controls to validate them.
    *
    * The controls can be accessed normally, but adding to, or removing controls from the array has
-   * no effect on the form. Instead, use {@link form.FormController#$addControl `$addControl()`} and
-   * {@link form.FormController#$removeControl `$removeControl()`} for this use-case.
+   * no effect on the form. Instead, use {@link form.FormController#addControl `addControl()`} and
+   * {@link form.FormController#removeControl `removeControl()`} for this use-case.
    * Likewise, adding a control to, or removing a control from the form is not reflected
-   * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
+   * in the shallow copy. That means you should get a fresh copy from `getControls()` every time
    * you need access to the controls.
    */
-  $getControls(): readonly FormControlController[] {
+  getControls(): readonly FormControlController[] {
     return shallowCopy(this._controls);
   }
 
@@ -371,7 +371,7 @@ export class FormController {
    */
   /** @internal */
   _renameControl(control: FormControlController, newName: ControlName): void {
-    const oldName = control.$name;
+    const oldName = control.controlName;
 
     this._validityPropagationId = nextValidityPropagationId++;
 
@@ -383,7 +383,7 @@ export class FormController {
       deleteProperty(formRecord, oldKey);
     }
     formRecord[String(newName)] = control;
-    control.$name = newName;
+    control.controlName = newName;
   }
 
   /**
@@ -392,18 +392,21 @@ export class FormController {
    * Input elements using ngModelController do this automatically when they are destroyed.
    *
    * Note that only the removed control's validation state (`$errors`etc.) will be removed from the
-   * form. `$dirty`, `$submitted` states will not be changed, because the expected behavior can be
-   * different from case to case. For example, removing the only `$dirty` control from a form may or
-   * may not mean that the form is still `$dirty`.
+   * form. `dirty`, `submitted` states will not be changed, because the expected behavior can be
+   * different from case to case. For example, removing the only `dirty` control from a form may or
+   * may not mean that the form is still `dirty`.
    */
-  $removeControl(control: FormControlController): void {
+  removeControl(control: FormControlController): void {
     this._validityPropagationId = nextValidityPropagationId++;
 
     if (
-      control.$name &&
-      (this as Record<string, unknown>)[String(control.$name)] === control
+      control.controlName &&
+      (this as Record<string, unknown>)[String(control.controlName)] === control
     ) {
-      deleteProperty(this as Record<string, unknown>, String(control.$name));
+      deleteProperty(
+        this as Record<string, unknown>,
+        String(control.controlName),
+      );
     }
 
     new Set([
@@ -411,14 +414,14 @@ export class FormController {
       ...this._customErrorControls.keys(),
       ...this._validCustomValidatorControls.keys(),
     ]).forEach((name) => {
-      this.$setValidity(name, null, control);
+      this.setValidity(name, null, control);
     });
 
     arrayRemove(this._controls, control);
 
-    this.$setNativeValidity(true, control);
+    this.setNativeValidity(true, control);
 
-    control.$target._parentForm = nullFormCtrl;
+    control._target._parentForm = nullFormCtrl;
   }
 
   /**
@@ -427,7 +430,7 @@ export class FormController {
    * This method can be called to add the 'ng-dirty' class and set the form to a dirty
    * state (ng-dirty class). This method will also propagate to parent forms.
    */
-  $setDirty(): void {
+  setDirty(): void {
     if (this._isAnimated) {
       this._getAnimate().setClass(this._element, DIRTY_CLASS, PRISTINE_CLASS);
     } else {
@@ -435,16 +438,16 @@ export class FormController {
       this._element.classList.remove(PRISTINE_CLASS);
       this._element.classList.add(DIRTY_CLASS);
     }
-    this.$dirty = true;
-    this.$pristine = false;
-    this._parentForm.$setDirty();
+    this.dirty = true;
+    this.pristine = false;
+    this._parentForm.setDirty();
   }
 
   /**
    * Sets the form to its pristine state.
    *
-   * This method sets the form's `$pristine` state to true, the `$dirty` state to false, removes
-   * the `ng-dirty` class and adds the `ng-pristine` class. Additionally, it sets the `$submitted`
+   * This method sets the form's `pristine` state to true, the `dirty` state to false, removes
+   * the `ng-dirty` class and adds the `ng-pristine` class. Additionally, it sets the `submitted`
    * state to false.
    *
    * This method will also propagate to all the controls contained in this form.
@@ -452,7 +455,7 @@ export class FormController {
    * Setting a form back to a pristine state is often useful when we want to 'reuse' a form after
    * saving or resetting it.
    */
-  $setPristine(): void {
+  setPristine(): void {
     if (this._isAnimated) {
       this._getAnimate().setClass(
         this._element,
@@ -465,11 +468,11 @@ export class FormController {
       this._element.classList.add(PRISTINE_CLASS);
     }
 
-    this.$dirty = false;
-    this.$pristine = true;
-    this.$submitted = false;
+    this.dirty = false;
+    this.pristine = true;
+    this.submitted = false;
     this._controls.forEach((control) => {
-      control.$setPristine();
+      control.setPristine();
     });
   }
 
@@ -482,17 +485,17 @@ export class FormController {
    * Setting a form controls back to their untouched state is often useful when setting the form
    * back to its pristine state.
    */
-  $setUntouched(): void {
+  setUntouched(): void {
     this._controls.forEach((control) => {
-      control.$setUntouched();
+      control.setUntouched();
     });
   }
 
   /**
-   * Sets the form to its `$submitted` state. This will also set `$submitted` on all child and
+   * Sets the form to its `submitted` state. This will also set `submitted` on all child and
    * parent forms of the form.
    */
-  $setSubmitted(): void {
+  setSubmitted(): void {
     if (this._parentForm === nullFormCtrl) {
       this._setSubmitted();
 
@@ -514,7 +517,7 @@ export class FormController {
     } else {
       this._element.classList.add(SUBMITTED_CLASS);
     }
-    this.$submitted = true;
+    this.submitted = true;
     this._controls.forEach((control) => {
       const maybeSetSubmitted = (control as { _setSubmitted?: unknown })
         ._setSubmitted;
@@ -610,10 +613,10 @@ export class FormController {
 
   /** @internal */
   _syncPublicCustomValidityObjects(): void {
-    this.$error = FormController._publicCustomValidityObject(
+    this.error = FormController._publicCustomValidityObject(
       this._customErrorControls,
     );
-    this.$pending = this._pendingCustomValidatorControls.size
+    this.pending = this._pendingCustomValidatorControls.size
       ? FormController._publicCustomValidityObject(
           this._pendingCustomValidatorControls,
         )
@@ -624,23 +627,23 @@ export class FormController {
    * Change the validity state of the form, and notify the parent form (if any).
    *
    * Application developers will rarely need to call this method directly. It is used internally, by
-   * {@link ngModel.NgModelController#$setValidity NgModelController.$setValidity()}, to propagate a
+   * {@link ngModel.NgModelController#setValidity NgModelController.setValidity()}, to propagate a
    * control's validity state to the parent `FormController`.
    *
    * @param validationErrorKey - Name of the validator. The `validationErrorKey` will be
-   *        assigned to either `$error[validationErrorKey]` or `$pending[validationErrorKey]` (for
-   *        unfulfilled `$asyncValidators`), so that it is available for data-binding. The
+   *        assigned to either `error[validationErrorKey]` or `pending[validationErrorKey]` (for
+   *        unfulfilled `asyncValidators`), so that it is available for data-binding. The
    *        `validationErrorKey` should be in camelCase and will get converted into dash-case for
    *        class name. Example: `myError` will result in `ng-valid-my-error` and
-   *        `ng-invalid-my-error` classes and can be bound to as `{{ someForm.$error.myError }}`.
+   *        `ng-invalid-my-error` classes and can be bound to as `{{ someForm.error.myError }}`.
    * @param state - Whether the current state is valid (true), invalid (false), pending
-   *        (undefined),  or skipped (null). Pending is used for unfulfilled `$asyncValidators`.
+   *        (undefined),  or skipped (null). Pending is used for unfulfilled `asyncValidators`.
    *        Skipped is used by AngularTS when validators do not run because of parse errors and when
-   *        `$asyncValidators` do not run because any of the `$validators` failed.
+   *        `asyncValidators` do not run because any of the `validators` failed.
    * @param controller - The controller whose validity state is
    *        triggering the change.
    */
-  $setValidity(
+  setValidity(
     validationErrorKey: string,
     state: PublicValidationState,
     controller: ValidityOwner = this,
@@ -698,23 +701,23 @@ export class FormController {
 
     this._syncPublicCustomValidityObjects();
 
-    if (this.$pending) {
+    if (this.pending) {
       cachedToggleClass(this, PENDING_CLASS, true);
-      this.$valid = this.$invalid = undefined;
+      this.valid = this.invalid = undefined;
       toggleValidationCss(this, "", null);
     } else {
       cachedToggleClass(this, PENDING_CLASS, false);
-      this.$valid = isObjectEmpty(this.$error) && this._hasNativeValidity();
-      this.$invalid = !this.$valid;
-      toggleValidationCss(this, "", this.$valid);
+      this.valid = isObjectEmpty(this.error) && this._hasNativeValidity();
+      this.invalid = !this.valid;
+      toggleValidationCss(this, "", this.valid);
     }
 
     // Re-read after syncing map-backed custom-validity buckets.
     let combinedState: CustomValidationState;
 
-    if (this.$pending?.[validationErrorKey]) {
+    if (this.pending?.[validationErrorKey]) {
       combinedState = "pending";
-    } else if (this.$error[validationErrorKey]) {
+    } else if (this.error[validationErrorKey]) {
       combinedState = "invalid";
     } else if (this._validCustomValidatorControls.has(validationErrorKey)) {
       combinedState = "valid";
@@ -725,11 +728,7 @@ export class FormController {
     const publicCombinedState = toPublicValidationState(combinedState);
 
     toggleValidationCss(this, validationErrorKey, publicCombinedState);
-    this._parentForm.$setValidity(
-      validationErrorKey,
-      publicCombinedState,
-      this,
-    );
+    this._parentForm.setValidity(validationErrorKey, publicCombinedState, this);
 
     /**
      * Updates the CSS validity classes for the controller and validation key.
@@ -763,7 +762,7 @@ export class FormController {
     });
   }
 
-  $setNativeValidity(
+  setNativeValidity(
     state?: boolean | null,
     controller?: FormControlController,
   ): void {
@@ -773,14 +772,14 @@ export class FormController {
     this._validityPropagationId = nextValidityPropagationId++;
     const isNativeValid = this._hasNativeValidity();
 
-    if (!this.$pending) {
-      this.$valid = isObjectEmpty(this.$error) && isNativeValid;
-      this.$invalid = !this.$valid;
-      cachedToggleClass(this, VALID_CLASS, this.$valid);
-      cachedToggleClass(this, INVALID_CLASS, this.$invalid);
+    if (!this.pending) {
+      this.valid = isObjectEmpty(this.error) && isNativeValid;
+      this.invalid = !this.valid;
+      cachedToggleClass(this, VALID_CLASS, this.valid);
+      cachedToggleClass(this, INVALID_CLASS, this.invalid);
     }
 
-    this._parentForm.$setNativeValidity(isNativeValid, this);
+    this._parentForm.setNativeValidity(isNativeValid, this);
   }
 }
 
@@ -890,8 +889,8 @@ const formDirectiveFactory = function (
                 );
 
                 const handleFormSubmission = function (event: Event) {
-                  controller.$commitViewValue();
-                  controller.$setSubmitted();
+                  controller.commitViewValue();
+                  controller.setSubmitted();
 
                   if (shouldPreventSubmit) {
                     event.preventDefault();
@@ -930,7 +929,7 @@ const formDirectiveFactory = function (
                 const resetRegisteredControlsToDefaults = (
                   formController: FormController,
                 ): void => {
-                  formController.$getControls().forEach((control) => {
+                  formController.getControls().forEach((control) => {
                     const actualControl = deProxy(control);
 
                     if (actualControl instanceof FormController) {
@@ -952,7 +951,7 @@ const formDirectiveFactory = function (
                   }
 
                   controller._syncNativeViewValue("reset");
-                  controller.$setNativeValidity();
+                  controller.setNativeValidity();
                 };
 
                 const scheduleNativeResetSync = () => {
@@ -1037,10 +1036,10 @@ const formDirectiveFactory = function (
 
               const parentFormCtrl = ctrls[1] ?? controller._parentForm;
 
-              parentFormCtrl.$addControl(controller);
+              parentFormCtrl.addControl(controller);
 
               const parsedSetter = nameAttr
-                ? getSetter(String(controller.$name))
+                ? getSetter(String(controller.controlName))
                 : undefined;
 
               const setter: (scopeParam: ng.Scope, value: unknown) => void =
@@ -1072,27 +1071,27 @@ const formDirectiveFactory = function (
                     );
                     const nextName = newValue ?? "";
 
-                    if (controller.$name === nextName) return;
+                    if (controller.controlName === nextName) return;
 
-                    (scope.$target as Record<string, unknown>)[
-                      String(controller.$name)
+                    (scope._target as Record<string, unknown>)[
+                      String(controller.controlName)
                     ] = undefined;
                     controller._parentForm._renameControl(controller, nextName);
 
                     if (
-                      (scope.$target as unknown) !== controller._parentForm &&
+                      (scope._target as unknown) !== controller._parentForm &&
                       controller._parentForm !== nullFormCtrl
                     ) {
                       // form moved
                     } else {
-                      (scope.$target as Record<string, unknown>)[nextName] =
+                      (scope._target as Record<string, unknown>)[nextName] =
                         controller;
                     }
                   }
                 });
                 observer.observe(formElementParam, { attributes: true });
 
-                let deregisterDestroy: (() => void) | undefined = scope.$on(
+                let deregisterDestroy: (() => void) | undefined = scope.on(
                   "$destroy",
                   deregister,
                 );
@@ -1105,9 +1104,9 @@ const formDirectiveFactory = function (
               }
               formElementParam.addEventListener("$destroy", () => {
                 const parentForm: ParentFormController =
-                  controller.$target._parentForm;
+                  controller._target._parentForm;
 
-                parentForm.$removeControl(controller);
+                parentForm.removeControl(controller);
                 setter(scope, undefined);
                 extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards
               });

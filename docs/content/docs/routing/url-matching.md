@@ -381,7 +381,7 @@ affect path scoring but must all be present if declared without defaults.
 Listen for `$locationChangeSuccess` when code needs URL-level notifications:
 
 ```javascript
-const deregister = $rootScope.$on('$locationChangeSuccess', () => {
+const deregister = $rootScope.on('$locationChangeSuccess', () => {
   console.log('URL changed to:', $location.url());
 });
 

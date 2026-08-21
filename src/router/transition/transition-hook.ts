@@ -40,6 +40,7 @@ export interface TransitionHookOptions {
 }
 
 interface TransitionHookDoneTask {
+  /** @internal */
   _startTransition(): Promise<void>;
 }
 
@@ -272,6 +273,7 @@ export class TransitionHook {
    * Executes the underlying hook callback and normalizes its result into
    * the router's rejection / redirect model.
    */
+  /** @internal */
   _invokeHook(): unknown {
     const hook = this._registeredHook;
 
@@ -301,6 +303,7 @@ export class TransitionHook {
   /**
    * Converts raw hook return values into transition outcomes.
    */
+  /** @internal */
   _handleHookResult(result: HookResult): Promise<unknown> | undefined {
     const notCurrent = this._getNotCurrentRejection();
 

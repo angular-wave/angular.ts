@@ -22,6 +22,7 @@ public typealias DirectiveLink<TController> = (
 public data class Directive<TController> public constructor(
     public val template: String? = null,
     public val templateUrl: String? = null,
+    public val view: ProgrammaticView<TController, dynamic>? = null,
     public val controller: InjectableFactory<TController>? = null,
     public val controllerAs: String? = null,
     public val restrict: DirectiveRestrict = DirectiveRestrict.ElementAttribute,
@@ -33,7 +34,7 @@ public data class Directive<TController> public constructor(
     public val postLink: DirectiveLink<TController>? = null,
 )
 
-internal fun Directive<*>.toJs(): dynamic {
+internal fun <TController> Directive<TController>.toJs(): dynamic {
     val raw = js("{}")
 
     raw.restrict = restrict.raw
@@ -42,6 +43,7 @@ internal fun Directive<*>.toJs(): dynamic {
 
     if (template != null) raw.template = template
     if (templateUrl != null) raw.templateUrl = templateUrl
+    if (view != null) raw.view = view.toJs()
     if (controller != null) raw.controller = controller.toJs()
     if (controllerAs != null) raw.controllerAs = controllerAs
     if (require != null) raw.require = require

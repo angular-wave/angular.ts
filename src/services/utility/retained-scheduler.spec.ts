@@ -15,13 +15,13 @@ describe("Canvas work adapter", () => {
     expect(calls).toEqual(["immediate"]);
     calls.length = 0;
 
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
     adapter.schedule(() => calls.push("during-pause"));
 
     await waitUntil(() => calls.length === 0);
     expect(calls).toEqual([]);
 
-    scope.$broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionResume");
 
     await waitUntil(() => calls.length === 1);
     expect(calls).toEqual(["during-pause"]);
@@ -32,16 +32,16 @@ describe("Canvas work adapter", () => {
     const calls: string[] = [];
     const adapter = createCanvasWorkAdapter(scope);
 
-    scope.$broadcast("$viewRetentionPause");
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
 
     adapter.schedule(() => calls.push("first"));
     adapter.schedule(() => calls.push("second"));
 
     expect(calls).toEqual([]);
 
-    scope.$broadcast("$viewRetentionResume");
-    scope.$broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionResume");
 
     await waitUntil(() => calls.length === 2);
 
@@ -55,7 +55,7 @@ describe("Canvas work adapter", () => {
 
     adapter.schedule(() => calls.push("immediate"));
 
-    scope.$broadcast("$viewRetentionPause", { _pause: "background" });
+    scope.broadcast("$viewRetentionPause", { _pause: "background" });
     adapter.schedule(() => calls.push("background"));
 
     await waitUntil(() => calls.length === 2);
@@ -67,14 +67,14 @@ describe("Canvas work adapter", () => {
     const calls: string[] = [];
     const adapter = createCanvasWorkAdapter(scope);
 
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
     adapter.schedule(() => calls.push("deferred"));
-    scope.$broadcast("$viewRetentionResume", { _pause: "background" });
+    scope.broadcast("$viewRetentionResume", { _pause: "background" });
 
     await Promise.resolve();
     expect(calls).toEqual([]);
 
-    scope.$broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionResume");
     await waitUntil(() => calls.length === 1);
     expect(calls).toEqual(["deferred"]);
   });
@@ -84,17 +84,17 @@ describe("Canvas work adapter", () => {
     const calls: string[] = [];
     const adapter = createCanvasWorkAdapter(scope);
 
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
     adapter.schedule(() => calls.push("deferred"));
-    scope.$broadcast("$viewRetentionResume");
-    scope.$broadcast("$viewRetentionPause");
-    scope.$broadcast("$viewRetentionResume");
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionPause");
 
     await Promise.resolve();
     expect(calls).toEqual([]);
 
-    scope.$broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionResume");
     await waitUntil(() => calls.length === 1);
     expect(calls).toEqual(["deferred"]);
   });
@@ -104,10 +104,10 @@ describe("Canvas work adapter", () => {
     const calls: string[] = [];
     const adapter = createCanvasWorkAdapter(scope);
 
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
     adapter.schedule(() => calls.push("discarded"));
     adapter.dispose();
-    scope.$broadcast("$viewRetentionResume");
+    scope.broadcast("$viewRetentionResume");
 
     await waitUntil(() => calls.length === 0);
     expect(calls).toEqual([]);
@@ -118,9 +118,9 @@ describe("Canvas work adapter", () => {
     const calls: string[] = [];
     const adapter = createCanvasWorkAdapter(scope);
 
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
     adapter.schedule(() => calls.push("discarded"));
-    scope.$destroy();
+    scope.destroy();
     adapter.schedule(() => calls.push("after-destroy"));
 
     await Promise.resolve();
@@ -132,10 +132,10 @@ describe("Canvas work adapter", () => {
     const calls: string[] = [];
     const adapter = createCanvasWorkAdapter(scope);
 
-    scope.$broadcast("$viewRetentionPause");
+    scope.broadcast("$viewRetentionPause");
     adapter.schedule(() => calls.push("discarded"));
-    scope.$broadcast("$viewRetentionResume");
-    scope.$destroy();
+    scope.broadcast("$viewRetentionResume");
+    scope.destroy();
 
     await Promise.resolve();
     expect(calls).toEqual([]);

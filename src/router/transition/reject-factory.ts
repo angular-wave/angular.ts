@@ -51,7 +51,7 @@ function detailToString(data: TransitionRejectionDetail): string {
  * @internal
  */
 export class Rejection extends Error {
-  $id: number;
+  id: number;
   type: RejectTypeValue;
   message: string;
   detail: TransitionRejectionDetail;
@@ -65,7 +65,7 @@ export class Rejection extends Error {
     super(message);
 
     this.name = "Rejection";
-    this.$id = id++;
+    this.id = id++;
     this.type = type;
     this.message = message;
     this.detail = detail;
@@ -126,7 +126,7 @@ export class Rejection extends Error {
   }
 
   toString(): string {
-    return `Transition Rejection($id: ${String(this.$id)} type: ${String(
+    return `Transition Rejection(id: ${String(this.id)} type: ${String(
       this.type,
     )}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
   }

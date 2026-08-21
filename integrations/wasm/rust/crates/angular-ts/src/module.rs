@@ -65,6 +65,7 @@ impl NgModule {
             std::any::type_name::<T>(),
             None,
             None,
+            None,
             T::INJECTIONS.to_vec(),
         )
     }
@@ -72,9 +73,10 @@ impl NgModule {
     /// Registers a Rust component controller type.
     pub fn component<T: ComponentController + 'static>(&mut self) -> &mut Self {
         let metadata = T::METADATA;
-        let (template, template_url) = match metadata.template() {
-            TemplateSource::Inline(template) => (Some(template), None),
-            TemplateSource::Url(template_url) => (None, Some(template_url)),
+        let (template, template_url, view) = match metadata.template() {
+            TemplateSource::Inline(template) => (Some(template), None, None),
+            TemplateSource::Url(template_url) => (None, Some(template_url), None),
+            TemplateSource::View(view) => (None, None, Some(view)),
         };
 
         self.push(
@@ -84,6 +86,7 @@ impl NgModule {
             std::any::type_name::<T>(),
             template,
             template_url,
+            view,
             metadata.injections().to_vec(),
         )
     }
@@ -102,6 +105,7 @@ impl NgModule {
             rust_type,
             None,
             None,
+            None,
             Vec::new(),
         )
     }
@@ -114,6 +118,7 @@ impl NgModule {
         rust_type: &'static str,
         template: Option<&'static str>,
         template_url: Option<&'static str>,
+        view: Option<&'static str>,
         injections: Vec<InjectionMetadata>,
     ) -> &mut Self {
         self.registrations.push(Registration {
@@ -123,6 +128,7 @@ impl NgModule {
             rust_type,
             template,
             template_url,
+            view,
             injections,
         });
         self
@@ -138,6 +144,7 @@ pub struct Registration {
     pub rust_type: &'static str,
     pub template: Option<&'static str>,
     pub template_url: Option<&'static str>,
+    pub view: Option<&'static str>,
     pub injections: Vec<InjectionMetadata>,
 }
 
@@ -194,6 +201,11 @@ pub fn module_manifest_json(module: &NgModule) -> String {
         if let Some(template_url) = registration.template_url {
             output.push(',');
             push_json_property(&mut output, "templateUrl", template_url);
+        }
+
+        if let Some(view) = registration.view {
+            output.push(',');
+            push_json_property(&mut output, "view", view);
         }
 
         if !registration.injections.is_empty() {

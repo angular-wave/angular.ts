@@ -42,8 +42,12 @@ part of the Dart public facade.
 | `Controller` | started |
 | `DocumentService` | alias |
 | `Directive` | started |
+| `DirectiveCompileFn` | started |
 | `DirectiveRestrict` | started |
 | `DirectiveFactory` | started |
+| `DirectiveFactoryFn` | started |
+| `DirectiveLinkFn` | started |
+| `DirectivePrePost` | started |
 | `ElementService` | alias |
 | `InjectionTokenMap` | review |
 | `NgModule` | started |
@@ -124,10 +128,12 @@ part of the Dart public facade.
 | `MachineService` | started |
 | `SecurityPolicy` | started |
 | `WorkflowService` | started |
+| `WorkflowSupervisorService` | started |
 | `ParseService` | started |
 | `SceDelegateService` | started |
 | `SceService` | started |
 | `StreamService` | started |
+| `StorageService` | started |
 | `TemplateCacheService` | started |
 | `TemplateRequestService` | started |
 | `TransitionsService` | started |

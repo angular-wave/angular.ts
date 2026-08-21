@@ -27,7 +27,7 @@ describe("channel", () => {
     spyOn($eventBus, "subscribe").and.callThrough();
   });
 
-  it("should subscribe to the specified angular.$eventBus channel", () => {
+  it("should subscribe to the specified angular.eventBus channel", () => {
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
 
     expect($eventBus.subscribe).toHaveBeenCalledWith(
@@ -47,7 +47,7 @@ describe("channel", () => {
     );
   });
 
-  it("should update innerHtml when angular.$eventBus emits a value", async () => {
+  it("should update innerHtml when angular.eventBus emits a value", async () => {
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
 
     expect(element.innerHTML).toBe("");
@@ -58,7 +58,7 @@ describe("channel", () => {
     expect(element.innerHTML).toBe("New Content");
   });
 
-  it("should serialize non-string values when angular.$eventBus emits a value", async () => {
+  it("should serialize non-string values when angular.eventBus emits a value", async () => {
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
 
     $eventBus.publish("testChannel", { status: "ready" });
@@ -67,11 +67,11 @@ describe("channel", () => {
     expect(element.innerHTML).toBe('{"status":"ready"}');
   });
 
-  it("should unsubscribe from the angular.$eventBus when the scope is destroyed", () => {
+  it("should unsubscribe from the angular.eventBus when the scope is destroyed", () => {
     $eventBus.reset();
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
     expect($eventBus.getCount("testChannel")).toEqual(1);
-    $scope.$destroy();
+    $scope.destroy();
 
     expect($eventBus.getCount("testChannel")).toEqual(0);
   });
@@ -80,7 +80,7 @@ describe("channel", () => {
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
 
     $eventBus.publish("testChannel", "Queued Content");
-    $scope.$destroy();
+    $scope.destroy();
 
     await wait();
 
@@ -88,7 +88,7 @@ describe("channel", () => {
     expect($eventBus.getCount("testChannel")).toEqual(0);
   });
 
-  it("should handle templates when angular.$eventBus emits a value", async () => {
+  it("should handle templates when angular.eventBus emits a value", async () => {
     element = $compile(
       '<div ng-channel="testChannel">{{ a.firstName }} {{ a.lastName }}</div>',
     )($scope);

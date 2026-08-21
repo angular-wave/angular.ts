@@ -105,7 +105,7 @@ class NgMessageCtrl {
       ngMessagesMultipleExpression,
     );
 
-    this._scope.$watch(collectionExpression ?? "", this._render.bind(this));
+    this._scope.watch(collectionExpression ?? "", this._render.bind(this));
   }
 
   /** @internal */
@@ -358,7 +358,7 @@ export function ngMessagesIncludeDirective(
 }
 
 function isDestroyedScope(scope: ng.Scope): boolean {
-  return scope._destroyed || scope.$root.$handler._destroyed;
+  return scope._destroyed || scope.root._handler._destroyed;
 }
 
 function insertCompiledMessageTemplate(
@@ -447,7 +447,7 @@ function ngMessageDirectiveFactory(
               const dynamicFn = $parse(dynamicExp);
 
               assignRecords(dynamicFn(scope) as string | string[] | undefined);
-              scope.$watch(dynamicExp, assignRecords);
+              scope.watch(dynamicExp, assignRecords);
             } else {
               assignRecords(staticExp);
             }
@@ -500,7 +500,7 @@ function ngMessageDirectiveFactory(
                         ngMessagesCtrl.deregister(commentNode, isDefault);
                         messageCtrl.detach();
                       }
-                      newScope?.$destroy();
+                      newScope?.destroy();
                     });
                   });
                 }
@@ -527,7 +527,7 @@ function ngMessageDirectiveFactory(
           // Normally this is done when the attached element is destroyed; but if this directive
           // gets removed before we attach the message to the DOM there is nothing to watch
           // in which case we must deregister when the containing scope is destroyed.
-          scope.$on("$destroy", () => {
+          scope.on("$destroy", () => {
             ngMessagesCtrl.deregister(commentNode, isDefault);
           });
         };

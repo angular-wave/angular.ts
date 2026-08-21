@@ -249,6 +249,7 @@ export function createCoreRuntime(
     get destroyed() {
       return destroyed;
     },
+    /** @internal */
     _installAnimationRegistry(registry) {
       if (destroyed) {
         registry.destroy();

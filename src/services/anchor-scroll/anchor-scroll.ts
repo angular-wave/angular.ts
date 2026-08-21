@@ -201,7 +201,7 @@ export function createAnchorScrollService(
 
       if (!enabled || destroyed) return;
 
-      removeLocationListener = $rootScope.$on(
+      removeLocationListener = $rootScope.on(
         "$locationChangeSuccess",
         (_event: ng.ScopeEvent, newValue: string, oldValue: string) => {
           const newUrl = urlResolve(newValue);
@@ -228,7 +228,7 @@ export function createAnchorScrollService(
 
   state.instances.add(instance);
   instance.setAutoScrolling(state.autoScrollingEnabled);
-  removeDestroyListener = $rootScope.$on("$destroy", () => {
+  removeDestroyListener = $rootScope.on("$destroy", () => {
     instance.destroy();
   });
 

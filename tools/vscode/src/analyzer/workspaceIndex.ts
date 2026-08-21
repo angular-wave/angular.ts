@@ -20,8 +20,8 @@ export class AngularTsWorkspaceIndex implements vscode.Disposable {
     const watcher = vscode.workspace.createFileSystemWatcher(SOURCE_GLOB);
     this.disposables.push(
       watcher,
-      watcher.onDidCreate((uri) => void this.indexUri(uri)),
-      watcher.onDidChange((uri) => void this.indexUri(uri)),
+      watcher.onDidCreate((uri) => void this._indexUri(uri)),
+      watcher.onDidChange((uri) => void this._indexUri(uri)),
       watcher.onDidDelete((uri) => {
         this.customEntries.delete(uri.fsPath);
         this.changeEmitter.fire();
@@ -32,7 +32,7 @@ export class AngularTsWorkspaceIndex implements vscode.Disposable {
   async rebuild(): Promise<void> {
     this.customEntries.clear();
     const uris = await vscode.workspace.findFiles(SOURCE_GLOB, EXCLUDE_GLOB);
-    await Promise.all(uris.map((uri) => this.indexUri(uri)));
+    await Promise.all(uris.map((uri) => this._indexUri(uri)));
     this.changeEmitter.fire();
   }
 
@@ -107,7 +107,8 @@ export class AngularTsWorkspaceIndex implements vscode.Disposable {
     this.changeEmitter.dispose();
   }
 
-  private async indexUri(uri: vscode.Uri): Promise<void> {
+  /** @internal */
+  private async _indexUri(uri: vscode.Uri): Promise<void> {
     try {
       const document = await vscode.workspace.openTextDocument(uri);
       const entries = parseAngularTsRegistrations(document.getText(), uri.fsPath);

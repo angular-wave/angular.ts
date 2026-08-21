@@ -1,4 +1,4 @@
-.PHONY: all deps sync-local-runtime format format-check test root-types generate generate-check parity check runtime-build example-build runtime-test release-check publish-local demo clean
+.PHONY: all deps source-runtime-build sync-local-runtime format format-check test root-types generate generate-check generate-check-local parity check runtime-build example-build runtime-test release-check publish-local demo clean
 
 GRADLE ?= ./gradlew
 NODE ?= node
@@ -6,9 +6,12 @@ PLAYWRIGHT ?= ../../node_modules/.bin/playwright
 
 all: check
 
-deps:
+deps: source-runtime-build
 	$(GRADLE) kotlinNpmInstall
 	$(NODE) tool/sync_local_runtime.mjs
+
+source-runtime-build:
+	$(MAKE) -C ../.. build
 
 sync-local-runtime:
 	$(NODE) tool/sync_local_runtime.mjs
@@ -29,7 +32,9 @@ generate: root-types
 	$(NODE) tool/generate_kotlin_bindings.mjs
 	$(GRADLE) formatKotlin
 
-generate-check: root-types
+generate-check: root-types generate-check-local
+
+generate-check-local:
 	$(NODE) tool/check_generated_bindings.mjs
 
 parity: root-types

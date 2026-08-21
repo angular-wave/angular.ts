@@ -30,7 +30,7 @@
       </section>
 
       <section class="demo-content">
-        <form ng-submit="$ctrl.submit($event)">
+        <form ng-submit="$ctrl.add()" data-event-prevent>
           <input
             aria-label="New ClojureScript todo"
             id="cljs-new-todo"
@@ -43,7 +43,9 @@
           <button type="submit">Add</button>
         </form>
 
-        <p id="cljs-count" class="demo-note">{{ $ctrl.tasks.length }} todos</p>
+        <p id="cljs-count" class="demo-note">
+          {{ $ctrl.tasks.length }} todos
+        </p>
 
         <div class="demo-actions">
           <button type="button" ng-click="$ctrl.archive()">
@@ -56,15 +58,13 @@
             class="event-card todo-row"
             ng-class="{ 'is-done': todo.done }"
             ng-repeat="todo in $ctrl.tasks"
-            data-index="id"
           >
             <strong>{{ todo.task }}</strong>
             <label>
               Done
               <input
                 type="checkbox"
-                ng-checked="todo.done"
-                ng-change="$ctrl.setDone(todo, $event.target.checked)"
+                ng-model="todo.done"
               />
             </label>
           </article>

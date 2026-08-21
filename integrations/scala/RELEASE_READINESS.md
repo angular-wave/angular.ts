@@ -36,7 +36,7 @@ The Scala.js package currently covers:
 - `$rest`, REST resource declaration, backend, cache policy, cache store,
   options, and `NgModule.rest(...)` facades;
 - `NgModule.model(...)`, typed app model values, lifecycle helpers, restore
-  options, and `$sync` target builders;
+  options, and `sync` target builders;
 - `$machine`, machine config, guard, transition, hook, snapshot, and
   `NgModule.machine(...)` facades;
 - `$workflow`, workflow command, config, snapshot, state-engine, and

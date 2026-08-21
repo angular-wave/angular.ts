@@ -1054,7 +1054,7 @@ describe("parser", () => {
         expect(evaluateExpression(scope, 'element[fn()].name = "lucas"')).toBe(
           "lucas",
         );
-        expect(scope.element.$target[0].name).toBe("lucas");
+        expect(scope.element._target[0].name).toBe("lucas");
         expect(count).toBe(1);
       });
     });
@@ -1178,7 +1178,7 @@ describe("parser", () => {
         return true;
       };
 
-      scope.$watch("a && b()", () => {
+      scope.watch("a && b()", () => {
         called = true;
       });
       await wait();
@@ -1205,7 +1205,7 @@ describe("parser", () => {
         return true;
       };
 
-      scope.$watch("a || b()", () => {
+      scope.watch("a || b()", () => {
         /* empty */
       });
       await wait();
@@ -1227,7 +1227,7 @@ describe("parser", () => {
         bCalled = true;
       };
 
-      scope.$watch("a ? b() : 1", () => {
+      scope.watch("a ? b() : 1", () => {
         /* empty */
       });
       await wait();
@@ -1261,7 +1261,7 @@ describe("parser", () => {
         return input;
       });
 
-      scope.$watch("a | foo:b:1", () => {
+      scope.watch("a | foo:b:1", () => {
         /* empty */
       });
       await wait();
@@ -1289,7 +1289,7 @@ describe("parser", () => {
         return input;
       });
 
-      scope.$watch("[(a | foo:b:1), undefined]", () => {
+      scope.watch("[(a | foo:b:1), undefined]", () => {
         /* empty */
       });
 
@@ -1317,7 +1317,7 @@ describe("parser", () => {
 
       let watcherCalls = 0;
 
-      scope.$watch("{x: 1} | foo:1", (input) => {
+      scope.watch("{x: 1} | foo:1", (input) => {
         expect(input).toEqual({ x: 1 });
         watcherCalls++;
       });
@@ -1334,7 +1334,7 @@ describe("parser", () => {
     it("should ignore changes within nested objects", async () => {
       const watchCalls = [];
 
-      scope.$watch("[a]", (a) => {
+      scope.watch("[a]", (a) => {
         watchCalls.push(a[0]);
       });
       scope.a = 0;
@@ -1382,7 +1382,7 @@ describe("parser", () => {
 
         let watcherCalls = 0;
 
-        scope.$watch("obj | foo", (input) => {
+        scope.watch("obj | foo", (input) => {
           watcherCalls++;
         });
 
@@ -1394,7 +1394,7 @@ describe("parser", () => {
       it("should always be reevaluated in literals", async () => {
         filterRegistry.register("foo", () => (input) => input.b > 0);
 
-        scope.$watch("[(a | foo)]", () => {
+        scope.watch("[(a | foo)]", () => {
           /* empty */
         });
         evaluateExpression(scope, "a = {b: 1}");
@@ -1407,7 +1407,7 @@ describe("parser", () => {
       });
 
       it("should always be reevaluated when passed literals", () => {
-        scope.$watch("[a] | filter", () => {
+        scope.watch("[a] | filter", () => {
           /* empty */
         });
 
@@ -1436,7 +1436,7 @@ describe("parser", () => {
 
         let watcherCalls = 0;
 
-        scope.$watch("date | foo:a", (input) => {
+        scope.watch("date | foo:a", (input) => {
           watcherCalls++;
         });
 
@@ -1456,7 +1456,7 @@ describe("parser", () => {
 
         let watcherCalls = 0;
 
-        scope.$watch("[(date | foo)]", (input) => {
+        scope.watch("[(date | foo)]", (input) => {
           watcherCalls++;
         });
 
@@ -1486,7 +1486,7 @@ describe("parser", () => {
         let watcherCalls = 0;
 
         scope.date = new Date();
-        scope.$watch("date | foo:a", (input) => {
+        scope.watch("date | foo:a", (input) => {
           watcherCalls++;
         });
 
@@ -1514,7 +1514,7 @@ describe("parser", () => {
 
         let watcherCalls = 0;
 
-        scope.$watch("[(date | foo)]", (input) => {
+        scope.watch("[(date | foo)]", (input) => {
           watcherCalls++;
         });
 
@@ -1542,7 +1542,7 @@ describe("parser", () => {
 
         let watcherCalls = 0;
 
-        scope.$watch("[(date | foo)]", (input) => {
+        scope.watch("[(date | foo)]", (input) => {
           watcherCalls++;
         });
 
@@ -1570,7 +1570,7 @@ describe("parser", () => {
 
       let watcherCalls = 0;
 
-      scope.$watch("!obj | foo:!obj", (input) => {
+      scope.watch("!obj | foo:!obj", (input) => {
         watcherCalls++;
       });
 
@@ -1596,7 +1596,7 @@ describe("parser", () => {
 
       let watcherCalls = 0;
 
-      scope.$watch("1 - obj | foo:(1 * obj)", (input) => {
+      scope.watch("1 - obj | foo:(1 * obj)", (input) => {
         watcherCalls++;
       });
 
@@ -1622,7 +1622,7 @@ describe("parser", () => {
 
       let watcherCalls = 0;
 
-      scope.$watch("1 + obj | foo", (input) => {
+      scope.watch("1 + obj | foo", (input) => {
         watcherCalls++;
       });
 
@@ -1660,7 +1660,7 @@ describe("parser", () => {
 
       let watcherCalls = 0;
 
-      scope.$watch("[a] | foo", (input) => {
+      scope.watch("[a] | foo", (input) => {
         watcherCalls++;
       });
 
@@ -1688,7 +1688,7 @@ describe("parser", () => {
 
       let watcherCalls = 0;
 
-      scope.$watch("[(prim | foo)]", (input) => {
+      scope.watch("[(prim | foo)]", (input) => {
         watcherCalls++;
       });
 
@@ -1731,7 +1731,7 @@ describe("parser", () => {
         lastVal = val;
       };
 
-      scope.$watch("{val: val}", listener);
+      scope.watch("{val: val}", listener);
       await wait();
       expect(callCount).toBe(1);
 
@@ -1766,7 +1766,7 @@ describe("parser", () => {
         lastVal = val;
       };
 
-      scope.$watch("{val: val}", listener);
+      scope.watch("{val: val}", listener);
       evaluateExpression(scope, "val = 1");
       await wait();
       expect(callCount).toBe(2);
@@ -1793,7 +1793,7 @@ describe("parser", () => {
         callCount++;
       };
 
-      scope.$watch("[{val: [val]}]", listener);
+      scope.watch("[{val: [val]}]", listener);
       evaluateExpression(scope, "val = 1");
       await wait();
       expect(callCount).toBe(2);
@@ -1831,7 +1831,7 @@ describe("parser", () => {
 
         let watcherCalls = 0;
 
-        scope.$watch("[obj]", (input) => {
+        scope.watch("[obj]", (input) => {
           watcherCalls++;
         });
 
@@ -1849,7 +1849,7 @@ describe("parser", () => {
 
         let watcherCalls = 0;
 
-        scope.$watch("[date]", () => {
+        scope.watch("[date]", () => {
           watcherCalls++;
         });
 
@@ -1864,7 +1864,7 @@ describe("parser", () => {
         scope.date = new Date();
         let watcherCalls = 0;
 
-        scope.$watch("[date]", () => {
+        scope.watch("[date]", () => {
           watcherCalls++;
         });
 
@@ -1881,7 +1881,7 @@ describe("parser", () => {
         scope.date = new Date(1234567890123);
         let watcherCalls = 0;
 
-        scope.$watch("[date]", (input) => {
+        scope.watch("[date]", (input) => {
           watcherCalls++;
         });
 
@@ -1899,7 +1899,7 @@ describe("parser", () => {
 
       let lastValue;
 
-      scope.$watch("{[a]: true}", (val) => {
+      scope.watch("{[a]: true}", (val) => {
         count++;
         lastValue = val;
       });
@@ -1933,7 +1933,7 @@ describe("parser", () => {
 
       let lastValue;
 
-      scope.$watch("{[a]: true}", (val) => {
+      scope.watch("{[a]: true}", (val) => {
         count++;
         lastValue = val;
       });

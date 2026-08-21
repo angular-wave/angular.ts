@@ -2705,7 +2705,7 @@ mod browser {
         #[wasm_bindgen(typescript_type = "ng.Scope")]
         pub type RootScopeService;
 
-        #[wasm_bindgen(method, js_name = "$new")]
+        #[wasm_bindgen(method, js_name = "new")]
         pub fn new_child(this: &RootScopeService) -> JsValue;
 
         /// Browser `$eventBus` service facade.

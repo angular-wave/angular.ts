@@ -7,7 +7,7 @@ import { createViewConfig } from '../view/view.js';
  */
 function buildPath(targetState) {
     const toParams = targetState.params();
-    const stateObject = targetState.$state();
+    const stateObject = targetState._state();
     if (!stateObject) {
         throw new Error("Target state does not resolve to a state object");
     }

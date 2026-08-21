@@ -34,7 +34,6 @@ import (
 )
 
 const (
-	httpAddr        = ":3000"
 	webTransportURL = "https://localhost:4433/webtransport"
 )
 
@@ -63,6 +62,12 @@ var webTransportAvailable atomic.Bool
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	httpPort := os.Getenv("PW_API_PORT")
+	if httpPort == "" {
+		httpPort = "3000"
+	}
+	httpAddr := net.JoinHostPort("", httpPort)
 
 	cert, certHash, err := generateLocalCertificate()
 	if err != nil {

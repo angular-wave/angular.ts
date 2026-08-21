@@ -209,24 +209,24 @@ describe("AngularRuntime composition ownership", () => {
     const expectedError = new Error("first runtime failure");
 
     firstRoot.value = "value";
-    firstRoot.$watch("value | runtimeOwner", (value) => {
+    firstRoot.watch("value | runtimeOwner", (value) => {
       observed.push(value);
     });
-    firstModel.$watch("value | runtimeOwner", (value) => {
+    firstModel.watch("value | runtimeOwner", (value) => {
       modelObserved.push(value);
     });
-    firstRoot.$on("runtime:error", () => {
+    firstRoot.on("runtime:error", () => {
       throw expectedError;
     });
 
-    firstRoot.$emit("runtime:error");
+    firstRoot.emit("runtime:error");
     await wait();
 
     expect(observed).toEqual(["first:value"]);
     expect(modelObserved).toEqual(["first:model"]);
     expect(firstErrors).toEqual([expectedError]);
     expect(secondErrors).toEqual([]);
-    expect(secondRoot.$handler._parse).not.toBe(firstRoot.$handler._parse);
+    expect(secondRoot._handler._parse).not.toBe(firstRoot._handler._parse);
   });
 
   it("releases root and app-owned resources during teardown", () => {
@@ -260,7 +260,7 @@ describe("AngularRuntime composition ownership", () => {
     const rootScope = injector.get(_rootScope);
     const root = runtime._appContext.getRootByScope(rootScope);
     const view = (injector.get(_state) as StateRuntime)._viewService;
-    const retainedScope = rootScope.$new();
+    const retainedScope = rootScope.new();
     const retainedElement = document.createElement("section");
     const scheduled = jasmine.createSpy("scheduled");
 
@@ -294,7 +294,7 @@ describe("AngularRuntime composition ownership", () => {
     expect(eventBus.getCount("runtime:event")).toBe(0);
     expect(terminate).toHaveBeenCalledTimes(1);
     expect(view._retainedViews.size).toBe(0);
-    expect(retainedScope.$handler._destroyed).toBeTrue();
+    expect(retainedScope._handler._destroyed).toBeTrue();
     expect(retainedElement.isConnected).toBeFalse();
 
     rootElement.remove();

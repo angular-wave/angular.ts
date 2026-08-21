@@ -13,8 +13,8 @@ function ngStyleDirective() {
                 return;
             }
             let oldStyles = null;
-            scope.$watch(expression, (newStyles) => {
-                const target = newStyles?.$target ?? newStyles;
+            scope.watch(expression, (newStyles) => {
+                const target = newStyles?._target ?? newStyles;
                 if (oldStyles) {
                     keys(oldStyles).forEach((key) => {
                         element.style.removeProperty(key);

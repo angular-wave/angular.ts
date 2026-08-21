@@ -20,22 +20,22 @@ public class ViewModelBuilder internal constructor() {
     }
 
     public fun onInit(callback: () -> Unit): ViewModelBuilder {
-        raw.`$onInit` = callback
+        raw.`onInit` = callback
         return this
     }
 
     public fun onChanges(callback: (changes: dynamic) -> Unit): ViewModelBuilder {
-        raw.`$onChanges` = callback
+        raw.`onChanges` = callback
         return this
     }
 
     public fun onDestroy(callback: () -> Unit): ViewModelBuilder {
-        raw.`$onDestroy` = callback
+        raw.`onDestroy` = callback
         return this
     }
 
     public fun postLink(callback: () -> Unit): ViewModelBuilder {
-        raw.`$postLink` = callback
+        raw.`postLink` = callback
         return this
     }
 

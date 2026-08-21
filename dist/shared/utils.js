@@ -33,7 +33,7 @@ function isProxy(value) {
  * @returns The unproxied value.
  */
 function deProxy(val) {
-    return isProxy(val) ? val.$target : val;
+    return isProxy(val) ? val._target : val;
 }
 const ngError = createErrorFactory("ng");
 let uid = 0;
@@ -234,7 +234,7 @@ function isWindow(obj) {
  * Returns whether a value looks like an Angular scope object.
  */
 function isScope(obj) {
-    return isObject(obj) && isFunction(obj.$watch);
+    return isObject(obj) && isFunction(obj.watch);
 }
 /**
  * Returns whether a value is a `File`.
@@ -934,7 +934,7 @@ function toDebugString(obj) {
     }
     if (!isString(obj)) {
         const seen = [];
-        const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
+        const copyObj = structuredClone(isProxy(obj) ? obj._target : obj);
         return JSON.stringify(copyObj, (key, val) => {
             const replace = toJsonReplacer(key, val);
             if (isObject(replace)) {

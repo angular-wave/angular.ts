@@ -41,7 +41,7 @@ export function classDirective($injector: ng.InjectorService): ng.Directive {
         return;
       }
 
-      scope.$watch(expression, (val) => {
+      scope.watch(expression, (val) => {
         ngClassWatchAction(toClassString(val));
       });
 

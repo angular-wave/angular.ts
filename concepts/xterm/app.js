@@ -17,7 +17,7 @@ window.angular
       constructor(terminalModel, $scope) {
         this.terminal = terminalModel;
         this.destroyRuntime = () => {};
-        $scope.$on("$destroy", () => this.destroyRuntime());
+        $scope.on("$destroy", () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 

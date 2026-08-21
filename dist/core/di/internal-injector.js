@@ -134,7 +134,7 @@ class InjectorService extends AbstractInjector {
     /** @internal */
     _factory(serviceName) {
         const provider = this._providerInjector.get(serviceName + providerSuffix);
-        return this.invoke(provider.$get, provider, undefined, serviceName);
+        return this.invoke(provider.get, provider, undefined, serviceName);
     }
     /**
      *

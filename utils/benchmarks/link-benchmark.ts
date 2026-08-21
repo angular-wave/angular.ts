@@ -138,7 +138,7 @@ function linkWithNewScope(
   $rootScope: Scope,
   createScopeData?: () => Record<string, unknown>,
 ): unknown {
-  const scope = $rootScope.$new() as BenchmarkScope;
+  const scope = $rootScope.new() as BenchmarkScope;
 
   if (createScopeData) {
     Object.assign(scope, createScopeData());
@@ -149,7 +149,7 @@ function linkWithNewScope(
 
     return linkedNodes;
   } finally {
-    scope.$destroy();
+    scope.destroy();
   }
 }
 
@@ -183,7 +183,7 @@ export async function runLinkBenchmark(
           () =>
             linkWithNewScope(
               linkFn,
-              runtime.$rootScope,
+              runtime.rootScope,
               benchmark.createScopeData,
             ),
         ),

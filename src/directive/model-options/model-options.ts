@@ -30,7 +30,7 @@ export type ModelOptionValue =
 export type ModelOptionsConfig = NgModelOptions & {
   [key: string]: ModelOptionValue;
   updateOnDefault?: boolean;
-  "*"?: "$inherit";
+  "*"?: "_inherit";
 };
 
 class NgModelOptionsController {
@@ -44,26 +44,26 @@ class NgModelOptionsController {
   /** @internal */
   _parse: ng.ParseService;
   parentCtrl: NgModelOptionsController | null;
-  $options: ModelOptions;
+  options: ModelOptions;
 
   constructor($element: Element, $scope: ng.Scope, $parse: ng.ParseService) {
     this._element = $element;
     this._scope = $scope;
     this._parse = $parse;
     this.parentCtrl = null;
-    this.$options = defaultModelOptions;
+    this.options = defaultModelOptions;
   }
 
-  $onInit(): void {
+  onInit(): void {
     const parentOptions = this.parentCtrl
-      ? this.parentCtrl.$options
+      ? this.parentCtrl.options
       : defaultModelOptions;
 
     const modelOptionsDefinition = this._parse(
       getNormalizedAttr(this._element, "ngModelOptions") ?? "",
     )(this._scope) as ModelOptionsConfig;
 
-    this.$options = parentOptions.createChild(modelOptionsDefinition);
+    this.options = parentOptions.createChild(modelOptionsDefinition);
   }
 }
 
@@ -90,7 +90,7 @@ export class ModelOptions {
     const mergedOptions = assign({}, options);
 
     for (const [key, option] of Object.entries(mergedOptions)) {
-      if (option === "$inherit") {
+      if (option === "_inherit") {
         if (key === "*") {
           inheritAll = true;
         } else {

@@ -239,7 +239,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       this.syncScope();
     }
 
-    $onInit() {
+    onInit() {
       const inner = this[innerSlot];
 
       if (inner && typeof inner.onInit === "function") {
@@ -249,7 +249,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       }
     }
 
-    $onDestroy() {
+    onDestroy() {
       const inner = this[innerSlot];
 
       if (inner && typeof inner.onDestroy === "function") {
@@ -338,7 +338,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
     }
 
     syncRustProperties() {
-      const target = this[controllerProxySlot] || this.$proxy || this;
+      const target = this[controllerProxySlot] || this._proxy || this;
 
       for (const property of syncProperties) {
         const next = this[innerSlot][property];

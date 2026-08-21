@@ -133,7 +133,7 @@ Listen for storage changes from other tabs through `$window`.
 angular.module("demo").run(["$window", "$rootScope", ($window, $rootScope) => {
   $window.addEventListener("storage", (event: StorageEvent) => {
     if (event.key === "theme") {
-      $rootScope.$broadcast("themeChanged", event.newValue);
+      $rootScope.broadcast("themeChanged", event.newValue);
     }
   });
 }]);

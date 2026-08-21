@@ -29,7 +29,9 @@ type LinkContext = object | boolean | undefined;
 
 type CreateFlag = boolean | 1 | undefined;
 
-type PropertyBag = Record<PropertyKey, unknown>;
+type PropertyBag = Record<PropertyKey, unknown> & {
+  _proxy?: unknown;
+};
 
 interface ExpressionReference {
   context?: unknown;
@@ -74,7 +76,18 @@ function asPropertyBag(value: unknown): PropertyBag | undefined {
 }
 
 function readProperty(value: unknown, key: PropertyKey): unknown {
-  return asPropertyBag(value)?.[key];
+  const bag = asPropertyBag(value);
+
+  if (!bag) return undefined;
+
+  if (isProxy(value)) {
+    const target = asPropertyBag(deProxy(value));
+
+    // Expressions address model data, not the Scope API layered over its proxy.
+    if (target && !(key in target)) return undefined;
+  }
+
+  return bag[key];
 }
 
 function writeProperty(
@@ -92,7 +105,7 @@ function writeProperty(
 function getProxyTarget(value: unknown): unknown {
   const bag = asPropertyBag(value);
 
-  return bag && "$proxy" in bag ? (bag.$proxy ?? value) : value;
+  return bag?._proxy ?? value;
 }
 
 function evaluateLogicalOrValue(

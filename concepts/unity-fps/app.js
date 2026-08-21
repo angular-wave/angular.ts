@@ -69,13 +69,13 @@ window.angular
         this.telemetry = telemetry;
         this.unity = null;
         this.destroyRuntime = () => {};
-        this.stopPlayerSync = player.$sync([
+        this.stopPlayerSync = player.sync([
           "unityTelemetrySyncTarget",
           (sync) => sync,
         ]);
 
         window.angularTsUnityFps = this.createBridge();
-        $scope.$on("$destroy", () => {
+        $scope.on("$destroy", () => {
           this.stopPlayerSync();
           this.destroyRuntime();
         });

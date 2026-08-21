@@ -658,9 +658,9 @@ describe("$http", function () {
       nested: { role: "admin", $hashKey: "role:1" },
       tags: [{ label: "primary", $hashKey: "tag:1" }],
     });
-    expect(response.data.$handler).toBeUndefined();
-    expect(response.data.$target).toBeUndefined();
-    expect(response.data.$proxy).toBeUndefined();
+    expect(response.data._handler).toBeUndefined();
+    expect(response.data._target).toBeUndefined();
+    expect(response.data._proxy).toBeUndefined();
     expect(response.data.$$watchersCount).toBeUndefined();
     expect(response.data.nested).not.toBe("$SCOPE");
   });

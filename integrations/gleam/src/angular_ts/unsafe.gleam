@@ -6,6 +6,12 @@ pub type JsValue =
 @external(javascript, "./ffi.mjs", "identity")
 pub fn coerce(value: a) -> Dynamic
 
+@external(javascript, "./ffi.mjs", "identity")
+pub fn from_dynamic(value: Dynamic) -> a
+
+@external(javascript, "./ffi.mjs", "get_property")
+pub fn get_property(target: Dynamic, key: String) -> Dynamic
+
 @external(javascript, "./ffi.mjs", "empty_object")
 pub fn empty_object() -> Dynamic
 
@@ -46,3 +52,10 @@ pub fn call_function0(target: Dynamic) -> Dynamic
 
 @external(javascript, "./ffi.mjs", "call_function2")
 pub fn call_function2(target: Dynamic, arg1: Dynamic, arg2: Dynamic) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "wrap_factory_property")
+pub fn wrap_factory_property(
+  factory: Dynamic,
+  key: String,
+  value: Dynamic,
+) -> Dynamic

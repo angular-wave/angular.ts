@@ -37,7 +37,7 @@ angular
         this.stopWorkerMessages = this.worker.onMessage((message) =>
           this.receive(message),
         );
-        this.stopSync = model.$sync({
+        this.stopSync = model.sync({
           write: (snapshot, change) => {
             if (!change.keys.includes("runId") || snapshot.status !== "ready") {
               return;
@@ -60,7 +60,7 @@ angular
           });
         });
 
-        $scope.$on("$destroy", () => {
+        $scope.on("$destroy", () => {
           this.stopSync();
           this.stopWorkerMessages();
           this.stopWorkerError();
@@ -75,7 +75,7 @@ angular
 
       receive(message) {
         if (message.type === "ready") {
-          this.model.$restore(
+          this.model.restore(
             {
               status: "ready",
               moduleShared: true,
@@ -92,7 +92,7 @@ angular
           return;
         }
 
-        this.model.$restore(
+        this.model.restore(
           {
             status: "ready",
             result: message.result,

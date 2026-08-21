@@ -18,42 +18,42 @@ An assignable AngularTS expression. When the user changes the input, the express
 ### Model controller (`NgModelController`)
 
 When `ng-model` is applied, AngularTS creates an `NgModelController` accessible as `formName.fieldName` on the scope. It exposes:
-#### `$viewValue`
+#### `viewValue`
 
 - **Type:** `any`
 
 The value as seen by the user in the input (always a string for text inputs).
-#### `$modelValue`
+#### `modelValue`
 
 - **Type:** `any`
 
 The value after parsers have run — what is stored on the scope.
-#### `$valid`
+#### `valid`
 
 - **Type:** `boolean`
 
 `true` when all validators pass.
-#### `$invalid`
+#### `invalid`
 
 - **Type:** `boolean`
 
 `true` when any validator fails.
-#### `$pristine`
+#### `pristine`
 
 - **Type:** `boolean`
 
 `true` until the user has interacted with this field.
-#### `$dirty`
+#### `dirty`
 
 - **Type:** `boolean`
 
 `true` after the user has changed the value at least once.
-#### `$touched`
+#### `touched`
 
 - **Type:** `boolean`
 
 `true` after the field has received and lost focus.
-#### `$error`
+#### `error`
 
 - **Type:** `object`
 
@@ -62,16 +62,16 @@ Map of failing validator names to `true`. E.g., `{ required: true, minlength: tr
 
 `ng-model` processes values through two pipelines:
 
-* **Parsers** (`$parsers`): Convert `$viewValue` → `$modelValue`. Applied on user input. Return `undefined` to mark invalid.
-* **Formatters** (`$formatters`): Convert `$modelValue` → `$viewValue`. Applied when scope value changes.
+* **Parsers** (`parsers`): Convert `viewValue` → `modelValue`. Applied on user input. Return `undefined` to mark invalid.
+* **Formatters** (`formatters`): Convert `modelValue` → `viewValue`. Applied when scope value changes.
 
 ```javascript
   return {
     require: 'ngModel',
     link: function(scope, el, attrs, ngModel) {
-      ngModel.$parsers.push(function(value) {
+      ngModel.parsers.push(function(value) {
         var n = parseInt(value, 10);
-        ngModel.$setValidity('integer', !isNaN(n));
+        ngModel.setValidity('integer', !isNaN(n));
         return isNaN(n) ? undefined : n;
       });
     }

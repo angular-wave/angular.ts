@@ -33,7 +33,7 @@ function createWorkflowUiFragmentHost(options) {
             return next;
         },
     };
-    const removeDestroyListener = options.scope.$on("$destroy", () => {
+    const removeDestroyListener = options.scope.on("$destroy", () => {
         host.dispose();
     });
     return host;

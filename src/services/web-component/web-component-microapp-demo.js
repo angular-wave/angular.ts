@@ -229,7 +229,7 @@ const inventoryMicroapp = {
         notify("restock");
       };
 
-      scope.$watch("resetToken", (token, previous) => {
+      scope.watch("resetToken", (token, previous) => {
         if (token === previous) return;
         reset("host-reset");
       });

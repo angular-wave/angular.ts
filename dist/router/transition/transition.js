@@ -97,7 +97,7 @@ class Transition {
         // current() is assumed to come from targetState.options, but provide a naive implementation otherwise.
         this._options = assign({}, targetState._options);
         (_a = this._options).current ?? (_a.current = () => this);
-        this.$id = transitionService._transitionCount++;
+        this.id = transitionService._transitionCount++;
         const toPath = buildToPath(fromPath, targetState);
         this._treeChanges = treeChanges(fromPath, toPath, this._options.reloadState);
         const onCreateHooks = buildHooksForPhase(this, TransitionHookPhase._CREATE);
@@ -112,20 +112,16 @@ class Transition {
         });
         applyViewConfigs(this._transitionService._view, this._treeChanges.to, enteringStates);
     }
-    /**
-     * @returns {StateObject} the internal from [State] object
-     */
-    $from() {
+    /** @internal */
+    _from() {
         const fromPath = this._treeChanges.from;
         const fromNode = fromPath.length
             ? fromPath[fromPath.length - 1]
             : undefined;
         return assertDefined(fromNode).state;
     }
-    /**
-     * @returns {StateObject} the internal to [State] object
-     */
-    $to() {
+    /** @internal */
+    _to() {
         const toPath = this._treeChanges.to;
         const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
         return assertDefined(toNode).state;
@@ -138,7 +134,7 @@ class Transition {
      * @returns {StateDeclaration} The state declaration object for the Transition's ("from state").
      */
     from() {
-        return this.$from().self;
+        return this._from().self;
     }
     /**
      * Returns the "to state"
@@ -148,7 +144,7 @@ class Transition {
      * @returns {StateDeclaration} The state declaration object for the Transition's target state ("to state").
      */
     to() {
-        return this.$to().self;
+        return this._to().self;
     }
     params(pathname = "to") {
         const path = this._treeChanges[pathname] ?? [];
@@ -311,7 +307,7 @@ class Transition {
     /** @internal */
     async _startTransition() {
         const { _routerState } = this;
-        _routerState._lastStartedTransitionId = this.$id;
+        _routerState._lastStartedTransitionId = this.id;
         _routerState._transition = this;
         _routerState._lastStartedTransition = this;
         return Promise.resolve();
@@ -362,7 +358,7 @@ class Transition {
      * @internal
      */
     error() {
-        const state = this.$to();
+        const state = this._to();
         if (state.self.abstract) {
             return Rejection.invalid(`Cannot transition to abstract state '${state.name}'`);
         }
@@ -392,7 +388,7 @@ class Transition {
         const fromStateOrName = this.from();
         const toStateOrName = this.to();
         // (X) means the to state is invalid.
-        const id = this.$id, from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName, fromParams = stringify(avoidEmptyHash(pathParams(this._treeChanges.from))), toValid = this.valid() ? "" : "(X) ", to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName, toParams = stringify(avoidEmptyHash(this.params()));
+        const id = this.id, from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName, fromParams = stringify(avoidEmptyHash(pathParams(this._treeChanges.from))), toValid = this.valid() ? "" : "(X) ", to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName, toParams = stringify(avoidEmptyHash(this.params()));
         return `Transition#${String(id)}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
     }
 }

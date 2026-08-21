@@ -163,7 +163,7 @@ describe("utility functions", () => {
     it("should store generated hash keys against deproxied targets", () => {
       const target = {};
 
-      const proxy = { [isProxySymbol]: true, $target: target };
+      const proxy = { [isProxySymbol]: true, _target: target };
 
       const key = hashKey(proxy);
 
@@ -766,9 +766,9 @@ describe("utility functions", () => {
     });
 
     it("should compare Scope instances only by identity", () => {
-      const scope1 = $rootScope.$new();
+      const scope1 = $rootScope.new();
 
-      const scope2 = $rootScope.$new();
+      const scope2 = $rootScope.new();
 
       expect(equals(scope1, scope1)).toBe(true);
       expect(equals(scope1, scope2)).toBe(false);
@@ -1301,7 +1301,7 @@ describe("utility functions", () => {
     it("should identify proxies and unwrap them", () => {
       const target = { value: 1 };
 
-      const proxy = { [isProxySymbol]: true, $target: target };
+      const proxy = { [isProxySymbol]: true, _target: target };
 
       expect(isProxySymbol).toBe(
         Symbol.for("@angular-wave/angular.ts/isProxy"),
@@ -1312,7 +1312,7 @@ describe("utility functions", () => {
     });
 
     it("should identify scope-like objects", () => {
-      expect(isScope({ $watch() {} })).toBeTruthy();
+      expect(isScope({ watch() {} })).toBeTruthy();
       expect(isScope({})).toBeFalsy();
     });
 

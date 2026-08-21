@@ -11,13 +11,13 @@ function getScopeWorkerQueueState(scope) {
     if (state)
         return state;
     let nextState;
-    const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+    const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
         if (!shouldHandleViewRetentionPause(args, "schedulers")) {
             return;
         }
         nextState._paused = true;
     });
-    const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+    const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
         if (!shouldHandleViewRetentionPause(args, "schedulers")) {
             return;
         }
@@ -27,7 +27,7 @@ function getScopeWorkerQueueState(scope) {
         nextState._paused = false;
         flushScopeWorkerQueue(nextState);
     });
-    const deregisterDestroy = scope.$on("$destroy", () => {
+    const deregisterDestroy = scope.on("$destroy", () => {
         nextState._pending.length = 0;
         nextState._paused = false;
         nextState._flushing = false;
@@ -109,7 +109,7 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                     }
                 });
                 observer.observe(element, { attributes: true });
-                let deregisterDestroy = scope.$on("$destroy", deregister);
+                let deregisterDestroy = scope.on("$destroy", deregister);
                 function deregister() {
                     observer.disconnect();
                     deregisterDestroy?.();
@@ -139,7 +139,7 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                     $log.error(`[ng-worker:${workerLabel}]`, err);
                     const onError = attr("onError");
                     if (isDefined(onError)) {
-                        $parse(onError)(scope, { $error: err });
+                        $parse(onError)(scope, { error: err });
                     }
                 });
             };
@@ -190,7 +190,7 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                     })();
                 });
             };
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 element.removeEventListener(eventName, listener);
                 if (intervalId !== undefined) {
                     clearInterval(intervalId);

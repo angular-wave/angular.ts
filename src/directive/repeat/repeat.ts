@@ -133,7 +133,7 @@ function parseRepeatExpression(
 
 type RepeatScope = ng.Scope &
   Record<string, unknown> & {
-    $target: Record<string, unknown>;
+    _target: Record<string, unknown>;
   };
 
 type RepeatClone = Node | Node[];
@@ -162,7 +162,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
   ];
 
   function scopeUsesRepeatPositionLocals(scope: RepeatScope): boolean {
-    const watchers = scope.$handler._watchers;
+    const watchers = scope._handler._watchers;
 
     for (let i = 0; i < repeatPositionLocalKeys.length; i++) {
       if (watchers.has(repeatPositionLocalKeys[i])) {
@@ -192,9 +192,9 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     }
 
     if (value && (typeof value === "object" || typeof value === "function")) {
-      setHashKey(scope.$target, hashKey(value));
+      setHashKey(scope._target, hashKey(value));
     } else {
-      setHashKey(scope.$target, null);
+      setHashKey(scope._target, null);
     }
 
     if (!updatePositionLocals) {
@@ -245,12 +245,12 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     key: unknown,
     arrayLength: number,
   ) {
-    const target = scope.$target as Record<string, unknown>;
+    const target = scope._target as Record<string, unknown>;
 
     target[valueIdentifier] = value;
 
     if (isProxy(value)) {
-      scope.$handler._foreignProxies.add(value);
+      scope._handler._foreignProxies.add(value);
     }
 
     if (keyIdentifier) {
@@ -659,7 +659,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       if (
         aliasAs &&
         (!/^[$a-zA-Z_][$a-zA-Z0-9_]*$/.test(aliasAs) ||
-          /^(null|undefined|this|\$index|\$first|\$middle|\$last|\$even|\$odd|\$parent|\$root|\$id)$/.test(
+          /^(null|undefined|this|\$index|\$first|\$middle|\$last|\$even|\$odd|parent|root|id)$/.test(
             aliasAs,
           ))
       ) {
@@ -855,7 +855,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
         let lastSeenArrayMutationVersion = 0;
 
-        $scope.$watch(
+        $scope.watch(
           rhs,
           (collection: unknown) => {
             swap();
@@ -1043,7 +1043,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
               if (firstNode && lastNode) {
                 for (let i = 0; i < lastBlockOrder.length; i++) {
-                  lastBlockOrder[i]._scope?.$destroy();
+                  lastBlockOrder[i]._scope?.destroy();
                 }
 
                 removeNodeRangeFast(firstNode, lastNode);
@@ -1075,7 +1075,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   removedIndex < lastBlockOrder.length;
                   removedIndex++
                 ) {
-                  lastBlockOrder[removedIndex]._scope?.$destroy();
+                  lastBlockOrder[removedIndex]._scope?.destroy();
                 }
 
                 removeNodeRangeFast(firstRemovedNode, lastRemovedNode);
@@ -1129,7 +1129,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
               if (firstNode && lastNode) {
                 for (let i = 0; i < lastBlockOrder.length; i++) {
-                  lastBlockOrder[i]._scope?.$destroy();
+                  lastBlockOrder[i]._scope?.destroy();
                 }
 
                 removeNodeRangeFast(firstNode, lastNode);
@@ -1166,7 +1166,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                     if (completed) leavingFragment?.dispose();
                   });
               } else {
-                block._scope?.$destroy();
+                block._scope?.destroy();
                 removeBlockNodes(blockNodes);
               }
 
@@ -1179,7 +1179,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
               }
 
               if (hasAnimate && elementsToRemove) {
-                block._scope?.$destroy();
+                block._scope?.destroy();
               }
             }
 
@@ -1309,7 +1309,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   block._value = collectionValue;
                 }
               } else {
-                const childScope = $scope.$transcluded() as RepeatScope;
+                const childScope = $scope.transcluded() as RepeatScope;
 
                 initializeScope(
                   childScope,

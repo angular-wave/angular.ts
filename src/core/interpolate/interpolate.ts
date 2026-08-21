@@ -30,7 +30,7 @@ export interface InterpolationFunction {
 }
 
 interface WatchableContext {
-  $watch: (
+  watch: (
     expression: string,
     listener: () => void,
     lazy?: boolean,
@@ -39,7 +39,7 @@ interface WatchableContext {
 }
 
 function getWatchableContext(context: unknown): WatchableContext | undefined {
-  return isFunction((context as Partial<WatchableContext> | undefined)?.$watch)
+  return isFunction((context as Partial<WatchableContext> | undefined)?.watch)
     ? (context as WatchableContext)
     : undefined;
 }
@@ -278,7 +278,7 @@ export function createInterpolateService(
 
               if (watchable) {
                 callFunction(
-                  watchable.$watch,
+                  watchable.watch,
                   watchable,
                   watchProp,
                   () => {
@@ -337,7 +337,7 @@ export function createInterpolateService(
 
               if (watchable) {
                 callFunction(
-                  watchable.$watch,
+                  watchable.watch,
                   watchable,
                   watchProp,
                   () => {

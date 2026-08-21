@@ -27,8 +27,8 @@ primitives.
 
 - **For sharing application state**: use custom Services and Factories that
   encapsulate your business logic and manage your model.
-- **For intercomponent communication**: use `$scope.$on()`, `$scope.$emit()`,
-  and `$scope.$broadcast()` methods.
+- **For intercomponent communication**: use `$scope.on()`, `$scope.emit()`,
+  and `$scope.broadcast()` methods.
 
 The example below demonstrates communication between the global `window` context
 and a controller. **Note**: Ensure topic clean-up after the `$scope` is

@@ -19,7 +19,7 @@ function ngWasmDirective($wasm) {
                 throw new Error(`ng-wasm cannot publish the reserved alias '${alias}'.`);
             }
             const loaded = $wasm.load({ source: src });
-            $scope.$on("$destroy", () => {
+            $scope.on("$destroy", () => {
                 loaded.dispose();
             });
             $scope[alias] = loaded;

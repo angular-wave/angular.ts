@@ -9,8 +9,21 @@ The integration is intentionally strict by default:
 - low-level JavaScript interop will live under `angular.ts.unsafe`;
 - namespace parity is checked against `@types/namespace.d.ts`.
 
+Generated namespace facades carry the canonical TypeScript API descriptions as
+KDoc. Public functions preserve source parameter names and include an `@param`
+entry for every argument. `make generate-check` rejects stale types, members,
+or documentation.
+
 Generated facades, handwritten runtime wrappers, examples, and browser runtime
 tests are tracked in `PLAN.md`.
+
+## Programmatic Views
+
+Components and directives accept a typed `ProgrammaticView`. The callback
+context exposes `controller`, `required`, `scope`, `element`, and `transclude`.
+Use `injector.get(angularToken).tags` to create real DOM, or
+`ProgrammaticTags.namespace(...)` for SVG and MathML. Function-valued children
+remain reactive AngularTS readers.
 
 ## Prerequisites
 
@@ -68,7 +81,7 @@ Generated Kotlin `WasmScope` facades represent the shared view-scope ABI. They
 should be used for DOM/root-scoped controller or component state. App-owned
 state belongs to `app.model(...)`; durable or shared state should synchronize
 with external runtimes through host-side AngularTS services or
-`model.$sync(...)` targets. Kotlin should not add model handles or model watch
+`model.sync(...)` targets. Kotlin should not add model handles or model watch
 imports unless the shared WASM ABI adds that surface.
 
 ## Release Checklist

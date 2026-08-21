@@ -1604,14 +1604,14 @@ function createWorkflowFactory() {
 
     Object.defineProperty(workflowTarget, SCOPE_PROXY_BIND, {
       value(handler: Scope, proxy: WorkflowInstance<TData, TCommands, TState>) {
-        let binding = bindings.get(handler.$id);
+        let binding = bindings.get(handler.id);
 
         if (!binding) {
           binding = {
             _handler: handler,
             _proxy: proxy,
           };
-          bindings.set(handler.$id, binding);
+          bindings.set(handler.id, binding);
         }
       },
     });
@@ -1919,6 +1919,7 @@ function createWorkflowFactory() {
       const controller = new AbortController();
       let cancel!: (diagnostic: WorkflowDiagnostic) => void;
       const state: WorkflowRunState = {
+        /** @internal */
         _cancel(diagnostic) {
           cancel(diagnostic);
         },

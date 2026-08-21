@@ -592,7 +592,7 @@ describe("$machine", () => {
 
     expect(machine.send("increment").ok).toBeTrue();
     expect(machine.data.count).toBe(1);
-    expect(machine.$handler).toBe($rootScope.$handler);
+    expect(machine._handler).toBe($rootScope._handler);
   });
 
   it("resolves one immutable target for guards, policy, and updates", () => {

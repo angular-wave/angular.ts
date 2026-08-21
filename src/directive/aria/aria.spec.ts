@@ -54,14 +54,14 @@ describe("ARIA composition", () => {
 
   it("watches an empty expression when a managed source attribute is absent", () => {
     const service = createAriaService(createAriaRuntimeState(), log);
-    const watch = jasmine.createSpy("$watch");
+    const watch = jasmine.createSpy("watch");
 
     service._watchExpr(
       "ngDisabled",
       "aria-disabled",
       [],
       false,
-    )({ $watch: watch }, document.createElement("div"));
+    )({ watch: watch }, document.createElement("div"));
 
     expect(watch).toHaveBeenCalledWith("", jasmine.any(Function));
   });
@@ -508,33 +508,33 @@ describe("$aria", () => {
       expect(element.getAttribute("aria-checked")).toBe("false");
     });
 
-    it("should use `$isEmpty()` to determine if the checkbox is checked", async () => {
+    it("should use `isEmpty()` to determine if the checkbox is checked", async () => {
       element = $compile('<div role="checkbox" ng-model="val"></div>')(scope);
       await wait();
       const ctrl = getController(element, "ngModel");
 
-      ctrl.$isEmpty = function (value) {
+      ctrl.isEmpty = function (value) {
         return value === "not-checked";
       };
 
       scope.val = true;
       await wait();
-      expect(ctrl.$modelValue).toBe(true);
+      expect(ctrl.modelValue).toBe(true);
       expect(element.getAttribute("aria-checked")).toBe("true");
 
       scope.val = false;
       await wait();
-      expect(ctrl.$modelValue).toBe(false);
+      expect(ctrl.modelValue).toBe(false);
       expect(element.getAttribute("aria-checked")).toBe("true");
 
       scope.val = "not-checked";
       await wait();
-      expect(ctrl.$modelValue).toBe("not-checked");
+      expect(ctrl.modelValue).toBe("not-checked");
       expect(element.getAttribute("aria-checked")).toBe("false");
 
       scope.val = "checked";
       await wait();
-      expect(ctrl.$modelValue).toBe("checked");
+      expect(ctrl.modelValue).toBe("checked");
       expect(element.getAttribute("aria-checked")).toBe("true");
     });
 
@@ -1124,7 +1124,7 @@ describe("$aria", () => {
   describe("announcing ngMessages", () => {
     it("should attach aria-live", async () => {
       const element = $compile(
-        '<div><div ng-messages="myForm.myName.$error"></div></div',
+        '<div><div ng-messages="myForm.myName.error"></div></div',
       )(scope);
 
       await wait();

@@ -141,8 +141,8 @@ describe("angular", () => {
       expect(window.angular.subapps.length).toBe(1);
       expect(window.angular.subapps[0]).toBeDefined();
       expect(window.angular.subapps[0]._subapp).toBeTrue();
-      expect(window.angular.$injector).not.toBe(
-        window.angular.subapps[0].$injector,
+      expect(window.angular.currentInjector).not.toBe(
+        window.angular.subapps[0].currentInjector,
       );
       expect(window.angular.subapps[0]._appContext).toBe(
         window.angular._appContext,
@@ -162,9 +162,7 @@ describe("angular", () => {
 
       window.angular.init(element);
 
-      expect(window.angular.subapps[0].$eventBus).toBe(
-        window.angular.$eventBus,
-      );
+      expect(window.angular.subapps[0].eventBus).toBe(window.angular.eventBus);
     });
   });
 
@@ -185,7 +183,7 @@ describe("angular", () => {
       expect(record.rootElement).toBe(root);
       expect(runtime._appContext.roots.length).toBe(beforeCount + 1);
 
-      $rootScope.$destroy();
+      $rootScope.destroy();
 
       expect(runtime._appContext.getRootByElement(root)).toBeUndefined();
       expect(runtime._appContext.getRootByScope($rootScope)).toBeUndefined();
@@ -206,7 +204,7 @@ describe("angular", () => {
       expect(record.rootElement).toBeUndefined();
       expect(runtime._appContext.roots.length).toBe(beforeCount + 1);
 
-      $rootScope.$destroy();
+      $rootScope.destroy();
 
       expect(runtime._appContext.getRootByScope($rootScope)).toBeUndefined();
       expect(runtime._appContext.roots.length).toBe(beforeCount);
@@ -349,7 +347,7 @@ describe("angular", () => {
       module = angular.module("default", ["ng"]).controller(
         "demo",
         class Demo {
-          static $scopename = "demo";
+          static scopeName = "demo";
         },
       );
       injector = createInjector(["default"]);
@@ -372,7 +370,7 @@ describe("angular", () => {
       expect(angular.getScopeByName("fail")).toBeUndefined();
     });
 
-    it("should return controllers with static $scopename property", () => {
+    it("should return controllers with static scopeName property", () => {
       const element = createElementFromHTML("<div ng-controller='demo'></div>");
 
       angular.bootstrap(element, ["default"]);
@@ -380,7 +378,7 @@ describe("angular", () => {
       expect(angular.getScopeByName("demo")).toBeDefined();
     });
 
-    it("should return controllers with static $scopename property registered with `as` syntax", () => {
+    it("should return controllers with static scopeName property registered with `as` syntax", () => {
       const element = createElementFromHTML(
         "<div ng-controller='demo as $ctrl'></div>",
       );
@@ -409,7 +407,7 @@ describe("angular", () => {
         .controller(
           "demo",
           class Demo {
-            static $scopename = "demo";
+            static scopeName = "demo";
             constructor() {}
           },
         );
@@ -435,13 +433,13 @@ describe("angular", () => {
 
       angular.dispatchEvent(new CustomEvent("store", { detail: "a = 1" }));
       await wait();
-      expect(angular.$injector.get("store").a).toEqual(1);
+      expect(angular.currentInjector.get("store").a).toEqual(1);
 
       angular.dispatchEvent(
         new CustomEvent("store", { detail: "setName('myStore')" }),
       );
       await wait();
-      expect(angular.$injector.get("store").name).toEqual("myStore");
+      expect(angular.currentInjector.get("store").name).toEqual("myStore");
     });
   });
 });

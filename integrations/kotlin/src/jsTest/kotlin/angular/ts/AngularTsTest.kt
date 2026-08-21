@@ -19,6 +19,27 @@ import kotlin.test.assertNotNull
 
 class AngularTsTest {
     @Test
+    fun exposesProgrammaticViewContextAndTags() {
+        val host = js("document.createElement('section')").unsafeCast<HTMLElement>()
+        val rawContext = js("({})")
+        rawContext.controller = "ready"
+        rawContext.scope = js("({})")
+        rawContext.element = host
+        rawContext.transclude = { _: Any? -> Unit }
+        val context = ProgrammaticViewContext<String, Unit>(rawContext)
+        val rawTags: dynamic = { _: String -> js("({})") }
+        rawTags.section = { _: dynamic, child: String ->
+            val element = js("document.createElement('section')").unsafeCast<HTMLElement>()
+            element.textContent = child
+            element
+        }
+
+        assertEquals("ready", context.controller)
+        assertEquals(host, context.element)
+        assertEquals("view", ProgrammaticTags(rawTags).tag("section", children = arrayOf("view")).textContent)
+    }
+
+    @Test
     fun exposesPackageMarker() {
         assertEquals("angular.ts", ng.marker())
     }
@@ -569,7 +590,7 @@ class AngularTsTest {
             onInit { initialized = true }
         }
 
-        viewModel.`$onInit`()
+        viewModel.`onInit`()
 
         assertEquals("hello", viewModel.message)
         assertEquals("ready", viewModel.label())
@@ -697,27 +718,27 @@ class AngularTsTest {
         var eventName = ""
         val raw = js("{}")
 
-        raw.`$watch` = { expression: String, listener: dynamic, lazy: Boolean ->
+        raw.`watch` = { expression: String, listener: dynamic, lazy: Boolean ->
             watchedExpression = expression
             listener("new", raw)
             assertEquals(true, lazy)
             ({ destroyed = true }).unsafeCast<dynamic>()
         }
-        raw.`$on` = { name: String, listener: dynamic ->
+        raw.`on` = { name: String, listener: dynamic ->
             eventName = name
             listener("event")
             ({}).unsafeCast<dynamic>()
         }
-        raw.`$emit` = { name: String, value: String -> "$name:$value" }
-        raw.`$broadcast` = { name: String, value: String -> "$name:$value" }
-        raw.`$merge` = { value: dynamic ->
+        raw.`emit` = { name: String, value: String -> "$name:$value" }
+        raw.`broadcast` = { name: String, value: String -> "$name:$value" }
+        raw.`merge` = { value: dynamic ->
             raw.merged = value
         }
-        raw.`$destroy` = {
+        raw.`destroy` = {
             destroyed = true
         }
-        raw.`$new` = { raw }
-        raw.`$newIsolate` = { raw }
+        raw.`new` = { raw }
+        raw.`newIsolate` = { raw }
 
         val scope = Scope<Any>(raw.unsafeCast<RawScope>())
         var observed: Any? = null
@@ -819,7 +840,7 @@ class AngularTsTest {
             )
 
         val injector = ng.bootstrap(root.unsafeCast<Element>(), listOf(app.name))
-        injector.raw.get("\$rootScope").`$handler`._flushScheduledTasks()
+        injector.raw.get("\$rootScope").`_handler`._flushScheduledTasks()
 
         assertEquals("Hello Kotlin", root.querySelector("strong")?.textContent)
         assertEquals("yes", root.querySelector("section")?.getAttribute("data-linked"))

@@ -114,7 +114,7 @@ export function ngViewportDirective($parse: ng.ParseService): ng.Directive {
         mutationObserver.observe(parent, { childList: true });
       }
 
-      scope.$on("$destroy", () => {
+      scope.on("$destroy", () => {
         observer.disconnect();
 
         if (mutationObserver) mutationObserver.disconnect();

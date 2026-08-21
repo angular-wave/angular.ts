@@ -1,9 +1,7 @@
 package org.angular.ts.demo.j2cl;
 
 import jsinterop.annotations.JsConstructor;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import org.angular.ts.annotation.AngularTemplateApi;
 
@@ -12,11 +10,8 @@ import org.angular.ts.annotation.AngularTemplateApi;
 @AngularTemplateApi
 public final class TodoController {
   private double nextId = 3;
-  @JsProperty
   public String greeting = "J2CL Todo App";
-  @JsProperty
   public String newTodo = "";
-  @JsProperty
   public Todo[] tasks = {
     new Todo(1, "Learn AngularTS", false),
     new Todo(2, "Compile the todo app with J2CL", false)
@@ -25,7 +20,6 @@ public final class TodoController {
   @JsConstructor
   public TodoController() {}
 
-  @JsMethod
   public void add(String task) {
     String value = task == null ? "" : task.trim();
 
@@ -40,12 +34,10 @@ public final class TodoController {
     newTodo = "";
   }
 
-  @JsMethod
   public void toggle(Todo todo) {
     todo.done = !todo.done;
   }
 
-  @JsMethod
   public void archive() {
     int activeCount = 0;
 
@@ -66,18 +58,4 @@ public final class TodoController {
 
     tasks = active;
   }
-
-  @JsMethod
-  public double remainingCount() {
-    int remaining = 0;
-
-    for (Todo todo : tasks) {
-      if (!todo.done) {
-        remaining++;
-      }
-    }
-
-    return remaining;
-  }
-
 }

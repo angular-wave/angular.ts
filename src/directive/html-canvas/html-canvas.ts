@@ -81,7 +81,7 @@ export function ngHtmlCanvasDirective(
         const root = $htmlCanvas.registerRoot(
           linkedElement as HTMLCanvasElement,
         );
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
           root.dispose();
         });
       };
@@ -103,7 +103,7 @@ export function ngHtmlCanvasSourceDirective(
         createHtmlCanvasSourceOptions(element),
       );
 
-      scope.$on("$destroy", destroy);
+      scope.on("$destroy", destroy);
     },
   };
 }

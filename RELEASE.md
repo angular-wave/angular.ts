@@ -42,6 +42,39 @@ The workflow uses npm's OIDC trusted publishing and does not require an
 `NPM_TOKEN` repository secret. After one successful trusted publication,
 disable token-based package publishing in the npm package settings.
 
+Maven Central does not currently provide equivalent trusted publishing. The
+Java and ClojureScript publication jobs use the same Central Portal account.
+Create a Central Portal user token at <https://central.sonatype.com/usertoken>
+and add its generated credentials as these GitHub Actions repository secrets:
+
+- `MAVEN_CENTRAL_USERNAME`
+- `MAVEN_CENTRAL_TOKEN`
+
+Create a passphrase-protected primary OpenPGP signing key, publish its public
+key to a Maven Central-supported key server, and add these repository secrets:
+
+- `MAVEN_GPG_PRIVATE_KEY`: the complete ASCII-armored output of
+  `gpg --armor --export-secret-keys <key-id>`
+- `MAVEN_GPG_PASSPHRASE`: the private key passphrase
+
+For example, publish the public key and set the secrets with:
+
+```bash
+gpg --keyserver keyserver.ubuntu.com --send-keys <key-id>
+gpg --armor --export-secret-keys <key-id> > angular-ts-release-key.asc
+
+gh secret set MAVEN_CENTRAL_USERNAME
+gh secret set MAVEN_CENTRAL_TOKEN
+gh secret set MAVEN_GPG_PRIVATE_KEY < angular-ts-release-key.asc
+gh secret set MAVEN_GPG_PASSPHRASE
+
+rm angular-ts-release-key.asc
+```
+
+The verified Central namespace must include `io.github.angular-wave`. Keep the
+private key and its passphrase outside the repository; only the public key is
+distributed to a key server.
+
 Protect tags matching `v*` in the GitHub repository rules so only maintainers
 can create release tags and published release tags cannot be moved or deleted.
 Enable immutable GitHub Releases for the repository when available.
@@ -132,15 +165,20 @@ tag, and pushes it to trigger the release workflow.
 The `Release` workflow then:
 
 1. Runs the complete CI workflow against the tagged commit.
-2. Rejects tags that do not exactly match `package.json` or versions that
+2. Validates and independently publishes `io.github.angular-wave:angular-ts-java`
+   and `io.github.angular-wave:angular-ts-cljs` to Maven Central with main,
+   source, documentation, and PGP signature artifacts.
+3. Waits until Maven Central reports both artifacts as published.
+4. Rejects tags that do not exactly match `package.json` or versions that
    already exist on npm.
-3. Rebuilds declarations, distribution files, and documentation and verifies
+5. Rebuilds declarations, distribution files, and documentation and verifies
    that the generated files were committed.
-4. Packs one npm tarball and validates its name, version, and warnings.
-5. Extracts the tagged version from `CHANGELOG.md` and creates a draft GitHub
+6. Packs one npm tarball and validates its name, version, and warnings.
+7. Extracts the tagged version from `CHANGELOG.md` and creates a draft GitHub
    Release with those curated notes and the tarball asset.
-6. Publishes that exact tarball to npm using OIDC and provenance.
-7. Publishes the GitHub Release only after npm accepts the package.
+8. Publishes that exact tarball to npm using OIDC and provenance.
+9. Publishes the GitHub Release only after Maven Central and npm accept their
+   packages.
 
 Stable versions are published under npm's `latest` tag. SemVer prereleases,
 such as `x.y.z-beta.1`, are published under `next` and marked as prereleases
@@ -153,11 +191,15 @@ version tag is the release trigger.
 
 ## Verify the release
 
-After the workflow succeeds, verify npm and the GitHub Release:
+After the workflow succeeds, verify npm, Maven Central, and the GitHub Release:
 
 ```bash
 RELEASE_VERSION="$(node -p 'require("./package.json").version')"
 npm view "@angular-wave/angular.ts@$RELEASE_VERSION" version dist-tags --json
+curl --fail --head \
+  "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-java/$RELEASE_VERSION/angular-ts-java-$RELEASE_VERSION.pom"
+curl --fail --head \
+  "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-cljs/$RELEASE_VERSION/angular-ts-cljs-$RELEASE_VERSION.pom"
 ```
 
 Confirm that GitHub published the matching `v<version>` tag, attached the npm
@@ -165,11 +207,14 @@ package tarball, and used the curated `CHANGELOG.md` section as its description.
 
 ## Failure handling
 
-Never move or reuse a published release tag. If validation fails before npm
-publication, correct the release commit and create a new tag and version when
-necessary.
+Never move or reuse a published release tag. Maven Central and npm packages are
+immutable. If validation fails before either publication, correct the release
+commit and create a new tag and version when necessary.
 
+If one Maven Central publication succeeds and the other fails, rerun only the
+failed Maven job and its dependent jobs. If both Maven publications succeed but
+npm publication fails, rerun only the failed and dependent workflow jobs after
+correcting transient configuration.
 If npm publication succeeds but finalizing the GitHub Release fails, publish
-the existing draft release manually. The npm version is immutable and must not
-be republished. Any package correction after publication must use a new version,
-usually the next patch version.
+the existing draft release manually. Any package correction after publication
+must use a new version, usually the next patch version.

@@ -116,7 +116,7 @@ describe("event directives", () => {
   describe("focus", () => {
     describe("call the listener asynchronously during reactive event delivery", () => {
       it("should call the listener with non isolate scopes", async () => {
-        const scope = $rootScope.$new();
+        const scope = $rootScope.new();
 
         element = $compile('<input type="text" ng-focus="focus()">')(scope);
         await wait();
@@ -130,7 +130,7 @@ describe("event directives", () => {
       });
 
       it("should call the listener with isolate scopes", async () => {
-        const scope = $rootScope.$newIsolate();
+        const scope = $rootScope.newIsolate();
 
         element = $compile('<input type="text" ng-focus="focus()">')(scope);
         await wait();
@@ -158,7 +158,7 @@ describe("event directives", () => {
 
   describe("DOM event object", () => {
     it("should allow access to the $event object", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       element = $compile('<button ng-click="e = $event">BTN</button>')(scope);
       await wait();
@@ -171,7 +171,7 @@ describe("event directives", () => {
   });
 
   it("should remove the event listener when the scope is destroyed", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     const el = document.createElement("button");
 
@@ -188,7 +188,7 @@ describe("event directives", () => {
     );
     const handler = el.addEventListener.calls.mostRecent().args[1];
 
-    scope.$destroy();
+    scope.destroy();
 
     expect(el.removeEventListener).toHaveBeenCalledWith("click", handler);
   });
@@ -202,7 +202,7 @@ describe("event directives", () => {
         "click",
       );
 
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       const button = document.createElement("button");
 
@@ -230,13 +230,13 @@ describe("event directives", () => {
 
       const handler = button.addEventListener.calls.mostRecent().args[1];
 
-      scope.$destroy();
+      scope.destroy();
 
       expect(button.removeEventListener).toHaveBeenCalledWith("click", handler);
     });
 
     it("should flush template updates after event expressions", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.count = 0;
       element = $compile(
@@ -262,7 +262,7 @@ describe("event directives", () => {
       );
 
       const scope = {
-        $on: jasmine.createSpy("$on"),
+        on: jasmine.createSpy("on"),
         click: jasmine.createSpy("click"),
       };
 
@@ -291,8 +291,8 @@ describe("event directives", () => {
       const rootScope = {};
 
       const scope = {
-        $on: jasmine.createSpy("$on"),
-        $root: rootScope,
+        on: jasmine.createSpy("on"),
+        root: rootScope,
         click: jasmine.createSpy("click"),
       };
 
@@ -316,7 +316,7 @@ describe("event directives", () => {
         "click",
       );
 
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       const button = document.createElement("button");
 
@@ -337,7 +337,7 @@ describe("event directives", () => {
     it("should apply prevent and stop event policy before evaluating the expression", async () => {
       const parentClick = jasmine.createSpy("parentClick");
 
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.handleClick = jasmine.createSpy("handleClick");
 
@@ -371,7 +371,7 @@ describe("event directives", () => {
         "click",
       );
 
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       const button = document.createElement("button");
 
@@ -399,7 +399,7 @@ describe("event directives", () => {
 
       const handler = button.addEventListener.calls.mostRecent().args[1];
 
-      scope.$destroy();
+      scope.destroy();
 
       expect(button.removeEventListener).toHaveBeenCalledWith(
         "click",
@@ -426,7 +426,7 @@ describe("event directives", () => {
           .and.callFake((scheduler: () => void) => {
             scheduler();
           }),
-        $on: jasmine.createSpy("$on"),
+        on: jasmine.createSpy("on"),
       };
 
       const button = document.createElement("button");
@@ -472,7 +472,7 @@ describe("event directives", () => {
   });
 
   it("should expose keyboard event information to handlers", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     element = $compile('<input type="text" ng-keydown="lastKey = $event.key">')(
       scope,
@@ -488,7 +488,7 @@ describe("event directives", () => {
   describe("blur", () => {
     describe("call the listener asynchronously during reactive event delivery", () => {
       it("should call the listener with non isolate scopes", async () => {
-        const scope = $rootScope.$new();
+        const scope = $rootScope.new();
 
         element = $compile('<input type="text" ng-blur="blur()">')(scope);
         await wait();
@@ -500,7 +500,7 @@ describe("event directives", () => {
       });
 
       it("should call the listener with isolate scopes", async () => {
-        const scope = $rootScope.$new();
+        const scope = $rootScope.new();
 
         element = $compile('<input type="text" ng-blur="blur()">')(scope);
         await wait();
@@ -519,7 +519,7 @@ describe("event directives", () => {
     element = $compile(
       '<button type="button" ng-click="click()">Button</button>',
     )($rootScope);
-    $rootScope.$watch("value", (newValue) => {
+    $rootScope.watch("value", (newValue) => {
       watchedVal = newValue;
     });
     $rootScope.click = jasmine.createSpy("click").and.callFake(() => {
@@ -539,7 +539,7 @@ describe("event directives", () => {
       '<button type="button" ng-click="click()">Button</button>',
     )($rootScope);
     await wait();
-    $rootScope.$watch("value", (newValue) => {
+    $rootScope.watch("value", (newValue) => {
       watchedVal = newValue;
     });
 
@@ -631,7 +631,7 @@ describe("event directives", () => {
 
       const link = directive.compile(element);
 
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.onResize = jasmine.createSpy("onResize");
 
@@ -649,7 +649,7 @@ describe("event directives", () => {
 
       expect(scope.onResize).toHaveBeenCalledWith(event);
 
-      scope.$destroy();
+      scope.destroy();
 
       expect(windowSpy.removeEventListener).toHaveBeenCalledWith(
         "resize",
@@ -677,7 +677,7 @@ describe("event directives", () => {
 
       const link = directive.compile(element);
 
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.boom = () => {
         throw new Error("window listener error");
@@ -712,7 +712,7 @@ describe("event directives", () => {
 
       const link = directive.compile(element);
 
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.endDrag = jasmine.createSpy("endDrag");
 
@@ -730,7 +730,7 @@ describe("event directives", () => {
 
       expect(scope.endDrag).toHaveBeenCalledWith(event);
 
-      scope.$destroy();
+      scope.destroy();
 
       expect(documentSpy.removeEventListener).toHaveBeenCalledWith(
         "pointerup",

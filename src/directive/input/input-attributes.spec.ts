@@ -31,7 +31,7 @@ describe("modern input directive attribute reads", () => {
   });
 
   it("reads data-type for native input type behavior", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML = '<input data-type="number" ng-model="age" />';
     $compile(app)(scope);
@@ -46,7 +46,7 @@ describe("modern input directive attribute reads", () => {
   });
 
   it("ignores data-ng-model-type conversion hints", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML =
       '<input type="date" data-ng-model-type="date" ng-model="birthday" />';
@@ -62,7 +62,7 @@ describe("modern input directive attribute reads", () => {
   });
 
   it("does not implement data-ng-trim compatibility", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     app.innerHTML =
       '<input data-ng-trim="true" ng-model="name" value=" Lucas " />';

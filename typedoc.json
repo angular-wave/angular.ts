@@ -29,7 +29,7 @@
     "src/core/di/injector.ts:Dynamic",
     "src/core/di/internal-injector.ts:InjectorService",
     "src/core/scope/scope.ts:NonScopeMarked",
-    "src/core/scope/scope.ts:ScheduledTask",
+    "src/core/scope/scope.ts:ScopeListenerScheduler",
     "src/filters/filter.ts:Dynamic",
     "src/router/state/state-object.ts:StateObject",
     "src/router/state/interface.ts:RouteMapFromForest",

@@ -41,7 +41,7 @@ describe("incremental compiled fragments", () => {
   it("creates root-owned fragment records without linking them", () => {
     const { root, rootScope } = createRoot();
     const node = document.createElement("section");
-    const childScope = rootScope.$new();
+    const childScope = rootScope.new();
     const record = createCompiledFragmentRecord({
       root,
       parentScope: rootScope,
@@ -278,7 +278,7 @@ describe("incremental compiled fragments", () => {
   it("disposes child fragments, async work, disposers, and child scopes", () => {
     const { root, rootScope } = createRoot();
     const events: string[] = [];
-    const childScope = rootScope.$new();
+    const childScope = rootScope.new();
     const node = document.createElement("article");
     const childFragment = createCompiledFragmentRecord({
       id: "fragment:child",
@@ -298,7 +298,7 @@ describe("incremental compiled fragments", () => {
       },
     };
 
-    childScope.$on("$destroy", () => {
+    childScope.on("$destroy", () => {
       events.push("scope");
     });
 
@@ -367,7 +367,7 @@ describe("incremental compiled fragments", () => {
 
   it("retains child scope disposal after attaching a fragment parent", () => {
     const { root, rootScope } = createRoot();
-    const rowScope = rootScope.$new();
+    const rowScope = rootScope.new();
     const rowNode = document.createElement("tr");
     const parent = createCompiledFragmentRecord({
       id: "fragment:repeat-root",
@@ -387,7 +387,7 @@ describe("incremental compiled fragments", () => {
 
     expect(parent.childFragments).toEqual([child]);
 
-    rowScope.$destroy();
+    rowScope.destroy();
 
     expect(child.disposed).toBeTrue();
     expect(child.root).toBeNull();
@@ -621,7 +621,7 @@ describe("incremental compiled fragments", () => {
       const { root, rootScope } = createRoot();
       const errors: unknown[] = [];
 
-      rootScope.$handler._setRuntimeDependencies({
+      rootScope._handler._setRuntimeDependencies({
         exceptionHandler(exception) {
           errors.push(exception);
 
@@ -642,7 +642,7 @@ describe("incremental compiled fragments", () => {
         });
       }
 
-      rootScope.$destroy();
+      rootScope.destroy();
 
       return errors;
     };
@@ -696,9 +696,9 @@ describe("incremental compiled fragments", () => {
   it("runs remaining cleanup before surfacing disposal errors", () => {
     const { root, rootScope } = createRoot();
     const events: string[] = [];
-    const childScope = rootScope.$new();
+    const childScope = rootScope.new();
 
-    childScope.$on("$destroy", () => {
+    childScope.on("$destroy", () => {
       events.push("scope");
     });
 
@@ -919,8 +919,8 @@ describe("incremental compiled fragments", () => {
 
   it("defers retained inactive fragment DOM work without pausing active root work", () => {
     const { root, rootScope } = createRoot();
-    const retainedScope = rootScope.$new();
-    const activeScope = rootScope.$new();
+    const retainedScope = rootScope.new();
+    const activeScope = rootScope.new();
     const retainedRecord = createCompiledFragmentRecord({
       root,
       parentScope: retainedScope,
@@ -942,7 +942,7 @@ describe("incremental compiled fragments", () => {
       }),
     ).toBeTrue();
 
-    retainedScope.$broadcast("$viewRetentionPause");
+    retainedScope.broadcast("$viewRetentionPause");
 
     expect(
       scheduleCompiledFragmentDomWork(retainedRecord, () => {
@@ -959,7 +959,7 @@ describe("incremental compiled fragments", () => {
 
     expect(calls).toEqual(["active"]);
 
-    retainedScope.$broadcast("$viewRetentionResume");
+    retainedScope.broadcast("$viewRetentionResume");
     root.scheduler.flush();
 
     expect(calls).toEqual([
@@ -977,11 +977,11 @@ describe("incremental compiled fragments", () => {
       parentScope: rootScope,
     });
 
-    rootScope.$broadcast("$viewRetentionResume");
-    rootScope.$broadcast("$viewRetentionPause", { _pause: "background" });
-    rootScope.$broadcast("$viewRetentionResume", { _pause: "background" });
-    rootScope.$broadcast("$viewRetentionPause");
-    rootScope.$broadcast("$viewRetentionResume");
+    rootScope.broadcast("$viewRetentionResume");
+    rootScope.broadcast("$viewRetentionPause", { _pause: "background" });
+    rootScope.broadcast("$viewRetentionResume", { _pause: "background" });
+    rootScope.broadcast("$viewRetentionPause");
+    rootScope.broadcast("$viewRetentionResume");
 
     expect(record.disposed).toBeFalse();
   });
@@ -994,15 +994,15 @@ describe("incremental compiled fragments", () => {
       parentScope: rootScope,
     });
 
-    rootScope.$broadcast("$viewRetentionPause");
+    rootScope.broadcast("$viewRetentionPause");
     scheduleCompiledFragmentDomWork(record, () => calls.push("deferred"));
-    rootScope.$broadcast("$viewRetentionResume");
-    rootScope.$broadcast("$viewRetentionPause");
+    rootScope.broadcast("$viewRetentionResume");
+    rootScope.broadcast("$viewRetentionPause");
     root.scheduler.flush();
 
     expect(calls).toEqual([]);
 
-    rootScope.$broadcast("$viewRetentionResume");
+    rootScope.broadcast("$viewRetentionResume");
     root.scheduler.flush();
 
     expect(calls).toEqual(["deferred"]);
@@ -1016,10 +1016,10 @@ describe("incremental compiled fragments", () => {
     });
     const operation = jasmine.createSpy("operation");
 
-    rootScope.$broadcast("$viewRetentionPause");
+    rootScope.broadcast("$viewRetentionPause");
     scheduleCompiledFragmentDomWork(record, operation);
     root.destroyed = true;
-    rootScope.$broadcast("$viewRetentionResume");
+    rootScope.broadcast("$viewRetentionResume");
 
     expect(operation).not.toHaveBeenCalled();
     expect(record.diagnostics.lateCallbacks).toBe(1);
@@ -1167,7 +1167,7 @@ describe("$compile incremental fragment ownership", () => {
   });
 
   it("disposes a cloned public fragment with its owning child scope", () => {
-    const childScope = $rootScope.$new();
+    const childScope = $rootScope.new();
     const link = $compile("<span>{{name}}</span>");
     let clone: Element | undefined;
 
@@ -1181,7 +1181,7 @@ describe("$compile incremental fragment ownership", () => {
     expect(record).toBeDefined();
     expect(record?.disposed).toBeFalse();
 
-    childScope.$destroy();
+    childScope.destroy();
 
     expect(record?.disposed).toBeTrue();
     expect(record?.parentScope).toBeNull();

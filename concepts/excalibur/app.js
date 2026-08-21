@@ -15,7 +15,7 @@ window.angular
       constructor(playerModel, $scope) {
         this.player = playerModel;
         this.destroyRuntime = () => {};
-        $scope.$on('$destroy', () => this.destroyRuntime());
+        $scope.on('$destroy', () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 

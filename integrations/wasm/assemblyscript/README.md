@@ -3,6 +3,9 @@
 This package is the AssemblyScript binding plan and low-level facade seed for
 the shared AngularTS `WasmScope` ABI.
 
+Generated model contract descriptions are preserved as AssemblyScript
+documentation comments from the shared JSON contract manifest.
+
 The facade in `src/angular_ts.ts` provides:
 
 - `angular_ts` host import declarations for the shared scope ABI.
@@ -27,7 +30,7 @@ visible to AngularTS templates.
 
 App-owned state belongs to `app.model(...)`. If an AssemblyScript runtime needs
 durable or shared state, wrap the runtime with a host-side AngularTS service or
-`model.$sync(...)` target and pass plain snapshots across that boundary. Do not
+`model.sync(...)` target and pass plain snapshots across that boundary. Do not
 add model handles, model path writes, or model watch imports to this binding
 until the shared ABI explicitly adds a model surface.
 
@@ -36,6 +39,13 @@ until the shared ABI explicitly adds a model surface.
 AssemblyScript currently exposes the shared `WasmScope` ABI surface only. It
 does not publish AngularTS `ng` namespace service or authoring types, so the
 Rust/Go namespace parity checklist does not apply to this binding yet.
+
+## Programmatic Views
+
+Programmatic views are supported in the JavaScript host adapter. Register the
+component `view` in `bootstrap.js`, construct DOM with `angular.tags`, and read
+guest-owned state through the bound `WasmScope`. The raw AssemblyScript ABI
+does not return DOM nodes, so no guest-side DOM facade is implied.
 
 ## Todo Proof
 

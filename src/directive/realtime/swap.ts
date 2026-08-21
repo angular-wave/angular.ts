@@ -71,7 +71,7 @@ export function createRealtimeSwapHandler({
   const activeAnimations = new Set<ng.AnimationHandle>();
   const placeholders = new Set<Node>();
 
-  scope.$on("$destroy", () => {
+  scope.on("$destroy", () => {
     destroyed = true;
     activeAnimations.forEach((animation) => {
       animation.cancel();

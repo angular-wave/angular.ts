@@ -119,7 +119,7 @@ function createAnchorScrollService(state, $location, $rootScope, runtimeDocument
             clearPendingLoadListeners();
             if (!enabled || destroyed)
                 return;
-            removeLocationListener = $rootScope.$on("$locationChangeSuccess", (_event, newValue, oldValue) => {
+            removeLocationListener = $rootScope.on("$locationChangeSuccess", (_event, newValue, oldValue) => {
                 const newUrl = urlResolve(newValue);
                 const oldUrl = urlResolve(oldValue);
                 if (newUrl.hash === oldUrl.hash && newUrl.hash === "")
@@ -141,7 +141,7 @@ function createAnchorScrollService(state, $location, $rootScope, runtimeDocument
     };
     state.instances.add(instance);
     instance.setAutoScrolling(state.autoScrollingEnabled);
-    removeDestroyListener = $rootScope.$on("$destroy", () => {
+    removeDestroyListener = $rootScope.on("$destroy", () => {
         instance.destroy();
     });
     return scroll;

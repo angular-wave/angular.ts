@@ -762,7 +762,7 @@ describe("NgModule", () => {
     spyOn(window, "scrollTo");
     injector
       .get("$rootScope")
-      .$broadcast(
+      .broadcast(
         "$locationChangeSuccess",
         "https://example.test/#top",
         "https://example.test/#previous",
@@ -1561,7 +1561,7 @@ describe("NgModule", () => {
 
   it("rejects unannotated model dependencies", () => {
     const initialFactory = ($rootScope) => ({
-      rootId: $rootScope.$id,
+      rootId: $rootScope.id,
     });
 
     expect(() => {
@@ -1602,22 +1602,22 @@ describe("NgModule", () => {
     const injector = angular.injector(["reactiveModelApp"]);
     const rootScope = injector.get("$rootScope");
     const user = injector.get("user");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const observed = [];
 
-    expect(user.$handler._listenerScheduler).toBe(
+    expect(user._handler._listenerScheduler).toBe(
       angular._appContext.modelScheduler._listenerScheduler,
     );
 
     scope.user = user;
-    scope.$watch("user.name", (value) => {
+    scope.watch("user.name", (value) => {
       observed.push(value);
     });
 
     await wait();
 
     expect(observed).toEqual(["John"]);
-    expect(user.$handler._foreignListeners.get("name").length).toBe(1);
+    expect(user._handler._foreignListeners.get("name").length).toBe(1);
 
     user.name = "Jane";
 
@@ -1625,9 +1625,9 @@ describe("NgModule", () => {
 
     expect(observed).toEqual(["John", "Jane"]);
 
-    scope.$destroy();
+    scope.destroy();
 
-    expect(user.$handler._foreignListeners.has("name")).toBeFalse();
+    expect(user._handler._foreignListeners.has("name")).toBeFalse();
 
     user.name = "Ada";
 
@@ -1654,7 +1654,7 @@ describe("NgModule", () => {
     const injector = angular.injector(["modelSyncTargetApp"]);
     const player = injector.get("player");
 
-    player.$sync(["playerSocketSync", (sync) => sync]);
+    player.sync(["playerSocketSync", (sync) => sync]);
     player.health = 90;
 
     await wait();
@@ -1723,7 +1723,7 @@ describe("NgModule", () => {
     const playerMachine = injector.get("playerMachine");
     const recoveryWorkflow = injector.get("recoveryWorkflow");
 
-    player.$sync([
+    player.sync([
       "playerMachine",
       "recoveryWorkflow",
       (
@@ -1772,7 +1772,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const player = injector.get("player");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile("<p>{{ player.x }}, {{ player.y }}</p>")(scope);
 
     scope.player = player;
@@ -1799,7 +1799,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const player = injector.get("player");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile('<p ng-bind="player.x"></p>')(scope);
 
     scope.player = player;
@@ -1826,7 +1826,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const synth = injector.get("synth");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile(
       "<button>{{ synth.playing ? 'Stop' : 'Start' }}</button>",
     )(scope);
@@ -1855,7 +1855,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const shark = injector.get("shark");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile("<p>{{ shark.speed.toFixed(2) }}</p>")(scope);
 
     scope.shark = shark;
@@ -1883,7 +1883,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const shark = injector.get("shark");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile(
       "<p>Speed: {{ shark.speed.toFixed(2) }}, Depth: {{ shark.depth.toFixed(1) }}</p>",
     )(scope);
@@ -2027,13 +2027,13 @@ describe("NgModule", () => {
     await wait();
 
     expect(element.querySelector("p").textContent).toBe("initial");
-    expect(session.$handler._foreignListeners.get("token").length).toBe(1);
+    expect(session._handler._foreignListeners.get("token").length).toBe(1);
 
-    controllerScope.$destroy();
+    controllerScope.destroy();
     stopLifecycle();
 
-    expect(controllerScope.$handler._destroyed).toBeTrue();
-    expect(session.$handler._foreignListeners.has("token")).toBeFalse();
+    expect(controllerScope._handler._destroyed).toBeTrue();
+    expect(session._handler._foreignListeners.has("token")).toBeFalse();
   });
 
   it("updates DOM interpolation when a nested model property changes", async () => {
@@ -2049,7 +2049,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const user = injector.get("user");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile("<p>{{ user.profile.name }}</p>")(scope);
 
     scope.user = user;
@@ -2078,7 +2078,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const user = injector.get("user");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile("<p>{{ user.profile.name }}</p>")(scope);
 
     scope.user = user;
@@ -2105,7 +2105,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const cart = injector.get("cart");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile("<p>{{ cart.items.length }}</p>")(scope);
 
     scope.cart = cart;
@@ -2133,7 +2133,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const cart = injector.get("cart");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile(
       "<section><ul ng-if=\"vm.cart.state === 'list'\">" +
         '<li ng-repeat="item in vm.cart.items">{{ item }}</li>' +
@@ -2170,7 +2170,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const user = injector.get("user");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile("<p>{{ user.profile.name }}</p>")(scope);
 
     scope.user = user;
@@ -2196,18 +2196,18 @@ describe("NgModule", () => {
     const injector = angular.injector(["deleteReactiveModelApp"]);
     const rootScope = injector.get("$rootScope");
     const user = injector.get("user");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const observed = [];
 
     scope.user = user;
-    scope.$watch("user.name", (value) => {
+    scope.watch("user.name", (value) => {
       observed.push(value);
     });
 
     await wait();
 
     expect(observed).toEqual(["John"]);
-    expect(user.$handler._foreignListeners.get("name").length).toBe(1);
+    expect(user._handler._foreignListeners.get("name").length).toBe(1);
 
     delete user.name;
 
@@ -2215,9 +2215,9 @@ describe("NgModule", () => {
 
     expect(observed).toEqual(["John", undefined]);
 
-    scope.$destroy();
+    scope.destroy();
 
-    expect(user.$handler._foreignListeners.has("name")).toBeFalse();
+    expect(user._handler._foreignListeners.has("name")).toBeFalse();
   });
 
   it("proxies nested model objects lazily", () => {
@@ -2234,7 +2234,7 @@ describe("NgModule", () => {
 
     user.profile.name = "Jane";
 
-    expect(user.profile.$handler).toBeDefined();
+    expect(user.profile._handler).toBeDefined();
     expect(user.profile.name).toBe("Jane");
   });
 
@@ -2250,11 +2250,11 @@ describe("NgModule", () => {
     const injector = angular.injector(["nestedModelWatchApp"]);
     const rootScope = injector.get("$rootScope");
     const user = injector.get("user");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const observed = [];
 
     scope.user = user;
-    scope.$watch("user.profile.name", (value) => {
+    scope.watch("user.profile.name", (value) => {
       observed.push(value);
     });
 
@@ -2262,7 +2262,7 @@ describe("NgModule", () => {
 
     expect(observed).toEqual(["John"]);
     expect(scope.user).toBe(user);
-    expect(user.profile.$handler._foreignListeners.get("name").length).toBe(1);
+    expect(user.profile._handler._foreignListeners.get("name").length).toBe(1);
 
     user.profile.name = "Jane";
 
@@ -2270,9 +2270,9 @@ describe("NgModule", () => {
 
     expect(observed).toEqual(["John", "Jane"]);
 
-    scope.$destroy();
+    scope.destroy();
 
-    expect(user.profile.$handler._foreignListeners.has("name")).toBeFalse();
+    expect(user.profile._handler._foreignListeners.has("name")).toBeFalse();
 
     user.profile.name = "Ada";
 
@@ -2291,18 +2291,18 @@ describe("NgModule", () => {
     const injector = angular.injector(["nestedModelArrayWatchApp"]);
     const rootScope = injector.get("$rootScope");
     const user = injector.get("user");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const observed = [];
 
     scope.user = user;
-    scope.$watch("user.items.length", (value) => {
+    scope.watch("user.items.length", (value) => {
       observed.push(value);
     });
 
     await wait();
 
     expect(observed).toEqual([1]);
-    expect(user.items.$handler._foreignListeners.get("length").length).toBe(1);
+    expect(user.items._handler._foreignListeners.get("length").length).toBe(1);
 
     user.items.push("beta");
 
@@ -2310,9 +2310,9 @@ describe("NgModule", () => {
 
     expect(observed).toEqual([1, 2]);
 
-    scope.$destroy();
+    scope.destroy();
 
-    expect(user.items.$handler._foreignListeners.has("length")).toBeFalse();
+    expect(user.items._handler._foreignListeners.has("length")).toBeFalse();
 
     user.items.push("gamma");
 
@@ -2333,11 +2333,11 @@ describe("NgModule", () => {
     const firstInjector = angular.injector(["crossRootReactiveModelApp"]);
     const firstRoot = firstInjector.get("$rootScope");
     const session = firstInjector.get("session");
-    const firstScope = firstRoot.$new();
+    const firstScope = firstRoot.new();
     const firstObserved = [];
 
     firstScope.session = session;
-    firstScope.$watch("session.token", (value) => {
+    firstScope.watch("session.token", (value) => {
       firstObserved.push(value);
     });
 
@@ -2345,11 +2345,11 @@ describe("NgModule", () => {
     const secondInjector = subapp.injector(["crossRootReactiveModelApp"]);
     const secondRoot = secondInjector.get("$rootScope");
     const secondSession = secondInjector.get("session");
-    const secondScope = secondRoot.$new();
+    const secondScope = secondRoot.new();
     const secondObserved = [];
 
     secondScope.session = secondSession;
-    secondScope.$watch("session.token", (value) => {
+    secondScope.watch("session.token", (value) => {
       secondObserved.push(value);
     });
 
@@ -2363,8 +2363,8 @@ describe("NgModule", () => {
     expect(firstObserved).toEqual(["", "abc"]);
     expect(secondObserved).toEqual(["", "abc"]);
 
-    firstScope.$destroy();
-    firstRoot.$destroy();
+    firstScope.destroy();
+    firstRoot.destroy();
 
     expect(angular._appContext.getModel("session")).toBe(session);
 
@@ -2389,11 +2389,11 @@ describe("NgModule", () => {
     const firstInjector = angular.injector(["rootDestroyReactiveModelApp"]);
     const firstRoot = firstInjector.get("$rootScope");
     const session = firstInjector.get("session");
-    const firstScope = firstRoot.$new();
+    const firstScope = firstRoot.new();
     const firstObserved = [];
 
     firstScope.session = session;
-    firstScope.$watch("session.token", (value) => {
+    firstScope.watch("session.token", (value) => {
       firstObserved.push(value);
     });
 
@@ -2401,22 +2401,22 @@ describe("NgModule", () => {
     const secondInjector = subapp.injector(["rootDestroyReactiveModelApp"]);
     const secondRoot = secondInjector.get("$rootScope");
     const secondSession = secondInjector.get("session");
-    const secondScope = secondRoot.$new();
+    const secondScope = secondRoot.new();
     const secondObserved = [];
 
     secondScope.session = secondSession;
-    secondScope.$watch("session.token", (value) => {
+    secondScope.watch("session.token", (value) => {
       secondObserved.push(value);
     });
 
     await wait();
 
-    expect(session.$handler._foreignListeners.get("token").length).toBe(2);
+    expect(session._handler._foreignListeners.get("token").length).toBe(2);
 
-    firstRoot.$destroy();
+    firstRoot.destroy();
 
-    expect(firstScope.$handler._destroyed).toBeTrue();
-    expect(session.$handler._foreignListeners.get("token").length).toBe(1);
+    expect(firstScope._handler._destroyed).toBeTrue();
+    expect(session._handler._foreignListeners.get("token").length).toBe(1);
 
     session.token = "abc";
 
@@ -2437,7 +2437,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const session = injector.get("session");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile("<p>{{ session.token }}</p>")(scope);
 
     scope.session = session;
@@ -2445,11 +2445,11 @@ describe("NgModule", () => {
     await wait();
 
     expect(element.textContent).toBe("initial");
-    expect(session.$handler._foreignListeners.get("token").length).toBe(1);
+    expect(session._handler._foreignListeners.get("token").length).toBe(1);
 
-    scope.$destroy();
+    scope.destroy();
 
-    expect(session.$handler._foreignListeners.has("token")).toBeFalse();
+    expect(session._handler._foreignListeners.has("token")).toBeFalse();
 
     session.token = "updated";
 
@@ -2471,7 +2471,7 @@ describe("NgModule", () => {
     const firstRoot = firstInjector.get("$rootScope");
     const firstCompile = firstInjector.get("$compile");
     const session = firstInjector.get("session");
-    const firstScope = firstRoot.$new();
+    const firstScope = firstRoot.new();
     const firstElement = firstCompile("<p>{{ session.token }}</p>")(firstScope);
 
     firstScope.session = session;
@@ -2481,7 +2481,7 @@ describe("NgModule", () => {
     const secondRoot = secondInjector.get("$rootScope");
     const secondCompile = secondInjector.get("$compile");
     const secondSession = secondInjector.get("session");
-    const secondScope = secondRoot.$new();
+    const secondScope = secondRoot.new();
     const secondElement = secondCompile("<p>{{ session.token }}</p>")(
       secondScope,
     );
@@ -2493,7 +2493,7 @@ describe("NgModule", () => {
     expect(secondSession).toBe(session);
     expect(firstElement.textContent).toBe("initial");
     expect(secondElement.textContent).toBe("initial");
-    expect(session.$handler._foreignListeners.get("token").length).toBe(2);
+    expect(session._handler._foreignListeners.get("token").length).toBe(2);
 
     session.token = "abc";
 
@@ -2502,10 +2502,10 @@ describe("NgModule", () => {
     expect(firstElement.textContent).toBe("abc");
     expect(secondElement.textContent).toBe("abc");
 
-    firstRoot.$destroy();
+    firstRoot.destroy();
 
-    expect(firstScope.$handler._destroyed).toBeTrue();
-    expect(session.$handler._foreignListeners.get("token").length).toBe(1);
+    expect(firstScope._handler._destroyed).toBeTrue();
+    expect(session._handler._foreignListeners.get("token").length).toBe(1);
 
     session.token = "def";
 
@@ -2526,7 +2526,7 @@ describe("NgModule", () => {
     const rootScope = injector.get("$rootScope");
     const $compile = injector.get("$compile");
     const session = injector.get("session");
-    const scope = rootScope.$new();
+    const scope = rootScope.new();
     const element = $compile("<p>{{ session.token }}</p>")(scope);
 
     scope.session = session;
@@ -2534,12 +2534,12 @@ describe("NgModule", () => {
     await wait();
 
     expect(element.textContent).toBe("initial");
-    expect(session.$handler._foreignListeners.get("token").length).toBe(1);
+    expect(session._handler._foreignListeners.get("token").length).toBe(1);
 
-    rootScope.$destroy();
+    rootScope.destroy();
 
-    expect(scope.$handler._destroyed).toBeTrue();
-    expect(session.$handler._foreignListeners.has("token")).toBeFalse();
+    expect(scope._handler._destroyed).toBeTrue();
+    expect(session._handler._foreignListeners.has("token")).toBeFalse();
     expect(angular._appContext.getModel("session")).toBe(session);
 
     session.token = "after-destroy";

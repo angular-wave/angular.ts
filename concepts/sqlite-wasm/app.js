@@ -19,7 +19,7 @@ window.angular
         this.database = databaseModel;
         this.destroyRuntime = () => {};
         this.stopModelSync = () => {};
-        $scope.$on("$destroy", () => {
+        $scope.on("$destroy", () => {
           this.stopModelSync();
           this.destroyRuntime();
         });
@@ -49,7 +49,7 @@ window.angular
       exportSnapshot() {
         if (!this.db) return;
 
-        const modelSnapshot = this.database.$snapshot();
+        const modelSnapshot = this.database.snapshot();
 
         this.db.run(
           "INSERT INTO model_snapshots (version, payload) VALUES (?, ?)",
@@ -103,7 +103,7 @@ window.angular
         );
 
         this.database.status = "ready";
-        this.stopModelSync = this.database.$sync(this.createSqliteSyncTarget());
+        this.stopModelSync = this.database.sync(this.createSqliteSyncTarget());
         this.refresh();
 
         this.destroyRuntime = () => {
@@ -126,7 +126,7 @@ window.angular
               [change.snapshotVersion, payload],
             );
 
-            this.database.$restore(
+            this.database.restore(
               {
                 lastSnapshotVersion: change.snapshotVersion,
                 lastSnapshotKeys: change.keys.join(", "),

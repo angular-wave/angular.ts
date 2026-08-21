@@ -72,7 +72,7 @@ app.controller(
       this.shipX = 480;
       this.shipY = 258;
 
-      $scope.$on("$destroy", () => {
+      $scope.on("$destroy", () => {
         cancelAnimationFrame(runtime.frame);
         this.disposeThree();
       });

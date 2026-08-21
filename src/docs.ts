@@ -79,10 +79,7 @@ export type {
 } from "./core/app-context/app-context.ts";
 export { Scope } from "./core/scope/scope.ts";
 export type { ListenerFn, ScopeEvent } from "./core/scope/scope.ts";
-export type {
-  ScopeListenerScheduler,
-  ScopeTarget,
-} from "./core/scope/scope.ts";
+export type { ScopeTarget } from "./core/scope/scope.ts";
 export type { ParseService } from "./core/parse/parse.ts";
 export type {
   CompiledExpression,
@@ -509,6 +506,7 @@ export type {
   RouterConfig,
   RouterFocusConfig,
   RouterFocusOptions,
+  RouterRelayConfig,
   RouterScrollConfig,
   RouterScrollOptions,
 } from "./router/router.ts";

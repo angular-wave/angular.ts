@@ -1,4 +1,5 @@
 import angular_ts/injectable.{type Injectable}
+import angular_ts/programmatic_view
 import angular_ts/unsafe
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -37,6 +38,7 @@ pub opaque type Component(controller) {
   Component(
     template: Option(String),
     template_url: Option(String),
+    view: Option(fn(Dynamic) -> Dynamic),
     controller: Injectable(controller),
     controller_as: Option(String),
     bindings: List(BindingEntry),
@@ -52,6 +54,7 @@ pub fn new(
   Component(
     template: Some(template),
     template_url: None,
+    view: None,
     controller: controller,
     controller_as: None,
     bindings: [],
@@ -67,6 +70,27 @@ pub fn with_template_url(
   Component(
     template: None,
     template_url: Some(template_url),
+    view: None,
+    controller: controller,
+    controller_as: None,
+    bindings: [],
+    transclusion: NoTransclusion,
+    require: [],
+  )
+}
+
+pub fn with_view(
+  view: programmatic_view.View(controller, Dynamic),
+  controller: Injectable(controller),
+) -> Component(controller) {
+  let wrapped_view = fn(context) {
+    view(programmatic_view.from_dynamic(context))
+  }
+
+  Component(
+    template: None,
+    template_url: None,
+    view: Some(wrapped_view),
     controller: controller,
     controller_as: None,
     bindings: [],
@@ -166,6 +190,11 @@ pub fn to_js_object(definition: Component(controller)) -> Dynamic {
 
   case definition.template_url {
     Some(template_url) -> unsafe.set_string(object, "templateUrl", template_url)
+    None -> object
+  }
+
+  case definition.view {
+    Some(view) -> unsafe.set_property(object, "view", unsafe.coerce(view))
     None -> object
   }
 

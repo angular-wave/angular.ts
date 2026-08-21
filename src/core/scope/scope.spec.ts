@@ -40,14 +40,14 @@ describe("Scope", () => {
   });
 
   it("propagates replaced runtime dependencies to child scopes", () => {
-    const child = scope.$new();
+    const child = scope.new();
     const parse = jasmine.createSpy("parse");
     const exceptionHandler = jasmine.createSpy("exceptionHandler");
 
-    scope.$handler._setRuntimeDependencies({ parse, exceptionHandler });
+    scope._handler._setRuntimeDependencies({ parse, exceptionHandler });
 
-    expect(child.$handler._parse).toBe(parse);
-    expect(child.$handler._exceptionHandler).toBe(exceptionHandler);
+    expect(child._handler._parse).toBe(parse);
+    expect(child._handler._exceptionHandler).toBe(exceptionHandler);
   });
 
   function prototypeMethodKeys(prototype) {
@@ -114,36 +114,36 @@ describe("Scope", () => {
     expect(scope.test.check()).toEqual("test!");
   });
 
-  describe("$id", () => {
+  describe("id", () => {
     it("should have a unique id", () => {
-      expect(scope.$id < scope.$new().$id).toBeTruthy();
+      expect(scope.id < scope.new().id).toBeTruthy();
 
       const res = createScope(new Demo());
 
-      expect(res.$id).toBeDefined();
+      expect(res.id).toBeDefined();
     });
   });
 
-  describe("$target", () => {
-    it("should have a $target property", () => {
+  describe("_target", () => {
+    it("should have a _target property", () => {
       scope = createScope({ a: 1 });
-      expect(scope.$target).toBeDefined();
+      expect(scope._target).toBeDefined();
     });
 
     it("should make its properties available for getters", () => {
       const target = { a: 1, b: { test: "test" } };
 
       scope = createScope(target);
-      expect(scope.$target).toBeDefined();
-      expect(scope.$target).toBe(target);
+      expect(scope._target).toBeDefined();
+      expect(scope._target).toBe(target);
       expect(scope.a).toEqual(1);
-      expect(scope.$target.a).toEqual(1);
-      expect(scope.a).toBe(scope.$target.a);
-      expect(scope.b).not.toBe(scope.$target.b);
-      expect(scope.b).toEqual(scope.$target.b);
+      expect(scope._target.a).toEqual(1);
+      expect(scope.a).toBe(scope._target.a);
+      expect(scope.b).not.toBe(scope._target.b);
+      expect(scope.b).toEqual(scope._target.b);
       expect(isProxy(scope.b)).toBeTrue();
-      expect(isProxy(scope.$target.b)).toBeFalse();
-      expect(target.b).toBe(scope.$target.b);
+      expect(isProxy(scope._target.b)).toBeFalse();
+      expect(target.b).toBe(scope._target.b);
     });
 
     it("should not write lazy nested proxies into the target model", () => {
@@ -172,10 +172,10 @@ describe("Scope", () => {
 
       scope.service = assigned;
 
-      expect(target.service).toBe(assigned.$target);
+      expect(target.service).toBe(assigned._target);
       expect(isProxy(target.service)).toBeFalse();
-      expect(scope.service.$target).toBe(assigned.$target);
-      expect(scope.$handler._foreignProxies.has(assigned)).toBeTrue();
+      expect(scope.service._target).toBe(assigned._target);
+      expect(scope._handler._foreignProxies.has(assigned)).toBeTrue();
 
       assigned.name = "updated";
       expect(scope.service.name).toBe("updated");
@@ -183,13 +183,13 @@ describe("Scope", () => {
 
     it("should store assigned child scopes as raw target values", () => {
       scope = createScope({});
-      const child = scope.$new();
+      const child = scope.new();
 
       scope.current = child;
 
-      expect(scope.$target.current).toBe(child.$target);
-      expect(isProxy(scope.$target.current)).toBeFalse();
-      expect(scope.current.$target).toBe(child.$target);
+      expect(scope._target.current).toBe(child._target);
+      expect(isProxy(scope._target.current)).toBeFalse();
+      expect(scope.current._target).toBe(child._target);
     });
 
     it("should preserve assigned nonscope child proxy identity", () => {
@@ -198,11 +198,11 @@ describe("Scope", () => {
       }
 
       scope = createScope({});
-      const controller = scope.$new(new Controller());
+      const controller = scope.new(new Controller());
 
       scope.controller = controller;
 
-      expect(scope.$target.controller).toBe(controller);
+      expect(scope._target.controller).toBe(controller);
       expect(scope.controller).toBe(controller);
     });
 
@@ -213,19 +213,19 @@ describe("Scope", () => {
 
       scope.items.push(assigned);
 
-      expect(scope.$target.items[0]).toBe(assigned.$target);
-      expect(isProxy(scope.$target.items[0])).toBeFalse();
-      expect(scope.items[0].$target).toBe(assigned.$target);
+      expect(scope._target.items[0]).toBe(assigned._target);
+      expect(isProxy(scope._target.items[0])).toBeFalse();
+      expect(scope.items[0]._target).toBe(assigned._target);
     });
 
     it("should make its properties available for setters", () => {
       scope = createScope({ a: 1, b: { test: "test" } });
-      expect(scope.$target).toBeDefined();
+      expect(scope._target).toBeDefined();
       expect(scope.a).toEqual(1);
       scope.a = 2;
-      expect(scope.$target.a).toEqual(2);
+      expect(scope._target.a).toEqual(2);
       scope.b = 2;
-      expect(scope.$target.b).toEqual(2);
+      expect(scope._target.b).toEqual(2);
     });
   });
 
@@ -233,14 +233,14 @@ describe("Scope", () => {
     it("should ignore objects with $nonscope property", () => {
       const res = createScope({ $nonscope: true });
 
-      expect(res.$id).toBeUndefined();
+      expect(res.id).toBeUndefined();
     });
 
     it("should ignore instances from classes with $nonscope property", () => {
       Demo.$nonscope = true;
       const res = createScope(new Demo());
 
-      expect(res.$id).toBeUndefined();
+      expect(res.id).toBeUndefined();
 
       Demo.$nonscope = undefined;
     });
@@ -251,7 +251,7 @@ describe("Scope", () => {
       }
       const res = createScope(new NonScope());
 
-      expect(res.$id).toBeUndefined();
+      expect(res.id).toBeUndefined();
     });
 
     it("should ignore properties marked as $nonscope array", () => {
@@ -263,21 +263,21 @@ describe("Scope", () => {
       }
       let res = createScope(new ExcludePropertyScope());
 
-      expect(res.$id).toBeDefined();
-      expect(res.a.$id).toBeDefined();
+      expect(res.id).toBeDefined();
+      expect(res.a.id).toBeDefined();
       expect(isProxy(res.a)).toBeTrue();
 
       ExcludePropertyScope.$nonscope = ["a"];
       res = createScope(new ExcludePropertyScope());
-      expect(res.$id).toBeDefined();
-      expect(res.a.$id).toBeUndefined();
+      expect(res.id).toBeDefined();
+      expect(res.a.id).toBeUndefined();
       expect(isProxy(res.a)).toBeFalse();
       expect(isProxy(res.b)).toBeTrue();
 
       ExcludePropertyScope.$nonscope = ["a", "b"];
       res = createScope(new ExcludePropertyScope());
-      expect(res.$id).toBeDefined();
-      expect(res.a.$id).toBeUndefined();
+      expect(res.id).toBeDefined();
+      expect(res.a.id).toBeUndefined();
       expect(isProxy(res.a)).toBeFalse();
       expect(isProxy(res.b)).toBeFalse();
 
@@ -285,9 +285,9 @@ describe("Scope", () => {
         a: {},
         b: [],
       });
-      expect(res.$id).toBeDefined();
-      expect(res.a.$id).toBeDefined();
-      expect(res.b.$id).toBeDefined();
+      expect(res.id).toBeDefined();
+      expect(res.a.id).toBeDefined();
+      expect(res.b.id).toBeDefined();
       expect(isProxy(res.a)).toBeTrue();
       expect(isProxy(res.b)).toBeTrue();
 
@@ -296,9 +296,9 @@ describe("Scope", () => {
         b: [],
         $nonscope: ["a", "b"],
       });
-      expect(res.$id).toBeDefined();
-      expect(res.a.$id).toBeUndefined();
-      expect(res.b.$id).toBeUndefined();
+      expect(res.id).toBeDefined();
+      expect(res.a.id).toBeUndefined();
+      expect(res.b.id).toBeUndefined();
       expect(isProxy(res.a)).toBeFalse();
       expect(isProxy(res.b)).toBeFalse();
     });
@@ -444,8 +444,8 @@ describe("Scope", () => {
 
       const values = [];
 
-      scope.$watch("map.size", (value) => sizes.push(value));
-      scope.$watch("map.get('a')", (value) => values.push(value));
+      scope.watch("map.size", (value) => sizes.push(value));
+      scope.watch("map.get('a')", (value) => values.push(value));
       await wait();
 
       expect(sizes).toEqual([1]);
@@ -481,8 +481,8 @@ describe("Scope", () => {
         const sizes = [];
         const values = [];
 
-        scoped.$watch("map.size", (value) => sizes.push(value));
-        scoped.$watch("map.get('b')", (value) => values.push(value));
+        scoped.watch("map.size", (value) => sizes.push(value));
+        scoped.watch("map.get('b')", (value) => values.push(value));
         await wait();
 
         scoped.map[method](
@@ -502,7 +502,7 @@ describe("Scope", () => {
 
       const sizes = [];
 
-      scope.$watch("map.size", (value) => sizes.push(value));
+      scope.watch("map.size", (value) => sizes.push(value));
       await wait();
 
       expect(sizes).toEqual([1]);
@@ -522,8 +522,8 @@ describe("Scope", () => {
 
       const hasValues = [];
 
-      scope.$watch("set.size", (value) => sizes.push(value));
-      scope.$watch("set.has('b')", (value) => hasValues.push(value));
+      scope.watch("set.size", (value) => sizes.push(value));
+      scope.watch("set.has('b')", (value) => hasValues.push(value));
       await wait();
 
       expect(sizes).toEqual([1]);
@@ -549,7 +549,7 @@ describe("Scope", () => {
 
       const sizes = [];
 
-      scope.$watch("set.size", (value) => sizes.push(value));
+      scope.watch("set.size", (value) => sizes.push(value));
       await wait();
 
       expect(sizes).toEqual([1]);
@@ -567,7 +567,7 @@ describe("Scope", () => {
 
       const values = [];
 
-      scope.$watch("map | values", (value) => values.push(value));
+      scope.watch("map | values", (value) => values.push(value));
       await wait();
 
       expect(values).toEqual([[1]]);
@@ -585,13 +585,13 @@ describe("Scope", () => {
 
       const values = {};
 
-      scope.$watch("map.get('a')", (value) => (values.get = value));
-      scope.$watch("map.has('a')", (value) => (values.has = value));
-      scope.$watch("map.keys()", (value) => (values.keys = Array.from(value)));
-      scope.$watch("map.values()", (value) => {
+      scope.watch("map.get('a')", (value) => (values.get = value));
+      scope.watch("map.has('a')", (value) => (values.has = value));
+      scope.watch("map.keys()", (value) => (values.keys = Array.from(value)));
+      scope.watch("map.values()", (value) => {
         values.values = Array.from(value);
       });
-      scope.$watch("map.entries()", (value) => {
+      scope.watch("map.entries()", (value) => {
         values.entries = Array.from(value);
       });
       await wait();
@@ -626,7 +626,7 @@ describe("Scope", () => {
 
       const values = [];
 
-      scope.$watch("map", (value) => values.push(value));
+      scope.watch("map", (value) => values.push(value));
       await wait();
 
       expect(values).toEqual([scope.map]);
@@ -654,12 +654,12 @@ describe("Scope", () => {
 
       const values = {};
 
-      scope.$watch("set.has('a')", (value) => (values.has = value));
-      scope.$watch("set.keys()", (value) => (values.keys = Array.from(value)));
-      scope.$watch("set.values()", (value) => {
+      scope.watch("set.has('a')", (value) => (values.has = value));
+      scope.watch("set.keys()", (value) => (values.keys = Array.from(value)));
+      scope.watch("set.values()", (value) => {
         values.values = Array.from(value);
       });
-      scope.$watch("set.entries()", (value) => {
+      scope.watch("set.entries()", (value) => {
         values.entries = Array.from(value);
       });
       await wait();
@@ -692,7 +692,7 @@ describe("Scope", () => {
 
       const values = [];
 
-      scope.$watch("set", (value) => values.push(value));
+      scope.watch("set", (value) => values.push(value));
       await wait();
 
       expect(values).toEqual([scope.set]);
@@ -727,7 +727,7 @@ describe("Scope", () => {
 
       const includesValues = [];
 
-      scope.$watch(includesExpr, (value) => includesValues.push(value));
+      scope.watch(includesExpr, (value) => includesValues.push(value));
       await wait();
 
       expect(includesValues).toEqual([scope.map[includesMethod]("b")]);
@@ -757,7 +757,7 @@ describe("Scope", () => {
 
       const includesValues = [];
 
-      scope.$watch(includesExpr, (value) => includesValues.push(value));
+      scope.watch(includesExpr, (value) => includesValues.push(value));
       await wait();
 
       expect(includesValues).toEqual([scope.set[includesMethod]("b")]);
@@ -780,7 +780,7 @@ describe("Scope", () => {
 
       const values = [];
 
-      scope.$watch("value", (value) => values.push(value));
+      scope.watch("value", (value) => values.push(value));
       await wait();
 
       scope.value = Promise.resolve("resolved");
@@ -796,7 +796,7 @@ describe("Scope", () => {
 
       const values = [];
 
-      scope.$watch("value.name", (value) => values.push(value));
+      scope.watch("value.name", (value) => values.push(value));
 
       scope.value = Promise.resolve({ name: "Ada" });
       await wait();
@@ -814,7 +814,7 @@ describe("Scope", () => {
 
       const values = [];
 
-      scope.$watch("value", (value) => values.push(value));
+      scope.watch("value", (value) => values.push(value));
       await wait();
 
       scope.value = Promise.reject(error);
@@ -921,8 +921,8 @@ describe("Scope", () => {
 
       const years = [];
 
-      scope.$watch("createdAt.getTime()", (value) => times.push(value));
-      scope.$watch("createdAt.getUTCFullYear()", (value) => years.push(value));
+      scope.watch("createdAt.getTime()", (value) => times.push(value));
+      scope.watch("createdAt.getUTCFullYear()", (value) => years.push(value));
       await wait();
 
       expect(times).toEqual([Date.UTC(2020, 0, 2)]);
@@ -942,7 +942,7 @@ describe("Scope", () => {
 
       const dates = [];
 
-      scope.$watch("createdAt", (value) => dates.push(value.getUTCFullYear()));
+      scope.watch("createdAt", (value) => dates.push(value.getUTCFullYear()));
       await wait();
 
       expect(dates).toEqual([2020]);
@@ -977,7 +977,7 @@ describe("Scope", () => {
 
       for (const method of getterMethods) {
         calls[method] = 0;
-        scope.$watch(dateGetterExpression(method), () => {
+        scope.watch(dateGetterExpression(method), () => {
           calls[method]++;
         });
       }
@@ -1013,7 +1013,7 @@ describe("Scope", () => {
 
         let calls = 0;
 
-        scoped.$watch("createdAt.getTime()", () => {
+        scoped.watch("createdAt.getTime()", () => {
           calls++;
         });
         await wait();
@@ -1038,17 +1038,17 @@ describe("Scope", () => {
     it("constructs a root scope by default while all children non-root", () => {
       const scope = createScope();
 
-      expect(scope.$isRoot()).toBe(true);
+      expect(scope._isRoot()).toBe(true);
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      expect(child.$isRoot()).toBe(false);
+      expect(child._isRoot()).toBe(false);
     });
 
     it("inherits the parents properties", () => {
       scope.aValue = [1, 2, 3];
 
-      const child = scope.$new();
+      const child = scope.new();
 
       expect(child.aValue).toEqual([1, 2, 3]);
 
@@ -1057,7 +1057,7 @@ describe("Scope", () => {
     });
 
     it("does not cause a parent to inherit its properties", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       child.aValue = [1, 2, 3];
 
@@ -1065,7 +1065,7 @@ describe("Scope", () => {
     });
 
     it("inherits the parents properties whenever they are defined", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       scope.aValue = [1, 2, 3];
 
@@ -1075,7 +1075,7 @@ describe("Scope", () => {
     it("can create a scope from an existing object", () => {
       const instance = { bValue: "child" };
 
-      const child = scope.$new(instance);
+      const child = scope.new(instance);
 
       scope.aValue = [1, 2, 3];
 
@@ -1086,15 +1086,15 @@ describe("Scope", () => {
     it("can be nested at any depth", () => {
       const a = scope;
 
-      const aa = a.$new();
+      const aa = a.new();
 
-      const aaa = aa.$new();
+      const aaa = aa.new();
 
-      const aab = aa.$new();
+      const aab = aa.new();
 
-      const ab = a.$new();
+      const ab = a.new();
 
-      const abb = ab.$new();
+      const abb = ab.new();
 
       a.value = 1;
 
@@ -1112,7 +1112,7 @@ describe("Scope", () => {
     });
 
     it("can manipulate a parent scopes property", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       scope.aValue = [1, 2, 3];
       child.aValue.push(4);
@@ -1136,7 +1136,7 @@ describe("Scope", () => {
       const instance = new Demo();
 
       expect(instance.test()).toEqual("Test");
-      const child = scope.$new(instance);
+      const child = scope.new(instance);
 
       scope.counter = 0;
 
@@ -1151,7 +1151,7 @@ describe("Scope", () => {
     });
 
     it("cannot override a parent scopes property", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       scope.aValue = [1, 2, 3];
       child.aValue = [1, 2, 3, 4];
@@ -1168,33 +1168,33 @@ describe("Scope", () => {
     });
 
     it("inherits the parents listeners", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       expect(child._listeners).toBe(scope._listeners);
     });
   });
 
-  describe("$new()", () => {
+  describe("new()", () => {
     it("should create a child scope", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       scope.a = 123;
       expect(child.a).toEqual(123);
     });
 
     it("should create a non prototypically inherited child scope", () => {
-      const child = scope.$newIsolate();
+      const child = scope.newIsolate();
 
       scope.a = 123;
       expect(child.a).toBeUndefined();
-      expect(child.$parent).toBe(scope.$root);
-      expect(child.$new).toBeDefined();
-      expect(child.$root).toEqual(scope.$root);
+      expect(child.parent).toBe(scope.root);
+      expect(child.new).toBeDefined();
+      expect(child.root).toEqual(scope.root);
     });
 
     it("should use supplied isolate state as the scope target", () => {
       const state = { own: "value" };
-      const child = scope.$newIsolate(state);
+      const child = scope.newIsolate(state);
 
       scope.inherited = "parent";
 
@@ -1204,88 +1204,88 @@ describe("Scope", () => {
     });
 
     it("should attach the child scope to a specified parent", () => {
-      const isolated = scope.$newIsolate();
+      const isolated = scope.newIsolate();
 
-      const trans = scope.$transcluded(isolated);
+      const trans = scope.transcluded(isolated);
 
       scope.a = 123;
       expect(isolated.a).toBeUndefined();
       expect(trans.a).toEqual(123);
-      expect(trans.$root.$id).toBeDefined();
-      expect(trans.$root.$id).toEqual(scope.$root.$id);
-      expect(trans.$parent.$id).toEqual(isolated.$id);
+      expect(trans.root.id).toBeDefined();
+      expect(trans.root.id).toEqual(scope.root.id);
+      expect(trans.parent.id).toEqual(isolated.id);
     });
   });
 
-  describe("$root", () => {
+  describe("root", () => {
     it("should point to itself", () => {
-      expect(scope.$root.$id).toEqual(scope.$id);
-      expect(scope.$root).toEqual(scope.$root.$root);
+      expect(scope.root.id).toEqual(scope.id);
+      expect(scope.root).toEqual(scope.root.root);
     });
 
     it("should expose the constructor", () => {
       expect(Object.getPrototypeOf(scope)).toBe(scope.constructor.prototype);
     });
 
-    it("should not have $root on children, but should inherit", () => {
-      const child = scope.$new();
+    it("should not have root on children, but should inherit", () => {
+      const child = scope.new();
 
-      expect(child.$root).toEqual(scope.$root);
+      expect(child.root).toEqual(scope.root);
     });
   });
 
-  describe("$parent", () => {
+  describe("parent", () => {
     it("should point to parent", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
-      expect(scope.$parent).toBeUndefined();
-      expect(child.$parent.$id).toEqual(scope.$id);
-      expect(child.$parent).toEqual(scope.$handler);
-      expect(child.$new().$parent).toEqual(child.$handler);
+      expect(scope.parent).toBeUndefined();
+      expect(child.parent.id).toEqual(scope.id);
+      expect(child.parent).toEqual(scope._handler);
+      expect(child.new().parent).toEqual(child._handler);
     });
 
     it("should keep track of its children", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       expect(scope._children).toEqual([child]);
 
-      const child2 = scope.$new();
+      const child2 = scope.new();
 
       expect(scope._children).toEqual([child, child2]);
 
-      const child3 = child2.$new();
+      const child3 = child2.new();
 
       expect(scope._children).toEqual([child, child2]);
       expect(child2._children).toEqual([child3]);
     });
 
     it("should can get children by id", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
-      const child2 = scope.$new();
+      const child2 = scope.new();
 
-      const child3 = child2.$new();
+      const child3 = child2.new();
 
-      const child4 = child3.$transcluded();
+      const child4 = child3.transcluded();
 
-      expect(scope.$getById(child.$id).$id).toEqual(child.$id);
-      expect(scope.$getById(child2.$id).$id).toEqual(child2.$id);
-      expect(scope.$getById(child3.$id).$id).toEqual(child3.$id);
-      expect(scope.$getById(child4.$id).$id).toEqual(child4.$id);
+      expect(scope.getById(child.id).id).toEqual(child.id);
+      expect(scope.getById(child2.id).id).toEqual(child2.id);
+      expect(scope.getById(child3.id).id).toEqual(child3.id);
+      expect(scope.getById(child4.id).id).toEqual(child4.id);
     });
   });
 
   describe("this", () => {
     it("should evaluate 'this' to be the scope", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
-      expect($parse("this")(scope)).toEqual(scope.$target);
-      expect($parse("this")(child)).toEqual(child.$target);
+      expect($parse("this")(scope)).toEqual(scope._target);
+      expect($parse("this")(child)).toEqual(child._target);
     });
 
     it("'this' should not be recursive", () => {
       expect($parse("this.this")(scope)).toBeUndefined();
-      expect($parse("$parent.this")(scope)).toBeUndefined();
+      expect($parse("parent.this")(scope)).toBeUndefined();
     });
 
     it("should not be able to overwrite the 'this' keyword", () => {
@@ -1299,19 +1299,19 @@ describe("Scope", () => {
     });
   });
 
-  describe("$watch", () => {
+  describe("watch", () => {
     it("needs an expression to designate a watched property", async () => {
-      expect(() => scope.$watch()).toThrowError();
+      expect(() => scope.watch()).toThrowError();
     });
 
     it("does not need a listener function", async () => {
-      expect(() => scope.$watch("1")).not.toThrowError();
+      expect(() => scope.watch("1")).not.toThrowError();
     });
 
     it("can register listeners via watch", async () => {
       const listenerFn = jasmine.createSpy();
 
-      scope.$watch("a", listenerFn);
+      scope.watch("a", listenerFn);
       scope.a = 1;
       await wait();
       expect(listenerFn).toHaveBeenCalled();
@@ -1320,13 +1320,13 @@ describe("Scope", () => {
     it("can calls a listener upon registration", async () => {
       const listenerFn = jasmine.createSpy();
 
-      scope.$watch("a", listenerFn);
+      scope.watch("a", listenerFn);
       await wait();
       expect(listenerFn).toHaveBeenCalled();
     });
 
     it("should return a deregistration function watch", () => {
-      const fn = scope.$watch("a", () => {
+      const fn = scope.watch("a", () => {
         /* empty */
       });
 
@@ -1335,7 +1335,7 @@ describe("Scope", () => {
     });
 
     it("should manipulate the $watcher count", () => {
-      const fn = scope.$watch("a", () => {
+      const fn = scope.watch("a", () => {
         /* empty */
       });
 
@@ -1352,7 +1352,7 @@ describe("Scope", () => {
       function Listener() {
         listen = this;
       }
-      scope.$watch("foo", Listener);
+      scope.watch("foo", Listener);
 
       scope.a = 1;
       await wait();
@@ -1376,7 +1376,7 @@ describe("Scope", () => {
 
       scope = createScope(new Demo());
 
-      scope.$watch("counter", () => {
+      scope.watch("counter", () => {
         called = true;
       });
 
@@ -1402,7 +1402,7 @@ describe("Scope", () => {
 
       scope = createScope(new Demo());
 
-      scope.$watch("counter", () => {
+      scope.watch("counter", () => {
         called = true;
       });
 
@@ -1428,7 +1428,7 @@ describe("Scope", () => {
 
       scope = createScope(demo);
 
-      scope.$watch("counter", () => {
+      scope.watch("counter", () => {
         called = true;
       });
 
@@ -1445,7 +1445,7 @@ describe("Scope", () => {
     it("calls the listener function when the watched value is initialized", async () => {
       scope.counter = 0;
       scope.someValue = "b";
-      scope.$watch("someValue", () => scope.counter++);
+      scope.watch("someValue", () => scope.counter++);
       expect(scope.counter).toBe(0);
 
       await wait();
@@ -1465,7 +1465,7 @@ describe("Scope", () => {
       scope.someValue = "b";
       expect(scope.counter).toBe(0);
 
-      scope.$watch("someValue", () => scope.counter++);
+      scope.watch("someValue", () => scope.counter++);
       await wait();
       expect(scope.counter).toBe(1);
 
@@ -1478,11 +1478,11 @@ describe("Scope", () => {
       scope.someValue = "a";
       scope.counter = 0;
 
-      scope.$watch("someValue", () => {
+      scope.watch("someValue", () => {
         scope.counter++;
       });
 
-      scope.$watch("someValue", () => scope.counter++);
+      scope.watch("someValue", () => scope.counter++);
       await wait();
       expect(scope.counter).toBe(2);
 
@@ -1495,7 +1495,7 @@ describe("Scope", () => {
       scope.someValue = "a";
       scope.counter = 0;
 
-      scope.$watch("someValue", () => scope.counter++);
+      scope.watch("someValue", () => scope.counter++);
       await wait();
       expect(scope.counter).toBe(1);
 
@@ -1503,7 +1503,7 @@ describe("Scope", () => {
       await wait();
       expect(scope.counter).toBe(2);
 
-      scope.$watch("someValue", () => {
+      scope.watch("someValue", () => {
         scope.counter++;
       });
       await wait();
@@ -1520,7 +1520,7 @@ describe("Scope", () => {
 
     it("correctly handles NaNs", async () => {
       scope.counter = 0;
-      scope.$watch("number", function (newValue, scope) {
+      scope.watch("number", function (newValue, scope) {
         scope.counter++;
       });
       scope.number = 0 / 0;
@@ -1537,7 +1537,7 @@ describe("Scope", () => {
     it("calls listener with undefined old value the first time", async () => {
       let newValueGiven;
 
-      scope.$watch("someValue", function (newValue, scope) {
+      scope.watch("someValue", function (newValue, scope) {
         newValueGiven = newValue;
       });
       scope.someValue = 123;
@@ -1550,7 +1550,7 @@ describe("Scope", () => {
 
       scope.someValue = 123;
 
-      scope.$watch("someValue", function (newValue) {
+      scope.watch("someValue", function (newValue) {
         newValueGiven = newValue;
       });
       scope.someValue = 321;
@@ -1564,7 +1564,7 @@ describe("Scope", () => {
 
       scope.someValue = 123;
 
-      scope.$watch("someValue", function (_1, m) {
+      scope.watch("someValue", function (_1, m) {
         scopeInstance = m;
       });
       scope.someValue = 321;
@@ -1575,12 +1575,12 @@ describe("Scope", () => {
     });
 
     it("triggers chained watchers in the same scope change", async () => {
-      scope.$watch("nameUpper", function (newValue) {
+      scope.watch("nameUpper", function (newValue) {
         if (newValue) {
           scope.initial = `${newValue.substring(0, 1)}.`;
         }
       });
-      scope.$watch("name", function (newValue) {
+      scope.watch("name", function (newValue) {
         if (newValue) {
           scope.nameUpper = newValue.toUpperCase();
         }
@@ -1597,8 +1597,8 @@ describe("Scope", () => {
     it("can register nested watches", async () => {
       scope.counter = 0;
       scope.aValue = "abc";
-      scope.$watch("aValue", () => {
-        scope.$watch("bValue", () => {
+      scope.watch("aValue", () => {
+        scope.watch("bValue", () => {
           scope.counter++;
         });
       });
@@ -1616,7 +1616,7 @@ describe("Scope", () => {
     });
 
     it("should delegate exceptions", async () => {
-      scope.$watch("a", () => {
+      scope.watch("a", () => {
         throw new Error("abc");
       });
       scope.a = 1;
@@ -1627,20 +1627,20 @@ describe("Scope", () => {
     it("should fire watches in order of addition", async () => {
       // this is not an external guarantee, just our own sanity
       logs = "";
-      scope.$watch("a", () => {
+      scope.watch("a", () => {
         logs += "a";
       });
-      scope.$watch("b", () => {
+      scope.watch("b", () => {
         logs += "b";
       });
       // constant expressions have slightly different handling as they are executed in priority
-      scope.$watch("1", () => {
+      scope.watch("1", () => {
         logs += "1";
       });
-      scope.$watch("c", () => {
+      scope.watch("c", () => {
         logs += "c";
       });
-      scope.$watch("2", () => {
+      scope.watch("2", () => {
         logs += "2";
       });
       scope.a = 1;
@@ -1652,15 +1652,15 @@ describe("Scope", () => {
 
     it("should repeat watch cycle while scope changes are identified", async () => {
       logs = "";
-      scope.$watch("c", (v) => {
+      scope.watch("c", (v) => {
         scope.d = v;
         logs += "c";
       });
-      scope.$watch("b", (v) => {
+      scope.watch("b", (v) => {
         scope.c = v;
         logs += "b";
       });
-      scope.$watch("a", (v) => {
+      scope.watch("a", (v) => {
         scope.b = v;
         logs += "a";
       });
@@ -1678,7 +1678,7 @@ describe("Scope", () => {
 
     describe("constants", () => {
       it("does not watch constants", async () => {
-        scope.$watch("1", () => {
+        scope.watch("1", () => {
           /* empty */
         });
         expect(scope.$$watchersCount).toBe(0);
@@ -1703,7 +1703,7 @@ describe("Scope", () => {
         it(`passes constants to listener cb ${expression}`, async () => {
           let res;
 
-          scope.$watch(expression, (val) => {
+          scope.watch(expression, (val) => {
             res = val;
           });
 
@@ -1717,24 +1717,24 @@ describe("Scope", () => {
       it("its should increase the count of watchers", async () => {
         logs = "";
         scope.a = 1;
-        scope.$watch("a", () => {
+        scope.watch("a", () => {
           logs += "a";
         });
-        scope.$watch("b", () => {
+        scope.watch("b", () => {
           logs += "b";
         });
 
-        expect(scope.$handler._watchers.size).toEqual(2);
-        expect(scope.$$watchersCount).toEqual(scope.$handler._watchers.size);
+        expect(scope._handler._watchers.size).toEqual(2);
+        expect(scope.$$watchersCount).toEqual(scope._handler._watchers.size);
       });
 
-      it("should fire upon $watch registration on initial registration", async () => {
+      it("should fire upon watch registration on initial registration", async () => {
         logs = "";
         scope.a = 1;
-        scope.$watch("a", () => {
+        scope.watch("a", () => {
           logs += "a";
         });
-        scope.$watch("b", () => {
+        scope.watch("b", () => {
           logs += "b";
         });
         await wait();
@@ -1744,7 +1744,7 @@ describe("Scope", () => {
       it("invokes a callback on property change", async () => {
         let newV, target;
 
-        scope.$watch("foo", (a, b) => {
+        scope.watch("foo", (a, b) => {
           newV = a;
           target = b;
         });
@@ -1752,22 +1752,22 @@ describe("Scope", () => {
         scope.foo = 1;
         await wait();
         expect(newV).toEqual(1);
-        expect(target).toEqual(scope.$target);
+        expect(target).toEqual(scope._target);
 
         scope.foo = 2;
         await wait();
         expect(newV).toEqual(2);
-        expect(target).toEqual(scope.$target);
+        expect(target).toEqual(scope._target);
 
         scope.foo = [];
         await wait();
         expect(newV).toEqual([]);
-        expect(target).toEqual(scope.$target);
+        expect(target).toEqual(scope._target);
       });
 
       it("calls the listener function when the watched value changes", async () => {
         scope.counter = 0;
-        scope.$watch("someValue", function (newValue, scope) {
+        scope.watch("someValue", function (newValue, scope) {
           scope.counter++;
         });
         await wait();
@@ -1785,7 +1785,7 @@ describe("Scope", () => {
       it("should watch and fire on simple property change", async () => {
         const spy = jasmine.createSpy();
 
-        scope.$watch("name", spy);
+        scope.watch("name", spy);
 
         spy.calls.reset();
 
@@ -1798,7 +1798,7 @@ describe("Scope", () => {
       it("should watch and fire on correct expression change", async () => {
         const spy = jasmine.createSpy();
 
-        scope.$watch("name.first", spy);
+        scope.watch("name.first", spy);
         await wait();
         expect(spy).toHaveBeenCalled();
 
@@ -1827,7 +1827,7 @@ describe("Scope", () => {
         const values = [];
 
         scope.vm = {};
-        scope.$watch(
+        scope.watch(
           "vm.caseItem ? vm.caseItem.objectAddress : 'Loading case'",
           (value) => {
             values.push(value);
@@ -1861,7 +1861,7 @@ describe("Scope", () => {
         };
 
         expect(() => {
-          scope.$watch("greeter.canGreet() ? 'false' : 'true'", (value) => {
+          scope.watch("greeter.canGreet() ? 'false' : 'true'", (value) => {
             values.push(value);
           });
         }).not.toThrow();
@@ -1884,7 +1884,7 @@ describe("Scope", () => {
           },
         };
 
-        scope.$watch("greeter.canGreet() ? false : true", (value) => {
+        scope.watch("greeter.canGreet() ? false : true", (value) => {
           values.push(value);
         });
 
@@ -1900,7 +1900,7 @@ describe("Scope", () => {
         const values = [];
 
         scope.vm = { caseItem: {} };
-        scope.$watch("vm.caseItem.customerName || 'Unknown'", (value) => {
+        scope.watch("vm.caseItem.customerName || 'Unknown'", (value) => {
           values.push(value);
         });
 
@@ -1924,7 +1924,7 @@ describe("Scope", () => {
     describe("array expressions", () => {
       it("registers a watcher for an array member expression", async () => {
         expect(scope.$$watchersCount).toBe(0);
-        scope.$watch("foo[0]", () => {
+        scope.watch("foo[0]", () => {
           /* empty */
         });
 
@@ -1936,7 +1936,7 @@ describe("Scope", () => {
         expect(scope.$$watchersCount).toBe(0);
         let res;
 
-        scope.$watch("foo[0]", (val) => {
+        scope.watch("foo[0]", (val) => {
           res = val;
         });
 
@@ -1956,7 +1956,7 @@ describe("Scope", () => {
       it("watches member expressions when parent object is assigned later", async () => {
         let res;
 
-        scope.$watch("[a.firstName, a.lastName]", (val) => {
+        scope.watch("[a.firstName, a.lastName]", (val) => {
           res = val;
         });
 
@@ -1975,7 +1975,7 @@ describe("Scope", () => {
       it("deregisters array member-expression watchers", async () => {
         const spy = jasmine.createSpy("array member watch");
 
-        const unwatch = scope.$watch("[a.firstName, a.lastName]", spy);
+        const unwatch = scope.watch("[a.firstName, a.lastName]", spy);
 
         await wait();
         spy.calls.reset();
@@ -1991,7 +1991,7 @@ describe("Scope", () => {
     describe("apply expression", () => {
       it("adds watches for expressions", async () => {
         expect(scope.$$watchersCount).toBe(0);
-        scope.$watch("foo = 1", () => {
+        scope.watch("foo = 1", () => {
           /* empty */
         });
 
@@ -2001,16 +2001,16 @@ describe("Scope", () => {
 
       it("applies a property change and continues watching the scopes", async () => {
         expect(scope.$$watchersCount).toBe(0);
-        scope.$watch("foo = 2", () => {
+        scope.watch("foo = 2", () => {
           /* empty */
         });
 
         await wait();
         expect(scope.$$watchersCount).toBe(1);
-        expect(scope.$handler._watchers.has("foo")).toBeTrue();
+        expect(scope._handler._watchers.has("foo")).toBeTrue();
         expect(scope.foo).toBe(2);
 
-        scope.$watch("boo = 3", () => {
+        scope.watch("boo = 3", () => {
           /* empty */
         });
 
@@ -2021,13 +2021,13 @@ describe("Scope", () => {
 
       it("should apply a change and not increase watchers if no listener function", async () => {
         expect(scope.$$watchersCount).toBe(0);
-        scope.$watch("foo = 2");
+        scope.watch("foo = 2");
 
         await wait();
         expect(scope.$$watchersCount).toBe(0);
         expect(scope.foo).toBe(2);
 
-        scope.$watch("foo = 3");
+        scope.watch("foo = 3");
 
         await wait();
         expect(scope.$$watchersCount).toBe(0);
@@ -2040,20 +2040,20 @@ describe("Scope", () => {
         expect(scope.$$watchersCount).toBe(0);
         let res;
 
-        scope.$watch("'abcd'|limitTo:3", (val) => {
+        scope.watch("'abcd'|limitTo:3", (val) => {
           res = val;
         });
         await wait();
         expect(res).toEqual("abc");
 
-        scope.$watch("'abcd'|limitTo:3|limitTo:2", (val) => {
+        scope.watch("'abcd'|limitTo:3|limitTo:2", (val) => {
           res = val;
         });
 
         await wait();
         expect(res).toEqual("ab");
 
-        scope.$watch("'abcd'|limitTo:3|limitTo:2|limitTo:1", (val) => {
+        scope.watch("'abcd'|limitTo:3|limitTo:2|limitTo:1", (val) => {
           res = val;
         });
 
@@ -2062,48 +2062,48 @@ describe("Scope", () => {
       });
     });
 
-    describe("$watch on constants", () => {
+    describe("watch on constants", () => {
       beforeEach(() => (logs = []));
-      it("should not $watch constant literals ", () => {
-        scope.$watch("[]", () => {
+      it("should not watch constant literals ", () => {
+        scope.watch("[]", () => {
           /* empty */
         });
-        scope.$watch("{}", () => {
+        scope.watch("{}", () => {
           /* empty */
         });
-        scope.$watch("1", () => {
+        scope.watch("1", () => {
           /* empty */
         });
-        scope.$watch('"foo"', () => {
-          /* empty */
-        });
-        expect(scope.$$watchersCount).toEqual(0);
-      });
-
-      it("should not $watch filtered literals", () => {
-        scope.$watch('[1] | filter:"x"', () => {
-          /* empty */
-        });
-        scope.$watch("1 | limitTo:2", () => {
+        scope.watch('"foo"', () => {
           /* empty */
         });
         expect(scope.$$watchersCount).toEqual(0);
       });
 
-      it("should ignore $watch of constant expressions", () => {
-        scope.$watch("1 + 1", () => {
+      it("should not watch filtered literals", () => {
+        scope.watch('[1] | filter:"x"', () => {
           /* empty */
         });
-        scope.$watch('"a" + "b"', () => {
+        scope.watch("1 | limitTo:2", () => {
           /* empty */
         });
-        scope.$watch('"ab".length', () => {
+        expect(scope.$$watchersCount).toEqual(0);
+      });
+
+      it("should ignore watch of constant expressions", () => {
+        scope.watch("1 + 1", () => {
           /* empty */
         });
-        scope.$watch("[].length", () => {
+        scope.watch('"a" + "b"', () => {
           /* empty */
         });
-        scope.$watch("(1 + 1) | limitTo:2", () => {
+        scope.watch('"ab".length', () => {
+          /* empty */
+        });
+        scope.watch("[].length", () => {
+          /* empty */
+        });
+        scope.watch("(1 + 1) | limitTo:2", () => {
           /* empty */
         });
         expect(scope.$$watchersCount).toEqual(0);
@@ -2113,7 +2113,7 @@ describe("Scope", () => {
     describe("watching objects", () => {
       it("should watch objects", async () => {
         scope.a = { c: 2 };
-        scope.$watch("a", (value) => {
+        scope.watch("a", (value) => {
           logs += "success";
           expect(value).toEqual(scope.a);
         });
@@ -2128,7 +2128,7 @@ describe("Scope", () => {
       it("calls the listener function registered via function when a value is created as an object", async () => {
         scope.counter = 0;
 
-        scope.$watch("someValue", () => {
+        scope.watch("someValue", () => {
           scope.counter++;
         });
         await wait();
@@ -2155,7 +2155,7 @@ describe("Scope", () => {
       it("calls the listener function registered via expression when a value is created as an object", async () => {
         scope.counter = 0;
 
-        scope.$watch("someValue", () => {
+        scope.watch("someValue", () => {
           scope.counter++;
         });
         await wait();
@@ -2171,7 +2171,7 @@ describe("Scope", () => {
       it("calls the listener function registered via function when a value is created on a nested object", async () => {
         scope.counter = 0;
         scope.a = { someValue: 1 };
-        scope.$watch("a.someValue", () => {
+        scope.watch("a.someValue", () => {
           scope.counter++;
         });
         await wait();
@@ -2191,7 +2191,7 @@ describe("Scope", () => {
         scope.counter = 0;
         scope.a = { someValue: 1 };
 
-        scope.$watch("a.someValue", () => {
+        scope.watch("a.someValue", () => {
           scope.counter++;
         });
 
@@ -2212,7 +2212,7 @@ describe("Scope", () => {
         scope.counter = 0;
         scope.someValue = {};
 
-        scope.$watch("someValue.b", () => {
+        scope.watch("someValue.b", () => {
           scope.counter++;
         });
         await wait();
@@ -2228,7 +2228,7 @@ describe("Scope", () => {
         scope.counter = 0;
         scope.someValue = undefined;
 
-        scope.$watch("someValue.b", async () => {
+        scope.watch("someValue.b", async () => {
           scope.counter++;
         });
         await wait();
@@ -2250,7 +2250,7 @@ describe("Scope", () => {
         scope.someValue = { b: 1 };
         scope.counter = 0;
 
-        scope.$watch("someValue.b", () => scope.counter++);
+        scope.watch("someValue.b", () => scope.counter++);
         await wait();
         expect(scope.counter).toBe(1);
 
@@ -2278,7 +2278,7 @@ describe("Scope", () => {
 
         expect(ctrl.scope.name).toEqual("John");
 
-        ctrl.$watch("scope.name", () => {
+        ctrl.watch("scope.name", () => {
           count++;
         });
         await wait();
@@ -2302,7 +2302,7 @@ describe("Scope", () => {
         scope.counter = 0;
         scope.someValue = { b: { c: { d: 1 } } };
 
-        scope.$watch("someValue.b.c.d", function (newValue, scope) {
+        scope.watch("someValue.b.c.d", function (newValue, scope) {
           scope.counter++;
         });
         await wait();
@@ -2322,7 +2322,7 @@ describe("Scope", () => {
         scope.counter = 0;
         scope.someValue = { b: { c: 1 } };
 
-        scope.$watch("someValue.b.c", function (newValue, scope) {
+        scope.watch("someValue.b.c", function (newValue, scope) {
           scope.counter++;
         });
         await wait();
@@ -2337,7 +2337,7 @@ describe("Scope", () => {
         scope.counter = 0;
         scope.someValue = { b: { c: undefined } };
 
-        scope.$watch("someValue.b.c.d", function (newValue, scope) {
+        scope.watch("someValue.b.c.d", function (newValue, scope) {
           scope.counter++;
         });
         await wait();
@@ -2353,39 +2353,39 @@ describe("Scope", () => {
       });
     });
 
-    describe("inherited $watch", () => {
+    describe("inherited watch", () => {
       it("should decrement the watcherCount when destroying a child scope", () => {
-        const child1 = scope.$new();
+        const child1 = scope.new();
 
-        const child2 = scope.$new();
+        const child2 = scope.new();
 
         expect(scope.$$watchersCount).toBe(0);
         expect(child1.$$watchersCount).toBe(0);
         expect(child1.$$watchersCount).toBe(0);
 
-        const grandChild1 = child1.$new();
+        const grandChild1 = child1.new();
 
-        const grandChild2 = child2.$new();
+        const grandChild2 = child2.new();
 
-        child1.$watch("a", () => {
+        child1.watch("a", () => {
           /* empty */
         });
         expect(scope.$$watchersCount).toBe(1);
         expect(child1.$$watchersCount).toBe(1);
 
-        child2.$watch("a", () => {
+        child2.watch("a", () => {
           /* empty */
         });
         expect(scope.$$watchersCount).toBe(2);
         expect(child2.$$watchersCount).toBe(1);
 
-        grandChild1.$watch("a", () => {
+        grandChild1.watch("a", () => {
           /* empty */
         });
         expect(grandChild1.$$watchersCount).toBe(1);
         expect(child1.$$watchersCount).toBe(2);
 
-        grandChild2.$watch("a", () => {
+        grandChild2.watch("a", () => {
           /* empty */
         });
         expect(grandChild2.$$watchersCount).toBe(1);
@@ -2397,36 +2397,36 @@ describe("Scope", () => {
         expect(grandChild1.$$watchersCount).toBe(1);
         expect(child2.$$watchersCount).toBe(2);
         expect(grandChild2.$$watchersCount).toBe(1);
-        grandChild2.$destroy();
+        grandChild2.destroy();
 
         expect(child2.$$watchersCount).toBe(1);
         expect(scope.$$watchersCount).toBe(3);
 
-        child1.$destroy();
+        child1.destroy();
         expect(child1.$$watchersCount).toBe(0);
         expect(scope.$$watchersCount).toBe(1);
       });
 
       it("should decrement the watcherCount when calling the remove function", () => {
-        const child1 = scope.$new();
+        const child1 = scope.new();
 
-        const child2 = scope.$new();
+        const child2 = scope.new();
 
-        const grandChild1 = child1.$new();
+        const grandChild1 = child1.new();
 
-        const grandChild2 = child2.$new();
+        const grandChild2 = child2.new();
 
-        const remove1 = child1.$watch("a", () => {
+        const remove1 = child1.watch("a", () => {
           /* empty */
         });
 
-        child2.$watch("a", () => {
+        child2.watch("a", () => {
           /* empty */
         });
-        grandChild1.$watch("a", () => {
+        grandChild1.watch("a", () => {
           /* empty */
         });
-        const remove2 = grandChild2.$watch("a", () => {
+        const remove2 = grandChild2.watch("a", () => {
           /* empty */
         });
 
@@ -2459,15 +2459,15 @@ describe("Scope", () => {
 
       it("should call child $watchers in addition order", async () => {
         logs = "";
-        const childA = scope.$new();
+        const childA = scope.new();
 
-        childA.$watch("a", () => {
+        childA.watch("a", () => {
           logs += "a";
         });
-        childA.$watch("a", () => {
+        childA.watch("a", () => {
           logs += "b";
         });
-        childA.$watch("a", () => {
+        childA.watch("a", () => {
           logs += "c";
         });
         await wait();
@@ -2479,18 +2479,18 @@ describe("Scope", () => {
 
       it("should share listeners with parent", async () => {
         logs = "";
-        const childA = scope.$new();
+        const childA = scope.new();
 
-        const childB = scope.$new();
+        const childB = scope.new();
 
-        scope.$watch("a", () => {
+        scope.watch("a", () => {
           logs += "r";
         });
 
-        childA.$watch("a", () => {
+        childA.watch("a", () => {
           logs += "a";
         });
-        childB.$watch("a", () => {
+        childB.watch("a", () => {
           logs += "b";
         });
         await wait();
@@ -2514,12 +2514,12 @@ describe("Scope", () => {
 
       it("should repeat watch cycle from the root element", async () => {
         logs = "";
-        const child = scope.$new();
+        const child = scope.new();
 
-        scope.$watch("c", () => {
+        scope.watch("c", () => {
           logs += "a";
         });
-        child.$watch("c", () => {
+        child.watch("c", () => {
           logs += "b";
         });
         await wait();
@@ -2532,7 +2532,7 @@ describe("Scope", () => {
     });
 
     it("should watch functions", async () => {
-      scope.$watch("fn", (fn) => {
+      scope.watch("fn", (fn) => {
         logs.push(fn);
       });
       await wait();
@@ -2554,9 +2554,9 @@ describe("Scope", () => {
 
       const watch2 = jasmine.createSpy("watch2");
 
-      scope.$watch("foo", () => {
-        scope.$watch("foo", watch1);
-        scope.$watch("foo", watch2);
+      scope.watch("foo", () => {
+        scope.watch("foo", watch1);
+        scope.watch("foo", watch2);
       });
 
       scope.foo = true;
@@ -2570,9 +2570,9 @@ describe("Scope", () => {
 
       const watch2 = jasmine.createSpy("watch2");
 
-      scope.$watch("foo", () => {
-        scope.$watch("foo", watch1);
-        scope.$watch("foo", watch2);
+      scope.watch("foo", () => {
+        scope.watch("foo", watch1);
+        scope.watch("foo", watch2);
       });
       scope.foo = "a";
       await wait();
@@ -2585,9 +2585,9 @@ describe("Scope", () => {
 
       const watch2 = jasmine.createSpy("watch2");
 
-      scope.$watch("foo", () => {
-        scope.$watch("foo", watch1);
-        scope.$watch("foo", watch2);
+      scope.watch("foo", () => {
+        scope.watch("foo", watch1);
+        scope.watch("foo", watch2);
       });
       scope.foo = 2;
       await wait();
@@ -2595,14 +2595,14 @@ describe("Scope", () => {
       expect(watch2).toHaveBeenCalled();
     });
 
-    describe("$watch deregistration", () => {
+    describe("watch deregistration", () => {
       beforeEach(() => (logs = []));
       it("should return a function that allows listeners to be deregistered", async () => {
         const listener = jasmine.createSpy("watch listener");
 
         let listenerRemove;
 
-        listenerRemove = scope.$watch("foo", listener);
+        listenerRemove = scope.watch("foo", listener);
 
         expect(listener).not.toHaveBeenCalled();
         expect(listenerRemove).toBeDefined();
@@ -2623,14 +2623,14 @@ describe("Scope", () => {
 
         let remove2;
 
-        scope.$watch("remove", () => {
+        scope.watch("remove", () => {
           remove1();
           remove2();
         });
-        remove1 = scope.$watch("thing", () => {
+        remove1 = scope.watch("thing", () => {
           /* empty */
         });
-        remove2 = scope.$watch("thing", () => {
+        remove2 = scope.watch("thing", () => {
           /* empty */
         });
         expect(async () => {
@@ -2659,13 +2659,13 @@ describe("Scope", () => {
         scope.items = [1];
         const listener = jasmine.createSpy("listener");
 
-        scope.$watch("items", listener);
+        scope.watch("items", listener);
         await wait();
         listener.calls.reset();
 
         const rawItems = deProxy(scope.items);
 
-        scope.$handler._objectListeners.set(rawItems, ["items", "items"]);
+        scope._handler._objectListeners.set(rawItems, ["items", "items"]);
 
         scope.items.unshift(2);
         await wait();
@@ -2677,7 +2677,7 @@ describe("Scope", () => {
         it("can watch arrays", async () => {
           scope.aValue = [1, 2, 3];
           scope.counter = 0;
-          scope.$watch("aValue", function (newValue, m) {
+          scope.watch("aValue", function (newValue, m) {
             m.counter++;
           });
           await wait();
@@ -2699,7 +2699,7 @@ describe("Scope", () => {
         it("can watch arrays when they are reversed", async () => {
           scope.aValue = [1, 2, 3];
           scope.counter = 0;
-          scope.$watch("aValue", function (newValue, m) {
+          scope.watch("aValue", function (newValue, m) {
             m.counter++;
           });
           await wait();
@@ -2714,7 +2714,7 @@ describe("Scope", () => {
         it("can watch arrays when they are sorted", async () => {
           scope.aValue = [3, 1, 2];
           scope.counter = 0;
-          scope.$watch("aValue", function (newValue, m) {
+          scope.watch("aValue", function (newValue, m) {
             m.counter++;
           });
           await wait();
@@ -2730,7 +2730,7 @@ describe("Scope", () => {
           scope.aValue = [];
           let newValueGiven;
 
-          scope.$watch("aValue", function (newValue) {
+          scope.watch("aValue", function (newValue) {
             newValueGiven = newValue;
           });
 
@@ -2755,7 +2755,7 @@ describe("Scope", () => {
           scope.aValue = [2, 3];
           let newValueGiven;
 
-          scope.$watch("aValue", function (newValue) {
+          scope.watch("aValue", function (newValue) {
             newValueGiven = newValue;
           });
 
@@ -2768,7 +2768,7 @@ describe("Scope", () => {
           scope.items = [];
           const listener = jasmine.createSpy("items watcher");
 
-          scope.$watch("items", listener);
+          scope.watch("items", listener);
 
           await wait();
           expect(listener).toHaveBeenCalledTimes(1);
@@ -2790,7 +2790,7 @@ describe("Scope", () => {
         scope.counter = 0;
         let newValueGiven;
 
-        scope.$watch("aValue", function (newValue, m) {
+        scope.watch("aValue", function (newValue, m) {
           newValueGiven = newValue;
           m.counter++;
         });
@@ -2808,7 +2808,7 @@ describe("Scope", () => {
         scope.counter = 0;
         let newValue;
 
-        scope.$watch("aValue", function (newV, m) {
+        scope.watch("aValue", function (newV, m) {
           m.counter++;
           newValue = newV;
         });
@@ -2841,7 +2841,7 @@ describe("Scope", () => {
       it("should allow deregistration", async () => {
         scope.obj = [];
         count = 0;
-        const deregister = scope.$watch("obj", (newVal) => {
+        const deregister = scope.watch("obj", (newVal) => {
           logs.push(newVal);
           count++;
         });
@@ -2864,7 +2864,7 @@ describe("Scope", () => {
       });
 
       it("should not trigger change when object in collection changes", async () => {
-        scope.$watch("obj", function () {
+        scope.watch("obj", function () {
           count++;
         });
         scope.obj = [{}];
@@ -2880,7 +2880,7 @@ describe("Scope", () => {
         let counter = 0;
 
         scope.obj = [];
-        scope.$watch("obj", function () {
+        scope.watch("obj", function () {
           counter++;
         });
         await wait();
@@ -2917,7 +2917,7 @@ describe("Scope", () => {
       it("should watch array-like objects like arrays", async () => {
         let counter = 0;
 
-        scope.$watch("obj", function () {
+        scope.watch("obj", function () {
           counter++;
         });
         scope.obj = document.getElementsByTagName("src");
@@ -2931,7 +2931,7 @@ describe("Scope", () => {
         const scope1 = createScope();
 
         scope1.service = createScope({ b: 2 });
-        expect(scope1.$handler._foreignProxies.size).toEqual(1);
+        expect(scope1._handler._foreignProxies.size).toEqual(1);
       });
 
       it("should detect changes on another proxy", async () => {
@@ -2942,11 +2942,11 @@ describe("Scope", () => {
         let count = 0;
 
         scope1.service = scope2;
-        scope1.$watch("service.b", () => {
+        scope1.watch("service.b", () => {
           count++;
         });
 
-        scope2.$watch("b", () => {
+        scope2.watch("b", () => {
           count++;
         });
 
@@ -2959,22 +2959,22 @@ describe("Scope", () => {
       it("should remove foreign listeners when a child scope is destroyed", async () => {
         const parent = createScope();
 
-        const child = parent.$new();
+        const child = parent.new();
 
         parent.service = createScope({ b: 2 });
 
         child.service = parent.service;
-        child.$watch("service.b", () => {
+        child.watch("service.b", () => {
           /* empty */
         });
 
-        expect(parent.service.$handler._foreignListeners.get("b").length).toBe(
+        expect(parent.service._handler._foreignListeners.get("b").length).toBe(
           1,
         );
 
-        child.$destroy();
+        child.destroy();
 
-        expect(parent.service.$handler._foreignListeners.has("b")).toBeFalse();
+        expect(parent.service._handler._foreignListeners.has("b")).toBeFalse();
       });
 
       it("should detect foreign proxy changes after storing the raw target", async () => {
@@ -2985,10 +2985,10 @@ describe("Scope", () => {
         let latest;
 
         scope1.service = scope2;
-        expect(scope1.$target.service).toBe(scope2.$target);
-        expect(isProxy(scope1.$target.service)).toBeFalse();
+        expect(scope1._target.service).toBe(scope2._target);
+        expect(isProxy(scope1._target.service)).toBeFalse();
 
-        scope1.$watch("service.b", (value) => {
+        scope1.watch("service.b", (value) => {
           latest = value;
         });
 
@@ -3008,22 +3008,22 @@ describe("Scope", () => {
         const values = [];
 
         scope1.service = scope2;
-        scope1.$watch("service.b", (value) => {
+        scope1.watch("service.b", (value) => {
           values.push(value);
         });
 
         await wait();
 
         expect(values).toEqual([2]);
-        expect(scope2.$handler._foreignListeners.get("b").length).toBe(1);
+        expect(scope2._handler._foreignListeners.get("b").length).toBe(1);
 
         scope1.service = scope3;
 
         await wait();
 
         expect(values).toEqual([2, 5]);
-        expect(scope2.$handler._foreignListeners.has("b")).toBeFalse();
-        expect(scope3.$handler._foreignListeners.get("b").length).toBe(1);
+        expect(scope2._handler._foreignListeners.has("b")).toBeFalse();
+        expect(scope3._handler._foreignListeners.get("b").length).toBe(1);
 
         scope2.b = 3;
         scope3.b = 6;
@@ -3034,12 +3034,12 @@ describe("Scope", () => {
       });
     });
 
-    describe("$watch", () => {
+    describe("watch", () => {
       it("should notify nested watchers when replacing an object with raw data", async () => {
         scope = createScope({ item: { nested: { count: 1 } } });
         let latest;
 
-        scope.$watch("item.nested.count", (value) => {
+        scope.watch("item.nested.count", (value) => {
           latest = value;
         });
         await wait();
@@ -3058,7 +3058,7 @@ describe("Scope", () => {
         beforeEach(async () => {
           logs = [];
 
-          deregister = scope.$watch("obj", (newVal) => {
+          deregister = scope.watch("obj", (newVal) => {
             const msg = { newVal };
 
             logs.push(msg);
@@ -3147,7 +3147,7 @@ describe("Scope", () => {
             await wait();
 
             expect(logs).toEqual([{ newVal: scope.obj }]);
-            expect(scope.obj.child.$handler).toBeDefined();
+            expect(scope.obj.child._handler).toBeDefined();
 
             logs = [];
             delete scope.obj.child;
@@ -3159,7 +3159,7 @@ describe("Scope", () => {
           });
 
           it("should fall back to object owner listeners when deleting a proxied child without direct watchers", () => {
-            const handler = scope.$handler;
+            const handler = scope._handler;
             const rawTarget = {
               child: createScope({ name: "John" }),
             };
@@ -3203,7 +3203,7 @@ describe("Scope", () => {
         describe("array", () => {
           beforeEach(async () => {
             logs = [];
-            scope.$watch("[obj]", (newVal) => {
+            scope.watch("[obj]", (newVal) => {
               const msg = { newVal };
 
               logs.push(msg);
@@ -3276,7 +3276,7 @@ describe("Scope", () => {
         describe("object", () => {
           beforeEach(() => {
             logs = [];
-            scope.$watch("{a: obj}", (newVal) => {
+            scope.watch("{a: obj}", (newVal) => {
               const msg = { newVal };
 
               logs.push(msg);
@@ -3317,7 +3317,7 @@ describe("Scope", () => {
         describe("object computed property", () => {
           beforeEach(async () => {
             logs = [];
-            scope.$watch("{[key]: obj}", (newVal) => {
+            scope.watch("{[key]: obj}", (newVal) => {
               const msg = { newVal };
 
               logs.push(msg);
@@ -3379,17 +3379,17 @@ describe("Scope", () => {
 
     logs = [];
     function setupWatches(scope, log) {
-      scope.$watch(() => {
+      scope.watch(() => {
         logs.push("w1");
 
         return scope.w1;
       }, log("w1action"));
-      scope.$watch(() => {
+      scope.watch(() => {
         logs.push("w2");
 
         return scope.w2;
       }, log("w2action"));
-      scope.$watch(() => {
+      scope.watch(() => {
         logs.push("w3");
 
         return scope.w3;
@@ -3418,7 +3418,7 @@ describe("Scope", () => {
     it("should modify the scope and trigger the watches", async () => {
       let counter = 0;
 
-      scope.$watch("a", () => {
+      scope.watch("a", () => {
         counter++;
       });
       await wait();
@@ -3459,7 +3459,7 @@ describe("Scope", () => {
 
     it("should update arrays", async () => {
       scope.a = [];
-      scope.$watch("a", () => count++);
+      scope.watch("a", () => count++);
 
       scope.a.push(1);
 
@@ -3477,9 +3477,9 @@ describe("Scope", () => {
     it("should evaluate expressions and trigger watchers", async () => {
       let log = "";
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      scope.$watch("a", (a) => {
+      scope.watch("a", (a) => {
         log += "1";
       });
 
@@ -3491,9 +3491,9 @@ describe("Scope", () => {
     it("should throw expression exceptions", async () => {
       let log = "";
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      scope.$watch("a", (a) => {
+      scope.watch("a", (a) => {
         log += "1";
       });
       scope.a = 0;
@@ -3506,61 +3506,61 @@ describe("Scope", () => {
   });
 
   describe("events", () => {
-    describe("$on", () => {
+    describe("on", () => {
       it("should add listener to list of listerner", () => {
         function eventFn() {}
-        scope.$on("abc", eventFn);
-        expect(scope.$handler._listeners.get("abc").length).toEqual(1);
-        const child = scope.$new();
+        scope.on("abc", eventFn);
+        expect(scope._handler._listeners.get("abc").length).toEqual(1);
+        const child = scope.new();
 
-        child.$on("abc", eventFn);
-        expect(child.$handler._listeners.get("abc").length).toEqual(1);
+        child.on("abc", eventFn);
+        expect(child._handler._listeners.get("abc").length).toEqual(1);
 
-        child.$on("abc", eventFn);
-        expect(child.$handler._listeners.get("abc").length).toEqual(2);
+        child.on("abc", eventFn);
+        expect(child._handler._listeners.get("abc").length).toEqual(2);
       });
 
       it("should return a deregistration function", () => {
-        const child = scope.$new();
+        const child = scope.new();
 
         function eventFn() {}
-        const res = child.$on("abc", eventFn);
+        const res = child.on("abc", eventFn);
 
         expect(isDefined(res)).toBeDefined();
       });
 
       it("should return a deregistration function that removes a listener", () => {
-        const child = scope.$new();
+        const child = scope.new();
 
         function eventFn() {}
-        const res = child.$on("abc", eventFn);
+        const res = child.on("abc", eventFn);
 
         expect(isDefined(res)).toBeDefined();
-        expect(child.$handler._listeners.get("abc").length).toEqual(1);
-        const res2 = child.$on("abc", eventFn);
+        expect(child._handler._listeners.get("abc").length).toEqual(1);
+        const res2 = child.on("abc", eventFn);
 
-        expect(child.$handler._listeners.get("abc").length).toEqual(2);
+        expect(child._handler._listeners.get("abc").length).toEqual(2);
         res();
-        expect(child.$handler._listeners.get("abc").length).toEqual(1);
+        expect(child._handler._listeners.get("abc").length).toEqual(1);
         res2();
-        expect(child.$handler._listeners.has("abc")).toBeFalse();
+        expect(child._handler._listeners.has("abc")).toBeFalse();
       });
 
-      it("should add listener for both $emit and $broadcast events", () => {
+      it("should add listener for both emit and broadcast events", () => {
         logs = "";
-        const child = scope.$new();
+        const child = scope.new();
 
         function eventFn() {
           logs += "X";
         }
 
-        child.$on("abc", eventFn);
+        child.on("abc", eventFn);
         expect(logs).toEqual("");
 
-        child.$emit("abc");
+        child.emit("abc");
         expect(logs).toEqual("X");
 
-        child.$broadcast("abc");
+        child.broadcast("abc");
         expect(logs).toEqual("XX");
       });
 
@@ -3568,7 +3568,7 @@ describe("Scope", () => {
         it("should return a function that deregisters the listener", () => {
           let log = "";
 
-          const child = scope.$new();
+          const child = scope.new();
 
           let listenerRemove;
 
@@ -3576,38 +3576,38 @@ describe("Scope", () => {
             log += "X";
           }
 
-          listenerRemove = child.$on("abc", eventFn);
+          listenerRemove = child.on("abc", eventFn);
           expect(log).toEqual("");
           expect(listenerRemove).toBeDefined();
 
-          child.$emit("abc");
-          child.$broadcast("abc");
+          child.emit("abc");
+          child.broadcast("abc");
           expect(log).toEqual("XX");
 
-          expect(child.$handler._listeners.get("abc").length).toBe(1);
+          expect(child._handler._listeners.get("abc").length).toBe(1);
 
           log = "";
           listenerRemove();
-          child.$emit("abc");
-          child.$broadcast("abc");
+          child.emit("abc");
+          child.broadcast("abc");
           expect(log).toEqual("");
-          expect(scope.$handler._listeners.get("abc")).toBeUndefined();
+          expect(scope._handler._listeners.get("abc")).toBeUndefined();
         });
 
         it("should deallocate the listener array entry", () => {
-          const remove1 = scope.$on("abc", () => {
+          const remove1 = scope.on("abc", () => {
             /* empty */
           });
 
-          scope.$on("abc", () => {
+          scope.on("abc", () => {
             /* empty */
           });
 
-          expect(scope.$handler._listeners.get("abc").length).toBe(2);
+          expect(scope._handler._listeners.get("abc").length).toBe(2);
 
           remove1();
 
-          expect(scope.$handler._listeners.get("abc").length).toBe(1);
+          expect(scope._handler._listeners.get("abc").length).toBe(1);
         });
 
         it("should call next listener after removing the current listener via its own handler", () => {
@@ -3615,17 +3615,17 @@ describe("Scope", () => {
             remove1();
           });
 
-          const remove1 = scope.$on("abc", listener1);
+          const remove1 = scope.on("abc", listener1);
 
           const listener2 = jasmine.createSpy("listener2");
 
-          const remove2 = scope.$on("abc", listener2);
+          const remove2 = scope.on("abc", listener2);
 
           const listener3 = jasmine.createSpy("listener3");
 
-          const remove3 = scope.$on("abc", listener3);
+          const remove3 = scope.on("abc", listener3);
 
-          scope.$broadcast("abc");
+          scope.broadcast("abc");
           expect(listener1).toHaveBeenCalled();
           expect(listener2).toHaveBeenCalled();
           expect(listener3).toHaveBeenCalled();
@@ -3634,7 +3634,7 @@ describe("Scope", () => {
           listener2.calls.reset();
           listener3.calls.reset();
 
-          scope.$broadcast("abc");
+          scope.broadcast("abc");
           expect(listener1).not.toHaveBeenCalled();
           expect(listener2).toHaveBeenCalled();
           expect(listener3).toHaveBeenCalled();
@@ -3643,17 +3643,17 @@ describe("Scope", () => {
         it("should call all subsequent listeners when a previous listener is removed via a handler", () => {
           const listener1 = jasmine.createSpy();
 
-          const remove1 = scope.$on("abc", listener1);
+          const remove1 = scope.on("abc", listener1);
 
           const listener2 = jasmine.createSpy().and.callFake(remove1);
 
-          const remove2 = scope.$on("abc", listener2);
+          const remove2 = scope.on("abc", listener2);
 
           const listener3 = jasmine.createSpy();
 
-          const remove3 = scope.$on("abc", listener3);
+          const remove3 = scope.on("abc", listener3);
 
-          scope.$broadcast("abc");
+          scope.broadcast("abc");
           expect(listener1).toHaveBeenCalled();
           expect(listener2).toHaveBeenCalled();
           expect(listener3).toHaveBeenCalled();
@@ -3662,7 +3662,7 @@ describe("Scope", () => {
           listener2.calls.reset();
           listener3.calls.reset();
 
-          scope.$broadcast("abc");
+          scope.broadcast("abc");
           expect(listener1).not.toHaveBeenCalled();
           expect(listener2).toHaveBeenCalled();
           expect(listener3).toHaveBeenCalled();
@@ -3671,23 +3671,23 @@ describe("Scope", () => {
         it("should not call listener when removed by previous", () => {
           const listener1 = jasmine.createSpy("listener1");
 
-          const remove1 = scope.$on("abc", listener1);
+          const remove1 = scope.on("abc", listener1);
 
           const listener2 = jasmine.createSpy("listener2").and.callFake(() => {
             remove3();
           });
 
-          const remove2 = scope.$on("abc", listener2);
+          const remove2 = scope.on("abc", listener2);
 
           const listener3 = jasmine.createSpy("listener3");
 
-          const remove3 = scope.$on("abc", listener3);
+          const remove3 = scope.on("abc", listener3);
 
           const listener4 = jasmine.createSpy("listener4");
 
-          const remove4 = scope.$on("abc", listener4);
+          const remove4 = scope.on("abc", listener4);
 
-          scope.$broadcast("abc");
+          scope.broadcast("abc");
           expect(listener1).toHaveBeenCalled();
           expect(listener2).toHaveBeenCalledTimes(1);
           expect(listener3).not.toHaveBeenCalled();
@@ -3698,7 +3698,7 @@ describe("Scope", () => {
           listener3.calls.reset();
           listener4.calls.reset();
 
-          scope.$broadcast("abc");
+          scope.broadcast("abc");
           expect(listener1).toHaveBeenCalled();
           expect(listener2).toHaveBeenCalledTimes(1);
           expect(listener3).not.toHaveBeenCalled();
@@ -3707,7 +3707,7 @@ describe("Scope", () => {
       });
     });
 
-    describe("$emit", () => {
+    describe("emit", () => {
       let log;
 
       let child;
@@ -3723,126 +3723,126 @@ describe("Scope", () => {
       beforeEach(() => {
         log = "";
         logs = [];
-        child = scope.$new();
-        grandChild = child.$new();
-        greatGrandChild = grandChild.$new();
+        child = scope.new();
+        grandChild = child.new();
+        greatGrandChild = grandChild.new();
 
         scope.$item = 0;
         child.$item = 1;
         grandChild.$item = 2;
         greatGrandChild.$item = 3;
 
-        scope.$on("myEvent", logger);
-        child.$on("myEvent", logger);
-        grandChild.$on("myEvent", logger);
-        greatGrandChild.$on("myEvent", logger);
+        scope.on("myEvent", logger);
+        child.on("myEvent", logger);
+        grandChild.on("myEvent", logger);
+        greatGrandChild.on("myEvent", logger);
       });
 
       it("should do nothing on empty listener", () => {
         logs = "";
-        const child = scope.$new();
+        const child = scope.new();
 
         function eventFn() {
           logs += "X";
         }
 
-        child.$on("abc", eventFn);
+        child.on("abc", eventFn);
         expect(logs).toEqual("");
 
-        child.$emit("none");
+        child.emit("none");
         expect(logs).toEqual("");
       });
 
       it("should bubble event up to the root scope", () => {
-        grandChild.$emit("myEvent");
+        grandChild.emit("myEvent");
         expect(log).toEqual("2>1>0>");
       });
 
       it("should allow all events on the same scope to run even if stopPropagation is called", () => {
-        child.$on("myEvent", logger);
-        grandChild.$on("myEvent", (e) => {
+        child.on("myEvent", logger);
+        grandChild.on("myEvent", (e) => {
           e.stopPropagation();
         });
-        grandChild.$on("myEvent", logger);
-        grandChild.$on("myEvent", logger);
-        grandChild.$emit("myEvent");
+        grandChild.on("myEvent", logger);
+        grandChild.on("myEvent", logger);
+        grandChild.emit("myEvent");
         expect(log).toEqual("2>2>2>");
       });
 
       it("should dispatch exceptions to the $exceptionHandler", () => {
-        child.$on("myEvent", () => {
+        child.on("myEvent", () => {
           throw "bubbleException";
         });
-        grandChild.$emit("myEvent");
+        grandChild.emit("myEvent");
         expect(log).toEqual("2>1>0>");
         expect(logs).toEqual(["bubbleException"]);
       });
 
       it("should allow stopping event propagation", () => {
-        child.$on("myEvent", (event) => {
+        child.on("myEvent", (event) => {
           event.stopPropagation();
         });
-        grandChild.$emit("myEvent");
+        grandChild.emit("myEvent");
         expect(log).toEqual("2>1>");
       });
 
       it("should continue executing listeners on the same scope when stopPropagation is called", () => {
         const sequence: string[] = [];
 
-        grandChild.$on("myEvent", () => {
+        grandChild.on("myEvent", () => {
           sequence.push("before");
         });
 
-        grandChild.$on("myEvent", (event) => {
+        grandChild.on("myEvent", (event) => {
           sequence.push("stop");
           event.stopPropagation();
         });
 
-        grandChild.$on("myEvent", () => {
+        grandChild.on("myEvent", () => {
           sequence.push("after");
         });
 
-        scope.$on("myEvent", () => {
+        scope.on("myEvent", () => {
           sequence.push("root");
         });
 
-        grandChild.$emit("myEvent");
+        grandChild.emit("myEvent");
 
         expect(sequence).toEqual(["before", "stop", "after"]);
       });
 
       it("should forward method arguments", () => {
-        child.$on("abc", (event, arg1, arg2) => {
+        child.on("abc", (event, arg1, arg2) => {
           expect(event.name).toBe("abc");
           expect(arg1).toBe("arg1");
           expect(arg2).toBe("arg2");
         });
-        child.$emit("abc", "arg1", "arg2");
+        child.emit("abc", "arg1", "arg2");
       });
 
-      it("should allow removing event listener inside a listener on $emit", () => {
+      it("should allow removing event listener inside a listener on emit", () => {
         const spy1 = jasmine.createSpy("1st listener");
 
         const spy2 = jasmine.createSpy("2nd listener");
 
         const spy3 = jasmine.createSpy("3rd listener");
 
-        const remove1 = child.$on("evt", spy1);
+        const remove1 = child.on("evt", spy1);
 
-        const remove2 = child.$on("evt", spy2);
+        const remove2 = child.on("evt", spy2);
 
-        const remove3 = child.$on("evt", spy3);
+        const remove3 = child.on("evt", spy3);
 
         spy1.and.callFake(remove1);
 
-        expect(child.$handler._listeners.get("evt").length).toBe(3);
+        expect(child._handler._listeners.get("evt").length).toBe(3);
 
         // should call all listeners and remove 1st
-        child.$emit("evt");
+        child.emit("evt");
         expect(spy1).toHaveBeenCalled();
         expect(spy2).toHaveBeenCalled();
         expect(spy3).toHaveBeenCalled();
-        expect(child.$handler._listeners.get("evt").length).toBe(2);
+        expect(child._handler._listeners.get("evt").length).toBe(2);
 
         spy1.calls.reset();
         spy2.calls.reset();
@@ -3850,36 +3850,36 @@ describe("Scope", () => {
 
         // // should call only 2nd because 1st was already removed and 2nd removes 3rd
         spy2.and.callFake(remove3);
-        child.$emit("evt");
+        child.emit("evt");
         expect(spy1).not.toHaveBeenCalled();
         expect(spy2).toHaveBeenCalled();
         expect(spy3).not.toHaveBeenCalled();
-        expect(child.$handler._listeners.get("evt").length).toBe(1);
+        expect(child._handler._listeners.get("evt").length).toBe(1);
       });
 
-      it("should allow removing event listener inside a listener on $broadcast", () => {
+      it("should allow removing event listener inside a listener on broadcast", () => {
         const spy1 = jasmine.createSpy("1st listener");
 
         const spy2 = jasmine.createSpy("2nd listener");
 
         const spy3 = jasmine.createSpy("3rd listener");
 
-        const remove1 = child.$on("evt", spy1);
+        const remove1 = child.on("evt", spy1);
 
-        const remove2 = child.$on("evt", spy2);
+        const remove2 = child.on("evt", spy2);
 
-        const remove3 = child.$on("evt", spy3);
+        const remove3 = child.on("evt", spy3);
 
         spy1.and.callFake(remove1);
 
-        expect(child.$handler._listeners.get("evt").length).toBe(3);
+        expect(child._handler._listeners.get("evt").length).toBe(3);
 
         // should call all listeners and remove 1st
-        child.$broadcast("evt");
+        child.broadcast("evt");
         expect(spy1).toHaveBeenCalled();
         expect(spy2).toHaveBeenCalled();
         expect(spy3).toHaveBeenCalled();
-        expect(child.$handler._listeners.get("evt").length).toBe(2);
+        expect(child._handler._listeners.get("evt").length).toBe(2);
 
         spy1.calls.reset();
         spy2.calls.reset();
@@ -3887,48 +3887,48 @@ describe("Scope", () => {
 
         // should call only 2nd because 1st was already removed and 2nd removes 3rd
         spy2.and.callFake(remove3);
-        child.$broadcast("evt");
+        child.broadcast("evt");
         expect(spy1).not.toHaveBeenCalled();
         expect(spy2).toHaveBeenCalled();
         expect(spy3).not.toHaveBeenCalled();
-        expect(child.$handler._listeners.get("evt").length).toBe(1);
+        expect(child._handler._listeners.get("evt").length).toBe(1);
       });
 
       describe("event object", () => {
         it("should have methods/properties", () => {
           let eventFired = false;
 
-          child.$on("myEvent", (e) => {
-            expect(e.targetScope).toEqual(grandChild.$handler.$target);
-            expect(e.currentScope).toEqual(child.$handler.$target);
+          child.on("myEvent", (e) => {
+            expect(e.targetScope).toEqual(grandChild._handler._target);
+            expect(e.currentScope).toEqual(child._handler._target);
             expect(e.name).toBe("myEvent");
             eventFired = true;
           });
-          grandChild.$emit("myEvent");
+          grandChild.emit("myEvent");
           expect(eventFired).toBe(true);
         });
 
         it("should have its `currentScope` property set to null after emit", () => {
           let event;
 
-          child.$on("myEvent", (e) => {
+          child.on("myEvent", (e) => {
             event = e;
           });
-          grandChild.$emit("myEvent");
+          grandChild.emit("myEvent");
           expect(event.currentScope).toBe(null);
-          expect(event.targetScope).toEqual(grandChild.$target);
+          expect(event.targetScope).toEqual(grandChild._target);
           expect(event.name).toBe("myEvent");
         });
 
         it("should have preventDefault method and defaultPrevented property", () => {
-          let event = grandChild.$emit("myEvent");
+          let event = grandChild.emit("myEvent");
 
           expect(event.defaultPrevented).toBe(false);
 
-          child.$on("myEvent", (event) => {
+          child.on("myEvent", (event) => {
             event.preventDefault();
           });
-          event = grandChild.$emit("myEvent");
+          event = grandChild.emit("myEvent");
           expect(event.defaultPrevented).toBe(true);
           expect(event.currentScope).toBe(null);
         });
@@ -3936,19 +3936,19 @@ describe("Scope", () => {
         it("should expose the same event object at each scope in an emit chain", () => {
           const events: any[] = [];
 
-          child.$on("myEvent", (event) => {
+          child.on("myEvent", (event) => {
             events.push(event);
           });
 
-          grandChild.$on("myEvent", (event) => {
+          grandChild.on("myEvent", (event) => {
             events.push(event);
           });
 
-          scope.$on("myEvent", (event) => {
+          scope.on("myEvent", (event) => {
             events.push(event);
           });
 
-          const result = grandChild.$emit("myEvent");
+          const result = grandChild.emit("myEvent");
 
           expect(events.length).toBe(3);
           expect(events[0]).toBe(result);
@@ -3957,20 +3957,20 @@ describe("Scope", () => {
         });
 
         it("should return an event object even when no listeners are registered", () => {
-          const child = scope.$new();
+          const child = scope.new();
 
-          const result = child.$emit("ghost");
+          const result = child.emit("ghost");
 
           expect(result).toBeDefined();
           expect(result.name).toBe("ghost");
-          expect(result.targetScope).toEqual(child.$target);
+          expect(result.targetScope).toEqual(child._target);
           expect(result.currentScope).toBeNull();
           expect(result.defaultPrevented).toBe(false);
         });
       });
     });
 
-    describe("$broadcast", () => {
+    describe("broadcast", () => {
       describe("event propagation", () => {
         let log;
 
@@ -3996,14 +3996,14 @@ describe("Scope", () => {
 
         beforeEach(() => {
           log = "";
-          child1 = scope.$new();
-          child2 = scope.$new();
-          child3 = scope.$new();
-          grandChild11 = child1.$new();
-          grandChild21 = child2.$new();
-          grandChild22 = child2.$new();
-          grandChild23 = child2.$new();
-          greatGrandChild211 = grandChild21.$new();
+          child1 = scope.new();
+          child2 = scope.new();
+          child3 = scope.new();
+          grandChild11 = child1.new();
+          grandChild21 = child2.new();
+          grandChild22 = child2.new();
+          grandChild23 = child2.new();
+          greatGrandChild211 = grandChild21.new();
 
           scope.$item = 0;
           child1.$item = 1;
@@ -4015,15 +4015,15 @@ describe("Scope", () => {
           grandChild23.$item = 23;
           greatGrandChild211.$item = 211;
 
-          scope.$on("myEvent", logger);
-          child1.$on("myEvent", logger);
-          child2.$on("myEvent", logger);
-          child3.$on("myEvent", logger);
-          grandChild11.$on("myEvent", logger);
-          grandChild21.$on("myEvent", logger);
-          grandChild22.$on("myEvent", logger);
-          grandChild23.$on("myEvent", logger);
-          greatGrandChild211.$on("myEvent", logger);
+          scope.on("myEvent", logger);
+          child1.on("myEvent", logger);
+          child2.on("myEvent", logger);
+          child3.on("myEvent", logger);
+          grandChild11.on("myEvent", logger);
+          grandChild21.on("myEvent", logger);
+          grandChild22.on("myEvent", logger);
+          grandChild23.on("myEvent", logger);
+          greatGrandChild211.on("myEvent", logger);
 
           //          R
           //       /  |   \
@@ -4035,48 +4035,48 @@ describe("Scope", () => {
         });
 
         it("should broadcast an event from the root scope", () => {
-          scope.$broadcast("myEvent");
+          scope.broadcast("myEvent");
           expect(log).toBe("0>1>11>2>21>211>22>23>3>");
         });
 
         it("should broadcast an event from a child scope", () => {
-          child2.$broadcast("myEvent");
+          child2.broadcast("myEvent");
           expect(log).toBe("2>21>211>22>23>");
         });
 
         it("should broadcast an event from a leaf scope with a sibling", () => {
-          grandChild22.$broadcast("myEvent");
+          grandChild22.broadcast("myEvent");
           expect(log).toBe("22>");
         });
 
         it("should broadcast an event from a leaf scope without a sibling", () => {
-          grandChild23.$broadcast("myEvent");
+          grandChild23.broadcast("myEvent");
           expect(log).toBe("23>");
         });
 
         it("should allow all events on the same scope to run even if stopPropagation is called", () => {
           const childListeners: number[] = [];
 
-          child2.$on("myEvent", () => childListeners.push(1));
+          child2.on("myEvent", () => childListeners.push(1));
 
-          child2.$on("myEvent", (event) => {
+          child2.on("myEvent", (event) => {
             childListeners.push(2);
             event.stopPropagation();
           });
 
-          child2.$on("myEvent", () => childListeners.push(3));
+          child2.on("myEvent", () => childListeners.push(3));
 
-          scope.$broadcast("myEvent");
+          scope.broadcast("myEvent");
 
           expect(childListeners).toEqual([1, 2, 3]);
         });
 
         it("should stop broadcasting to descendants when propagation is stopped", () => {
-          grandChild21.$on("myEvent", (event) => {
+          grandChild21.on("myEvent", (event) => {
             event.stopPropagation();
           });
 
-          scope.$broadcast("myEvent");
+          scope.broadcast("myEvent");
 
           expect(log).toBe("0>1>11>2>21>");
         });
@@ -4084,120 +4084,120 @@ describe("Scope", () => {
         it("should continue same-scope listeners after one listener throws", () => {
           const calls: string[] = [];
 
-          child2.$on("myEvent", () => {
+          child2.on("myEvent", () => {
             calls.push("one");
             throw new Error("broadcastFailure");
           });
 
-          child2.$on("myEvent", () => {
+          child2.on("myEvent", () => {
             calls.push("two");
           });
 
-          scope.$broadcast("myEvent");
+          scope.broadcast("myEvent");
 
           expect(calls).toEqual(["one", "two"]);
           expect(log.includes("2>")).toBe(true);
         });
 
         it("should stop broadcasting to sibling branches when propagation is stopped", () => {
-          child1.$on("myEvent", (event) => {
+          child1.on("myEvent", (event) => {
             event.stopPropagation();
           });
 
-          scope.$broadcast("myEvent");
+          scope.broadcast("myEvent");
 
           expect(log).toBe("0>1>");
         });
 
         it("should continue sibling traversal when a child is destroyed mid-traversal", () => {
           const eventScope = createScope();
-          const first = eventScope.$new();
-          const second = eventScope.$new();
-          const third = eventScope.$new();
+          const first = eventScope.new();
+          const second = eventScope.new();
+          const third = eventScope.new();
           const calls: string[] = [];
 
-          first.$on("evt", () => calls.push("first"));
-          second.$on("evt", () => {
+          first.on("evt", () => calls.push("first"));
+          second.on("evt", () => {
             calls.push("second");
-            second.$destroy();
+            second.destroy();
           });
-          third.$on("evt", () => calls.push("third"));
+          third.on("evt", () => calls.push("third"));
 
-          eventScope.$broadcast("evt");
+          eventScope.broadcast("evt");
 
           expect(calls).toEqual(["first", "second", "third"]);
-          expect(second.$handler._destroyed).toBeTrue();
+          expect(second._handler._destroyed).toBeTrue();
         });
 
         it("should not follow a replaced lone child in the same broadcast pass", () => {
           const eventScope = createScope();
-          const loneChild = eventScope.$new();
+          const loneChild = eventScope.new();
           const calls: string[] = [];
 
-          loneChild.$on("evt", () => {
+          loneChild.on("evt", () => {
             calls.push("original");
           });
 
-          eventScope.$on("evt", () => {
+          eventScope.on("evt", () => {
             calls.push("root");
 
-            loneChild.$destroy();
+            loneChild.destroy();
 
-            const replacement = eventScope.$new();
+            const replacement = eventScope.new();
 
-            replacement.$on("evt", () => {
+            replacement.on("evt", () => {
               calls.push("replacement");
             });
           });
 
-          eventScope.$broadcast("evt");
+          eventScope.broadcast("evt");
 
           expect(calls).toEqual(["root"]);
         });
 
         it("should not follow a replaced child when it is one of multiple siblings", () => {
           const eventScope = createScope();
-          const first = eventScope.$new();
-          const second = eventScope.$new();
+          const first = eventScope.new();
+          const second = eventScope.new();
           const calls: string[] = [];
 
-          first.$on("evt", () => {
+          first.on("evt", () => {
             calls.push("first");
 
-            first.$destroy();
+            first.destroy();
 
-            const replacement = eventScope.$new();
+            const replacement = eventScope.new();
 
-            replacement.$on("evt", () => {
+            replacement.on("evt", () => {
               calls.push("replacement");
             });
           });
 
-          second.$on("evt", () => {
+          second.on("evt", () => {
             calls.push("second");
           });
 
-          eventScope.$broadcast("evt");
+          eventScope.broadcast("evt");
 
           expect(calls).toEqual(["first", "second"]);
         });
 
         it("should not include dynamically added children in the same broadcast pass", () => {
           const eventScope = createScope();
-          const parent = eventScope.$new();
-          const sibling = eventScope.$new();
+          const parent = eventScope.new();
+          const sibling = eventScope.new();
           const calls: string[] = [];
 
-          parent.$on("evt", () => {
+          parent.on("evt", () => {
             calls.push("parent");
 
-            const late = parent.$new();
-            late.$on("evt", () => calls.push("late"));
+            const late = parent.new();
+            late.on("evt", () => calls.push("late"));
           });
 
-          sibling.$on("evt", () => calls.push("sibling"));
+          sibling.on("evt", () => calls.push("sibling"));
 
-          eventScope.$broadcast("evt");
+          eventScope.broadcast("evt");
 
           expect(calls).toEqual(["parent", "sibling"]);
         });
@@ -4205,12 +4205,12 @@ describe("Scope", () => {
         it("should null out currentScope for broadcast even if propagation is stopped", () => {
           let resultEvent;
 
-          grandChild21.$on("myEvent", (event) => {
+          grandChild21.on("myEvent", (event) => {
             event.stopPropagation();
             resultEvent = event;
           });
 
-          const result = scope.$broadcast("myEvent");
+          const result = scope.broadcast("myEvent");
 
           expect(result).toBeDefined();
           expect(result).toBe(resultEvent);
@@ -4218,63 +4218,63 @@ describe("Scope", () => {
         });
 
         it("should not not fire any listeners for other events", () => {
-          scope.$broadcast("fooEvent");
+          scope.broadcast("fooEvent");
           expect(log).toBe("");
         });
 
         it("should return event object", () => {
-          const result = child1.$broadcast("some");
+          const result = child1.broadcast("some");
 
           expect(result).toBeDefined();
           expect(result.name).toBe("some");
-          expect(result.targetScope).toEqual(child1.$target);
+          expect(result.targetScope).toEqual(child1._target);
           expect(result.currentScope).toBe(null);
         });
       });
 
       describe("listener", () => {
         it("should receive event object", () => {
-          const child = scope.$new();
+          const child = scope.new();
 
           let eventFired = false;
 
-          child.$on("fooEvent", (event) => {
+          child.on("fooEvent", (event) => {
             eventFired = true;
             expect(event.name).toBe("fooEvent");
-            expect(event.targetScope).toEqual(scope.$target);
-            expect(event.currentScope).toEqual(child.$target);
+            expect(event.targetScope).toEqual(scope._target);
+            expect(event.currentScope).toEqual(child._target);
           });
-          scope.$broadcast("fooEvent");
+          scope.broadcast("fooEvent");
 
           expect(eventFired).toBe(true);
         });
 
         it("should have the event's `currentScope` property set to null after broadcast", () => {
-          const child = scope.$new();
+          const child = scope.new();
 
           let event;
 
-          child.$on("fooEvent", (e) => {
+          child.on("fooEvent", (e) => {
             event = e;
           });
-          scope.$broadcast("fooEvent");
+          scope.broadcast("fooEvent");
 
           expect(event.name).toBe("fooEvent");
-          expect(event.targetScope).toEqual(scope.$target);
+          expect(event.targetScope).toEqual(scope._target);
           expect(event.currentScope).toBe(null);
         });
 
         it("should have currentScope set to null when a listener throws", () => {
           let captured;
-          scope.$on("fooEvent", () => {
+          scope.on("fooEvent", () => {
             throw new Error("boom");
           });
 
-          scope.$on("fooEvent", (event) => {
+          scope.on("fooEvent", (event) => {
             captured = event;
           });
 
-          const result = scope.$broadcast("fooEvent");
+          const result = scope.broadcast("fooEvent");
 
           expect(captured).toBe(result);
           expect(result.currentScope).toBeNull();
@@ -4283,29 +4283,29 @@ describe("Scope", () => {
         it("should continue executing listeners on the same scope if one listener throws", () => {
           const events: string[] = [];
 
-          scope.$on("myEvent", () => {
+          scope.on("myEvent", () => {
             events.push("first");
             throw new Error("handlerFailure");
           });
 
-          scope.$on("myEvent", () => {
+          scope.on("myEvent", () => {
             events.push("second");
           });
 
-          scope.$broadcast("myEvent");
+          scope.broadcast("myEvent");
 
           expect(events).toEqual(["first", "second"]);
         });
 
         it("should support passing messages as constargs", () => {
-          const child = scope.$new();
+          const child = scope.new();
 
           let args;
 
-          child.$on("fooEvent", function () {
+          child.on("fooEvent", function () {
             args = arguments;
           });
-          scope.$broadcast("fooEvent", "do", "re", "me", "fa");
+          scope.broadcast("fooEvent", "do", "re", "me", "fa");
 
           expect(args.length).toBe(5);
           expect(sliceArgs(args, 1)).toEqual(["do", "re", "me", "fa"]);
@@ -4318,12 +4318,12 @@ describe("Scope", () => {
         const calls: number[] = [];
 
         for (let i = 0; i < childCount; i++) {
-          const child = eventScope.$new();
+          const child = eventScope.new();
 
-          child.$on("evt", () => calls.push(i));
+          child.on("evt", () => calls.push(i));
         }
 
-        eventScope.$broadcast("evt");
+        eventScope.broadcast("evt");
 
         expect(calls.length).toBe(childCount);
       });
@@ -4334,60 +4334,60 @@ describe("Scope", () => {
         const depth = 300;
 
         for (let i = 0; i < depth; i++) {
-          const next = current.$new();
+          const next = current.new();
 
-          next.$on("evt", () => {
+          next.on("evt", () => {
             // intentionally empty
           });
 
           current = next;
         }
 
-        const result = eventScope.$broadcast("evt");
+        const result = eventScope.broadcast("evt");
 
         expect(result.currentScope).toBeNull();
       });
     });
 
-    it("should allow recursive $emit/$broadcast", () => {
+    it("should allow recursive emit/broadcast", () => {
       let callCount = 0;
 
-      scope.$on("evt", ($event, arg0) => {
+      scope.on("evt", ($event, arg0) => {
         callCount++;
 
         if (arg0 !== 1234) {
-          scope.$emit("evt", 1234);
-          scope.$broadcast("evt", 1234);
+          scope.emit("evt", 1234);
+          scope.broadcast("evt", 1234);
         }
       });
 
-      scope.$emit("evt");
-      scope.$broadcast("evt");
+      scope.emit("evt");
+      scope.broadcast("evt");
       expect(callCount).toBe(6);
     });
 
-    it("should allow recursive $emit/$broadcast between parent/child", () => {
-      const child = scope.$new();
+    it("should allow recursive emit/broadcast between parent/child", () => {
+      const child = scope.new();
 
       let calls = "";
 
-      scope.$on("evt", ($event, arg0) => {
+      scope.on("evt", ($event, arg0) => {
         calls += "r"; // For "root".
 
         if (arg0 === "fromChild") {
-          scope.$broadcast("evt", "fromRoot2");
+          scope.broadcast("evt", "fromRoot2");
         }
       });
 
-      child.$on("evt", ($event, arg0) => {
+      child.on("evt", ($event, arg0) => {
         calls += "c"; // For "child".
 
         if (arg0 === "fromRoot1") {
-          child.$emit("evt", "fromChild");
+          child.emit("evt", "fromChild");
         }
       });
 
-      scope.$broadcast("evt", "fromRoot1");
+      scope.broadcast("evt", "fromRoot1");
       expect(calls).toBe("rccrrc");
     });
   });
@@ -4396,25 +4396,25 @@ describe("Scope", () => {
     it("should clean up all listeners for root", () => {
       const scope = createScope();
 
-      scope.$on("test", () => {
+      scope.on("test", () => {
         /* empty */
       });
-      expect(scope.$handler._listeners.size).toEqual(1);
+      expect(scope._handler._listeners.size).toEqual(1);
 
-      scope.$destroy();
-      expect(scope.$handler._listeners.size).toEqual(0);
+      scope.destroy();
+      expect(scope._handler._listeners.size).toEqual(0);
     });
 
     it("should clean up all watchers for root", () => {
       const scope = createScope();
 
-      scope.$watch("a", () => {
+      scope.watch("a", () => {
         /* empty */
       });
-      expect(scope.$handler._watchers.size).toEqual(1);
+      expect(scope._handler._watchers.size).toEqual(1);
 
-      scope.$destroy();
-      expect(scope.$handler._watchers.size).toEqual(0);
+      scope.destroy();
+      expect(scope._handler._watchers.size).toEqual(0);
     });
 
     it("should default internal destroy to broadcasting destroy events", () => {
@@ -4422,66 +4422,66 @@ describe("Scope", () => {
 
       const onDestroy = jasmine.createSpy("internal destroy default");
 
-      scope.$on("$destroy", onDestroy);
+      scope.on("$destroy", onDestroy);
 
-      scope.$handler._destroy();
+      scope._handler.destroy();
 
       expect(onDestroy).toHaveBeenCalledTimes(1);
-      expect(scope.$handler._destroyed).toBeTrue();
+      expect(scope._handler._destroyed).toBeTrue();
     });
 
     it("should remove children from parent scopes", async () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
       expect(scope._children.length).toEqual(1);
-      child.$destroy();
+      child.destroy();
       expect(scope._children.length).toEqual(0);
     });
 
     it("should tolerate nested broadcast calls from $destroy listeners", () => {
       const scope = createScope();
-      const parent = scope.$new();
-      const child = parent.$new();
+      const parent = scope.new();
+      const child = parent.new();
 
       const events: string[] = [];
 
-      child.$on("cleanup", () => {
+      child.on("cleanup", () => {
         events.push("cleanup");
       });
 
-      parent.$on("$destroy", () => {
-        parent.$broadcast("cleanup");
+      parent.on("$destroy", () => {
+        parent.broadcast("cleanup");
         events.push("destroyed");
       });
 
-      parent.$destroy();
+      parent.destroy();
 
       expect(events).toEqual(["cleanup", "destroyed"]);
-      expect(parent.$handler._destroyed).toBeTrue();
+      expect(parent._handler._destroyed).toBeTrue();
       expect(scope._children.includes(parent)).toBeFalse();
     });
 
     it("should keep parent child bookkeeping consistent when destroying a middle child", () => {
       const scope = createScope();
 
-      const childA = scope.$new();
+      const childA = scope.new();
 
-      const childB = scope.$new();
+      const childB = scope.new();
 
-      const childC = scope.$new();
+      const childC = scope.new();
 
       expect(scope._children).toEqual([childA, childB, childC]);
 
-      childB.$destroy();
+      childB.destroy();
 
       expect(scope._children.length).toBe(2);
       expect(scope._children.includes(childA)).toBeTrue();
       expect(scope._children.includes(childB)).toBeFalse();
       expect(scope._children.includes(childC)).toBeTrue();
 
-      childC.$destroy();
+      childC.destroy();
 
       expect(scope._children).toEqual([childA]);
     });
@@ -4489,129 +4489,129 @@ describe("Scope", () => {
     it("cleans up child watchers when the child is destroyed", async () => {
       const scope = createScope();
 
-      scope.$watch("test", () => {
+      scope.watch("test", () => {
         /* empty */
       });
-      const child = scope.$new();
+      const child = scope.new();
 
-      child.$watch("test", () => {
+      child.watch("test", () => {
         /* empty */
       });
 
-      expect(scope.$handler._watchers.size).toEqual(1);
-      expect(scope.$handler._watchers.get("test").length).toEqual(2);
-      expect(child.$handler._watchers.size).toEqual(1);
-      expect(child.$handler._watchers.get("test").length).toEqual(2);
+      expect(scope._handler._watchers.size).toEqual(1);
+      expect(scope._handler._watchers.get("test").length).toEqual(2);
+      expect(child._handler._watchers.size).toEqual(1);
+      expect(child._handler._watchers.get("test").length).toEqual(2);
 
-      child.$destroy();
-      expect(scope.$handler._watchers.get("test").length).toEqual(1);
+      child.destroy();
+      expect(scope._handler._watchers.get("test").length).toEqual(1);
     });
 
     it("should clear transient destroy state from child handlers", () => {
       const scope = createScope();
 
-      scope.$watch("test", () => {
+      scope.watch("test", () => {
         /* empty */
       });
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const sharedForeignListeners = child.$handler._foreignListeners;
+      const sharedForeignListeners = child._handler._foreignListeners;
 
-      const sharedObjectListeners = child.$handler._objectListeners;
+      const sharedObjectListeners = child._handler._objectListeners;
 
-      child.$handler._foreignProxies.add(scope);
-      child.$handler._scheduled = [{}];
+      child._handler._foreignProxies.add(scope);
+      child._handler._scheduled = [{}];
 
-      child.$destroy();
+      child.destroy();
 
-      expect(child.$handler._foreignListeners).not.toBe(sharedForeignListeners);
-      expect(child.$handler._foreignListeners.size).toBe(0);
-      expect(child.$handler._objectListeners).not.toBe(sharedObjectListeners);
-      expect(child.$handler._foreignProxies.size).toBe(0);
-      expect(child.$handler._scheduled.length).toBe(0);
+      expect(child._handler._foreignListeners).not.toBe(sharedForeignListeners);
+      expect(child._handler._foreignListeners.size).toBe(0);
+      expect(child._handler._objectListeners).not.toBe(sharedObjectListeners);
+      expect(child._handler._foreignProxies.size).toBe(0);
+      expect(child._handler._scheduled.length).toBe(0);
     });
 
     it("should release cached target and proxy references after destroy", async () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const handler = child.$handler;
+      const handler = child._handler;
 
       child.value = 42;
-      expect(handler.$target).not.toBeNull();
-      expect(handler.$proxy).toBeDefined();
+      expect(handler._target).not.toBeNull();
+      expect(handler._proxy).toBeDefined();
 
-      child.$destroy();
+      child.destroy();
       await wait();
 
-      expect(handler.$target).toBeNull();
-      expect(handler.$proxy).toBeUndefined();
-      expect(handler._propertyMap.$target).toBeNull();
-      expect(handler._propertyMap.$proxy).toBeUndefined();
+      expect(handler._target).toBeNull();
+      expect(handler._proxy).toBeUndefined();
+      expect(handler._propertyMap._target).toBeNull();
+      expect(handler._propertyMap._proxy).toBeUndefined();
     });
 
     it("should preserve ancestry during destroy listeners and release it afterward", async () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const handler = child.$handler;
+      const handler = child._handler;
 
       let destroyParent;
 
       let destroyRoot;
 
-      child.$on("$destroy", () => {
-        destroyParent = child.$parent;
-        destroyRoot = child.$root;
+      child.on("$destroy", () => {
+        destroyParent = child.parent;
+        destroyRoot = child.root;
       });
 
-      child.$destroy();
+      child.destroy();
 
-      expect(destroyParent).toBe(scope.$handler);
-      expect(destroyRoot).toBe(scope.$root);
+      expect(destroyParent).toBe(scope._handler);
+      expect(destroyRoot).toBe(scope.root);
 
       await wait();
 
-      expect(handler.$parent).toBeUndefined();
-      expect(handler.$root).toBeUndefined();
-      expect(handler._propertyMap.$parent).toBeUndefined();
-      expect(handler._propertyMap.$root).toBeUndefined();
+      expect(handler.parent).toBeUndefined();
+      expect(handler.root).toBeUndefined();
+      expect(handler._propertyMap.parent).toBeUndefined();
+      expect(handler._propertyMap.root).toBeUndefined();
     });
 
     it("should release destroyed scope references on the next microtask", async () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const handler = child.$handler;
+      const handler = child._handler;
 
       child.value = 42;
-      child.$destroy();
+      child.destroy();
 
-      expect(handler.$target).not.toBeNull();
-      expect(handler.$parent).toBe(scope.$handler);
+      expect(handler._target).not.toBeNull();
+      expect(handler.parent).toBe(scope._handler);
 
       await Promise.resolve();
 
-      expect(handler.$target).toBeNull();
-      expect(handler.$proxy).toBeUndefined();
-      expect(handler.$parent).toBeUndefined();
+      expect(handler._target).toBeNull();
+      expect(handler._proxy).toBeUndefined();
+      expect(handler.parent).toBeUndefined();
     });
 
     it("should release root child references after destroy", async () => {
       const scope = createScope();
 
-      const handler = scope.$handler;
+      const handler = scope._handler;
 
-      scope.$new();
-      scope.$new();
+      scope.new();
+      scope.new();
 
       expect(scope._children.length).toBe(2);
 
-      scope.$destroy();
+      scope.destroy();
       await wait();
 
       expect(scope._children.length).toBe(0);
@@ -4621,90 +4621,90 @@ describe("Scope", () => {
     it("should release child scope descendants and watcher map references after destroy", async () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const grandChild = child.$new();
+      const grandChild = child.new();
 
-      const handler = child.$handler;
+      const handler = child._handler;
 
       const sharedWatchers = handler._watchers;
 
-      child.$watch("test", () => {
+      child.watch("test", () => {
         /* empty */
       });
-      grandChild.$watch("test", () => {
+      grandChild.watch("test", () => {
         /* empty */
       });
 
-      child.$destroy();
+      child.destroy();
       await wait();
 
       expect(handler._children.length).toBe(0);
       expect(handler._propertyMap._children.length).toBe(0);
       expect(handler._watchers).not.toBe(sharedWatchers);
       expect(handler._watchers.size).toBe(0);
-      expect(grandChild.$handler._destroyed).toBeTrue();
-      expect(scope.$handler._watchers.has("test")).toBeFalse();
+      expect(grandChild._handler._destroyed).toBeTrue();
+      expect(scope._handler._watchers.has("test")).toBeFalse();
     });
 
     it("should not rehydrate cleared caches for destroyed-scope inspection reads", async () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const handler = child.$handler;
+      const handler = child._handler;
 
       child.value = 42;
-      child.$destroy();
+      child.destroy();
       await wait();
 
-      expect(handler.$target).toBeNull();
-      expect(handler.$proxy).toBeUndefined();
+      expect(handler._target).toBeNull();
+      expect(handler._proxy).toBeUndefined();
 
-      void child.$id;
-      void child.$parent;
-      void child.$root;
-      void child.$destroy;
+      void child.id;
+      void child.parent;
+      void child.root;
+      void child.destroy;
       void child._children;
 
-      expect(handler.$target).toBeNull();
-      expect(handler.$proxy).toBeUndefined();
-      expect(handler._propertyMap.$target).toBeNull();
-      expect(handler._propertyMap.$proxy).toBeUndefined();
+      expect(handler._target).toBeNull();
+      expect(handler._proxy).toBeUndefined();
+      expect(handler._propertyMap._target).toBeNull();
+      expect(handler._propertyMap._proxy).toBeUndefined();
     });
 
     it("should slim the destroyed property map to inspection keys", async () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const handler = child.$handler;
+      const handler = child._handler;
 
-      child.$destroy();
+      child.destroy();
       await wait();
 
-      expect(handler._propertyMap.$destroy).toBeDefined();
-      expect(handler._propertyMap.$handler).toBe(handler);
-      expect(handler._propertyMap.$id).toBe(handler.$id);
+      expect(handler._propertyMap.destroy).toBeDefined();
+      expect(handler._propertyMap._handler).toBe(handler);
+      expect(handler._propertyMap.id).toBe(handler.id);
       expect(handler._propertyMap._children).toBe(handler._children);
-      expect(handler._propertyMap.$watch).toBeUndefined();
-      expect(handler._propertyMap.$new).toBeUndefined();
+      expect(handler._propertyMap.watch).toBeUndefined();
+      expect(handler._propertyMap.new).toBeUndefined();
     });
 
     it("should destroy a displaced direct child scope when overwriting an object property", () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
       const onDestroy = jasmine.createSpy("child destroy");
 
-      child.$on("$destroy", onDestroy);
+      child.on("$destroy", onDestroy);
       scope.current = child;
 
       scope.current = { replacement: true };
 
       expect(onDestroy).toHaveBeenCalled();
-      expect(child.$handler._destroyed).toBeTrue();
+      expect(child._handler._destroyed).toBeTrue();
       expect(scope._children.includes(child)).toBeFalse();
       expect(scope.current.replacement).toBeTrue();
     });
@@ -4727,24 +4727,24 @@ describe("Scope", () => {
     it("should destroy direct child scopes removed by shrinking an array length", () => {
       const scope = createScope();
 
-      const child1 = scope.$new();
+      const child1 = scope.new();
 
-      const child2 = scope.$new();
+      const child2 = scope.new();
 
       const onDestroy1 = jasmine.createSpy("child1 destroy");
 
       const onDestroy2 = jasmine.createSpy("child2 destroy");
 
-      child1.$on("$destroy", onDestroy1);
-      child2.$on("$destroy", onDestroy2);
+      child1.on("$destroy", onDestroy1);
+      child2.on("$destroy", onDestroy2);
       scope.items = [child1, child2];
 
       scope.items.length = 1;
 
       expect(onDestroy1).not.toHaveBeenCalled();
       expect(onDestroy2).toHaveBeenCalled();
-      expect(child1.$handler._destroyed).toBeFalse();
-      expect(child2.$handler._destroyed).toBeTrue();
+      expect(child1._handler._destroyed).toBeFalse();
+      expect(child2._handler._destroyed).toBeTrue();
       expect(scope._children.includes(child1)).toBeTrue();
       expect(scope._children.includes(child2)).toBeFalse();
     });
@@ -4752,17 +4752,17 @@ describe("Scope", () => {
     it("should destroy a displaced direct child scope when replacing an array item by index", () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
       const onDestroy = jasmine.createSpy("child destroy on index replace");
 
-      child.$on("$destroy", onDestroy);
+      child.on("$destroy", onDestroy);
       scope.items = [child];
 
       scope.items[0] = { replacement: true };
 
       expect(onDestroy).toHaveBeenCalled();
-      expect(child.$handler._destroyed).toBeTrue();
+      expect(child._handler._destroyed).toBeTrue();
       expect(scope._children.includes(child)).toBeFalse();
       expect(scope.items[0].replacement).toBeTrue();
     });
@@ -4770,9 +4770,9 @@ describe("Scope", () => {
     it("should destroy direct child scopes contained in a displaced collection when overwritten", () => {
       const scope = createScope();
 
-      const child1 = scope.$new();
+      const child1 = scope.new();
 
-      const child2 = scope.$new();
+      const child2 = scope.new();
 
       const onDestroy1 = jasmine.createSpy(
         "child1 destroy on collection overwrite",
@@ -4782,16 +4782,16 @@ describe("Scope", () => {
         "child2 destroy on collection overwrite",
       );
 
-      child1.$on("$destroy", onDestroy1);
-      child2.$on("$destroy", onDestroy2);
+      child1.on("$destroy", onDestroy1);
+      child2.on("$destroy", onDestroy2);
       scope.items = [child1, child2];
 
       scope.items = [];
 
       expect(onDestroy1).toHaveBeenCalled();
       expect(onDestroy2).toHaveBeenCalled();
-      expect(child1.$handler._destroyed).toBeTrue();
-      expect(child2.$handler._destroyed).toBeTrue();
+      expect(child1._handler._destroyed).toBeTrue();
+      expect(child2._handler._destroyed).toBeTrue();
       expect(scope._children.includes(child1)).toBeFalse();
       expect(scope._children.includes(child2)).toBeFalse();
       expect(scope.items.length).toBe(0);
@@ -4800,19 +4800,19 @@ describe("Scope", () => {
     it("should destroy direct child scopes nested inside a displaced collection when overwritten", () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
       const onDestroy = jasmine.createSpy(
         "nested child destroy on collection overwrite",
       );
 
-      child.$on("$destroy", onDestroy);
+      child.on("$destroy", onDestroy);
       scope.current = { items: [child] };
 
       scope.current = { replacement: true };
 
       expect(onDestroy).toHaveBeenCalled();
-      expect(child.$handler._destroyed).toBeTrue();
+      expect(child._handler._destroyed).toBeTrue();
       expect(scope._children.includes(child)).toBeFalse();
       expect(scope.current.replacement).toBeTrue();
     });
@@ -4820,17 +4820,17 @@ describe("Scope", () => {
     it("should destroy a displaced direct child scope when overwritten with undefined", () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
       const onDestroy = jasmine.createSpy("child destroy on undefined");
 
-      child.$on("$destroy", onDestroy);
+      child.on("$destroy", onDestroy);
       scope.current = child;
 
       scope.current = undefined;
 
       expect(onDestroy).toHaveBeenCalled();
-      expect(child.$handler._destroyed).toBeTrue();
+      expect(child._handler._destroyed).toBeTrue();
       expect(scope._children.includes(child)).toBeFalse();
       expect(scope.current).toBeUndefined();
     });
@@ -4838,17 +4838,17 @@ describe("Scope", () => {
     it("should destroy a displaced direct child scope when overwritten with a primitive", () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
       const onDestroy = jasmine.createSpy("child destroy on primitive");
 
-      child.$on("$destroy", onDestroy);
+      child.on("$destroy", onDestroy);
       scope.current = child;
 
       scope.current = 42;
 
       expect(onDestroy).toHaveBeenCalled();
-      expect(child.$handler._destroyed).toBeTrue();
+      expect(child._handler._destroyed).toBeTrue();
       expect(scope._children.includes(child)).toBeFalse();
       expect(scope.current).toBe(42);
     });
@@ -4856,15 +4856,15 @@ describe("Scope", () => {
     it("should only invoke displaced child scope destruction once on primitive overwrite", () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const originalDestroy = child.$handler._propertyMap.$destroy;
+      const originalDestroy = child._handler._propertyMap.destroy;
 
       const destroySpy = jasmine
         .createSpy("bound child destroy")
         .and.callFake((...args) => originalDestroy(...args));
 
-      child.$handler._propertyMap.$destroy = destroySpy;
+      child._handler._propertyMap.destroy = destroySpy;
 
       scope.current = child;
       scope.current = 42;
@@ -4875,15 +4875,15 @@ describe("Scope", () => {
     it("should only invoke displaced child scope destruction once on undefined overwrite", () => {
       const scope = createScope();
 
-      const child = scope.$new();
+      const child = scope.new();
 
-      const originalDestroy = child.$handler._propertyMap.$destroy;
+      const originalDestroy = child._handler._propertyMap.destroy;
 
       const destroySpy = jasmine
         .createSpy("bound child destroy on undefined")
         .and.callFake((...args) => originalDestroy(...args));
 
-      child.$handler._propertyMap.$destroy = destroySpy;
+      child._handler._propertyMap.destroy = destroySpy;
 
       scope.current = child;
       scope.current = undefined;
@@ -4899,8 +4899,8 @@ describe("Scope", () => {
 
       scope.current = { replacement: true };
 
-      expect(previous.$handler).toBe(scope.$handler);
-      expect(scope.$handler._destroyed).toBeFalse();
+      expect(previous._handler).toBe(scope._handler);
+      expect(scope._handler._destroyed).toBeFalse();
       expect(scope.current.replacement).toBeTrue();
     });
 
@@ -4912,8 +4912,8 @@ describe("Scope", () => {
 
       scope.current = [];
 
-      expect(previous.$handler).toBe(scope.$handler);
-      expect(scope.$handler._destroyed).toBeFalse();
+      expect(previous._handler).toBe(scope._handler);
+      expect(scope._handler._destroyed).toBeFalse();
       expect(scope.current.length).toBe(0);
     });
 
@@ -4921,13 +4921,13 @@ describe("Scope", () => {
       it("should not destroy nested child scopes when rebinding one proxied object to another", () => {
         const scope = createScope();
 
-        const nestedChild = scope.$new();
+        const nestedChild = scope.new();
 
         const onDestroy = jasmine.createSpy(
           "nested child destroy on proxy rebind",
         );
 
-        nestedChild.$on("$destroy", onDestroy);
+        nestedChild.on("$destroy", onDestroy);
 
         scope.first = { nested: nestedChild };
         scope.second = { nested: true };
@@ -4940,7 +4940,7 @@ describe("Scope", () => {
         scope.current = second;
 
         expect(onDestroy).not.toHaveBeenCalled();
-        expect(nestedChild.$handler._destroyed).toBeFalse();
+        expect(nestedChild._handler._destroyed).toBeFalse();
         expect(scope._children.includes(nestedChild)).toBeTrue();
         expect(first.nested).toBe(nestedChild);
         expect(scope.current).toBe(second);
@@ -4949,9 +4949,9 @@ describe("Scope", () => {
       it("should not destroy nested child scopes when swapping proxied array items by index", () => {
         const scope = createScope();
 
-        const nestedA = scope.$new();
+        const nestedA = scope.new();
 
-        const nestedB = scope.$new();
+        const nestedB = scope.new();
 
         const destroyA = jasmine.createSpy(
           "nestedA destroy on array proxy swap",
@@ -4961,8 +4961,8 @@ describe("Scope", () => {
           "nestedB destroy on array proxy swap",
         );
 
-        nestedA.$on("$destroy", destroyA);
-        nestedB.$on("$destroy", destroyB);
+        nestedA.on("$destroy", destroyA);
+        nestedB.on("$destroy", destroyB);
 
         scope.items = [
           { label: "A", nested: nestedA },
@@ -4980,8 +4980,8 @@ describe("Scope", () => {
 
         expect(destroyA).not.toHaveBeenCalled();
         expect(destroyB).not.toHaveBeenCalled();
-        expect(nestedA.$handler._destroyed).toBeFalse();
-        expect(nestedB.$handler._destroyed).toBeFalse();
+        expect(nestedA._handler._destroyed).toBeFalse();
+        expect(nestedB._handler._destroyed).toBeFalse();
         expect(scope._children.includes(nestedA)).toBeTrue();
         expect(scope._children.includes(nestedB)).toBeTrue();
         expect(scope.items[0]).toBe(second);
@@ -5039,29 +5039,29 @@ describe("Scope", () => {
     it("cleans up all watchers when the scope is destroyed", () => {
       const scope = createScope();
 
-      scope.$watch("a", () => {
+      scope.watch("a", () => {
         // Intentionally empty; this test verifies watcher cleanup.
       });
 
-      expect(scope.$handler._watchers.size).toEqual(1);
+      expect(scope._handler._watchers.size).toEqual(1);
 
-      scope.$destroy();
+      scope.destroy();
 
-      expect(scope.$handler._watchers.size).toEqual(0);
+      expect(scope._handler._watchers.size).toEqual(0);
     });
   });
 
   describe("doc examples", () => {
     it("should properly fire off watch listeners upon scope changes", async () => {
       // <docs tag="docs1">
-      const $scope = scope.$new();
+      const $scope = scope.new();
 
       $scope.salutation = "Hello";
       $scope.name = "World";
       await wait();
       expect($scope.greeting).toEqual(undefined);
 
-      $scope.$watch("name", () => {
+      $scope.watch("name", () => {
         $scope.greeting = `${$scope.salutation} ${$scope.name}!`;
       });
 
@@ -5288,7 +5288,7 @@ describe("Scope optimizations", () => {
 
   describe("swap-and-pop watcher deregistration", () => {
     it("should correctly deregister a single watcher", async () => {
-      const deregister = scope.$watch("a", () => {
+      const deregister = scope.watch("a", () => {
         /* empty */
       });
 
@@ -5300,15 +5300,15 @@ describe("Scope optimizations", () => {
     it("should correctly deregister one of multiple watchers on the same key", async () => {
       let log = "";
 
-      scope.$watch("a", () => {
+      scope.watch("a", () => {
         log += "1";
       });
 
-      const deregister2 = scope.$watch("a", () => {
+      const deregister2 = scope.watch("a", () => {
         log += "2";
       });
 
-      scope.$watch("a", () => {
+      scope.watch("a", () => {
         log += "3";
       });
 
@@ -5331,15 +5331,15 @@ describe("Scope optimizations", () => {
     it("should correctly deregister the first watcher when multiple exist", async () => {
       let log = "";
 
-      const deregister1 = scope.$watch("x", () => {
+      const deregister1 = scope.watch("x", () => {
         log += "A";
       });
 
-      scope.$watch("x", () => {
+      scope.watch("x", () => {
         log += "B";
       });
 
-      scope.$watch("x", () => {
+      scope.watch("x", () => {
         log += "C";
       });
 
@@ -5361,15 +5361,15 @@ describe("Scope optimizations", () => {
     it("should correctly deregister the last watcher when multiple exist", async () => {
       let log = "";
 
-      scope.$watch("x", () => {
+      scope.watch("x", () => {
         log += "A";
       });
 
-      scope.$watch("x", () => {
+      scope.watch("x", () => {
         log += "B";
       });
 
-      const deregister3 = scope.$watch("x", () => {
+      const deregister3 = scope.watch("x", () => {
         log += "C";
       });
 
@@ -5388,11 +5388,11 @@ describe("Scope optimizations", () => {
     });
 
     it("should handle deregistering all watchers one by one", () => {
-      const d1 = scope.$watch("a", () => {});
+      const d1 = scope.watch("a", () => {});
 
-      const d2 = scope.$watch("a", () => {});
+      const d2 = scope.watch("a", () => {});
 
-      const d3 = scope.$watch("a", () => {});
+      const d3 = scope.watch("a", () => {});
 
       expect(scope.$$watchersCount).toBe(3);
       d1();
@@ -5406,102 +5406,102 @@ describe("Scope optimizations", () => {
 
   describe("$destroy with swap-and-pop child removal", () => {
     it("should correctly remove a child from the middle of multiple children", () => {
-      const child1 = scope.$new();
+      const child1 = scope.new();
 
-      const child2 = scope.$new();
+      const child2 = scope.new();
 
-      const child3 = scope.$new();
+      const child3 = scope.new();
 
-      const id1 = child1.$id;
+      const id1 = child1.id;
 
-      const id3 = child3.$id;
+      const id3 = child3.id;
 
       expect(scope._children.length).toBe(3);
-      child2.$destroy();
+      child2.destroy();
       expect(scope._children.length).toBe(2);
 
       // The remaining children should be child1 and child3
-      const remainingIds = scope._children.map((c) => c.$id);
+      const remainingIds = scope._children.map((c) => c.id);
 
       expect(remainingIds).toContain(id1);
       expect(remainingIds).toContain(id3);
     });
 
     it("should correctly remove the first child", () => {
-      const child1 = scope.$new();
+      const child1 = scope.new();
 
-      const child2 = scope.$new();
+      const child2 = scope.new();
 
-      const child3 = scope.$new();
+      const child3 = scope.new();
 
-      const id2 = child2.$id;
+      const id2 = child2.id;
 
-      const id3 = child3.$id;
+      const id3 = child3.id;
 
-      child1.$destroy();
+      child1.destroy();
       expect(scope._children.length).toBe(2);
 
-      const remainingIds = scope._children.map((c) => c.$id);
+      const remainingIds = scope._children.map((c) => c.id);
 
       expect(remainingIds).toContain(id2);
       expect(remainingIds).toContain(id3);
     });
 
     it("should correctly remove the last child", () => {
-      const child1 = scope.$new();
+      const child1 = scope.new();
 
-      const child2 = scope.$new();
+      const child2 = scope.new();
 
-      const child3 = scope.$new();
+      const child3 = scope.new();
 
-      const id1 = child1.$id;
+      const id1 = child1.id;
 
-      const id2 = child2.$id;
+      const id2 = child2.id;
 
-      child3.$destroy();
+      child3.destroy();
       expect(scope._children.length).toBe(2);
 
-      const remainingIds = scope._children.map((c) => c.$id);
+      const remainingIds = scope._children.map((c) => c.id);
 
       expect(remainingIds).toContain(id1);
       expect(remainingIds).toContain(id2);
     });
 
     it("should correctly remove the only child", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       expect(scope._children.length).toBe(1);
-      child.$destroy();
+      child.destroy();
       expect(scope._children.length).toBe(0);
     });
 
     it("should clean up watchers using swap-pop strategy", async () => {
-      const child1 = scope.$new();
+      const child1 = scope.new();
 
-      const child2 = scope.$new();
+      const child2 = scope.new();
 
-      child1.$watch("a", () => {});
-      child2.$watch("a", () => {});
+      child1.watch("a", () => {});
+      child2.watch("a", () => {});
 
-      expect(scope.$handler._watchers.get("a").length).toBe(2);
+      expect(scope._handler._watchers.get("a").length).toBe(2);
 
-      child1.$destroy();
-      expect(scope.$handler._watchers.get("a").length).toBe(1);
+      child1.destroy();
+      expect(scope._handler._watchers.get("a").length).toBe(1);
 
       // Remaining watcher should belong to child2
-      const remaining = scope.$handler._watchers.get("a")[0];
+      const remaining = scope._handler._watchers.get("a")[0];
 
-      expect(remaining._scopeId).toBe(child2.$id);
+      expect(remaining._scopeId).toBe(child2.id);
     });
 
     it("should not destroy twice", () => {
-      const child = scope.$new();
+      const child = scope.new();
 
       expect(scope._children.length).toBe(1);
-      child.$destroy();
+      child.destroy();
       expect(scope._children.length).toBe(0);
       // Second call should be a no-op
-      child.$destroy();
+      child.destroy();
       expect(scope._children.length).toBe(0);
     });
   });
@@ -5519,11 +5519,11 @@ describe("Scope optimizations", () => {
 
       let signature = "";
 
-      scope.$handler._scheduleCallback(() => {
+      scope._handler._scheduleCallback(() => {
         signature += "A";
         throw new Error("boom");
       });
-      scope.$handler._scheduleCallback(() => {
+      scope._handler._scheduleCallback(() => {
         signature += "B";
       });
 
@@ -5534,8 +5534,8 @@ describe("Scope optimizations", () => {
 
       expect(() => firstFlush()).toThrowError("boom");
       expect(signature).toBe("A");
-      expect(scope.$handler._listenerScheduler._queue.length).toBe(1);
-      expect(scope.$handler._listenerScheduler._index).toBe(0);
+      expect(scope._handler._listenerScheduler._queue.length).toBe(1);
+      expect(scope._handler._listenerScheduler._index).toBe(0);
       expect(queuedMicrotasks.length).toBe(1);
 
       const secondFlush = queuedMicrotasks.shift();
@@ -5543,8 +5543,8 @@ describe("Scope optimizations", () => {
       secondFlush();
 
       expect(signature).toBe("AB");
-      expect(scope.$handler._listenerScheduler._queue.length).toBe(0);
-      expect(scope.$handler._listenerScheduler._index).toBe(0);
+      expect(scope._handler._listenerScheduler._queue.length).toBe(0);
+      expect(scope._handler._listenerScheduler._index).toBe(0);
       expect(queuedMicrotasks.length).toBe(0);
     });
 
@@ -5561,11 +5561,11 @@ describe("Scope optimizations", () => {
       let signature = "";
       let callsDuringBatch = -1;
 
-      scope.$batch(() => {
-        scope.$handler._scheduleCallback(() => {
+      scope.batch(() => {
+        scope._handler._scheduleCallback(() => {
           signature += "A";
         });
-        scope.$handler._scheduleCallback(() => {
+        scope._handler._scheduleCallback(() => {
           signature += "B";
         });
         callsDuringBatch = queueMicrotaskSpy.calls.count();
@@ -5592,13 +5592,13 @@ describe("Scope optimizations", () => {
 
       let signature = "";
 
-      scope.$batch(() => {
-        scope.$handler._scheduleCallback(() => {
+      scope.batch(() => {
+        scope._handler._scheduleCallback(() => {
           signature += "A";
         });
 
-        scope.$batch(() => {
-          scope.$handler._scheduleCallback(() => {
+        scope.batch(() => {
+          scope._handler._scheduleCallback(() => {
             signature += "B";
           });
         });
@@ -5623,8 +5623,8 @@ describe("Scope optimizations", () => {
       let signature = "";
 
       expect(() => {
-        scope.$batch(() => {
-          scope.$handler._scheduleCallback(() => {
+        scope.batch(() => {
+          scope._handler._scheduleCallback(() => {
             signature += "A";
           });
 
@@ -5641,7 +5641,7 @@ describe("Scope optimizations", () => {
     });
 
     it("should preserve the batch callback return value", () => {
-      const result = scope.$batch(() => "done");
+      const result = scope.batch(() => "done");
 
       expect(result).toBe("done");
     });
@@ -5659,17 +5659,17 @@ describe("Scope optimizations", () => {
 
       const promise = Promise.resolve("done");
 
-      const result = scope.$batch(() => {
-        scope.$handler._scheduleCallback(() => undefined);
+      const result = scope.batch(() => {
+        scope._handler._scheduleCallback(() => undefined);
 
         return promise;
       });
 
       expect(result).toBe(promise);
       expect(warnSpy).toHaveBeenCalledWith(
-        "$batch callback returned a Promise. Async mutations after await are not batched.",
+        "batch callback returned a Promise. Async mutations after await are not batched.",
       );
-      expect(scope.$handler._listenerScheduler._batchDepth).toBe(0);
+      expect(scope._handler._listenerScheduler._batchDepth).toBe(0);
       expect(queueMicrotaskSpy).toHaveBeenCalledTimes(1);
       expect(queuedMicrotasks.length).toBe(1);
     });
@@ -5686,12 +5686,12 @@ describe("Scope optimizations", () => {
 
       let signature = "";
 
-      scope.$handler._scheduleCallback(() => {
+      scope._handler._scheduleCallback(() => {
         signature += "A";
       });
 
-      scope.$batch(() => {
-        scope.$handler._scheduleCallback(() => {
+      scope.batch(() => {
+        scope._handler._scheduleCallback(() => {
           signature += "B";
         });
       });
@@ -5712,13 +5712,13 @@ describe("Scope optimizations", () => {
         },
       });
       const target = {
-        user: foreign.$target,
+        user: foreign._target,
       };
 
-      scope.$handler._foreignProxyTargets.set(foreign.$target, foreign);
+      scope._handler._foreignProxyTargets.set(foreign._target, foreign);
 
       expect(
-        scope.$handler._resolveForeignProxyParent("user.profile.name", target),
+        scope._handler._resolveForeignProxyParent("user.profile.name", target),
       ).toBe(foreign.profile);
     });
 
@@ -5729,22 +5729,22 @@ describe("Scope optimizations", () => {
         },
       });
       const target = {
-        user: foreign.$target,
+        user: foreign._target,
       };
 
-      scope.$handler._foreignProxyTargets.set(foreign.$target, foreign);
+      scope._handler._foreignProxyTargets.set(foreign._target, foreign);
 
       expect(
-        scope.$handler._resolveForeignProxyParent("user[0].name", target),
+        scope._handler._resolveForeignProxyParent("user[0].name", target),
       ).toBeUndefined();
       expect(
-        scope.$handler._resolveForeignProxyParent(
+        scope._handler._resolveForeignProxyParent(
           "user.invalid-name.value",
           target,
         ),
       ).toBeUndefined();
       expect(
-        scope.$handler._resolveForeignProxyParent("user.missing.name", target),
+        scope._handler._resolveForeignProxyParent("user.missing.name", target),
       ).toBeUndefined();
     });
 
@@ -5757,8 +5757,8 @@ describe("Scope optimizations", () => {
       const consumer = createScope({});
       const observed = [];
 
-      consumer.$target.profile = foreign.profile;
-      consumer.$watch("profile.name", (value) => {
+      consumer._target.profile = foreign.profile;
+      consumer.watch("profile.name", (value) => {
         observed.push(value);
       });
 
@@ -5766,7 +5766,7 @@ describe("Scope optimizations", () => {
 
       expect(observed).toEqual(["John"]);
       expect(
-        foreign.profile.$handler._foreignListeners.get("name").length,
+        foreign.profile._handler._foreignListeners.get("name").length,
       ).toBe(1);
 
       foreign.profile.name = "Jane";
@@ -5783,7 +5783,7 @@ describe("Scope optimizations", () => {
         'a"b': "first",
       };
 
-      const unwatch = scope.$watch('[user["a\\"b"]]', (value) => {
+      const unwatch = scope.watch('[user["a\\"b"]]', (value) => {
         observed.push(value[0]);
       });
 
@@ -5806,7 +5806,7 @@ describe("Scope optimizations", () => {
       scope.items = ["first", "second"];
       scope.index = 0;
 
-      const unwatch = scope.$watch("[items[index]]", (value) => {
+      const unwatch = scope.watch("[items[index]]", (value) => {
         observed.push(value[0]);
       });
 
@@ -5839,7 +5839,7 @@ describe("Scope optimizations", () => {
       consumer.primary = primary;
       consumer.fallback = fallback;
 
-      const unwatch = consumer.$watch(
+      const unwatch = consumer.watch(
         "primary.profile.name || fallback.profile.name",
         (value) => {
           observed.push(value);
@@ -5847,10 +5847,10 @@ describe("Scope optimizations", () => {
       );
 
       expect(
-        primary.profile.$handler._foreignListeners.get("name").length,
+        primary.profile._handler._foreignListeners.get("name").length,
       ).toBe(1);
       expect(
-        fallback.profile.$handler._foreignListeners.get("name").length,
+        fallback.profile._handler._foreignListeners.get("name").length,
       ).toBe(1);
 
       fallback.profile.name = "Next";
@@ -5861,15 +5861,15 @@ describe("Scope optimizations", () => {
 
       expect(unwatch()).toBeUndefined();
       expect(
-        primary.profile.$handler._foreignListeners.has("name"),
+        primary.profile._handler._foreignListeners.has("name"),
       ).toBeFalse();
       expect(
-        fallback.profile.$handler._foreignListeners.has("name"),
+        fallback.profile._handler._foreignListeners.has("name"),
       ).toBeFalse();
     });
 
     it("should release dependency bookkeeping for simple watcher deregistration", () => {
-      const unwatch = scope.$watch("plainValue", () => {
+      const unwatch = scope.watch("plainValue", () => {
         /* empty */
       });
 
@@ -5879,7 +5879,7 @@ describe("Scope optimizations", () => {
     it("should release dependency bookkeeping for assignment watcher deregistration", () => {
       scope.sourceValue = "updated";
 
-      const unwatch = scope.$watch("plainValue = sourceValue", () => {
+      const unwatch = scope.watch("plainValue = sourceValue", () => {
         /* empty */
       });
 
@@ -5888,50 +5888,50 @@ describe("Scope optimizations", () => {
     });
 
     it("should track nested watcher registrations without scanning watcher maps", () => {
-      expect(scope.$handler._listenerStats._nestedCandidateCount).toBe(0);
-      expect(scope.$handler._hasNestedListenerCandidates()).toBeFalse();
+      expect(scope._handler._listenerStats._nestedCandidateCount).toBe(0);
+      expect(scope._handler._hasNestedListenerCandidates()).toBeFalse();
 
-      const unwatch = scope.$watch("item.name", () => {});
+      const unwatch = scope.watch("item.name", () => {});
 
       expect(
-        scope.$handler._listenerStats._nestedCandidateCount,
+        scope._handler._listenerStats._nestedCandidateCount,
       ).toBeGreaterThan(0);
-      expect(scope.$handler._hasNestedListenerCandidates()).toBeTrue();
+      expect(scope._handler._hasNestedListenerCandidates()).toBeTrue();
 
       unwatch();
 
-      expect(scope.$handler._listenerStats._nestedCandidateCount).toBe(0);
-      expect(scope.$handler._hasNestedListenerCandidates()).toBeFalse();
+      expect(scope._handler._listenerStats._nestedCandidateCount).toBe(0);
+      expect(scope._handler._hasNestedListenerCandidates()).toBeFalse();
     });
 
     it("should keep nested watcher stats for remaining child scopes", () => {
-      const left = scope.$new();
+      const left = scope.new();
 
-      const right = scope.$new();
+      const right = scope.new();
 
-      left.$watch("item.name", () => {});
-      right.$watch("item.name", () => {});
+      left.watch("item.name", () => {});
+      right.watch("item.name", () => {});
 
       expect(
-        scope.$handler._listenerStats._nestedCandidateCount,
+        scope._handler._listenerStats._nestedCandidateCount,
       ).toBeGreaterThan(1);
 
-      left.$destroy();
+      left.destroy();
 
       expect(
-        scope.$handler._listenerStats._nestedCandidateCount,
+        scope._handler._listenerStats._nestedCandidateCount,
       ).toBeGreaterThan(0);
 
-      right.$destroy();
+      right.destroy();
 
-      expect(scope.$handler._listenerStats._nestedCandidateCount).toBe(0);
+      expect(scope._handler._listenerStats._nestedCandidateCount).toBe(0);
     });
   });
 
   describe("primitive assignment fast path", () => {
     it("should skip listener scheduling for unobserved primitive assignments", () => {
       const scheduleSpy = spyOn(
-        scope.$handler,
+        scope._handler,
         "_scheduleListener",
       ).and.callThrough();
 
@@ -5942,12 +5942,12 @@ describe("Scope optimizations", () => {
     });
 
     it("should still schedule listener work for observed primitive assignments", () => {
-      scope.$watch("fastValue", () => {
+      scope.watch("fastValue", () => {
         /* empty */
       });
 
       const scheduleSpy = spyOn(
-        scope.$handler,
+        scope._handler,
         "_scheduleListener",
       ).and.callThrough();
 
@@ -5967,8 +5967,8 @@ describe("Scope optimizations", () => {
 
       scope.left = shared;
       scope.right = shared;
-      scope.$watch("left", leftListener);
-      scope.$watch("right", rightListener);
+      scope.watch("left", leftListener);
+      scope.watch("right", rightListener);
       await wait();
 
       leftListener.calls.reset();
@@ -5995,20 +5995,20 @@ describe("Scope optimizations", () => {
 
       const listenerFn = jasmine.createSpy("listenerFn");
 
-      scope.$handler._notifyListener(
+      scope._handler._notifyListener(
         {
-          _originalTarget: scope.$target,
+          _originalTarget: scope._target,
           _listenerFn: listenerFn,
           _watchFn: watchFn,
           _id: 1,
-          _scopeId: scope.$id,
+          _scopeId: scope.id,
           _property: [],
         },
-        scope.$target,
+        scope._target,
       );
 
       expect(watchFn).toHaveBeenCalledTimes(1);
-      expect(listenerFn).toHaveBeenCalledWith(undefined, scope.$target);
+      expect(listenerFn).toHaveBeenCalledWith(undefined, scope._target);
     });
   });
 
@@ -6016,7 +6016,7 @@ describe("Scope optimizations", () => {
     it("should use the correct target when notifying watchers", async () => {
       let receivedTarget;
 
-      scope.$watch("a", (newVal, target) => {
+      scope.watch("a", (newVal, target) => {
         receivedTarget = target;
       });
 
@@ -6030,7 +6030,7 @@ describe("Scope optimizations", () => {
     it("should capture distinct targets for sequential changes", async () => {
       const targets = [];
 
-      scope.$watch("a", (newVal, target) => {
+      scope.watch("a", (newVal, target) => {
         targets.push(newVal);
       });
 
@@ -6046,61 +6046,61 @@ describe("Scope optimizations", () => {
   });
 
   describe("event propagation with spread args", () => {
-    it("should pass event and args correctly via $emit", () => {
+    it("should pass event and args correctly via emit", () => {
       let receivedEvent;
 
       let receivedArgs;
 
-      scope.$on("testEvent", (event, arg1, arg2) => {
+      scope.on("testEvent", (event, arg1, arg2) => {
         receivedEvent = event;
         receivedArgs = [arg1, arg2];
       });
 
-      scope.$emit("testEvent", "hello", 42);
+      scope.emit("testEvent", "hello", 42);
 
       expect(receivedEvent.name).toBe("testEvent");
       expect(receivedArgs).toEqual(["hello", 42]);
     });
 
-    it("should pass event and args correctly via $broadcast", () => {
-      const child = scope.$new();
+    it("should pass event and args correctly via broadcast", () => {
+      const child = scope.new();
 
       let receivedEvent;
 
       let receivedArgs;
 
-      child.$on("testEvent", (event, arg1, arg2) => {
+      child.on("testEvent", (event, arg1, arg2) => {
         receivedEvent = event;
         receivedArgs = [arg1, arg2];
       });
 
-      scope.$broadcast("testEvent", "world", 99);
+      scope.broadcast("testEvent", "world", 99);
 
       expect(receivedEvent.name).toBe("testEvent");
       expect(receivedArgs).toEqual(["world", 99]);
     });
 
-    it("should pass event and multiple args via $emit up the scope chain", () => {
-      const child = scope.$new();
+    it("should pass event and multiple args via emit up the scope chain", () => {
+      const child = scope.new();
 
       let capturedArgs;
 
-      scope.$on("myEvent", (event, ...args) => {
+      scope.on("myEvent", (event, ...args) => {
         capturedArgs = args;
       });
 
-      child.$emit("myEvent", "a", "b", "c");
+      child.emit("myEvent", "a", "b", "c");
       expect(capturedArgs).toEqual(["a", "b", "c"]);
     });
 
     it("should pass event with no extra args", () => {
       let receivedEvent;
 
-      scope.$on("noArgs", (event) => {
+      scope.on("noArgs", (event) => {
         receivedEvent = event;
       });
 
-      scope.$emit("noArgs");
+      scope.emit("noArgs");
       expect(receivedEvent.name).toBe("noArgs");
     });
   });
@@ -6115,24 +6115,24 @@ describe("Scope optimizations", () => {
     });
 
     it("should return handler properties correctly", () => {
-      expect(scope.$id).toBeDefined();
-      expect(typeof scope.$id).toBe("number");
+      expect(scope.id).toBeDefined();
+      expect(typeof scope.id).toBe("number");
       // Repeated access should be consistent
-      const id = scope.$id;
+      const id = scope.id;
 
-      expect(scope.$id).toBe(id);
+      expect(scope.id).toBe(id);
     });
 
-    it("should correctly resolve $parent, $root, and $handler on child scopes", () => {
-      const child = scope.$new();
+    it("should correctly resolve parent, root, and _handler on child scopes", () => {
+      const child = scope.new();
 
-      expect(child.$root).toBeDefined();
-      expect(child.$parent).toBeDefined();
-      expect(child.$handler).toBeDefined();
+      expect(child.root).toBeDefined();
+      expect(child.parent).toBeDefined();
+      expect(child._handler).toBeDefined();
 
       // Repeated access should be stable
-      expect(child.$root).toBe(child.$root);
-      expect(child.$parent).toBe(child.$parent);
+      expect(child.root).toBe(child.root);
+      expect(child.parent).toBe(child.parent);
     });
   });
 });

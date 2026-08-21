@@ -142,7 +142,7 @@ const createController = (registration) => [
       $scope[method] = (...args) => controller[method](...args);
     });
 
-    $scope.$on("$destroy", () => {
+    $scope.on("$destroy", () => {
       if (typeof controller.unbind === "function") {
         controller.unbind();
       }
@@ -165,6 +165,7 @@ const register = (module, registration) => {
         controller: createController(registration),
         template: registration.template,
         templateUrl: registration.templateUrl,
+        view: registration.view ? readExport(registration.view) : undefined,
       });
       break;
     case "service":

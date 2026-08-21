@@ -42,7 +42,7 @@ not for API shape. Kotlin should reuse the Dart strategy where it is useful:
 
 Generated WASM scope facades are view-scope facades only. Kotlin should keep
 `WasmScope` tied to DOM/root-scoped state and use `app.model(...)` plus
-host-side `model.$sync(...)` targets for app-owned state that coordinates with
+host-side `model.sync(...)` targets for app-owned state that coordinates with
 external runtimes.
 
 ## Non-Negotiable API Rules

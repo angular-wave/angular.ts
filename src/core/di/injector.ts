@@ -72,7 +72,7 @@ export function createInjector(
 
   providerCache.$injectorProvider = {
     // $injectionProvider return instance injector
-    $get: () => protoInstanceInjector,
+    get: () => protoInstanceInjector,
   };
 
   let instanceInjector: InjectorService = protoInstanceInjector;
@@ -129,10 +129,10 @@ export function createInjector(
       newProvider = providerDefinition;
     }
 
-    if (!newProvider.$get) {
+    if (!newProvider.get) {
       throw $injectorError(
         "pget",
-        "Provider '{0}' must define $get factory method.",
+        "Provider '{0}' must define get factory method.",
         name,
       );
     }
@@ -146,13 +146,13 @@ export function createInjector(
    */
   function factory(name: string, factoryFn: RunBlock): ServiceProvider {
     return provider(name, {
-      $get() {
+      get() {
         const result: unknown = instanceInjector.invoke(factoryFn, this);
 
         if (isUndefined(result)) {
           throw $injectorError(
             "undef",
-            "Provider '{0}' must return a value from $get factory method.",
+            "Provider '{0}' must return a value from get factory method.",
             name,
           );
         }
@@ -191,7 +191,7 @@ export function createInjector(
    */
   function value(name: string, val: unknown): ServiceProvider {
     return (providerCache[name + providerSuffix] = {
-      $get: () => val,
+      get: () => val,
     });
   }
 
@@ -217,11 +217,11 @@ export function createInjector(
       serviceName + providerSuffix,
     );
 
-    const origGet = origProvider.$get as Parameters<
+    const origGet = origProvider.get as Parameters<
       typeof instanceInjector.invoke
     >[0];
 
-    origProvider.$get = function () {
+    origProvider.get = function () {
       const origInstance: unknown = instanceInjector.invoke(
         origGet,
         origProvider,
@@ -249,7 +249,7 @@ export function createInjector(
     backendOrConfig?: StorageLike & PersistentStoreConfig,
   ): ServiceProvider {
     return provider(name, {
-      $get: [
+      get: [
         _injector,
         ($injector: InjectorService) => {
           switch (type) {

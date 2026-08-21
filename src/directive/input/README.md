@@ -14,7 +14,7 @@ cross-browser event fallbacks.
 - Read and write view values through native DOM properties such as `value`,
   `checked`, and `files`.
 - Expose native `ValidityState` and `validationMessage` without copying native
-  failures into `$error`.
+  failures into `error`.
 - Route composed custom validator messages through one native
   `customError` channel via `setCustomValidity()`.
 - Preserve AngularTS model behavior that native controls do not provide:
@@ -48,7 +48,7 @@ work directly with `HTMLInputElement.value`, `checked`, `files`, and
 `validity`.
 
 Model writes intentionally accept unknown runtime values because
-`NgModelController.$viewValue` can be produced by application formatters. The
+`NgModelController.viewValue` can be produced by application formatters. The
 directive stringifies only when it writes to the browser `value` property.
 
 ## Core Model
@@ -59,7 +59,7 @@ state. At link time it creates:
 - internal value-source selection for reads, writes, emptiness, and update
   event selection;
 - live browser validity accessors on the `NgModelController`;
-- binding functions that connect DOM events to `$setViewValue()` and model
+- binding functions that connect DOM events to `setViewValue()` and model
   renders back to the element.
 
 Default value behavior:
@@ -88,20 +88,20 @@ known.
 
 The directive exposes browser validity through live controller properties:
 
-- `$validity`: the element's current `ValidityState`.
-- `$validationMessage`: the element's current `validationMessage`.
+- `validity`: the element's current `ValidityState`.
+- `validationMessage`: the element's current `validationMessage`.
 
-Native validity is propagated to `$valid` and `$invalid`, but native failures
-are not copied into `$error`. `$error` is reserved for framework/custom
+Native validity is propagated to `valid` and `invalid`, but native failures
+are not copied into `error`. `error` is reserved for framework/custom
 validators while the broader controller modernization continues.
 
 Native validity does not produce `ng-valid-native` or `ng-invalid-native`
-classes. Read native details from `$validity`; use `$valid` / `$invalid` for
+classes. Read native details from `validity`; use `valid` / `invalid` for
 aggregate state.
 
 Custom validators compose to one native custom-validity message. Validator
 helpers decide message priority, then call
-`NgModelController.$setCustomValidity(message)`. Passing an empty string clears
+`NgModelController.setCustomValidity(message)`. Passing an empty string clears
 `ValidityState.customError`.
 
 The browser remains the source of truth. AngularTS does not reimplement email,
@@ -126,7 +126,7 @@ Removed event behavior:
 
 ## Integration Points
 
-- `NgModelController`: receives `$render`, `$isEmpty`, live native validity
+- `NgModelController`: receives `render`, `isEmpty`, live native validity
   getters, native validity propagation, custom validity message updates, and
   DOM cleanup callbacks.
 - Normalized DOM attribute helpers: read directive attributes directly from the

@@ -20,7 +20,7 @@ describe("RouterRuntimeComposition", () => {
     compile: (() => undefined) as unknown as ng.CompileService,
     controller: (() => undefined) as unknown as ng.ControllerService,
     rootScope: {
-      $on: () => () => undefined,
+      on: () => () => undefined,
     } as unknown as ng.Scope,
     injector: {} as ng.InjectorService,
   };

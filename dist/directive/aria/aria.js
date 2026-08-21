@@ -158,7 +158,7 @@ function createAriaService(state, $log) {
             if (config[ariaCamelName] &&
                 !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
                 !hasNormalizedAttr(elem, ariaCamelName)) {
-                scope.$watch(getNormalizedAttr(elem, attrName) ?? "", (boolVal) => {
+                scope.watch(getNormalizedAttr(elem, attrName) ?? "", (boolVal) => {
                     // ensure boolean value
                     boolVal = negate ? !boolVal : !!boolVal;
                     elem.setAttribute(ariaAttr, String(boolVal));
@@ -172,6 +172,7 @@ function createAriaService(state, $log) {
             return config[key];
         },
         _diagnoseInteractive: diagnoseInteractive,
+        /** @internal */
         _diagnostics() {
             return diagnostics;
         },
@@ -334,7 +335,7 @@ function ngModelAriaDirective($aria) {
             }
         });
         observer.observe(elem, { attributes: true });
-        let deregisterDestroy = scope.$on("$destroy", deregister);
+        let deregisterDestroy = scope.on("$destroy", deregister);
         function deregister() {
             observer.disconnect();
             deregisterDestroy?.();
@@ -354,10 +355,10 @@ function ngModelAriaDirective($aria) {
                     const needsTabIndex = shouldAttachAttr("tabindex", "tabindex", elem, false);
                     function getRadioReaction() {
                         // Strict comparison would cause a BC
-                        elem.setAttribute("aria-checked", (getNormalizedAttr(elem, "value") == ngModel.$viewValue).toString());
+                        elem.setAttribute("aria-checked", (getNormalizedAttr(elem, "value") == ngModel.viewValue).toString());
                     }
                     function getCheckboxReaction() {
-                        elem.setAttribute("aria-checked", (!ngModel.$isEmpty(ngModel.$viewValue)).toString());
+                        elem.setAttribute("aria-checked", (!ngModel.isEmpty(ngModel.viewValue)).toString());
                     }
                     switch (shape) {
                         case "radio":
@@ -366,7 +367,7 @@ function ngModelAriaDirective($aria) {
                                 elem.setAttribute("role", shape);
                             }
                             if (shouldAttachAttr("aria-checked", "ariaChecked", elem, false)) {
-                                ngModel.$watch("$modelValue", shape === "radio" ? getRadioReaction : getCheckboxReaction);
+                                ngModel.watch("modelValue", shape === "radio" ? getRadioReaction : getCheckboxReaction);
                             }
                             if (needsTabIndex) {
                                 elem.setAttribute("tabindex", "0");
@@ -404,7 +405,7 @@ function ngModelAriaDirective($aria) {
                                     observeAriaAttribute(scope, elem, "ngMax", updateAriaMax);
                                 }
                                 if (needsAriaValuenow) {
-                                    ngModel.$watch("$modelValue", (newVal) => {
+                                    ngModel.watch("modelValue", (newVal) => {
                                         elem.setAttribute("aria-valuenow", newVal);
                                     });
                                 }
@@ -416,9 +417,9 @@ function ngModelAriaDirective($aria) {
                             break;
                     }
                     if (!hasNormalizedAttr(elem, "ngRequired") &&
-                        ngModel.$validators.required &&
+                        ngModel.validators.required &&
                         shouldAttachAttr("aria-required", "ariaRequired", elem, false)) {
-                        // ngModel.$error.required is undefined on custom controls
+                        // ngModel.error.required is undefined on custom controls
                         const updateAriaRequired = () => {
                             elem.setAttribute("aria-required", hasNormalizedAttr(elem, "required").toString());
                         };
@@ -426,7 +427,7 @@ function ngModelAriaDirective($aria) {
                         observeAriaAttribute(scope, elem, "required", updateAriaRequired);
                     }
                     if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
-                        ngModel.$watch("$invalid", (newVal) => {
+                        ngModel.watch("invalid", (newVal) => {
                             elem.setAttribute("aria-invalid", (!!newVal).toString());
                         });
                     }

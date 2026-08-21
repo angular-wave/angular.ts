@@ -112,7 +112,7 @@ describe("WasmScopeAbi", () => {
       stale: true,
     }));
     const changes: any[] = [];
-    const stop = model.$sync({
+    const stop = model.sync({
       write: (snapshot, change) => {
         changes.push({ snapshot, change });
       },
@@ -131,7 +131,7 @@ describe("WasmScopeAbi", () => {
 
     context.modelScheduler.flush();
 
-    expect(model.$snapshot()).toEqual({
+    expect(model.snapshot()).toEqual({
       count: 2,
       nested: { ready: true },
     });
@@ -325,7 +325,7 @@ describe("WasmScopeAbi", () => {
       ownedAbi._scopes.set(index + 1, {});
     }
     expect(() =>
-      abi.createScope(rootScope.$new(), { name: "limits:overflow" }),
+      abi.createScope(rootScope.new(), { name: "limits:overflow" }),
     ).toThrowError("AngularTS Wasm ABI scope limit exceeded");
   });
 
@@ -403,15 +403,15 @@ describe("WasmScopeAbi", () => {
       "Wasm scope name must not be empty",
     );
     expect(() =>
-      abi.createScope(rootScope.$new(), { name: "todoList:main" }),
+      abi.createScope(rootScope.new(), { name: "todoList:main" }),
     ).toThrowError("Wasm scope name 'todoList:main' is already bound");
     expect(abi.getScope("todoList:main")).toBe(original);
   });
 
   it("rejects already-destroyed reactive targets", () => {
-    const target = rootScope.$new();
+    const target = rootScope.new();
 
-    target.$destroy();
+    target.destroy();
 
     expect(() => abi.createScope(target)).toThrowError(
       "Cannot bind a destroyed AngularTS reactive target",
@@ -583,12 +583,12 @@ describe("WasmScopeAbi", () => {
   it("writes through scope-proxy-like nested targets without redefining properties", () => {
     const scope = abi.createScope(rootScope, { name: "todoList:main" });
     const proxyLike = {
-      $handler: {
+      _handler: {
         set() {
           return true;
         },
       },
-      $target: {},
+      _target: {},
     };
 
     rootScope.proxyLike = proxyLike;
@@ -600,11 +600,11 @@ describe("WasmScopeAbi", () => {
   it("falls back to safe writes for raw handler-only scope targets", () => {
     const scope = abi.createScope(rootScope, { name: "todoList:main" });
     const target = {
-      $handler: {},
+      _handler: {},
     };
 
-    rootScope.$target.$nonscope = ["handlerOnly"];
-    rootScope.$target.handlerOnly = target;
+    rootScope._target.$nonscope = ["handlerOnly"];
+    rootScope._target.handlerOnly = target;
 
     expect(scope.set("handlerOnly.name", "Ada")).toBeTrue();
     expect(target.name).toBe("Ada");
@@ -615,7 +615,7 @@ describe("WasmScopeAbi", () => {
     let assignedName = "";
     const proxy = {
       [isProxySymbol]: true,
-      $target: {},
+      _target: {},
     };
 
     Object.defineProperty(proxy, "name", {
@@ -641,55 +641,57 @@ describe("WasmScopeAbi", () => {
     const cases = [
       {},
       {
-        $handler: {},
-        $target: {},
+        _handler: {},
+        _target: {},
       },
       {
-        $handler: {
+        _handler: {
           set: "not a function",
         },
-        $target: {},
+        _target: {},
       },
       {
-        $handler: {
+        _handler: {
           set() {
             return true;
           },
         },
       },
       {
-        $handler: {
+        _handler: {
           set() {
             return true;
           },
         },
-        $target: "not an object",
+        _target: "not an object",
       },
       {
-        $handler: null,
-        $target: {},
+        _handler: null,
+        _target: {},
       },
       {
-        $handler() {
+        /** @internal */
+        _handler() {
           return true;
         },
-        $target: {},
+        _target: {},
       },
       {
-        $handler: {
+        _handler: {
           set() {
             return true;
           },
         },
-        $target: null,
+        _target: null,
       },
       {
-        $handler: {
+        _handler: {
           set() {
             return true;
           },
         },
-        $target() {
+        /** @internal */
+        _target() {
           return true;
         },
       },
@@ -851,7 +853,7 @@ describe("WasmScopeAbi", () => {
     expect(watch).toBeGreaterThan(0);
 
     rootScope.count = 1;
-    rootScope.$emit("$viewRetentionPause");
+    rootScope.emit("$viewRetentionPause");
 
     const value = guest.writeJson(2);
 
@@ -863,7 +865,7 @@ describe("WasmScopeAbi", () => {
 
     expect(updates).toEqual([]);
 
-    rootScope.$emit("$viewRetentionResume");
+    rootScope.emit("$viewRetentionResume");
 
     await wait();
 
@@ -890,8 +892,8 @@ describe("WasmScopeAbi", () => {
     ).toBeGreaterThan(0);
 
     rootScope.count = 1;
-    rootScope.$emit("$viewRetentionResume");
-    rootScope.$emit("$viewRetentionPause", {
+    rootScope.emit("$viewRetentionResume");
+    rootScope.emit("$viewRetentionPause", {
       _pause: "background",
     });
 
@@ -926,13 +928,13 @@ describe("WasmScopeAbi", () => {
     ).toBeGreaterThan(0);
 
     rootScope.count = 1;
-    rootScope.$emit("$viewRetentionPause");
+    rootScope.emit("$viewRetentionPause");
 
     expect(
       imports.scope_set(scope.handle, path.ptr, path.len, value.ptr, value.len),
     ).toBe(1);
 
-    rootScope.$emit("$viewRetentionResume", {
+    rootScope.emit("$viewRetentionResume", {
       _pause: "background",
     });
 
@@ -940,7 +942,7 @@ describe("WasmScopeAbi", () => {
 
     expect(updates).toEqual([]);
 
-    rootScope.$emit("$viewRetentionResume");
+    rootScope.emit("$viewRetentionResume");
 
     await wait();
 
@@ -966,7 +968,7 @@ describe("WasmScopeAbi", () => {
     ).toBeGreaterThan(0);
 
     rootScope.count = 1;
-    rootScope.$emit("$viewRetentionPause");
+    rootScope.emit("$viewRetentionPause");
 
     rootScope.count = 2;
     await wait();
@@ -978,7 +980,7 @@ describe("WasmScopeAbi", () => {
 
     expect(updates).toEqual([]);
 
-    rootScope.$emit("$viewRetentionResume");
+    rootScope.emit("$viewRetentionResume");
 
     await wait();
 
@@ -1006,20 +1008,20 @@ describe("WasmScopeAbi", () => {
     ).toBeGreaterThan(0);
 
     rootScope.count = 1;
-    rootScope.$emit("$viewRetentionPause");
+    rootScope.emit("$viewRetentionPause");
 
     expect(
       imports.scope_set(scope.handle, path.ptr, path.len, value.ptr, value.len),
     ).toBe(1);
 
-    rootScope.$emit("$viewRetentionResume");
-    rootScope.$emit("$viewRetentionPause");
+    rootScope.emit("$viewRetentionResume");
+    rootScope.emit("$viewRetentionPause");
 
     await wait();
 
     expect(updates).toEqual([]);
 
-    rootScope.$emit("$viewRetentionResume");
+    rootScope.emit("$viewRetentionResume");
 
     await wait();
 
@@ -1046,14 +1048,14 @@ describe("WasmScopeAbi", () => {
       imports.scope_watch(scope.handle, path.ptr, path.len),
     ).toBeGreaterThan(0);
 
-    rootScope.$emit("$viewRetentionPause");
+    rootScope.emit("$viewRetentionPause");
 
     expect(
       imports.scope_set(scope.handle, path.ptr, path.len, value.ptr, value.len),
     ).toBe(1);
 
-    rootScope.$destroy();
-    rootScope.$emit("$viewRetentionResume");
+    rootScope.destroy();
+    rootScope.emit("$viewRetentionResume");
 
     await wait();
 
@@ -1076,14 +1078,14 @@ describe("WasmScopeAbi", () => {
     ).toBeGreaterThan(0);
 
     rootScope.count = 1;
-    rootScope.$emit("$viewRetentionPause");
+    rootScope.emit("$viewRetentionPause");
 
     expect(
       imports.scope_set(scope.handle, path.ptr, path.len, value.ptr, value.len),
     ).toBe(1);
 
-    rootScope.$emit("$viewRetentionResume");
-    rootScope.$destroy();
+    rootScope.emit("$viewRetentionResume");
+    rootScope.destroy();
 
     await wait();
 
@@ -1105,7 +1107,7 @@ describe("WasmScopeAbi", () => {
     ).toBeGreaterThan(0);
 
     rootScope.count = 1;
-    rootScope.$emit("$viewRetentionPause");
+    rootScope.emit("$viewRetentionPause");
 
     expect(
       imports.scope_set(
@@ -1121,7 +1123,7 @@ describe("WasmScopeAbi", () => {
 
     expect(updates).toEqual([]);
 
-    rootScope.$emit("$viewRetentionResume");
+    rootScope.emit("$viewRetentionResume");
 
     await wait();
 
@@ -1244,10 +1246,10 @@ describe("WasmScopeAbi", () => {
 
   it("rolls back tracked writes when an atomic transaction fails", () => {
     const target = {
-      $id: 10_001,
-      $handler: { _destroyed: false },
-      $on: () => () => undefined,
-      $batch: () => {
+      id: 10_001,
+      _handler: { _destroyed: false },
+      on: () => () => undefined,
+      batch: () => {
         throw new Error("transaction failed");
       },
       count: 1,
@@ -1455,12 +1457,12 @@ describe("WasmScopeAbi", () => {
   });
 
   it("handles unnamed scopes and safe direct path edge cases", () => {
-    const unnamed = rootScope.$new();
+    const unnamed = rootScope.new();
 
-    delete unnamed.$scopename;
+    delete unnamed.scopeName;
     const scope = abi.createScope(unnamed);
 
-    expect(scope.name).toBe(String(unnamed.$id));
+    expect(scope.name).toBe(String(unnamed.id));
     expect(scope.get("__proto__.polluted")).toBeUndefined();
 
     scope._watchedPaths.set("", 1);
@@ -1810,7 +1812,7 @@ describe("WasmScopeAbi", () => {
 
     expect(binding.disposed).toBeTrue();
     expect(resource.disposed).toBeTrue();
-    expect(rootScope.$handler._destroyed).toBeFalse();
+    expect(rootScope._handler._destroyed).toBeFalse();
   });
 
   it("reports invalid binding names with structured errors", async () => {
@@ -1831,7 +1833,7 @@ describe("WasmScopeAbi", () => {
     );
 
     const binding = await resource.bind(rootScope, { name: "runtime:scope" });
-    const duplicateTarget = rootScope.$new();
+    const duplicateTarget = rootScope.new();
 
     await expectAsync(
       resource.bind(duplicateTarget, { name: "runtime:scope" }),
@@ -1843,7 +1845,7 @@ describe("WasmScopeAbi", () => {
       }),
     );
 
-    duplicateTarget.$destroy();
+    duplicateTarget.destroy();
     binding.dispose();
     resource.dispose();
   });
@@ -2081,7 +2083,7 @@ describe("WasmScopeAbi", () => {
       source: "/integrations/wasm/c/examples/todo/main.wasm",
       diagnostics: true,
     });
-    const target = rootScope.$new();
+    const target = rootScope.new();
     const binding = await resource.bind(target, {
       name: "diagnostics:scope",
       watch: ["count"],
@@ -2108,7 +2110,7 @@ describe("WasmScopeAbi", () => {
       }),
     );
 
-    target.$destroy();
+    target.destroy();
     for (const name of measureNames) performance.clearMeasures(name);
   });
 
@@ -2158,7 +2160,7 @@ describe("WasmScopeAbi", () => {
       await wait();
       binding.dispose();
       resource.dispose();
-      target.$destroy();
+      target.destroy();
 
       expect(ownedAbi._scopes.size).toBe(0);
       expect(ownedAbi._watches.size).toBe(0);
@@ -2206,10 +2208,10 @@ describe("WasmScopeAbi", () => {
     const resource = wasmService.load({
       source: "/src/directive/wasm/math.wasm",
     });
-    const target = rootScope.$new();
+    const target = rootScope.new();
     const binding = resource.bind(target);
 
-    target.$destroy();
+    target.destroy();
 
     await expectAsync(binding).toBeRejectedWith(
       jasmine.objectContaining({ code: "binding" }),
@@ -2224,10 +2226,10 @@ describe("WasmScopeAbi", () => {
     const resource = wasmService.load({
       source: "/integrations/wasm/c/examples/todo/main.wasm",
     });
-    const target = rootScope.$new();
+    const target = rootScope.new();
 
     await resource.ready;
-    target.$destroy();
+    target.destroy();
 
     await expectAsync(resource.bind(target)).toBeRejectedWith(
       jasmine.objectContaining({
@@ -2295,7 +2297,7 @@ describe("WasmScopeAbi", () => {
     destroyWasmRuntimeState(state);
 
     expect(resource.disposed).toBeTrue();
-    expect(rootScope.$handler._destroyed).toBeFalse();
+    expect(rootScope._handler._destroyed).toBeFalse();
     let runtimeError: unknown;
 
     try {
@@ -2322,7 +2324,7 @@ describe("WasmScopeAbi", () => {
 
     await resource.ready;
 
-    const binding = await resource.bind(rootScope.$new(), {
+    const binding = await resource.bind(rootScope.new(), {
       name: "resource:state",
     });
 
@@ -2343,17 +2345,17 @@ describe("WasmScopeAbi", () => {
     const resource = wasmService.load({
       source: "/src/directive/wasm/math.wasm?lifecycle-observer",
     });
-    const observer = rootScope.$new();
+    const observer = rootScope.new();
     const schedule = jasmine.createSpy("schedule");
     const liveHandler = {
-      $id: 20_001,
+      id: 20_001,
       _destroyed: false,
       _scheduleWatchKeys: schedule,
     };
 
-    resource[SCOPE_PROXY_BIND](observer.$handler);
+    resource[SCOPE_PROXY_BIND](observer._handler);
     resource[SCOPE_PROXY_BIND](liveHandler);
-    observer.$destroy();
+    observer.destroy();
 
     await resource.ready;
 
@@ -2372,7 +2374,7 @@ describe("WasmScopeAbi", () => {
     spyOn(resource._abi, "createScope").and.throwError(
       new WasmError("binding", "known binding failure"),
     );
-    await expectAsync(resource.bind(rootScope.$new())).toBeRejectedWith(
+    await expectAsync(resource.bind(rootScope.new())).toBeRejectedWith(
       jasmine.objectContaining({
         code: "binding",
         message: "known binding failure",
@@ -2382,7 +2384,7 @@ describe("WasmScopeAbi", () => {
     resource._abi.createScope.and.callFake(() => {
       throw "unknown binding failure";
     });
-    await expectAsync(resource.bind(rootScope.$new())).toBeRejectedWith(
+    await expectAsync(resource.bind(rootScope.new())).toBeRejectedWith(
       jasmine.objectContaining({
         code: "binding",
         message: "WebAssembly target binding failed",
@@ -2399,7 +2401,7 @@ describe("WasmScopeAbi", () => {
 
     await resource.ready;
 
-    const binding = resource.bind(rootScope.$new());
+    const binding = resource.bind(rootScope.new());
 
     resource.dispose();
 

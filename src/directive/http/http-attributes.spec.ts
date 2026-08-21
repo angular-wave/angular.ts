@@ -34,7 +34,7 @@ describe("http directive attribute reads", () => {
     app.innerHTML =
       '<button ng-get="/mock/hello" data-trigger="mouseover">Load</button>';
 
-    $compile(app)($rootScope.$new());
+    $compile(app)($rootScope.new());
 
     browserTrigger(app.querySelector("button")!, "click");
     await wait();
@@ -50,7 +50,7 @@ describe("http directive attribute reads", () => {
       '<button ng-get="/mock/hello" data-target="#target" data-swap="textContent">Load</button>' +
       '<div id="target"></div>';
 
-    $compile(app)($rootScope.$new());
+    $compile(app)($rootScope.new());
 
     browserTrigger(app.querySelector("button")!, "click");
     await waitUntil(
@@ -63,7 +63,7 @@ describe("http directive attribute reads", () => {
     app.innerHTML =
       '<button ng-get="/mock/now" data-loading-class="pending">Load</button>';
 
-    $compile(app)($rootScope.$new());
+    $compile(app)($rootScope.new());
 
     const button = app.querySelector("button")!;
 

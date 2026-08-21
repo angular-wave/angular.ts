@@ -38,7 +38,7 @@ function defineAngularElement(name, options) {
     elementModule?.configure?.(appModule, angular);
     appModule.appComponent(name, component);
     const injector = angular.injector([ngModuleName, elementModuleName]);
-    angular.$rootScope =
+    angular.rootScope =
         injector.get(_rootScope);
     const element = customElements.get(name);
     if (!element) {

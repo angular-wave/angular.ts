@@ -134,7 +134,7 @@
     "prefix": "ngprovider",
     "body": [
       "angular.module(\"${1:app}\").provider(\"${2:myProvider}\", function() {",
-      "  this.$get = function() {",
+      "  this.get = function() {",
       "    return {",
       "      $0",
       "    };",

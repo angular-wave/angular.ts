@@ -11,7 +11,7 @@ function appendParamSchema(nodes, schema) {
         }
     }
 }
-/** @ignore incrementing id */
+/** @internal Incrementing callback identifier. */
 let canExitId = 0;
 /**
  * Registers component/controller transition lifecycle callbacks for an active view.
@@ -28,16 +28,16 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
         return;
     }
     registeredScopes.add($scope);
-    // Call $onInit() ASAP
-    const onInit = controllerInstance.$onInit;
+    // Call onInit() ASAP
+    const onInit = controllerInstance.onInit;
     if (isFunction(onInit) && !cfg._viewDecl.component) {
         onInit();
     }
     const viewState = cfg._path[cfg._path.length - 1].state.self;
     const hookOptions = { bind: controllerInstance };
-    // Add component/controller-level hook for $onParamsChanged
-    if (isFunction(controllerInstance.$onParamsChanged)) {
-        const onParamsChanged = controllerInstance.$onParamsChanged;
+    // Add component/controller-level hook for onParamsChanged
+    if (isFunction(controllerInstance.onParamsChanged)) {
+        const onParamsChanged = controllerInstance.onParamsChanged;
         const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
         const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
         // Fire callback on any successful transition
@@ -91,23 +91,23 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
             cfg._viewDecl._ngViewName ?? "$default",
             cfg._viewDecl._ngViewContextAnchor ?? "^",
         ].join("::");
-        const rootScope = $scope.$root;
+        const rootScope = $scope.root;
         const registryProp = "__ngRouterParamsChangedHooks__";
         const hookRegistry = (rootScope[registryProp] ??
             (rootScope[registryProp] = new Map()));
         hookRegistry.get(hookRegistryKey)?.();
         const deregisterParamsHook = $transitions.onSuccess({}, paramsUpdated, hookOptions);
         hookRegistry.set(hookRegistryKey, deregisterParamsHook);
-        $scope.$on("$destroy", () => {
+        $scope.on("$destroy", () => {
             if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
                 hookRegistry.delete(hookRegistryKey);
             }
             deregisterParamsHook();
         });
     }
-    // Add component/controller-level hook for $canExit
-    if (isFunction(controllerInstance.$canExit)) {
-        const canExit = controllerInstance.$canExit;
+    // Add component/controller-level hook for canExit
+    if (isFunction(controllerInstance.canExit)) {
+        const canExit = controllerInstance.canExit;
         const id = canExitId++;
         /**
          * Returns true if any transition in the redirect chain already answered truthy.
@@ -131,7 +131,7 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
             return promise;
         };
         const criteria = { exiting: viewState.name };
-        $scope.$on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
+        $scope.on("$destroy", $transitions.onBefore(criteria, wrappedHook, hookOptions));
     }
 }
 

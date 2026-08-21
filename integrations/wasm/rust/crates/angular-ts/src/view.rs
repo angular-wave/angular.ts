@@ -1,0 +1,113 @@
+//! Programmatic real-DOM view helpers for Rust/Wasm components.
+
+#![cfg(target_arch = "wasm32")]
+
+use js_sys::{Array, Function, Object, Reflect};
+use wasm_bindgen::{JsCast, JsValue};
+
+/// DOM value returned by a programmatic component view.
+pub type ComponentViewChild = JsValue;
+
+/// Primitive text value accepted as a programmatic view child.
+pub type ComponentViewPrimitive = JsValue;
+
+/// JavaScript callback registered as a programmatic component view.
+pub type ComponentView = Function;
+
+/// Property bag passed to a programmatic tag factory.
+pub type ComponentViewProperties = Object;
+
+/// Property value accepted by a programmatic tag factory.
+pub type ComponentViewPropertyValue = JsValue;
+
+/// JavaScript function that creates one real DOM element.
+pub type ComponentViewTag = Function;
+
+/// Typed wrapper around the context supplied to a component view export.
+#[derive(Clone)]
+pub struct ComponentViewContext {
+    raw: JsValue,
+}
+
+impl ComponentViewContext {
+    /// Wraps the JavaScript context supplied by AngularTS.
+    pub fn new(raw: JsValue) -> Self {
+        Self { raw }
+    }
+
+    /// Returns the component controller.
+    pub fn controller(&self) -> Result<JsValue, JsValue> {
+        self.property("controller")
+    }
+
+    /// Returns the scope that owns the generated DOM.
+    pub fn scope(&self) -> Result<JsValue, JsValue> {
+        self.property("scope")
+    }
+
+    /// Returns the component host element.
+    pub fn element(&self) -> Result<JsValue, JsValue> {
+        self.property("element")
+    }
+
+    /// Returns the component transclusion callback.
+    pub fn transclude(&self) -> Result<Function, JsValue> {
+        self.property("transclude")?.dyn_into::<Function>()
+    }
+
+    /// Returns the unwrapped JavaScript context.
+    pub fn raw(&self) -> &JsValue {
+        &self.raw
+    }
+
+    fn property(&self, name: &str) -> Result<JsValue, JsValue> {
+        Reflect::get(&self.raw, &JsValue::from_str(name))
+    }
+}
+
+/// Wrapper around `angular.tags` and namespaced tag collections.
+#[derive(Clone)]
+pub struct ComponentViewTags {
+    raw: JsValue,
+}
+
+impl ComponentViewTags {
+    /// Resolves the global AngularTS tag collection.
+    pub fn global() -> Result<Self, JsValue> {
+        let angular = Reflect::get(&js_sys::global(), &JsValue::from_str("angular"))?;
+        let raw = Reflect::get(&angular, &JsValue::from_str("tags"))?;
+
+        Ok(Self { raw })
+    }
+
+    /// Resolves a namespaced tag collection, such as SVG or MathML.
+    pub fn namespace(&self, namespace_uri: &str) -> Result<Self, JsValue> {
+        let factory = self.raw.clone().dyn_into::<Function>()?;
+        let raw = factory.call1(&JsValue::UNDEFINED, &JsValue::from_str(namespace_uri))?;
+
+        Ok(Self { raw })
+    }
+
+    /// Creates one real DOM element through `angular.tags[name]`.
+    pub fn tag(
+        &self,
+        name: &str,
+        properties: &ComponentViewProperties,
+        children: &[ComponentViewChild],
+    ) -> Result<ComponentViewChild, JsValue> {
+        let factory =
+            Reflect::get(&self.raw, &JsValue::from_str(name))?.dyn_into::<ComponentViewTag>()?;
+        let arguments = Array::new();
+        arguments.push(properties);
+        for child in children {
+            arguments.push(child);
+        }
+
+        Reflect::apply(&factory, &JsValue::UNDEFINED, &arguments)
+    }
+
+    /// Returns the raw JavaScript tag collection.
+    pub fn raw(&self) -> &JsValue {
+        &self.raw
+    }
+}

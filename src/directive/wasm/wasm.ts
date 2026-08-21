@@ -28,7 +28,7 @@ export function ngWasmDirective($wasm: ng.WasmService): ng.Directive {
 
       const loaded = $wasm.load({ source: src });
 
-      $scope.$on("$destroy", () => {
+      $scope.on("$destroy", () => {
         loaded.dispose();
       });
 

@@ -41,16 +41,16 @@
         </div>
 
         <div class="field">
-          <button type="button" ng-disabled="signupForm.$invalid">Create account</button>
+          <button type="button" ng-disabled="signupForm.invalid">Create account</button>
         </div>
       </form>
 
       <p class="error">
-        Form invalid: {{ signupForm.$invalid }}
+        Form invalid: {{ signupForm.invalid }}
         <br />
-        Email invalid: {{ signupForm.email.$invalid }}
+        Email invalid: {{ signupForm.email.invalid }}
         <br />
-        Password invalid: {{ signupForm.password.$invalid }}
+        Password invalid: {{ signupForm.password.invalid }}
       </p>
       <p>
         Notice how `aria-required` and `aria-invalid` are injected by `$aria` when

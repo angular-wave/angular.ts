@@ -194,7 +194,10 @@ void untypedTransitionParams["runtimeParam"];
 type AssertStateGetReturn = ReturnType<StateService<AppRouteMap>["get"]>;
 type AssertStateGetHasPrivateMarker = Extract<
   AssertStateGetReturn,
-  { _state(): unknown }
+  {
+    /** @internal */
+    _state(): unknown;
+  }
 >;
 type AssertStateGetIsPublicOnly = AssertStateGetHasPrivateMarker extends never
   ? true

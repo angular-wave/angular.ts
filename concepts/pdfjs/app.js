@@ -17,7 +17,7 @@ window.angular
       constructor(documentViewerModel, $scope) {
         this.viewer = documentViewerModel;
         this.destroyRuntime = () => {};
-        $scope.$on("$destroy", () => this.destroyRuntime());
+        $scope.on("$destroy", () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 

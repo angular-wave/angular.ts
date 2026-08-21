@@ -99,7 +99,7 @@ function observeOptionElementAttr(
 
   observer.observe(optionElement, { attributes: true });
 
-  let deregisterDestroy: (() => void) | undefined = optionScope.$on(
+  let deregisterDestroy: (() => void) | undefined = optionScope.on(
     "$destroy",
     deregister,
   );
@@ -128,7 +128,7 @@ function setOptionElementAttr(
  * regular or `ngOptions`-backed select element.
  */
 export class SelectController {
-  /* @ignore */ static $inject = [_element, _scope];
+  static $inject = [_element, _scope];
 
   /** @internal */
   _element: HTMLSelectElement;
@@ -163,7 +163,7 @@ export class SelectController {
   /** @internal */
   _deferredDraining: boolean;
 
-  /** @ignore */
+  /** @internal */
   constructor($element: HTMLSelectElement, $scope: SelectScope) {
     this._element = $element;
     this._scope = $scope;
@@ -182,7 +182,7 @@ export class SelectController {
     this._deferredDrainScheduled = false;
     this._deferredDraining = false;
 
-    $scope.$on("$destroy", () => {
+    $scope.on("$destroy", () => {
       this._renderUnknownOption = () => {
         /* empty */
       };
@@ -194,7 +194,7 @@ export class SelectController {
    * element, i.e. an option that signifies that the select is empty or the
    * selection is `null`.
    */
-  $hasEmptyOption() {
+  hasEmptyOption() {
     return this._hasEmptyOption;
   }
 
@@ -204,7 +204,7 @@ export class SelectController {
    * The unknown option is added and automatically selected whenever the
    * select model does not match any option.
    */
-  $isUnknownOptionSelected() {
+  isUnknownOptionSelected() {
     return this._element.options[0] === this._unknownOption;
   }
 
@@ -212,14 +212,13 @@ export class SelectController {
    * Returns `true` if the select element has an empty option and that option
    * is currently selected.
    */
-  $isEmptyOptionSelected() {
+  isEmptyOptionSelected() {
     return (
       this._hasEmptyOption &&
       this._element.options[this._element.selectedIndex] === this._emptyOption
     );
   }
 
-  /** @ignore */
   /** @internal */
   _renderUnknownOption(val: unknown) {
     const unknownVal = this._generateUnknownOptionValue(val);
@@ -231,7 +230,6 @@ export class SelectController {
     this._element.value = unknownVal;
   }
 
-  /** @ignore */
   /** @internal */
   _updateUnknownOption(val: unknown) {
     const unknownVal = this._generateUnknownOptionValue(val);
@@ -242,7 +240,6 @@ export class SelectController {
     this._element.value = unknownVal;
   }
 
-  /** @ignore */
   /** @internal */
   _generateUnknownOptionValue(val: unknown) {
     if (isUndefined(val)) {
@@ -252,13 +249,11 @@ export class SelectController {
     return `? ${hashKey(val)} ?`;
   }
 
-  /** @ignore */
   /** @internal */
   _removeUnknownOption() {
     if (this._unknownOption.parentElement) removeElement(this._unknownOption);
   }
 
-  /** @ignore */
   /** @internal */
   _selectEmptyOption() {
     if (this._emptyOption) {
@@ -268,7 +263,6 @@ export class SelectController {
     }
   }
 
-  /** @ignore */
   /** @internal */
   _unselectEmptyOption() {
     if (this._hasEmptyOption && this._emptyOption) {
@@ -276,7 +270,6 @@ export class SelectController {
     }
   }
 
-  /** @ignore */
   /** @internal */
   _readValue() {
     const val = this._element.value;
@@ -287,7 +280,6 @@ export class SelectController {
     return this._hasOption(realVal) ? deProxy(realVal) : null;
   }
 
-  /** @ignore */
   /** @internal */
   _writeValue(value: unknown) {
     const writeValue: unknown = deProxy<unknown>(value);
@@ -318,7 +310,6 @@ export class SelectController {
     }
   }
 
-  /** @ignore */
   /** @internal */
   _addOption(value: unknown, element: HTMLOptionElement) {
     const optionValue: unknown = deProxy<unknown>(value);
@@ -336,9 +327,9 @@ export class SelectController {
     this._optionsMap.set(optionValue, count + 1);
     this._scheduleRender();
 
-    const currentViewValue: unknown = this._ngModelCtrl.$viewValue;
+    const currentViewValue: unknown = this._ngModelCtrl.viewValue;
 
-    const currentModelValue: unknown = this._ngModelCtrl.$modelValue;
+    const currentModelValue: unknown = this._ngModelCtrl.modelValue;
 
     if (
       currentViewValue === optionValue ||
@@ -347,12 +338,11 @@ export class SelectController {
         optionValue === "")
     ) {
       this._scheduleDeferred(() => {
-        this._ngModelCtrl.$render();
+        this._ngModelCtrl.render();
       });
     }
   }
 
-  /** @ignore */
   /** @internal */
   _scheduleDeferred(fn: () => void, ownerScope: SelectScope = this._scope) {
     this._deferredQueue.push(() => {
@@ -374,7 +364,6 @@ export class SelectController {
     });
   }
 
-  /** @ignore */
   /** @internal */
   _drainDeferredQueue() {
     if (this._deferredQueue.length === 0) {
@@ -395,7 +384,6 @@ export class SelectController {
     }
   }
 
-  /** @ignore */
   /** @internal */
   _removeOption(value: unknown) {
     const optionValue: unknown = deProxy<unknown>(value);
@@ -415,7 +403,6 @@ export class SelectController {
     }
   }
 
-  /** @ignore */
   /** @internal */
   _hasOption(value: unknown) {
     const optionValue: unknown = deProxy<unknown>(value);
@@ -423,7 +410,6 @@ export class SelectController {
     return !!this._optionsMap.get(optionValue);
   }
 
-  /** @ignore */
   /** @internal */
   _selectUnknownOrEmptyOption(value: unknown) {
     if (isNullOrUndefined(value) && this._emptyOption) {
@@ -436,7 +422,6 @@ export class SelectController {
     }
   }
 
-  /** @ignore */
   /** @internal */
   _scheduleRender() {
     if (this._renderScheduled) {
@@ -448,7 +433,7 @@ export class SelectController {
     this._renderScheduled = true;
     this._scheduleDeferred(() => {
       this._renderScheduled = false;
-      this._ngModelCtrl.$render();
+      this._ngModelCtrl.render();
 
       if (this._renderRescheduleRequested) {
         this._renderRescheduleRequested = false;
@@ -457,7 +442,6 @@ export class SelectController {
     });
   }
 
-  /** @ignore */
   /** @internal */
   _scheduleViewValueUpdate(renderAfter = false) {
     if (this._updateScheduled) {
@@ -470,9 +454,9 @@ export class SelectController {
 
     this._scheduleDeferred(() => {
       this._updateScheduled = false;
-      this._ngModelCtrl.$setViewValue(this._readValue());
+      this._ngModelCtrl.setViewValue(this._readValue());
 
-      if (renderAfter) this._ngModelCtrl.$render();
+      if (renderAfter) this._ngModelCtrl.render();
 
       if (this._updateRescheduleRequested) {
         this._updateRescheduleRequested = false;
@@ -481,7 +465,6 @@ export class SelectController {
     });
   }
 
-  /** @ignore */
   /** @internal */
   _registerOption(
     optionScope: SelectScope,
@@ -531,7 +514,7 @@ export class SelectController {
       };
 
       syncNgValue(undefined);
-      optionScope.$watch(stringify(ngValueExpression ?? ""), syncNgValue);
+      optionScope.watch(stringify(ngValueExpression ?? ""), syncNgValue);
       observeOptionElementAttr(
         optionScope,
         optionElement,
@@ -588,7 +571,7 @@ export class SelectController {
         this._addOption(String(initialTextValue), optionElement);
       }
 
-      optionScope.$watch("value", () => {
+      optionScope.watch("value", () => {
         const newVal: unknown = interpolateTextFn(optionScope);
 
         if (!registeredValue) {
@@ -622,8 +605,8 @@ export class SelectController {
           if (this._multiple) {
             this._scheduleViewValueUpdate(true);
           } else {
-            this._ngModelCtrl.$setViewValue(null);
-            this._ngModelCtrl.$render();
+            this._ngModelCtrl.setViewValue(null);
+            this._ngModelCtrl.render();
           }
         }
       },

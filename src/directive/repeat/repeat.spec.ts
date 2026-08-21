@@ -373,7 +373,7 @@ describe("ngRepeat", () => {
       expect(element.textContent.trim()).toEqual("");
     });
 
-    for (const name of ["null2", "qthis", "qthisq", "fundefined", "$$parent"]) {
+    for (const name of ["null2", "qthis", "qthisq", "fundefined", "$parent"]) {
       it(`should support alias identifier containing reserved word: ${name}`, async () => {
         scope.x = "bl";
         scope.items = [
@@ -403,9 +403,9 @@ describe("ngRepeat", () => {
       "null",
       "this",
       "undefined",
-      "$parent",
-      "$root",
-      "$id",
+      "parent",
+      "root",
+      "id",
       "$index",
       "$first",
       "$middle",
@@ -734,7 +734,7 @@ describe("ngRepeat", () => {
       );
       scope.items = ["a", "b", "c"];
       scope.items.$hashKey = "xxx";
-      scope.items.$root = "yyy";
+      scope.items.root = "yyy";
       await wait();
       expect(element.textContent).toEqual("a|b|c|");
     });

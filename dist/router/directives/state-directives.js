@@ -105,8 +105,8 @@ function normalizeParamsOnlyStateRef(ref) {
  */
 function stateContext(el) {
     const $ngView = getInheritedData(el, "$ngView");
-    const path = $ngView?.$cfg
-        ?._path;
+    const path = $ngView
+        ?._config?._path;
     return path ? path[path.length - 1].state.name : undefined;
 }
 /**
@@ -206,7 +206,7 @@ function clickHook(el, $state, type, rawDef, scope) {
                     void $state
                         .go(target._ngState, target._ngStateParams, target._ngStateOpts)
                         .then(() => {
-                        scope.$emit("$updateBrowser");
+                        scope.emit("$updateBrowser");
                         return undefined;
                     })
                         .catch(() => undefined);
@@ -225,7 +225,7 @@ function clickHook(el, $state, type, rawDef, scope) {
  */
 function defaultOpts(el, $state) {
     return {
-        relative: stateContext(el) ?? $state.$current,
+        relative: stateContext(el) ?? $state._current,
         inherit: true,
         source: "ng-state",
     };
@@ -246,7 +246,7 @@ function bindEvents(element, scope, hookFn, keyboardHookFn, ngStateOpts) {
     if (keyboardHookFn) {
         element.addEventListener("keydown", keyboardHookFn);
     }
-    scope.$on("$destroy", function () {
+    scope.on("$destroy", function () {
         // const off = element.off ? "off" : "unbind";
         for (const event of eventNames) {
             element.removeEventListener(event, hookFn);
@@ -285,7 +285,7 @@ function bindPrefetchEvents(element, scope, $state, rawDef) {
     element.addEventListener("pointerleave", cancel);
     element.addEventListener("focus", schedule);
     element.addEventListener("blur", cancel);
-    scope.$on("$destroy", () => {
+    scope.on("$destroy", () => {
         cancel();
         element.removeEventListener("pointerenter", schedule);
         element.removeEventListener("pointerleave", cancel);
@@ -368,7 +368,7 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                         return;
                     }
                     watchDeregFns[field] =
-                        scope.$watch(expr, (newval) => {
+                        scope.watch(expr, (newval) => {
                             rawDef[rawDefKeyByAttr[field]] =
                                 newval;
                             update();
@@ -386,7 +386,7 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                     }
                 });
                 observer.observe(element, { attributes: true });
-                let deregisterDestroy = scope.$on("$destroy", deregister);
+                let deregisterDestroy = scope.on("$destroy", deregister);
                 function deregister() {
                     observer.disconnect();
                     deregisterDestroy?.();
@@ -405,12 +405,12 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                 }
             });
             modifierObserver.observe(element, { attributes: true });
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 modifierObserver.disconnect();
             });
             update();
-            scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
-            scope.$on("$destroy", $transitions.onSuccess({}, update));
+            scope.on("$destroy", $stateRegistry.onStatesChanged(update));
+            scope.on("$destroy", $transitions.onSuccess({}, update));
             bindPrefetchEvents(element, scope, $state, rawDef);
             if (!type._clickable)
                 return;
@@ -487,14 +487,14 @@ function StateRefActiveDirective($state, $interpolate, $stateRegistry, $transiti
                     })
                         .catch(() => undefined);
                 }
-                $scope.$on("$destroy", setupEventListeners());
+                $scope.on("$destroy", setupEventListeners());
                 if (routerState._transition) {
                     updateAfterTransition(routerState._transition);
                 }
                 function setupEventListeners() {
                     const deregisterStatesChangedListener = $stateRegistry.onStatesChanged(handleStatesChanged);
                     const deregisterOnStartListener = $transitions.onStart({}, updateAfterTransition);
-                    const deregisterStateChangeSuccessListener = $scope.$on("$stateChangeSuccess", update);
+                    const deregisterStateChangeSuccessListener = $scope.on("$stateChangeSuccess", update);
                     return function cleanUp() {
                         deregisterStatesChangedListener();
                         deregisterOnStartListener();

@@ -86,6 +86,7 @@ class NativeHtmlCanvasRoot {
         this._sources.clear();
         this._onDispose();
     }
+    /** @internal */
     _paint(event) {
         if (this.mode !== "2d") {
             return;
@@ -231,8 +232,8 @@ class NativeHtmlCanvasService {
                 (this.config.enabled === "auto" && this.supported);
     }
     registerRoot(canvas, options = {}) {
-        this.assertActive();
-        this.assertEnabled();
+        this._assertActive();
+        this._assertEnabled();
         const existing = this._roots.get(canvas);
         if (existing)
             return existing;
@@ -248,16 +249,16 @@ class NativeHtmlCanvasService {
         return root;
     }
     registerSource(canvas, source, options = {}) {
-        const root = this.getRoot(canvas);
+        const root = this._getRoot(canvas);
         return root.addSource(source, options);
     }
     invalidate(canvas) {
-        this.assertActive();
-        this.assertEnabled();
+        this._assertActive();
+        this._assertEnabled();
         this._roots.get(canvas)?.invalidate();
     }
     requestPaint(canvas) {
-        this.assertActive();
+        this._assertActive();
         const requestPaint = canvas.requestPaint;
         if (!isCallable(requestPaint)) {
             throw new Error(`${htmlCanvasRuntimeUnsupportedMessage} Missing paint.`);
@@ -265,7 +266,7 @@ class NativeHtmlCanvasService {
         requestPaint.call(canvas);
     }
     requestAnimationFrame(callback) {
-        this.assertActive();
+        this._assertActive();
         this._window.requestAnimationFrame(callback);
     }
     /** @internal */
@@ -277,13 +278,15 @@ class NativeHtmlCanvasService {
             root.dispose();
         this._ownedRoots.clear();
     }
-    getRoot(canvas) {
+    /** @internal */
+    _getRoot(canvas) {
         const existing = this._roots.get(canvas);
         if (existing)
             return existing;
         return this.registerRoot(canvas);
     }
-    assertEnabled() {
+    /** @internal */
+    _assertEnabled() {
         if (this.enabled)
             return;
         if (this.config.enabled === false) {
@@ -291,7 +294,8 @@ class NativeHtmlCanvasService {
         }
         throw new Error(`${htmlCanvasRuntimeUnsupportedMessage} Missing ${this.config.defaultMode}.`);
     }
-    assertActive() {
+    /** @internal */
+    _assertActive() {
         if (this._disposed) {
             throw new Error("HTML-in-Canvas runtime has already been disposed.");
         }

@@ -64,7 +64,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                         const leavingFragment = currentFragment;
                         const animate = getAnimateForNode(getAnimate, currentElement);
                         if (animate) {
-                            currentScope?.$destroy();
+                            currentScope?.destroy();
                             animate.leave(currentElement).done((response) => {
                                 if (response) {
                                     leavingFragment?.dispose();
@@ -80,7 +80,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             else {
                                 removeElement(currentElement);
                             }
-                            currentScope?.$destroy();
+                            currentScope?.destroy();
                         }
                         currentScope = null;
                         previousElement = currentElement;
@@ -89,11 +89,11 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                         currentFragment = null;
                     }
                     else if (currentScope) {
-                        currentScope.$destroy();
+                        currentScope.destroy();
                         currentScope = null;
                     }
                 };
-                scope.$watch(srcExp, (src) => {
+                scope.watch(srcExp, (src) => {
                     const afterAnimation = function (response) {
                         if (response) {
                             maybeScroll();
@@ -101,14 +101,14 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                     };
                     const thisChangeId = ++changeCounter;
                     if (src) {
-                        scope.$emit("$includeContentRequested", src);
+                        scope.emit("$includeContentRequested", src);
                         $templateRequest(src)
                             .then((response) => {
                             if (scope._destroyed)
                                 return;
                             if (thisChangeId !== changeCounter)
                                 return undefined;
-                            const newScope = scope.$new();
+                            const newScope = scope.new();
                             ctrl.template = response;
                             // Note: This will also link all children of ng-include that were contained in the original
                             // html. If that content contains controllers, ... they could pollute/change the scope.
@@ -132,7 +132,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             currentScope = newScope;
                             currentElement = clone;
                             currentFragment = assertDefined(getCompiledFragmentRecordFromNodes(clone));
-                            currentScope.$emit("$includeContentLoaded", src);
+                            currentScope.emit("$includeContentLoaded", src);
                             onloadFn?.(scope);
                             return undefined;
                         })
@@ -141,7 +141,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                                 return undefined;
                             if (thisChangeId === changeCounter) {
                                 cleanupLastIncludeContent();
-                                scope.$emit("$includeContentError", src);
+                                scope.emit("$includeContentError", src);
                             }
                             $exceptionHandler(isInstanceOf(err, Error) ? err : new Error(String(err)));
                             return undefined;

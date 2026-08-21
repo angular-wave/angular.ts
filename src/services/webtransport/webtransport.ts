@@ -234,6 +234,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     }
   }
 
+  /** @internal */
   private _open(attempt = 0, previousError?: unknown): void {
     let transport: WebTransport;
 
@@ -282,6 +283,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
       });
   }
 
+  /** @internal */
   private async _notifyReconnect(
     attempt: number,
     error?: unknown,
@@ -303,6 +305,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     }
   }
 
+  /** @internal */
   private _handleNativeClose(
     error?: unknown,
     transport = this.transport,
@@ -331,6 +334,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     this._settleClosed();
   }
 
+  /** @internal */
   private _scheduleReconnect(error?: unknown): boolean {
     if (this._closedSettled || !this._config.reconnect) return false;
 
@@ -351,6 +355,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     return true;
   }
 
+  /** @internal */
   private _resolveRetryDelay(attempt: number, error?: unknown): number {
     const retryDelay = this._config.retryDelay ?? 1000;
 
@@ -361,6 +366,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     return isNumber(delay) && Number.isFinite(delay) && delay > 0 ? delay : 0;
   }
 
+  /** @internal */
   private _settleClosed(error?: unknown): void {
     if (this._closedSettled) return;
 
@@ -374,6 +380,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     }
   }
 
+  /** @internal */
   private _clearReconnectTimer(): void {
     if (!this._reconnectTimer) return;
 
@@ -381,6 +388,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     this._reconnectTimer = undefined;
   }
 
+  /** @internal */
   private async _readDatagrams(transport: WebTransport): Promise<void> {
     if (!this._config.onDatagram && !this._config.onProtocolMessage) return;
 
@@ -435,6 +443,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     }
   }
 
+  /** @internal */
   private _toBytes(data: WebTransportBufferInput): Uint8Array {
     if (isString(data)) {
       return this._encoder.encode(data);

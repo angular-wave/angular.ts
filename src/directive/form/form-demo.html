@@ -578,33 +578,33 @@
                   data-testid="inline-control-state"
                   data-control-state-for="{{ field.name }}"
                 >
-$name: {{ demoForm[field.name].$name }}
+controlName: {{ demoForm[field.name].controlName }}
 model: {{ field.value }}
-$viewValue: {{ demoForm[field.name].$viewValue }}
-$modelValue: {{ demoForm[field.name].$modelValue }}
-$valid: {{ demoForm[field.name].$valid }}  $invalid: {{ demoForm[field.name].$invalid }}
-$validity.valid: {{ demoForm[field.name].$validity.valid }}
-$validity.valueMissing: {{ demoForm[field.name].$validity.valueMissing }}
-$validity.typeMismatch: {{ demoForm[field.name].$validity.typeMismatch }}
-$validity.rangeUnderflow: {{ demoForm[field.name].$validity.rangeUnderflow }}
-$validity.rangeOverflow: {{ demoForm[field.name].$validity.rangeOverflow }}
-$validity.stepMismatch: {{ demoForm[field.name].$validity.stepMismatch }}
-$validity.customError: {{ demoForm[field.name].$validity.customError }}
-$validationMessage: {{ demoForm[field.name].$validationMessage }}
-$pending: {{ demoForm[field.name].$pending }}
-$error.required: {{ demoForm[field.name].$error.required }}
-$error.pattern: {{ demoForm[field.name].$error.pattern }}
-$error.minlength: {{ demoForm[field.name].$error.minlength }}
-$error.maxlength: {{ demoForm[field.name].$error.maxlength }}
-$pristine: {{ demoForm[field.name].$pristine }}  $dirty: {{ demoForm[field.name].$dirty }}
-$touched: {{ demoForm[field.name].$touched }}  $untouched: {{ demoForm[field.name].$untouched }}
-$parsers.length: {{ demoForm[field.name].$parsers.length }}
-$formatters.length: {{ demoForm[field.name].$formatters.length }}
-$viewChangeListeners.length: {{ demoForm[field.name].$viewChangeListeners.length }}
-$options.updateOn: {{ demoForm[field.name].$options.getOption('updateOn') }}
-$options.updateOnDefault: {{ demoForm[field.name].$options.getOption('updateOnDefault') }}
-$options.getterSetter: {{ demoForm[field.name].$options.getOption('getterSetter') }}
-$options.allowInvalid: {{ demoForm[field.name].$options.getOption('allowInvalid') }}</pre
+viewValue: {{ demoForm[field.name].viewValue }}
+modelValue: {{ demoForm[field.name].modelValue }}
+valid: {{ demoForm[field.name].valid }}  invalid: {{ demoForm[field.name].invalid }}
+validity.valid: {{ demoForm[field.name].validity.valid }}
+validity.valueMissing: {{ demoForm[field.name].validity.valueMissing }}
+validity.typeMismatch: {{ demoForm[field.name].validity.typeMismatch }}
+validity.rangeUnderflow: {{ demoForm[field.name].validity.rangeUnderflow }}
+validity.rangeOverflow: {{ demoForm[field.name].validity.rangeOverflow }}
+validity.stepMismatch: {{ demoForm[field.name].validity.stepMismatch }}
+validity.customError: {{ demoForm[field.name].validity.customError }}
+validationMessage: {{ demoForm[field.name].validationMessage }}
+pending: {{ demoForm[field.name].pending }}
+error.required: {{ demoForm[field.name].error.required }}
+error.pattern: {{ demoForm[field.name].error.pattern }}
+error.minlength: {{ demoForm[field.name].error.minlength }}
+error.maxlength: {{ demoForm[field.name].error.maxlength }}
+pristine: {{ demoForm[field.name].pristine }}  dirty: {{ demoForm[field.name].dirty }}
+touched: {{ demoForm[field.name].touched }}  untouched: {{ demoForm[field.name].untouched }}
+parsers.length: {{ demoForm[field.name].parsers.length }}
+formatters.length: {{ demoForm[field.name].formatters.length }}
+viewChangeListeners.length: {{ demoForm[field.name].viewChangeListeners.length }}
+options.updateOn: {{ demoForm[field.name].options.getOption('updateOn') }}
+options.updateOnDefault: {{ demoForm[field.name].options.getOption('updateOnDefault') }}
+options.getterSetter: {{ demoForm[field.name].options.getOption('getterSetter') }}
+options.allowInvalid: {{ demoForm[field.name].options.getOption('allowInvalid') }}</pre
                 >
               </div>
             </div>
@@ -622,38 +622,36 @@ $options.allowInvalid: {{ demoForm[field.name].$options.getOption('allowInvalid'
             <table class="state-table">
               <tbody>
                 <tr>
-                  <th>$name</th>
-                  <td>{{ demoForm.$name }}</td>
+                  <th>name</th>
+                  <td>{{ demoForm.controlName }}</td>
                 </tr>
                 <tr>
-                  <th>$valid</th>
-                  <td data-testid="form-valid">{{ demoForm.$valid }}</td>
+                  <th>valid</th>
+                  <td data-testid="form-valid">{{ demoForm.valid }}</td>
                 </tr>
                 <tr>
-                  <th>$invalid</th>
-                  <td data-testid="form-invalid">{{ demoForm.$invalid }}</td>
+                  <th>invalid</th>
+                  <td data-testid="form-invalid">{{ demoForm.invalid }}</td>
                 </tr>
                 <tr>
-                  <th>$pending</th>
-                  <td>{{ demoForm.$pending | json }}</td>
+                  <th>pending</th>
+                  <td>{{ demoForm.pending | json }}</td>
                 </tr>
                 <tr>
-                  <th>$error</th>
-                  <td>{{ demoForm.$error | json }}</td>
+                  <th>error</th>
+                  <td>{{ demoForm.error | json }}</td>
                 </tr>
                 <tr>
-                  <th>$pristine</th>
-                  <td>{{ demoForm.$pristine }}</td>
+                  <th>pristine</th>
+                  <td>{{ demoForm.pristine }}</td>
                 </tr>
                 <tr>
-                  <th>$dirty</th>
-                  <td>{{ demoForm.$dirty }}</td>
+                  <th>dirty</th>
+                  <td>{{ demoForm.dirty }}</td>
                 </tr>
                 <tr>
-                  <th>$submitted</th>
-                  <td data-testid="form-submitted">
-                    {{ demoForm.$submitted }}
-                  </td>
+                  <th>submitted</th>
+                  <td data-testid="form-submitted">{{ demoForm.submitted }}</td>
                 </tr>
                 <tr>
                   <th>submit count</th>

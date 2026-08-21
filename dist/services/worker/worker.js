@@ -362,7 +362,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
     Object.defineProperty(handle, SCOPE_PROXY_BIND, {
         value(handler) {
             if (!terminated)
-                bindings.set(handler.$id, handler);
+                bindings.set(handler.id, handler);
         },
     });
     return handle;

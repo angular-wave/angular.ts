@@ -8,7 +8,7 @@ AngularTS owns:
 - pause/reload/heal controls;
 - settings such as mouse sensitivity;
 - event projection into DOM;
-- player snapshot telemetry through `unityPlayerModel.$sync(...)`.
+- player snapshot telemetry through `unityPlayerModel.sync(...)`.
 
 Unity owns:
 
@@ -19,7 +19,7 @@ Unity owns:
 
 The bridge writes runtime state into `unityPlayerModel`. The model then
 synchronizes through the injectable `unityTelemetrySyncTarget`, proving the
-`runtime -> model -> sync target -> DOM` path without `scope.$watch` glue or a
+`runtime -> model -> sync target -> DOM` path without `scope.watch` glue or a
 runtime-specific AngularTS primitive.
 
 The host page falls back to a mock runtime when `Build/unity-fps.loader.js` is

@@ -205,8 +205,8 @@ Later browser tests:
   - `ng-model` reads/writes Rust-visible JS properties.
 
 - `lifecycle.spec.ts`
-  - `$onInit` maps to Rust hook;
-  - `$onDestroy` maps to Rust hook;
+  - `onInit` maps to Rust hook;
+  - `onDestroy` maps to Rust hook;
   - Wasm resources are released on component teardown.
 
 - `errors.spec.ts`

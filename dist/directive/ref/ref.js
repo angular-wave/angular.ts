@@ -46,7 +46,7 @@ function ngRefDirective($parse) {
                 }
                 const targetScope = deProxy(scope);
                 setter(targetScope, refValue);
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     setter(targetScope, null);
                 });
             };

@@ -22,9 +22,9 @@ public final class App {
   @JsMethod
   @AngularEntryPoint
   public static void start() {
-    NgModule app = Angular.module("j2clTodo", new String[0]);
-    app.controller("TodoCtrl", (TodoControllerFactory) TodoController::new);
-    app.directive("j2clBadge", App::createBadgeDirective);
+    Angular.module("j2clTodo", new String[0])
+      .controller("TodoCtrl", (TodoControllerFactory) TodoController::new)
+      .directive("j2clBadge", App::createBadgeDirective);
   }
 
   private static Directive<Object> createBadgeDirective() {
@@ -33,7 +33,7 @@ public final class App {
     directive.setLink(
         (scope, element) ->
             element.textContent =
-                "Application JavaScript compiled from Java with J2CL and AngularTS JsInterop bindings");
+                "Application JavaScript compiled from Java with J2CL and AngularTS Java bindings");
     return directive;
   }
 

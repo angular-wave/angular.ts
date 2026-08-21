@@ -267,10 +267,10 @@ dependency injection.
 ## Locate Named Scopes
 
 `getScopeByName()` searches from `$rootScope` for a scope with a matching
-`$scopename`.
+`scopeName`.
 
 ```typescript
-$scope.$scopename = 'dashboard';
+$scope.scopeName = 'dashboard';
 
 const scope = angular.getScopeByName('dashboard');
 scope?.refresh();
@@ -292,9 +292,9 @@ These helpers read metadata attached during compilation and bootstrap.
 
 ## Use Injection Tokens
 
-`angular.$t` exposes public injection token strings as a typed object. Prefer it
+`angular.tokens` exposes public injection token strings as a typed object. Prefer it
 when writing `$inject` arrays in TypeScript.
 
 ```typescript
-MyService.$inject = [angular.$t.$http, angular.$t.$rootScope];
+MyService.$inject = [angular.tokens.$http, angular.tokens.$rootScope];
 ```

@@ -25,7 +25,7 @@ internal caches:
   first request.
 
 When a service is requested via `$injector.get('myService')`, the injector looks
-up `myServiceProvider`, calls its `$get` method (injecting that method's own
+up `myServiceProvider`, calls its `get` method (injecting that method's own
 dependencies), caches the result, and returns it. Every subsequent `get` returns
 the same instance.
 
@@ -34,7 +34,7 @@ the same instance.
 const $http = injector.get('$http');
 
 // Built-in token literals infer their registered service type.
-const $machine = injector.get(angular.$t.$machine);
+const $machine = injector.get(angular.tokens.$machine);
 
 // Custom services can provide an explicit result type.
 const flags = injector.get<{ enabled: boolean }>('featureFlags');
@@ -150,7 +150,7 @@ singleton.
 
 #### provider
 
-The most flexible type. An object with a `$get` method. Can expose configuration
+The most flexible type. An object with a `get` method. Can expose configuration
 methods accessible during the config phase.
 
 #### decorator
@@ -163,7 +163,7 @@ replacement or augmented version.
 Providers give you a way to configure a service before any instance is created.
 During the **config phase** the provider itself is injected (not the instance),
 allowing configuration. During the **run phase** and everywhere else, the
-instance produced by `$get` is injected.
+instance produced by `get` is injected.
 
 ```typescript
   private prefix = 'Hello';
@@ -173,8 +173,8 @@ instance produced by `$get` is injected.
     this.prefix = value;
   }
 
-  // The injector calls $get to produce the service instance
-  $get = ['$log', ($log: ng.LogService) => {
+  // The injector calls get to produce the service instance
+  get = ['$log', ($log: ng.LogService) => {
     const prefix = this.prefix;
     return {
       greet(name: string) {
@@ -315,7 +315,7 @@ app.run([
   '$rootScope',
   '$state',
   function ($rootScope, $state) {
-    $rootScope.$on('$stateChangeError', () => $state.go('error'));
+    $rootScope.on('$stateChangeError', () => $state.go('error'));
   },
 ]);
 ```

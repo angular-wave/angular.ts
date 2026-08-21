@@ -108,7 +108,7 @@ const $locationError = createErrorFactory("$location");
 const locationCleanupByRootElement = new WeakMap<HTMLElement, () => void>();
 
 /**
- * @ignore
+ * @internal
  */
 export function isLinkRewritingEnabled(
   rewriteLinks: boolean | string,
@@ -554,7 +554,6 @@ export class LocationRuntimeState {
     };
 
     this._urlChangeListeners = [];
-    /** @private */
     this._urlChangeInit = false;
 
     this._cachedState = null;
@@ -562,7 +561,7 @@ export class LocationRuntimeState {
     this._destroyed = false;
     this._window = browserWindow;
     this._lastBrowserUrl = browserWindow.location.href;
-    this.cacheState();
+    this._cacheState();
   }
 
   /// ///////////////////////////////////////////////////////////
@@ -591,7 +590,7 @@ export class LocationRuntimeState {
       this._lastBrowserUrl = url;
       this._lastHistoryState = state;
       this._window.history.pushState(state, "", url);
-      this.cacheState();
+      this._cacheState();
     }
 
     return this;
@@ -618,9 +617,9 @@ export class LocationRuntimeState {
   /**
    * Caches the current state.
    *
-   * @private
+   * @internal
    */
-  cacheState() {
+  private _cacheState() {
     const currentState: unknown = this._window.history.state ?? null;
 
     if (!equals(currentState, this.lastCachedState)) {
@@ -637,7 +636,7 @@ export class LocationRuntimeState {
   _fireStateOrUrlChange(): void {
     const prevLastHistoryState: unknown = this._lastHistoryState;
 
-    this.cacheState();
+    this._cacheState();
 
     if (
       this._lastBrowserUrl === this.getBrowserUrl() &&
@@ -739,7 +738,7 @@ export class LocationRuntimeState {
     const broadcastRootScopeEvent = (
       name: string,
       ...args: unknown[]
-    ): ng.ScopeEvent => $rootScope.$broadcast(name, ...args);
+    ): ng.ScopeEvent => $rootScope.broadcast(name, ...args);
 
     const clickHandler = ((event: MouseEvent) => {
       const { rewriteLinks } = this.config.html5Mode;
@@ -826,7 +825,7 @@ export class LocationRuntimeState {
 
     this._serviceCleanup = cleanupLocation;
     locationCleanupByRootElement.set($rootElement, cleanupLocation);
-    $rootScope.$on("$destroy", () => {
+    $rootScope.on("$destroy", () => {
       cleanupLocation();
     });
 
@@ -933,7 +932,7 @@ export class LocationRuntimeState {
 
     $location._updateBrowser = updateBrowser;
     updateBrowser();
-    $rootScope.$on("$updateBrowser", updateBrowser);
+    $rootScope.on("$updateBrowser", updateBrowser);
 
     return $location;
 
@@ -1012,7 +1011,7 @@ export function applyLocationConfiguration(
  */
 
 /**
- * @ignore
+ * @internal
  * Encodes a URL path by encoding each path segment individually using `encodeUriSegment`,
  * while preserving forward slashes (`/`) as segment separators.
  *
@@ -1055,7 +1054,7 @@ export function encodePath(path: string): string {
 }
 
 /**
- * @ignore
+ * @internal
  * Decodes each segment of a URL path.
  *
  * Splits the input path by "/", decodes each segment using decodeURIComponent,
@@ -1084,7 +1083,7 @@ export function decodePath(path: string, html5Mode: boolean): string {
 }
 
 /**
- * @ignore
+ * @internal
  * Normalizes a URL path by encoding the path segments, query parameters, and hash fragment.
  *
  * - Path segments are encoded using `encodePath`, which encodes each segment individually.
@@ -1125,7 +1124,7 @@ export function normalizePath(
 }
 
 /**
- * @ignore
+ * @internal
  * Parses an application URL into isolated path, search, and hash values.
  *
  * @param url - The URL string to parse.
@@ -1167,7 +1166,7 @@ export function parseAppUrl(
 }
 
 /**
- * @ignore
+ * @internal
  * Returns the substring of `url` after the `base` string if `url` starts with `base`.
  * Returns `undefined` if `url` does not start with `base`.
  * @returns Text from `url` after `base`, or `undefined` if it does not begin with the expected string.
@@ -1181,7 +1180,7 @@ export function stripBaseUrl(base: string, url: string): string | undefined {
 }
 
 /**
- * @ignore
+ * @internal
  * Removes the hash fragment (including the '#') from the given URL string.
  *
  * @param url - The URL string to process.
@@ -1194,7 +1193,7 @@ export function stripHash(url: string): string {
 }
 
 /**
- * @ignore
+ * @internal
  * Removes the file name (and any hash) from a URL, returning the base directory path.
  *
  * For example:
@@ -1212,7 +1211,7 @@ export function stripFile(url: string): string {
 }
 
 /**
- * @ignore
+ * @internal
  * Extracts the base server URL (scheme, host, and optional port) from a full URL.
  *
  * If no path is present, returns the full URL.
@@ -1236,7 +1235,7 @@ export function serverBase(url: string): string {
 }
 
 /**
- * @ignore
+ * @internal
  * Determines if two URLs are equal despite potential differences in encoding,
  * trailing slashes, or empty hash fragments, such as between $location.absUrl() and $browser.url().
  *
@@ -1249,7 +1248,7 @@ export function urlsEqual(x: string, y: string): boolean {
 }
 
 /**
- * @ignore
+ * @internal
  * Normalizes a URL by resolving it via a DOM anchor element,
  * removing trailing slashes (except root), and trimming empty hashes.
  *

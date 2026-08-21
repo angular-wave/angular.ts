@@ -1,16 +1,10 @@
-.PHONY: closure-generate closure-externs closure-validate closure-build closure-test closure-demo clojurescript-generate clojurescript-validate clojurescript-build clojurescript-test clojurescript-package clojurescript-deploy java-generate java-processor java-package java-deploy java-check generate-check
+.PHONY: closure-generate closure-externs closure-validate closure-build closure-test closure-demo clojurescript-generate clojurescript-format clojurescript-format-check clojurescript-lint clojurescript-validate clojurescript-build clojurescript-unit-test clojurescript-test clojurescript-package clojurescript-package-check clojurescript-version-check clojurescript-deploy java-generate java-package java-version-check java-docs-test java-types-test java-artifact-check java-deploy java-check generate-check
 
 CLOSURE_INTEGRATION_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 CLOSURE_REPO_ROOT := $(abspath $(CLOSURE_INTEGRATION_DIR)/../..)
 CLOSURE_NODE ?= $(shell command -v node)
-SHADOW_CLJS_VERSION ?= 3.4.10
 CLOJURESCRIPT_JAVA_HOME ?= $(firstword $(wildcard $(HOME)/.sdkman/candidates/java/21*))
-CLOJARS_REPOSITORY_ID ?= clojars
-CLOJARS_URL ?= https://repo.clojars.org/
-CLOJURESCRIPT_GROUP_ID ?= org.angular.ts
-CLOJURESCRIPT_ARTIFACT_ID ?= angular-ts-cljs
-CLOJURESCRIPT_PACKAGE_VERSION ?= $(shell cd $(CLOSURE_REPO_ROOT) && node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")
-
+J2CL_JAVA_HOME ?= $(firstword $(wildcard $(HOME)/.sdkman/candidates/java/11* /usr/lib/jvm/java-11*))
 closure-generate: closure-externs clojurescript-generate java-generate
 
 closure-externs:
@@ -32,7 +26,19 @@ closure-demo: closure-build
 clojurescript-generate: closure-externs
 	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/clojurescript/scripts/generate-cljs-types.mjs
 
-clojurescript-validate: closure-validate
+clojurescript-format:
+	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \
+		npx shadow-cljs clj-run cljfmt.main fix src demo/src test/src
+
+clojurescript-format-check:
+	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \
+		npx shadow-cljs clj-run cljfmt.main check src demo/src test/src
+
+clojurescript-lint:
+	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \
+		npx shadow-cljs clj-run clj-kondo.main -- --lint src demo/src test/src
+
+clojurescript-validate: closure-validate clojurescript-format-check clojurescript-lint
 	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/clojurescript/scripts/generate-cljs-types.mjs --check
 
 generate-check: clojurescript-validate
@@ -40,54 +46,73 @@ generate-check: clojurescript-validate
 clojurescript-build: clojurescript-validate
 	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \
 		if [ -n "$(CLOJURESCRIPT_JAVA_HOME)" ]; then \
-			PATH="$(CLOJURESCRIPT_JAVA_HOME)/bin:$$PATH" npx --yes shadow-cljs@$(SHADOW_CLJS_VERSION) release todo; \
+			PATH="$(CLOJURESCRIPT_JAVA_HOME)/bin:$$PATH" npx shadow-cljs release todo; \
 		else \
-			npx --yes shadow-cljs@$(SHADOW_CLJS_VERSION) release todo; \
+			npx shadow-cljs release todo; \
 		fi
 
-clojurescript-test: clojurescript-build
+clojurescript-unit-test: clojurescript-validate
+	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \
+		NODE_OPTIONS="--require ./test/setup.cjs" npx shadow-cljs compile test
+
+clojurescript-test: clojurescript-build clojurescript-unit-test clojurescript-package-check
 	@cd $(CLOSURE_REPO_ROOT) && npx playwright test --config integrations/closure/playwright.config.ts integrations/closure/clojurescript/clojurescript.test.ts
 
 clojurescript-package: clojurescript-generate
-	@CLOJURESCRIPT_GROUP_ID="$(CLOJURESCRIPT_GROUP_ID)" \
-		CLOJURESCRIPT_ARTIFACT_ID="$(CLOJURESCRIPT_ARTIFACT_ID)" \
-		CLOJURESCRIPT_PACKAGE_VERSION="$(CLOJURESCRIPT_PACKAGE_VERSION)" \
-		"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/clojurescript/scripts/package-cljs.mjs
-
-clojurescript-deploy: clojurescript-package
 	@cd $(CLOSURE_REPO_ROOT) && \
-		mvn deploy:deploy-file \
-			-Dfile=integrations/closure/clojurescript/target/$(CLOJURESCRIPT_ARTIFACT_ID)-$(CLOJURESCRIPT_PACKAGE_VERSION).jar \
-			-DpomFile=integrations/closure/clojurescript/target/$(CLOJURESCRIPT_ARTIFACT_ID)-$(CLOJURESCRIPT_PACKAGE_VERSION).pom \
-			-DrepositoryId=$(CLOJARS_REPOSITORY_ID) \
-			-Durl=$(CLOJARS_URL)
+		mvn --batch-mode --no-transfer-progress \
+			-f integrations/closure/clojurescript/pom.xml clean package
+
+clojurescript-package-check: clojurescript-version-check clojurescript-package
+	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/clojurescript/scripts/verify-cljs-package.mjs
+
+clojurescript-version-check:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		"$(CLOSURE_NODE)" integrations/closure/clojurescript/scripts/check-clojurescript-release-version.mjs
+
+clojurescript-deploy: clojurescript-generate clojurescript-version-check
+	@cd $(CLOSURE_REPO_ROOT) && \
+		mvn --batch-mode --no-transfer-progress \
+			-f integrations/closure/clojurescript/pom.xml -Prelease clean deploy
 
 java-generate: closure-externs
 	@cd $(CLOSURE_REPO_ROOT) && \
 		mvn -f integrations/closure/java/pom.xml process-sources
 
-java-processor:
-	@cd $(CLOSURE_REPO_ROOT) && \
-		mvn -f integrations/closure/java/pom.xml install
-	@cd $(CLOSURE_REPO_ROOT) && \
-		mvn -f integrations/closure/java/processor/pom.xml install
-
 java-package:
 	@cd $(CLOSURE_REPO_ROOT) && \
-		mvn -f integrations/closure/java/pom.xml clean install
-	@cd $(CLOSURE_REPO_ROOT) && \
-		mvn -f integrations/closure/java/processor/pom.xml clean package
+		mvn -f integrations/closure/java/pom.xml clean package
 
-java-deploy:
+java-version-check:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		"$(CLOSURE_NODE)" integrations/closure/java/scripts/check-java-release-version.mjs
+
+java-docs-test:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		"$(CLOSURE_NODE)" --test integrations/closure/java/scripts/apply-jsinterop-javadocs.test.mjs
+
+java-types-test:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		"$(CLOSURE_NODE)" --test integrations/closure/java/scripts/refine-generated-jsinterop-types.test.mjs
+
+java-artifact-check:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		"$(CLOSURE_NODE)" integrations/closure/java/scripts/verify-java-artifact.mjs
+
+java-deploy: java-version-check
 	@cd $(CLOSURE_REPO_ROOT) && \
 		mvn -f integrations/closure/java/pom.xml -Prelease clean deploy
-	@cd $(CLOSURE_REPO_ROOT) && \
-		mvn -f integrations/closure/java/processor/pom.xml -Prelease clean deploy
 
-java-check:
+java-check: java-docs-test java-types-test
 	@cd $(CLOSURE_REPO_ROOT) && \
 		mvn -f integrations/closure/java/pom.xml clean install
 	@cd $(CLOSURE_REPO_ROOT) && \
-		mvn -f integrations/closure/java/processor/pom.xml clean install
+		"$(CLOSURE_NODE)" integrations/closure/java/scripts/verify-java-artifact.mjs
 	@cd $(CLOSURE_REPO_ROOT) && \
-		mvn -f integrations/closure/java/demo/pom.xml clean j2cl:clean verify
+		if [ -n "$(J2CL_JAVA_HOME)" ]; then \
+			JAVA_HOME="$(J2CL_JAVA_HOME)" \
+			PATH="$(J2CL_JAVA_HOME)/bin:$$PATH" \
+			mvn -f integrations/closure/java/demo/pom.xml clean j2cl:clean verify; \
+		else \
+			mvn -f integrations/closure/java/demo/pom.xml clean j2cl:clean verify; \
+		fi

@@ -106,6 +106,6 @@ describe("ngWasm", () => {
 
     await wait();
 
-    expect($rootScope.$target.math).toBeUndefined();
+    expect($rootScope._target.math).toBeUndefined();
   });
 });

@@ -16,17 +16,17 @@ export function ngStyleDirective(): ng.Directive {
 
       let oldStyles: Record<string, string> | null = null;
 
-      scope.$watch(
+      scope.watch(
         expression,
         (
           newStyles:
             | (Record<string, string> & {
-                $target?: Record<string, string>;
+                _target?: Record<string, string>;
               })
             | null
             | undefined,
         ) => {
-          const target = newStyles?.$target ?? newStyles;
+          const target = newStyles?._target ?? newStyles;
 
           if (oldStyles) {
             keys(oldStyles).forEach((key) => {

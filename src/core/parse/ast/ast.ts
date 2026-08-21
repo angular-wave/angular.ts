@@ -71,6 +71,7 @@ export class AST {
     this._index = 0;
   }
 
+  /** @internal */
   private _tokenAt(index = this._index): Token | undefined {
     return this._tokens[index] as Token | undefined;
   }

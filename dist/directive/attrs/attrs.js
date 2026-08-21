@@ -45,7 +45,7 @@ BOOLEAN_ATTR.forEach((i) => {
         return;
     /** Mirrors the watched scope expression into the underlying boolean attribute. */
     const defaultLinkFn = (scope, element, expression) => {
-        scope.$watch(expression, (value) => {
+        scope.watch(expression, (value) => {
             setNormalizedAttr(element, i, !!value);
         });
     };
@@ -90,7 +90,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                     }
                 }
                 return (scope, element) => {
-                    scope.$watch(expression, (value) => {
+                    scope.watch(expression, (value) => {
                         setNormalizedAttr(element, ngAttr, value);
                     });
                 };
@@ -190,7 +190,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                             }
                         });
                         observer.observe(element, { attributes: true });
-                        let deregisterDestroy = scope.$on("$destroy", deregister);
+                        let deregisterDestroy = scope.on("$destroy", deregister);
                         function deregister() {
                             observer.disconnect();
                             deregisterDestroy?.();

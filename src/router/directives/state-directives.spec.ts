@@ -874,7 +874,7 @@ describe("ngStateRef", () => {
       browserTrigger(el, "click");
       await wait(200);
 
-      expect($state.$current.name).toBe("contacts.item.detail");
+      expect($state._current.name).toBe("contacts.item.detail");
       expect($state.params.id).toEqual(5);
     });
 
@@ -885,7 +885,7 @@ describe("ngStateRef", () => {
       browserTrigger(el, "click");
       await wait(200);
 
-      expect($state.$current.name).toBe("contacts.item.detail");
+      expect($state._current.name).toBe("contacts.item.detail");
       expect($state.params.id).toEqual(5);
     });
 
@@ -897,7 +897,7 @@ describe("ngStateRef", () => {
       browserTrigger(parentToChild, "click");
       await wait(500);
 
-      expect($state.$current.name).toBe("contacts.item");
+      expect($state._current.name).toBe("contacts.item");
     });
 
     it("should update the browser from root scope after a view-scoped link transition", async () => {
@@ -914,7 +914,7 @@ describe("ngStateRef", () => {
       browserTrigger(childToDetail, "click");
       await wait(500);
 
-      expect($state.$current.name).toBe("contacts.item.detail");
+      expect($state._current.name).toBe("contacts.item.detail");
       expect(errorLog).toEqual([]);
     });
   });

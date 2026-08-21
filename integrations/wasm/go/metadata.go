@@ -13,6 +13,7 @@ import (
 type TemplateSource struct {
 	inline string
 	url    string
+	view   string
 }
 
 // InlineTemplate creates metadata for an inline AngularTS component template.
@@ -25,6 +26,11 @@ func TemplateURL(url string) TemplateSource {
 	return TemplateSource{url: url}
 }
 
+// ProgrammaticView creates metadata for an exported programmatic view function.
+func ProgrammaticView(exportName string) TemplateSource {
+	return TemplateSource{view: exportName}
+}
+
 // Inline returns the inline template text, when this source is inline.
 func (s TemplateSource) Inline() string {
 	return s.inline
@@ -35,13 +41,28 @@ func (s TemplateSource) URL() string {
 	return s.url
 }
 
+// View returns the programmatic view export name, when this source is view-backed.
+func (s TemplateSource) View() string {
+	return s.view
+}
+
 // Validate checks that exactly one template source is configured.
 func (s TemplateSource) Validate() error {
-	if s.inline == "" && s.url == "" {
-		return fmt.Errorf("angular.ts wasm: component template is required")
+	configured := 0
+	if s.inline != "" {
+		configured++
 	}
-	if s.inline != "" && s.url != "" {
-		return fmt.Errorf("angular.ts wasm: component template must be inline or URL, not both")
+	if s.url != "" {
+		configured++
+	}
+	if s.view != "" {
+		configured++
+	}
+	if configured == 0 {
+		return fmt.Errorf("angular.ts wasm: component template or view is required")
+	}
+	if configured != 1 {
+		return fmt.Errorf("angular.ts wasm: component must use exactly one of inline template, template URL, or view")
 	}
 
 	return nil
@@ -665,6 +686,9 @@ func (r Registration) manifest() registrationManifest {
 	if r.Template.URL() != "" {
 		manifest.TemplateURL = r.Template.URL()
 	}
+	if r.Template.View() != "" {
+		manifest.View = r.Template.View()
+	}
 	if r.ScopeName != "" {
 		manifest.ScopeName = r.ScopeName
 	}
@@ -704,6 +728,7 @@ type registrationManifest struct {
 	ExportName  string            `json:"export"`
 	Template    string            `json:"template,omitempty"`
 	TemplateURL string            `json:"templateUrl,omitempty"`
+	View        string            `json:"view,omitempty"`
 	ScopeName   string            `json:"scopeName,omitempty"`
 	Methods     []string          `json:"methods,omitempty"`
 	Fields      []ScopeField      `json:"fields,omitempty"`

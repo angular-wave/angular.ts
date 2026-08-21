@@ -72,7 +72,7 @@ export interface PersistentStoreConfig {
 export interface ProviderCache {
   [key: string]: unknown; // dynamic providers
   $injectorProvider?: {
-    $get: () => InjectorService;
+    get: () => InjectorService;
   };
   $injector?: ProviderInjector;
 }

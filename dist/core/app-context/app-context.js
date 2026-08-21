@@ -62,7 +62,7 @@ class AppContext {
         this.setExceptionHandler(runtime.exceptionHandler);
         this._scopeRuntime = runtime;
         this._reactiveModels.forEach((model) => {
-            model.$handler._setRuntimeDependencies(runtime);
+            model._handler._setRuntimeDependencies(runtime);
         });
     }
     runWithRoot(root, operation) {
@@ -94,7 +94,7 @@ class AppContext {
                 if (root.destroyed) {
                     return;
                 }
-                root.rootScope.$destroy();
+                root.rootScope.destroy();
             },
         };
         this._roots.push(root);
@@ -102,7 +102,7 @@ class AppContext {
         if (root.rootElement) {
             this._rootsByElement.set(root.rootElement, root);
         }
-        root.rootScope.$on("$destroy", () => {
+        root.rootScope.on("$destroy", () => {
             this._markRootDestroyed(root);
         });
         this._notify(this._attachHooks, root);
@@ -159,7 +159,7 @@ class AppContext {
         }
         const model = createScope(target, undefined, this.modelScheduler._listenerScheduler);
         if (this._scopeRuntime) {
-            model.$handler._setRuntimeDependencies(this._scopeRuntime);
+            model._handler._setRuntimeDependencies(this._scopeRuntime);
         }
         attachModelLifecycle(this, model, options);
         this._reactiveModels.add(model);
@@ -207,7 +207,7 @@ class AppContext {
         }
         const reactiveModels = Array.from(this._reactiveModels);
         for (let i = 0, l = reactiveModels.length; i < l; i++) {
-            reactiveModels[i].$destroy();
+            reactiveModels[i].destroy();
         }
         this.modelScheduler.destroy();
         this._models.clear();
@@ -299,8 +299,8 @@ function isPlainModelRoot(value) {
     return prototype === Object.prototype || prototype === null;
 }
 function attachModelLifecycle(context, model, options) {
-    const handler = model.$handler;
-    const target = model.$target;
+    const handler = model._handler;
+    const target = model._target;
     const syncRecords = new Set();
     const pendingKeys = new Set();
     let pendingOrigin;
@@ -355,21 +355,21 @@ function attachModelLifecycle(context, model, options) {
         },
     };
     handler._modelChangeTracker = tracker;
-    model.$on("$destroy", () => {
+    model.on("$destroy", () => {
         context._releaseReactive(model);
         for (const record of Array.from(syncRecords)) {
             disposeModelSyncRecord(context, syncRecords, record);
         }
     });
-    handler._propertyMap.$snapshot = snapshot;
-    handler._propertyMap.$restore = (incoming, restoreOptions = {}) => {
+    handler._propertyMap.snapshot = snapshot;
+    handler._propertyMap.restore = (incoming, restoreOptions = {}) => {
         assertPlainModelSnapshot(incoming);
         const normalizedRestoreOptions = normalizeModelRestoreOptions(restoreOptions);
         const next = cloneModelData(incoming);
         const previousOrigin = currentOrigin;
         currentOrigin = normalizedRestoreOptions.origin;
         try {
-            model.$batch(() => {
+            model.batch(() => {
                 if (normalizedRestoreOptions.mode !== "merge") {
                     const currentKeys = Object.keys(target);
                     for (let i = 0, l = currentKeys.length; i < l; i++) {
@@ -389,7 +389,7 @@ function attachModelLifecycle(context, model, options) {
             currentOrigin = previousOrigin;
         }
     };
-    handler._propertyMap.$sync = (input, syncOptions = {}) => {
+    handler._propertyMap.sync = (input, syncOptions = {}) => {
         const origin = createModelSyncOrigin(options.name, nextSyncId++);
         const failure = normalizeModelSyncFailureMode(syncOptions);
         const syncTarget = resolveModelSyncTarget(input, options.injector);
@@ -408,7 +408,7 @@ function attachModelLifecycle(context, model, options) {
                     }
                     try {
                         const normalizedRestoreOptions = normalizeModelRestoreOptions(restoreOptions);
-                        model.$restore(incoming, {
+                        model.restore(incoming, {
                             ...normalizedRestoreOptions,
                             origin: normalizedRestoreOptions.origin ?? origin,
                         });
@@ -435,7 +435,7 @@ function attachModelLifecycle(context, model, options) {
                     if (record.disposed || incoming == null) {
                         return;
                     }
-                    model.$restore(incoming, { origin });
+                    model.restore(incoming, { origin });
                 };
                 if (isPromiseLike(result)) {
                     Promise.resolve(result)
@@ -595,6 +595,7 @@ function createAppModelScheduler(handleError) {
         get pending() {
             return listenerScheduler._queue.length - listenerScheduler._index;
         },
+        /** @internal */
         get _listenerScheduler() {
             return listenerScheduler;
         },

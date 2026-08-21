@@ -87,8 +87,8 @@ describe("select", () => {
           pre(scope, element, ctrl) {
             selectCtrl = ctrl;
             renderSpy = jasmine.createSpy("renderSpy");
-            selectCtrl._ngModelCtrl.$render = renderSpy.and.callFake(
-              selectCtrl._ngModelCtrl.$render,
+            selectCtrl._ngModelCtrl.render = renderSpy.and.callFake(
+              selectCtrl._ngModelCtrl.render,
             );
             spyOn(selectCtrl, "_writeValue").and.callThrough();
           },
@@ -109,7 +109,7 @@ describe("select", () => {
       "$rootScope",
       "$compile",
       (_$rootScope_, _$compile_) => {
-        scope = _$rootScope_.$new(); // create a child scope because the root scope can't be $destroy-ed
+        scope = _$rootScope_.new(); // create a child scope because the root scope can't be $destroy-ed
         $rootScope = _$rootScope_;
         $compile = _$compile_;
         formElement = element = null;
@@ -118,7 +118,7 @@ describe("select", () => {
   });
 
   afterEach(() => {
-    scope.$destroy(); // disables unknown option work during destruction
+    scope.destroy(); // disables unknown option work during destruction
     dealoc(formElement);
     ngModelCtrl = null;
   });
@@ -267,18 +267,18 @@ describe("select", () => {
         scope.selection = "a";
         await wait();
         expect(element.classList.contains("ng-valid")).toBeTrue();
-        expect(ngModelCtrl.$error.required).toBeFalsy();
+        expect(ngModelCtrl.error.required).toBeFalsy();
 
         let options = element.querySelectorAll("option");
 
         // view -> model
         setSelectValue(element, 0);
         expect(element.classList.contains("ng-invalid")).toBeTrue();
-        expect(ngModelCtrl.$error.required).toBeTruthy();
+        expect(ngModelCtrl.error.required).toBeTruthy();
 
         setSelectValue(element, 1);
         expect(element.classList.contains("ng-valid")).toBeTrue();
-        expect(ngModelCtrl.$error.required).toBeFalsy();
+        expect(ngModelCtrl.error.required).toBeFalsy();
 
         // // model -> view
         scope.selection = null;
@@ -286,7 +286,7 @@ describe("select", () => {
         options = element.querySelectorAll("option");
         expect(options[0].selected).toBe(true);
         expect(element.classList.contains("ng-invalid")).toBeTrue();
-        expect(ngModelCtrl.$error.required).toBeTruthy();
+        expect(ngModelCtrl.error.required).toBeTruthy();
       });
 
       it("should validate with empty option and bound ngRequired", async () => {
@@ -345,13 +345,13 @@ describe("select", () => {
         await wait();
 
         expect(element.classList.contains("ng-valid")).toBeTrue();
-        expect(ngModelCtrl.$error.required).toBeFalsy();
+        expect(ngModelCtrl.error.required).toBeFalsy();
 
         scope.selection = "c";
         await wait();
         expect(element.value).toBe(unknownValue("c"));
         expect(element.classList.contains("ng-valid")).toBeTrue();
-        expect(ngModelCtrl.$error.required).toBeFalsy();
+        expect(ngModelCtrl.error.required).toBeFalsy();
       });
     });
 
@@ -392,23 +392,23 @@ describe("select", () => {
           "</select></form>",
       );
       await wait();
-      expect(scope.form.name47.$pristine).toBeTruthy();
+      expect(scope.form.name47.pristine).toBeTruthy();
       setSelectValue(element, 0);
-      expect(scope.form.name47.$dirty).toBeTruthy();
+      expect(scope.form.name47.dirty).toBeTruthy();
       expect(scope.name).toBe("c3p0");
     });
 
     it("should rename select controls in form when interpolated name changes", async () => {
       scope.nameID = "A";
       await compile('<select ng-model="name" name="name{{nameID}}"></select>');
-      expect(scope.form.nameA.$name).toBe("nameA");
+      expect(scope.form.nameA.controlName).toBe("nameA");
       const oldModel = scope.form.nameA;
 
       scope.nameID = "B";
       await wait();
       expect(scope.form.nameA).toBeUndefined();
       expect(scope.form.nameB).toBe(oldModel);
-      expect(scope.form.nameB.$name).toBe("nameB");
+      expect(scope.form.nameB.controlName).toBe("nameB");
     });
 
     it("should select options in a group when there is a linebreak before an option", async () => {
@@ -927,17 +927,15 @@ describe("select", () => {
   });
 
   describe("selectController", () => {
-    it("should expose .$hasEmptyOption(), .$isEmptyOptionSelected(), and .$isUnknownOptionSelected()", async () => {
+    it("should expose .hasEmptyOption(), .isEmptyOptionSelected(), and .isUnknownOptionSelected()", async () => {
       compile('<select ng-model="mySelect"></select>');
 
       const selectCtrl = getController(element, "select");
 
       await wait();
-      expect(selectCtrl.$hasEmptyOption).toEqual(jasmine.any(Function));
-      expect(selectCtrl.$isEmptyOptionSelected).toEqual(jasmine.any(Function));
-      expect(selectCtrl.$isUnknownOptionSelected).toEqual(
-        jasmine.any(Function),
-      );
+      expect(selectCtrl.hasEmptyOption).toEqual(jasmine.any(Function));
+      expect(selectCtrl.isEmptyOptionSelected).toEqual(jasmine.any(Function));
+      expect(selectCtrl.isUnknownOptionSelected).toEqual(jasmine.any(Function));
     });
 
     it("should reflect the status of empty and unknown option", async () => {
@@ -953,8 +951,8 @@ describe("select", () => {
       const selectCtrl = getController(element, "select");
 
       expect(element.value).toBe("? string: ?");
-      expect(selectCtrl.$hasEmptyOption()).toBe(false);
-      expect(selectCtrl.$isEmptyOptionSelected()).toBe(false);
+      expect(selectCtrl.hasEmptyOption()).toBe(false);
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
 
       scope.dynamicOptions = [
         { val: "x", display: "robot x" },
@@ -963,66 +961,66 @@ describe("select", () => {
       scope.empty = true;
       await wait();
       expect(element.value).toBe("");
-      expect(selectCtrl.$hasEmptyOption()).toBe(true);
-      expect(selectCtrl.$isEmptyOptionSelected()).toBe(true);
-      expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
+      expect(selectCtrl.hasEmptyOption()).toBe(true);
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(true);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
       // empty -> selection
       scope.selected = "x";
       await wait();
       expect(element.value).toBe("x");
-      expect(selectCtrl.$hasEmptyOption()).toBe(true);
-      expect(selectCtrl.$isEmptyOptionSelected()).toBe(false);
-      expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
+      expect(selectCtrl.hasEmptyOption()).toBe(true);
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
       // // remove empty
       // await wait();
       // expect(element.value).toBe("x");
-      // expect(selectCtrl.$hasEmptyOption()).toBe(false);
-      // expect(selectCtrl.$isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
+      // expect(selectCtrl.hasEmptyOption()).toBe(false);
+      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      // expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
       // // selection -> unknown
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
-      // expect(selectCtrl.$hasEmptyOption()).toBe(false);
-      // expect(selectCtrl.$isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
+      // expect(selectCtrl.hasEmptyOption()).toBe(false);
+      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      // expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
 
       // // add empty
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
-      // expect(selectCtrl.$hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.$isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
+      // expect(selectCtrl.hasEmptyOption()).toBe(true);
+      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      // expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
 
       // // unknown -> empty
       // await wait();
       // expect(element.value).toBe("");
-      // expect(selectCtrl.$hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.$isEmptyOptionSelected()).toBe(true);
-      // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
+      // expect(selectCtrl.hasEmptyOption()).toBe(true);
+      // expect(selectCtrl.isEmptyOptionSelected()).toBe(true);
+      // expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
       // // empty -> unknown
       // await wait();
       // expect(element.value).toBe(unknownValue("unmatched"));
-      // expect(selectCtrl.$hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.$isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
+      // expect(selectCtrl.hasEmptyOption()).toBe(true);
+      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      // expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
 
       // // unknown -> selection
       // await wait();
       // expect(element.value).toBe("y");
-      // expect(selectCtrl.$hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.$isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
+      // expect(selectCtrl.hasEmptyOption()).toBe(true);
+      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      // expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
       // // selection -> empty
       // await wait();
       // expect(element.value).toBe("");
-      // expect(selectCtrl.$hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.$isEmptyOptionSelected()).toBe(true);
-      // expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
+      // expect(selectCtrl.hasEmptyOption()).toBe(true);
+      // expect(selectCtrl.isEmptyOptionSelected()).toBe(true);
+      // expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
     });
   });
 
@@ -1359,7 +1357,7 @@ describe("select", () => {
       expect(element.classList.contains("ng-dirty")).toBeTrue();
     });
 
-    describe("calls to $render", () => {
+    describe("calls to render", () => {
       let ngModelCtrl;
 
       beforeEach(() => {
@@ -1371,37 +1369,37 @@ describe("select", () => {
         );
 
         ngModelCtrl = getController(element, "ngModel");
-        spyOn(ngModelCtrl, "$render").and.callThrough();
+        spyOn(ngModelCtrl, "render").and.callThrough();
       });
 
-      it("should call $render once when the reference to the viewValue changes", async () => {
-        ngModelCtrl.$render.calls.reset();
+      it("should call render once when the reference to the viewValue changes", async () => {
+        ngModelCtrl.render.calls.reset();
         scope.selection = ["A"];
         await wait();
-        expect(ngModelCtrl.$render).toHaveBeenCalled();
+        expect(ngModelCtrl.render).toHaveBeenCalled();
 
         scope.selection = ["A", "B"];
         await wait();
-        expect(ngModelCtrl.$render.calls.count()).toBeGreaterThanOrEqual(1);
+        expect(ngModelCtrl.render.calls.count()).toBeGreaterThanOrEqual(1);
 
         scope.selection = [];
         await wait();
-        expect(ngModelCtrl.$render.calls.count()).toBeGreaterThanOrEqual(1);
+        expect(ngModelCtrl.render.calls.count()).toBeGreaterThanOrEqual(1);
       });
 
-      it("should call $render once when the viewValue deep-changes", async () => {
-        ngModelCtrl.$render.calls.reset();
+      it("should call render once when the viewValue deep-changes", async () => {
+        ngModelCtrl.render.calls.reset();
         scope.selection = ["A"];
         await wait();
-        expect(ngModelCtrl.$render).toHaveBeenCalled();
+        expect(ngModelCtrl.render).toHaveBeenCalled();
 
         scope.selection.push("B");
         await wait();
-        expect(ngModelCtrl.$render.calls.count()).toBeGreaterThanOrEqual(1);
+        expect(ngModelCtrl.render.calls.count()).toBeGreaterThanOrEqual(1);
 
         scope.selection.length = 0;
         await wait();
-        expect(ngModelCtrl.$render.calls.count()).toBeGreaterThanOrEqual(1);
+        expect(ngModelCtrl.render.calls.count()).toBeGreaterThanOrEqual(1);
       });
     });
   });

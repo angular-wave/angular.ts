@@ -20,7 +20,7 @@ thin AngularTS state coordinator for:
 - custom validator errors;
 - parent logical-group aggregation when explicitly requested.
 
-Native validity should not be copied into `$error`. `$error` remains for
+Native validity should not be copied into `error`. `error` remains for
 AngularTS/custom validators. Browser validity is read from the controls and the
 native form element.
 
@@ -77,13 +77,13 @@ do not assert browser behavior that AngularTS does not own.
 - [x] Remove form-level `ng-valid-native` and `ng-invalid-native` CSS classes.
 - [x] Replace `_nativeInvalidControls` as a persistent validity bucket with a
       direct aggregate query over registered native controls where possible.
-- [x] Keep `$valid` / `$invalid` aggregate booleans updated from:
-  - custom validator `$error`;
-  - async `$pending`;
+- [x] Keep `valid` / `invalid` aggregate booleans updated from:
+  - custom validator `error`;
+  - async `pending`;
   - direct native `checkValidity()` / control native validity.
-- [x] Do not add native validity keys to `$error`.
+- [x] Do not add native validity keys to `error`.
 - [x] Update tests that currently inspect native validity through AngularTS
-      buckets to inspect `$validity` on controls or native form APIs instead.
+      buckets to inspect `validity` on controls or native form APIs instead.
 
 Files:
 
@@ -93,7 +93,7 @@ Files:
 - `src/directive/form/form-demo.html`
 
 Acceptance: native invalid controls make the form invalid, but native failure
-details remain available through browser APIs, not `$error`.
+details remain available through browser APIs, not `error`.
 
 ### Phase 3: Split Custom Errors From Native Validity
 
@@ -101,10 +101,10 @@ details remain available through browser APIs, not `$error`.
   - custom validator failures;
   - pending async validators;
   - native aggregate validity.
-- [x] Keep `$error` and `$pending` as public transitional objects only for
+- [x] Keep `error` and `pending` as public transitional objects only for
       custom/framework validators.
 - [x] Use `Map<string, Set<Control>>` internally for all custom validity
-      buckets, then derive public `$error` / `$pending` objects from those maps.
+      buckets, then derive public `error` / `pending` objects from those maps.
 - [x] Remove duplicated array mutation helpers once map/set buckets are the
       source of truth.
 
@@ -232,7 +232,7 @@ npx playwright test src/directive/form/form.test.ts src/directive/input/input.te
 
 - Native forms remain usable as native forms.
 - Named form and named control publication remains supported.
-- AngularTS no longer mirrors native validity details into `$error`.
+- AngularTS no longer mirrors native validity details into `error`.
 - No proxy-only form adapter APIs are introduced.
 - Logical grouping is explicitly separate from native form behavior.
 - Tests cover AngularTS-owned state and avoid retesting browser primitives.

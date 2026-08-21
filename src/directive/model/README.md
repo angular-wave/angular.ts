@@ -9,10 +9,10 @@ and parent form propagation.
 ## Responsibilities
 
 - Bind an assignable `ng-model` expression to a DOM control controller.
-- Convert view values to model values through `$parsers`, and model values to
-  view values through `$formatters`.
-- Run synchronous and asynchronous validators and maintain `$error`,
-  `$pending`, `_validationStates`, `$valid`, and `$invalid`.
+- Convert view values to model values through `parsers`, and model values to
+  view values through `formatters`.
+- Run synchronous and asynchronous validators and maintain `error`,
+  `pending`, `_validationStates`, `valid`, and `invalid`.
 - Track pristine/dirty and touched/untouched control state and corresponding
   CSS classes.
 - Integrate controls with parent forms, `ngModelOptions`, `ngChange`, and
@@ -32,36 +32,36 @@ and parent form propagation.
 - `ModelValidators`, `AsyncModelValidators`, `ModelParser`, `ModelFormatter`,
   and `ModelViewChangeListener`: public pipeline and callback shapes.
 
-Public controller methods include `$setViewValue`, `$commitViewValue`,
-`$rollbackViewValue`, `$processModelValue`, `$validate`, `$setValidity`,
-`$setPristine`, `$setDirty`, `$setUntouched`, `$setTouched`,
-`$overrideModelOptions`, `$render`, and `$isEmpty`.
+Public controller methods include `setViewValue`, `commitViewValue`,
+`rollbackViewValue`, `processModelValue`, `validate`, `setValidity`,
+`setPristine`, `setDirty`, `setUntouched`, `setTouched`,
+`overrideModelOptions`, `render`, and `isEmpty`.
 
 ## Core Model
 
-`NgModelController` owns both sides of the control binding. `$modelValue` is the
+`NgModelController` owns both sides of the control binding. `modelValue` is the
 current model value visible to the scope expression, `_rawModelValue` is the
-latest parsed value regardless of validity, `$viewValue` is the value owned by
+latest parsed value regardless of validity, `viewValue` is the value owned by
 the control, and `_lastCommittedViewValue` is the last view value that entered
 the parser/validator pipeline.
 
 The main view-to-model flow is:
 
-1. A control calls `$setViewValue(value, trigger)`.
+1. A control calls `setViewValue(value, trigger)`.
 2. The controller stages `_pendingViewValue` and either debounces or commits it.
-3. `$commitViewValue()` updates empty classes, marks the control dirty, and
+3. `commitViewValue()` updates empty classes, marks the control dirty, and
    calls `_parseAndValidate()`.
 4. Parsers transform the view value into `_rawModelValue`.
-5. Validators update validity buckets and, when allowed, write `$modelValue`
+5. Validators update validity buckets and, when allowed, write `modelValue`
    back to the scope expression.
-6. `$viewChangeListeners`, including `ngChange`, run after a model write.
+6. `viewChangeListeners`, including `ngChange`, run after a model write.
 
 The main model-to-view flow is:
 
 1. Scope watchers read the parsed `ng-model` expression.
 2. `_setModelValue()` stores the external model value.
-3. `$processModelValue()` runs `$formatters` in reverse order.
-4. If the view value changed, `$render()` updates the control and validators
+3. `processModelValue()` runs `formatters` in reverse order.
+4. If the view value changed, `render()` updates the control and validators
    run against the formatted value.
 
 Important invariants:
@@ -91,7 +91,7 @@ removes itself from the parent form, drops the parent form back to
 
 ## Scheduling And Ordering
 
-- `$setViewValue()` stages values and only commits immediately when
+- `setViewValue()` stages values and only commits immediately when
   `updateOnDefault` allows it.
 - `_debounceViewValueCommit()` uses `setTimeout` for numeric debounce values
   and clears older pending timers before scheduling a new one.
@@ -100,16 +100,16 @@ removes itself from the parent form, drops the parent form back to
 - Synchronous validators run before asynchronous validators.
 - Async validators set their key to pending and only the latest validation run
   may apply results.
-- Listener errors from `$viewChangeListeners` are routed through
+- Listener errors from `viewChangeListeners` are routed through
   `$exceptionHandler`.
 
 ## Data Structures
 
-- `$parsers`: ordered view-to-model conversion pipeline.
-- `$formatters`: reverse-order model-to-view conversion pipeline.
-- `$validators`: synchronous named validators.
-- `$asyncValidators`: promise-returning named validators.
-- `$error` and `$pending`: public transitional validity buckets keyed by
+- `parsers`: ordered view-to-model conversion pipeline.
+- `formatters`: reverse-order model-to-view conversion pipeline.
+- `validators`: synchronous named validators.
+- `asyncValidators`: promise-returning named validators.
+- `error` and `pending`: public transitional validity buckets keyed by
   validator name.
 - `_validationStates`: internal map of explicit validator states.
 - `_classCache`: tracks CSS class state to avoid redundant toggles.
@@ -140,7 +140,7 @@ removes itself from the parent form, drops the parent form back to
 - `allowInvalid` writes parsed model values even while validators are failing.
 - Getter/setter mode calls the model expression as a function when the parsed
   value is callable.
-- `$rollbackViewValue()` cancels pending debounce work and restores the last
+- `rollbackViewValue()` cancels pending debounce work and restores the last
   committed view value.
 - Name interpolation renames the control in its parent form without replacing
   the controller instance.
@@ -157,7 +157,7 @@ and clears `_element` so later controller calls become guarded no-ops.
 
 `NgModelOptions`
 : Public options shape consumed by `ngModelOptions` and
-`$overrideModelOptions()`.
+`overrideModelOptions()`.
 
 `ModelValidators`
 : Map of synchronous validator names to functions that receive model and view

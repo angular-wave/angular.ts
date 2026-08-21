@@ -10,7 +10,7 @@
   <packaging>jar</packaging>
 
   <name>AngularTS J2CL Todo Demo</name>
-  <description>J2CL todo demo that compiles against generated AngularTS JsInterop bindings.</description>
+  <description>J2CL todo demo that compiles against generated AngularTS Java bindings.</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -18,7 +18,7 @@
     <angular.ts.java.dir>${project.basedir}/..</angular.ts.java.dir>
     <angular.ts.handwritten.sources>${angular.ts.java.dir}/src/main/java</angular.ts.handwritten.sources>
     <angular.ts.generated.sources>${angular.ts.java.dir}/target/generated-sources/jsinterop</angular.ts.generated.sources>
-    <angular.ts.jsinterop.version>0.32.0</angular.ts.jsinterop.version>
+    <angular.ts.java.version>0.32.0</angular.ts.java.version>
     <j2cl.maven.plugin.version>0.22.0</j2cl.maven.plugin.version>
     <jsinterop.annotations.version>2.0.2</jsinterop.annotations.version>
     <jsinterop.base.version>1.1.1</jsinterop.base.version>
@@ -59,7 +59,7 @@
         <version>${build-helper-maven-plugin.version}</version>
         <executions>
           <execution>
-            <id>add-angular-ts-jsinterop-sources</id>
+            <id>add-angular-ts-java-sources</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>add-source</goal>
@@ -84,8 +84,8 @@
           <annotationProcessorPaths>
             <path>
               <groupId>io.github.angular-wave</groupId>
-              <artifactId>angular-ts-jsinterop-processor</artifactId>
-              <version>${angular.ts.jsinterop.version}</version>
+              <artifactId>angular-ts-java</artifactId>
+              <version>${angular.ts.java.version}</version>
             </path>
           </annotationProcessorPaths>
           <annotationProcessors>

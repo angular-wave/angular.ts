@@ -2,6 +2,9 @@
 
 This package is the C binding for the shared AngularTS `WasmScope` ABI.
 
+Generated model contract descriptions are preserved as Doxygen-compatible C
+comments from the shared JSON contract manifest.
+
 The binding provides:
 
 - `include/angular_ts_wasm.h` as the public C header.
@@ -20,6 +23,13 @@ The binding provides:
 
 The C layer does not include a JSON library. It passes JSON as `ng_bytes_t`
 ranges and leaves parsing/serialization to the application.
+
+## Programmatic Views
+
+Register programmatic component views in the JavaScript host adapter and build
+their DOM with `angular.tags`; C continues to own reactive state through the
+bound `WasmScope`. The pointer/length ABI cannot return JavaScript DOM nodes,
+so the C facade intentionally does not claim a guest-side view callback type.
 
 `examples/todo` is a minimal native-checkable todo proof that keeps C state
 authoritative. It commits `items`, `remainingCount`, and `newTodo` through one
@@ -69,7 +79,7 @@ values that are directly visible to AngularTS templates.
 
 App-owned state belongs to `app.model(...)`. When a C Wasm runtime needs to
 participate in durable or shared state, wrap it with a host-side AngularTS
-service or `model.$sync(...)` target and pass plain snapshots. Do not add model
+service or `model.sync(...)` target and pass plain snapshots. Do not add model
 handles, model path writes, or model watch imports to the C header until the
 shared ABI explicitly adds a model surface.
 

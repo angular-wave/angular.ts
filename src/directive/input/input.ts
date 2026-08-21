@@ -54,7 +54,7 @@ function unwrapNgModelController(
   ctrl: NgModelControllerProxied,
 ): NgModelControllerProxied {
   while (isProxy(ctrl)) {
-    ctrl = ctrl.$target as unknown as NgModelControllerProxied;
+    ctrl = ctrl._target as unknown as NgModelControllerProxied;
   }
 
   return ctrl;
@@ -169,22 +169,22 @@ function createInputControlBinding(
   let composing = false;
 
   function syncNativeValidity(): void {
-    ctrl.$setNativeValidity(!element.willValidate || element.validity.valid);
+    ctrl.setNativeValidity(!element.willValidate || element.validity.valid);
   }
 
   function syncViewToModel(trigger: NativeInputUpdateEvent): void {
-    ctrl.$setViewValue(readViewValue(element, valueKind), trigger);
+    ctrl.setViewValue(readViewValue(element, valueKind), trigger);
     syncNativeValidity();
   }
 
   function syncModelToView(): void {
-    writeViewValue(element, type, valueKind, ctrl.$viewValue);
+    writeViewValue(element, type, valueKind, ctrl.viewValue);
     syncNativeValidity();
   }
 
   function syncNativeViewValue(trigger = "input"): void {
-    ctrl.$setViewValue(readViewValue(element, valueKind), trigger);
-    ctrl.$commitViewValue();
+    ctrl.setViewValue(readViewValue(element, valueKind), trigger);
+    ctrl.commitViewValue();
     syncNativeValidity();
   }
 
@@ -211,16 +211,16 @@ function createInputControlBinding(
       ctrl._hasNativeValidators = true;
       ctrl._setNativeCustomValidity = setNativeCustomValidity;
       ctrl._syncNativeViewValue = syncNativeViewValue;
-      Object.defineProperty(ctrl, "$validity", {
+      Object.defineProperty(ctrl, "validity", {
         configurable: true,
         get: () => element.validity,
       });
-      Object.defineProperty(ctrl, "$validationMessage", {
+      Object.defineProperty(ctrl, "validationMessage", {
         configurable: true,
         get: () => element.validationMessage,
       });
-      ctrl.$isEmpty = (value: unknown) => isEmptyViewValue(valueKind, value);
-      ctrl.$render = () => {
+      ctrl.isEmpty = (value: unknown) => isEmptyViewValue(valueKind, value);
+      ctrl.render = () => {
         syncModelToView();
       };
 

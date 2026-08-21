@@ -29,14 +29,14 @@ pause/resume behavior.
 
 The injected service is lazy and shared across injectors belonging to one
 Angular runtime. Runtime composition exposes the same instance as
-`angular.$eventBus`.
+`angular.eventBus`.
 
 ## Lifecycle Contract
 
 - Injecting `$eventBus` constructs it on first use.
 - Scope-owned subscriptions are removed when their scope is destroyed.
 - Runtime destruction disposes a framework-created bus exactly once.
-- A bus supplied on `angular.$eventBus` is reused but remains externally owned.
+- A bus supplied on `angular.eventBus` is reused but remains externally owned.
 - `dispose()` clears listeners and prevents work until `reset()` is called.
 
 ## Reactivity Contract

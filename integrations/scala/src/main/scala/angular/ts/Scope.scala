@@ -17,7 +17,7 @@ trait ScopeEvent extends js.Object:
 
 @js.native
 trait Scope extends js.Object:
-  def $watch(expression: String, listener: ListenerFn): ListenerDeregister =
+  def watch(expression: String, listener: ListenerFn): ListenerDeregister =
     js.native
-  def $on(name: String, listener: js.Function): ListenerDeregister = js.native
-  def $destroy(): Unit = js.native
+  def on(name: String, listener: js.Function): ListenerDeregister = js.native
+  def destroy(): Unit = js.native

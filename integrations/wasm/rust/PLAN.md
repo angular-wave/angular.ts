@@ -428,7 +428,7 @@ The first usable version should support:
 - components;
 - controllers;
 - typed constructor or field injection;
-- `$onInit` and `$onDestroy`;
+- `onInit` and `onDestroy`;
 - inline templates and template files;
 - one basic example app;
 - browser smoke test proving the Rust-authored component renders and responds
@@ -659,7 +659,7 @@ Initial docs should explain:
 - [x] Support template-callable methods.
 - [x] Support public field getters and setters without manual wasm-bindgen
       authoring.
-- [x] Add generated `$onInit` and `$onDestroy`.
+- [x] Add generated `onInit` and `onDestroy`.
 - [x] Bind component scopes through the shared `WasmScope` ABI.
 - [x] Propagate UI-originated scope updates to Rust through
       `scope_watch` / `ng_scope_on_transaction`.

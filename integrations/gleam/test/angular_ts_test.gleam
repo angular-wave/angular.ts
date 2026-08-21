@@ -5,8 +5,10 @@ import angular_ts/filters
 import angular_ts/http
 import angular_ts/injectable
 import angular_ts/injection_tokens
+import angular_ts/programmatic_view
 import angular_ts/storage
 import angular_ts/token
+import angular_ts/unsafe
 import angular_ts/worker
 import gleam/option
 import gleeunit
@@ -34,6 +36,17 @@ pub fn binding_symbol_test() {
   component.one_way_binding(True)
   |> component.binding_symbol
   |> should.equal("<?")
+}
+
+pub fn programmatic_view_context_test() {
+  let context =
+    unsafe.empty_object()
+    |> unsafe.set_property("controller", unsafe.coerce("ready"))
+    |> programmatic_view.from_dynamic
+
+  context
+  |> programmatic_view.controller
+  |> should.equal("ready")
 }
 
 pub fn generated_http_token_test() {

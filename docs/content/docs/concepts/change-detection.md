@@ -7,7 +7,7 @@ description: "See how AngularTS replaces the AngularJS digest loop with ES6 Prox
 Change detection is how a framework decides when to update the DOM to reflect new data. AngularJS used a polling mechanism called the **digest cycle** — every time something might have changed, AngularJS ran all registered watchers, compared old and new values, and repeated until nothing changed. AngularTS replaces this entirely with **ES6 Proxy-based reactive observation**: the framework knows exactly which property changed, which bindings depend on it, and schedules only those bindings to re-evaluate.
 ## The digest cycle problem
 
-In AngularJS, every `$watch` registered anywhere in the application was checked on every digest. A large application could have thousands of watchers running on every user interaction, mouse move, or HTTP response. This was O(n) in the number of watchers per cycle, and cycles could chain into one another.
+In AngularJS, every `watch` registered anywhere in the application was checked on every digest. A large application could have thousands of watchers running on every user interaction, mouse move, or HTTP response. This was O(n) in the number of watchers per cycle, and cycles could chain into one another.
 
 AngularTS eliminates this entirely. There are no cycles. There is no polling.
 ## How Proxy-based reactivity works
@@ -106,17 +106,17 @@ _enqueueScheduledTask(task: ScheduledTask): void {
 If you set ten properties in one synchronous function, all ten listener notifications are flushed together in a single microtask. The DOM is updated once, not ten times.
 ## Post-render layout work
 
-Use `$afterRender` when a controller needs to read layout after AngularTS has applied the DOM work from the current flush:
+Use `afterRender` when a controller needs to read layout after AngularTS has applied the DOM work from the current flush:
 
 ```typescript
 class BoardGridController {
-  $afterRender() {
+  afterRender() {
     this.realignShips();
   }
 }
 ```
 
-AngularTS coalesces `$afterRender` to one callback per controller instance per render flush. The hook runs after directive and binding DOM mutations have completed, after linked children from structural directives such as `ng-repeat` exist, after class/style/attribute bindings for that flush are applied, and after one browser animation frame gives layout a chance to settle. It does not wait for external resources such as fonts or images by default.
+AngularTS coalesces `afterRender` to one callback per controller instance per render flush. The hook runs after directive and binding DOM mutations have completed, after linked children from structural directives such as `ng-repeat` exist, after class/style/attribute bindings for that flush are applied, and after one browser animation frame gives layout a chance to settle. It does not wait for external resources such as fonts or images by default.
 
 For explicit scheduling outside the controller lifecycle, import `afterRender` or `queueAfterRender`:
 
@@ -154,17 +154,17 @@ This prevents the framework from wrapping DOM nodes or native collections in Pro
 // Or per-instance:
 $scope.rawData = Object.assign(new SomeClass(), { $nonscope: true });
 ```
-## When to use `$watch`
+## When to use `watch`
 
-In the reactive proxy model, `$watch` is rarely necessary for keeping the DOM in sync — that happens automatically. Use `$watch` when you need to run **side-effect code** in response to a scope property changing:
+In the reactive proxy model, `watch` is rarely necessary for keeping the DOM in sync — that happens automatically. Use `watch` when you need to run **side-effect code** in response to a scope property changing:
 
 ```typescript
-$scope.$watch('selectedTab', function (newTab) {
+$scope.watch('selectedTab', function (newTab) {
   externalTabWidget.activate(newTab);
 });
 
 // Trigger a service call when a search term changes
-$scope.$watch('searchQuery', function (query) {
+$scope.watch('searchQuery', function (query) {
   if (query && query.length > 2) {
     searchService.find(query).then(results => {
       $scope.results = results;
@@ -173,12 +173,12 @@ $scope.$watch('searchQuery', function (query) {
 });
 
 // React to a computed condition
-$scope.$watch('items.length > 100', function (tooMany) {
+$scope.watch('items.length > 100', function (tooMany) {
   $scope.showPagination = tooMany;
 });
 ```
 
-> **Note:** `$watch` on a constant expression — a bare string literal, number, or boolean — is evaluated exactly once and the returned deregistration function is a no-op. The runtime detects the `_constant` flag on the compiled expression and avoids registering a watcher at all.
+> **Note:** `watch` on a constant expression — a bare string literal, number, or boolean — is evaluated exactly once and the returned deregistration function is a no-op. The runtime detects the `_constant` flag on the compiled expression and avoids registering a watcher at all.
 ## Watcher count and `$$watchersCount`
 
 You can inspect how many active watchers are registered in a scope subtree:
@@ -204,4 +204,4 @@ Nested objects are proxied at assignment time, not at watch time. There is no ``
 
 #### Scope destruction cleans up
 
-When `$destroy()` is called, all watcher entries for that scope's `$id` are removed from the shared `_watchers` Map in a single O(n) pass, with O(1) swap-pop removal for each matched entry.
+When `destroy()` is called, all watcher entries for that scope's `id` are removed from the shared `_watchers` Map in a single O(n) pass, with O(1) swap-pop removal for each matched entry.

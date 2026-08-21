@@ -19,7 +19,9 @@ The package has two Dart API layers:
 
 - `lib/src/generated/ng_facades.dart` is generated from
   `@types/namespace.d.ts`. It contains deterministic raw JavaScript facades for
-  public `ng` namespace types.
+  public `ng` namespace types and carries their TypeScript API descriptions as
+  Dartdoc on generated types and members. Callable members preserve source
+  parameter names and document every parameter.
 - Handwritten files under `lib/src/` expose the Dart-facing API: typed tokens,
   value objects, builders, config objects, and curated wrappers that convert
   Dart values at JavaScript boundaries.
@@ -34,13 +36,31 @@ member. Type overrides in `tool/generator-overrides.json` are reserved for
 stable platform mappings such as DOM and stream types from `package:web`; parity
 checks reject stale type overrides.
 
+## Programmatic Views
+
+`Component.view` and `Directive.view` receive a typed
+`ProgrammaticViewContext`. Its `controller`, `required`, `scope`, `element`, and
+`transclude` members map directly to the AngularTS runtime context.
+`AngularTsRuntime.global().tags` creates real DOM without parsing HTML:
+
+```dart
+final tags = AngularTsRuntime.global().tags;
+final button = tags.tag(
+  'button',
+  properties: {'type': 'button'},
+  children: [reactiveViewChild(() => controller.label)],
+);
+```
+
+Use `tags.namespace(uri)` for SVG or MathML factories.
+
 ## WASM Scope And App Models
 
 Generated `WasmScope` facades, when enabled, represent the view-scope ABI only.
 They should be used for DOM/root-scoped controller or component state. App-owned
 state belongs to `app.model(...)`; durable or shared state should synchronize
 with external runtimes through host-side AngularTS services or
-`model.$sync(...)` targets. Dart wrappers should not add model handles or model
+`model.sync(...)` targets. Dart wrappers should not add model handles or model
 watch imports unless the shared WASM ABI adds that surface.
 
 Regenerate raw facades after public namespace type changes:

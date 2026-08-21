@@ -112,7 +112,7 @@ describe("setter", () => {
     spyOn(window, "MutationObserver").and.returnValue(observerSpy);
     $compile('<div ng-setter="testModel"></div>')($rootScope);
 
-    $rootScope.$destroy();
+    $rootScope.destroy();
     await wait();
     expect(observerSpy.disconnect).toHaveBeenCalled();
   });

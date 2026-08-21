@@ -23,24 +23,24 @@ describe("ngScopeDirective", () => {
     ]);
   });
 
-  it("should set $scope.$scopename from the ng-scope attribute", async () => {
-    const scope = $rootScope.$new();
+  it("should set $scope.scopeName from the ng-scope attribute", async () => {
+    const scope = $rootScope.new();
 
     $compile('<div ng-scope="myName"></div>')(scope);
 
-    expect(scope.$scopename).toBe("myName");
+    expect(scope.scopeName).toBe("myName");
   });
 
   it("should support normalized data-ng-scope aliases", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     $compile('<div data-ng-scope="myName"></div>')(scope);
 
-    expect(scope.$scopename).toBe("myName");
+    expect(scope.scopeName).toBe("myName");
   });
 
   it("should not create an isolate scope", () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     scope.testVal = 42;
 

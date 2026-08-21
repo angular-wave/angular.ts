@@ -65,7 +65,7 @@ function settleAsyncValue(
     _value: value,
   });
 
-  const handler = $rootScope.$handler as {
+  const handler = $rootScope._handler as {
     _scheduleWatchKeys: (watchKeys: string[]) => void;
   };
 

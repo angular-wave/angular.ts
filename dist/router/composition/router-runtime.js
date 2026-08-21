@@ -79,6 +79,7 @@ function createRouterRuntime(dependencies) {
 }
 /** @internal */
 const routerRuntimeRegistration = {
+    /** @internal */
     _register(registry, name, { runtime, providers }) {
         const locationState = requireProvider(providers, _location);
         const securityPolicy = requireProvider(providers, _security);

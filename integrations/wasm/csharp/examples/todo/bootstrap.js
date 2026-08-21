@@ -87,7 +87,7 @@ app.controller("csharpTodoController", [
     $scope.toggle = (index) => exports.TodoToggle(index);
     $scope.archive = () => exports.TodoArchiveCompleted();
 
-    $scope.$on("$destroy", () => {
+    $scope.on("$destroy", () => {
       exports.TodoUnbind();
       scopeAbi.unbind(scope.name);
     });

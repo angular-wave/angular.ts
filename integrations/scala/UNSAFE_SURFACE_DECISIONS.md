@@ -30,10 +30,10 @@ facades, examples, and tests.
 | Realtime transports | `$eventBus`, `$sse`, `$websocket`, `$webTransport`, and `$worker` typed | Unsafe only for native stream/datagram internals not represented by the facade | Promote transport internals only when typed browser abstractions and examples justify them. |
 | Service workers | `$serviceWorker`, registration config, message options, and `NgModule.serviceWorker(...)` typed | Unsafe only for service-worker-side protocol implementations | Browser lifecycle state is represented through typed snapshots and callbacks. |
 | Persistent stores | `NgModule.store(...)`, `PersistentStoreConfig`, `StorageLike`, and `StorageType` typed | Unsafe only for custom third-party storage objects without a facade | Storage is a module primitive, not a `$storage` injectable. |
-| App models and `$sync` targets | `NgModule.model(...)`, `Model`, lifecycle helpers, restore options, and sync target builders typed | Unsafe only for third-party sync target objects without Scala facades | Shared app state uses app-owned models; DOM scopes remain view-local state. |
+| App models and `sync` targets | `NgModule.model(...)`, `Model`, lifecycle helpers, restore options, and sync target builders typed | Unsafe only for third-party sync target objects without Scala facades | Shared app state uses app-owned models; DOM scopes remain view-local state. |
 | Machines | `$machine`, `MachineStateConfig`, state-tree transition/guard/hook/snapshot builders, and `NgModule.machine(...)` typed | Unsafe only for third-party machine-like objects that do not implement the AngularTS machine contract | Machines are a first-class orchestration primitive and should remain typed in Scala. |
 | Workflows and supervisors | `$workflow`, command/config/snapshot/state-engine builders, supervisor persistence/recovery, worker protocol facades, and `NgModule.workflow(...)`/`NgModule.workflowSupervisor(...)` typed | Unsafe only for custom worker transports or persistence adapters without Scala facades | Workflow orchestration is promoted as typed default API; worker and persistence internals stay behind explicit contracts. |
-| WASM scope ABI | View-scope facades only | Raw ABI interop remains explicit | Scala WASM support follows the shared ABI; app models synchronize through host services or `$sync`. |
+| WASM scope ABI | View-scope facades only | Raw ABI interop remains explicit | Scala WASM support follows the shared ABI; app models synchronize through host services or `sync`. |
 
 ## Promotion Checklist
 

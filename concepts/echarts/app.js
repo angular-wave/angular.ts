@@ -14,7 +14,7 @@ window.angular
       constructor(chartModel, $scope) {
         this.chart = chartModel;
         this.destroyRuntime = () => {};
-        $scope.$on('$destroy', () => this.destroyRuntime());
+        $scope.on('$destroy', () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 

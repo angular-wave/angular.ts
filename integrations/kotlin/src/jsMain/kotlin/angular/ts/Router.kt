@@ -135,7 +135,7 @@ public class Transition internal constructor(
     internal val raw: RawAnyTransition,
 ) {
     public val id: Int?
-        get() = raw.`$id`.unsafeCast<Int?>()
+        get() = raw.`id`.unsafeCast<Int?>()
 
     public val promise: Any?
         get() = raw.promise

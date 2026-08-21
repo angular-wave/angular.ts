@@ -5,6 +5,7 @@ import 'package:web/web.dart';
 
 import 'injector.dart';
 import 'module.dart';
+import 'programmatic_view.dart';
 import 'scope.dart';
 import 'unsafe.dart' as unsafe;
 
@@ -113,6 +114,14 @@ final class AngularTsRuntime {
 
     return (value as JSString).toDart;
   }
+
+  /// JSX-free real-DOM factories used by programmatic views.
+  ProgrammaticTags get tags =>
+      ProgrammaticTags(_runtime.getProperty('tags'.toJS) as JSObject);
+
+  /// Explicit programmatic-view binding and element helpers.
+  ProgrammaticViewApi get view =>
+      ProgrammaticViewApi(_runtime.getProperty('view'.toJS) as JSObject);
 }
 
 /// The module.

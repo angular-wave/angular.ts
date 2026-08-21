@@ -95,14 +95,19 @@
           <span class="tsd-signature-symbol">&amp;</span>
           <span class="tsd-signature-symbol">{</span><br />    <span
             class="tsd-kind-property"
-            >$afterRender</span
+            >afterRender</span
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-symbol">()</span>
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br />    <span
             class="tsd-kind-property"
-            >$onChanges</span
+            >name</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">;</span><br />    <span
+            class="tsd-kind-property"
+            >onChanges</span
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-symbol">(</span
           ><span class="tsd-kind-parameter">changes</span
@@ -116,30 +121,25 @@
           <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br />    <span
             class="tsd-kind-property"
-            >$onDestroy</span
+            >onDestroy</span
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-symbol">()</span>
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br />    <span
             class="tsd-kind-property"
-            >$onInit</span
+            >onInit</span
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-symbol">()</span>
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">void</span
           ><span class="tsd-signature-symbol">;</span><br />    <span
             class="tsd-kind-property"
-            >$postLink</span
+            >postLink</span
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-symbol">()</span>
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">void</span
-          ><span class="tsd-signature-symbol">;</span><br />    <span
-            class="tsd-kind-property"
-            >name</span
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">;</span><br /><span
             class="tsd-signature-symbol"
             >}</span
@@ -166,7 +166,7 @@
             <li class="tsd-parameter">
               <h5>
                 <code class="tsd-tag">Optional</code
-                ><span class="tsd-kind-property">$afterRender</span
+                ><span class="tsd-kind-property">afterRender</span
                 ><span class="tsd-signature-symbol">?: </span
                 ><span class="tsd-signature-symbol">()</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
@@ -185,7 +185,18 @@
             <li class="tsd-parameter">
               <h5>
                 <code class="tsd-tag">Optional</code
-                ><span class="tsd-kind-property">$onChanges</span
+                ><span class="tsd-kind-property">name</span
+                ><span class="tsd-signature-symbol">?: </span
+                ><span class="tsd-signature-type">string</span>
+              </h5>
+              <div class="tsd-comment tsd-typography">
+                <p>Optional controller name (used in debugging)</p>
+              </div>
+            </li>
+            <li class="tsd-parameter">
+              <h5>
+                <code class="tsd-tag">Optional</code
+                ><span class="tsd-kind-property">onChanges</span
                 ><span class="tsd-signature-symbol">?: </span
                 ><span class="tsd-signature-symbol">(</span
                 ><span class="tsd-kind-parameter">changes</span
@@ -218,7 +229,7 @@
             <li class="tsd-parameter">
               <h5>
                 <code class="tsd-tag">Optional</code
-                ><span class="tsd-kind-property">$onDestroy</span
+                ><span class="tsd-kind-property">onDestroy</span
                 ><span class="tsd-signature-symbol">?: </span
                 ><span class="tsd-signature-symbol">()</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
@@ -235,7 +246,7 @@
             <li class="tsd-parameter">
               <h5>
                 <code class="tsd-tag">Optional</code
-                ><span class="tsd-kind-property">$onInit</span
+                ><span class="tsd-kind-property">onInit</span
                 ><span class="tsd-signature-symbol">?: </span
                 ><span class="tsd-signature-symbol">()</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
@@ -254,7 +265,7 @@
             <li class="tsd-parameter">
               <h5>
                 <code class="tsd-tag">Optional</code
-                ><span class="tsd-kind-property">$postLink</span
+                ><span class="tsd-kind-property">postLink</span
                 ><span class="tsd-signature-symbol">?: </span
                 ><span class="tsd-signature-symbol">()</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
@@ -275,17 +286,6 @@
                   different in Angular 1 there is no direct mapping and care
                   should be taken when upgrading.
                 </p>
-              </div>
-            </li>
-            <li class="tsd-parameter">
-              <h5>
-                <code class="tsd-tag">Optional</code
-                ><span class="tsd-kind-property">name</span
-                ><span class="tsd-signature-symbol">?: </span
-                ><span class="tsd-signature-type">string</span>
-              </h5>
-              <div class="tsd-comment tsd-typography">
-                <p>Optional controller name (used in debugging)</p>
               </div>
             </li>
           </ul>

@@ -119,7 +119,7 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                 }
                 evaluate(attr("onError"), {
                     $connection: connection,
-                    $error: error,
+                    error: error,
                     ...locals,
                 });
             }
@@ -274,7 +274,7 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                             $attempt: event.attempt,
                             $connection: event.connection,
                             $count: event.attempt,
-                            $error: event.error,
+                            error: event.error,
                             $url: event.url,
                         });
                         await userOnReconnect?.(event);
@@ -292,7 +292,7 @@ function ngWebTransportDirective($webTransport, $parse, $compile, $log, $excepti
                     handleError(error);
                 });
             });
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 void streamReader?.cancel("scope destroyed");
                 closeConnection("scope destroyed");
             });

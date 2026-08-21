@@ -116,23 +116,23 @@ An expression evaluating to a string of HTML. The string is written to `element.
 
 `ng-model` creates an `NgModelController` instance that manages:
 
-* **`$viewValue`** — the formatted value shown in the control (always a string for native inputs)
-* **`$modelValue`** — the parsed value stored in the scope
-* **`$parsers`** — pipeline from view to model (view → model transformation)
-* **`$formatters`** — pipeline from model to view (model → view transformation)
-* **`$validators`** — synchronous validator functions keyed by error name
-* **`$asyncValidators`** — async validator functions that return Promises
-* **`$error`** — object whose keys are failing validator names
+* **`viewValue`** — the formatted value shown in the control (always a string for native inputs)
+* **`modelValue`** — the parsed value stored in the scope
+* **`parsers`** — pipeline from view to model (view → model transformation)
+* **`formatters`** — pipeline from model to view (model → view transformation)
+* **`validators`** — synchronous validator functions keyed by error name
+* **`asyncValidators`** — async validator functions that return Promises
+* **`error`** — object whose keys are failing validator names
 ### State properties
 
 | Property     | Type    | Description                                             |
 | ------------ | ------- | ------------------------------------------------------- |
-| `$pristine`  | boolean | `true` if the user has not interacted with this control |
-| `$dirty`     | boolean | `true` after the user has changed the value             |
-| `$touched`   | boolean | `true` after the control has lost focus                 |
-| `$untouched` | boolean | `true` before the control has ever been blurred         |
-| `$valid`     | boolean | `true` if all validators pass                           |
-| `$invalid`   | boolean | `true` if any validator fails                           |
+| `pristine`  | boolean | `true` if the user has not interacted with this control |
+| `dirty`     | boolean | `true` after the user has changed the value             |
+| `touched`   | boolean | `true` after the control has lost focus                 |
+| `untouched` | boolean | `true` before the control has ever been blurred         |
+| `valid`     | boolean | `true` if all validators pass                           |
+| `invalid`   | boolean | `true` if any validator fails                           |
 ### CSS classes
 
 AngularTS automatically toggles CSS classes on the element:

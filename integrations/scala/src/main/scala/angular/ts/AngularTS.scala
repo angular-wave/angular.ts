@@ -5,6 +5,9 @@ import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
 
 object AngularTS:
+  def tags: ProgrammaticTags = ProgrammaticTags(RuntimeAngular.tags)
+  def view: ProgrammaticViewApi = ProgrammaticViewApi(RuntimeAngular.view)
+
   def module(name: String, requires: Seq[String] = Seq.empty): NgModule =
     val raw = RuntimeAngular.module(name, requires.toJSArray)
 

@@ -183,19 +183,19 @@ function ngOptionsDirective($compile, $parse) {
                     if (optionEl.value === "") {
                         selectCtrl._hasEmptyOption = true;
                         selectCtrl._emptyOption = optionEl;
-                        ngModelCtrl.$render();
+                        ngModelCtrl.render();
                         optionEl.addEventListener("$destroy", () => {
-                            const needsRerender = selectCtrl.$isEmptyOptionSelected();
+                            const needsRerender = selectCtrl.isEmptyOptionSelected();
                             selectCtrl._hasEmptyOption = false;
                             selectCtrl._emptyOption = undefined;
                             if (needsRerender)
-                                ngModelCtrl.$render();
+                                ngModelCtrl.render();
                         });
                     }
                 };
             }
         }
-        scope.$watch(ngOptions._getWatchables, updateOptions);
+        scope.watch(ngOptions._getWatchables, updateOptions);
         function _addOptionElement(option, parent) {
             const optionElement = optionTemplate.cloneNode(false);
             parent.appendChild(optionElement);
@@ -255,15 +255,15 @@ function ngOptionsDirective($compile, $parse) {
                 }
             });
             selectNode.appendChild(listFragment);
-            ngModelCtrl.$render();
-            if (!ngModelCtrl.$isEmpty(previousValue)) {
+            ngModelCtrl.render();
+            if (!ngModelCtrl.isEmpty(previousValue)) {
                 const nextValue = selectCtrl._readValue();
                 const isNotPrimitive = multiple;
                 if (isNotPrimitive
                     ? !equals(previousValue, nextValue)
                     : previousValue !== nextValue) {
-                    ngModelCtrl.$setViewValue(nextValue);
-                    ngModelCtrl.$render();
+                    ngModelCtrl.setViewValue(nextValue);
+                    ngModelCtrl.render();
                 }
             }
         }

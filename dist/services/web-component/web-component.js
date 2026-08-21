@@ -70,8 +70,8 @@ function destroyWebComponentRuntimeState(state) {
         disconnectScopeElement(host);
     }
     for (const scope of Array.from(state.scopes)) {
-        if (!scope.$handler._destroyed)
-            scope.$destroy();
+        if (!scope._handler._destroyed)
+            scope.destroy();
     }
     for (const definition of state.definitions) {
         scopeElementDefinitions.delete(definition);
@@ -95,10 +95,10 @@ function createWebComponentService(injector, rootScope, compile, state) {
             getInheritedData(host.parentNode ?? host, _scope) ??
             rootScope);
         const scope = options.isolate
-            ? parentScope.$newIsolate(initialState)
-            : parentScope.$new(initialState);
+            ? parentScope.newIsolate(initialState)
+            : parentScope.new(initialState);
         state.scopes.add(scope);
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
             state.scopes.delete(scope);
         });
         setScope(host, scope);
@@ -244,7 +244,7 @@ function syncScopeElementAttribute(host, attribute, oldValue, newValue) {
 }
 function connectScopeElement(host) {
     const existingScope = scopeElementScopes.get(host);
-    if (existingScope && !existingScope.$handler._destroyed)
+    if (existingScope && !existingScope._handler._destroyed)
         return;
     const definition = getScopeElementDefinition(host);
     if (!definition)
@@ -284,8 +284,8 @@ function disconnectScopeElement(host) {
     const context = scopeElementContexts.get(host);
     const element = host;
     element.disconnected?.();
-    if (!scope.$handler._destroyed) {
-        scope.$destroy();
+    if (!scope._handler._destroyed) {
+        scope.destroy();
     }
     scopeElementScopes.delete(host);
     scopeElementContexts.delete(host);

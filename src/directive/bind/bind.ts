@@ -11,7 +11,7 @@ import {
 import { getNormalizedAttr, hasNormalizedAttr } from "../../shared/dom.ts";
 
 interface DirectBindingScope extends ng.Scope {
-  $watch(
+  watch(
     expression: string,
     listener: ng.ListenerFn,
     lazy?: boolean,
@@ -27,7 +27,7 @@ export function ngBindDirective(): ng.Directive {
 
       if (!isString(expression)) return;
 
-      (scope as DirectBindingScope).$watch(
+      (scope as DirectBindingScope).watch(
         expression,
         (value: unknown) => {
           const text = stringify(deProxy(value));
@@ -67,7 +67,7 @@ export function ngBindTemplateDirective(): ng.Directive {
       });
       observer.observe(element, { attributes: true });
 
-      let deregisterDestroy: (() => void) | undefined = scope.$on(
+      let deregisterDestroy: (() => void) | undefined = scope.on(
         "$destroy",
         deregister,
       );
@@ -96,7 +96,7 @@ export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
       return (
         /** Watches the expression and writes the resulting HTML into the element. */
         (scope: ng.Scope, element: HTMLElement): void => {
-          (scope as DirectBindingScope).$watch(
+          (scope as DirectBindingScope).watch(
             expression,
             (val: unknown) => {
               const html =

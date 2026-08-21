@@ -66,7 +66,9 @@ fi
 
 (
   cd "${SOURCE_DIR}"
-  "${BAZEL_CMD[@]}" build //java/jsinterop/generator/closure:ClosureJsinteropGenerator_deploy.jar
+  "${BAZEL_CMD[@]}" build \
+    --check_direct_dependencies=off \
+    //java/jsinterop/generator/closure:ClosureJsinteropGenerator_deploy.jar
 )
 
 rm -f "${OUT_JAR}"

@@ -99,7 +99,7 @@ describe("createRealtimeSwapHandler", () => {
 
   it("disposes replaced innerHTML fragments before installing the next fragment", () => {
     const host = document.getElementById("host") as HTMLElement;
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
     const swap = createRealtimeSwapHandler({
       $compile,
       $log: { warn: warnSpy } as any,
@@ -130,7 +130,7 @@ describe("createRealtimeSwapHandler", () => {
 
   it("disposes appended stream fragments when the directive scope is destroyed", () => {
     const host = document.getElementById("host") as HTMLElement;
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
     const swap = createRealtimeSwapHandler({
       $compile,
       $log: { warn: warnSpy } as any,
@@ -151,7 +151,7 @@ describe("createRealtimeSwapHandler", () => {
     expect(firstRecord).toBeDefined();
     expect(secondRecord).toBeDefined();
 
-    scope.$destroy();
+    scope.destroy();
 
     expect(firstRecord?.disposed).toBeTrue();
     expect(secondRecord?.disposed).toBeTrue();
@@ -302,7 +302,7 @@ describe("createRealtimeSwapHandler", () => {
   it("does not commit an animated replacement after scope destruction", () => {
     const host = document.getElementById("host") as HTMLElement;
     const target = document.getElementById("target") as HTMLElement;
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
     let finishLeave: ((completed: boolean) => void) | undefined;
     const leaveHandle = {
       cancel: jasmine.createSpy("cancel"),
@@ -332,7 +332,7 @@ describe("createRealtimeSwapHandler", () => {
       }),
     ).toBeTrue();
 
-    scope.$destroy();
+    scope.destroy();
     finishLeave?.(true);
 
     expect(leaveHandle.cancel).toHaveBeenCalled();
@@ -344,7 +344,7 @@ describe("createRealtimeSwapHandler", () => {
 
   it("does not commit a deferred view transition after scope destruction", () => {
     const host = document.getElementById("host") as HTMLElement;
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
     let commit: (() => void) | undefined;
 
     host.setAttribute("data-view-transition", "true");
@@ -363,7 +363,7 @@ describe("createRealtimeSwapHandler", () => {
 
     expect(swap('<span id="deferred">deferred</span>', "innerHTML")).toBeTrue();
 
-    scope.$destroy();
+    scope.destroy();
     commit?.();
 
     expect(host.querySelector("#deferred")).toBeNull();

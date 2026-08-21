@@ -23,7 +23,28 @@ final class DemoController {
 
 final class LifecycleController with ng.Controller {}
 
+final class ViewController {
+  const ViewController(this.message);
+
+  final String message;
+}
+
 void main() {
+  test('programmatic view context exposes typed runtime values', () {
+    const controller = ViewController('ready');
+    final element = document.createElement('section');
+    final raw = JSObject()
+      ..setProperty('controller'.toJS, controller.toJSBox)
+      ..setProperty('scope'.toJS, JSObject())
+      ..setProperty('element'.toJS, element)
+      ..setProperty('transclude'.toJS, (() => null).toJS);
+    final context = ng.ProgrammaticViewContext<ViewController, Object?>(raw);
+
+    expect(context.controller, same(controller));
+    expect(context.element, same(element));
+    expect(context.transclude, isA<JSFunction>());
+  });
+
   test('typed DI helpers preserve token parameter types', () {
     final api = ng.token<ApiService>('api');
     final factory = ng.inject1(api, DemoController.new);

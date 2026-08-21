@@ -10,6 +10,11 @@ sync, DOM hydration, and any one language integration. Rust, Go,
 AssemblyScript, C#, Zig, C++, C, and other Wasm producers should be able to
 target the same contract.
 
+Generated model contracts use their JSON manifest as the documentation source
+of truth. Contract and field descriptions are emitted as native documentation
+comments for TypeScript, AssemblyScript, C, C++, C#, Go, Rust, and Zig, and the
+contract freshness check rejects drift in any target.
+
 `WasmScope` is the host boundary type. It wraps a real AngularTS scope and
 mutates that scope directly through the standard scope traps. UI updates caused
 by Wasm writes flow through normal AngularTS scope behavior. UI updates observed
@@ -22,7 +27,7 @@ models. Binding authors see the same scope-shaped ABI for either target.
 Initial rule:
 
 - use `WasmScope` for DOM/root-scoped view state and explicit scope bindings;
-- use `app.model(...)` plus `$sync()` for app-owned state that should survive
+- use `app.model(...)` plus `sync()` for app-owned state that should survive
   root destruction, coordinate multiple roots, or synchronize with workers,
   engines, storage, machines, workflows, or network services;
 - keep large WASM-owned buffers and hot-loop state inside WASM, and expose only
@@ -51,7 +56,7 @@ from a numeric handle or resolve a stable name into one.
 
 ```text
 scopeHandle: host-owned handle for one WasmScope
-scopeName: UTF-8 scope name, usually matching ng-scope / $scopename
+scopeName: UTF-8 scope name, usually matching ng-scope / scopeName
 watchHandle: host-owned handle for one registered watch
 bufferHandle: host-owned handle for one result buffer
 ```
@@ -280,7 +285,7 @@ Applies one validated JSON transaction as a single reactive batch:
 
 `set` and `delete` paths must be safe, non-empty, and non-overlapping. The
 transaction is validated before mutation. App-context models are restored once
-with the supplied origin, so model schedulers and `$sync()` targets observe one
+with the supplied origin, so model schedulers and `sync()` targets observe one
 coherent change. `echo` defaults to `false` for guest transactions; set it to
 `true` only when the writing guest also needs its watch callback.
 
@@ -414,7 +419,7 @@ Wasm code is intentionally writing a real AngularTS scope and receiving watched
 scope updates from the DOM.
 
 App-owned state should not be pushed through the scope ABI only to make it
-durable or shared. Use `app.model(...)` and a host-side `$sync()` target when
+durable or shared. Use `app.model(...)` and a host-side `sync()` target when
 state must:
 
 - survive root scope destruction;
@@ -444,14 +449,14 @@ app.controller("DatabaseCtrl", class {
 
   constructor(database, sqliteSyncTarget, $scope) {
     this.database = database;
-    const stopSync = database.$sync(sqliteSyncTarget);
+    const stopSync = database.sync(sqliteSyncTarget);
 
-    $scope.$on("$destroy", stopSync);
+    $scope.on("$destroy", stopSync);
   }
 });
 ```
 
-AngularTS validates this host boundary. A `$sync()` target must expose at least
+AngularTS validates this host boundary. A `sync()` target must expose at least
 one recognized lifecycle operation, every supplied operation must be callable,
 and restored or received model snapshots must be plain objects. Invalid guest
 payloads follow the target's model sync failure policy and cannot partially
@@ -463,11 +468,11 @@ ABI until repeated host-side adapters fail to cover real integrations. The
 current validation examples are:
 
 - SQLite WASM: model snapshots are plain JSON data persisted into a WASM-owned
-  database runtime through `$snapshot()` and `$sync()`.
-- Unity WebGL: runtime bridge events update an app model, then `$sync()` emits
+  database runtime through `snapshot()` and `sync()`.
+- Unity WebGL: runtime bridge events update an app model, then `sync()` emits
   a plain player snapshot to an injectable telemetry target.
 
-Inbound runtime updates should apply snapshots through `$restore(snapshot, {
+Inbound runtime updates should apply snapshots through `restore(snapshot, {
 origin })` from the host-side target so echo prevention stays in AngularTS
 model sync rather than in each Wasm language facade.
 

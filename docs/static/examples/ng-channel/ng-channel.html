@@ -8,7 +8,7 @@
 
 <button
   class="btn btn-dark"
-  onclick="angular.$eventBus.publish('epoch', Date.now())"
+  onclick="angular.eventBus.publish('epoch', Date.now())"
 >
   Publish epoch
 </button>
@@ -16,7 +16,7 @@
 <button
   class="btn btn-dark"
   onclick="
-    angular.$eventBus.publish('user', {
+    angular.eventBus.publish('user', {
       user: {
         firstName: 'John',
         lastName: 'Smith',

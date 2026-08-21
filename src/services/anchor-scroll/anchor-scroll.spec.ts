@@ -21,7 +21,7 @@ describe("AnchorScroll composition", () => {
     const removeDestroyListener = jasmine.createSpy("removeDestroyListener");
     const listeners = new Map();
     const rootScope = {
-      $on(name, listener) {
+      on(name, listener) {
         listeners.set(name, listener);
 
         return name === "$destroy"
@@ -69,7 +69,7 @@ describe("AnchorScroll composition", () => {
       createAnchorScrollService(
         state,
         { getHash: () => "" },
-        { $on: () => () => undefined },
+        { on: () => () => undefined },
         document,
         window,
       ),
@@ -101,7 +101,7 @@ describe("AnchorScroll composition", () => {
       state,
       { getHash: () => "" },
       {
-        $on(name, listener) {
+        on(name, listener) {
           scopeListeners.set(name, listener);
           return () => undefined;
         },

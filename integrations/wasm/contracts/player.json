@@ -1,10 +1,16 @@
 {
   "name": "Player",
+  "description": "Reactive player state shared between AngularTS and WebAssembly runtimes.",
   "fields": [
-    { "path": "position.x", "type": "f64" },
-    { "path": "position.y", "type": "f64" },
-    { "path": "health", "type": "u32" },
-    { "path": "name", "type": "string" },
-    { "path": "frame", "type": "bytes", "optional": true }
+    { "path": "position.x", "type": "f64", "description": "Horizontal world position." },
+    { "path": "position.y", "type": "f64", "description": "Vertical world position." },
+    { "path": "health", "type": "u32", "description": "Current player health." },
+    { "path": "name", "type": "string", "description": "Player display name." },
+    {
+      "path": "frame",
+      "type": "bytes",
+      "optional": true,
+      "description": "Optional binary frame payload."
+    }
   ]
 }

@@ -148,6 +148,7 @@ class TransitionHook {
      * Executes the underlying hook callback and normalizes its result into
      * the router's rejection / redirect model.
      */
+    /** @internal */
     _invokeHook() {
         const hook = this._registeredHook;
         if (hook._deregistered)
@@ -174,6 +175,7 @@ class TransitionHook {
     /**
      * Converts raw hook return values into transition outcomes.
      */
+    /** @internal */
     _handleHookResult(result) {
         const notCurrent = this._getNotCurrentRejection();
         if (notCurrent)

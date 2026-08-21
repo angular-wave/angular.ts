@@ -42,7 +42,7 @@ class Rejection extends Error {
     constructor(type, message, detail) {
         super(message);
         this.name = "Rejection";
-        this.$id = id++;
+        this.id = id++;
         this.type = type;
         this.message = message;
         this.detail = detail;
@@ -74,7 +74,7 @@ class Rejection extends Error {
         return isInstanceOf(detail, Rejection) ? detail : Rejection.errored(detail);
     }
     toString() {
-        return `Transition Rejection($id: ${String(this.$id)} type: ${String(this.type)}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
+        return `Transition Rejection(id: ${String(this.id)} type: ${String(this.type)}, message: ${this.message}, detail: ${detailToString(this.detail)})`;
     }
     /**
      * Returns a rejected promise tagged with this rejection instance.

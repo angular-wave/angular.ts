@@ -19,7 +19,7 @@ window.angular
       constructor(editorModel, $scope) {
         this.editor = editorModel;
         this.destroyRuntime = () => {};
-        $scope.$on("$destroy", () => this.destroyRuntime());
+        $scope.on("$destroy", () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 

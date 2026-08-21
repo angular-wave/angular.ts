@@ -121,6 +121,18 @@ JSAny? callFunction(JSFunction function, List<JSAny?> args) {
   };
 }
 
+@JS('Reflect.apply')
+external JSAny? _reflectApply(
+  JSFunction function,
+  JSAny? receiver,
+  JSArray<JSAny?> arguments,
+);
+
+/// Calls a JavaScript function with an arbitrary argument list.
+JSAny? callFunctionVarArgs(JSFunction function, List<JSAny?> args) {
+  return _reflectApply(function, null, args.toJS);
+}
+
 /// Calls a method with exactly one argument, including `null`.
 JSAny? callMethod1(JSObject target, String method, JSAny? arg1) {
   return target.callMethodVarArgs(method.toJS, [arg1]);

@@ -2,7 +2,7 @@
 title: "Form Directives and Validation in AngularTS"
 linkTitle: "Form Directives"
 weight: 270
-description: "Complete guide to AngularTS form directives: ng-model, built-in validators, ng-messages, ng-model-options, and form state properties like $valid and $dirty."
+description: "Complete guide to AngularTS form directives: ng-model, built-in validators, ng-messages, ng-model-options, and form state properties like valid and dirty."
 ---
 AngularTS treats HTML forms as first-class citizens of the framework. Every `<form>` element (and `ng-form` directive) creates a `FormController` instance that tracks the aggregate validity and dirty state of all its inputs. Each input bound with `ng-model` gets its own `NgModelController` that manages the view-to-model pipeline, validation, and CSS class hooks.
 ## The form directive
@@ -15,7 +15,7 @@ A plain `<form>` element is enhanced by AngularTS into a `FormController`. Give 
          required />
 
   <button type="submit"
-          ng-disabled="registrationForm.$invalid">
+          ng-disabled="registrationForm.invalid">
     Register
   </button>
 </form>
@@ -24,7 +24,7 @@ A plain `<form>` element is enhanced by AngularTS into a `FormController`. Give 
 ```javascript
   .controller('RegistrationCtrl', ['$scope', function($scope) {
     $scope.register = function() {
-      if ($scope.registrationForm.$valid) {
+      if ($scope.registrationForm.valid) {
         // submit logic
       }
     };
@@ -34,13 +34,13 @@ A plain `<form>` element is enhanced by AngularTS into a `FormController`. Give 
 
 | Property     | Type    | Description                                                     |
 | ------------ | ------- | --------------------------------------------------------------- |
-| `$valid`     | boolean | `true` when all child controls are valid                        |
-| `$invalid`   | boolean | `true` when any child control is invalid                        |
-| `$pristine`  | boolean | `true` before any control has been changed                      |
-| `$dirty`     | boolean | `true` after any control has been changed                       |
-| `$submitted` | boolean | `true` after the form's submit event fires                      |
-| `$error`     | object  | Keys are validator names; values are arrays of failing controls |
-| `$pending`   | object  | Keys are validator names with pending async validators          |
+| `valid`     | boolean | `true` when all child controls are valid                        |
+| `invalid`   | boolean | `true` when any child control is invalid                        |
+| `pristine`  | boolean | `true` before any control has been changed                      |
+| `dirty`     | boolean | `true` after any control has been changed                       |
+| `submitted` | boolean | `true` after the form's submit event fires                      |
+| `error`     | object  | Keys are validator names; values are arrays of failing controls |
+| `pending`   | object  | Keys are validator names with pending async validators          |
 ### CSS classes on forms
 
 AngularTS automatically toggles these classes on both the `<form>` element and each `ng-model` input:
@@ -84,20 +84,20 @@ input.ng-touched.ng-invalid ~ .field-error {
   <ng-form name="shippingForm">
     <input name="street" ng-model="shipping.street" required />
     <input name="city" ng-model="shipping.city" required />
-    <p ng-if="shippingForm.$invalid">Please complete shipping address.</p>
+    <p ng-if="shippingForm.invalid">Please complete shipping address.</p>
   </ng-form>
 
   <!-- Billing address group -->
   <ng-form name="billingForm">
     <input name="street" ng-model="billing.street" required />
-    <p ng-if="billingForm.$invalid">Please complete billing address.</p>
+    <p ng-if="billingForm.invalid">Please complete billing address.</p>
   </ng-form>
 
-  <button ng-disabled="outerForm.$invalid">Submit</button>
+  <button ng-disabled="outerForm.invalid">Submit</button>
 </form>
 ```
 
-The outer form's `$valid` is `false` if any nested `ng-form` is invalid, allowing you to check a single top-level form while still presenting granular errors per section.
+The outer form's `valid` is `false` if any nested `ng-form` is invalid, allowing you to check a single top-level form while still presenting granular errors per section.
 
 ***
 ## Input directives
@@ -136,7 +136,7 @@ All standard HTML input types are supported. For `<input>`, `<textarea>`, and `<
        required />
 ```
 
-Parses the input into a JavaScript `number`. Sets `$error.number` if the value is not numeric, `$error.min` or `$error.max` if out of range.
+Parses the input into a JavaScript `number`. Sets `error.number` if the value is not numeric, `error.min` or `error.max` if out of range.
 
 ### Checkbox
 
@@ -200,13 +200,13 @@ Parses the input into a JavaScript `number`. Sets `$error.number` if the value i
        ng-required="user.accountType === 'business'" />
 ```
 
-The validator calls `NgModelController.$isEmpty` on the view value. For text inputs, empty means `""`. For checkboxes, empty means `false`.
+The validator calls `NgModelController.isEmpty` on the view value. For text inputs, empty means `""`. For checkboxes, empty means `false`.
 ### minlength / ng-minlength
 
 ```html
        ng-model="user.password"
        ng-minlength="8" />
-<p ng-if="form.password.$error.minlength">
+<p ng-if="form.password.error.minlength">
   Password must be at least 8 characters.
 </p>
 ```
@@ -242,7 +242,7 @@ The validator calls `NgModelController.$isEmpty` on the view value. For text inp
 ***
 ## ng-messages
 
-`ng-messages` simplifies displaying validation error messages. It watches a form control's `$error` object and renders the first matching `ng-message` child (or all matching, with the `multiple` attribute).
+`ng-messages` simplifies displaying validation error messages. It watches a form control's `error` object and renders the first matching `ng-message` child (or all matching, with the `multiple` attribute).
 
 ```html
   <div class="field">
@@ -252,7 +252,7 @@ The validator calls `NgModelController.$isEmpty` on the view value. For text inp
            ng-model="user.email"
            required />
 
-    <div ng-messages="signupForm.email.$error" role="alert">
+    <div ng-messages="signupForm.email.error" role="alert">
       <p ng-message="required">Email address is required.</p>
       <p ng-message="email">Please enter a valid email address.</p>
     </div>
@@ -395,8 +395,8 @@ The following example demonstrates a registration form with multiple input types
            ng-maxlength="20"
            ng-pattern="/^[a-z0-9_]+$/" />
 
-    <div ng-messages="regForm.username.$error"
-         ng-if="regForm.username.$touched || regForm.$submitted">
+    <div ng-messages="regForm.username.error"
+         ng-if="regForm.username.touched || regForm.submitted">
       <p ng-message="required">Username is required.</p>
       <p ng-message="minlength">At least 3 characters.</p>
       <p ng-message="maxlength">No more than 20 characters.</p>
@@ -413,8 +413,8 @@ The following example demonstrates a registration form with multiple input types
            ng-model="form.email"
            required />
 
-    <div ng-messages="regForm.email.$error"
-         ng-if="regForm.email.$touched || regForm.$submitted">
+    <div ng-messages="regForm.email.error"
+         ng-if="regForm.email.touched || regForm.submitted">
       <p ng-message="required">Email is required.</p>
       <p ng-message="email">Enter a valid email address.</p>
     </div>
@@ -430,8 +430,8 @@ The following example demonstrates a registration form with multiple input types
            required
            ng-minlength="8" />
 
-    <div ng-messages="regForm.password.$error"
-         ng-if="regForm.password.$dirty">
+    <div ng-messages="regForm.password.error"
+         ng-if="regForm.password.dirty">
       <p ng-message="required">Password is required.</p>
       <p ng-message="minlength">At least 8 characters required.</p>
     </div>
@@ -446,13 +446,13 @@ The following example demonstrates a registration form with multiple input types
              required />
       I agree to the terms and conditions
     </label>
-    <p ng-if="regForm.terms.$error.required && regForm.$submitted">
+    <p ng-if="regForm.terms.error.required && regForm.submitted">
       You must accept the terms.
     </p>
   </div>
 
   <button type="submit"
-          ng-disabled="regForm.$invalid && regForm.$submitted">
+          ng-disabled="regForm.invalid && regForm.submitted">
     Create account
   </button>
 </form>
@@ -463,9 +463,9 @@ The following example demonstrates a registration form with multiple input types
     $scope.form = {};
 
     $scope.submitRegistration = function() {
-      $scope.regForm.$setSubmitted();
+      $scope.regForm.setSubmitted();
 
-      if ($scope.regForm.$valid) {
+      if ($scope.regForm.valid) {
         // Call your API
         console.log('Registering:', $scope.form);
       }

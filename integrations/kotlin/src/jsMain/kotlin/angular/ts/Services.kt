@@ -311,6 +311,14 @@ public class Angular internal constructor(
 ) {
     public val version: String
         get() = raw.version
+
+    public val tags: ProgrammaticTags
+        get() = ProgrammaticTags(
+            raw.asDynamic().tags.unsafeCast<angular.ts.generated.ComponentViewTags>(),
+        )
+
+    public val view: ProgrammaticViewApi
+        get() = ProgrammaticViewApi(raw)
 }
 
 public class AnchorScrollService internal constructor(

@@ -28,8 +28,9 @@ export type ControllerService = (
 type InjectableController = Injectable<ControllerConstructor>;
 
 type ControllerInstance = Record<string, unknown> & {
-  $controllerIdentifier?: string;
-  constructor?: { $scopename?: string };
+  /** @internal */
+  _controllerIdentifier?: string;
+  constructor?: { scopeName?: string };
 };
 
 type DeferredControllerInitializer = ((
@@ -104,13 +105,13 @@ export class ControllerRegistry {
   private _destroyed = false;
 
   has(name: string): boolean {
-    this.assertActive();
+    this._assertActive();
 
     return this._controllers.has(name);
   }
 
   get(name: string): InjectableController | undefined {
-    this.assertActive();
+    this._assertActive();
 
     return this._controllers.get(name);
   }
@@ -119,7 +120,7 @@ export class ControllerRegistry {
     name: string | Record<string, unknown>,
     constructor?: unknown,
   ): void {
-    this.assertActive();
+    this._assertActive();
 
     if (isString(name)) {
       assertNotHasOwnProperty(name, "controller");
@@ -146,7 +147,8 @@ export class ControllerRegistry {
     this._controllers.clear();
   }
 
-  private assertActive(): void {
+  /** @internal */
+  private _assertActive(): void {
     if (this._destroyed) {
       throw new Error("Controller registry has already been disposed.");
     }
@@ -171,7 +173,7 @@ function addIdentifier(
   const scope = locals.$scope as Record<string, unknown>;
 
   scope[identifier] = instance;
-  scope.$controllerIdentifier = identifier;
+  scope._controllerIdentifier = identifier;
 }
 
 /** @internal */
@@ -224,13 +226,13 @@ export function createControllerService(
       const exportName = constructorName ?? meta.name;
 
       if (identifier) {
-        instance.$controllerIdentifier = identifier;
+        instance._controllerIdentifier = identifier;
         addIdentifier(locals, identifier, instance, exportName);
       }
 
-      if (instance.constructor?.$scopename && locals?.$scope) {
-        (locals.$scope as Record<string, unknown>).$scopename =
-          instance.constructor.$scopename;
+      if (instance.constructor?.scopeName && locals?.$scope) {
+        (locals.$scope as Record<string, unknown>).scopeName =
+          instance.constructor.scopeName;
       }
 
       const initialize = ((instanceOverride?: ControllerInstance) => {
@@ -238,7 +240,7 @@ export function createControllerService(
           instance = instanceOverride;
 
           if (identifier) {
-            instance.$controllerIdentifier = identifier;
+            instance._controllerIdentifier = identifier;
             addIdentifier(locals, identifier, instance, exportName);
           }
         }
@@ -254,7 +256,7 @@ export function createControllerService(
           instance = result as ControllerInstance;
 
           if (identifier) {
-            instance.$controllerIdentifier = identifier;
+            instance._controllerIdentifier = identifier;
             addIdentifier(locals, identifier, instance, exportName);
           }
         }

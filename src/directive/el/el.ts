@@ -15,7 +15,7 @@ type ElementAssignFn = (scope: ng.Scope, value: Element | null) => unknown;
 ngElDirective.$inject = [_parse];
 
 /**
- * Exposes the current element on `scope.$target` or an assignable expression.
+ * Exposes the current element on `scope._target` or an assignable expression.
  */
 export function ngElDirective($parse: ng.ParseService): ng.Directive {
   return {
@@ -76,7 +76,7 @@ function bindKeyedElement(
   element: Element,
   key: string,
 ): () => void {
-  const target = scope.$target as Record<string, Element | undefined>;
+  const target = scope._target as Record<string, Element | undefined>;
 
   target[key] = element;
 
@@ -105,7 +105,7 @@ function registerElementCleanup(
     observer?.disconnect();
   };
 
-  removeDestroyListener = scope.$on("$destroy", cleanupOnce);
+  removeDestroyListener = scope.on("$destroy", cleanupOnce);
   const parent = element.parentNode;
 
   if (!parent) {

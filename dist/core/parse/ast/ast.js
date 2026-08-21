@@ -49,6 +49,7 @@ class AST {
         };
         this._index = 0;
     }
+    /** @internal */
     _tokenAt(index = this._index) {
         return this._tokens[index];
     }

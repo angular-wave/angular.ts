@@ -105,8 +105,8 @@ export class TargetState {
     return this._params;
   }
 
-  /** The internal state object (if it was found) */
-  $state(): StateObject | undefined {
+  /** @internal The internal state object, if it was found. */
+  _state(): StateObject | undefined {
     return this._definition;
   }
 

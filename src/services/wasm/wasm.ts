@@ -178,7 +178,7 @@ export interface WasmAbiExports {
 
 /** Options for creating an AngularTS scope wrapper for Wasm clients. */
 export interface WasmScopeOptions {
-  /** Stable name exposed to Wasm clients. Defaults to `$scopename` or `$id`. */
+  /** Stable name exposed to Wasm clients. Defaults to `scopeName` or `id`. */
   name?: string;
 }
 
@@ -354,6 +354,7 @@ interface WasmModuleCacheEntry {
   _promise: Promise<WebAssembly.Module>;
   _references: number;
   _settled: boolean;
+  /** @internal */
   _remove(): void;
 }
 
@@ -418,7 +419,7 @@ const wasmScopeRetentionStates = new WeakMap<
 >();
 
 function resolveWasmScopeName(scope: ng.Scope, requestedName?: string): string {
-  return requestedName ?? scope.$scopename ?? String(scope.$id);
+  return requestedName ?? scope.scopeName ?? String(scope.id);
 }
 
 /**
@@ -515,7 +516,7 @@ class WasmScopeImpl implements WasmScope {
     this._destroyed = false;
     this._retentionState = getWasmScopeRetentionState(scope);
     this._bindings.push(
-      scope.$on("$destroy", () => {
+      scope.on("$destroy", () => {
         this.dispose();
       }),
     );
@@ -580,18 +581,18 @@ class WasmScopeImpl implements WasmScope {
 
     try {
       if (
-        typeof model.$snapshot === "function" &&
-        typeof model.$restore === "function"
+        typeof model.snapshot === "function" &&
+        typeof model.restore === "function"
       ) {
-        const snapshot = model.$snapshot();
+        const snapshot = model.snapshot();
 
         applyWasmScopeTransaction(snapshot, normalized);
-        model.$restore(snapshot, {
+        model.restore(snapshot, {
           origin: options.origin,
           mode: "replace",
         });
       } else {
-        this._scope.$batch(() => {
+        this._scope.batch(() => {
           applyWasmScopeTransaction(
             this._scope as unknown as Record<string, unknown>,
             normalized,
@@ -689,7 +690,7 @@ class WasmScopeImpl implements WasmScope {
     options: WasmScopeWatchOptions = {},
   ): () => void {
     this._watchedPaths.set(path, (this._watchedPaths.get(path) ?? 0) + 1);
-    const dispose = this._scope.$watch(
+    const dispose = this._scope.watch(
       path,
       (value: unknown) => {
         if (this._destroyed) {
@@ -1066,7 +1067,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
       throw new Error("Cannot create a scope from a disposed Wasm scope ABI");
     }
 
-    if (scope.$handler._destroyed) {
+    if (scope._handler._destroyed) {
       throw new Error("Cannot bind a destroyed AngularTS reactive target");
     }
 
@@ -1818,7 +1819,7 @@ class WasmResourceImpl<TExports extends WebAssembly.Exports>
   }
 
   get status(): WasmResourceStatus {
-    if (!this._lifecycle.$handler._destroyed) {
+    if (!this._lifecycle._handler._destroyed) {
       void this._lifecycle.status;
     }
 
@@ -1826,7 +1827,7 @@ class WasmResourceImpl<TExports extends WebAssembly.Exports>
   }
 
   get error(): WasmError | undefined {
-    if (!this._lifecycle.$handler._destroyed) {
+    if (!this._lifecycle._handler._destroyed) {
       void this._lifecycle.status;
     }
 
@@ -1852,7 +1853,7 @@ class WasmResourceImpl<TExports extends WebAssembly.Exports>
   /** @internal */
   [SCOPE_PROXY_BIND](handler: Scope): void {
     if (!handler._destroyed) {
-      this._scopeBindings.set(handler.$id, handler);
+      this._scopeBindings.set(handler.id, handler);
     }
   }
 
@@ -1866,7 +1867,7 @@ class WasmResourceImpl<TExports extends WebAssembly.Exports>
       throw this._disposedError("Cannot bind a disposed WebAssembly resource");
     }
 
-    if (target.$handler._destroyed) {
+    if (target._handler._destroyed) {
       throw new WasmError(
         "binding",
         "Cannot bind a destroyed AngularTS reactive target",
@@ -1883,7 +1884,7 @@ class WasmResourceImpl<TExports extends WebAssembly.Exports>
 
     let removeDestroyListener!: () => void;
     const targetDestroyed = new Promise<never>((_resolve, reject) => {
-      removeDestroyListener = target.$on("$destroy", () => {
+      removeDestroyListener = target.on("$destroy", () => {
         reject(
           new WasmError(
             "binding",
@@ -2096,7 +2097,7 @@ class WasmResourceImpl<TExports extends WebAssembly.Exports>
   private _setStatus(status: WasmResourceStatus): void {
     this._status = status;
 
-    if (!this._lifecycle.$handler._destroyed) {
+    if (!this._lifecycle._handler._destroyed) {
       this._lifecycle.status = status;
     }
 
@@ -2798,7 +2799,7 @@ function getWasmScopeRetentionState(scope: ng.Scope): WasmScopeRetentionState {
     _deregisterDestroy: undefined,
   };
 
-  state._deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+  state._deregisterPause = scope.on("$viewRetentionPause", (...args) => {
     if (!shouldHandleViewRetentionPause(args, "schedulers")) {
       return;
     }
@@ -2806,7 +2807,7 @@ function getWasmScopeRetentionState(scope: ng.Scope): WasmScopeRetentionState {
     state._paused = true;
   });
 
-  state._deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+  state._deregisterResume = scope.on("$viewRetentionResume", (...args) => {
     if (!shouldHandleViewRetentionPause(args, "schedulers")) {
       return;
     }
@@ -2819,7 +2820,7 @@ function getWasmScopeRetentionState(scope: ng.Scope): WasmScopeRetentionState {
     flushWasmScopeQueue(state);
   });
 
-  state._deregisterDestroy = scope.$on("$destroy", () => {
+  state._deregisterDestroy = scope.on("$destroy", () => {
     state._pending.length = 0;
     state._flushing = false;
     state._deregisterPause?.();
@@ -3017,7 +3018,7 @@ function writeSafeScopeProperty(
   key: string,
   value: unknown,
 ): void {
-  if (isProxy(target) || ("$handler" in target && "$target" in target)) {
+  if (isProxy(target)) {
     target[key] = value;
 
     return;

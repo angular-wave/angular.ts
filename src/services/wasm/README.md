@@ -143,7 +143,7 @@ origin }` payload. Language facades may route that payload back into their
   ordinary per-path watch callbacks without losing transaction access.
 
 When the target is an app-context model, transaction origins flow through
-`$restore()` into the model scheduler and `$sync()` loop-prevention contract.
+`restore()` into the model scheduler and `sync()` loop-prevention contract.
 Ordinary scopes receive the same batched DOM reactivity and guest echo policy.
 
 `WasmAbi.version` is the required reactive ABI version. Guest facades export
@@ -208,7 +208,7 @@ deep-path generic types to the application API.
 Compiled `WebAssembly.Module` values are structured-cloneable. The
 `concepts/wasm-worker` demo compiles once through `$wasm`, sends
 `resource.module` through `$worker`, and creates independent main-thread and
-worker instances. An app model and `$sync()` keep worker commands and DOM state
+worker instances. An app model and `sync()` keep worker commands and DOM state
 declarative. The concept also transfers a shared `WebAssembly.Memory` and
 verifies atomic main-thread/worker access under route-scoped COOP/COEP headers.
 Its AssemblyScript guest imports that memory; both the window and worker invoke

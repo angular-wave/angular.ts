@@ -297,6 +297,7 @@ export class CachedRestBackend implements RestBackend {
     };
   }
 
+  /** @internal */
   private async _invalidate(request: RestRequest): Promise<void> {
     await this._cache.deletePrefix(`GET ${request.url}`);
 

@@ -40,7 +40,7 @@ function ngSetterDirective($parse, $log) {
                 subtree: true,
                 characterData: true,
             });
-            scope.$on("$destroy", () => {
+            scope.on("$destroy", () => {
                 observer.disconnect();
             });
             updateModel(element.innerHTML);

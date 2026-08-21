@@ -7,9 +7,10 @@ import {
 
 const valid = {
   name: "Player",
+  description: "Reactive player state.",
   fields: [
-    { path: "position.x", type: "f64" },
-    { path: "frame", type: "bytes", optional: true },
+    { path: "position.x", type: "f64", description: "Horizontal position." },
+    { path: "frame", type: "bytes", optional: true, description: "Frame bytes." },
   ],
 };
 
@@ -18,6 +19,7 @@ test("validates and normalizes one binding manifest", () => {
 
   assert.equal(contract.name, "Player");
   assert.deepEqual(contract.fields[0], {
+    description: "Horizontal position.",
     path: "position.x",
     type: "f64",
     optional: false,
@@ -69,7 +71,12 @@ test("generates deterministic contracts for every maintained guest language", ()
     "player.contract.as.ts",
     "PlayerContract.cs",
   ]);
+  for (const content of files.values()) {
+    assert.match(content, /Reactive player state\./u);
+    assert.match(content, /Horizontal position\./u);
+  }
   assert.match(files.get("player.contract.ts"), /"position\.x": number/u);
+  assert.match(files.get("player.contract.ts"), /Horizontal position\./u);
   assert.match(
     files.get("player_contract.rs"),
     /pub const POSITION_X: Field<f64> = Field::new\("position\.x"\);/u,
@@ -98,4 +105,5 @@ test("generates deterministic contracts for every maintained guest language", ()
     /pub const frame = angular\.BinaryField\.optional\("frame"\);/u,
   );
   assert.doesNotMatch(files.get("player_contract.zig"), /PositionXValue|positionX_path/u);
+  assert.match(files.get("PlayerContract.cs"), /Reactive player state\./u);
 });

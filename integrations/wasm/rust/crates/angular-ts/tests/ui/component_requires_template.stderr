@@ -1,4 +1,4 @@
-error: `component` requires `template` or `template_url`
+error: `component` accepts exactly one of `template`, `template_url`, or `view`
  --> tests/ui/component_requires_template.rs:3:1
   |
 3 | #[component(selector = "bad-component")]

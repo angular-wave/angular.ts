@@ -9,7 +9,7 @@ window.angular.module('demo', []).controller(
         $scope.$ctrl.ms = val;
       });
 
-      $scope.$on('$destroy', unsubscribe);
+      $scope.on('$destroy', unsubscribe);
     }
   },
 );

@@ -46,7 +46,7 @@
                 const translation = getKeyFromTranslation(
                   el.innerText.toLocaleLowerCase(),
                 );
-                $rootScope.$watch('lang', (lang) => {
+                $rootScope.watch('lang', (lang) => {
                   i18next.changeLanguage(lang);
                   el.innerText = i18next.t(translation);
                 });

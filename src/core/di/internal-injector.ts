@@ -304,11 +304,11 @@ export class InjectorService<
    */
   /** @internal */
   _factory(serviceName: string): unknown {
-    const provider = this._providerInjector.get<{ $get: InjectableFn }>(
+    const provider = this._providerInjector.get<{ get: InjectableFn }>(
       serviceName + providerSuffix,
     );
 
-    return this.invoke(provider.$get, provider, undefined, serviceName);
+    return this.invoke(provider.get, provider, undefined, serviceName);
   }
 
   /**

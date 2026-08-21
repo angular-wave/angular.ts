@@ -22,7 +22,7 @@ function ngChannelDirective($eventBus) {
             $eventBus.subscribe(channel, (value) => {
                 if (hasTemplateContent) {
                     if (isObject(value)) {
-                        scope.$merge(value);
+                        scope.merge(value);
                     }
                 }
                 else {

@@ -316,7 +316,7 @@ describe("HTML-in-Canvas", () => {
       registerRoot,
     } as unknown as ng.HtmlCanvasService);
     const canvas = document.createElement("canvas");
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
     const link = directive.compile?.(canvas) as TestLinkFn;
 
     expect(canvas.getAttribute("layoutsubtree")).toBe("true");
@@ -324,7 +324,7 @@ describe("HTML-in-Canvas", () => {
     link(scope, canvas);
     expect(registerRoot).toHaveBeenCalledOnceWith(canvas);
 
-    scope.$destroy();
+    scope.destroy();
     expect(dispose).toHaveBeenCalledTimes(1);
   });
 
@@ -336,7 +336,7 @@ describe("HTML-in-Canvas", () => {
       registerRoot,
     } as unknown as ng.HtmlCanvasService);
     const element = document.createElement("div");
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
     const link = directive.compile?.(
       element as unknown as HTMLCanvasElement,
     ) as TestLinkFn;
@@ -356,7 +356,7 @@ describe("HTML-in-Canvas", () => {
     } as unknown as ng.HtmlCanvasService);
     const canvas = document.createElement("canvas");
     const source = document.createElement("div");
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     source.setAttribute("x", "12");
     source.setAttribute("data-y", "3");
@@ -382,7 +382,7 @@ describe("HTML-in-Canvas", () => {
     expect(options.width).toBe(20);
     expect(options.height).toBe(30);
 
-    scope.$destroy();
+    scope.destroy();
     expect(destroy).toHaveBeenCalledTimes(1);
   });
 
@@ -395,7 +395,7 @@ describe("HTML-in-Canvas", () => {
     } as unknown as ng.HtmlCanvasService);
     const canvas = document.createElement("canvas");
 
-    (directive.link as TestLinkFn)($rootScope.$new(), canvas);
+    (directive.link as TestLinkFn)($rootScope.new(), canvas);
 
     expect(registerSource.calls.mostRecent().args.slice(0, 2)).toEqual([
       canvas,
@@ -413,7 +413,7 @@ describe("HTML-in-Canvas", () => {
     const element = document.createElement("div");
 
     expect(() =>
-      (sourceDirective.link as TestLinkFn)($rootScope.$new(), element),
+      (sourceDirective.link as TestLinkFn)($rootScope.new(), element),
     ).toThrowError(
       "HTML-in-Canvas source and invalidation directives require a parent canvas root.",
     );
@@ -833,6 +833,7 @@ describe("HTML-in-Canvas", () => {
     expect(() =>
       (
         root as unknown as {
+          /** @internal */
           _paint(event: Event): void;
         }
       )._paint(new Event("paint")),
@@ -856,6 +857,7 @@ describe("HTML-in-Canvas", () => {
     expect(() =>
       (
         webglRoot as unknown as {
+          /** @internal */
           _paint(event: Event): void;
         }
       )._paint(new Event("paint")),

@@ -44,7 +44,7 @@ function ngSwitchDirective($injector) {
                 }
                 for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
                     const selected = selectedElements[i]._clone;
-                    selectedScopes[i].$destroy();
+                    selectedScopes[i].destroy();
                     const leaveAnimate = getAnimateForNode(getAnimate, selected);
                     if (leaveAnimate) {
                         const handle = leaveAnimate.leave(selected);
@@ -132,10 +132,10 @@ function ngSwitchDirective($injector) {
                     applySwitchValue(nextValue);
                 }
             }
-            const removePauseHandler = scope.$on("$viewRetentionPause", onPause);
-            const removeResumeHandler = scope.$on("$viewRetentionResume", onResume);
-            scope.$watch(watchExpr, applyOrQueueSwitch);
-            scope.$on("$destroy", () => {
+            const removePauseHandler = scope.on("$viewRetentionPause", onPause);
+            const removeResumeHandler = scope.on("$viewRetentionResume", onResume);
+            scope.watch(watchExpr, applyOrQueueSwitch);
+            scope.on("$destroy", () => {
                 removePauseHandler();
                 removeResumeHandler();
             });

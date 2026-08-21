@@ -166,13 +166,13 @@ describe("ngView", () => {
         function ($scope, $element) {
           const data = getCacheData($element, "$ngViewAnim");
 
-          $scope.$on("$destroy", () => {
+          $scope.on("$destroy", () => {
             log += "destroy;";
           });
-          data.$animEnter.then(() => {
+          data._animationEnter.then(() => {
             log += "animEnter;";
           });
-          data.$animLeave.then(() => {
+          data._animationLeave.then(() => {
             log += "animLeave;";
           });
         },
@@ -205,7 +205,7 @@ describe("ngView", () => {
         function ($scope) {
           retainedLimitedCompiles.a += 1;
           $scope.count = 0;
-          $scope.$on("$destroy", () => {
+          $scope.on("$destroy", () => {
             retainedLimitedDestroys.a += 1;
           });
         },
@@ -227,7 +227,7 @@ describe("ngView", () => {
         function ($scope) {
           retainedLimitedCompiles.b += 1;
           $scope.count = 0;
-          $scope.$on("$destroy", () => {
+          $scope.on("$destroy", () => {
             retainedLimitedDestroys.b += 1;
           });
         },
@@ -493,7 +493,7 @@ describe("ngView", () => {
         function ($scope) {
           retainedInjectedEvictCompiles.a += 1;
           $scope.count = 0;
-          $scope.$on("$destroy", () => {
+          $scope.on("$destroy", () => {
             retainedInjectedEvictDestroys.a += 1;
           });
         },
@@ -524,7 +524,7 @@ describe("ngView", () => {
         function ($scope) {
           retainedInjectedEvictCompiles.b += 1;
           $scope.count = 0;
-          $scope.$on("$destroy", () => {
+          $scope.on("$destroy", () => {
             retainedInjectedEvictDestroys.b += 1;
           });
         },
@@ -555,10 +555,10 @@ describe("ngView", () => {
         function ($scope) {
           retainedNestedCompiles.parent += 1;
           $scope.parentCount = 0;
-          $scope.$on("$viewRetentionPause", () => {
+          $scope.on("$viewRetentionPause", () => {
             retainedNestedLifecycle.parentPause += 1;
           });
-          $scope.$on("$viewRetentionResume", () => {
+          $scope.on("$viewRetentionResume", () => {
             retainedNestedLifecycle.parentResume += 1;
           });
         },
@@ -582,10 +582,10 @@ describe("ngView", () => {
             function ($scope) {
               retainedNestedCompiles.child += 1;
               $scope.childCount = 0;
-              $scope.$on("$viewRetentionPause", () => {
+              $scope.on("$viewRetentionPause", () => {
                 retainedNestedLifecycle.childPause += 1;
               });
-              $scope.$on("$viewRetentionResume", () => {
+              $scope.on("$viewRetentionResume", () => {
                 retainedNestedLifecycle.childResume += 1;
               });
             },
@@ -641,7 +641,7 @@ describe("ngView", () => {
 
             observer.observe(observedElement, { attributes: true });
 
-            $scope.$watch("probeValue", () => {
+            $scope.watch("probeValue", () => {
               retainedNestedCleanup.watchRuns += 1;
             });
 
@@ -657,13 +657,13 @@ describe("ngView", () => {
 
             const canvasAdapter = createCanvasWorkAdapter($scope);
 
-            $scope.$broadcast("$viewRetentionPause");
+            $scope.broadcast("$viewRetentionPause");
 
             canvasAdapter.schedule(() => {
               retainedNestedCleanup.canvasRuns += 1;
             });
 
-            $scope.$on("$destroy", () => {
+            $scope.on("$destroy", () => {
               retainedNestedCleanup.scopeDestroyEvents += 1;
               retainedNestedCleanup.wasmScope.dispose();
               observer.disconnect();
@@ -705,7 +705,7 @@ describe("ngView", () => {
 
         observer.observe(observedElement, { attributes: true });
 
-        $scope.$watch("probeValue", () => {
+        $scope.watch("probeValue", () => {
           retainedEvictionCleanup.watchRuns += 1;
         });
 
@@ -721,13 +721,13 @@ describe("ngView", () => {
 
         const canvasAdapter = createCanvasWorkAdapter($scope);
 
-        $scope.$broadcast("$viewRetentionPause");
+        $scope.broadcast("$viewRetentionPause");
 
         canvasAdapter.schedule(() => {
           retainedEvictionCleanup.canvasRuns += 1;
         });
 
-        $scope.$on("$destroy", () => {
+        $scope.on("$destroy", () => {
           retainedEvictionCleanup.scopeDestroyEvents += 1;
           retainedEvictionCleanup.wasmScope.dispose();
           observer.disconnect();
@@ -908,7 +908,7 @@ describe("ngView", () => {
       "$compile",
       "$anchorScroll",
       (_$state_, $rootScope, _$compile_, _$anchorScroll_) => {
-        scope = $rootScope.$new();
+        scope = $rootScope.new();
         $compile = _$compile_;
         $state = _$state_;
         stateRuntime = $state;
@@ -974,11 +974,13 @@ describe("ngView", () => {
           templateUrl: "/async-route.html",
         },
         _factory: {
+          /** @internal */
           _fromConfig() {
             return new Promise((resolve) => {
               resolveView = resolve;
             });
           },
+          /** @internal */
           _makeComponentTemplate() {
             return undefined;
           },
@@ -1033,11 +1035,13 @@ describe("ngView", () => {
           templateUrl: `/async-route-${id}.html`,
         },
         _factory: {
+          /** @internal */
           _fromConfig() {
             return new Promise((resolve) => {
               resolveFactory(resolve);
             });
           },
+          /** @internal */
           _makeComponentTemplate() {
             return undefined;
           },
@@ -1083,14 +1087,14 @@ describe("ngView", () => {
 
     it("ignores view configuration callbacks after the host scope is destroyed", () => {
       elem.innerHTML = "<div><ng-view></ng-view></div>";
-      const hostScope = scope.$new();
+      const hostScope = scope.new();
 
       $compile(elem)(hostScope);
       const activeView = $view._ngViews.find(
         (registeredView) => registeredView._fqn === "$default",
       );
 
-      hostScope.$destroy();
+      hostScope.destroy();
 
       expect(() => activeView._configUpdated(undefined)).not.toThrow();
     });
@@ -2093,7 +2097,7 @@ describe("ngView", () => {
 
   it("should not start a view transition for detached routed views", async () => {
     await wait(350);
-    const detachedScope = scope.$new();
+    const detachedScope = scope.new();
 
     const detachedElement = createElementFromHTML(
       "<div><ng-view></ng-view></div>",
@@ -2115,7 +2119,7 @@ describe("ngView", () => {
       aState.template,
     );
 
-    detachedScope.$destroy();
+    detachedScope.destroy();
     dealoc(detachedElement);
   });
 
@@ -2281,22 +2285,22 @@ describe("ngView", () => {
     });
   });
 
-  it("should call the existing $onInit after instantiating a controller", async () => {
-    const $onInit = jasmine.createSpy();
+  it("should call the existing onInit after instantiating a controller", async () => {
+    const onInit = jasmine.createSpy();
 
     stateRuntime.state({
       name: "onInit",
       controller: function () {
-        this.$onInit = $onInit;
+        this.onInit = onInit;
       },
       template: "hi",
     });
     elem.innerHTML = "<div><ng-view></ng-view></div>";
     $compile(elem)(scope);
     await $state.transitionTo("onInit");
-    await waitUntil(() => $onInit.calls.any());
+    await waitUntil(() => onInit.calls.any());
 
-    expect($onInit).toHaveBeenCalled();
+    expect(onInit).toHaveBeenCalled();
   });
 
   it("should default the template to a '<ng-view>'", async () => {
@@ -2411,9 +2415,9 @@ describe("ngView transclusion", () => {
         return {
           restrict: "E",
           link(scope) {
-            scope.$emit("directiveCreated");
-            scope.$on("$destroy", () => {
-              scope.$emit("directiveDestroyed");
+            scope.emit("directiveCreated");
+            scope.on("$destroy", () => {
+              scope.emit("directiveDestroyed");
             });
           },
         };
@@ -2437,7 +2441,7 @@ describe("ngView transclusion", () => {
       "$anchorScroll",
       (_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
         $rootScope = _$rootScope_;
-        scope = $rootScope.$new();
+        scope = $rootScope.new();
         $compile = _$compile_;
         $state = _$state_;
         elem = document.getElementById("app");
@@ -2448,10 +2452,10 @@ describe("ngView transclusion", () => {
   it("should not link the initial view and leave its scope undestroyed when a subview is activated", async () => {
     let aliveCount = 0;
 
-    scope.$on("directiveCreated", () => {
+    scope.on("directiveCreated", () => {
       aliveCount++;
     });
-    scope.$on("directiveDestroyed", () => {
+    scope.on("directiveDestroyed", () => {
       aliveCount--;
     });
     elem.innerHTML = "<div><ng-view></ng-view></div>";
@@ -2514,7 +2518,7 @@ describe("ngView controllers or onEnter handlers", () => {
       "$anchorScroll",
       (_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
         $rootScope = _$rootScope_;
-        scope = $rootScope.$new();
+        scope = $rootScope.new();
         $compile = _$compile_;
         $state = _$state_;
         elem = document.getElementById("app");
@@ -2584,7 +2588,7 @@ describe("angular 1.5+ style .component()", () => {
           scope: { data: "=" },
           templateUrl: "/comp_tpl.html",
           controller: function () {
-            this.$onInit = function () {
+            this.onInit = function () {
               log += "onInit;";
             };
           },
@@ -2596,7 +2600,7 @@ describe("angular 1.5+ style .component()", () => {
         bindings: { data: "<", data2: "<" },
         templateUrl: "/comp_tpl.html",
         controller: function () {
-          this.$onInit = function () {
+          this.onInit = function () {
             log += "onInit;";
           };
         },
@@ -2644,7 +2648,7 @@ describe("angular 1.5+ style .component()", () => {
       .component("dynamicComponent", {
         template: "dynamicComponent {{ $ctrl.param }}",
         controller: function () {
-          this.$onParamsChanged = function (params) {
+          this.onParamsChanged = function (params) {
             this.param = params.param;
           };
         },
@@ -2667,7 +2671,7 @@ describe("angular 1.5+ style .component()", () => {
         };
         stateRuntime = _$state_;
         $rootScope = _$rootScope_;
-        scope = $rootScope.$new();
+        scope = $rootScope.new();
         log = "";
         el.innerHTML = "<div><ng-view></ng-view></div>";
         svcs.$compile(el)(scope);
@@ -2948,7 +2952,7 @@ describe("angular 1.5+ style .component()", () => {
       );
     });
 
-    it("should only call $onInit() once", async () => {
+    it("should only call onInit() once", async () => {
       stateRuntime.state({
         name: "route2cmp",
         component: "ngComponent",
@@ -3276,7 +3280,7 @@ describe("angular 1.5+ style .component()", () => {
     });
   });
 
-  describe("$onParamsChanged()", () => {
+  describe("onParamsChanged()", () => {
     let param;
 
     beforeEach(() => {
@@ -3294,7 +3298,7 @@ describe("angular 1.5+ style .component()", () => {
         component: {
           template: "<span>dynamicInline {{ $ctrl.param }}</span>",
           controller: function () {
-            this.$onParamsChanged = function (params) {
+            this.onParamsChanged = function (params) {
               this.param = params.param;
             };
           },

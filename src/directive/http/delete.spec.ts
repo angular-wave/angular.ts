@@ -24,7 +24,7 @@ describe("ngDelete", () => {
   });
 
   it("should compile and swap streamed HTML responses", async () => {
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     scope.first = "A";
     scope.second = "B";

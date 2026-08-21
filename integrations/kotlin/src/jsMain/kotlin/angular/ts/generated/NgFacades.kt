@@ -9,1705 +9,7432 @@
 
 package angular.ts.generated
 
+/**
+ * Main AngularTS runtime entry point with the full built-in `ng` module configured by
+ * default.
+ */
 public external interface Angular {
-    public var `$eventBus`: dynamic
-    public var `$injector`: dynamic
-    public var `$rootScope`: dynamic
-    public var `$t`: dynamic
-    public fun bootstrap(p0: dynamic = definedExternally, p1: Array<dynamic> = definedExternally): dynamic
-    public fun call(p0: String = definedExternally): dynamic
-    public fun dispatchEvent(p0: org.w3c.dom.events.Event = definedExternally): Boolean
-    public fun emit(p0: String = definedExternally): Unit
-    public fun errorHandlingConfig(p0: dynamic = definedExternally): dynamic
-    public fun getController(p0: org.w3c.dom.Element = definedExternally, p1: String = definedExternally): dynamic
-    public fun getInjector(p0: org.w3c.dom.Element = definedExternally): dynamic
-    public fun getNormalizedAttr(p0: dynamic = definedExternally, p1: String = definedExternally): String
-    public fun getNormalizedAttrName(p0: dynamic = definedExternally, p1: String = definedExternally): String
-    public fun getScope(p0: org.w3c.dom.Element = definedExternally): dynamic
-    public fun getScopeByName(p0: String = definedExternally): dynamic
-    public fun hasNormalizedAttr(p0: dynamic = definedExternally, p1: String = definedExternally): Boolean
-    public fun init(p0: dynamic = definedExternally): Unit
-    public fun injector(p0: Array<dynamic> = definedExternally): dynamic
-    public fun module(p0: String = definedExternally, p1: Array<String> = definedExternally, p2: dynamic = definedExternally): dynamic
+    /**
+     * Use this function to manually start up AngularTS application. AngularTS will detect if
+     * it has been loaded into the browser more than once and only allow the first loaded
+     * script to be bootstrapped and will report a warning to the browser console for each of
+     * the subsequent scripts. This prevents strange results in applications, where otherwise
+     * multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the
+     * app on an element with a directive that uses transclusion, such as `ng-if`,
+     * `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector,
+     * causing animations to stop working and making the injector inaccessible from outside the
+     * app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController">
+     * {{greeting}} </div> <script src="angular.js"></script> <script> let app =
+     * angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope)
+     * { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script>
+     * </body> </html> ```
+     * @param element DOM element which is the root of AngularTS application.
+     * @param modules an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.module()`.
+     */
+    public fun bootstrap(element: dynamic = definedExternally, modules: Array<dynamic> = definedExternally): dynamic
+    /**
+     * Await result. Accepts a single string: `"<target>.<expression>"`
+     * @param input Value supplied for the input parameter.
+     */
+    public fun call(input: String = definedExternally): dynamic
+    /**
+     * Application injector, available after `bootstrap()` or `injector()` completes.
+     */
+    public var currentInjector: dynamic
+    /**
+     * Dispatches an invocation event to either an injectable service or a named scope. The
+     * event `type` identifies the target and the payload contains the expression to evaluate
+     * against that target.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun dispatchEvent(event: org.w3c.dom.events.Event = definedExternally): Boolean
+    /**
+     * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
+     * @param input Value supplied for the input parameter.
+     */
+    public fun emit(input: String = definedExternally): Unit
+    /**
+     * Global framework error-handling configuration.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun errorHandlingConfig(config: dynamic = definedExternally): dynamic
+    /**
+     * Application-wide event bus, available after bootstrap providers are created.
+     */
+    public var eventBus: dynamic
+    /**
+     * Retrieve the controller instance cached on a compiled DOM element.
+     * @param element The DOM element to get data from.
+     * @param name Controller name.
+     */
+    public fun getController(element: org.w3c.dom.Element = definedExternally, name: String = definedExternally): dynamic
+    /**
+     * Retrieve the injector cached on a bootstrapped DOM element.
+     * @param element Value supplied for the element parameter.
+     */
+    public fun getInjector(element: org.w3c.dom.Element = definedExternally): dynamic
+    /**
+     * Read an element attribute by normalized directive-style name.
+     * @param element Value supplied for the element parameter.
+     * @param normalizedName Value supplied for the normalizedName parameter.
+     */
+    public fun getNormalizedAttr(element: dynamic = definedExternally, normalizedName: String = definedExternally): String
+    /**
+     * Return the actual DOM attribute name for a normalized directive-style name.
+     * @param element Value supplied for the element parameter.
+     * @param normalizedName Value supplied for the normalizedName parameter.
+     */
+    public fun getNormalizedAttrName(element: dynamic = definedExternally, normalizedName: String = definedExternally): String
+    /**
+     * Retrieve the scope cached on a compiled DOM element.
+     * @param element The DOM element to get data from.
+     */
+    public fun getScope(element: org.w3c.dom.Element = definedExternally): dynamic
+    /**
+     * Find a scope by its registered `scopeName`.
+     * @param name Scope name to search for.
+     */
+    public fun getScopeByName(name: String = definedExternally): dynamic
+    /**
+     * Return whether an element has an attribute matching a normalized name.
+     * @param element Value supplied for the element parameter.
+     * @param normalizedName Value supplied for the normalizedName parameter.
+     */
+    public fun hasNormalizedAttr(element: dynamic = definedExternally, normalizedName: String = definedExternally): Boolean
+    /**
+     * Find `ng-app` roots under the provided element and bootstrap them. The first root uses
+     * this instance. Additional roots are bootstrapped as sub-applications and stored in
+     * subapps.
+     * @param element Root element or document to scan.
+     */
+    public fun init(element: dynamic = definedExternally): Unit
+    /**
+     * Create a standalone injector without bootstrapping the DOM.
+     * @param modules Module names or config functions to load.
+     */
+    public fun injector(modules: Array<dynamic> = definedExternally): dynamic
+    /**
+     * The `angular.module` is a global place for creating, registering and retrieving
+     * AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to
+     * an application must be registered using this mechanism. Passing one argument retrieves
+     * an existing ng.NgModule, whereas passing more than one argument creates a new
+     * ng.NgModule # Module A module is a collection of services, directives, controllers,
+     * filters, workers, WebAssembly modules, and configuration information. `angular.module`
+     * is used to configure the auto.$injector `$injector`. ```js // Create a new module let
+     * myModule = angular.module('myModule', []); // register a new service
+     * myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object
+     * config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an
+     * injector and load your modules like this: ```js let injector = angular.injector(['ng',
+     * 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or
+     * `bootstrap()` to simplify this process.
+     * @param name The name of the module to create or retrieve.
+     * @param requires If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.
+     * @param configFn Optional configuration function for the module that gets passed to `NgModule.config()`.
+     */
+    public fun module(name: String = definedExternally, requires: Array<String> = definedExternally, configFn: dynamic = definedExternally): dynamic
+    /**
+     * Registers the configured built-in `ng` module for this runtime instance.
+     */
     public fun registerNgModule(): dynamic
+    /**
+     * Root scope for the bootstrapped application.
+     */
+    public var rootScope: dynamic
+    /**
+     * Base class for user-authored AngularTS custom elements.
+     */
     public var ScopeElement: dynamic
+    /**
+     * Sub-application instances created when multiple `ng-app` roots are initialized.
+     */
     public var subapps: Array<dynamic>
+    /**
+     * JSX-free real-DOM tag factories for programmatic component views.
+     * @param namespaceUri Value supplied for the namespaceUri parameter.
+     */
+    public fun tags(namespaceUri: String = definedExternally): dynamic
+    /**
+     * Public injection token names keyed by token value.
+     */
+    public var tokens: dynamic
+    /**
+     * AngularTS version string replaced at build time.
+     */
     public var version: String
+    /**
+     * Explicit programmatic-view binding and element helpers.
+     */
+    public var view: dynamic
 }
 
+/**
+ * Public AngularTS AnnotatedDirectiveFactory contract exposed through the ng namespace.
+ */
 public external interface AnnotatedDirectiveFactory
 
+/**
+ * Defines a component's configuration object (a simplified directive definition object).
+ */
 public external interface Component {
+    /**
+     * Define DOM attribute binding to component properties. Component properties are always
+     * bound to the component controller and not to the scope.
+     */
     public var bindings: dynamic
+    /**
+     * The controller member of ng.Component.
+     */
     public var controller: dynamic
+    /**
+     * An identifier name for a reference to the controller. If present, the controller will be
+     * published to its scope under the specified name. If not present, this will default to
+     * '$ctrl'.
+     */
     public var controllerAs: String
+    /**
+     * Replaces the generated component host element with the component template.
+     */
     public var replace: Boolean
+    /**
+     * Requires the controllers of other directives and binds them to this component's
+     * controller. The object keys specify the property names under which the required
+     * controllers (object values) will be bound. Note that the required controllers will not
+     * be available during the instantiation of the controller, but they are guaranteed to be
+     * available just before the onInit method is executed!
+     */
     public var require: dynamic
+    /**
+     * html template as a string or a function that returns an html template as a string which
+     * should be used as the contents of this component. Empty string by default. If template
+     * is a function, then it is injected with the following locals: $element - Current element
+     * Use the array form to define dependencies.
+     */
     public var template: dynamic
+    /**
+     * Path or function that returns a path to an html template that should be used as the
+     * contents of this component. If templateUrl is a function, then it is injected with the
+     * following locals: $element - Current element Use the array form to define dependencies.
+     */
     public var templateUrl: dynamic
+    /**
+     * Whether transclusion is enabled. Disabled by default.
+     */
     public var transclude: dynamic
+    /**
+     * Programmatic real-DOM view factory. It runs during linking after controller bindings and
+     * `onInit`, and is mutually exclusive with template, templateUrl, and replace.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun view(context: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Programmatic real-DOM factory used instead of a component template.
+ */
+public external interface ComponentView {
+    /**
+     * Calls the ng.ComponentView function.
+     * @param context Value supplied for the context parameter.
+     */
+    public operator fun invoke(context: dynamic = definedExternally): dynamic
+}
+
+/**
+ * DOM content accepted from programmatic component and directive views. Functions are
+ * reactive child readers, arrays are flattened recursively, and existing nodes are moved
+ * rather than cloned. `null`, `undefined`, and `false` render no DOM content. Document
+ * fragments contribute their children.
+ */
+public external interface ComponentViewChild
+
+/**
+ * Runtime context passed to a component's programmatic view.
+ */
+public external interface ComponentViewContext {
+    /**
+     * Component controller after bindings and `onInit` have run.
+     */
+    public var controller: dynamic
+    /**
+     * Native component host element.
+     */
+    public var element: org.w3c.dom.HTMLElement
+    /**
+     * Registers cleanup owned by the compiled view and returns a cancellation function.
+     * @param cleanup Value supplied for the cleanup parameter.
+     */
+    public fun onDestroy(cleanup: () -> Unit = definedExternally): () -> Unit
+    /**
+     * Scope that owns the generated DOM and reactive child readers.
+     */
+    public var scope: dynamic
+    /**
+     * Component transclusion function, when transclusion is enabled.
+     * @param scope Value supplied for the scope parameter.
+     * @param cloneAttachFn Value supplied for the cloneAttachFn parameter.
+     * @param futureParentElement Value supplied for the futureParentElement parameter.
+     * @param slotName Value supplied for the slotName parameter.
+     */
+    public fun transclude(scope: dynamic = definedExternally, cloneAttachFn: (dynamic, dynamic) -> dynamic = definedExternally, futureParentElement: dynamic = definedExternally, slotName: dynamic = definedExternally): dynamic
+}
+
+/**
+ * Primitive text value accepted as a programmatic view child.
+ */
+public external interface ComponentViewPrimitive
+
+/**
+ * Typed DOM properties plus arbitrary attribute and custom-element values.
+ */
+public external interface ComponentViewProperties {
+    /**
+     * The is member of ng.ComponentViewProperties.
+     */
+    public var `is`: String
+}
+
+/**
+ * Property, attribute, event listener, or reactive property reader accepted by a
+ * programmatic view tag factory.
+ */
+public external interface ComponentViewPropertyValue
+
+/**
+ * Factory that creates one real DOM element without parsing HTML.
+ */
+public external interface ComponentViewTag<TElement> {
+    /**
+     * Calls the ng.ComponentViewTag function.
+     * @param first Value supplied for the first parameter.
+     * @param children Value supplied for the children parameter.
+     */
+    public operator fun invoke(first: dynamic = definedExternally, vararg children: dynamic): dynamic
+}
+
+/**
+ * Typed HTML tag factories. Calling the object with a namespace URI returns factories for
+ * namespaced elements such as SVG and MathML.
+ */
+public external interface ComponentViewTags {
+    /**
+     * Calls the ng.ComponentViewTags function.
+     * @param namespaceUri Value supplied for the namespaceUri parameter.
+     */
+    public operator fun invoke(namespaceUri: String = definedExternally): dynamic
+}
+
+/**
+ * AngularTS component lifecycle interface. Directive controllers have a well-defined
+ * lifecycle. Each controller can implement "lifecycle hooks". These are methods that will
+ * be called by Angular at certain points in the life cycle of the directive.
+ * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
+ * https://docs.angularjs.org/guide/component
+ */
 public external interface Controller {
-    public fun `$afterRender`(): Unit
-    public fun `$onChanges`(p0: dynamic = definedExternally): Unit
-    public fun `$onDestroy`(): Unit
-    public fun `$onInit`(): Unit
-    public fun `$postLink`(): Unit
+    /**
+     * Called after this controller has been linked, AngularTS has applied DOM mutations for
+     * the current flush, and the browser has had one animation frame to settle layout.
+     * Multiple schedules for the same controller in one flush are coalesced into one call.
+     */
+    public fun afterRender(): Unit
+    /**
+     * Optional controller name (used in debugging)
+     */
     public var name: String
+    /**
+     * Called whenever one-way bindings are updated. The onChangesObj is a hash whose keys are
+     * the names of the bound properties that have changed, and the values are a ChangesObject
+     * object of the form { currentValue, previousValue, isFirstChange() }. Use this hook to
+     * trigger updates within a component such as cloning the bound value to prevent accidental
+     * mutation of the outer value.
+     * @param changes Value supplied for the changes parameter.
+     */
+    public fun onChanges(changes: dynamic = definedExternally): Unit
+    /**
+     * Called on a controller when its containing scope is destroyed. Use this hook for
+     * releasing external resources, watches and event handlers.
+     */
+    public fun onDestroy(): Unit
+    /**
+     * Called on each controller after all the controllers on an element have been constructed
+     * and had their bindings initialized (and before the pre & post linking functions for the
+     * directives on this element). This is a good place to put initialization code for your
+     * controller.
+     */
+    public fun onInit(): Unit
+    /**
+     * Called after this controller's element and its children have been linked. Similar to the
+     * post-link function this hook can be used to set up DOM event handlers and do direct DOM
+     * manipulation. Note that child elements that contain templateUrl directives will not have
+     * been compiled and linked since they are waiting for their template to load
+     * asynchronously and their own compilation and linking has been suspended until that
+     * occurs. This hook can be considered analogous to the ngAfterViewInit and
+     * ngAfterContentInit hooks in Angular 2. Since the compilation process is rather different
+     * in Angular 1 there is no direct mapping and care should be taken when upgrading.
+     */
+    public fun postLink(): Unit
 }
 
+/**
+ * Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values
+ * add the class; `false`, `null`, and `undefined` remove it.
+ */
 public external interface ClassMap
 
+/**
+ * Public shape accepted by `ng-class` for class binding expressions.
+ */
 public external interface ClassValue
 
+/**
+ * Defines the structure of an AngularTS directive.
+ */
 public external interface Directive<TController> {
+    /**
+     * Whether to bind scope to controller
+     */
     public var bindToController: dynamic
-    public fun compile(p0: org.w3c.dom.HTMLElement = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Compile function for the directive
+     * @param templateElement Value supplied for the templateElement parameter.
+     * @param transclude Value supplied for the transclude parameter.
+     */
+    public fun compile(templateElement: org.w3c.dom.HTMLElement = definedExternally, transclude: dynamic = definedExternally): dynamic
+    /**
+     * Controller constructor or injectable string name
+     */
     public var controller: dynamic
+    /**
+     * Alias name for the controller in templates
+     */
     public var controllerAs: String
+    /**
+     * Currently only used by view directive
+     */
     public var count: Double
+    /**
+     * Link function(s) executed during linking
+     */
     public var link: dynamic
+    /**
+     * Optional name (usually inferred)
+     */
     public var name: String
+    /**
+     * Priority of the directive
+     */
     public var priority: Double
+    /**
+     * Replaces the element with the template if true
+     */
     public var replace: Boolean
+    /**
+     * Required controllers for the directive
+     */
     public var require: dynamic
+    /**
+     * Restrict option: 'A' and/or 'E'. Defaults to 'EA' if not defined
+     */
     public var restrict: dynamic
+    /**
+     * Scope configuration (`true`, `false`, or object for isolate scope)
+     */
     public var scope: dynamic
+    /**
+     * Inline template
+     */
     public var template: dynamic
+    /**
+     * Template namespace (e.g., SVG, HTML)
+     */
     public var templateNamespace: String
+    /**
+     * Template URL for loading from server
+     */
     public var templateUrl: dynamic
+    /**
+     * Stops further directive processing if true
+     */
     public var terminal: Boolean
+    /**
+     * Enables transclusion or configures named slots
+     */
     public var transclude: dynamic
+    /**
+     * Programmatic real-DOM view factory. It is mutually exclusive with template, templateUrl,
+     * and replace and composes with compile/link.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun view(context: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Supported directive matching locations.
+ */
 public external interface DirectiveRestrict
 
+/**
+ * Public AngularTS DirectiveFactory contract exposed through the ng namespace.
+ */
 public external interface DirectiveFactory
 
+/**
+ * Public AngularTS DirectiveFactoryFn contract exposed through the ng namespace.
+ */
+public external interface DirectiveFactoryFn {
+    /**
+     * Calls the ng.DirectiveFactoryFn function.
+     * @param args Value supplied for the args parameter.
+     */
+    public operator fun invoke(vararg args: dynamic): dynamic
+}
+
+/**
+ * A compile function used to prepare directives before linking.
+ */
+public external interface DirectiveCompileFn {
+    /**
+     * Calls the ng.DirectiveCompileFn function.
+     * @param templateElement Value supplied for the templateElement parameter.
+     * @param transclude Value supplied for the transclude parameter.
+     */
+    public operator fun invoke(templateElement: org.w3c.dom.HTMLElement = definedExternally, transclude: dynamic = definedExternally): dynamic
+}
+
+/**
+ * A controller instance or object map used in directives.
+ */
+public external interface DirectiveController
+
+/**
+ * Public AngularTS DirectiveLinkFn contract exposed through the ng namespace.
+ */
+public external interface DirectiveLinkFn<T> {
+    /**
+     * Calls the ng.DirectiveLinkFn function.
+     * @param scope Value supplied for the scope parameter.
+     * @param element Value supplied for the element parameter.
+     * @param arg2 Value supplied for the arg2 parameter.
+     * @param transclude Value supplied for the transclude parameter.
+     */
+    public operator fun invoke(scope: dynamic = definedExternally, element: dynamic = definedExternally, arg2: dynamic = definedExternally, transclude: dynamic = definedExternally): Unit
+}
+
+/**
+ * Defines optional pre/post link functions in directive compile phase.
+ */
+public external interface DirectivePrePost {
+    /**
+     * The post member of ng.DirectivePrePost.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun post(vararg args: dynamic): Unit
+    /**
+     * The pre member of ng.DirectivePrePost.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun pre(vararg args: dynamic): Unit
+}
+
+/**
+ * Programmatic real-DOM factory used instead of a directive template.
+ */
+public external interface DirectiveView<TController, TRequired> {
+    /**
+     * Calls the ng.DirectiveView function.
+     * @param context Value supplied for the context parameter.
+     */
+    public operator fun invoke(context: dynamic = definedExternally): dynamic
+}
+
+/**
+ * Runtime context passed to a directive's programmatic view.
+ */
+public external interface DirectiveViewContext<TController, TRequired> {
+    /**
+     * Directive controller, when the directive declares one.
+     */
+    public var controller: dynamic
+    /**
+     * Native element matched by the directive.
+     */
+    public var element: org.w3c.dom.Element
+    /**
+     * Registers cleanup owned by the compiled view and returns a cancellation function.
+     * @param cleanup Value supplied for the cleanup parameter.
+     */
+    public fun onDestroy(cleanup: () -> Unit = definedExternally): () -> Unit
+    /**
+     * Controllers resolved through the directive's `require` declaration.
+     */
+    public var required: dynamic
+    /**
+     * Scope that owns the generated DOM and reactive child readers.
+     */
+    public var scope: dynamic
+    /**
+     * Directive transclusion function, when transclusion is enabled.
+     * @param scope Value supplied for the scope parameter.
+     * @param cloneAttachFn Value supplied for the cloneAttachFn parameter.
+     * @param futureParentElement Value supplied for the futureParentElement parameter.
+     * @param slotName Value supplied for the slotName parameter.
+     */
+    public fun transclude(scope: dynamic = definedExternally, cloneAttachFn: (dynamic, dynamic) -> dynamic = definedExternally, futureParentElement: dynamic = definedExternally, slotName: dynamic = definedExternally): dynamic
+}
+
+/**
+ * Modules are collections of application configuration information for components:
+ * controllers, directives, filters, etc. They provide recipes for the injector to do the
+ * actual instantiation. A module itself has no behaviour but only state. A such, it acts
+ * as a data structure between the Angular instance and the injector service.
+ */
 public external interface NgModule {
-    public fun animation(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun appComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun component(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun config(p0: dynamic = definedExternally): dynamic
-    public fun constant(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun controller(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun decorator(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun directive(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun factory(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun filter(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun lazyState(p0: String = definedExternally, p1: (dynamic, dynamic) -> dynamic = definedExternally): dynamic
-    public fun machine(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun model(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The animation member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param animationFactory Value supplied for the animationFactory parameter.
+     */
+    public fun animation(name: String = definedExternally, animationFactory: dynamic = definedExternally): dynamic
+    /**
+     * Register an options-backed application host custom element. The definition is installed
+     * when the module runs. The host element is a native custom element backed by an AngularTS
+     * child scope.
+     * @param name Custom element tag name.
+     * @param options App component options.
+     */
+    public fun appComponent(name: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The component member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun component(name: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Declare built-in AngularTS service configuration during the config phase.
+     * @param config Built-in config map.
+     */
+    public fun config(config: dynamic = definedExternally): dynamic
+    /**
+     * The constant member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param objectValue Value supplied for the object parameter.
+     */
+    public fun constant(name: String = definedExternally, objectValue: dynamic = definedExternally): dynamic
+    /**
+     * The $controller service is used by Angular to create new controllers. Named controllers
+     * are stored in the owning runtime's controller registry.
+     * @param name Controller name
+     * @param ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
+     */
+    public fun controller(name: String = definedExternally, ctlFn: dynamic = definedExternally): dynamic
+    /**
+     * The decorator member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param decorFn Value supplied for the decorFn parameter.
+     */
+    public fun decorator(name: String = definedExternally, decorFn: dynamic = definedExternally): dynamic
+    /**
+     * The directive member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param directiveFactory Value supplied for the directiveFactory parameter.
+     */
+    public fun directive(name: String = definedExternally, directiveFactory: dynamic = definedExternally): dynamic
+    /**
+     * The factory member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param providerFunction Value supplied for the providerFunction parameter.
+     */
+    public fun factory(name: String = definedExternally, providerFunction: dynamic = definedExternally): dynamic
+    /**
+     * The filter member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param filterFn Value supplied for the filterFn parameter.
+     */
+    public fun filter(name: String = definedExternally, filterFn: dynamic = definedExternally): dynamic
+    /**
+     * Register a lazy router state namespace during module configuration. Lazy route
+     * declarations use the same composed router runtime as static module routes.
+     * @param prefix State name prefix to load on demand.
+     * @param loader Loader invoked by the router when a transition targets the prefix.
+     */
+    public fun lazyState(prefix: String = definedExternally, loader: (dynamic, dynamic) -> dynamic = definedExternally): dynamic
+    /**
+     * Register a named reactive state machine as an injectable service. The machine is created
+     * by `$machine` when the named service is requested. The returned instance is not tied to
+     * any one scope lifetime; it registers with AngularTS scope proxies when assigned to a
+     * controller or scope.
+     * @param name Injectable name.
+     * @param config Machine configuration or a resolvable config factory.
+     */
+    public fun machine(name: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a named reactive model as an injectable app-owned service. The model is created
+     * lazily by the owning `AppContext` when the service is first injected. Models are shared
+     * across every root scope managed by the same `AppContext`; they are not children of
+     * `$rootScope`. Assign an injected model to a controller or scope property to bind it in a
+     * template. DOM interpolation, `ng-bind`, directive expressions, nested object reads, and
+     * array length reads update when the app model changes. Mutating the model proxy schedules
+     * every affected observer. The injected `Model<T>` value is proxy-backed. It exposes
+     * scope-proxy methods such as `watch`, `batch`, `merge`, `on`, `emit`, `broadcast`, and
+     * `destroy`, plus `snapshot`, `restore`, and `sync` for model lifecycle and
+     * synchronization. Prefer the factory form for nontrivial initial state: ```ts
+     * app.model("user", () => ({ name: "John", authenticated: false })); ```
+     * @param name Injectable model name.
+     * @param initial Plain object state or an injectable factory that returns plain object state.
+     */
+    public fun model(name: String = definedExternally, initial: dynamic = definedExternally): dynamic
+    /**
+     * The name member of ng.NgModule.
+     */
     public var name: String
-    public fun provider(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun rest(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun router(p0: dynamic = definedExternally): dynamic
-    public fun run(p0: dynamic = definedExternally): dynamic
-    public fun service(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun serviceWorker(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun sse(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun store(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun value(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun wasm(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun webComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun websocket(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun webTransport(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun worker(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun workflow(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun workflowSupervisor(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The provider member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param providerType Value supplied for the providerType parameter.
+     */
+    public fun provider(name: String = definedExternally, providerType: dynamic = definedExternally): dynamic
+    /**
+     * Register a REST resource as an injectable service. The resource factory is delegated to
+     * the injected `$rest` service, keeping REST support configurable by custom runtimes.
+     * @param name Service name.
+     * @param url Base URL or URI template.
+     * @param entityClass Optional constructor for mapping JSON.
+     * @param options Optional RestService options, optionally produced by DI.
+     */
+    public fun rest(name: String = definedExternally, url: String = definedExternally, entityClass: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Register a module-owned router state tree during module configuration. Child state names
+     * are relative to their parent unless they contain a dot. Each route is queued for the
+     * composed router runtime, so module router trees compose with `lazyState(...)` and
+     * inherited route policies.
+     * @param declaration Router tree root declaration.
+     */
+    public fun router(declaration: dynamic = definedExternally): dynamic
+    /**
+     * The run member of ng.NgModule.
+     * @param block Value supplied for the block parameter.
+     */
+    public fun run(block: dynamic = definedExternally): dynamic
+    /**
+     * The service member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param serviceFunction Value supplied for the serviceFunction parameter.
+     */
+    public fun service(name: String = definedExternally, serviceFunction: dynamic = definedExternally): dynamic
+    /**
+     * Configure the singleton `$serviceWorker` for this application.
+     * @param scriptUrl Value supplied for the scriptUrl parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun serviceWorker(scriptUrl: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a pre-configured SSE connection as an injectable service. The connection is
+     * created by `$sse` when the named service is requested.
+     * @param name Injectable name.
+     * @param url SSE endpoint.
+     * @param config SSE connection options, optionally produced by DI.
+     */
+    public fun sse(name: String = definedExternally, url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a persistent object store as an injectable service. Store construction is
+     * delegated to the internal provider registry, which creates the service through the
+     * injector and persists it through the selected backend.
+     * @param name Service name.
+     * @param ctor Constructor, factory, or object to persist.
+     * @param type Storage backend type.
+     * @param backendOrConfig Custom backend or persistence options.
+     */
+    public fun store(name: String = definedExternally, ctor: dynamic = definedExternally, type: dynamic = definedExternally, backendOrConfig: dynamic = definedExternally): dynamic
+    /**
+     * The value member of ng.NgModule.
+     * @param name Value supplied for the name parameter.
+     * @param objectValue Allows undefined
+     */
+    public fun value(name: String = definedExternally, objectValue: dynamic = definedExternally): dynamic
+    /**
+     * Register a named WebAssembly module as an injectable resource. The actual loading is
+     * delegated to the `$wasm` service, so custom runtimes can decide whether WebAssembly
+     * support is included.
+     * @param name Injectable name used to access the resource.
+     * @param config Module source and imports, optionally produced by DI.
+     */
+    public fun wasm(name: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a user-authored native custom element backed by an AngularTS scope. The element
+     * class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and
+     * isolate properties configure the AngularTS wiring.
+     * @param name Custom element tag name.
+     * @param elementClass Custom element class.
+     */
+    public fun webComponent(name: String = definedExternally, elementClass: dynamic = definedExternally): dynamic
+    /**
+     * Register a pre-configured WebSocket connection as an injectable service. The connection
+     * is created by `$websocket` when the named service is requested.
+     * @param name Injectable name.
+     * @param url WebSocket endpoint.
+     * @param config WebSocket connection options, optionally produced by DI.
+     */
+    public fun websocket(name: String = definedExternally, url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a pre-configured WebTransport connection as an injectable service. The
+     * connection is created by `$webTransport` when the named service is requested.
+     * @param name Injectable name.
+     * @param url WebTransport endpoint.
+     * @param config WebTransport connection options, optionally produced by DI.
+     */
+    public fun webTransport(name: String = definedExternally, url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a named Web Worker connection as an injectable service. The actual connection
+     * is delegated to the `$worker` provider, so worker support remains provider-driven
+     * instead of directive-driven.
+     * @param name Injectable name.
+     * @param scriptPath Worker script URL, optionally produced by DI.
+     * @param config Worker connection options, optionally produced by DI.
+     */
+    public fun worker(name: String = definedExternally, scriptPath: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a named workflow as an injectable service. The workflow is created by
+     * `$workflow` when the named service is requested. Workflow behavior remains local to its
+     * `WorkflowConfig`; the provider does not apply global workflow defaults.
+     * @param name Injectable name.
+     * @param config Workflow configuration or a resolvable config factory.
+     */
+    public fun workflow(name: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a named workflow supervisor as an injectable service. The supervisor is created
+     * when the named service is requested. It composes existing workflow configs or workflow
+     * instances and keeps persistence and recovery policy local to the supervisor config.
+     * @param name Injectable name.
+     * @param config Supervisor configuration or a resolvable config factory.
+     */
+    public fun workflowSupervisor(name: String = definedExternally, config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS RouterModule contract exposed through the ng namespace.
+ */
 public external interface RouterModule<TRouteMap> {
-    public fun animation(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun appComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun component(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun config(p0: dynamic = definedExternally): dynamic
-    public fun constant(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun controller(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun decorator(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun directive(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun factory(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun filter(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun lazyState(p0: dynamic = definedExternally, p1: (dynamic, dynamic) -> dynamic = definedExternally): dynamic
-    public fun machine(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun model(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The animation member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param animationFactory Value supplied for the animationFactory parameter.
+     */
+    public fun animation(name: String = definedExternally, animationFactory: dynamic = definedExternally): dynamic
+    /**
+     * Register an options-backed application host custom element. The definition is installed
+     * when the module runs. The host element is a native custom element backed by an AngularTS
+     * child scope.
+     * @param name Custom element tag name.
+     * @param options App component options.
+     */
+    public fun appComponent(name: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The component member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun component(name: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Declare built-in AngularTS service configuration during the config phase.
+     * @param config Built-in config map.
+     */
+    public fun config(config: dynamic = definedExternally): dynamic
+    /**
+     * The constant member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param objectValue Value supplied for the object parameter.
+     */
+    public fun constant(name: String = definedExternally, objectValue: dynamic = definedExternally): dynamic
+    /**
+     * The $controller service is used by Angular to create new controllers. Named controllers
+     * are stored in the owning runtime's controller registry.
+     * @param name Controller name
+     * @param ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
+     */
+    public fun controller(name: String = definedExternally, ctlFn: dynamic = definedExternally): dynamic
+    /**
+     * The decorator member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param decorFn Value supplied for the decorFn parameter.
+     */
+    public fun decorator(name: String = definedExternally, decorFn: dynamic = definedExternally): dynamic
+    /**
+     * The directive member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param directiveFactory Value supplied for the directiveFactory parameter.
+     */
+    public fun directive(name: String = definedExternally, directiveFactory: dynamic = definedExternally): dynamic
+    /**
+     * The factory member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param providerFunction Value supplied for the providerFunction parameter.
+     */
+    public fun factory(name: String = definedExternally, providerFunction: dynamic = definedExternally): dynamic
+    /**
+     * The filter member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param filterFn Value supplied for the filterFn parameter.
+     */
+    public fun filter(name: String = definedExternally, filterFn: dynamic = definedExternally): dynamic
+    /**
+     * Register a lazy state namespace while preserving this module route map.
+     * @param prefix Value supplied for the prefix parameter.
+     * @param loader Value supplied for the loader parameter.
+     */
+    public fun lazyState(prefix: dynamic = definedExternally, loader: (dynamic, dynamic) -> dynamic = definedExternally): dynamic
+    /**
+     * Register a named reactive state machine as an injectable service. The machine is created
+     * by `$machine` when the named service is requested. The returned instance is not tied to
+     * any one scope lifetime; it registers with AngularTS scope proxies when assigned to a
+     * controller or scope.
+     * @param name Injectable name.
+     * @param config Machine configuration or a resolvable config factory.
+     */
+    public fun machine(name: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a named reactive model as an injectable app-owned service. The model is created
+     * lazily by the owning `AppContext` when the service is first injected. Models are shared
+     * across every root scope managed by the same `AppContext`; they are not children of
+     * `$rootScope`. Assign an injected model to a controller or scope property to bind it in a
+     * template. DOM interpolation, `ng-bind`, directive expressions, nested object reads, and
+     * array length reads update when the app model changes. Mutating the model proxy schedules
+     * every affected observer. The injected `Model<T>` value is proxy-backed. It exposes
+     * scope-proxy methods such as `watch`, `batch`, `merge`, `on`, `emit`, `broadcast`, and
+     * `destroy`, plus `snapshot`, `restore`, and `sync` for model lifecycle and
+     * synchronization. Prefer the factory form for nontrivial initial state: ```ts
+     * app.model("user", () => ({ name: "John", authenticated: false })); ```
+     * @param name Injectable model name.
+     * @param initial Plain object state or an injectable factory that returns plain object state.
+     */
+    public fun model(name: String = definedExternally, initial: dynamic = definedExternally): dynamic
+    /**
+     * The name member of ng.RouterModule.
+     */
     public var name: String
-    public fun provider(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun rest(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun router(p0: dynamic = definedExternally): dynamic
-    public fun run(p0: dynamic = definedExternally): dynamic
-    public fun service(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun serviceWorker(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun sse(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun store(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun value(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun wasm(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun webComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun websocket(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun webTransport(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun worker(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun workflow(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun workflowSupervisor(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The provider member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param providerType Value supplied for the providerType parameter.
+     */
+    public fun provider(name: String = definedExternally, providerType: dynamic = definedExternally): dynamic
+    /**
+     * Register a REST resource as an injectable service. The resource factory is delegated to
+     * the injected `$rest` service, keeping REST support configurable by custom runtimes.
+     * @param name Service name.
+     * @param url Base URL or URI template.
+     * @param entityClass Optional constructor for mapping JSON.
+     * @param options Optional RestService options, optionally produced by DI.
+     */
+    public fun rest(name: String = definedExternally, url: String = definedExternally, entityClass: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Register a router tree while preserving this module's route map.
+     * @param declaration Value supplied for the declaration parameter.
+     */
+    public fun router(declaration: dynamic = definedExternally): dynamic
+    /**
+     * The run member of ng.RouterModule.
+     * @param block Value supplied for the block parameter.
+     */
+    public fun run(block: dynamic = definedExternally): dynamic
+    /**
+     * The service member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param serviceFunction Value supplied for the serviceFunction parameter.
+     */
+    public fun service(name: String = definedExternally, serviceFunction: dynamic = definedExternally): dynamic
+    /**
+     * Configure the singleton `$serviceWorker` for this application.
+     * @param scriptUrl Value supplied for the scriptUrl parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun serviceWorker(scriptUrl: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a pre-configured SSE connection as an injectable service. The connection is
+     * created by `$sse` when the named service is requested.
+     * @param name Injectable name.
+     * @param url SSE endpoint.
+     * @param config SSE connection options, optionally produced by DI.
+     */
+    public fun sse(name: String = definedExternally, url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a persistent object store as an injectable service. Store construction is
+     * delegated to the internal provider registry, which creates the service through the
+     * injector and persists it through the selected backend.
+     * @param name Service name.
+     * @param ctor Constructor, factory, or object to persist.
+     * @param type Storage backend type.
+     * @param backendOrConfig Custom backend or persistence options.
+     */
+    public fun store(name: String = definedExternally, ctor: dynamic = definedExternally, type: dynamic = definedExternally, backendOrConfig: dynamic = definedExternally): dynamic
+    /**
+     * The value member of ng.RouterModule.
+     * @param name Value supplied for the name parameter.
+     * @param objectValue Allows undefined
+     */
+    public fun value(name: String = definedExternally, objectValue: dynamic = definedExternally): dynamic
+    /**
+     * Register a named WebAssembly module as an injectable resource. The actual loading is
+     * delegated to the `$wasm` service, so custom runtimes can decide whether WebAssembly
+     * support is included.
+     * @param name Injectable name used to access the resource.
+     * @param config Module source and imports, optionally produced by DI.
+     */
+    public fun wasm(name: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a user-authored native custom element backed by an AngularTS scope. The element
+     * class must extend `ScopeElement`. Its static template, shadow, scope, inputs, and
+     * isolate properties configure the AngularTS wiring.
+     * @param name Custom element tag name.
+     * @param elementClass Custom element class.
+     */
+    public fun webComponent(name: String = definedExternally, elementClass: dynamic = definedExternally): dynamic
+    /**
+     * Register a pre-configured WebSocket connection as an injectable service. The connection
+     * is created by `$websocket` when the named service is requested.
+     * @param name Injectable name.
+     * @param url WebSocket endpoint.
+     * @param config WebSocket connection options, optionally produced by DI.
+     */
+    public fun websocket(name: String = definedExternally, url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a pre-configured WebTransport connection as an injectable service. The
+     * connection is created by `$webTransport` when the named service is requested.
+     * @param name Injectable name.
+     * @param url WebTransport endpoint.
+     * @param config WebTransport connection options, optionally produced by DI.
+     */
+    public fun webTransport(name: String = definedExternally, url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a named Web Worker connection as an injectable service. The actual connection
+     * is delegated to the `$worker` provider, so worker support remains provider-driven
+     * instead of directive-driven.
+     * @param name Injectable name.
+     * @param scriptPath Worker script URL, optionally produced by DI.
+     * @param config Worker connection options, optionally produced by DI.
+     */
+    public fun worker(name: String = definedExternally, scriptPath: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a named workflow as an injectable service. The workflow is created by
+     * `$workflow` when the named service is requested. Workflow behavior remains local to its
+     * `WorkflowConfig`; the provider does not apply global workflow defaults.
+     * @param name Injectable name.
+     * @param config Workflow configuration or a resolvable config factory.
+     */
+    public fun workflow(name: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Register a named workflow supervisor as an injectable service. The supervisor is created
+     * when the named service is requested. It composes existing workflow configs or workflow
+     * instances and keeps persistence and recovery policy local to the supervisor config.
+     * @param name Injectable name.
+     * @param config Supervisor configuration or a resolvable config factory.
+     */
+    public fun workflowSupervisor(name: String = definedExternally, config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * A function returned by the `$compile` service that links a compiled template to a scope.
+ */
 public external interface LinkFn {
-    public operator fun invoke(p0: dynamic = definedExternally, p1: (dynamic, dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.LinkFn function.
+     * @param scope Value supplied for the scope parameter.
+     * @param cloneAttachFn Value supplied for the cloneAttachFn parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public operator fun invoke(scope: dynamic = definedExternally, cloneAttachFn: (dynamic, dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The post member of ng.LinkFn.
+     */
     public var post: dynamic
+    /**
+     * The pre member of ng.LinkFn.
+     */
     public var pre: dynamic
 }
 
+/**
+ * Scope class for the Proxy. It intercepts operations like property access (get) and
+ * property setting (set), and adds support for deep change tracking and observer-like
+ * behavior.
+ */
 public external interface Scope {
-    public fun `$batch`(p0: () -> dynamic = definedExternally): dynamic
-    public fun `$broadcast`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$destroy`(): Unit
-    public fun `$emit`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$getById`(p0: dynamic = definedExternally): dynamic
-    public var `$handler`: dynamic
-    public var `$id`: Double
-    public fun `$merge`(p0: dynamic = definedExternally): Unit
-    public fun `$new`(p0: dynamic = definedExternally): dynamic
-    public fun `$newIsolate`(p0: dynamic = definedExternally): dynamic
-    public fun `$on`(p0: String = definedExternally, p1: Function<*> = definedExternally): () -> Unit
-    public var `$parent`: dynamic
-    public var `$proxy`: dynamic
-    public var `$root`: dynamic
-    public var `$scopename`: String
-    public fun `$searchByName`(p0: String = definedExternally): dynamic
-    public var `$target`: dynamic
-    public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
-    public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
-    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
+    /**
+     * Runs synchronous scope mutations as one batch. Listener notifications are queued while
+     * the callback runs and flushed once after the outermost batch exits. Mutations are not
+     * rolled back if the callback throws.
+     * @param fn Value supplied for the fn parameter.
+     */
+    public fun batch(fn: () -> dynamic = definedExternally): dynamic
+    /**
+     * Broadcasts an event downward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun broadcast(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * The deleteProperty member of ng.Scope.
+     * @param target The target object.
+     * @param property The name of the property being deleted.
+     */
+    public fun deleteProperty(target: dynamic = definedExternally, property: dynamic = definedExternally): Boolean
+    /**
+     * Destroys this scope and its descendants.
+     */
+    public fun destroy(): Unit
+    /**
+     * Emits an event upward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun emit(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * Intercepts property access on the target object. It checks for specific properties
+     * (`watch` and `sync`) and binds their methods. For other properties, it returns the value
+     * directly.
+     * @param target The target object.
+     * @param property The name of the property being accessed.
+     * @param proxy The proxy object being invoked.
+     */
+    public fun get(target: dynamic = definedExternally, property: dynamic = definedExternally, proxy: dynamic = definedExternally): dynamic
+    /**
+     * Searches this scope tree for a scope with the given id.
+     * @param id Value supplied for the id parameter.
+     */
+    public fun getById(id: dynamic = definedExternally): dynamic
+    /**
+     * The id member of ng.Scope.
+     */
+    public var id: Double
+    /**
+     * Merges enumerable properties from the provided object into the current scope target.
+     * @param newTarget Value supplied for the newTarget parameter.
+     */
+    public fun merge(newTarget: dynamic = definedExternally): Unit
+    /**
+     * Creates a prototypically inherited child scope.
+     * @param childInstance Value supplied for the childInstance parameter.
+     */
+    public fun new(childInstance: dynamic = definedExternally): dynamic
+    /**
+     * Creates an isolate child scope that does not inherit watchable properties directly.
+     * @param instance Value supplied for the instance parameter.
+     */
+    public fun newIsolate(instance: dynamic = definedExternally): dynamic
+    /**
+     * Registers an event listener on this scope and returns a deregistration function.
+     * @param name Value supplied for the name parameter.
+     * @param listener Value supplied for the listener parameter.
+     */
+    public fun on(name: String = definedExternally, listener: Function<*> = definedExternally): () -> Unit
+    /**
+     * The parent member of ng.Scope.
+     */
+    public var parent: dynamic
+    /**
+     * The root member of ng.Scope.
+     */
+    public var root: dynamic
+    /**
+     * The scopeName member of ng.Scope.
+     */
+    public var scopeName: String
+    /**
+     * Searches the scope tree for a scope registered under the provided name.
+     * @param name Value supplied for the name parameter.
+     */
+    public fun searchByName(name: String = definedExternally): dynamic
+    /**
+     * Intercepts and handles property assignments on the target object. Scopeable objects are
+     * stored as raw model values and proxied lazily when read.
+     * @param target The target object.
+     * @param property The name of the property being set.
+     * @param value The new value being assigned to the property.
+     * @param proxy The proxy intercepting property access.
+     */
+    public fun set(target: dynamic = definedExternally, property: String = definedExternally, value: dynamic = definedExternally, proxy: dynamic = definedExternally): Boolean
+    /**
+     * Creates a transcluded child scope linked to this scope and an optional parent instance.
+     * @param parentInstance Value supplied for the parentInstance parameter.
+     */
+    public fun transcluded(parentInstance: dynamic = definedExternally): dynamic
+    /**
+     * Registers a watcher for a property along with a listener function. The listener function
+     * is invoked when changes to that property are detected.
+     * @param watchProp An expression to be watched in the context of this model.
+     * @param listenerFn A function to execute when changes are detected on watched context.
+     * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+     * @param directLeaf Value supplied for the directLeaf parameter.
+     */
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
 }
 
+/**
+ * A function passed to directive link functions for transcluded content. It behaves like a
+ * linking function, with the `scope` argument automatically created as a new child of the
+ * transcluded parent scope. The function returns the DOM content to be injected
+ * (transcluded) into the directive.
+ */
 public external interface TranscludeFn {
-    public operator fun invoke(p0: dynamic = definedExternally, p1: (dynamic, dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun isSlotFilled(p0: dynamic = definedExternally): Boolean
+    /**
+     * $transclude(scope?, cloneAttachFn?, futureParentElement?, slotName?) (scope-first form)
+     * @param scope Value supplied for the scope parameter.
+     * @param cloneAttachFn Value supplied for the cloneAttachFn parameter.
+     * @param futureParentElement Value supplied for the futureParentElement parameter.
+     * @param slotName Value supplied for the slotName parameter.
+     */
+    public operator fun invoke(scope: dynamic = definedExternally, cloneAttachFn: (dynamic, dynamic) -> dynamic = definedExternally, futureParentElement: dynamic = definedExternally, slotName: dynamic = definedExternally): dynamic
+    /**
+     * Added by your `controllersBoundTransclude` wrapper.
+     * @param slotName Value supplied for the slotName parameter.
+     */
+    public fun isSlotFilled(slotName: dynamic = definedExternally): Boolean
 }
 
+/**
+ * Public AngularTS AriaConfig contract exposed through the ng namespace.
+ */
 public external interface AriaConfig {
+    /**
+     * The ariaChecked member of ng.AriaConfig.
+     */
     public var ariaChecked: Boolean
+    /**
+     * The ariaCurrent member of ng.AriaConfig.
+     */
     public var ariaCurrent: Boolean
+    /**
+     * The ariaCurrentToken member of ng.AriaConfig.
+     */
     public var ariaCurrentToken: dynamic
+    /**
+     * The ariaDisabled member of ng.AriaConfig.
+     */
     public var ariaDisabled: Boolean
+    /**
+     * The ariaHidden member of ng.AriaConfig.
+     */
     public var ariaHidden: Boolean
+    /**
+     * The ariaInvalid member of ng.AriaConfig.
+     */
     public var ariaInvalid: Boolean
+    /**
+     * The ariaReadonly member of ng.AriaConfig.
+     */
     public var ariaReadonly: Boolean
+    /**
+     * The ariaRequired member of ng.AriaConfig.
+     */
     public var ariaRequired: Boolean
+    /**
+     * The ariaValue member of ng.AriaConfig.
+     */
     public var ariaValue: Boolean
+    /**
+     * The bindKeydown member of ng.AriaConfig.
+     */
     public var bindKeydown: Boolean
+    /**
+     * The bindRoleForClick member of ng.AriaConfig.
+     */
     public var bindRoleForClick: Boolean
+    /**
+     * The bindRoleForState member of ng.AriaConfig.
+     */
     public var bindRoleForState: Boolean
+    /**
+     * The diagnostics member of ng.AriaConfig.
+     */
     public var diagnostics: Boolean
+    /**
+     * The tabindex member of ng.AriaConfig.
+     */
     public var tabindex: Boolean
 }
 
+/**
+ * Delimiter configuration accepted by `NgModule.config()`.
+ */
 public external interface InterpolateConfig {
+    /**
+     * Closing delimiter. Defaults to `}}`.
+     */
     public var endSymbol: String
+    /**
+     * Opening delimiter. Defaults to `{{`.
+     */
     public var startSymbol: String
 }
 
+/**
+ * Main AngularTS runtime entry point with the full built-in `ng` module configured by
+ * default.
+ */
 public external interface AngularService {
-    public var `$eventBus`: dynamic
-    public var `$injector`: dynamic
-    public var `$rootScope`: dynamic
-    public var `$t`: dynamic
-    public fun bootstrap(p0: dynamic = definedExternally, p1: Array<dynamic> = definedExternally): dynamic
-    public fun call(p0: String = definedExternally): dynamic
-    public fun dispatchEvent(p0: org.w3c.dom.events.Event = definedExternally): Boolean
-    public fun emit(p0: String = definedExternally): Unit
-    public fun errorHandlingConfig(p0: dynamic = definedExternally): dynamic
-    public fun getController(p0: org.w3c.dom.Element = definedExternally, p1: String = definedExternally): dynamic
-    public fun getInjector(p0: org.w3c.dom.Element = definedExternally): dynamic
-    public fun getNormalizedAttr(p0: dynamic = definedExternally, p1: String = definedExternally): String
-    public fun getNormalizedAttrName(p0: dynamic = definedExternally, p1: String = definedExternally): String
-    public fun getScope(p0: org.w3c.dom.Element = definedExternally): dynamic
-    public fun getScopeByName(p0: String = definedExternally): dynamic
-    public fun hasNormalizedAttr(p0: dynamic = definedExternally, p1: String = definedExternally): Boolean
-    public fun init(p0: dynamic = definedExternally): Unit
-    public fun injector(p0: Array<dynamic> = definedExternally): dynamic
-    public fun module(p0: String = definedExternally, p1: Array<String> = definedExternally, p2: dynamic = definedExternally): dynamic
+    /**
+     * Use this function to manually start up AngularTS application. AngularTS will detect if
+     * it has been loaded into the browser more than once and only allow the first loaded
+     * script to be bootstrapped and will report a warning to the browser console for each of
+     * the subsequent scripts. This prevents strange results in applications, where otherwise
+     * multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the
+     * app on an element with a directive that uses transclusion, such as `ng-if`,
+     * `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector,
+     * causing animations to stop working and making the injector inaccessible from outside the
+     * app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController">
+     * {{greeting}} </div> <script src="angular.js"></script> <script> let app =
+     * angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope)
+     * { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script>
+     * </body> </html> ```
+     * @param element DOM element which is the root of AngularTS application.
+     * @param modules an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.module()`.
+     */
+    public fun bootstrap(element: dynamic = definedExternally, modules: Array<dynamic> = definedExternally): dynamic
+    /**
+     * Await result. Accepts a single string: `"<target>.<expression>"`
+     * @param input Value supplied for the input parameter.
+     */
+    public fun call(input: String = definedExternally): dynamic
+    /**
+     * Application injector, available after `bootstrap()` or `injector()` completes.
+     */
+    public var currentInjector: dynamic
+    /**
+     * Dispatches an invocation event to either an injectable service or a named scope. The
+     * event `type` identifies the target and the payload contains the expression to evaluate
+     * against that target.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun dispatchEvent(event: org.w3c.dom.events.Event = definedExternally): Boolean
+    /**
+     * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
+     * @param input Value supplied for the input parameter.
+     */
+    public fun emit(input: String = definedExternally): Unit
+    /**
+     * Global framework error-handling configuration.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun errorHandlingConfig(config: dynamic = definedExternally): dynamic
+    /**
+     * Application-wide event bus, available after bootstrap providers are created.
+     */
+    public var eventBus: dynamic
+    /**
+     * Retrieve the controller instance cached on a compiled DOM element.
+     * @param element The DOM element to get data from.
+     * @param name Controller name.
+     */
+    public fun getController(element: org.w3c.dom.Element = definedExternally, name: String = definedExternally): dynamic
+    /**
+     * Retrieve the injector cached on a bootstrapped DOM element.
+     * @param element Value supplied for the element parameter.
+     */
+    public fun getInjector(element: org.w3c.dom.Element = definedExternally): dynamic
+    /**
+     * Read an element attribute by normalized directive-style name.
+     * @param element Value supplied for the element parameter.
+     * @param normalizedName Value supplied for the normalizedName parameter.
+     */
+    public fun getNormalizedAttr(element: dynamic = definedExternally, normalizedName: String = definedExternally): String
+    /**
+     * Return the actual DOM attribute name for a normalized directive-style name.
+     * @param element Value supplied for the element parameter.
+     * @param normalizedName Value supplied for the normalizedName parameter.
+     */
+    public fun getNormalizedAttrName(element: dynamic = definedExternally, normalizedName: String = definedExternally): String
+    /**
+     * Retrieve the scope cached on a compiled DOM element.
+     * @param element The DOM element to get data from.
+     */
+    public fun getScope(element: org.w3c.dom.Element = definedExternally): dynamic
+    /**
+     * Find a scope by its registered `scopeName`.
+     * @param name Scope name to search for.
+     */
+    public fun getScopeByName(name: String = definedExternally): dynamic
+    /**
+     * Return whether an element has an attribute matching a normalized name.
+     * @param element Value supplied for the element parameter.
+     * @param normalizedName Value supplied for the normalizedName parameter.
+     */
+    public fun hasNormalizedAttr(element: dynamic = definedExternally, normalizedName: String = definedExternally): Boolean
+    /**
+     * Find `ng-app` roots under the provided element and bootstrap them. The first root uses
+     * this instance. Additional roots are bootstrapped as sub-applications and stored in
+     * subapps.
+     * @param element Root element or document to scan.
+     */
+    public fun init(element: dynamic = definedExternally): Unit
+    /**
+     * Create a standalone injector without bootstrapping the DOM.
+     * @param modules Module names or config functions to load.
+     */
+    public fun injector(modules: Array<dynamic> = definedExternally): dynamic
+    /**
+     * The `angular.module` is a global place for creating, registering and retrieving
+     * AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to
+     * an application must be registered using this mechanism. Passing one argument retrieves
+     * an existing ng.NgModule, whereas passing more than one argument creates a new
+     * ng.NgModule # Module A module is a collection of services, directives, controllers,
+     * filters, workers, WebAssembly modules, and configuration information. `angular.module`
+     * is used to configure the auto.$injector `$injector`. ```js // Create a new module let
+     * myModule = angular.module('myModule', []); // register a new service
+     * myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object
+     * config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an
+     * injector and load your modules like this: ```js let injector = angular.injector(['ng',
+     * 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or
+     * `bootstrap()` to simplify this process.
+     * @param name The name of the module to create or retrieve.
+     * @param requires If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.
+     * @param configFn Optional configuration function for the module that gets passed to `NgModule.config()`.
+     */
+    public fun module(name: String = definedExternally, requires: Array<String> = definedExternally, configFn: dynamic = definedExternally): dynamic
+    /**
+     * Registers the configured built-in `ng` module for this runtime instance.
+     */
     public fun registerNgModule(): dynamic
+    /**
+     * Root scope for the bootstrapped application.
+     */
+    public var rootScope: dynamic
+    /**
+     * Base class for user-authored AngularTS custom elements.
+     */
     public var ScopeElement: dynamic
+    /**
+     * Sub-application instances created when multiple `ng-app` roots are initialized.
+     */
     public var subapps: Array<dynamic>
+    /**
+     * JSX-free real-DOM tag factories for programmatic component views.
+     * @param namespaceUri Value supplied for the namespaceUri parameter.
+     */
+    public fun tags(namespaceUri: String = definedExternally): dynamic
+    /**
+     * Public injection token names keyed by token value.
+     */
+    public var tokens: dynamic
+    /**
+     * AngularTS version string replaced at build time.
+     */
     public var version: String
+    /**
+     * Explicit programmatic-view binding and element helpers.
+     */
+    public var view: dynamic
 }
 
+/**
+ * Scope class for the Proxy. It intercepts operations like property access (get) and
+ * property setting (set), and adds support for deep change tracking and observer-like
+ * behavior.
+ */
 public external interface ScopeService {
-    public fun `$batch`(p0: () -> dynamic = definedExternally): dynamic
-    public fun `$broadcast`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$destroy`(): Unit
-    public fun `$emit`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$getById`(p0: dynamic = definedExternally): dynamic
-    public var `$handler`: dynamic
-    public var `$id`: Double
-    public fun `$merge`(p0: dynamic = definedExternally): Unit
-    public fun `$new`(p0: dynamic = definedExternally): dynamic
-    public fun `$newIsolate`(p0: dynamic = definedExternally): dynamic
-    public fun `$on`(p0: String = definedExternally, p1: Function<*> = definedExternally): () -> Unit
-    public var `$parent`: dynamic
-    public var `$proxy`: dynamic
-    public var `$root`: dynamic
-    public var `$scopename`: String
-    public fun `$searchByName`(p0: String = definedExternally): dynamic
-    public var `$target`: dynamic
-    public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
-    public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
-    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
+    /**
+     * Runs synchronous scope mutations as one batch. Listener notifications are queued while
+     * the callback runs and flushed once after the outermost batch exits. Mutations are not
+     * rolled back if the callback throws.
+     * @param fn Value supplied for the fn parameter.
+     */
+    public fun batch(fn: () -> dynamic = definedExternally): dynamic
+    /**
+     * Broadcasts an event downward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun broadcast(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * The deleteProperty member of ng.ScopeService.
+     * @param target The target object.
+     * @param property The name of the property being deleted.
+     */
+    public fun deleteProperty(target: dynamic = definedExternally, property: dynamic = definedExternally): Boolean
+    /**
+     * Destroys this scope and its descendants.
+     */
+    public fun destroy(): Unit
+    /**
+     * Emits an event upward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun emit(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * Intercepts property access on the target object. It checks for specific properties
+     * (`watch` and `sync`) and binds their methods. For other properties, it returns the value
+     * directly.
+     * @param target The target object.
+     * @param property The name of the property being accessed.
+     * @param proxy The proxy object being invoked.
+     */
+    public fun get(target: dynamic = definedExternally, property: dynamic = definedExternally, proxy: dynamic = definedExternally): dynamic
+    /**
+     * Searches this scope tree for a scope with the given id.
+     * @param id Value supplied for the id parameter.
+     */
+    public fun getById(id: dynamic = definedExternally): dynamic
+    /**
+     * The id member of ng.ScopeService.
+     */
+    public var id: Double
+    /**
+     * Merges enumerable properties from the provided object into the current scope target.
+     * @param newTarget Value supplied for the newTarget parameter.
+     */
+    public fun merge(newTarget: dynamic = definedExternally): Unit
+    /**
+     * Creates a prototypically inherited child scope.
+     * @param childInstance Value supplied for the childInstance parameter.
+     */
+    public fun new(childInstance: dynamic = definedExternally): dynamic
+    /**
+     * Creates an isolate child scope that does not inherit watchable properties directly.
+     * @param instance Value supplied for the instance parameter.
+     */
+    public fun newIsolate(instance: dynamic = definedExternally): dynamic
+    /**
+     * Registers an event listener on this scope and returns a deregistration function.
+     * @param name Value supplied for the name parameter.
+     * @param listener Value supplied for the listener parameter.
+     */
+    public fun on(name: String = definedExternally, listener: Function<*> = definedExternally): () -> Unit
+    /**
+     * The parent member of ng.ScopeService.
+     */
+    public var parent: dynamic
+    /**
+     * The root member of ng.ScopeService.
+     */
+    public var root: dynamic
+    /**
+     * The scopeName member of ng.ScopeService.
+     */
+    public var scopeName: String
+    /**
+     * Searches the scope tree for a scope registered under the provided name.
+     * @param name Value supplied for the name parameter.
+     */
+    public fun searchByName(name: String = definedExternally): dynamic
+    /**
+     * Intercepts and handles property assignments on the target object. Scopeable objects are
+     * stored as raw model values and proxied lazily when read.
+     * @param target The target object.
+     * @param property The name of the property being set.
+     * @param value The new value being assigned to the property.
+     * @param proxy The proxy intercepting property access.
+     */
+    public fun set(target: dynamic = definedExternally, property: String = definedExternally, value: dynamic = definedExternally, proxy: dynamic = definedExternally): Boolean
+    /**
+     * Creates a transcluded child scope linked to this scope and an optional parent instance.
+     * @param parentInstance Value supplied for the parentInstance parameter.
+     */
+    public fun transcluded(parentInstance: dynamic = definedExternally): dynamic
+    /**
+     * Registers a watcher for a property along with a listener function. The listener function
+     * is invoked when changes to that property are detected.
+     * @param watchProp An expression to be watched in the context of this model.
+     * @param listenerFn A function to execute when changes are detected on watched context.
+     * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+     * @param directLeaf Value supplied for the directLeaf parameter.
+     */
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
 }
 
+/**
+ * Scope class for the Proxy. It intercepts operations like property access (get) and
+ * property setting (set), and adds support for deep change tracking and observer-like
+ * behavior.
+ */
 public external interface RootScopeService {
-    public fun `$batch`(p0: () -> dynamic = definedExternally): dynamic
-    public fun `$broadcast`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$destroy`(): Unit
-    public fun `$emit`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$getById`(p0: dynamic = definedExternally): dynamic
-    public var `$handler`: dynamic
-    public var `$id`: Double
-    public fun `$merge`(p0: dynamic = definedExternally): Unit
-    public fun `$new`(p0: dynamic = definedExternally): dynamic
-    public fun `$newIsolate`(p0: dynamic = definedExternally): dynamic
-    public fun `$on`(p0: String = definedExternally, p1: Function<*> = definedExternally): () -> Unit
-    public var `$parent`: dynamic
-    public var `$proxy`: dynamic
-    public var `$root`: dynamic
-    public var `$scopename`: String
-    public fun `$searchByName`(p0: String = definedExternally): dynamic
-    public var `$target`: dynamic
-    public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
-    public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
-    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
+    /**
+     * Runs synchronous scope mutations as one batch. Listener notifications are queued while
+     * the callback runs and flushed once after the outermost batch exits. Mutations are not
+     * rolled back if the callback throws.
+     * @param fn Value supplied for the fn parameter.
+     */
+    public fun batch(fn: () -> dynamic = definedExternally): dynamic
+    /**
+     * Broadcasts an event downward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun broadcast(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * The deleteProperty member of ng.RootScopeService.
+     * @param target The target object.
+     * @param property The name of the property being deleted.
+     */
+    public fun deleteProperty(target: dynamic = definedExternally, property: dynamic = definedExternally): Boolean
+    /**
+     * Destroys this scope and its descendants.
+     */
+    public fun destroy(): Unit
+    /**
+     * Emits an event upward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun emit(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * Intercepts property access on the target object. It checks for specific properties
+     * (`watch` and `sync`) and binds their methods. For other properties, it returns the value
+     * directly.
+     * @param target The target object.
+     * @param property The name of the property being accessed.
+     * @param proxy The proxy object being invoked.
+     */
+    public fun get(target: dynamic = definedExternally, property: dynamic = definedExternally, proxy: dynamic = definedExternally): dynamic
+    /**
+     * Searches this scope tree for a scope with the given id.
+     * @param id Value supplied for the id parameter.
+     */
+    public fun getById(id: dynamic = definedExternally): dynamic
+    /**
+     * The id member of ng.RootScopeService.
+     */
+    public var id: Double
+    /**
+     * Merges enumerable properties from the provided object into the current scope target.
+     * @param newTarget Value supplied for the newTarget parameter.
+     */
+    public fun merge(newTarget: dynamic = definedExternally): Unit
+    /**
+     * Creates a prototypically inherited child scope.
+     * @param childInstance Value supplied for the childInstance parameter.
+     */
+    public fun new(childInstance: dynamic = definedExternally): dynamic
+    /**
+     * Creates an isolate child scope that does not inherit watchable properties directly.
+     * @param instance Value supplied for the instance parameter.
+     */
+    public fun newIsolate(instance: dynamic = definedExternally): dynamic
+    /**
+     * Registers an event listener on this scope and returns a deregistration function.
+     * @param name Value supplied for the name parameter.
+     * @param listener Value supplied for the listener parameter.
+     */
+    public fun on(name: String = definedExternally, listener: Function<*> = definedExternally): () -> Unit
+    /**
+     * The parent member of ng.RootScopeService.
+     */
+    public var parent: dynamic
+    /**
+     * The root member of ng.RootScopeService.
+     */
+    public var root: dynamic
+    /**
+     * The scopeName member of ng.RootScopeService.
+     */
+    public var scopeName: String
+    /**
+     * Searches the scope tree for a scope registered under the provided name.
+     * @param name Value supplied for the name parameter.
+     */
+    public fun searchByName(name: String = definedExternally): dynamic
+    /**
+     * Intercepts and handles property assignments on the target object. Scopeable objects are
+     * stored as raw model values and proxied lazily when read.
+     * @param target The target object.
+     * @param property The name of the property being set.
+     * @param value The new value being assigned to the property.
+     * @param proxy The proxy intercepting property access.
+     */
+    public fun set(target: dynamic = definedExternally, property: String = definedExternally, value: dynamic = definedExternally, proxy: dynamic = definedExternally): Boolean
+    /**
+     * Creates a transcluded child scope linked to this scope and an optional parent instance.
+     * @param parentInstance Value supplied for the parentInstance parameter.
+     */
+    public fun transcluded(parentInstance: dynamic = definedExternally): dynamic
+    /**
+     * Registers a watcher for a property along with a listener function. The listener function
+     * is invoked when changes to that property are detected.
+     * @param watchProp An expression to be watched in the context of this model.
+     * @param listenerFn A function to execute when changes are detected on watched context.
+     * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+     * @param directLeaf Value supplied for the directLeaf parameter.
+     */
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
 }
 
+/**
+ * **`Element`** is the most general base class from which all element objects (i.e.,
+ * objects that represent elements) in a Document inherit. [MDN
+ * Reference](https://developer.mozilla.org/docs/Web/API/Element)
+ */
 public external interface ElementService
 
+/**
+ * The **`HTMLElement`** interface represents any HTML element. [MDN
+ * Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement)
+ */
 public external interface RootElementService
 
+/**
+ * The **`Document`** interface represents any web page loaded in the browser and serves as
+ * an entry point into the web page's content, which is the DOM tree. [MDN
+ * Reference](https://developer.mozilla.org/docs/Web/API/Document)
+ */
 public external interface DocumentService
 
+/**
+ * The **`Window`** interface represents a window containing a DOM document; the `document`
+ * property points to the DOM document loaded in that window. [MDN
+ * Reference](https://developer.mozilla.org/docs/Web/API/Window)
+ */
 public external interface WindowService {
+    /**
+     * The angular member of ng.WindowService.
+     */
     public var angular: dynamic
 }
 
+/**
+ * Public AngularTS AnchorScrollService contract exposed through the ng namespace.
+ */
 public external interface AnchorScrollService {
-    public operator fun invoke(p0: dynamic = definedExternally): Unit
+    /**
+     * Invoke anchor scrolling.
+     * @param hashOrElement Value supplied for the hashOrElement parameter.
+     */
+    public operator fun invoke(hashOrElement: dynamic = definedExternally): Unit
+    /**
+     * Vertical scroll offset. Can be a number, a function returning a number, or an Element
+     * whose offsetTop will be used.
+     */
     public var yOffset: dynamic
 }
 
+/**
+ * Public AngularTS AnimateService contract exposed through the ng namespace.
+ */
 public external interface AnimateService {
-    public fun addClass(p0: org.w3c.dom.Element = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun animate(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: String = definedExternally, p4: dynamic = definedExternally): dynamic
-    public fun cancel(p0: dynamic = definedExternally): Unit
-    public fun define(p0: String = definedExternally, p1: dynamic = definedExternally): Unit
-    public fun enter(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun leave(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun move(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun removeClass(p0: org.w3c.dom.Element = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun setClass(p0: org.w3c.dom.Element = definedExternally, p1: String = definedExternally, p2: String = definedExternally, p3: dynamic = definedExternally): dynamic
-    public fun transition(p0: () -> dynamic = definedExternally): dynamic
+    /**
+     * The addClass member of ng.AnimateService.
+     * @param element Value supplied for the element parameter.
+     * @param className Value supplied for the className parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun addClass(element: org.w3c.dom.Element = definedExternally, className: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The animate member of ng.AnimateService.
+     * @param element Value supplied for the element parameter.
+     * @param from Value supplied for the from parameter.
+     * @param to Value supplied for the to parameter.
+     * @param className Value supplied for the className parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun animate(element: org.w3c.dom.Element = definedExternally, from: dynamic = definedExternally, to: dynamic = definedExternally, className: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The cancel member of ng.AnimateService.
+     * @param handle Value supplied for the handle parameter.
+     */
+    public fun cancel(handle: dynamic = definedExternally): Unit
+    /**
+     * The define member of ng.AnimateService.
+     * @param name Value supplied for the name parameter.
+     * @param preset Value supplied for the preset parameter.
+     */
+    public fun define(name: String = definedExternally, preset: dynamic = definedExternally): Unit
+    /**
+     * The enter member of ng.AnimateService.
+     * @param element Value supplied for the element parameter.
+     * @param parent Value supplied for the parent parameter.
+     * @param after Value supplied for the after parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun enter(element: org.w3c.dom.Element = definedExternally, parent: dynamic = definedExternally, after: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The leave member of ng.AnimateService.
+     * @param element Value supplied for the element parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun leave(element: org.w3c.dom.Element = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The move member of ng.AnimateService.
+     * @param element Value supplied for the element parameter.
+     * @param parent Value supplied for the parent parameter.
+     * @param after Value supplied for the after parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun move(element: org.w3c.dom.Element = definedExternally, parent: dynamic = definedExternally, after: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The removeClass member of ng.AnimateService.
+     * @param element Value supplied for the element parameter.
+     * @param className Value supplied for the className parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun removeClass(element: org.w3c.dom.Element = definedExternally, className: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The setClass member of ng.AnimateService.
+     * @param element Value supplied for the element parameter.
+     * @param add Value supplied for the add parameter.
+     * @param remove Value supplied for the remove parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun setClass(element: org.w3c.dom.Element = definedExternally, add: String = definedExternally, remove: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The transition member of ng.AnimateService.
+     * @param update Value supplied for the update parameter.
+     */
+    public fun transition(update: () -> dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS AnimationHandle contract exposed through the ng namespace.
+ */
 public external interface AnimationHandle {
+    /**
+     * The cancel member of ng.AnimationHandle.
+     */
     public fun cancel(): Unit
-    public fun catch(p0: (dynamic) -> dynamic = definedExternally): dynamic
-    public fun complete(p0: Boolean = definedExternally): Unit
+    /**
+     * The catch member of ng.AnimationHandle.
+     * @param onrejected Value supplied for the onrejected parameter.
+     */
+    public fun catch(onrejected: (dynamic) -> dynamic = definedExternally): dynamic
+    /**
+     * The complete member of ng.AnimationHandle.
+     * @param status Value supplied for the status parameter.
+     */
+    public fun complete(status: Boolean = definedExternally): Unit
+    /**
+     * The controller member of ng.AnimationHandle.
+     */
     public var controller: dynamic
-    public fun done(p0: (Boolean) -> Unit = definedExternally): Unit
-    public fun finally(p0: () -> Unit = definedExternally): dynamic
+    /**
+     * The done member of ng.AnimationHandle.
+     * @param callback Value supplied for the callback parameter.
+     */
+    public fun done(callback: (Boolean) -> Unit = definedExternally): Unit
+    /**
+     * The finally member of ng.AnimationHandle.
+     * @param onfinally Value supplied for the onfinally parameter.
+     */
+    public fun finally(onfinally: () -> Unit = definedExternally): dynamic
+    /**
+     * The finish member of ng.AnimationHandle.
+     */
     public fun finish(): Unit
+    /**
+     * The finished member of ng.AnimationHandle.
+     */
     public var finished: dynamic
+    /**
+     * The pause member of ng.AnimationHandle.
+     */
     public fun pause(): Unit
+    /**
+     * The play member of ng.AnimationHandle.
+     */
     public fun play(): Unit
-    public fun then(p0: (Nothing?) -> dynamic = definedExternally, p1: (dynamic) -> dynamic = definedExternally): dynamic
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled Value supplied for the onfulfilled parameter.
+     * @param onrejected Value supplied for the onrejected parameter.
+     */
+    public fun then(onfulfilled: (Nothing?) -> dynamic = definedExternally, onrejected: (dynamic) -> dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS AnimationContext contract exposed through the ng namespace.
+ */
 public external interface AnimationContext {
+    /**
+     * The addClass member of ng.AnimationContext.
+     */
     public var addClass: String
+    /**
+     * The className member of ng.AnimationContext.
+     */
     public var className: String
+    /**
+     * The from member of ng.AnimationContext.
+     */
     public var from: dynamic
+    /**
+     * The phase member of ng.AnimationContext.
+     */
     public var phase: dynamic
+    /**
+     * The removeClass member of ng.AnimationContext.
+     */
     public var removeClass: String
+    /**
+     * The signal member of ng.AnimationContext.
+     */
     public var signal: dynamic
+    /**
+     * The to member of ng.AnimationContext.
+     */
     public var to: dynamic
 }
 
+/**
+ * Public AngularTS AnimationLifecycleCallback contract exposed through the ng namespace.
+ */
 public external interface AnimationLifecycleCallback {
-    public operator fun invoke(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally): Unit
+    /**
+     * Calls the ng.AnimationLifecycleCallback function.
+     * @param element Value supplied for the element parameter.
+     * @param context Value supplied for the context parameter.
+     */
+    public operator fun invoke(element: org.w3c.dom.Element = definedExternally, context: dynamic = definedExternally): Unit
 }
 
+/**
+ * Public AngularTS AriaService contract exposed through the ng namespace.
+ */
 public external interface AriaService {
-    public fun config(p0: dynamic = definedExternally): dynamic
+    /**
+     * The config member of ng.AriaService.
+     * @param key Value supplied for the key parameter.
+     */
+    public fun config(key: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Entry point for the `$compile` service.
+ */
 public external interface CompileService {
-    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: Double = definedExternally, p3: String = definedExternally, p4: dynamic = definedExternally): (dynamic, (dynamic, dynamic) -> dynamic, dynamic) -> dynamic
+    /**
+     * Calls the ng.CompileService function.
+     * @param compileNode Value supplied for the compileNode parameter.
+     * @param transcludeFn Value supplied for the transcludeFn parameter.
+     * @param maxPriority Value supplied for the maxPriority parameter.
+     * @param ignoreDirective Value supplied for the ignoreDirective parameter.
+     * @param previousCompileContext Value supplied for the previousCompileContext parameter.
+     */
+    public operator fun invoke(compileNode: dynamic = definedExternally, transcludeFn: dynamic = definedExternally, maxPriority: Double = definedExternally, ignoreDirective: String = definedExternally, previousCompileContext: dynamic = definedExternally): (dynamic, (dynamic, dynamic) -> dynamic, dynamic) -> dynamic
 }
 
+/**
+ * Public AngularTS ControllerService contract exposed through the ng namespace.
+ */
 public external interface ControllerService {
-    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: Boolean = definedExternally, p3: String = definedExternally): dynamic
+    /**
+     * Calls the ng.ControllerService function.
+     * @param expression Value supplied for the expression parameter.
+     * @param locals Value supplied for the locals parameter.
+     * @param later Value supplied for the later parameter.
+     * @param ident Value supplied for the ident parameter.
+     */
+    public operator fun invoke(expression: dynamic = definedExternally, locals: dynamic = definedExternally, later: Boolean = definedExternally, ident: String = definedExternally): dynamic
 }
 
+/**
+ * High-level API for reading, writing, serializing, and removing browser cookies through
+ * the injectable `$cookie` service.
+ */
 public external interface CookieService {
-    public fun get(p0: String = definedExternally): String
+    /**
+     * Retrieves a raw cookie value.
+     * @param key Cookie name to read.
+     */
+    public fun get(key: String = definedExternally): String
+    /**
+     * Returns an object containing all raw cookies.
+     */
     public fun getAll(): dynamic
-    public fun getObject(p0: String = definedExternally): dynamic
-    public fun put(p0: String = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally): Unit
-    public fun putObject(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Unit
-    public fun remove(p0: String = definedExternally, p1: dynamic = definedExternally): Unit
+    /**
+     * Retrieves a cookie and deserializes its JSON content.
+     * @param key Cookie name to read.
+     */
+    public fun getObject(key: String = definedExternally): dynamic
+    /**
+     * Sets a raw cookie value.
+     * @param key Cookie name to write.
+     * @param value String value to write.
+     * @param options Cookie attributes for this write.
+     */
+    public fun put(key: String = definedExternally, value: String = definedExternally, options: dynamic = definedExternally): Unit
+    /**
+     * Serializes an object as JSON and stores it as a cookie.
+     * @param key Cookie name to write.
+     * @param value JSON-serializable value.
+     * @param options Cookie attributes for this write.
+     */
+    public fun putObject(key: String = definedExternally, value: dynamic = definedExternally, options: dynamic = definedExternally): Unit
+    /**
+     * Removes a cookie by setting an expired date.
+     * @param key Cookie name to remove.
+     * @param options Cookie attributes that must match the existing cookie.
+     */
+    public fun remove(key: String = definedExternally, options: dynamic = definedExternally): Unit
 }
 
+/**
+ * Application-wide asynchronous publish/subscribe utility. `EventBus` powers `$eventBus`
+ * for cross-boundary domain events, browser callbacks, worker messages, realtime messages,
+ * and non-Angular integrations. It is intentionally not a state store and should not
+ * replace scope events for parent/child scope-tree communication.
+ */
 public external interface EventBusService {
+    /**
+     * Dispose the instance, removing all topics and listeners.
+     */
     public fun dispose(): Unit
-    public fun getCount(p0: String = definedExternally): Double
+    /**
+     * Get the number of subscribers for a topic. This is the public diagnostic surface for
+     * `$eventBus`. It reports active registered listeners only; topic listings, leak reports,
+     * and reactive diagnostics are intentionally not exposed.
+     * @param topic Topic name to inspect.
+     */
+    public fun getCount(topic: String = definedExternally): Double
+    /**
+     * Checks if instance has been disposed.
+     */
     public fun isDisposed(): Boolean
-    public fun publish(p0: String = definedExternally, vararg p1: dynamic): Boolean
+    /**
+     * Publish a value to a topic asynchronously. All listeners are invoked in the order they
+     * were added. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are
+     * skipped if their scope is destroyed before the queued delivery runs.
+     * @param topic The topic to publish.
+     * @param args Arguments to pass to listeners.
+     */
+    public fun publish(topic: String = definedExternally, vararg args: dynamic): Boolean
+    /**
+     * Reset the bus to its initial state without disposing it. All topics and listeners are
+     * removed, and the instance can be reused.
+     */
     public fun reset(): Unit
-    public fun setDeliveryPolicy(p0: (dynamic) -> dynamic = definedExternally): Unit
-    public fun subscribe(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): () -> Boolean
-    public fun subscribeOnce(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): () -> Boolean
-    public fun unsubscribe(p0: String = definedExternally, p1: Function<*> = definedExternally, p2: dynamic = definedExternally): Boolean
+    /**
+     * Replace the runtime delivery policy used by future publications. The default policy
+     * delivers every active listener. Configured policies can drop deliveries for specific
+     * topics, scopes, or application metadata.
+     * @param policy Value supplied for the policy parameter.
+     */
+    public fun setDeliveryPolicy(policy: (dynamic) -> dynamic = definedExternally): Unit
+    /**
+     * Subscribe a function to a topic. The returned function removes only this listener
+     * registration. When `context` is provided, it becomes the listener `this` binding. When
+     * `context` is an AngularTS scope proxy, the scope also owns the listener lifecycle:
+     * destroying the scope removes the listener and prevents queued delivery from reaching the
+     * destroyed scope.
+     * @param topic Value supplied for the topic parameter.
+     * @param fn Value supplied for the fn parameter.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun subscribe(topic: String = definedExternally, fn: Function<*> = definedExternally, context: dynamic = definedExternally): () -> Boolean
+    /**
+     * Subscribe a function to a topic only once. Listener is removed before the first
+     * invocation. When `context` is provided, it becomes the listener `this` binding. When
+     * `context` is an AngularTS scope proxy, scope destruction before first delivery removes
+     * the one-time listener.
+     * @param topic Value supplied for the topic parameter.
+     * @param fn Value supplied for the fn parameter.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun subscribeOnce(topic: String = definedExternally, fn: Function<*> = definedExternally, context: dynamic = definedExternally): () -> Boolean
+    /**
+     * Unsubscribe a specific function from a topic. Matches by function reference and optional
+     * context.
+     * @param topic Value supplied for the topic parameter.
+     * @param fn Value supplied for the fn parameter.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun unsubscribe(topic: String = definedExternally, fn: Function<*> = definedExternally, context: dynamic = definedExternally): Boolean
 }
 
+/**
+ * A callback type for handling errors.
+ */
 public external interface ExceptionHandlerService {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.ExceptionHandlerService function.
+     * @param exception Value supplied for the exception parameter.
+     */
+    public operator fun invoke(exception: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Declarative config accepted by `NgModule.config({ $htmlCanvas: ... })`. The integration
+ * is disabled by default and has no AngularTS fallback.
+ */
 public external interface HtmlCanvasConfig {
+    /**
+     * Default canvas rendering target for directives that do not specify one.
+     */
     public var defaultMode: dynamic
+    /**
+     * Default invalidation scheduler for canvas-backed HTML layers.
+     */
     public var defaultScheduler: dynamic
+    /**
+     * The enabled member of ng.HtmlCanvasConfig.
+     */
     public var enabled: dynamic
+    /**
+     * Require an explicit browser/engine feature flag before activation. This stays strict by
+     * default while the browser API is experimental.
+     */
     public var requireFlag: Boolean
+    /**
+     * Throw when HTML-in-Canvas is enabled on a runtime that does not support the native
+     * browser feature. AngularTS does not provide a fallback renderer.
+     */
     public var throwOnUnsupported: Boolean
 }
 
+/**
+ * Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the ng namespace.
+ */
 public external interface HtmlCanvasRuntimeSupport {
+    /**
+     * Native WebGPU `copyElementImageToTexture(...)` support.
+     */
     public var copyElementImageToTexture: Boolean
+    /**
+     * Native 2D `drawElementImage(...)` support.
+     */
     public var drawElementImage: Boolean
+    /**
+     * Native layout-subtree support or an implied drawing primitive.
+     */
     public var layoutSubtree: Boolean
+    /**
+     * Supported rendering modes for the current runtime.
+     */
     public var modes: dynamic
+    /**
+     * Native canvas `paint` event support.
+     */
     public var paintEvent: Boolean
+    /**
+     * Native canvas `requestPaint()` support.
+     */
     public var requestPaint: Boolean
+    /**
+     * Whether any native HTML-in-Canvas rendering mode is available.
+     */
     public var supported: Boolean
+    /**
+     * Native WebGL `texElementImage2D(...)` support.
+     */
     public var texElementImage2D: Boolean
 }
 
+/**
+ * Public AngularTS HtmlCanvasService contract exposed through the ng namespace.
+ */
 public external interface HtmlCanvasService {
+    /**
+     * The config member of ng.HtmlCanvasService.
+     */
     public var config: dynamic
+    /**
+     * The enabled member of ng.HtmlCanvasService.
+     */
     public var enabled: Boolean
-    public fun invalidate(p0: dynamic = definedExternally): Unit
-    public fun registerRoot(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun registerSource(p0: dynamic = definedExternally, p1: org.w3c.dom.Element = definedExternally, p2: dynamic = definedExternally): () -> Unit
-    public fun requestPaint(p0: dynamic = definedExternally): Unit
+    /**
+     * The invalidate member of ng.HtmlCanvasService.
+     * @param canvas Value supplied for the canvas parameter.
+     */
+    public fun invalidate(canvas: dynamic = definedExternally): Unit
+    /**
+     * The registerRoot member of ng.HtmlCanvasService.
+     * @param canvas Value supplied for the canvas parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun registerRoot(canvas: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The registerSource member of ng.HtmlCanvasService.
+     * @param canvas Value supplied for the canvas parameter.
+     * @param source Value supplied for the source parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun registerSource(canvas: dynamic = definedExternally, source: org.w3c.dom.Element = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * The requestPaint member of ng.HtmlCanvasService.
+     * @param canvas Value supplied for the canvas parameter.
+     */
+    public fun requestPaint(canvas: dynamic = definedExternally): Unit
+    /**
+     * The support member of ng.HtmlCanvasService.
+     */
     public var support: dynamic
+    /**
+     * The supported member of ng.HtmlCanvasService.
+     */
     public var supported: Boolean
 }
 
+/**
+ * Public AngularTS FilterFn contract exposed through the ng namespace.
+ */
 public external interface FilterFn {
-    public operator fun invoke(vararg p0: dynamic): dynamic
+    /**
+     * Calls the ng.FilterFn function.
+     * @param args Value supplied for the args parameter.
+     */
+    public operator fun invoke(vararg args: dynamic): dynamic
 }
 
+/**
+ * Public AngularTS FilterFactory contract exposed through the ng namespace.
+ */
 public external interface FilterFactory
 
+/**
+ * Public AngularTS FilterService contract exposed through the ng namespace.
+ */
 public external interface FilterService {
-    public operator fun invoke(p0: String = definedExternally): Function<*>
+    /**
+     * Calls the ng.FilterService function.
+     * @param name Value supplied for the name parameter.
+     */
+    public operator fun invoke(name: String = definedExternally): Function<*>
 }
 
+/**
+ * Public AngularTS EntryFilterItem contract exposed through the ng namespace.
+ */
 public external interface EntryFilterItem {
+    /**
+     * The key member of ng.EntryFilterItem.
+     */
     public var key: dynamic
+    /**
+     * The value member of ng.EntryFilterItem.
+     */
     public var value: dynamic
 }
 
+/**
+ * Public AngularTS CurrencyFilterOptions contract exposed through the ng namespace.
+ */
 public external interface CurrencyFilterOptions
 
+/**
+ * Function that serializes query params into a URL-encoded string.
+ */
 public external interface HttpParamSerializerService {
-    public operator fun invoke(p0: dynamic = definedExternally): String
+    /**
+     * Calls the ng.HttpParamSerializerService function.
+     * @param params Value supplied for the params parameter.
+     */
+    public operator fun invoke(params: dynamic = definedExternally): String
 }
 
+/**
+ * Runtime surface of the `$http` service. Call the service directly with a full
+ * HttpRequestConfig, or use a shorthand method for common HTTP verbs. All methods return
+ * an `Promise<HttpResponse<T>>` that resolves for successful 2xx responses and rejects
+ * with HttpError for errors.
+ */
 public external interface HttpService {
+    /**
+     * Live runtime defaults initialized from app-level `$http` configuration.
+     */
     public var defaults: dynamic
-    public fun delete(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun get(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun head(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
-    public fun patch(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    /**
+     * Send a `DELETE` request.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun delete(url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Send a `GET` request.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun get(url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Send a `HEAD` request.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun head(url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Send a request using the full configuration object.
+     * @param config Value supplied for the config parameter.
+     */
+    public operator fun invoke(config: dynamic = definedExternally): dynamic
+    /**
+     * Send a `PATCH` request with a request body.
+     * @param url Value supplied for the url parameter.
+     * @param data Value supplied for the data parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun patch(url: String = definedExternally, data: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Requests currently in flight.
+     */
     public var pendingRequests: Array<dynamic>
-    public fun post(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun put(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    /**
+     * Send a `POST` request with a request body.
+     * @param url Value supplied for the url parameter.
+     * @param data Value supplied for the data parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun post(url: String = definedExternally, data: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * Send a `PUT` request with a request body.
+     * @param url Value supplied for the url parameter.
+     * @param data Value supplied for the data parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun put(url: String = definedExternally, data: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Injector for factories and services
+ */
 public external interface InjectorService<TCustomServices> {
-    public fun get(p0: dynamic = definedExternally): dynamic
-    public fun has(p0: String = definedExternally): Boolean
-    public fun instantiate(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: String = definedExternally): dynamic
-    public fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally, p3: String = definedExternally): dynamic
-    public fun loadNewModules(p0: Array<dynamic> = definedExternally): Unit
+    /**
+     * Get a service by name.
+     * @param serviceName Value supplied for the serviceName parameter.
+     */
+    public fun get(serviceName: dynamic = definedExternally): dynamic
+    /**
+     * The has member of ng.InjectorService.
+     * @param name Value supplied for the name parameter.
+     */
+    public fun has(name: String = definedExternally): Boolean
+    /**
+     * Instantiate a type constructor with optional locals.
+     * @param type Value supplied for the type parameter.
+     * @param locals Value supplied for the locals parameter.
+     * @param serviceName Value supplied for the serviceName parameter.
+     */
+    public fun instantiate(type: dynamic = definedExternally, locals: dynamic = definedExternally, serviceName: String = definedExternally): dynamic
+    /**
+     * Invoke a function with optional context and locals.
+     * @param fn Value supplied for the fn parameter.
+     * @param self Value supplied for the self parameter.
+     * @param locals Value supplied for the locals parameter.
+     * @param serviceName Value supplied for the serviceName parameter.
+     */
+    public fun invoke(fn: dynamic = definedExternally, self: dynamic = definedExternally, locals: dynamic = definedExternally, serviceName: String = definedExternally): dynamic
+    /**
+     * The loadNewModules member of ng.InjectorService.
+     * @param mods Value supplied for the mods parameter.
+     */
+    public fun loadNewModules(mods: Array<dynamic> = definedExternally): Unit
 }
 
+/**
+ * Public injectable contracts keyed by their canonical runtime token. Every single-dollar
+ * token exposed by [[PublicInjectionTokens]] must map to a named, documented contract
+ * here. Double-dollar framework internals are intentionally excluded.
+ */
 public external interface InjectionTokenMap {
-    public fun `$anchorScroll`(p0: dynamic = definedExternally): Unit
+    /**
+     * The $anchorScroll member of ng.InjectionTokenMap.
+     * @param hashOrElement Value supplied for the hashOrElement parameter.
+     */
+    public fun `$anchorScroll`(hashOrElement: dynamic = definedExternally): Unit
+    /**
+     * The $angular member of ng.InjectionTokenMap.
+     */
     public var `$angular`: dynamic
+    /**
+     * The $animate member of ng.InjectionTokenMap.
+     */
     public var `$animate`: dynamic
+    /**
+     * The $aria member of ng.InjectionTokenMap.
+     */
     public var `$aria`: dynamic
-    public fun `$compile`(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: Double = definedExternally, p3: String = definedExternally, p4: dynamic = definedExternally): (dynamic, (dynamic, dynamic) -> dynamic, dynamic) -> dynamic
-    public fun `$controller`(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: Boolean = definedExternally, p3: String = definedExternally): dynamic
+    /**
+     * The $compile member of ng.InjectionTokenMap.
+     * @param compileNode Value supplied for the compileNode parameter.
+     * @param transcludeFn Value supplied for the transcludeFn parameter.
+     * @param maxPriority Value supplied for the maxPriority parameter.
+     * @param ignoreDirective Value supplied for the ignoreDirective parameter.
+     * @param previousCompileContext Value supplied for the previousCompileContext parameter.
+     */
+    public fun `$compile`(compileNode: dynamic = definedExternally, transcludeFn: dynamic = definedExternally, maxPriority: Double = definedExternally, ignoreDirective: String = definedExternally, previousCompileContext: dynamic = definedExternally): (dynamic, (dynamic, dynamic) -> dynamic, dynamic) -> dynamic
+    /**
+     * The $controller member of ng.InjectionTokenMap.
+     * @param expression Value supplied for the expression parameter.
+     * @param locals Value supplied for the locals parameter.
+     * @param later Value supplied for the later parameter.
+     * @param ident Value supplied for the ident parameter.
+     */
+    public fun `$controller`(expression: dynamic = definedExternally, locals: dynamic = definedExternally, later: Boolean = definedExternally, ident: String = definedExternally): dynamic
+    /**
+     * The $cookie member of ng.InjectionTokenMap.
+     */
     public var `$cookie`: dynamic
+    /**
+     * The $document member of ng.InjectionTokenMap.
+     */
     public var `$document`: dynamic
+    /**
+     * The $element member of ng.InjectionTokenMap.
+     */
     public var `$element`: org.w3c.dom.Element
+    /**
+     * The $eventBus member of ng.InjectionTokenMap.
+     */
     public var `$eventBus`: dynamic
-    public fun `$exceptionHandler`(p0: dynamic = definedExternally): dynamic
-    public fun `$filter`(p0: String = definedExternally): Function<*>
+    /**
+     * The $exceptionHandler member of ng.InjectionTokenMap.
+     * @param exception Value supplied for the exception parameter.
+     */
+    public fun `$exceptionHandler`(exception: dynamic = definedExternally): dynamic
+    /**
+     * The $filter member of ng.InjectionTokenMap.
+     * @param name Value supplied for the name parameter.
+     */
+    public fun `$filter`(name: String = definedExternally): Function<*>
+    /**
+     * The $htmlCanvas member of ng.InjectionTokenMap.
+     */
     public var `$htmlCanvas`: dynamic
-    public fun `$http`(p0: dynamic = definedExternally): dynamic
-    public fun `$httpParamSerializer`(p0: dynamic = definedExternally): String
+    /**
+     * The $http member of ng.InjectionTokenMap.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun `$http`(config: dynamic = definedExternally): dynamic
+    /**
+     * The $httpParamSerializer member of ng.InjectionTokenMap.
+     * @param params Value supplied for the params parameter.
+     */
+    public fun `$httpParamSerializer`(params: dynamic = definedExternally): String
+    /**
+     * The $injector member of ng.InjectionTokenMap.
+     */
     public var `$injector`: dynamic
-    public fun `$interpolate`(p0: String = definedExternally, p1: Boolean = definedExternally, p2: dynamic = definedExternally, p3: Boolean = definedExternally): (dynamic, (dynamic) -> Unit) -> dynamic
+    /**
+     * The $interpolate member of ng.InjectionTokenMap.
+     * @param text Value supplied for the text parameter.
+     * @param mustHaveExpression Value supplied for the mustHaveExpression parameter.
+     * @param trustedContext Value supplied for the trustedContext parameter.
+     * @param allOrNothing Value supplied for the allOrNothing parameter.
+     */
+    public fun `$interpolate`(text: String = definedExternally, mustHaveExpression: Boolean = definedExternally, trustedContext: dynamic = definedExternally, allOrNothing: Boolean = definedExternally): (dynamic, (dynamic) -> Unit) -> dynamic
+    /**
+     * The $location member of ng.InjectionTokenMap.
+     */
     public var `$location`: dynamic
+    /**
+     * The $log member of ng.InjectionTokenMap.
+     */
     public var `$log`: dynamic
-    public fun `$machine`(p0: dynamic = definedExternally): dynamic
-    public fun `$parse`(p0: String = definedExternally, p1: (dynamic) -> dynamic = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    public fun `$rest`(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    /**
+     * The $machine member of ng.InjectionTokenMap.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun `$machine`(config: dynamic = definedExternally): dynamic
+    /**
+     * The $parse member of ng.InjectionTokenMap.
+     * @param expression Value supplied for the expression parameter.
+     * @param interceptorFn Value supplied for the interceptorFn parameter.
+     */
+    public fun `$parse`(expression: String = definedExternally, interceptorFn: (dynamic) -> dynamic = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
+    /**
+     * The $rest member of ng.InjectionTokenMap.
+     * @param baseUrl Value supplied for the baseUrl parameter.
+     * @param entityClass Value supplied for the entityClass parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun `$rest`(baseUrl: String = definedExternally, entityClass: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The $rootElement member of ng.InjectionTokenMap.
+     */
     public var `$rootElement`: org.w3c.dom.HTMLElement
+    /**
+     * The $rootScope member of ng.InjectionTokenMap.
+     */
     public var `$rootScope`: dynamic
+    /**
+     * The $sce member of ng.InjectionTokenMap.
+     */
     public var `$sce`: dynamic
+    /**
+     * The $sceDelegate member of ng.InjectionTokenMap.
+     */
     public var `$sceDelegate`: dynamic
+    /**
+     * The $scope member of ng.InjectionTokenMap.
+     */
     public var `$scope`: dynamic
+    /**
+     * The $security member of ng.InjectionTokenMap.
+     */
     public var `$security`: dynamic
+    /**
+     * The $serviceWorker member of ng.InjectionTokenMap.
+     */
     public var `$serviceWorker`: dynamic
-    public fun `$sse`(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The $sse member of ng.InjectionTokenMap.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun `$sse`(url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * The $state member of ng.InjectionTokenMap.
+     */
     public var `$state`: dynamic
+    /**
+     * The $stateRegistry member of ng.InjectionTokenMap.
+     */
     public var `$stateRegistry`: dynamic
-    public fun `$storage`(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
+    /**
+     * The $storage member of ng.InjectionTokenMap.
+     * @param target Value supplied for the target parameter.
+     * @param key Value supplied for the key parameter.
+     * @param storage Value supplied for the storage parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun `$storage`(target: dynamic = definedExternally, key: String = definedExternally, storage: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The $stream member of ng.InjectionTokenMap.
+     */
     public var `$stream`: dynamic
+    /**
+     * The $templateCache member of ng.InjectionTokenMap.
+     */
     public var `$templateCache`: dynamic
-    public fun `$templateRequest`(p0: String = definedExternally): dynamic
+    /**
+     * The $templateRequest member of ng.InjectionTokenMap.
+     * @param templateUrl Value supplied for the templateUrl parameter.
+     */
+    public fun `$templateRequest`(templateUrl: String = definedExternally): dynamic
+    /**
+     * The $transitions member of ng.InjectionTokenMap.
+     */
     public var `$transitions`: dynamic
+    /**
+     * The $wasm member of ng.InjectionTokenMap.
+     */
     public var `$wasm`: dynamic
+    /**
+     * The $webComponent member of ng.InjectionTokenMap.
+     */
     public var `$webComponent`: dynamic
-    public fun `$websocket`(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun `$webTransport`(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The $websocket member of ng.InjectionTokenMap.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun `$websocket`(url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * The $webTransport member of ng.InjectionTokenMap.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun `$webTransport`(url: String = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * The $window member of ng.InjectionTokenMap.
+     */
     public var `$window`: dynamic
-    public fun `$worker`(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun `$workflow`(p0: dynamic = definedExternally): dynamic
-    public fun `$workflowSupervisor`(p0: dynamic = definedExternally): dynamic
+    /**
+     * The $worker member of ng.InjectionTokenMap.
+     * @param scriptPath Value supplied for the scriptPath parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun `$worker`(scriptPath: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
+    /**
+     * The $workflow member of ng.InjectionTokenMap.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun `$workflow`(config: dynamic = definedExternally): dynamic
+    /**
+     * The $workflowSupervisor member of ng.InjectionTokenMap.
+     * @param config Value supplied for the config parameter.
+     */
+    public fun `$workflowSupervisor`(config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS Model contract exposed through the ng namespace.
+ */
 public external interface Model<T> {
-    public fun `$batch`(p0: () -> dynamic = definedExternally): dynamic
-    public fun `$broadcast`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$destroy`(): Unit
-    public fun `$emit`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$getById`(p0: dynamic = definedExternally): dynamic
-    public var `$handler`: dynamic
-    public var `$id`: Double
-    public fun `$merge`(p0: dynamic = definedExternally): Unit
-    public fun `$new`(p0: dynamic = definedExternally): dynamic
-    public fun `$newIsolate`(p0: dynamic = definedExternally): dynamic
-    public fun `$on`(p0: String = definedExternally, p1: Function<*> = definedExternally): () -> Unit
-    public var `$parent`: dynamic
-    public var `$proxy`: dynamic
-    public fun `$restore`(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
-    public var `$root`: dynamic
-    public var `$scopename`: String
-    public fun `$searchByName`(p0: String = definedExternally): dynamic
-    public fun `$snapshot`(): dynamic
-    public fun `$sync`(p0: dynamic = definedExternally, p1: dynamic = definedExternally): () -> Unit
-    public var `$target`: dynamic
-    public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
-    public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
-    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
+    /**
+     * Runs synchronous scope mutations as one batch. Listener notifications are queued while
+     * the callback runs and flushed once after the outermost batch exits. Mutations are not
+     * rolled back if the callback throws.
+     * @param fn Value supplied for the fn parameter.
+     */
+    public fun batch(fn: () -> dynamic = definedExternally): dynamic
+    /**
+     * Broadcasts an event downward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun broadcast(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * The deleteProperty member of ng.Model.
+     * @param target The target object.
+     * @param property The name of the property being deleted.
+     */
+    public fun deleteProperty(target: dynamic = definedExternally, property: dynamic = definedExternally): Boolean
+    /**
+     * Destroys this scope and its descendants.
+     */
+    public fun destroy(): Unit
+    /**
+     * Emits an event upward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun emit(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * Intercepts property access on the target object. It checks for specific properties
+     * (`watch` and `sync`) and binds their methods. For other properties, it returns the value
+     * directly.
+     * @param target The target object.
+     * @param property The name of the property being accessed.
+     * @param proxy The proxy object being invoked.
+     */
+    public fun get(target: dynamic = definedExternally, property: dynamic = definedExternally, proxy: dynamic = definedExternally): dynamic
+    /**
+     * Searches this scope tree for a scope with the given id.
+     * @param id Value supplied for the id parameter.
+     */
+    public fun getById(id: dynamic = definedExternally): dynamic
+    /**
+     * The id member of ng.Model.
+     */
+    public var id: Double
+    /**
+     * Merges enumerable properties from the provided object into the current scope target.
+     * @param newTarget Value supplied for the newTarget parameter.
+     */
+    public fun merge(newTarget: dynamic = definedExternally): Unit
+    /**
+     * Creates a prototypically inherited child scope.
+     * @param childInstance Value supplied for the childInstance parameter.
+     */
+    public fun new(childInstance: dynamic = definedExternally): dynamic
+    /**
+     * Creates an isolate child scope that does not inherit watchable properties directly.
+     * @param instance Value supplied for the instance parameter.
+     */
+    public fun newIsolate(instance: dynamic = definedExternally): dynamic
+    /**
+     * Registers an event listener on this scope and returns a deregistration function.
+     * @param name Value supplied for the name parameter.
+     * @param listener Value supplied for the listener parameter.
+     */
+    public fun on(name: String = definedExternally, listener: Function<*> = definedExternally): () -> Unit
+    /**
+     * The parent member of ng.Model.
+     */
+    public var parent: dynamic
+    /**
+     * The restore member of ng.Model.
+     * @param snapshot Value supplied for the snapshot parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun restore(snapshot: dynamic = definedExternally, options: dynamic = definedExternally): Unit
+    /**
+     * The root member of ng.Model.
+     */
+    public var root: dynamic
+    /**
+     * The scopeName member of ng.Model.
+     */
+    public var scopeName: String
+    /**
+     * Searches the scope tree for a scope registered under the provided name.
+     * @param name Value supplied for the name parameter.
+     */
+    public fun searchByName(name: String = definedExternally): dynamic
+    /**
+     * Intercepts and handles property assignments on the target object. Scopeable objects are
+     * stored as raw model values and proxied lazily when read.
+     * @param target The target object.
+     * @param property The name of the property being set.
+     * @param value The new value being assigned to the property.
+     * @param proxy The proxy intercepting property access.
+     */
+    public fun set(target: dynamic = definedExternally, property: String = definedExternally, value: dynamic = definedExternally, proxy: dynamic = definedExternally): Boolean
+    /**
+     * The snapshot member of ng.Model.
+     */
+    public fun snapshot(): dynamic
+    /**
+     * The sync member of ng.Model.
+     * @param target Value supplied for the target parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun sync(target: dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * Creates a transcluded child scope linked to this scope and an optional parent instance.
+     * @param parentInstance Value supplied for the parentInstance parameter.
+     */
+    public fun transcluded(parentInstance: dynamic = definedExternally): dynamic
+    /**
+     * Registers a watcher for a property along with a listener function. The listener function
+     * is invoked when changes to that property are detected.
+     * @param watchProp An expression to be watched in the context of this model.
+     * @param listenerFn A function to execute when changes are detected on watched context.
+     * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+     * @param directLeaf Value supplied for the directLeaf parameter.
+     */
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
 }
 
+/**
+ * Public AngularTS ModelChange contract exposed through the ng namespace.
+ */
 public external interface ModelChange {
+    /**
+     * The keys member of ng.ModelChange.
+     */
     public var keys: Array<String>
+    /**
+     * The origin member of ng.ModelChange.
+     */
     public var origin: String
+    /**
+     * The snapshotVersion member of ng.ModelChange.
+     */
     public var snapshotVersion: Double
 }
 
+/**
+ * Public AngularTS ModelRestoreOptions contract exposed through the ng namespace.
+ */
 public external interface ModelRestoreOptions {
+    /**
+     * The mode member of ng.ModelRestoreOptions.
+     */
     public var mode: dynamic
+    /**
+     * The origin member of ng.ModelRestoreOptions.
+     */
     public var origin: String
 }
 
+/**
+ * Public AngularTS ModelSyncFailureMode contract exposed through the ng namespace.
+ */
 public external interface ModelSyncFailureMode
 
+/**
+ * Public AngularTS ModelSyncOptions contract exposed through the ng namespace.
+ */
 public external interface ModelSyncOptions {
+    /**
+     * The failure member of ng.ModelSyncOptions.
+     */
     public var failure: dynamic
 }
 
+/**
+ * Public AngularTS ModelSyncTarget contract exposed through the ng namespace.
+ */
 public external interface ModelSyncTarget<T> {
+    /**
+     * The dispose member of ng.ModelSyncTarget.
+     */
     public fun dispose(): Unit
-    public fun receive(p0: (dynamic, dynamic) -> Unit = definedExternally): () -> Unit
+    /**
+     * The receive member of ng.ModelSyncTarget.
+     * @param apply Value supplied for the apply parameter.
+     */
+    public fun receive(apply: (dynamic, dynamic) -> Unit = definedExternally): () -> Unit
+    /**
+     * The restore member of ng.ModelSyncTarget.
+     */
     public fun restore(): dynamic
-    public fun write(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The write member of ng.ModelSyncTarget.
+     * @param snapshot Value supplied for the snapshot parameter.
+     * @param change Value supplied for the change parameter.
+     */
+    public fun write(snapshot: dynamic = definedExternally, change: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS InterpolateService contract exposed through the ng namespace.
+ */
 public external interface InterpolateService {
+    /**
+     * Return the configured interpolation end delimiter.
+     */
     public fun endSymbol(): String
-    public operator fun invoke(p0: String = definedExternally, p1: Boolean = definedExternally, p2: dynamic = definedExternally, p3: Boolean = definedExternally): (dynamic, (dynamic) -> Unit) -> dynamic
+    /**
+     * Calls the ng.InterpolateService function.
+     * @param text Value supplied for the text parameter.
+     * @param mustHaveExpression Value supplied for the mustHaveExpression parameter.
+     * @param trustedContext Value supplied for the trustedContext parameter.
+     * @param allOrNothing Value supplied for the allOrNothing parameter.
+     */
+    public operator fun invoke(text: String = definedExternally, mustHaveExpression: Boolean = definedExternally, trustedContext: dynamic = definedExternally, allOrNothing: Boolean = definedExternally): (dynamic, (dynamic) -> Unit) -> dynamic
+    /**
+     * Return the configured interpolation start delimiter.
+     */
     public fun startSymbol(): String
 }
 
+/**
+ * Public AngularTS LocationService contract exposed through the ng namespace.
+ */
 public external interface LocationService {
+    /**
+     * The absUrl member of ng.LocationService.
+     */
     public var absUrl: String
+    /**
+     * The appBase member of ng.LocationService.
+     */
     public var appBase: String
+    /**
+     * The appBaseNoFile member of ng.LocationService.
+     */
     public var appBaseNoFile: String
+    /**
+     * The basePrefix member of ng.LocationService.
+     */
     public var basePrefix: String
+    /**
+     * Returns the hash fragment when called without any parameters.
+     */
     public fun getHash(): String
+    /**
+     * Returns the path of the current URL.
+     */
     public fun getPath(): String
+    /**
+     * Returns the search part of the current URL as an object.
+     */
     public fun getSearch(): dynamic
+    /**
+     * Returns the current history state object.
+     */
     public fun getState(): dynamic
+    /**
+     * Return URL (e.g. `/path?a=b#hash`) when called without any parameter.
+     */
     public fun getUrl(): String
-    public fun hash(p0: dynamic = definedExternally): dynamic
+    /**
+     * The hash member of ng.LocationService.
+     * @param hash Value supplied for the hash parameter.
+     */
+    public fun hash(hash: dynamic = definedExternally): dynamic
+    /**
+     * The hashPrefix member of ng.LocationService.
+     */
     public var hashPrefix: String
+    /**
+     * The html5 member of ng.LocationService.
+     */
     public var html5: Boolean
-    public fun parse(p0: String = definedExternally): Unit
-    public fun parseLinkUrl(p0: String = definedExternally, p1: String = definedExternally): Boolean
-    public fun path(p0: dynamic = definedExternally): dynamic
-    public fun search(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun setHash(p0: dynamic = definedExternally): dynamic
-    public fun setPath(p0: dynamic = definedExternally): dynamic
-    public fun setSearch(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun setState(p0: dynamic = definedExternally): dynamic
-    public fun setUrl(p0: String = definedExternally): dynamic
-    public fun state(p0: dynamic = definedExternally): dynamic
-    public fun url(p0: String = definedExternally): dynamic
+    /**
+     * Parse given HTML5 (regular) URL string into properties
+     * @param url HTML5 URL
+     */
+    public fun parse(url: String = definedExternally): Unit
+    /**
+     * Attempts to parse a clicked link into an app-relative URL update.
+     * @param url Value supplied for the url parameter.
+     * @param relHref Value supplied for the relHref parameter.
+     */
+    public fun parseLinkUrl(url: String = definedExternally, relHref: String = definedExternally): Boolean
+    /**
+     * The path member of ng.LocationService.
+     * @param path Value supplied for the path parameter.
+     */
+    public fun path(path: dynamic = definedExternally): dynamic
+    /**
+     * The search member of ng.LocationService.
+     * @param search Value supplied for the search parameter.
+     * @param paramValue Value supplied for the paramValue parameter.
+     */
+    public fun search(search: dynamic = definedExternally, paramValue: dynamic = definedExternally): dynamic
+    /**
+     * Changes the hash fragment when called with a parameter and returns `$location`.
+     * @param hash New hash fragment.
+     */
+    public fun setHash(hash: dynamic = definedExternally): dynamic
+    /**
+     * Changes the path parameter and returns `$location`.
+     * @param path New path.
+     */
+    public fun setPath(path: dynamic = definedExternally): dynamic
+    /**
+     * Sets the search part of the current URL as an object.
+     * @param search New search params as a string or object.
+     * @param paramValue If `search` is a string or number, overrides only a single search property.
+     */
+    public fun setSearch(search: dynamic = definedExternally, paramValue: dynamic = definedExternally): dynamic
+    /**
+     * Change the history state object when called with one parameter and return `$location`.
+     * The state object is later passed to `pushState` or `replaceState`. See {@link
+     * https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state}
+     * NOTE: This method is supported only in HTML5 mode and only in browsers supporting the
+     * HTML5 History API (i.e. methods `pushState` and `replaceState`). If you need to support
+     * older browsers (like IE9 or Android < 4.0), don't use this method.
+     * @param state Value supplied for the state parameter.
+     */
+    public fun setState(state: dynamic = definedExternally): dynamic
+    /**
+     * Change path, search and hash, when called with parameter and return `$location`.
+     * @param url New URL without base prefix (e.g. `/path?a=b#hash`).
+     */
+    public fun setUrl(url: String = definedExternally): dynamic
+    /**
+     * The state member of ng.LocationService.
+     * @param state Value supplied for the state parameter.
+     */
+    public fun state(state: dynamic = definedExternally): dynamic
+    /**
+     * The url member of ng.LocationService.
+     * @param url Value supplied for the url parameter.
+     */
+    public fun url(url: String = definedExternally): dynamic
 }
 
+/**
+ * Declarative remote logging configuration for `navigator.sendBeacon()`.
+ */
 public external interface LogBeaconConfig {
+    /**
+     * Action taken when serialization or Beacon queueing fails.
+     */
     public var failure: dynamic
+    /**
+     * Levels delivered remotely. Defaults to `error` only.
+     */
     public var levels: Array<dynamic>
+    /**
+     * Name of an injectable LogBeaconSerializer.
+     */
     public var serializer: String
+    /**
+     * Beacon endpoint URL.
+     */
     public var url: String
 }
 
+/**
+ * Converts a structured log entry into a Beacon-compatible request body.
+ */
 public external interface LogBeaconSerializer {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.LogBeaconSerializer function.
+     * @param entry Value supplied for the entry parameter.
+     */
+    public operator fun invoke(entry: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Structured record passed to a configured Beacon serializer.
+ */
 public external interface LogEntry {
+    /**
+     * Arguments originally passed to the logging method.
+     */
     public var args: Array<dynamic>
+    /**
+     * Logging method that produced this entry.
+     */
     public var level: dynamic
+    /**
+     * ISO-8601 timestamp captured when the logging method was called.
+     */
     public var timestamp: String
 }
 
+/**
+ * Logging severity attached to a structured remote log entry.
+ */
 public external interface LogLevel
 
+/**
+ * Service for logging messages at various levels.
+ */
 public external interface LogService {
-    public fun debug(vararg p0: dynamic): Unit
-    public fun error(vararg p0: dynamic): Unit
-    public fun info(vararg p0: dynamic): Unit
-    public fun log(vararg p0: dynamic): Unit
-    public fun warn(vararg p0: dynamic): Unit
+    /**
+     * Log a debug message.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun debug(vararg args: dynamic): Unit
+    /**
+     * Log an error message.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun error(vararg args: dynamic): Unit
+    /**
+     * Log an info message.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun info(vararg args: dynamic): Unit
+    /**
+     * Log a general message.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun log(vararg args: dynamic): Unit
+    /**
+     * Log a warning message.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun warn(vararg args: dynamic): Unit
 }
 
+/**
+ * Public AngularTS MachineService contract exposed through the ng namespace.
+ */
 public external interface MachineService {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.MachineService function.
+     * @param config Value supplied for the config parameter.
+     */
+    public operator fun invoke(config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Creates a proxy that automatically persists an object's state into a storage backend
+ * whenever a property is set. The proxy also restores previously serialized state on
+ * creation and persists deletions in addition to property assignments.
+ */
 public external interface StorageService {
-    public operator fun invoke(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): dynamic
+    /**
+     * Creates a proxy that automatically persists an object's state into a storage backend
+     * whenever a property is set. The proxy also restores previously serialized state on
+     * creation and persists deletions in addition to property assignments.
+     * @param target Value supplied for the target parameter.
+     * @param key Value supplied for the key parameter.
+     * @param storage Value supplied for the storage parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public operator fun invoke(target: dynamic = definedExternally, key: String = definedExternally, storage: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS WorkflowService contract exposed through the ng namespace.
+ */
 public external interface WorkflowService {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.WorkflowService function.
+     * @param config Value supplied for the config parameter.
+     */
+    public operator fun invoke(config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS WorkflowSupervisorService contract exposed through the ng namespace.
+ */
 public external interface WorkflowSupervisorService {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.WorkflowSupervisorService function.
+     * @param config Value supplied for the config parameter.
+     */
+    public operator fun invoke(config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Parses a string or expression function into a compiled expression.
+ */
 public external interface ParseService {
-    public operator fun invoke(p0: String = definedExternally, p1: (dynamic) -> dynamic = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
+    /**
+     * Calls the ng.ParseService function.
+     * @param expression Value supplied for the expression parameter.
+     * @param interceptorFn Value supplied for the interceptorFn parameter.
+     */
+    public operator fun invoke(expression: String = definedExternally, interceptorFn: (dynamic) -> dynamic = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
 }
 
+/**
+ * Public AngularTS Policy contract exposed through the ng namespace.
+ */
 public external interface Policy<TContext, TDecisionType> {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.Policy function.
+     * @param context Value supplied for the context parameter.
+     */
+    public operator fun invoke(context: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS PolicyContext contract exposed through the ng namespace.
+ */
 public external interface PolicyContext<TOperation> {
+    /**
+     * The meta member of ng.PolicyContext.
+     */
     public var meta: dynamic
+    /**
+     * The operation member of ng.PolicyContext.
+     */
     public var operation: dynamic
 }
 
+/**
+ * Public AngularTS PolicyDecision contract exposed through the ng namespace.
+ */
 public external interface PolicyDecision<TType> {
+    /**
+     * The meta member of ng.PolicyDecision.
+     */
     public var meta: dynamic
+    /**
+     * The reason member of ng.PolicyDecision.
+     */
     public var reason: String
+    /**
+     * The type member of ng.PolicyDecision.
+     */
     public var type: dynamic
 }
 
+/**
+ * Public AngularTS EventBusConfig contract exposed through the ng namespace.
+ */
 public external interface EventBusConfig {
-    public fun deliveryPolicy(p0: dynamic = definedExternally): dynamic
+    /**
+     * The deliveryPolicy member of ng.EventBusConfig.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun deliveryPolicy(context: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS EventDeliveryPolicy contract exposed through the ng namespace.
+ */
 public external interface EventDeliveryPolicy {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.EventDeliveryPolicy function.
+     * @param context Value supplied for the context parameter.
+     */
+    public operator fun invoke(context: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS EventDeliveryPolicyContext contract exposed through the ng namespace.
+ */
 public external interface EventDeliveryPolicyContext {
+    /**
+     * The args member of ng.EventDeliveryPolicyContext.
+     */
     public var args: Array<dynamic>
+    /**
+     * The listenerIndex member of ng.EventDeliveryPolicyContext.
+     */
     public var listenerIndex: Double
+    /**
+     * The meta member of ng.EventDeliveryPolicyContext.
+     */
     public var meta: dynamic
+    /**
+     * The operation member of ng.EventDeliveryPolicyContext.
+     */
     public var operation: String
+    /**
+     * The scopeOwned member of ng.EventDeliveryPolicyContext.
+     */
     public var scopeOwned: Boolean
+    /**
+     * The targetAlive member of ng.EventDeliveryPolicyContext.
+     */
     public var targetAlive: Boolean
+    /**
+     * The topic member of ng.EventDeliveryPolicyContext.
+     */
     public var topic: String
 }
 
+/**
+ * Public AngularTS SceService contract exposed through the ng namespace.
+ */
 public external interface SceService {
-    public fun getTrusted(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun getTrustedHtml(p0: dynamic = definedExternally): dynamic
-    public fun getTrustedMediaUrl(p0: dynamic = definedExternally): dynamic
-    public fun getTrustedResourceUrl(p0: dynamic = definedExternally): dynamic
-    public fun getTrustedUrl(p0: dynamic = definedExternally): dynamic
+    /**
+     * The getTrusted member of ng.SceService.
+     * @param type Value supplied for the type parameter.
+     * @param mayBeTrusted Value supplied for the mayBeTrusted parameter.
+     */
+    public fun getTrusted(type: dynamic = definedExternally, mayBeTrusted: dynamic = definedExternally): dynamic
+    /**
+     * The getTrustedHtml member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun getTrustedHtml(value: dynamic = definedExternally): dynamic
+    /**
+     * The getTrustedMediaUrl member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun getTrustedMediaUrl(value: dynamic = definedExternally): dynamic
+    /**
+     * The getTrustedResourceUrl member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun getTrustedResourceUrl(value: dynamic = definedExternally): dynamic
+    /**
+     * The getTrustedUrl member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun getTrustedUrl(value: dynamic = definedExternally): dynamic
+    /**
+     * The isEnabled member of ng.SceService.
+     */
     public fun isEnabled(): Boolean
-    public fun parse(p0: dynamic = definedExternally, p1: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    public fun parseAsHtml(p0: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    public fun parseAsMediaUrl(p0: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    public fun parseAsResourceUrl(p0: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    public fun parseAsUrl(p0: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    public fun trustAs(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun trustAsHtml(p0: dynamic = definedExternally): dynamic
-    public fun trustAsMediaUrl(p0: dynamic = definedExternally): dynamic
-    public fun trustAsResourceUrl(p0: dynamic = definedExternally): dynamic
-    public fun trustAsUrl(p0: dynamic = definedExternally): dynamic
-    public fun valueOf(p0: dynamic = definedExternally): dynamic
+    /**
+     * The parse member of ng.SceService.
+     * @param type Value supplied for the type parameter.
+     * @param expression Value supplied for the expression parameter.
+     */
+    public fun parse(type: dynamic = definedExternally, expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
+    /**
+     * The parseAsHtml member of ng.SceService.
+     * @param expression Value supplied for the expression parameter.
+     */
+    public fun parseAsHtml(expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
+    /**
+     * The parseAsMediaUrl member of ng.SceService.
+     * @param expression Value supplied for the expression parameter.
+     */
+    public fun parseAsMediaUrl(expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
+    /**
+     * The parseAsResourceUrl member of ng.SceService.
+     * @param expression Value supplied for the expression parameter.
+     */
+    public fun parseAsResourceUrl(expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
+    /**
+     * The parseAsUrl member of ng.SceService.
+     * @param expression Value supplied for the expression parameter.
+     */
+    public fun parseAsUrl(expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
+    /**
+     * The trustAs member of ng.SceService.
+     * @param type Value supplied for the type parameter.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun trustAs(type: dynamic = definedExternally, value: dynamic = definedExternally): dynamic
+    /**
+     * The trustAsHtml member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun trustAsHtml(value: dynamic = definedExternally): dynamic
+    /**
+     * The trustAsMediaUrl member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun trustAsMediaUrl(value: dynamic = definedExternally): dynamic
+    /**
+     * The trustAsResourceUrl member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun trustAsResourceUrl(value: dynamic = definedExternally): dynamic
+    /**
+     * The trustAsUrl member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun trustAsUrl(value: dynamic = definedExternally): dynamic
+    /**
+     * The valueOf member of ng.SceService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun valueOf(value: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS SceDelegateService contract exposed through the ng namespace.
+ */
 public external interface SceDelegateService {
-    public fun getTrusted(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun trustAs(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun valueOf(p0: dynamic = definedExternally): dynamic
+    /**
+     * The getTrusted member of ng.SceDelegateService.
+     * @param type Value supplied for the type parameter.
+     * @param mayBeTrusted Value supplied for the mayBeTrusted parameter.
+     */
+    public fun getTrusted(type: dynamic = definedExternally, mayBeTrusted: dynamic = definedExternally): dynamic
+    /**
+     * The trustAs member of ng.SceDelegateService.
+     * @param type Value supplied for the type parameter.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun trustAs(type: dynamic = definedExternally, value: dynamic = definedExternally): dynamic
+    /**
+     * The valueOf member of ng.SceDelegateService.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun valueOf(value: dynamic = definedExternally): dynamic
 }
 
+/**
+ * $sse service type Returns a managed SSE connection that automatically reconnects when
+ * needed.
+ */
 public external interface SseService {
-    public operator fun invoke(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.SseService function.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public operator fun invoke(url: String = definedExternally, config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * SSE-specific configuration
+ */
 public external interface SseConfig {
+    /**
+     * Additional EventSource event names to subscribe to
+     */
     public var eventTypes: Array<String>
+    /**
+     * Timeout in milliseconds to detect heartbeat inactivity
+     */
     public var heartbeatTimeout: Double
+    /**
+     * Maximum number of reconnect attempts
+     */
     public var maxRetries: Double
-    public fun onClose(p0: dynamic = definedExternally): Unit
-    public fun onError(p0: org.w3c.dom.events.Event = definedExternally): Unit
-    public fun onEvent(p0: dynamic = definedExternally): Unit
-    public fun onMessage(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
-    public fun onOpen(p0: org.w3c.dom.events.Event = definedExternally): Unit
-    public fun onReconnect(p0: Double = definedExternally): Unit
+    /**
+     * Called when a WebSocket connection closes
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onClose(event: dynamic = definedExternally): Unit
+    /**
+     * Called when an error occurs
+     * @param err Value supplied for the err parameter.
+     */
+    public fun onError(err: org.w3c.dom.events.Event = definedExternally): Unit
+    /**
+     * Called with every registered connection message, including custom SSE event types
+     * @param message Value supplied for the message parameter.
+     */
+    public fun onEvent(message: dynamic = definedExternally): Unit
+    /**
+     * Called when a message is received
+     * @param data Value supplied for the data parameter.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onMessage(data: dynamic = definedExternally, event: dynamic = definedExternally): Unit
+    /**
+     * Called when the connection opens
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onOpen(event: org.w3c.dom.events.Event = definedExternally): Unit
+    /**
+     * Called when a reconnect attempt happens
+     * @param attempt Value supplied for the attempt parameter.
+     */
+    public fun onReconnect(attempt: Double = definedExternally): Unit
+    /**
+     * Optional query parameters appended to the URL
+     */
     public var params: dynamic
+    /**
+     * Delay between reconnect attempts in milliseconds
+     */
     public var retryDelay: Double
-    public fun transformMessage(p0: String = definedExternally): dynamic
+    /**
+     * Function to transform incoming messages
+     * @param data Value supplied for the data parameter.
+     */
+    public fun transformMessage(data: String = definedExternally): dynamic
+    /**
+     * Include cookies/credentials when connecting
+     */
     public var withCredentials: Boolean
 }
 
+/**
+ * Managed SSE connection object returned by $sse. Provides a safe way to close the
+ * connection and stop reconnection attempts.
+ */
 public external interface SseConnection {
+    /**
+     * Manually close the SSE connection and stop all reconnect attempts
+     */
     public fun close(): Unit
+    /**
+     * Manually restart the SSE connection.
+     */
     public fun reconnect(): Unit
 }
 
+/**
+ * Public AngularTS SecurityPolicy contract exposed through the ng namespace.
+ */
 public external interface SecurityPolicy {
-    public fun check(p0: dynamic = definedExternally): dynamic
+    /**
+     * The check member of ng.SecurityPolicy.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun check(context: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS SecurityConfig contract exposed through the ng namespace.
+ */
 public external interface SecurityConfig {
+    /**
+     * HTTP origins explicitly permitted to carry credentials.
+     */
     public var allowInsecureOrigins: Array<String>
+    /**
+     * The credentials member of ng.SecurityConfig.
+     */
     public var credentials: dynamic
+    /**
+     * The fallback member of ng.SecurityConfig.
+     */
     public var fallback: dynamic
+    /**
+     * The isAuthenticated member of ng.SecurityConfig.
+     */
     public var isAuthenticated: dynamic
+    /**
+     * The permissions member of ng.SecurityConfig.
+     */
     public var permissions: dynamic
 }
 
+/**
+ * Public AngularTS SecurityCredentialsConfig contract exposed through the ng namespace.
+ */
 public external interface SecurityCredentialsConfig {
+    /**
+     * The basic member of ng.SecurityCredentialsConfig.
+     */
     public var basic: dynamic
+    /**
+     * The bearer member of ng.SecurityCredentialsConfig.
+     */
     public var bearer: dynamic
+    /**
+     * The cookie member of ng.SecurityCredentialsConfig.
+     */
     public var cookie: Boolean
+    /**
+     * The order member of ng.SecurityCredentialsConfig.
+     */
     public var order: Array<dynamic>
 }
 
+/**
+ * Public `$stateRegistry` contract for dynamic route registration. Module-owned static
+ * routes should normally use [[NgModule.router]]. Use this service when routes must be
+ * added or removed at runtime.
+ */
 public external interface StateRegistryService {
-    public fun deregister(p0: dynamic = definedExternally): Array<dynamic>
-    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The deregister member of ng.StateRegistryService.
+     * @param stateOrName Value supplied for the stateOrName parameter.
+     */
+    public fun deregister(stateOrName: dynamic = definedExternally): Array<dynamic>
+    /**
+     * The get member of ng.StateRegistryService.
+     * @param stateOrName Value supplied for the stateOrName parameter.
+     * @param base Value supplied for the base parameter.
+     */
+    public fun get(stateOrName: dynamic = definedExternally, base: dynamic = definedExternally): dynamic
+    /**
+     * The getAll member of ng.StateRegistryService.
+     */
     public fun getAll(): Array<dynamic>
-    public fun onStatesChanged(p0: (dynamic, Array<dynamic>) -> Unit = definedExternally): () -> Unit
-    public fun register(p0: dynamic = definedExternally): dynamic
+    /**
+     * The onStatesChanged member of ng.StateRegistryService.
+     * @param listener Value supplied for the listener parameter.
+     */
+    public fun onStatesChanged(listener: (dynamic, Array<dynamic>) -> Unit = definedExternally): () -> Unit
+    /**
+     * The register member of ng.StateRegistryService.
+     * @param stateDefinition Value supplied for the stateDefinition parameter.
+     */
+    public fun register(stateDefinition: dynamic = definedExternally): dynamic
+    /**
+     * The root member of ng.StateRegistryService.
+     */
     public fun root(): dynamic
 }
 
+/**
+ * Injectable service-worker lifecycle and messaging facade.
+ */
 public external interface ServiceWorkerService {
+    /**
+     * Current native controller, if the page is controlled.
+     */
     public var controller: dynamic
-    public fun onControllerChange(p0: (dynamic) -> Unit = definedExternally): () -> Unit
-    public fun onMessage(p0: (dynamic) -> Unit = definedExternally): () -> Unit
-    public fun onUpdate(p0: (dynamic) -> Unit = definedExternally): () -> Unit
-    public fun post(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Subscribe to controller-change notifications.
+     * @param callback Value supplied for the callback parameter.
+     */
+    public fun onControllerChange(callback: (dynamic) -> Unit = definedExternally): () -> Unit
+    /**
+     * Subscribe to messages from the service worker container.
+     * @param callback Value supplied for the callback parameter.
+     */
+    public fun onMessage(callback: (dynamic) -> Unit = definedExternally): () -> Unit
+    /**
+     * Subscribe to update-state notifications.
+     * @param callback Value supplied for the callback parameter.
+     */
+    public fun onUpdate(callback: (dynamic) -> Unit = definedExternally): () -> Unit
+    /**
+     * Send a message to the current controller or an explicit worker target.
+     * @param message Value supplied for the message parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun post(message: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Resolve when the browser reports an active ready registration.
+     */
     public fun ready(): dynamic
-    public fun register(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Register the configured script or an explicit script URL.
+     * @param scriptOrOptions Value supplied for the scriptOrOptions parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun register(scriptOrOptions: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Latest known native registration.
+     */
     public var registration: dynamic
+    /**
+     * Template-friendly registration snapshot.
+     */
     public var registrationState: dynamic
-    public fun request(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Send a request through a dedicated `MessageChannel`.
+     * @param message Value supplied for the message parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun request(message: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Template-facing lifecycle status for the latest service-worker operation.
+     */
     public var status: dynamic
+    /**
+     * Support flag for templates and guards.
+     */
     public var supported: Boolean
+    /**
+     * Unregister the latest known registration.
+     */
     public fun unregister(): dynamic
+    /**
+     * Ask the latest known registration to check for an updated worker.
+     */
     public fun update(): dynamic
+    /**
+     * Template-friendly update snapshot.
+     */
     public var updateState: dynamic
 }
 
+/**
+ * Public AngularTS RealtimeProtocolEventDetail contract exposed through the ng namespace.
+ */
 public external interface RealtimeProtocolEventDetail<T, TSource> {
+    /**
+     * The data member of ng.RealtimeProtocolEventDetail.
+     */
     public var data: dynamic
+    /**
+     * The error member of ng.RealtimeProtocolEventDetail.
+     */
     public var error: dynamic
+    /**
+     * The event member of ng.RealtimeProtocolEventDetail.
+     */
     public var event: dynamic
+    /**
+     * The source member of ng.RealtimeProtocolEventDetail.
+     */
     public var source: dynamic
+    /**
+     * The url member of ng.RealtimeProtocolEventDetail.
+     */
     public var url: String
 }
 
+/**
+ * Public AngularTS RealtimeProtocolMessage contract exposed through the ng namespace.
+ */
 public external interface RealtimeProtocolMessage {
+    /**
+     * Plain value used as swap content when `html` is omitted.
+     */
     public var data: dynamic
+    /**
+     * HTML or text payload to apply with the configured swap mode.
+     */
     public var html: dynamic
+    /**
+     * Optional swap mode that overrides the directive swap mode for this message.
+     */
     public var swap: dynamic
+    /**
+     * Optional CSS selector that overrides the directive target for this message.
+     */
     public var target: String
 }
 
+/**
+ * Possible values for `data-swap` and realtime protocol `swap` fields. Union type
+ * representing all possible DOM insertion modes.
+ */
 public external interface SwapMode
 
+/**
+ * Public contract implemented by the `$templateCache` injectable.
+ */
 public external interface TemplateCacheService
 
+/**
+ * Downloads a template using $http and, upon success, stores the contents inside of
+ * $templateCache. If the HTTP request fails or the response data of the HTTP request is
+ * empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true).
+ */
 public external interface TemplateRequestService {
-    public operator fun invoke(p0: String = definedExternally): dynamic
+    /**
+     * Calls the ng.TemplateRequestService function.
+     * @param templateUrl Value supplied for the templateUrl parameter.
+     */
+    public operator fun invoke(templateUrl: String = definedExternally): dynamic
 }
 
+/**
+ * This interface specifies the api for registering Transition Hooks. Both the
+ * [[TransitionService]] and also the [[Transition]] object itself implement this
+ * interface. Note: the Transition object only allows hooks to be registered before the
+ * Transition is started.
+ */
 public external interface TransitionsService {
-    public fun onBefore(p0: dynamic = definedExternally, p1: (dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): () -> Unit
-    public fun onEnter(p0: dynamic = definedExternally, p1: (dynamic, dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): () -> Unit
-    public fun onError(p0: dynamic = definedExternally, p1: (dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): () -> Unit
-    public fun onExit(p0: dynamic = definedExternally, p1: (dynamic, dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): () -> Unit
-    public fun onFinish(p0: dynamic = definedExternally, p1: (dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): () -> Unit
-    public fun onRetain(p0: dynamic = definedExternally, p1: (dynamic, dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): () -> Unit
-    public fun onStart(p0: dynamic = definedExternally, p1: (dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): () -> Unit
-    public fun onSuccess(p0: dynamic = definedExternally, p1: (dynamic) -> dynamic = definedExternally, p2: dynamic = definedExternally): () -> Unit
+    /**
+     * Registers a [[TransitionHookFn]], called *before a transition starts*. Registers a
+     * transition lifecycle hook, which is invoked before a transition even begins. This hook
+     * can be useful to implement logic which prevents a transition from even starting, such as
+     * authentication, redirection See [[TransitionHookFn]] for the signature of the function.
+     * The [[HookMatchCriteria]] is used to determine which Transitions the hook should be
+     * invoked for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle
+     * `onBefore` hooks are invoked *before a Transition starts*. No resolves have been fetched
+     * yet. Each `onBefore` hook is invoked synchronously, in the same call stack as
+     * [[StateService.transitionTo]]. The registered `onBefore` hooks are invoked in priority
+     * order. Note: during the `onBefore` phase, additional hooks can be added to the specific
+     * [[Transition]] instance. These "on-the-fly" hooks only affect the currently running
+     * transition.. ### Return value The hook's return value can be used to pause, cancel, or
+     * redirect the current Transition. See [[HookResult]] for more information. If any hook
+     * modifies the transition *synchronously* (by throwing, returning `false`, or returning a
+     * [[TargetState]]), the remainder of the hooks are skipped. If a hook returns a promise,
+     * the remainder of the `onBefore` hooks are still invoked synchronously. All promises are
+     * resolved, and processed asynchronously before the `onStart` phase of the Transition. ###
+     * Examples #### Default Substate This example redirects any transition from 'home' to
+     * 'home.dashboard'. This is commonly referred to as a "default substate".
+     * @param matchCriteria defines which Transitions the Hook should be invoked for.
+     * @param callback the hook function which will be invoked.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun onBefore(matchCriteria: dynamic = definedExternally, callback: (dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * Registers a [[TransitionStateHookFn]], called when a specific state is entered.
+     * Registers a lifecycle hook, which is invoked (during a transition) when a specific state
+     * is being entered. Since this hook is run only when the specific state is being
+     * *entered*, it can be useful for performing tasks when entering a submodule/feature area
+     * such as initializing a stateful service, or for guarding access to a submodule/feature
+     * area. See [[TransitionStateHookFn]] for the signature of the function. The
+     * [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked
+     * for. `onEnter` hooks generally specify `{ entering: 'somestate' }`. To match all
+     * Transitions, use an empty criteria object `{}`. ### Lifecycle `onEnter` hooks are
+     * invoked when the Transition is entering a state. States are entered after the `onRetain`
+     * phase is complete. If more than one state is being entered, the parent state is entered
+     * first. The registered `onEnter` hooks for a state are invoked in priority order. Note: A
+     * built-in `onEnter` hook with high priority is used to fetch lazy resolve data for states
+     * being entered. ### Return value The hook's return value can be used to pause, cancel, or
+     * redirect the current Transition. See [[HookResult]] for more information. ### Inside a
+     * state declaration Instead of registering `onEnter` hooks using the
+     * [[TransitionService]], you may define an `onEnter` hook directly on a state declaration
+     * (see: [[StateDeclaration.onEnter]]). ### Examples #### Audit Log This example uses a
+     * service to log that a user has entered the admin section of an app. This assumes that
+     * there are substates of the "admin" state, such as "admin.users", "admin.pages", etc.
+     * @param matchCriteria defines which Transitions the Hook should be invoked for.
+     * @param callback the hook function which will be injected and invoked.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun onEnter(matchCriteria: dynamic = definedExternally, callback: (dynamic, dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * Registers a [[TransitionHookFn]], called after a transition has errored. Registers a
+     * transition lifecycle hook, which is invoked after a transition has been rejected for any
+     * reason. See [[TransitionHookFn]] for the signature of the function. The
+     * [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked
+     * for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle The
+     * `onError` hooks are chained off the Transition's promise (see [[Transition.promise]]).
+     * If a Transition fails, its promise is rejected and the `onError` hooks are invoked. The
+     * `onError` hooks are invoked in priority order. Since these hooks are run after the
+     * transition is over, their return value is ignored. A transition "errors" if it was
+     * started, but failed to complete (for any reason). A *non-exhaustive list* of reasons a
+     * transition can error: - A transition was cancelled because a new transition started
+     * while it was still running (`Transition superseded`) - A transition was cancelled by a
+     * Transition Hook returning false - A transition was redirected by a Transition Hook
+     * returning a [[TargetState]] - A Transition Hook or resolve function threw an error - A
+     * Transition Hook returned a rejected promise - A resolve function returned a rejected
+     * promise To check the failure reason, inspect the return value of [[Transition.error]].
+     * Note: `onError` should be used for targeted error handling, or error recovery. For
+     * catch-all error reporting, configure `$router.error` or `$exceptionHandler`. ### Return
+     * value Since the Transition is already completed, the hook's return value is ignored
+     * @param matchCriteria defines which Transitions the Hook should be invoked for.
+     * @param callback the hook function which will be injected and invoked.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun onError(matchCriteria: dynamic = definedExternally, callback: (dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * Registers a [[TransitionStateHookFn]], called when a specific state is exited. Registers
+     * a lifecycle hook, which is invoked (during a transition) when a specific state is being
+     * exited. Since this hook is run only when the specific state is being *exited*, it can be
+     * useful for performing tasks when leaving a submodule/feature area such as cleaning up a
+     * stateful service, or for preventing the user from leaving a state or submodule until
+     * some criteria is satisfied. See [[TransitionStateHookFn]] for the signature of the
+     * function. The [[HookMatchCriteria]] is used to determine which Transitions the hook
+     * should be invoked for. `onExit` hooks generally specify `{ exiting: 'somestate' }`. To
+     * match all Transitions, use an empty criteria object `{}`. ### Lifecycle `onExit` hooks
+     * are invoked when the Transition is exiting a state. States are exited after any
+     * `onStart` phase is complete. If more than one state is being exited, the child states
+     * are exited first. The registered `onExit` hooks for a state are invoked in priority
+     * order. ### Return value The hook's return value can be used to pause, cancel, or
+     * redirect the current Transition. See [[HookResult]] for more information. ### Inside a
+     * state declaration Instead of registering `onExit` hooks using the [[TransitionService]],
+     * you may define an `onExit` hook directly on a state declaration (see:
+     * [[StateDeclaration.onExit]]).
+     * @param matchCriteria defines which Transitions the Hook should be invoked for.
+     * @param callback the hook function which will be injected and invoked.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun onExit(matchCriteria: dynamic = definedExternally, callback: (dynamic, dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * Registers a [[TransitionHookFn]], called *just before a transition finishes*. Registers
+     * a transition lifecycle hook, which is invoked just before a transition finishes. This
+     * hook is a last chance to cancel or redirect a transition. See [[TransitionHookFn]] for
+     * the signature of the function. The [[HookMatchCriteria]] is used to determine which
+     * Transitions the hook should be invoked for. To match all Transitions, use an empty
+     * criteria object `{}`. ### Lifecycle `onFinish` hooks are invoked after the `onEnter`
+     * phase is complete. These hooks are invoked just before the transition is "committed".
+     * Each hook is invoked in priority order. ### Return value The hook's return value can be
+     * used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more
+     * information.
+     * @param matchCriteria defines which Transitions the Hook should be invoked for.
+     * @param callback the hook function which will be injected and invoked.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun onFinish(matchCriteria: dynamic = definedExternally, callback: (dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * Registers a [[TransitionStateHookFn]], called when a specific state is retained/kept.
+     * Registers a lifecycle hook, which is invoked (during a transition) for a specific state
+     * that was previously active will remain active (is not being entered nor exited). This
+     * hook is invoked when a state is "retained" or "kept". It means the transition is coming
+     * *from* a substate of the retained state *to* a substate of the retained state. This hook
+     * can be used to perform actions when the user moves from one substate to another, such as
+     * between steps in a wizard. The [[HookMatchCriteria]] is used to determine which
+     * Transitions the hook should be invoked for. `onRetain` hooks generally specify `{
+     * retained: 'somestate' }`. To match all Transitions, use an empty criteria object `{}`.
+     * ### Lifecycle `onRetain` hooks are invoked after any `onExit` hooks have been fired. If
+     * more than one state is retained, the child states' `onRetain` hooks are invoked first.
+     * The registered `onRetain` hooks for a state are invoked in priority order. ### Return
+     * value The hook's return value can be used to pause, cancel, or redirect the current
+     * Transition. See [[HookResult]] for more information. ### Inside a state declaration
+     * Instead of registering `onRetain` hooks using the [[TransitionService]], you may define
+     * an `onRetain` hook directly on a state declaration (see: [[StateDeclaration.onRetain]]).
+     * @param matchCriteria defines which Transitions the Hook should be invoked for.
+     * @param callback the hook function which will be injected and invoked.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun onRetain(matchCriteria: dynamic = definedExternally, callback: (dynamic, dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * Registers a [[TransitionHookFn]], called when a transition starts. Registers a
+     * transition lifecycle hook, which is invoked as a transition starts running. This hook
+     * can be useful to perform some asynchronous action before completing a transition. See
+     * [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is
+     * used to determine which Transitions the hook should be invoked for. To match all
+     * Transitions, use an empty criteria object `{}`. ### Lifecycle `onStart` hooks are
+     * invoked asynchronously when the Transition starts running. This happens after the
+     * `onBefore` phase is complete. At this point, the Transition has not yet exited nor
+     * entered any states. The registered `onStart` hooks are invoked in priority order. Note:
+     * A built-in `onStart` hook with high priority is used to fetch any eager resolve data.
+     * ### Return value The hook's return value can be used to pause, cancel, or redirect the
+     * current Transition. See [[HookResult]] for more information. ### Example #### Load
+     * feature shell data during transition This example pauses transitions into a reporting
+     * branch while an application-level feature shell loads. Use state `resolve` for route
+     * data and `policy.navigation` for security; use transition hooks for advanced
+     * orchestration that intentionally spans multiple states. #### Example: ```js
+     * $transitions.onStart({ to: 'reports.**' }, function(trans) { var reportsShell =
+     * trans.injector().get('ReportsShell'); return reportsShell.ensureLoaded(); }); ```
+     * @param matchCriteria defines which Transitions the Hook should be invoked for.
+     * @param callback the hook function which will be injected and invoked.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun onStart(matchCriteria: dynamic = definedExternally, callback: (dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
+    /**
+     * Registers a [[TransitionHookFn]], called after a successful transition completed.
+     * Registers a transition lifecycle hook, which is invoked after a transition successfully
+     * completes. See [[TransitionHookFn]] for the signature of the function. The
+     * [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked
+     * for. To match all Transitions, use an empty criteria object `{}`. ### Lifecycle
+     * `onSuccess` hooks are chained off the Transition's promise (see [[Transition.promise]]).
+     * If the Transition is successful and its promise is resolved, then the `onSuccess` hooks
+     * are invoked. Since these hooks are run after the transition is over, their return value
+     * is ignored. The `onSuccess` hooks are invoked in priority order. ### Return value Since
+     * the Transition is already completed, the hook's return value is ignored
+     * @param matchCriteria defines which Transitions the Hook should be invoked for.
+     * @param callback the hook function which will be injected and invoked.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun onSuccess(matchCriteria: dynamic = definedExternally, callback: (dynamic) -> dynamic = definedExternally, options: dynamic = definedExternally): () -> Unit
 }
 
+/**
+ * Injectable factory for typed managed Web Worker connections.
+ */
 public external interface WorkerService {
-    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.WorkerService function.
+     * @param scriptPath Value supplied for the scriptPath parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public operator fun invoke(scriptPath: dynamic = definedExternally, config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Dependency-annotated factory array used by AngularTS DI system. Example: ['dep1',
+ * 'dep2', (dep1, dep2) => new MyController(dep1, dep2)]
+ */
 public external interface AnnotatedFactory<T>
 
+/**
+ * Public AngularTS AnimationOptions contract exposed through the ng namespace.
+ */
 public external interface AnimationOptions {
+    /**
+     * The addClass member of ng.AnimationOptions.
+     */
     public var addClass: String
+    /**
+     * The animation member of ng.AnimationOptions.
+     */
     public var animation: String
+    /**
+     * The enter member of ng.AnimationOptions.
+     */
     public var enter: dynamic
+    /**
+     * The from member of ng.AnimationOptions.
+     */
     public var from: dynamic
+    /**
+     * The keyframes member of ng.AnimationOptions.
+     */
     public var keyframes: dynamic
+    /**
+     * The leave member of ng.AnimationOptions.
+     */
     public var leave: dynamic
+    /**
+     * The move member of ng.AnimationOptions.
+     */
     public var move: dynamic
-    public fun onCancel(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally): Unit
-    public fun onDone(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally): Unit
-    public fun onStart(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally): Unit
+    /**
+     * The onCancel member of ng.AnimationOptions.
+     * @param element Value supplied for the element parameter.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun onCancel(element: org.w3c.dom.Element = definedExternally, context: dynamic = definedExternally): Unit
+    /**
+     * The onDone member of ng.AnimationOptions.
+     * @param element Value supplied for the element parameter.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun onDone(element: org.w3c.dom.Element = definedExternally, context: dynamic = definedExternally): Unit
+    /**
+     * The onStart member of ng.AnimationOptions.
+     * @param element Value supplied for the element parameter.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun onStart(element: org.w3c.dom.Element = definedExternally, context: dynamic = definedExternally): Unit
+    /**
+     * The removeClass member of ng.AnimationOptions.
+     */
     public var removeClass: String
+    /**
+     * The tempClasses member of ng.AnimationOptions.
+     */
     public var tempClasses: dynamic
+    /**
+     * The to member of ng.AnimationOptions.
+     */
     public var to: dynamic
 }
 
+/**
+ * Public AngularTS AnimationPhase contract exposed through the ng namespace.
+ */
 public external interface AnimationPhase
 
+/**
+ * Public AngularTS AnimationPreset contract exposed through the ng namespace.
+ */
 public external interface AnimationPreset {
+    /**
+     * The addClass member of ng.AnimationPreset.
+     */
     public var addClass: dynamic
+    /**
+     * The animate member of ng.AnimationPreset.
+     */
     public var animate: dynamic
+    /**
+     * The enter member of ng.AnimationPreset.
+     */
     public var enter: dynamic
+    /**
+     * The leave member of ng.AnimationPreset.
+     */
     public var leave: dynamic
+    /**
+     * The move member of ng.AnimationPreset.
+     */
     public var move: dynamic
+    /**
+     * The options member of ng.AnimationPreset.
+     */
     public var options: dynamic
+    /**
+     * The removeClass member of ng.AnimationPreset.
+     */
     public var removeClass: dynamic
+    /**
+     * The setClass member of ng.AnimationPreset.
+     */
     public var setClass: dynamic
 }
 
+/**
+ * Public AngularTS AnimationPresetHandler contract exposed through the ng namespace.
+ */
 public external interface AnimationPresetHandler {
-    public operator fun invoke(p0: org.w3c.dom.Element = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.AnimationPresetHandler function.
+     * @param element Value supplied for the element parameter.
+     * @param context Value supplied for the context parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public operator fun invoke(element: org.w3c.dom.Element = definedExternally, context: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS AnimationResult contract exposed through the ng namespace.
+ */
 public external interface AnimationResult
 
+/**
+ * Runtime metadata returned after defining a standalone custom element.
+ */
 public external interface AngularElementDefinition {
+    /**
+     * AngularTS runtime instance that owns the element injector.
+     */
     public var angular: dynamic
+    /**
+     * Native custom element constructor registered with `customElements`.
+     */
     public var element: dynamic
+    /**
+     * Application module that registered the element.
+     */
     public var elementModule: dynamic
+    /**
+     * Injector used by all instances of this custom element definition.
+     */
     public var injector: dynamic
+    /**
+     * Registered custom element tag name.
+     */
     public var name: String
+    /**
+     * Custom runtime `ng` module.
+     */
     public var ngModule: dynamic
 }
 
+/**
+ * Configuration for the application module that owns the custom element.
+ */
 public external interface AngularElementModuleOptions {
-    public fun configure(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
+    /**
+     * Optional hook for adding services, filters, directives, or config to the element module.
+     * @param module Value supplied for the module parameter.
+     * @param angular Value supplied for the angular parameter.
+     */
+    public fun configure(module: dynamic = definedExternally, angular: dynamic = definedExternally): Unit
+    /**
+     * Name of the element application module. Defaults to a name derived from the tag.
+     */
     public var name: String
+    /**
+     * Additional application modules required by the element module.
+     */
     public var requires: Array<String>
 }
 
+/**
+ * Options for a standalone AngularTS-backed custom element runtime.
+ */
 public external interface AngularElementOptions<T> {
+    /**
+     * App component definition passed to `$webComponent.defineAppComponent`.
+     */
     public var component: dynamic
+    /**
+     * Directives registered in the composed root module.
+     */
     public var directives: dynamic
+    /**
+     * Application module that registers the custom element.
+     */
     public var elementModule: dynamic
+    /**
+     * Filters registered in the composed root module.
+     */
     public var filters: dynamic
+    /**
+     * Framework modules included by the composed `ng` module.
+     */
     public var modules: Array<(dynamic) -> dynamic>
+    /**
+     * Name of the composed root module. Defaults to `ng`.
+     */
     public var name: String
+    /**
+     * Additional providers registered in the composed root module.
+     */
     public var providers: dynamic
+    /**
+     * Additional application modules required by the composed root module.
+     */
     public var requires: Array<String>
+    /**
+     * Services registered in the composed root module.
+     */
     public var services: dynamic
+    /**
+     * Treat this runtime as a sub-application of the current host runtime.
+     */
     public var subapp: Boolean
 }
 
+/**
+ * A controller constructor function used in AngularTS.
+ */
 public external interface ControllerConstructor
 
+/**
+ * Public AngularTS CookieOptions contract exposed through the ng namespace.
+ */
 public external interface CookieOptions {
+    /**
+     * Domain scope for the cookie.
+     */
     public var domain: String
+    /**
+     * Expiration date, date string, or timestamp. Omit for a session cookie.
+     */
     public var expires: dynamic
+    /**
+     * URL path scope for the cookie.
+     */
     public var path: String
+    /**
+     * SameSite policy applied by the browser.
+     */
     public var samesite: dynamic
+    /**
+     * Restrict the cookie to HTTPS connections.
+     */
     public var secure: Boolean
 }
 
+/**
+ * Serialization options for cookie-backed stores.
+ */
 public external interface CookieStoreOptions {
+    /**
+     * Cookie attributes used for writes.
+     */
     public var cookie: dynamic
-    public fun deserialize(p0: String = definedExternally): dynamic
-    public fun serialize(p0: dynamic = definedExternally): String
+    /**
+     * Convert stored strings back to values after reading.
+     * @param text Value supplied for the text parameter.
+     */
+    public fun deserialize(text: String = definedExternally): dynamic
+    /**
+     * Convert values to strings before writing.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun serialize(value: dynamic = definedExternally): String
 }
 
+/**
+ * Creates a new entity instance from raw response data.
+ */
 public external interface EntityClass<T>
 
+/**
+ * Error configuration object. May only contain the options that need to be updated.
+ */
 public external interface ErrorHandlingConfig {
+    /**
+     * The max depth for stringifying objects. Setting to a non-positive or non-numeric value
+     * removes the max depth limit. Default: 5.
+     */
     public var objectMaxDepth: Double
 }
 
+/**
+ * A JavaScript expression represented as a string, typically used in interpolation
+ * bindings. Example: ```html <span title="{{ attrBinding }}">{{ textBinding }}</span> ```
+ */
 public external interface Expression
 
+/**
+ * HTTP method accepted by HttpRequestConfig.method.
+ */
 public external interface HttpMethod
 
+/**
+ * Default request settings configured through `app.config({ $http })` and exposed at
+ * runtime through `$http.defaults`. Not every `HttpRequestOptions` field is supported
+ * here; this shape only includes the fields that the runtime reads from provider-level
+ * defaults. https://docs.angularjs.org/api/ng/service/$http#defaults
+ * https://docs.angularjs.org/api/ng/service/$http#usage
+ */
 public external interface HttpDefaults {
+    /**
+     * Cache used for cacheable requests. `true` enables the default cache.
+     */
     public var cache: dynamic
+    /**
+     * Default headers merged into each request.
+     */
     public var headers: dynamic
+    /**
+     * Query parameter serializer token or function.
+     */
     public var paramSerializer: dynamic
+    /**
+     * Request body transform pipeline.
+     */
     public var transformRequest: dynamic
+    /**
+     * Response body transform pipeline.
+     */
     public var transformResponse: dynamic
+    /**
+     * Whether cross-site requests should include credentials by default.
+     */
     public var withCredentials: Boolean
+    /**
+     * Cookie name used when reading the XSRF token.
+     */
     public var xsrfCookieName: String
+    /**
+     * Header name used when sending the XSRF token.
+     */
     public var xsrfHeaderName: String
 }
 
+/**
+ * Response object returned by `$http` requests.
+ */
 public external interface HttpResponse<T> {
+    /**
+     * Request configuration that produced this response.
+     */
     public var config: dynamic
+    /**
+     * Parsed response body.
+     */
     public var data: dynamic
-    public fun headers(p0: String = definedExternally): String
+    /**
+     * Lazy response header reader.
+     * @param headerName Value supplied for the headerName parameter.
+     */
+    public fun headers(headerName: String = definedExternally): String
+    /**
+     * Numeric HTTP status code. Non-2xx statuses reject the promise.
+     */
     public var status: Double
+    /**
+     * Native status text such as `OK` or `Not Found`.
+     */
     public var statusText: String
+    /**
+     * Transport completion status. Useful for distinguishing timeout, abort, and network
+     * errors.
+     */
     public var xhrStatus: dynamic
 }
 
+/**
+ * Final transport status reported by transport completion handlers.
+ */
 public external interface HttpResponseStatus
 
+/**
+ * Public AngularTS Injectable contract exposed through the ng namespace.
+ */
 public external interface Injectable<T>
 
+/**
+ * A user-defined service recipe accepted by ng.NgModule.provider. Object recipes define an
+ * injectable `get` factory directly. Injectable functions and classes are instantiated
+ * first and must produce an object with an injectable `get` factory.
+ */
 public external interface ProviderDefinition
 
+/**
+ * Public AngularTS InterpolationFunction contract exposed through the ng namespace.
+ */
 public external interface InterpolationFunction {
+    /**
+     * Original interpolation text.
+     */
     public var exp: String
+    /**
+     * Expressions extracted from the interpolation text.
+     */
     public var expressions: Array<String>
-    public operator fun invoke(p0: dynamic = definedExternally, p1: (dynamic) -> Unit = definedExternally): dynamic
+    /**
+     * Evaluate the interpolation.
+     * @param context The scope/context
+     * @param cb Optional callback when expressions change
+     */
+    public operator fun invoke(context: dynamic = definedExternally, cb: (dynamic) -> Unit = definedExternally): dynamic
 }
 
+/**
+ * Public watcher callback shape. The first argument is the resolved watched value. The
+ * second argument is the original target object used when the watcher was registered.
+ */
 public external interface ListenerFn {
-    public operator fun invoke(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
+    /**
+     * Calls the ng.ListenerFn function.
+     * @param newValue Value supplied for the newValue parameter.
+     * @param originalTarget Value supplied for the originalTarget parameter.
+     */
+    public operator fun invoke(newValue: dynamic = definedExternally, originalTarget: dynamic = definedExternally): Unit
 }
 
+/**
+ * Public AngularTS Machine contract exposed through the ng namespace.
+ */
 public external interface Machine<TContract> {
-    public fun can(p0: dynamic = definedExternally, vararg p1: dynamic): Boolean
+    /**
+     * The can member of ng.Machine.
+     * @param type Value supplied for the type parameter.
+     * @param payload Value supplied for the payload parameter.
+     */
+    public fun can(type: dynamic = definedExternally, vararg payload: dynamic): Boolean
+    /**
+     * The data member of ng.Machine.
+     */
     public var data: dynamic
-    public fun matches(p0: dynamic = definedExternally): Boolean
-    public fun restore(p0: dynamic = definedExternally): Unit
-    public fun send(p0: dynamic = definedExternally, vararg p1: dynamic): dynamic
+    /**
+     * The matches member of ng.Machine.
+     * @param state Value supplied for the state parameter.
+     */
+    public fun matches(state: dynamic = definedExternally): Boolean
+    /**
+     * The restore member of ng.Machine.
+     * @param snapshot Value supplied for the snapshot parameter.
+     */
+    public fun restore(snapshot: dynamic = definedExternally): Unit
+    /**
+     * The send member of ng.Machine.
+     * @param type Value supplied for the type parameter.
+     * @param payload Value supplied for the payload parameter.
+     */
+    public fun send(type: dynamic = definedExternally, vararg payload: dynamic): dynamic
+    /**
+     * The snapshot member of ng.Machine.
+     */
     public fun snapshot(): dynamic
+    /**
+     * The state member of ng.Machine.
+     */
     public var state: dynamic
 }
 
+/**
+ * Labeled type contract carried by a machine definition and instance.
+ */
 public external interface MachineContract {
+    /**
+     * The data member of ng.MachineContract.
+     */
     public var data: dynamic
+    /**
+     * The events member of ng.MachineContract.
+     */
     public var events: dynamic
+    /**
+     * The state member of ng.MachineContract.
+     */
     public var state: String
 }
 
+/**
+ * Public AngularTS MachineConfig contract exposed through the ng namespace.
+ */
 public external interface MachineConfig<TContract> {
+    /**
+     * The data member of ng.MachineConfig.
+     */
     public var data: dynamic
+    /**
+     * The hooks member of ng.MachineConfig.
+     */
     public var hooks: dynamic
+    /**
+     * The id member of ng.MachineConfig.
+     */
     public var id: String
+    /**
+     * The initial member of ng.MachineConfig.
+     */
     public var initial: dynamic
+    /**
+     * The meta member of ng.MachineConfig.
+     */
     public var meta: dynamic
-    public fun policy(p0: dynamic = definedExternally): dynamic
+    /**
+     * The policy member of ng.MachineConfig.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun policy(context: dynamic = definedExternally): dynamic
+    /**
+     * The states member of ng.MachineConfig.
+     */
     public var states: dynamic
 }
 
+/**
+ * Public AngularTS MachineSnapshot contract exposed through the ng namespace.
+ */
 public external interface MachineSnapshot<TContract> {
+    /**
+     * The data member of ng.MachineSnapshot.
+     */
     public var data: dynamic
+    /**
+     * The state member of ng.MachineSnapshot.
+     */
     public var state: dynamic
 }
 
+/**
+ * Public AngularTS MachineSendResult contract exposed through the ng namespace.
+ */
 public external interface MachineSendResult<TMode> {
+    /**
+     * The from member of ng.MachineSendResult.
+     */
     public var from: dynamic
+    /**
+     * The ok member of ng.MachineSendResult.
+     */
     public var ok: Boolean
+    /**
+     * The status member of ng.MachineSendResult.
+     */
     public var status: dynamic
+    /**
+     * The to member of ng.MachineSendResult.
+     */
     public var to: dynamic
+    /**
+     * The type member of ng.MachineSendResult.
+     */
     public var type: String
 }
 
+/**
+ * Public AngularTS MachineSendStatus contract exposed through the ng namespace.
+ */
 public external interface MachineSendStatus
 
+/**
+ * Public AngularTS Workflow contract exposed through the ng namespace.
+ */
 public external interface Workflow<TContract> {
-    public fun can(p0: dynamic = definedExternally): Boolean
-    public fun cancel(p0: dynamic = definedExternally): Double
+    /**
+     * The can member of ng.Workflow.
+     * @param command Value supplied for the command parameter.
+     */
+    public fun can(command: dynamic = definedExternally): Boolean
+    /**
+     * The cancel member of ng.Workflow.
+     * @param command Value supplied for the command parameter.
+     */
+    public fun cancel(command: dynamic = definedExternally): Double
+    /**
+     * The data member of ng.Workflow.
+     */
     public var data: dynamic
+    /**
+     * The diagnostics member of ng.Workflow.
+     */
     public var diagnostics: Array<dynamic>
+    /**
+     * The history member of ng.Workflow.
+     */
     public var history: Array<dynamic>
+    /**
+     * The id member of ng.Workflow.
+     */
     public var id: String
-    public fun restore(p0: dynamic = definedExternally): Unit
-    public fun run(p0: dynamic = definedExternally, vararg p1: dynamic): dynamic
+    /**
+     * The restore member of ng.Workflow.
+     * @param snapshot Value supplied for the snapshot parameter.
+     */
+    public fun restore(snapshot: dynamic = definedExternally): Unit
+    /**
+     * The run member of ng.Workflow.
+     * @param command Value supplied for the command parameter.
+     * @param input Value supplied for the input parameter.
+     */
+    public fun run(command: dynamic = definedExternally, vararg input: dynamic): dynamic
+    /**
+     * The snapshot member of ng.Workflow.
+     */
     public fun snapshot(): dynamic
+    /**
+     * The state member of ng.Workflow.
+     */
     public var state: dynamic
 }
 
+/**
+ * Labeled type contract carried by a workflow definition and instance.
+ */
 public external interface WorkflowContract {
+    /**
+     * The commands member of ng.WorkflowContract.
+     */
     public var commands: dynamic
+    /**
+     * The data member of ng.WorkflowContract.
+     */
     public var data: dynamic
+    /**
+     * The state member of ng.WorkflowContract.
+     */
     public var state: String
 }
 
+/**
+ * Public AngularTS WorkflowCommand contract exposed through the ng namespace.
+ */
 public external interface WorkflowCommand<TContract, TCommand> {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.WorkflowCommand function.
+     * @param context Value supplied for the context parameter.
+     */
+    public operator fun invoke(context: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Input and output carried by a workflow command.
+ */
 public external interface WorkflowCommandContract {
+    /**
+     * The input member of ng.WorkflowCommandContract.
+     */
     public var input: dynamic
+    /**
+     * The output member of ng.WorkflowCommandContract.
+     */
     public var output: dynamic
 }
 
+/**
+ * Public AngularTS WorkflowCommandContext contract exposed through the ng namespace.
+ */
 public external interface WorkflowCommandContext<TContract, TInput> {
-    public fun cleanup(p0: () -> Unit = definedExternally): Unit
+    /**
+     * The cleanup member of ng.WorkflowCommandContext.
+     * @param callback Value supplied for the callback parameter.
+     */
+    public fun cleanup(callback: () -> Unit = definedExternally): Unit
+    /**
+     * The command member of ng.WorkflowCommandContext.
+     */
     public var command: String
+    /**
+     * The data member of ng.WorkflowCommandContext.
+     */
     public var data: dynamic
+    /**
+     * The input member of ng.WorkflowCommandContext.
+     */
     public var input: dynamic
-    public fun reject(p0: dynamic = definedExternally): dynamic
+    /**
+     * Stop the command with a controlled, recorded diagnostic.
+     * @param diagnostic Value supplied for the diagnostic parameter.
+     */
+    public fun reject(diagnostic: dynamic = definedExternally): dynamic
+    /**
+     * The signal member of ng.WorkflowCommandContext.
+     */
     public var signal: dynamic
 }
 
+/**
+ * Public AngularTS WorkflowCommandDefinition contract exposed through the ng namespace.
+ */
 public external interface WorkflowCommandDefinition<TContract, TCommand> {
+    /**
+     * The cancelled member of ng.WorkflowCommandDefinition.
+     */
     public var cancelled: dynamic
+    /**
+     * The commandTimeout member of ng.WorkflowCommandDefinition.
+     */
     public var commandTimeout: Double
+    /**
+     * The concurrency member of ng.WorkflowCommandDefinition.
+     */
     public var concurrency: dynamic
-    public fun execute(p0: dynamic = definedExternally): dynamic
+    /**
+     * The execute member of ng.WorkflowCommandDefinition.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun execute(context: dynamic = definedExternally): dynamic
+    /**
+     * The failure member of ng.WorkflowCommandDefinition.
+     */
     public var failure: dynamic
+    /**
+     * The from member of ng.WorkflowCommandDefinition.
+     */
     public var from: dynamic
+    /**
+     * The pending member of ng.WorkflowCommandDefinition.
+     */
     public var pending: dynamic
+    /**
+     * The retry member of ng.WorkflowCommandDefinition.
+     */
     public var retry: Double
+    /**
+     * The success member of ng.WorkflowCommandDefinition.
+     */
     public var success: dynamic
+    /**
+     * The timeout member of ng.WorkflowCommandDefinition.
+     */
     public var timeout: dynamic
 }
 
+/**
+ * Public AngularTS WorkflowResult contract exposed through the ng namespace.
+ */
 public external interface WorkflowResult<TOutput> {
+    /**
+     * The diagnostics member of ng.WorkflowResult.
+     */
     public var diagnostics: Array<dynamic>
+    /**
+     * The ok member of ng.WorkflowResult.
+     */
     public var ok: Boolean
+    /**
+     * The status member of ng.WorkflowResult.
+     */
     public var status: dynamic
 }
 
+/**
+ * Public AngularTS WorkflowSnapshot contract exposed through the ng namespace.
+ */
 public external interface WorkflowSnapshot<TContract> {
+    /**
+     * The data member of ng.WorkflowSnapshot.
+     */
     public var data: dynamic
+    /**
+     * The diagnostics member of ng.WorkflowSnapshot.
+     */
     public var diagnostics: Array<dynamic>
+    /**
+     * The history member of ng.WorkflowSnapshot.
+     */
     public var history: Array<dynamic>
+    /**
+     * The id member of ng.WorkflowSnapshot.
+     */
     public var id: String
+    /**
+     * The state member of ng.WorkflowSnapshot.
+     */
     public var state: dynamic
+    /**
+     * The version member of ng.WorkflowSnapshot.
+     */
     public var version: Double
 }
 
+/**
+ * Public AngularTS WorkflowSupervisor contract exposed through the ng namespace.
+ */
 public external interface WorkflowSupervisor<TWorkflows> {
+    /**
+     * The cancelAll member of ng.WorkflowSupervisor.
+     */
     public fun cancelAll(): Double
+    /**
+     * The diagnostics member of ng.WorkflowSupervisor.
+     */
     public var diagnostics: Array<dynamic>
+    /**
+     * The id member of ng.WorkflowSupervisor.
+     */
     public var id: String
+    /**
+     * The persist member of ng.WorkflowSupervisor.
+     */
     public fun persist(): dynamic
+    /**
+     * The ready member of ng.WorkflowSupervisor.
+     */
     public var ready: dynamic
+    /**
+     * The recover member of ng.WorkflowSupervisor.
+     */
     public fun recover(): dynamic
-    public fun restore(p0: dynamic = definedExternally): Unit
+    /**
+     * The restore member of ng.WorkflowSupervisor.
+     * @param snapshot Value supplied for the snapshot parameter.
+     */
+    public fun restore(snapshot: dynamic = definedExternally): Unit
+    /**
+     * The snapshot member of ng.WorkflowSupervisor.
+     */
     public fun snapshot(): dynamic
+    /**
+     * The status member of ng.WorkflowSupervisor.
+     */
     public var status: dynamic
-    public fun workflow(p0: dynamic = definedExternally): dynamic
+    /**
+     * The workflow member of ng.WorkflowSupervisor.
+     * @param name Value supplied for the name parameter.
+     */
+    public fun workflow(name: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS WorkflowSupervisorConfig contract exposed through the ng namespace.
+ */
 public external interface WorkflowSupervisorConfig<TWorkflows> {
+    /**
+     * Persist a fresh supervisor snapshot after each completed command.
+     */
     public var autoPersist: Boolean
+    /**
+     * Restore persisted state and retry recoverable commands on startup.
+     */
     public var autoRecover: Boolean
+    /**
+     * The id member of ng.WorkflowSupervisorConfig.
+     */
     public var id: String
+    /**
+     * The persistence member of ng.WorkflowSupervisorConfig.
+     */
     public var persistence: dynamic
+    /**
+     * The workflows member of ng.WorkflowSupervisorConfig.
+     */
     public var workflows: dynamic
 }
 
+/**
+ * Built-in IndexedDB persistence selected by a workflow supervisor.
+ */
 public external interface WorkflowSupervisorPersistenceConfig {
+    /**
+     * The database member of ng.WorkflowSupervisorPersistenceConfig.
+     */
     public var database: String
+    /**
+     * The indexedDB member of ng.WorkflowSupervisorPersistenceConfig.
+     */
     public var indexedDB: dynamic
+    /**
+     * The store member of ng.WorkflowSupervisorPersistenceConfig.
+     */
     public var store: String
+    /**
+     * The type member of ng.WorkflowSupervisorPersistenceConfig.
+     */
     public var type: String
+    /**
+     * The version member of ng.WorkflowSupervisorPersistenceConfig.
+     */
     public var version: Double
 }
 
+/**
+ * Public AngularTS WorkflowSupervisorPersistence contract exposed through the ng
+ * namespace.
+ */
 public external interface WorkflowSupervisorPersistence<TSnapshot> {
-    public fun load(p0: String = definedExternally): dynamic
-    public fun save(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The load member of ng.WorkflowSupervisorPersistence.
+     * @param id Value supplied for the id parameter.
+     */
+    public fun load(id: String = definedExternally): dynamic
+    /**
+     * The save member of ng.WorkflowSupervisorPersistence.
+     * @param id Value supplied for the id parameter.
+     * @param snapshot Value supplied for the snapshot parameter.
+     */
+    public fun save(id: String = definedExternally, snapshot: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS WorkflowSupervisorSnapshot contract exposed through the ng namespace.
+ */
 public external interface WorkflowSupervisorSnapshot<TWorkflowSnapshots> {
+    /**
+     * The diagnostics member of ng.WorkflowSupervisorSnapshot.
+     */
     public var diagnostics: Array<dynamic>
+    /**
+     * The id member of ng.WorkflowSupervisorSnapshot.
+     */
     public var id: String
+    /**
+     * The status member of ng.WorkflowSupervisorSnapshot.
+     */
     public var status: dynamic
+    /**
+     * The updatedAt member of ng.WorkflowSupervisorSnapshot.
+     */
     public var updatedAt: Double
+    /**
+     * The version member of ng.WorkflowSupervisorSnapshot.
+     */
     public var version: Double
+    /**
+     * The workflows member of ng.WorkflowSupervisorSnapshot.
+     */
     public var workflows: dynamic
 }
 
+/**
+ * Public AngularTS NgModelController contract exposed through the ng namespace.
+ */
 public external interface NgModelController {
-    public var `$asyncValidators`: dynamic
-    public fun `$commitViewValue`(): Unit
-    public var `$dirty`: Boolean
-    public var `$error`: dynamic
-    public var `$formatters`: Array<(dynamic) -> dynamic>
-    public var `$invalid`: Boolean
-    public fun `$isEmpty`(p0: dynamic = definedExternally): Boolean
-    public var `$modelValue`: dynamic
-    public var `$name`: dynamic
-    public var `$options`: dynamic
-    public fun `$overrideModelOptions`(p0: dynamic = definedExternally): Unit
-    public var `$parsers`: Array<(dynamic) -> dynamic>
-    public var `$pending`: dynamic
-    public var `$pristine`: Boolean
-    public fun `$processModelValue`(): Unit
-    public fun `$render`(): Unit
-    public fun `$rollbackViewValue`(): Unit
-    public fun `$setCustomValidity`(p0: String = definedExternally): Unit
-    public fun `$setDirty`(): Unit
-    public fun `$setNativeValidity`(p0: Boolean = definedExternally): Unit
-    public fun `$setPristine`(): Unit
-    public fun `$setTouched`(): Unit
-    public fun `$setUntouched`(): Unit
-    public fun `$setValidity`(p0: String = definedExternally, p1: Boolean = definedExternally): Unit
-    public fun `$setViewValue`(p0: dynamic = definedExternally, p1: String = definedExternally): Unit
-    public var `$target`: dynamic
-    public var `$touched`: Boolean
-    public var `$untouched`: Boolean
-    public var `$valid`: Boolean
-    public fun `$validate`(): Unit
-    public var `$validationMessage`: String
-    public var `$validators`: dynamic
-    public var `$validity`: dynamic
-    public var `$viewChangeListeners`: Array<() -> Unit>
-    public var `$viewValue`: dynamic
-}
-
-public external interface HttpRequestConfig {
-    public var cache: dynamic
-    public var data: dynamic
-    public var eventHandlers: dynamic
-    public var headers: dynamic
-    public var method: dynamic
-    public var params: dynamic
-    public var paramSerializer: dynamic
-    public var responseType: String
-    public var timeout: dynamic
-    public var transformRequest: dynamic
-    public var transformResponse: dynamic
-    public var uploadEventHandlers: dynamic
-    public var url: String
-    public var withCredentials: Boolean
-    public var xsrfCookieName: String
-    public var xsrfHeaderName: String
-}
-
-public external interface HttpRequestOptions {
-    public var cache: dynamic
-    public var data: dynamic
-    public var headers: dynamic
-    public var params: dynamic
-    public var paramSerializer: dynamic
-    public var responseType: String
-    public var timeout: dynamic
-    public var transformRequest: dynamic
-    public var transformResponse: dynamic
-    public var withCredentials: Boolean
-    public var xsrfCookieName: String
-    public var xsrfHeaderName: String
-}
-
-public external interface RestFactory {
-    public operator fun invoke(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-}
-
-public external interface RestBackend {
-    public fun request(p0: dynamic = definedExternally): dynamic
-}
-
-public external interface RestCachePolicy {
-    public operator fun invoke(p0: dynamic = definedExternally): dynamic
-}
-
-public external interface RestCachePolicyContext {
-    public var cacheKey: String
-    public var collectionUrl: String
-    public var id: dynamic
-    public var meta: dynamic
-    public var method: dynamic
-    public var operation: String
+    /**
+     * The _target member of ng.NgModelController.
+     */
+    public var _target: dynamic
+    /**
+     * The asyncValidators member of ng.NgModelController.
+     */
+    public var asyncValidators: dynamic
+    /**
+     * Commit a pending update to the `modelValue`. Updates may be pending by a debounced event
+     * or because the input is waiting for a some future event defined in `ng-model-options`.
+     * this method is rarely needed as `NgModelController` usually handles calling this in
+     * response to input events.
+     */
+    public fun commitViewValue(): Unit
+    /**
+     * The controlName member of ng.NgModelController.
+     */
+    public var controlName: dynamic
+    /**
+     * The dirty member of ng.NgModelController.
+     */
+    public var dirty: Boolean
+    /**
+     * The error member of ng.NgModelController.
+     */
+    public var error: dynamic
+    /**
+     * The formatters member of ng.NgModelController.
+     */
+    public var formatters: Array<(dynamic) -> dynamic>
+    /**
+     * The invalid member of ng.NgModelController.
+     */
+    public var invalid: Boolean
+    /**
+     * This is called when we need to determine if the value of an input is empty. For
+     * instance, the required directive does this to work out if the input has data or not. The
+     * default `isEmpty` function checks whether the value is `undefined`, `''`, `null` or
+     * `NaN`. You can override this for input directives whose concept of being empty is
+     * different from the default. The `checkboxInputType` directive does this because in its
+     * case a value of `false` implies empty.
+     * @param value The value of the input to check for emptiness.
+     */
+    public fun isEmpty(value: dynamic = definedExternally): Boolean
+    /**
+     * The modelValue member of ng.NgModelController.
+     */
+    public var modelValue: dynamic
+    /**
+     * The options member of ng.NgModelController.
+     */
     public var options: dynamic
+    /**
+     * Override the current model options settings programmatically. The previous
+     * `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will
+     * inherit from the previous one overriding or inheriting settings that are defined in the
+     * given parameter. See `ngModelOptions` for information about what options can be
+     * specified and how model option inheritance works. <div class="alert alert-warning">
+     * **Note:** this function only affects the options set on the `ngModelController`, and not
+     * the options on the `ngModelOptions` directive from which they might have been obtained
+     * initially. </div> <div class="alert alert-danger"> **Note:** it is not possible to
+     * override the `getterSetter` option. </div>
+     * @param options a hash of settings to override the previous options
+     */
+    public fun overrideModelOptions(options: dynamic = definedExternally): Unit
+    /**
+     * The parsers member of ng.NgModelController.
+     */
+    public var parsers: Array<(dynamic) -> dynamic>
+    /**
+     * The pending member of ng.NgModelController.
+     */
+    public var pending: dynamic
+    /**
+     * The pristine member of ng.NgModelController.
+     */
+    public var pristine: Boolean
+    /**
+     * Runs the model -> view pipeline on the current NgModelController.modelValuemodelValue.
+     * The following actions are performed by this method: - the `modelValue` is run through
+     * the NgModelController.formattersformatters and the result is set to the
+     * NgModelController.viewValueviewValue - the `ng-empty` or `ng-not-empty` class is set on
+     * the element - if the `viewValue` has changed: - NgModelController.renderrender is called
+     * on the control - the NgModelController.validatorsvalidators are run and the validation
+     * status is set. This method is called by ngModel internally when the bound scope value
+     * changes. Application developers usually do not have to call this function themselves.
+     * This function can be used when the `viewValue` or the rendered DOM value are not
+     * correctly formatted and the `modelValue` must be run through the `formatters` again.
+     */
+    public fun processModelValue(): Unit
+    /**
+     * Called when the view needs to be updated. It is expected that the user of the ng-model
+     * directive will implement this method. The `render()` method is invoked in the following
+     * situations: * `rollbackViewValue()` is called. If we are rolling back the view value to
+     * the last committed value then `render()` is called to update the input control. * The
+     * value referenced by `ng-model` is changed programmatically and both the `modelValue` and
+     * the `viewValue` are different from last time. Since `ng-model` does not do a deep watch,
+     * `render()` is only invoked if the values of `modelValue` and `viewValue` are actually
+     * different from their previous values. If `modelValue` or `viewValue` are objects (rather
+     * than a string or number) then `render()` will not be invoked if you only change a
+     * property on the objects.
+     */
+    public fun render(): Unit
+    /**
+     * Cancel an update and reset the input element's value to prevent an update to the
+     * `modelValue`, which may be caused by a pending debounced event or because the input is
+     * waiting for some future event. If you have an input that uses `ng-model-options` to set
+     * up debounced updates or updates that depend on special events such as `blur`, there can
+     * be a period when the `viewValue` is out of sync with the ngModel's `modelValue`. In this
+     * case, you can use `rollbackViewValue()` to manually cancel the debounced / future update
+     * and reset the input to the last committed view value. It is also possible that you run
+     * into difficulties if you try to update the ngModel's `modelValue` programmatically
+     * before these debounced/future events have resolved/occurred, because AngularTS's dirty
+     * checking mechanism is not able to tell whether the model has actually changed or not.
+     * The `rollbackViewValue()` method should be called before programmatically changing the
+     * model of an input which may have such events pending. This is important in order to make
+     * sure that the input field will be updated with the new model value and any pending
+     * operations are cancelled.
+     */
+    public fun rollbackViewValue(): Unit
+    /**
+     * Sets the control's single native custom-validity message. Native controls expose this
+     * through `ValidityState.customError`; an empty message clears the custom error.
+     * @param message Value supplied for the message parameter.
+     */
+    public fun setCustomValidity(message: String = definedExternally): Unit
+    /**
+     * Sets the control to its dirty state. This method can be called to remove the
+     * `ng-pristine` class and set the control to its dirty state (`ng-dirty` class). A model
+     * is considered to be dirty when the control has been changed from when first compiled.
+     */
+    public fun setDirty(): Unit
+    /**
+     * The setNativeValidity member of ng.NgModelController.
+     * @param state Value supplied for the state parameter.
+     */
+    public fun setNativeValidity(state: Boolean = definedExternally): Unit
+    /**
+     * Sets the control to its pristine state. This method can be called to remove the
+     * `ng-dirty` class and set the control to its pristine state (`ng-pristine` class). A
+     * model is considered to be pristine when the control has not been changed from when first
+     * compiled.
+     */
+    public fun setPristine(): Unit
+    /**
+     * Sets the control to its touched state. This method can be called to remove the
+     * `ng-untouched` class and set the control to its touched state (`ng-touched` class). A
+     * model is considered to be touched when the user has first focused the control element
+     * and then shifted focus away from the control (blur event).
+     */
+    public fun setTouched(): Unit
+    /**
+     * Sets the control to its untouched state. This method can be called to remove the
+     * `ng-touched` class and set the control to its untouched state (`ng-untouched` class).
+     * Upon compilation, a model is set as untouched by default, however this function can be
+     * used to restore that state if the model has already been touched by the user.
+     */
+    public fun setUntouched(): Unit
+    /**
+     * Updates the validation state of the control and propagates it to the parent form.
+     * @param validationErrorKey Value supplied for the validationErrorKey parameter.
+     * @param state Value supplied for the state parameter.
+     */
+    public fun setValidity(validationErrorKey: String = definedExternally, state: Boolean = definedExternally): Unit
+    /**
+     * Update the view value. This method should be called when a control wants to change the
+     * view value; typically, this is done from within a DOM event handler. For example, the
+     * `input` directive calls it when the value of the input changes and `select` calls it
+     * when an option is selected. When `setViewValue` is called, the new `value` will be
+     * staged for committing through the `parsers` and `validators` pipelines. If there are no
+     * special `ngModelOptions` settings specified then the staged value is sent directly for
+     * processing through the `parsers` pipeline. After this, the `validators` and
+     * `asyncValidators` are called and the value is applied to `modelValue`. Finally, the
+     * value is set to the **expression** specified in the `ng-model` attribute and all the
+     * registered change listeners, in the `viewChangeListeners` list are called. In case the
+     * `ngModelOptions` directive is used with `updateOn` and the `default` trigger is not
+     * listed, all those actions will remain pending until one of the `updateOn` events is
+     * triggered on the DOM element. All these actions will be debounced if the
+     * `ngModelOptions` directive is used with a custom debounce for this particular event. The
+     * model commit and its reactive notifications run when an `updateOn` event fires, or after
+     * the configured debounce timer expires. Standard native inputs pass through
+     * browser-native values, such as strings from text-like controls, booleans from
+     * checkboxes, and `FileList | null` from file inputs. However, custom controls might also
+     * pass objects to this method. In this case, we should make a copy of the object before
+     * passing it to `setViewValue`. This is because `ngModel` does not perform a deep watch of
+     * objects, it only looks for a change of identity. If you only change the property of the
+     * object then ngModel will not realize that the object has changed and will not invoke the
+     * `parsers` and `validators` pipelines. For this reason, you should not change properties
+     * of the copy once it has been passed to `setViewValue`. Otherwise you may cause the model
+     * value on the scope to change incorrectly. <div class="alert alert-info"> In any case,
+     * the value passed to the method should always reflect the current value of the control.
+     * For example, if you are calling `setViewValue` for an input element, you should pass the
+     * input DOM value. Otherwise, the control and the scope model become out of sync. It's
+     * also important to note that `setViewValue` does not call `render` or change the
+     * control's DOM value in any way. If we want to change the control's DOM value
+     * programmatically, we should update the `ngModel` scope expression. Its new value will be
+     * picked up by the model controller, which will run it through the `formatters`, `render`
+     * it to update the DOM, and finally call `validate` on it. </div>
+     * @param value value from the view.
+     * @param trigger Event that triggered the update.
+     */
+    public fun setViewValue(value: dynamic = definedExternally, trigger: String = definedExternally): Unit
+    /**
+     * The touched member of ng.NgModelController.
+     */
+    public var touched: Boolean
+    /**
+     * The untouched member of ng.NgModelController.
+     */
+    public var untouched: Boolean
+    /**
+     * The valid member of ng.NgModelController.
+     */
+    public var valid: Boolean
+    /**
+     * Runs each of the registered validators (first synchronous validators and then
+     * asynchronous validators). If the validity changes to invalid, the model will be set to
+     * `undefined`, unless `ngModelOptions.allowInvalid` is `true`. If the validity changes to
+     * valid, it will set the model to the last available valid `modelValue`, i.e. either the
+     * last parsed value or the last value set from the scope.
+     */
+    public fun validate(): Unit
+    /**
+     * The validationMessage member of ng.NgModelController.
+     */
+    public var validationMessage: String
+    /**
+     * The validators member of ng.NgModelController.
+     */
+    public var validators: dynamic
+    /**
+     * The validity member of ng.NgModelController.
+     */
+    public var validity: dynamic
+    /**
+     * The viewChangeListeners member of ng.NgModelController.
+     */
+    public var viewChangeListeners: Array<() -> Unit>
+    /**
+     * The viewValue member of ng.NgModelController.
+     */
+    public var viewValue: dynamic
+}
+
+/**
+ * Full request configuration accepted by `$http(...)`. See
+ * http://docs.angularjs.org/api/ng/service/$http#usage
+ */
+public external interface HttpRequestConfig {
+    /**
+     * Cache used for cacheable requests. `true` enables the default cache.
+     */
+    public var cache: dynamic
+    /**
+     * Request body. Shorthand methods with explicit data set this automatically.
+     */
+    public var data: dynamic
+    /**
+     * Event handlers notified by the underlying transport.
+     */
+    public var eventHandlers: dynamic
+    /**
+     * Default headers merged into each request.
+     */
+    public var headers: dynamic
+    /**
+     * HTTP verb to use for the request.
+     */
+    public var method: dynamic
+    /**
+     * Query parameters appended to the request URL.
+     */
     public var params: dynamic
+    /**
+     * Query parameter serializer token or function.
+     */
+    public var paramSerializer: dynamic
+    /**
+     * Native fetch response body reader hint.
+     */
+    public var responseType: String
+    /**
+     * Millisecond timeout, or a promise whose resolution aborts the request.
+     */
+    public var timeout: dynamic
+    /**
+     * Request body transform pipeline.
+     */
+    public var transformRequest: dynamic
+    /**
+     * Response body transform pipeline.
+     */
+    public var transformResponse: dynamic
+    /**
+     * Upload event handlers. Not used by the fetch transport.
+     */
+    public var uploadEventHandlers: dynamic
+    /**
+     * Request URL. Query parameters from `params` are appended to this URL.
+     */
+    public var url: String
+    /**
+     * Whether cross-site requests should include credentials by default.
+     */
+    public var withCredentials: Boolean
+    /**
+     * Cookie name used when reading the XSRF token.
+     */
+    public var xsrfCookieName: String
+    /**
+     * Header name used when sending the XSRF token.
+     */
+    public var xsrfHeaderName: String
+}
+
+/**
+ * Request options shared by the `$http` shortcut methods. See
+ * http://docs.angularjs.org/api/ng/service/$http#usage
+ */
+public external interface HttpRequestOptions {
+    /**
+     * Cache used for cacheable requests. `true` enables the default cache.
+     */
+    public var cache: dynamic
+    /**
+     * Request body. Shorthand methods with explicit data set this automatically.
+     */
+    public var data: dynamic
+    /**
+     * Default headers merged into each request.
+     */
+    public var headers: dynamic
+    /**
+     * Query parameters appended to the request URL.
+     */
+    public var params: dynamic
+    /**
+     * Query parameter serializer token or function.
+     */
+    public var paramSerializer: dynamic
+    /**
+     * Native fetch response body reader hint.
+     */
+    public var responseType: String
+    /**
+     * Millisecond timeout, or a promise whose resolution aborts the request.
+     */
+    public var timeout: dynamic
+    /**
+     * Request body transform pipeline.
+     */
+    public var transformRequest: dynamic
+    /**
+     * Response body transform pipeline.
+     */
+    public var transformResponse: dynamic
+    /**
+     * Whether cross-site requests should include credentials by default.
+     */
+    public var withCredentials: Boolean
+    /**
+     * Cookie name used when reading the XSRF token.
+     */
+    public var xsrfCookieName: String
+    /**
+     * Header name used when sending the XSRF token.
+     */
+    public var xsrfHeaderName: String
+}
+
+/**
+ * Factory service exposed as `$rest`. Creates a typed RestService for a base URL, optional
+ * entity mapper, and optional backend request defaults.
+ */
+public external interface RestFactory {
+    /**
+     * Calls the ng.RestFactory function.
+     * @param baseUrl Value supplied for the baseUrl parameter.
+     * @param entityClass Value supplied for the entityClass parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public operator fun invoke(baseUrl: String = definedExternally, entityClass: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+}
+
+/**
+ * Backend abstraction used by RestService. Implement this interface to route REST
+ * operations through `$http`, IndexedDB, the Cache API, a test double, or a composed
+ * backend such as CachedRestBackend.
+ */
+public external interface RestBackend {
+    /**
+     * Execute one normalized REST request.
+     * @param request Request produced by `RestService`.
+     */
+    public fun request(request: dynamic = definedExternally): dynamic
+}
+
+/**
+ * Public AngularTS RestCachePolicy contract exposed through the ng namespace.
+ */
+public external interface RestCachePolicy {
+    /**
+     * Calls the ng.RestCachePolicy function.
+     * @param context Value supplied for the context parameter.
+     */
+    public operator fun invoke(context: dynamic = definedExternally): dynamic
+}
+
+/**
+ * Public AngularTS RestCachePolicyContext contract exposed through the ng namespace.
+ */
+public external interface RestCachePolicyContext {
+    /**
+     * The cacheKey member of ng.RestCachePolicyContext.
+     */
+    public var cacheKey: String
+    /**
+     * The collectionUrl member of ng.RestCachePolicyContext.
+     */
+    public var collectionUrl: String
+    /**
+     * The id member of ng.RestCachePolicyContext.
+     */
+    public var id: dynamic
+    /**
+     * The meta member of ng.RestCachePolicyContext.
+     */
+    public var meta: dynamic
+    /**
+     * The method member of ng.RestCachePolicyContext.
+     */
+    public var method: dynamic
+    /**
+     * The operation member of ng.RestCachePolicyContext.
+     */
+    public var operation: String
+    /**
+     * The options member of ng.RestCachePolicyContext.
+     */
+    public var options: dynamic
+    /**
+     * The params member of ng.RestCachePolicyContext.
+     */
+    public var params: dynamic
+    /**
+     * The url member of ng.RestCachePolicyContext.
+     */
     public var url: String
 }
 
+/**
+ * Async cache store used by CachedRestBackend. The interface is deliberately small so
+ * implementations can be backed by IndexedDB, the browser Cache API, local storage,
+ * memory, or test fixtures.
+ */
 public external interface RestCacheStore {
-    public fun delete(p0: String = definedExternally): dynamic
-    public fun deletePrefix(p0: String = definedExternally): dynamic
-    public fun get(p0: String = definedExternally): dynamic
-    public fun set(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Delete one cached REST response.
+     * @param key Exact cache key to remove.
+     */
+    public fun delete(key: String = definedExternally): dynamic
+    /**
+     * Delete cached REST responses whose keys start with the prefix. `CachedRestBackend` uses
+     * prefixes such as `GET /api/users` to invalidate collection and entity entries after
+     * successful writes.
+     * @param prefix Value supplied for the prefix parameter.
+     */
+    public fun deletePrefix(prefix: String = definedExternally): dynamic
+    /**
+     * Read a cached REST response by deterministic key.
+     * @param key Opaque cache key supplied by CachedRestBackend.
+     */
+    public fun get(key: String = definedExternally): dynamic
+    /**
+     * Store a REST response by deterministic key.
+     * @param key Opaque cache key supplied by CachedRestBackend.
+     * @param response Response to persist.
+     */
+    public fun set(key: String = definedExternally, response: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Cache read strategies shared by HTTP, REST, and router transports.
+ */
 public external interface RestCacheStrategy
 
+/**
+ * Extra backend options merged into requests made by a REST resource.
+ */
 public external interface RestOptions {
+    /**
+     * Optional backend used instead of the default HTTP backend.
+     */
     public var backend: dynamic
 }
 
+/**
+ * Normalized request object passed from RestService to a RestBackend. Backends receive
+ * expanded URLs and already-separated request options, so they can focus on transport,
+ * persistence, or cache policy.
+ */
 public external interface RestRequest {
+    /**
+     * Collection URL used for broad cache invalidation.
+     */
     public var collectionUrl: String
+    /**
+     * Request body for write operations.
+     */
     public var data: dynamic
+    /**
+     * Resource identifier for entity operations.
+     */
     public var id: dynamic
+    /**
+     * Resource operation method.
+     */
     public var method: dynamic
+    /**
+     * Backend-specific request options.
+     */
     public var options: dynamic
+    /**
+     * URI template and query parameters.
+     */
     public var params: dynamic
+    /**
+     * Expanded request URL.
+     */
     public var url: String
 }
 
+/**
+ * Response shape returned by RestBackend implementations. HTTP-backed responses may
+ * include the usual HttpResponse metadata, while local or cached backends can return only
+ * `data` plus optional cache source metadata.
+ */
 public external interface RestResponse<T> {
+    /**
+     * Request configuration that produced this response.
+     */
     public var config: dynamic
+    /**
+     * Response payload.
+     */
     public var data: dynamic
-    public fun headers(p0: String = definedExternally): String
+    /**
+     * Lazy response header reader.
+     * @param headerName Value supplied for the headerName parameter.
+     */
+    public fun headers(headerName: String = definedExternally): String
+    /**
+     * Backend that produced the response.
+     */
     public var source: dynamic
+    /**
+     * Whether the returned cached value may be older than the remote source.
+     */
     public var stale: Boolean
+    /**
+     * Numeric HTTP status code. Non-2xx statuses reject the promise.
+     */
     public var status: Double
+    /**
+     * Native status text such as `OK` or `Not Found`.
+     */
     public var statusText: String
+    /**
+     * Transport completion status. Useful for distinguishing timeout, abort, and network
+     * errors.
+     */
     public var xhrStatus: dynamic
 }
 
+/**
+ * Event emitted after a stale-while-revalidate background refresh succeeds.
+ */
 public external interface RestRevalidateEvent<T> {
+    /**
+     * Cache key that was refreshed.
+     */
     public var key: String
+    /**
+     * Original request.
+     */
     public var request: dynamic
+    /**
+     * Fresh network response.
+     */
     public var response: dynamic
 }
 
+/**
+ * Configuration for CachedRestBackend.
+ */
 public external interface CachedRestBackendOptions {
+    /**
+     * Async cache store, such as IndexedDB, Cache API, or memory.
+     */
     public var cache: dynamic
+    /**
+     * Backend used for authoritative network responses and writes.
+     */
     public var network: dynamic
-    public fun onRevalidate(p0: dynamic = definedExternally): Unit
-    public fun policy(p0: dynamic = definedExternally): dynamic
+    /**
+     * Notified after a stale-while-revalidate refresh succeeds.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onRevalidate(event: dynamic = definedExternally): Unit
+    /**
+     * Runtime policy used to choose the read strategy for each cacheable request.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun policy(context: dynamic = definedExternally): dynamic
+    /**
+     * Default read strategy used for cacheable GET requests.
+     */
     public var strategy: dynamic
 }
 
+/**
+ * Typed REST resource client backed by RestBackend. A `RestService` is usually created by
+ * injecting `$rest` and calling it with a base URL, optional EntityClass, and optional
+ * backend request defaults.
+ */
 public external interface RestService<T, ID> {
-    public fun create(p0: dynamic = definedExternally): dynamic
-    public fun delete(p0: dynamic = definedExternally): dynamic
-    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun list(p0: dynamic = definedExternally): dynamic
-    public fun update(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Create a resource using `POST`.
+     * @param item Request body to create.
+     */
+    public fun create(item: dynamic = definedExternally): dynamic
+    /**
+     * Delete a resource by ID.
+     * @param id Resource identifier appended to the base URL.
+     */
+    public fun delete(id: dynamic = definedExternally): dynamic
+    /**
+     * Fetch one resource by ID using `GET`.
+     * @param id Resource identifier appended to the base URL.
+     * @param params Additional URI template or query parameters.
+     */
+    public fun get(id: dynamic = definedExternally, params: dynamic = definedExternally): dynamic
+    /**
+     * Fetch a collection. Parameters are used for URI template expansion and are also
+     * forwarded to `$http` as query params. Non-array responses resolve to an empty array.
+     * @param params Value supplied for the params parameter.
+     */
+    public fun list(params: dynamic = definedExternally): dynamic
+    /**
+     * Update a resource using `PUT`.
+     * @param id Resource identifier appended to the base URL.
+     * @param item Request body to send.
+     */
+    public fun update(id: dynamic = definedExternally, item: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Event object passed to `emit` and `broadcast` listeners. Tracks target scope, current
+ * scope, name, propagation/default flags, and control methods.
+ */
 public external interface ScopeEvent {
+    /**
+     * The currentScope member of ng.ScopeEvent.
+     */
     public var currentScope: dynamic
+    /**
+     * The defaultPrevented member of ng.ScopeEvent.
+     */
     public var defaultPrevented: Boolean
+    /**
+     * The name member of ng.ScopeEvent.
+     */
     public var name: String
+    /**
+     * The preventDefault member of ng.ScopeEvent.
+     */
     public fun preventDefault(): Unit
+    /**
+     * The stopped member of ng.ScopeEvent.
+     */
     public var stopped: Boolean
+    /**
+     * The stopPropagation member of ng.ScopeEvent.
+     */
     public fun stopPropagation(): Unit
+    /**
+     * The targetScope member of ng.ScopeEvent.
+     */
     public var targetScope: dynamic
 }
 
+/**
+ * Module-owned router state tree declaration. Use this with [[NgModule.router]] when a
+ * module owns a route subtree. Child state names are relative to their parent unless they
+ * contain a dot.
+ */
 public external interface RouterModuleDeclaration {
+    /**
+     * Abstract state indicator An abstract state can never be directly activated. Use an
+     * abstract state to provide inherited properties (url, resolve, data, etc) to children
+     * states.
+     */
     public var abstract: Boolean
+    /**
+     * An object which maps `resolve`s to [[component]] `bindings`. When using a [[component]]
+     * declaration (`component: 'myComponent'`), each input binding for the component is
+     * supplied data from a resolve of the same name, by default. You may supply data from a
+     * different resolve name by mapping it here. Each key in this object is the name of one of
+     * the component's input bindings. Each value is the name of the resolve that should be
+     * provided to that binding. Any component bindings that are omitted from this map get the
+     * default behavior of mapping to a resolve of the same name. #### Example: ```js
+     * app.router('foo', { resolve: { foo: ['FooService', function(FooService) { return
+     * FooService.get(); }], bar: ['BarService', function(BarService) { return
+     * BarService.get(); }] }, component: 'Baz', // The component's `baz` binding gets data
+     * from the `bar` resolve // The component's `foo` binding gets data from the `foo` resolve
+     * (default behavior) bindings: { baz: 'bar' } }); app.component('Baz', { templateUrl:
+     * 'baz.html', controller: 'BazController', bindings: { foo: '<', // foo binding baz: '<'
+     * // baz binding } }); ```
+     */
     public var bindings: dynamic
+    /**
+     * Child states owned by this module route tree. Each child is lowered to a normal
+     * [[StateDeclaration]] before registration.
+     */
     public var children: Array<dynamic>
+    /**
+     * The name of the component to use for this view. The name of an AngularTS `.component()`
+     * which will be used for this view. Resolve data can be provided to the component via the
+     * component's `bindings` object. For each binding declared on the component, any resolve
+     * with the same name is set on the component's controller instance. Note: Mapping from
+     * resolve names to component inputs may be specified using [[bindings]]. #### Example:
+     * ```js .state('profile', { // Use the <my-profile></my-profile> component for this state.
+     * component: 'MyProfile', } ``` Note: When using `component` to define a view, you may
+     * _not_ use any of: `template`, `templateUrl`, `controller`.
+     */
     public var component: dynamic
+    /**
+     * The view's controller function or name The controller function, or the name of a
+     * registered controller. The controller function will be used to control the contents of
+     * the [[directives.ngVIew]] directive. See: [[Ng1Controller]] for information about
+     * component-level router hooks.
+     */
     public var controller: dynamic
+    /**
+     * An inherited property to store state data This is a spot for you to store inherited
+     * state metadata. Child states' `data` object will prototypally inherit from their parent
+     * state. Use this for application metadata. Use `policy.navigation` for framework
+     * navigation decisions such as authentication, permissions, or redirects. Note: because
+     * prototypal inheritance is used, changes to parent `data` objects reflect in the child
+     * `data` objects. Care should be taken if you are using `hasOwnProperty` on the `data`
+     * object. Properties from parent objects will return false for `hasOwnProperty`.
+     */
     public var data: dynamic
+    /**
+     * Marks all the state's parameters as `dynamic`. All parameters on the state will use this
+     * value for `dynamic` as a default. Individual parameters may override this default using
+     * [[ParamDeclaration.dynamic]] in the [[params]] block. This default applies to all
+     * parameters declared on this state.
+     */
     public var dynamic: Boolean
+    /**
+     * The state name (required) A unique state name, e.g. `"home"`, `"about"`, `"contacts"`.
+     * To create a parent/child state use a dot, e.g. `"about.sales"`, `"home.newest"`. Note:
+     * [State] objects require unique names. The name is used like an id.
+     */
     public var name: String
+    /**
+     * A state hook invoked when a state is being entered. The hook can inject global services.
+     * It can also inject `$transition$` or `$state$` (from the current transition). ###
+     * Example: ```js app.router({ name: 'mystate', onEnter: (MyService, $transition$, $state$)
+     * => { return MyService.doSomething($state$.name, $transition$.params()); } }); ``` ####
+     * Example:` ```js app.router({ name: 'mystate', onEnter: [ 'MyService', '$transition$',
+     * '$state$', function (MyService, $transition$, $state$) { return
+     * MyService.doSomething($state$.name, $transition$.params()); } ] }); ```
+     */
     public var onEnter: dynamic
+    /**
+     * A state hook invoked when a state is being exited. The hook can inject global services.
+     * It can also inject `$transition$` or `$state$` (from the current transition). ###
+     * Example: ```js app.router({ name: 'mystate', onExit: (MyService, $transition$, $state$)
+     * => { return MyService.doSomething($state$.name, $transition$.params()); } }); ``` ####
+     * Example:` ```js app.router({ name: 'mystate', onExit: [ 'MyService', '$transition$',
+     * '$state$', function (MyService, $transition$, $state$) { return
+     * MyService.doSomething($state$.name, $transition$.params()); } ] }); ```
+     */
     public var onExit: dynamic
+    /**
+     * A state hook invoked when a state is being retained. The hook can inject global
+     * services. It can also inject `$transition$` or `$state$` (from the current transition).
+     * #### Example: ```js app.router({ name: 'mystate', onRetain: (MyService, $transition$,
+     * $state$) => { return MyService.doSomething($state$.name, $transition$.params()); } });
+     * ``` #### Example:` ```js app.router({ name: 'mystate', onRetain: [ 'MyService',
+     * '$transition$', '$state$', function (MyService, $transition$, $state$) { return
+     * MyService.doSomething($state$.name, $transition$.params()); } ] }); ```
+     */
     public var onRetain: dynamic
+    /**
+     * Params configuration An object which optionally configures parameters declared in the
+     * url, or defines additional non-url parameters. For each parameter being configured, add
+     * a [[ParamDeclaration]] keyed to the name of the parameter. #### Example: ```js params: {
+     * param1: { type: "int", array: true, value: [] }, param2: { value: "index" } } ```
+     */
     public var params: dynamic
+    /**
+     * The parent state Normally, a state's parent is implied from the state's [[name]], e.g.,
+     * `"parentstate.childstate"`. Alternatively, you can explicitly set the parent state using
+     * this property. This allows shorter state names, e.g., `<a
+     * ng-state="'childstate'">Child</a>` instead of `<a
+     * ng-state="'parentstate.childstate'">Child</a> When using this property, the state's name
+     * should not have any dots in it. #### Example: ```js var parentstate = { name:
+     * 'parentstate' } var childstate = { name: 'childstate', parent: 'parentstate' // or use a
+     * JS var which is the parent StateDeclaration, i.e.: // parent: parentstate } ```
+     */
     public var parent: dynamic
+    /**
+     * Declarative state policy metadata consumed by AngularTS framework services.
+     * `policy.navigation` is inherited through the state tree and evaluated by the router's
+     * security navigation hook before resolves, controllers, or views run.
+     * `policy.transition.canExit` is evaluated before exiting states are torn down.
+     * `policy.retention` declares keep-alive route subtree behavior and can override
+     * router-wide retention defaults.
+     */
     public var policy: dynamic
+    /**
+     * Synchronously or asynchronously redirects Transitions to a different state/params If
+     * this property is defined, a Transition directly to this state will be redirected based
+     * on the property's value. - If the value is a `string`, the Transition is redirected to
+     * the state named by the string. - If the property is an object with a `state` and/or
+     * `params` property, the Transition is redirected to the named `state` and/or `params`. -
+     * If the value is a [[TargetState]] the Transition is redirected to the `TargetState` - If
+     * the property is a function: - The function is called with the current [[Transition]] -
+     * The return value is processed using the previously mentioned rules. - If the return
+     * value is a promise, the promise is waited for, then the resolved async value is
+     * processed using the same rules. Note: `redirectTo` is processed as an `onStart` hook,
+     * before non-eager resolves. If your redirect function relies on resolve data, get the
+     * [[Transition.injector]] and request the resolve data with `getAsync()`. #### Example:
+     * ```js // a string .state('A', { redirectTo: 'A.B' }) // a {state, params} object
+     * .state('C', { redirectTo: { state: 'C.D', params: { foo: 'index' } } }) // a fn
+     * .state('E', { redirectTo: () => "A" }) // a fn conditionally returning a {state, params}
+     * .state('F', { redirectTo: (trans) => { if (trans.params().foo < 10) return { state: 'F',
+     * params: { foo: 10 } }; } }) // a fn returning a promise for a redirect .state('G', {
+     * redirectTo: (trans) => { let svc = trans.injector().get('SomeAsyncService') let promise
+     * = svc.getAsyncRedirectTo(trans.params.foo); return promise; } }) // a fn that fetches
+     * resolve data .state('G', { redirectTo: (trans) => { // getAsync tells the resolve to
+     * load let resolvePromise = trans.injector().getAsync('SomeResolve') return
+     * resolvePromise.then(resolveData => resolveData === 'login' ? 'login' : null); } }) ```
+     */
     public var redirectTo: dynamic
+    /**
+     * Resolve - a mechanism to asynchronously fetch data, participating in the Transition
+     * lifecycle The `resolve:` property defines data (or other dependencies) to be fetched
+     * asynchronously when the state is being entered. After the data is fetched, it may be
+     * used in views, transition hooks or other resolves that belong to this state. The data
+     * may also be used in any views or resolves that belong to nested states. ### As an array
+     * Each array element should be a [[ResolvableLiteral]] object. #### Example: The `user`
+     * resolve injects the current `Transition` and the `UserService` (using its token, which
+     * is a string). The [[ResolvableLiteral.eager]] flag controls whether the resolve starts
+     * at transition start instead of when the owning state is entered. The `user` data,
+     * fetched asynchronously, can then be used in a view. ```js var state = { name: 'user',
+     * url: '/user/:userId resolve: [ { token: 'user', eager: true, deps: ['UserService',
+     * Transition], resolveFn: (userSvc, trans) => userSvc.fetchUser(trans.params().userId) },
+     * } ] } ``` ### As an object The `resolve` property may be an object where: - Each key
+     * (string) is the name of the dependency. - Each value (function) is an injectable
+     * function which returns the dependency, or a promise for the dependency. This style is
+     * based on AngularTS injectable functions. Dependency-bearing functions must use array
+     * annotation or a static `$inject` property. #### AngularTS Example: ```js resolve: { //
+     * If you inject `myStateDependency` into a controller, you'll get "abc" myStateDependency:
+     * function() { return "abc"; }, // Dependencies are annotated in "Inline Array Annotation"
+     * myAsyncData: ['$http', '$transition$' function($http, $transition$) { // Return a
+     * promise (async) for the data return $http.get("/foos/" + $transition$.params().foo); }]
+     * } ``` Note: You cannot mark individual entries as eager, nor can you use non-string
+     * tokens when using the object style `resolve:` block. ### Lifecycle Since a resolve
+     * function can return a promise, the router will delay entering the state until the
+     * promises are ready. If any of the promises are rejected, the Transition is aborted with
+     * an Error. By default, resolves for a state are fetched just before that state is
+     * entered. Note that only states which are being *entered* during the `Transition` have
+     * their resolves fetched. States that are "retained" do not have their resolves
+     * re-fetched. If you are currently in a parent state `parent` and are transitioning to a
+     * child state `parent.child`, the previously resolved data for state `parent` can be
+     * injected into `parent.child` without delay. Any resolved data for `parent.child` is
+     * retained until `parent.child` is exited, e.g., by transitioning back to the `parent`
+     * state. Because of this scoping and lifecycle, resolves are a great place to fetch your
+     * application's primary data. ### Injecting resolves into other things During a
+     * transition, Resolve data can be injected into: - Views (the components which fill a
+     * `ng-view` tag) - Transition Hooks - Other resolves (a resolve may depend on asynchronous
+     * data from a different resolve) ### Injecting other things into resolves Resolve
+     * functions usually have dependencies on some other API(s). The dependencies are usually
+     * declared and injected into the resolve function. A common pattern is to inject a custom
+     * service such as `UserService`. The resolve then delegates to a service method, such as
+     * `UserService.list()`; #### Special injectable tokens - `Transition`: The current
+     * [[Transition]] object; information and API about the current transition, such as "to"
+     * and "from" State Parameters and transition options. - `'$transition$'`: A string alias
+     * for the `Transition` injectable - `'$state$'`: For `onEnter`/`onExit`/`onRetain`, the
+     * state being entered/exited/retained. - Other resolve tokens: A resolve can depend on
+     * another resolve, either from the same state, or from any parent state. #### Example:
+     * ```js // Injecting a resolve into another resolve resolve: [ // Define a resolve
+     * 'allusers' which delegates to the UserService.list() // which returns a promise (async)
+     * for all the users { token: 'allusers', resolveFn: (UserService) => UserService.list(),
+     * deps: [UserService] }, // Define a resolve 'user' which depends on the allusers resolve.
+     * // This resolve function is not called until 'allusers' is ready. { token: 'user',
+     * resolveFn: (allusers, trans) => _.find(allusers, trans.params().userId), deps:
+     * ['allusers', Transition] } } ```
+     */
     public var resolve: dynamic
+    /**
+     * The HTML template for the view. HTML template as a string, or a function which returns
+     * an html template as a string. This template will be used to render the corresponding
+     * [[directives.ngVIew]] directive. This property takes precedence over templateUrl. If
+     * `template` is a function, it will be called with the Transition parameters as the first
+     * argument. #### Example: ```js template: "<h1>inline template definition</h1><div
+     * ng-view></div>" ``` #### Example: ```js template: function(params) { return
+     * "<h1>generated template</h1>"; } ```
+     */
     public var template: dynamic
+    /**
+     * The URL for the HTML template for the view. A path or a function that returns a path to
+     * an html template. The template will be fetched and used to render the corresponding
+     * [[directives.ngVIew]] directive. If `templateUrl` is a function, it will be called with
+     * the Transition parameters as the first argument. #### Example: ```js templateUrl:
+     * "/templates/home.html" ``` #### Example: ```js templateUrl: function(params) { return
+     * myTemplates[params.pageId]; } ```
+     */
     public var templateUrl: dynamic
+    /**
+     * The url fragment for the state A URL fragment (with optional parameters) which is used
+     * to match the browser location with this state. This fragment will be appended to the
+     * parent state's URL in order to build up the overall URL for this state. It may include
+     * path parameters, typed parameters, and query parameters.
+     */
     public var url: String
+    /**
+     * Named view declarations for this state. Each key targets an `ng-view`; each value is
+     * either a full view declaration or a string shorthand for `{ component: "componentName"
+     * }`. Examples: ```js views: { mymessages: "mymessages", messagelist: { component:
+     * "messageList" }, "^.^.messagecontent": "message" } ```
+     */
     public var views: dynamic
 }
 
+/**
+ * Public AngularTS RouterConfig contract exposed through the ng namespace.
+ */
 public external interface RouterConfig {
+    /**
+     * The caseInsensitive member of ng.RouterConfig.
+     */
     public var caseInsensitive: Boolean
+    /**
+     * The defaultSquash member of ng.RouterConfig.
+     */
     public var defaultSquash: dynamic
+    /**
+     * The error member of ng.RouterConfig.
+     */
     public var error: dynamic
+    /**
+     * The errorBoundary member of ng.RouterConfig.
+     */
     public var errorBoundary: dynamic
+    /**
+     * The fallbackTo member of ng.RouterConfig.
+     */
     public var fallbackTo: dynamic
+    /**
+     * The focus member of ng.RouterConfig.
+     */
     public var focus: dynamic
+    /**
+     * The loading member of ng.RouterConfig.
+     */
     public var loading: dynamic
+    /**
+     * The paramTypes member of ng.RouterConfig.
+     */
     public var paramTypes: dynamic
+    /**
+     * The prefetch member of ng.RouterConfig.
+     */
     public var prefetch: Boolean
+    /**
+     * The prefetchDelay member of ng.RouterConfig.
+     */
     public var prefetchDelay: Double
+    /**
+     * The relay member of ng.RouterConfig.
+     */
     public var relay: dynamic
+    /**
+     * The retention member of ng.RouterConfig.
+     */
     public var retention: dynamic
+    /**
+     * The retry member of ng.RouterConfig.
+     */
     public var retry: dynamic
+    /**
+     * The scroll member of ng.RouterConfig.
+     */
     public var scroll: dynamic
+    /**
+     * The strict member of ng.RouterConfig.
+     */
     public var strict: Boolean
+    /**
+     * The viewTransitions member of ng.RouterConfig.
+     */
     public var viewTransitions: Boolean
 }
 
+/**
+ * Public route contract entry used by router helper types. This is an author-written
+ * TypeScript shape. It is intentionally separate from built router state records so
+ * generated docs and language bindings do not expose internal state/runtime implementation
+ * details.
+ */
 public external interface RouteContract {
+    /**
+     * The params member of ng.RouteContract.
+     */
     public var params: dynamic
+    /**
+     * The resolves member of ng.RouteContract.
+     */
     public var resolves: dynamic
 }
 
+/**
+ * Public route-name to route-contract map used by `StateService`, generic `Transition`,
+ * `ParamsOf`, and `ResolvesOf`.
+ */
 public external interface RouteMap
 
+/**
+ * Derives the public route map for a literal `router(...)` tree.
+ */
 public external interface RoutesOf<TTree, TParamTypes>
 
+/**
+ * Params declared by one route in a public route map.
+ */
 public external interface ParamsOf<TRouteMap, TRouteName>
 
+/**
+ * Resolve values declared by one route in a public route map.
+ */
 public external interface ResolvesOf<TRouteMap, TRouteName>
 
+/**
+ * Public AngularTS StateService contract exposed through the ng namespace.
+ */
 public external interface StateService<TRouteMap> {
+    /**
+     * The current state declaration, when navigation has selected one.
+     */
     public var current: dynamic
-    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun go(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun href(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): String
-    public fun matches(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
+    /**
+     * Get all states or a matching public state declaration.
+     * @param stateOrName Value supplied for the stateOrName parameter.
+     * @param base Value supplied for the base parameter.
+     */
+    public fun get(stateOrName: dynamic = definedExternally, base: dynamic = definedExternally): dynamic
+    /**
+     * Overload for typed route names and params. Untyped overload used when no route map is
+     * supplied.
+     * @param to Value supplied for the to parameter.
+     * @param params Value supplied for the params parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun go(to: dynamic = definedExternally, params: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Overload for typed route names and params. Untyped overload used when no route map is
+     * supplied.
+     * @param stateOrName Value supplied for the stateOrName parameter.
+     * @param params Value supplied for the params parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun href(stateOrName: dynamic = definedExternally, params: dynamic = definedExternally, options: dynamic = definedExternally): String
+    /**
+     * Check whether the current state matches a state, ancestor, or glob.
+     * @param stateOrName Value supplied for the stateOrName parameter.
+     * @param params Value supplied for the params parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun matches(stateOrName: dynamic = definedExternally, params: dynamic = definedExternally, options: dynamic = definedExternally): Boolean
+    /**
+     * The latest successful state parameters.
+     */
     public var params: dynamic
-    public fun prefetch(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun target(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
+    /**
+     * Prefetch lazy declarations and templates for a typed route. Prefetch lazy declarations
+     * and templates without navigating.
+     * @param stateOrName Value supplied for the stateOrName parameter.
+     * @param params Value supplied for the params parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun prefetch(stateOrName: dynamic = definedExternally, params: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Build a target that can be returned from a transition hook.
+     * @param identifier Value supplied for the identifier parameter.
+     * @param params Value supplied for the params parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun target(identifier: dynamic = definedExternally, params: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
 }
 
+/**
+ * The StateDeclaration object is used to define a state or nested state. #### Example:
+ * ```js // StateDeclaration object var foldersState = { name: 'folders', url: '/folders',
+ * component: FoldersComponent, resolve: { allfolders: ['FolderService',
+ * function(FolderService) { return FolderService.list(); }] }, }
+ * registry.register(foldersState); ```
+ */
 public external interface StateDeclaration {
+    /**
+     * Abstract state indicator An abstract state can never be directly activated. Use an
+     * abstract state to provide inherited properties (url, resolve, data, etc) to children
+     * states.
+     */
     public var abstract: Boolean
+    /**
+     * An object which maps `resolve`s to [[component]] `bindings`. When using a [[component]]
+     * declaration (`component: 'myComponent'`), each input binding for the component is
+     * supplied data from a resolve of the same name, by default. You may supply data from a
+     * different resolve name by mapping it here. Each key in this object is the name of one of
+     * the component's input bindings. Each value is the name of the resolve that should be
+     * provided to that binding. Any component bindings that are omitted from this map get the
+     * default behavior of mapping to a resolve of the same name. #### Example: ```js
+     * app.router('foo', { resolve: { foo: ['FooService', function(FooService) { return
+     * FooService.get(); }], bar: ['BarService', function(BarService) { return
+     * BarService.get(); }] }, component: 'Baz', // The component's `baz` binding gets data
+     * from the `bar` resolve // The component's `foo` binding gets data from the `foo` resolve
+     * (default behavior) bindings: { baz: 'bar' } }); app.component('Baz', { templateUrl:
+     * 'baz.html', controller: 'BazController', bindings: { foo: '<', // foo binding baz: '<'
+     * // baz binding } }); ```
+     */
     public var bindings: dynamic
+    /**
+     * The name of the component to use for this view. The name of an AngularTS `.component()`
+     * which will be used for this view. Resolve data can be provided to the component via the
+     * component's `bindings` object. For each binding declared on the component, any resolve
+     * with the same name is set on the component's controller instance. Note: Mapping from
+     * resolve names to component inputs may be specified using [[bindings]]. #### Example:
+     * ```js .state('profile', { // Use the <my-profile></my-profile> component for this state.
+     * component: 'MyProfile', } ``` Note: When using `component` to define a view, you may
+     * _not_ use any of: `template`, `templateUrl`, `controller`.
+     */
     public var component: dynamic
+    /**
+     * The view's controller function or name The controller function, or the name of a
+     * registered controller. The controller function will be used to control the contents of
+     * the [[directives.ngVIew]] directive. See: [[Ng1Controller]] for information about
+     * component-level router hooks.
+     */
     public var controller: dynamic
+    /**
+     * An inherited property to store state data This is a spot for you to store inherited
+     * state metadata. Child states' `data` object will prototypally inherit from their parent
+     * state. Use this for application metadata. Use `policy.navigation` for framework
+     * navigation decisions such as authentication, permissions, or redirects. Note: because
+     * prototypal inheritance is used, changes to parent `data` objects reflect in the child
+     * `data` objects. Care should be taken if you are using `hasOwnProperty` on the `data`
+     * object. Properties from parent objects will return false for `hasOwnProperty`.
+     */
     public var data: dynamic
+    /**
+     * Marks all the state's parameters as `dynamic`. All parameters on the state will use this
+     * value for `dynamic` as a default. Individual parameters may override this default using
+     * [[ParamDeclaration.dynamic]] in the [[params]] block. This default applies to all
+     * parameters declared on this state.
+     */
     public var dynamic: Boolean
+    /**
+     * The state name (required) A unique state name, e.g. `"home"`, `"about"`, `"contacts"`.
+     * To create a parent/child state use a dot, e.g. `"about.sales"`, `"home.newest"`. Note:
+     * [State] objects require unique names. The name is used like an id.
+     */
     public var name: String
+    /**
+     * A state hook invoked when a state is being entered. The hook can inject global services.
+     * It can also inject `$transition$` or `$state$` (from the current transition). ###
+     * Example: ```js app.router({ name: 'mystate', onEnter: (MyService, $transition$, $state$)
+     * => { return MyService.doSomething($state$.name, $transition$.params()); } }); ``` ####
+     * Example:` ```js app.router({ name: 'mystate', onEnter: [ 'MyService', '$transition$',
+     * '$state$', function (MyService, $transition$, $state$) { return
+     * MyService.doSomething($state$.name, $transition$.params()); } ] }); ```
+     */
     public var onEnter: dynamic
+    /**
+     * A state hook invoked when a state is being exited. The hook can inject global services.
+     * It can also inject `$transition$` or `$state$` (from the current transition). ###
+     * Example: ```js app.router({ name: 'mystate', onExit: (MyService, $transition$, $state$)
+     * => { return MyService.doSomething($state$.name, $transition$.params()); } }); ``` ####
+     * Example:` ```js app.router({ name: 'mystate', onExit: [ 'MyService', '$transition$',
+     * '$state$', function (MyService, $transition$, $state$) { return
+     * MyService.doSomething($state$.name, $transition$.params()); } ] }); ```
+     */
     public var onExit: dynamic
+    /**
+     * A state hook invoked when a state is being retained. The hook can inject global
+     * services. It can also inject `$transition$` or `$state$` (from the current transition).
+     * #### Example: ```js app.router({ name: 'mystate', onRetain: (MyService, $transition$,
+     * $state$) => { return MyService.doSomething($state$.name, $transition$.params()); } });
+     * ``` #### Example:` ```js app.router({ name: 'mystate', onRetain: [ 'MyService',
+     * '$transition$', '$state$', function (MyService, $transition$, $state$) { return
+     * MyService.doSomething($state$.name, $transition$.params()); } ] }); ```
+     */
     public var onRetain: dynamic
+    /**
+     * Params configuration An object which optionally configures parameters declared in the
+     * url, or defines additional non-url parameters. For each parameter being configured, add
+     * a [[ParamDeclaration]] keyed to the name of the parameter. #### Example: ```js params: {
+     * param1: { type: "int", array: true, value: [] }, param2: { value: "index" } } ```
+     */
     public var params: dynamic
+    /**
+     * The parent state Normally, a state's parent is implied from the state's [[name]], e.g.,
+     * `"parentstate.childstate"`. Alternatively, you can explicitly set the parent state using
+     * this property. This allows shorter state names, e.g., `<a
+     * ng-state="'childstate'">Child</a>` instead of `<a
+     * ng-state="'parentstate.childstate'">Child</a> When using this property, the state's name
+     * should not have any dots in it. #### Example: ```js var parentstate = { name:
+     * 'parentstate' } var childstate = { name: 'childstate', parent: 'parentstate' // or use a
+     * JS var which is the parent StateDeclaration, i.e.: // parent: parentstate } ```
+     */
     public var parent: dynamic
+    /**
+     * Declarative state policy metadata consumed by AngularTS framework services.
+     * `policy.navigation` is inherited through the state tree and evaluated by the router's
+     * security navigation hook before resolves, controllers, or views run.
+     * `policy.transition.canExit` is evaluated before exiting states are torn down.
+     * `policy.retention` declares keep-alive route subtree behavior and can override
+     * router-wide retention defaults.
+     */
     public var policy: dynamic
+    /**
+     * Synchronously or asynchronously redirects Transitions to a different state/params If
+     * this property is defined, a Transition directly to this state will be redirected based
+     * on the property's value. - If the value is a `string`, the Transition is redirected to
+     * the state named by the string. - If the property is an object with a `state` and/or
+     * `params` property, the Transition is redirected to the named `state` and/or `params`. -
+     * If the value is a [[TargetState]] the Transition is redirected to the `TargetState` - If
+     * the property is a function: - The function is called with the current [[Transition]] -
+     * The return value is processed using the previously mentioned rules. - If the return
+     * value is a promise, the promise is waited for, then the resolved async value is
+     * processed using the same rules. Note: `redirectTo` is processed as an `onStart` hook,
+     * before non-eager resolves. If your redirect function relies on resolve data, get the
+     * [[Transition.injector]] and request the resolve data with `getAsync()`. #### Example:
+     * ```js // a string .state('A', { redirectTo: 'A.B' }) // a {state, params} object
+     * .state('C', { redirectTo: { state: 'C.D', params: { foo: 'index' } } }) // a fn
+     * .state('E', { redirectTo: () => "A" }) // a fn conditionally returning a {state, params}
+     * .state('F', { redirectTo: (trans) => { if (trans.params().foo < 10) return { state: 'F',
+     * params: { foo: 10 } }; } }) // a fn returning a promise for a redirect .state('G', {
+     * redirectTo: (trans) => { let svc = trans.injector().get('SomeAsyncService') let promise
+     * = svc.getAsyncRedirectTo(trans.params.foo); return promise; } }) // a fn that fetches
+     * resolve data .state('G', { redirectTo: (trans) => { // getAsync tells the resolve to
+     * load let resolvePromise = trans.injector().getAsync('SomeResolve') return
+     * resolvePromise.then(resolveData => resolveData === 'login' ? 'login' : null); } }) ```
+     */
     public var redirectTo: dynamic
+    /**
+     * Resolve - a mechanism to asynchronously fetch data, participating in the Transition
+     * lifecycle The `resolve:` property defines data (or other dependencies) to be fetched
+     * asynchronously when the state is being entered. After the data is fetched, it may be
+     * used in views, transition hooks or other resolves that belong to this state. The data
+     * may also be used in any views or resolves that belong to nested states. ### As an array
+     * Each array element should be a [[ResolvableLiteral]] object. #### Example: The `user`
+     * resolve injects the current `Transition` and the `UserService` (using its token, which
+     * is a string). The [[ResolvableLiteral.eager]] flag controls whether the resolve starts
+     * at transition start instead of when the owning state is entered. The `user` data,
+     * fetched asynchronously, can then be used in a view. ```js var state = { name: 'user',
+     * url: '/user/:userId resolve: [ { token: 'user', eager: true, deps: ['UserService',
+     * Transition], resolveFn: (userSvc, trans) => userSvc.fetchUser(trans.params().userId) },
+     * } ] } ``` ### As an object The `resolve` property may be an object where: - Each key
+     * (string) is the name of the dependency. - Each value (function) is an injectable
+     * function which returns the dependency, or a promise for the dependency. This style is
+     * based on AngularTS injectable functions. Dependency-bearing functions must use array
+     * annotation or a static `$inject` property. #### AngularTS Example: ```js resolve: { //
+     * If you inject `myStateDependency` into a controller, you'll get "abc" myStateDependency:
+     * function() { return "abc"; }, // Dependencies are annotated in "Inline Array Annotation"
+     * myAsyncData: ['$http', '$transition$' function($http, $transition$) { // Return a
+     * promise (async) for the data return $http.get("/foos/" + $transition$.params().foo); }]
+     * } ``` Note: You cannot mark individual entries as eager, nor can you use non-string
+     * tokens when using the object style `resolve:` block. ### Lifecycle Since a resolve
+     * function can return a promise, the router will delay entering the state until the
+     * promises are ready. If any of the promises are rejected, the Transition is aborted with
+     * an Error. By default, resolves for a state are fetched just before that state is
+     * entered. Note that only states which are being *entered* during the `Transition` have
+     * their resolves fetched. States that are "retained" do not have their resolves
+     * re-fetched. If you are currently in a parent state `parent` and are transitioning to a
+     * child state `parent.child`, the previously resolved data for state `parent` can be
+     * injected into `parent.child` without delay. Any resolved data for `parent.child` is
+     * retained until `parent.child` is exited, e.g., by transitioning back to the `parent`
+     * state. Because of this scoping and lifecycle, resolves are a great place to fetch your
+     * application's primary data. ### Injecting resolves into other things During a
+     * transition, Resolve data can be injected into: - Views (the components which fill a
+     * `ng-view` tag) - Transition Hooks - Other resolves (a resolve may depend on asynchronous
+     * data from a different resolve) ### Injecting other things into resolves Resolve
+     * functions usually have dependencies on some other API(s). The dependencies are usually
+     * declared and injected into the resolve function. A common pattern is to inject a custom
+     * service such as `UserService`. The resolve then delegates to a service method, such as
+     * `UserService.list()`; #### Special injectable tokens - `Transition`: The current
+     * [[Transition]] object; information and API about the current transition, such as "to"
+     * and "from" State Parameters and transition options. - `'$transition$'`: A string alias
+     * for the `Transition` injectable - `'$state$'`: For `onEnter`/`onExit`/`onRetain`, the
+     * state being entered/exited/retained. - Other resolve tokens: A resolve can depend on
+     * another resolve, either from the same state, or from any parent state. #### Example:
+     * ```js // Injecting a resolve into another resolve resolve: [ // Define a resolve
+     * 'allusers' which delegates to the UserService.list() // which returns a promise (async)
+     * for all the users { token: 'allusers', resolveFn: (UserService) => UserService.list(),
+     * deps: [UserService] }, // Define a resolve 'user' which depends on the allusers resolve.
+     * // This resolve function is not called until 'allusers' is ready. { token: 'user',
+     * resolveFn: (allusers, trans) => _.find(allusers, trans.params().userId), deps:
+     * ['allusers', Transition] } } ```
+     */
     public var resolve: dynamic
+    /**
+     * The HTML template for the view. HTML template as a string, or a function which returns
+     * an html template as a string. This template will be used to render the corresponding
+     * [[directives.ngVIew]] directive. This property takes precedence over templateUrl. If
+     * `template` is a function, it will be called with the Transition parameters as the first
+     * argument. #### Example: ```js template: "<h1>inline template definition</h1><div
+     * ng-view></div>" ``` #### Example: ```js template: function(params) { return
+     * "<h1>generated template</h1>"; } ```
+     */
     public var template: dynamic
+    /**
+     * The URL for the HTML template for the view. A path or a function that returns a path to
+     * an html template. The template will be fetched and used to render the corresponding
+     * [[directives.ngVIew]] directive. If `templateUrl` is a function, it will be called with
+     * the Transition parameters as the first argument. #### Example: ```js templateUrl:
+     * "/templates/home.html" ``` #### Example: ```js templateUrl: function(params) { return
+     * myTemplates[params.pageId]; } ```
+     */
     public var templateUrl: dynamic
+    /**
+     * The url fragment for the state A URL fragment (with optional parameters) which is used
+     * to match the browser location with this state. This fragment will be appended to the
+     * parent state's URL in order to build up the overall URL for this state. It may include
+     * path parameters, typed parameters, and query parameters.
+     */
     public var url: String
+    /**
+     * Named view declarations for this state. Each key targets an `ng-view`; each value is
+     * either a full view declaration or a string shorthand for `{ component: "componentName"
+     * }`. Examples: ```js views: { mymessages: "mymessages", messagelist: { component:
+     * "messageList" }, "^.^.messagecontent": "message" } ```
+     */
     public var views: dynamic
 }
 
+/**
+ * Public AngularTS StatePolicyDeclaration contract exposed through the ng namespace.
+ */
 public external interface StatePolicyDeclaration {
+    /**
+     * The navigation member of ng.StatePolicyDeclaration.
+     */
     public var navigation: dynamic
+    /**
+     * The retention member of ng.StatePolicyDeclaration.
+     */
     public var retention: dynamic
+    /**
+     * The transition member of ng.StatePolicyDeclaration.
+     */
     public var transition: dynamic
 }
 
+/**
+ * Public AngularTS StorageBackend contract exposed through the ng namespace.
+ */
 public external interface StorageBackend {
-    public fun get(p0: String = definedExternally): String
-    public fun remove(p0: String = definedExternally): Unit
-    public fun set(p0: String = definedExternally, p1: String = definedExternally): Unit
+    /**
+     * Read a stored serialized value.
+     * @param key Value supplied for the key parameter.
+     */
+    public fun get(key: String = definedExternally): String
+    /**
+     * Remove a stored value.
+     * @param key Value supplied for the key parameter.
+     */
+    public fun remove(key: String = definedExternally): Unit
+    /**
+     * Store a serialized value.
+     * @param key Value supplied for the key parameter.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun set(key: String = definedExternally, value: String = definedExternally): Unit
 }
 
+/**
+ * Built-in persistent storage backends understood by `NgModule.store()`.
+ */
 public external interface StorageType
 
+/**
+ * Public AngularTS ConnectionConfig contract exposed through the ng namespace.
+ */
 public external interface ConnectionConfig {
+    /**
+     * Additional EventSource event names to subscribe to
+     */
     public var eventTypes: Array<String>
+    /**
+     * Timeout in milliseconds to detect heartbeat inactivity
+     */
     public var heartbeatTimeout: Double
+    /**
+     * Maximum number of reconnect attempts
+     */
     public var maxRetries: Double
-    public fun onClose(p0: dynamic = definedExternally): Unit
-    public fun onError(p0: org.w3c.dom.events.Event = definedExternally): Unit
-    public fun onEvent(p0: dynamic = definedExternally): Unit
-    public fun onMessage(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
-    public fun onOpen(p0: org.w3c.dom.events.Event = definedExternally): Unit
-    public fun onReconnect(p0: Double = definedExternally): Unit
+    /**
+     * Called when a WebSocket connection closes
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onClose(event: dynamic = definedExternally): Unit
+    /**
+     * Called when an error occurs
+     * @param err Value supplied for the err parameter.
+     */
+    public fun onError(err: org.w3c.dom.events.Event = definedExternally): Unit
+    /**
+     * Called with every registered connection message, including custom SSE event types
+     * @param message Value supplied for the message parameter.
+     */
+    public fun onEvent(message: dynamic = definedExternally): Unit
+    /**
+     * Called when a message is received
+     * @param data Value supplied for the data parameter.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onMessage(data: dynamic = definedExternally, event: dynamic = definedExternally): Unit
+    /**
+     * Called when the connection opens
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onOpen(event: org.w3c.dom.events.Event = definedExternally): Unit
+    /**
+     * Called when a reconnect attempt happens
+     * @param attempt Value supplied for the attempt parameter.
+     */
+    public fun onReconnect(attempt: Double = definedExternally): Unit
+    /**
+     * Delay between reconnect attempts in milliseconds
+     */
     public var retryDelay: Double
-    public fun transformMessage(p0: String = definedExternally): dynamic
+    /**
+     * Function to transform incoming messages
+     * @param data Value supplied for the data parameter.
+     */
+    public fun transformMessage(data: String = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS ConnectionEvent contract exposed through the ng namespace.
+ */
 public external interface ConnectionEvent {
+    /**
+     * The data member of ng.ConnectionEvent.
+     */
     public var data: dynamic
+    /**
+     * The event member of ng.ConnectionEvent.
+     */
     public var event: dynamic
+    /**
+     * The rawData member of ng.ConnectionEvent.
+     */
     public var rawData: dynamic
+    /**
+     * The type member of ng.ConnectionEvent.
+     */
     public var type: String
 }
 
+/**
+ * Declarative defaults used when registering an application service worker. This config
+ * intentionally maps only browser registration options and safe observation policy.
+ * Activation, reload, cache strategy, push, and background sync remain explicit
+ * application or adapter policy.
+ */
 public external interface ServiceWorkerConfig {
+    /**
+     * Register automatically when the runtime service is created.
+     */
     public var autoRegister: Boolean
+    /**
+     * Check for an updated worker after registration succeeds.
+     */
     public var checkForUpdatesOnRegister: Boolean
 }
 
+/**
+ * Stable failure codes reported by ServiceWorkerError.
+ */
 public external interface ServiceWorkerErrorCode
 
+/**
+ * Message event normalized by `$serviceWorker`.
+ */
 public external interface ServiceWorkerMessageEvent<TData> {
+    /**
+     * Message payload from the native service worker event.
+     */
     public var data: dynamic
+    /**
+     * Native event for callers that need browser-specific fields.
+     */
     public var event: dynamic
+    /**
+     * Native source that sent the message, when supplied by the browser.
+     */
     public var source: dynamic
 }
 
+/**
+ * Explicit message target for `$serviceWorker.post(...)`.
+ */
 public external interface ServiceWorkerMessageTarget
 
+/**
+ * Options for ServiceWorkerService.post.
+ */
 public external interface ServiceWorkerPostOptions {
+    /**
+     * Worker target for this message.
+     */
     public var target: dynamic
+    /**
+     * Transferable objects sent with `postMessage(...)`.
+     */
     public var transfer: Array<dynamic>
 }
 
+/**
+ * Template-friendly snapshot of the current registration.
+ */
 public external interface ServiceWorkerRegistrationState {
+    /**
+     * State of the active worker, when present.
+     */
     public var active: dynamic
+    /**
+     * State of the installing worker, when present.
+     */
     public var installing: dynamic
+    /**
+     * True when a registration is currently known by the service.
+     */
     public var registered: Boolean
+    /**
+     * Registration scope, when available.
+     */
     public var scope: String
+    /**
+     * Update cache policy reported by the browser registration.
+     */
     public var updateViaCache: dynamic
+    /**
+     * State of the waiting worker, when present.
+     */
     public var waiting: dynamic
 }
 
+/**
+ * Per-request options for ServiceWorkerService.request.
+ */
 public external interface ServiceWorkerRequestOptions {
+    /**
+     * Worker target for this message.
+     */
     public var target: dynamic
+    /**
+     * Request timeout in milliseconds.
+     */
     public var timeout: Double
+    /**
+     * Transferable objects sent with `postMessage(...)`.
+     */
     public var transfer: Array<dynamic>
 }
 
+/**
+ * Template-friendly snapshot of update-related service-worker state.
+ */
 public external interface ServiceWorkerUpdateState {
+    /**
+     * True while an explicit update check is in flight.
+     */
     public var checking: Boolean
+    /**
+     * True when the active worker changed during the current page lifetime.
+     */
     public var controllerChanged: Boolean
+    /**
+     * Native error preserved for diagnostics.
+     */
     public var error: dynamic
+    /**
+     * Stable failure code from the last update-related operation.
+     */
     public var errorCode: dynamic
+    /**
+     * Last successful update-check time in epoch milliseconds.
+     */
     public var lastCheckedAt: Double
+    /**
+     * Latest observed service worker lifecycle phase.
+     */
     public var phase: dynamic
+    /**
+     * Registration associated with the latest update event.
+     */
     public var registration: dynamic
+    /**
+     * True when a waiting worker has been discovered.
+     */
     public var waiting: Boolean
+    /**
+     * Worker associated with the latest update event.
+     */
     public var worker: dynamic
 }
 
+/**
+ * Public AngularTS StreamService contract exposed through the ng namespace.
+ */
 public external interface StreamService {
-    public fun consumeJsonLines(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun consumeText(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun isReadableStream(p0: dynamic = definedExternally): Boolean
-    public fun readJsonLines(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun readLines(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun readText(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Decodes newline-delimited JSON without retaining parsed values.
+     * @param stream Value supplied for the stream parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun consumeJsonLines(stream: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Decodes a byte stream and calls `onChunk` without retaining decoded text.
+     * @param stream Value supplied for the stream parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun consumeText(stream: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Returns true when a value is a native readable byte stream.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun isReadableStream(value: dynamic = definedExternally): Boolean
+    /**
+     * Decodes newline-delimited JSON and returns all parsed values.
+     * @param stream Value supplied for the stream parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun readJsonLines(stream: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Decodes a byte stream and emits complete lines.
+     * @param stream Value supplied for the stream parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun readLines(stream: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Decodes a byte stream into text chunks.
+     * @param stream Value supplied for the stream parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun readText(stream: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Represents a transition between two states. A transition contains the source and
+ * destination states, parameters, resolves, and the states entered or exited during
+ * navigation.
+ */
 public external interface Transition<TRouteMap, TRoutes> {
-    public fun `$from`(): dynamic
-    public var `$id`: Double
-    public fun `$to`(): dynamic
+    /**
+     * Aborts this transition Imperative API to abort a Transition. This only applies to
+     * Transitions that are not yet complete.
+     */
     public fun abort(): Unit
+    /**
+     * The applyViewConfigs member of ng.Transition.
+     */
     public fun applyViewConfigs(): Unit
+    /**
+     * Returns true if the transition is dynamic. A transition is dynamic if no states are
+     * entered nor exited, but at least one dynamic parameter has changed.
+     */
     public fun dynamic(): Boolean
+    /**
+     * Gets the states being entered.
+     */
     public fun entering(): Array<dynamic>
+    /**
+     * Gets the states being exited.
+     */
     public fun exiting(): Array<dynamic>
+    /**
+     * Returns the "from state" Returns the state that the transition is coming *from*.
+     */
     public fun from(): dynamic
+    /**
+     * The id member of ng.Transition.
+     */
+    public var id: Double
+    /**
+     * Checks if this transition is currently active/running.
+     */
     public fun isActive(): Boolean
-    public fun params(p0: String = definedExternally): dynamic
+    /**
+     * The params member of ng.Transition.
+     * @param pathname Value supplied for the pathname parameter.
+     */
+    public fun params(pathname: String = definedExternally): dynamic
+    /**
+     * The promise member of ng.Transition.
+     */
     public var promise: dynamic
-    public fun redirect(p0: dynamic = definedExternally): dynamic
+    /**
+     * Creates a new transition that is a redirection of the current one. This transition can
+     * be returned from a [[TransitionService]] hook to redirect a transition to a new state
+     * and/or set of parameters.
+     * @param targetState the new target state for the redirected transition
+     */
+    public fun redirect(targetState: dynamic = definedExternally): dynamic
+    /**
+     * The success member of ng.Transition.
+     */
     public var success: Boolean
+    /**
+     * Returns the "to state" Returns the state that the transition is going *to*.
+     */
     public fun to(): dynamic
+    /**
+     * A string representation of the Transition
+     */
     public override fun toString(): String
+    /**
+     * Checks if the Transition is valid
+     */
     public fun valid(): Boolean
 }
 
+/**
+ * Names the destination and source routes carried by a typed transition.
+ */
 public external interface TransitionRouteContract<TRouteMap> {
+    /**
+     * The from member of ng.TransitionRouteContract.
+     */
     public var from: dynamic
+    /**
+     * The to member of ng.TransitionRouteContract.
+     */
     public var to: dynamic
 }
 
+/**
+ * Public AngularTS Validator contract exposed through the ng namespace.
+ */
 public external interface Validator {
-    public operator fun invoke(p0: dynamic = definedExternally): Boolean
+    /**
+     * Calls the ng.Validator function.
+     * @param value Value supplied for the value parameter.
+     */
+    public operator fun invoke(value: dynamic = definedExternally): Boolean
 }
 
+/**
+ * Public AngularTS ElementScopeOptions contract exposed through the ng namespace.
+ */
 public external interface ElementScopeOptions {
+    /**
+     * Use an isolate child scope.
+     */
     public var isolate: Boolean
+    /**
+     * Explicit parent scope. Defaults to nearest inherited DOM scope.
+     */
     public var parentScope: dynamic
 }
 
+/**
+ * Public AngularTS AppComponentOptions contract exposed through the ng namespace.
+ */
 public external interface AppComponentOptions<T> {
-    public fun attributeChanged(p0: String = definedExternally, p1: String = definedExternally, p2: String = definedExternally, p3: dynamic = definedExternally): Unit
-    public fun connected(p0: dynamic = definedExternally): () -> Unit
-    public fun disconnected(p0: dynamic = definedExternally): Unit
+    /**
+     * Called after an observed input attribute changes.
+     * @param name Value supplied for the name parameter.
+     * @param oldValue Value supplied for the oldValue parameter.
+     * @param newValue Value supplied for the newValue parameter.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun attributeChanged(name: String = definedExternally, oldValue: String = definedExternally, newValue: String = definedExternally, context: dynamic = definedExternally): Unit
+    /**
+     * Called after the scope exists and the template has been linked.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun connected(context: dynamic = definedExternally): () -> Unit
+    /**
+     * Called before the scope is destroyed.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun disconnected(context: dynamic = definedExternally): Unit
+    /**
+     * Declared DOM attributes/properties that sync into the scope.
+     */
     public var inputs: dynamic
+    /**
+     * Use an isolate child scope instead of inheriting parent properties.
+     */
     public var isolate: Boolean
+    /**
+     * Initial scope state, or a factory returning it.
+     */
     public var scope: dynamic
+    /**
+     * Enables shadow DOM, or passes ShadowRootInit options.
+     */
     public var shadow: dynamic
+    /**
+     * Template compiled into the host or shadow root.
+     */
     public var template: String
 }
 
+/**
+ * Native custom element base class backed by an AngularTS child scope.
+ */
 public external interface ScopeElement<T> {
-    public fun attributeChanged(p0: String = definedExternally, p1: String = definedExternally, p2: String = definedExternally): Unit
-    public fun attributeChangedCallback(p0: String = definedExternally, p1: String = definedExternally, p2: String = definedExternally): Unit
+    /**
+     * Called after an observed input attribute changes.
+     * @param name Value supplied for the name parameter.
+     * @param oldValue Value supplied for the oldValue parameter.
+     * @param newValue Value supplied for the newValue parameter.
+     */
+    public fun attributeChanged(name: String = definedExternally, oldValue: String = definedExternally, newValue: String = definedExternally): Unit
+    /**
+     * The attributeChangedCallback member of ng.ScopeElement.
+     * @param attribute Value supplied for the attribute parameter.
+     * @param oldValue Value supplied for the oldValue parameter.
+     * @param newValue Value supplied for the newValue parameter.
+     */
+    public fun attributeChangedCallback(attribute: String = definedExternally, oldValue: String = definedExternally, newValue: String = definedExternally): Unit
+    /**
+     * Called after the AngularTS scope and template are connected.
+     */
     public fun connected(): () -> Unit
+    /**
+     * The connectedCallback member of ng.ScopeElement.
+     */
     public fun connectedCallback(): Unit
+    /**
+     * Called before the AngularTS scope is destroyed.
+     */
     public fun disconnected(): Unit
+    /**
+     * The disconnectedCallback member of ng.ScopeElement.
+     */
     public fun disconnectedCallback(): Unit
-    public fun dispatch(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
+    /**
+     * Dispatch a composed bubbling DOM event from this custom element.
+     * @param type Value supplied for the type parameter.
+     * @param detail Value supplied for the detail parameter.
+     * @param init Value supplied for the init parameter.
+     */
+    public fun dispatch(type: String = definedExternally, detail: dynamic = definedExternally, init: dynamic = definedExternally): Boolean
+    /**
+     * Injector used by the AngularTS app that registered this element.
+     */
     public var injector: dynamic
+    /**
+     * Render root used for compiled template content.
+     */
     public var root: dynamic
+    /**
+     * Scope owned by this custom element instance.
+     */
     public var scope: dynamic
 }
 
+/**
+ * Public AngularTS ScopeElementConstructor contract exposed through the ng namespace.
+ */
 public external interface ScopeElementConstructor<T> {
+    /**
+     * Declared DOM attributes/properties that sync into the scope.
+     */
     public var inputs: dynamic
+    /**
+     * Use an isolate child scope instead of inheriting parent properties.
+     */
     public var isolate: Boolean
+    /**
+     * Initial scope state, or a factory returning it.
+     */
     public var scope: dynamic
+    /**
+     * Enables shadow DOM, or passes ShadowRootInit options.
+     */
     public var shadow: dynamic
+    /**
+     * Template compiled into the host or shadow root.
+     */
     public var template: String
 }
 
+/**
+ * Public AngularTS WebComponentContext contract exposed through the ng namespace.
+ */
 public external interface WebComponentContext<T> {
-    public fun dispatch(p0: String = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): Boolean
+    /**
+     * Dispatch a composed bubbling DOM event from the host.
+     * @param type Value supplied for the type parameter.
+     * @param detail Value supplied for the detail parameter.
+     * @param init Value supplied for the init parameter.
+     */
+    public fun dispatch(type: String = definedExternally, detail: dynamic = definedExternally, init: dynamic = definedExternally): Boolean
+    /**
+     * Custom element host.
+     */
     public var host: org.w3c.dom.HTMLElement
+    /**
+     * Injector used by the AngularTS app that registered the element.
+     */
     public var injector: dynamic
+    /**
+     * Render root used for template content.
+     */
     public var root: dynamic
+    /**
+     * Scope owned by the custom element.
+     */
     public var scope: dynamic
+    /**
+     * Shadow root when `shadow` is enabled.
+     */
     public var shadowRoot: dynamic
 }
 
+/**
+ * Application-wide defaults for scoped custom elements.
+ */
 public external interface WebComponentConfig {
+    /**
+     * Defaults merged into every `appComponent(...)` declaration.
+     */
     public var defaults: dynamic
 }
 
+/**
+ * Public AngularTS WebComponentInput contract exposed through the ng namespace.
+ */
 public external interface WebComponentInput
 
+/**
+ * Public AngularTS WebComponentInputConfig contract exposed through the ng namespace.
+ */
 public external interface WebComponentInputConfig {
+    /**
+     * Attribute name. Defaults to the kebab-case property name.
+     */
     public var attribute: String
+    /**
+     * Initial value used when no attribute or property was provided.
+     */
     public var default: dynamic
+    /**
+     * Reflect property writes back to the DOM attribute.
+     */
     public var reflect: Boolean
-    public fun type(p0: dynamic = definedExternally): dynamic
+    /**
+     * Attribute/property coercion function. Defaults to `String`.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun type(value: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS WebComponentInputs contract exposed through the ng namespace.
+ */
 public external interface WebComponentInputs
 
+/**
+ * Public AngularTS WebComponentService contract exposed through the ng namespace.
+ */
 public external interface WebComponentService {
-    public fun createElementScope(p0: org.w3c.dom.HTMLElement = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun defineAppComponent(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
-    public fun defineElement(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Create and attach a normal AngularTS child scope for a custom element.
+     * @param host Value supplied for the host parameter.
+     * @param initialState Value supplied for the initialState parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun createElementScope(host: org.w3c.dom.HTMLElement = definedExternally, initialState: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Define an options-backed application host custom element.
+     * @param name Value supplied for the name parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun defineAppComponent(name: String = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Define a native custom element backed by an AngularTS child scope.
+     * @param name Value supplied for the name parameter.
+     * @param elementClass Value supplied for the elementClass parameter.
+     */
+    public fun defineElement(name: String = definedExternally, elementClass: dynamic = definedExternally): dynamic
 }
 
+/**
+ * WebSocket-specific configuration
+ */
 public external interface WebSocketConfig {
+    /**
+     * Additional EventSource event names to subscribe to
+     */
     public var eventTypes: Array<String>
+    /**
+     * Timeout in milliseconds to detect heartbeat inactivity
+     */
     public var heartbeatTimeout: Double
+    /**
+     * Maximum number of reconnect attempts
+     */
     public var maxRetries: Double
-    public fun onClose(p0: dynamic = definedExternally): Unit
-    public fun onError(p0: org.w3c.dom.events.Event = definedExternally): Unit
-    public fun onEvent(p0: dynamic = definedExternally): Unit
-    public fun onMessage(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
-    public fun onOpen(p0: org.w3c.dom.events.Event = definedExternally): Unit
-    public fun onProtocolMessage(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
-    public fun onReconnect(p0: Double = definedExternally): Unit
+    /**
+     * Called when a WebSocket connection closes
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onClose(event: dynamic = definedExternally): Unit
+    /**
+     * Called when an error occurs
+     * @param err Value supplied for the err parameter.
+     */
+    public fun onError(err: org.w3c.dom.events.Event = definedExternally): Unit
+    /**
+     * Called with every registered connection message, including custom SSE event types
+     * @param message Value supplied for the message parameter.
+     */
+    public fun onEvent(message: dynamic = definedExternally): Unit
+    /**
+     * Called when a message is received
+     * @param data Value supplied for the data parameter.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onMessage(data: dynamic = definedExternally, event: dynamic = definedExternally): Unit
+    /**
+     * Called when the connection opens
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onOpen(event: org.w3c.dom.events.Event = definedExternally): Unit
+    /**
+     * Called when a decoded message uses the realtime protocol shape.
+     * @param data Value supplied for the data parameter.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onProtocolMessage(data: dynamic = definedExternally, event: dynamic = definedExternally): Unit
+    /**
+     * Called when a reconnect attempt happens
+     * @param attempt Value supplied for the attempt parameter.
+     */
+    public fun onReconnect(attempt: Double = definedExternally): Unit
+    /**
+     * Optional WebSocket subprotocols
+     */
     public var protocols: Array<String>
+    /**
+     * Delay between reconnect attempts in milliseconds
+     */
     public var retryDelay: Double
-    public fun transformMessage(p0: String = definedExternally): dynamic
+    /**
+     * Function to transform incoming messages
+     * @param data Value supplied for the data parameter.
+     */
+    public fun transformMessage(data: String = definedExternally): dynamic
 }
 
+/**
+ * Managed WebSocket connection returned by $websocket.
+ */
 public external interface WebSocketConnection {
+    /**
+     * Close the WebSocket connection and stop reconnect attempts.
+     */
     public fun close(): Unit
+    /**
+     * Manually restart the WebSocket connection.
+     */
     public fun reconnect(): Unit
-    public fun send(p0: dynamic = definedExternally): Unit
+    /**
+     * Send a JSON-serialized message through the native WebSocket.
+     * @param data Value supplied for the data parameter.
+     */
+    public fun send(data: dynamic = definedExternally): Unit
 }
 
+/**
+ * Public AngularTS WebSocketService contract exposed through the ng namespace.
+ */
 public external interface WebSocketService {
-    public operator fun invoke(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.WebSocketService function.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public operator fun invoke(url: String = definedExternally, config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Public AngularTS WebTransportBufferInput contract exposed through the ng namespace.
+ */
 public external interface WebTransportBufferInput
 
+/**
+ * Options passed to `$webTransport`.
+ */
 public external interface WebTransportConfig {
+    /**
+     * Maximum reconnect attempts before `closed` settles. Defaults to no limit.
+     */
     public var maxRetries: Double
+    /**
+     * Called when the managed connection closes without another reconnect.
+     */
     public fun onClose(): Unit
-    public fun onDatagram(p0: dynamic = definedExternally): Unit
-    public fun onError(p0: dynamic = definedExternally): Unit
+    /**
+     * Called with each incoming datagram.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onDatagram(event: dynamic = definedExternally): Unit
+    /**
+     * Called when opening, reading, writing, or closing fails.
+     * @param error Value supplied for the error parameter.
+     */
+    public fun onError(error: dynamic = definedExternally): Unit
+    /**
+     * Called whenever the current native transport resolves `ready`.
+     */
     public fun onOpen(): Unit
-    public fun onProtocolMessage(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Unit
-    public fun onReconnect(p0: dynamic = definedExternally): dynamic
+    /**
+     * Called when a decoded datagram uses the realtime protocol shape.
+     * @param message Value supplied for the message parameter.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onProtocolMessage(message: dynamic = definedExternally, event: dynamic = definedExternally): Unit
+    /**
+     * Called after a replacement session is ready so callers can renegotiate state.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun onReconnect(event: dynamic = definedExternally): dynamic
+    /**
+     * Reopen the native WebTransport session when it closes unexpectedly.
+     */
     public var reconnect: Boolean
+    /**
+     * Delay before each reconnect attempt. Defaults to 1000ms.
+     */
     public var retryDelay: dynamic
-    public fun transformDatagram(p0: dynamic = definedExternally): dynamic
+    /**
+     * Converts incoming datagram bytes into the value passed as `event.message`.
+     * @param data Value supplied for the data parameter.
+     */
+    public fun transformDatagram(data: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Managed WebTransport connection returned by `$webTransport`. The connection wraps the
+ * browser-native `WebTransport` object and keeps its promise/stream model visible while
+ * adding small conveniences for sending bytes, text, datagrams, and unidirectional
+ * streams.
+ */
 public external interface WebTransportConnection {
-    public fun close(p0: dynamic = definedExternally): Unit
+    /**
+     * Close the WebTransport session.
+     * @param closeInfo Value supplied for the closeInfo parameter.
+     */
+    public fun close(closeInfo: dynamic = definedExternally): Unit
+    /**
+     * Resolves or rejects when the managed connection closes permanently.
+     */
     public var closed: dynamic
+    /**
+     * Open a reliable bidirectional stream.
+     */
     public fun createBidirectionalStream(): dynamic
+    /**
+     * Resolves after the current native WebTransport session is ready.
+     */
     public var ready: dynamic
-    public fun sendDatagram(p0: dynamic = definedExternally): dynamic
-    public fun sendStream(p0: dynamic = definedExternally): dynamic
-    public fun sendText(p0: String = definedExternally): dynamic
+    /**
+     * Send one unreliable datagram.
+     * @param data Value supplied for the data parameter.
+     */
+    public fun sendDatagram(data: dynamic = definedExternally): dynamic
+    /**
+     * Send data on a client-opened reliable unidirectional stream.
+     * @param data Value supplied for the data parameter.
+     */
+    public fun sendStream(data: dynamic = definedExternally): dynamic
+    /**
+     * Send UTF-8 text as one unreliable datagram.
+     * @param data Value supplied for the data parameter.
+     */
+    public fun sendText(data: String = definedExternally): dynamic
+    /**
+     * Current browser-native WebTransport instance. Replaced after reconnects.
+     */
     public var transport: dynamic
 }
 
+/**
+ * Event emitted for each incoming WebTransport datagram.
+ */
 public external interface WebTransportDatagramEvent<T> {
+    /**
+     * Raw bytes received from the browser WebTransport datagram stream.
+     */
     public var data: dynamic
+    /**
+     * Value after `transformDatagram`, or the raw bytes when no transform is configured.
+     */
     public var message: dynamic
 }
 
+/**
+ * Event passed to WebTransport reconnect and renegotiation hooks.
+ */
 public external interface WebTransportReconnectEvent {
+    /**
+     * One-based reconnect attempt count for this connection.
+     */
     public var attempt: Double
+    /**
+     * Stable managed connection whose native `transport` was reopened.
+     */
     public var connection: dynamic
+    /**
+     * Error or close reason that caused the reconnect attempt, when available.
+     */
     public var error: dynamic
+    /**
+     * URL used to open the replacement WebTransport session.
+     */
     public var url: String
 }
 
+/**
+ * Delay, in milliseconds, before a reconnect attempt is opened.
+ */
 public external interface WebTransportRetryDelay
 
+/**
+ * Factory function exposed as `$webTransport`.
+ */
 public external interface WebTransportService {
-    public operator fun invoke(p0: String = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Calls the ng.WebTransportService function.
+     * @param url Value supplied for the url parameter.
+     * @param config Value supplied for the config parameter.
+     */
+    public operator fun invoke(url: String = definedExternally, config: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Native worker options plus AngularTS decoding and restart policy.
+ */
 public external interface WorkerConfig<TReceive> {
-    public fun decode(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Decode an inbound native message before delivering it to subscribers.
+     * @param data Value supplied for the data parameter.
+     * @param event Value supplied for the event parameter.
+     */
+    public fun decode(data: dynamic = definedExternally, event: dynamic = definedExternally): dynamic
+    /**
+     * Maximum automatic restarts. Defaults to 3.
+     */
     public var maxRestarts: Double
+    /**
+     * Restart the worker after a native runtime error. Automatic restart is disabled by
+     * default.
+     */
     public var restart: Boolean
+    /**
+     * Base restart delay. Exponential backoff is capped at 30s.
+     */
     public var restartDelay: Double
 }
 
+/**
+ * Typed failure reported by a managed worker.
+ */
 public external interface WorkerError {
+    /**
+     * The code member of ng.WorkerError.
+     */
     public var code: dynamic
+    /**
+     * The event member of ng.WorkerError.
+     */
     public var event: dynamic
 }
 
+/**
+ * Public AngularTS WorkerErrorCode contract exposed through the ng namespace.
+ */
 public external interface WorkerErrorCode
 
+/**
+ * Managed, scope-bindable handle to one page-owned Web Worker.
+ */
 public external interface WorkerHandle<TSend, TReceive> {
+    /**
+     * Latest managed failure, retained across worker replacement.
+     */
     public var error: dynamic
-    public fun model(p0: String = definedExternally): dynamic
-    public fun onError(p0: (dynamic) -> Unit = definedExternally): () -> Unit
-    public fun onMessage(p0: (dynamic, dynamic) -> Unit = definedExternally): () -> Unit
-    public fun post(p0: dynamic = definedExternally, p1: Array<dynamic> = definedExternally): Unit
-    public fun request(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * Adapt this handle to the standard model synchronization contract.
+     * @param channel Value supplied for the channel parameter.
+     */
+    public fun model(channel: String = definedExternally): dynamic
+    /**
+     * Subscribe to runtime, message, decoding, and request failures.
+     * @param listener Value supplied for the listener parameter.
+     */
+    public fun onError(listener: (dynamic) -> Unit = definedExternally): () -> Unit
+    /**
+     * Subscribe to decoded worker messages.
+     * @param listener Value supplied for the listener parameter.
+     */
+    public fun onMessage(listener: (dynamic, dynamic) -> Unit = definedExternally): () -> Unit
+    /**
+     * Send a typed message and optional transferable ownership list.
+     * @param message Value supplied for the message parameter.
+     * @param transfer Value supplied for the transfer parameter.
+     */
+    public fun post(message: dynamic = definedExternally, transfer: Array<dynamic> = definedExternally): Unit
+    /**
+     * Send a correlated request using the AngularTS worker envelope.
+     * @param message Value supplied for the message parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun request(message: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * Replace the native worker unless this connection was terminated.
+     */
     public fun restart(): Unit
+    /**
+     * Number of explicit or automatic worker restarts.
+     */
     public var restartCount: Double
+    /**
+     * Current managed lifecycle state.
+     */
     public var status: dynamic
+    /**
+     * Permanently terminate this managed connection.
+     */
     public fun terminate(): Unit
 }
 
+/**
+ * Standard messages used by WorkerHandle.model.
+ */
 public external interface WorkerModelMessage<T> {
+    /**
+     * The channel member of ng.WorkerModelMessage.
+     */
     public var channel: String
+    /**
+     * The type member of ng.WorkerModelMessage.
+     */
     public var type: dynamic
 }
 
+/**
+ * Request envelope understood by WorkerHandle.request.
+ */
 public external interface WorkerRequest<TPayload> {
+    /**
+     * The id member of ng.WorkerRequest.
+     */
     public var id: String
+    /**
+     * The payload member of ng.WorkerRequest.
+     */
     public var payload: dynamic
+    /**
+     * The type member of ng.WorkerRequest.
+     */
     public var type: String
 }
 
+/**
+ * Options for one correlated worker request.
+ */
 public external interface WorkerRequestOptions {
+    /**
+     * Abort the request without terminating the worker.
+     */
     public var signal: dynamic
+    /**
+     * Reject the request after this many milliseconds. Defaults to 30 seconds.
+     */
     public var timeout: Double
+    /**
+     * Transfer ownership of values contained by the request payload.
+     */
     public var transfer: Array<dynamic>
 }
 
+/**
+ * Response envelope returned for a correlated worker request.
+ */
 public external interface WorkerResponse<TResult> {
+    /**
+     * The id member of ng.WorkerResponse.
+     */
     public var id: String
+    /**
+     * The ok member of ng.WorkerResponse.
+     */
     public var ok: Boolean
+    /**
+     * The type member of ng.WorkerResponse.
+     */
     public var type: String
 }
 
+/**
+ * Lifecycle state exposed by a managed WorkerHandle.
+ */
 public external interface WorkerStatus
 
+/**
+ * Active connection between one AngularTS target and a WebAssembly guest.
+ */
 public external interface WasmBinding<TTarget> {
+    /**
+     * The dispose member of ng.WasmBinding.
+     */
     public fun dispose(): Unit
+    /**
+     * The disposed member of ng.WasmBinding.
+     */
     public var disposed: Boolean
+    /**
+     * The name member of ng.WasmBinding.
+     */
     public var name: String
+    /**
+     * The target member of ng.WasmBinding.
+     */
     public var target: dynamic
 }
 
+/**
+ * Options for binding one reactive target to a WebAssembly guest.
+ */
 public external interface WasmBindingOptions {
+    /**
+     * Deliver each watched path's current value when binding. Defaults to `true`.
+     */
     public var initial: Boolean
+    /**
+     * Stable name exposed to the guest.
+     */
     public var name: String
+    /**
+     * Reactive paths delivered to the guest's update callback.
+     */
     public var watch: Array<String>
 }
 
+/**
+ * Standard WebAssembly compilation options forwarded without translation.
+ */
 public external interface WasmCompileOptions {
+    /**
+     * Native WebAssembly builtin modules enabled while compiling.
+     */
     public var builtins: Array<String>
+    /**
+     * Native module name used for imported global string constants.
+     */
     public var importedStringConstants: String
 }
 
+/**
+ * Structured error raised by the high-level WebAssembly host.
+ */
 public external interface WasmError {
+    /**
+     * The code member of ng.WasmError.
+     */
     public var code: dynamic
+    /**
+     * The source member of ng.WasmError.
+     */
     public var source: dynamic
+    /**
+     * The stage member of ng.WasmError.
+     */
     public var stage: dynamic
 }
 
+/**
+ * Error categories reported by the high-level WebAssembly host.
+ */
 public external interface WasmErrorCode
 
+/**
+ * Lifecycle stage at which a WebAssembly operation failed.
+ */
 public external interface WasmErrorStage
 
+/**
+ * Declarative options for loading one WebAssembly module.
+ */
 public external interface WasmLoadOptions {
+    /**
+     * Standard options forwarded to WebAssembly compilation.
+     */
     public var compile: dynamic
+    /**
+     * Publish lifecycle timing entries through the browser Performance API.
+     */
     public var diagnostics: Boolean
+    /**
+     * Imports supplied in addition to the AngularTS reactive ABI.
+     */
     public var imports: dynamic
+    /**
+     * URL, request, response, bytes, or compiled WebAssembly module.
+     */
     public var source: dynamic
 }
 
+/**
+ * Loaded WebAssembly module with owned reactive bindings and lifecycle.
+ */
 public external interface WasmResource<TExports> {
-    public fun bind(p0: dynamic = definedExternally, p1: dynamic = definedExternally): dynamic
+    /**
+     * The bind member of ng.WasmResource.
+     * @param target Value supplied for the target parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun bind(target: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The dispose member of ng.WasmResource.
+     */
     public fun dispose(): Unit
+    /**
+     * The disposed member of ng.WasmResource.
+     */
     public var disposed: Boolean
+    /**
+     * The error member of ng.WasmResource.
+     */
     public var error: dynamic
+    /**
+     * The exports member of ng.WasmResource.
+     */
     public var exports: dynamic
+    /**
+     * The instance member of ng.WasmResource.
+     */
     public var instance: dynamic
+    /**
+     * The module member of ng.WasmResource.
+     */
     public var module: dynamic
+    /**
+     * The ready member of ng.WasmResource.
+     */
     public var ready: dynamic
+    /**
+     * The source member of ng.WasmResource.
+     */
     public var source: dynamic
+    /**
+     * The status member of ng.WasmResource.
+     */
     public var status: dynamic
 }
 
+/**
+ * Lifecycle state of a WebAssembly resource.
+ */
 public external interface WasmResourceStatus
 
+/**
+ * High-level WebAssembly host service.
+ */
 public external interface WasmService {
-    public fun load(p0: dynamic = definedExternally): dynamic
+    /**
+     * Loads one module and returns its owned resource.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun load(options: dynamic = definedExternally): dynamic
 }
 
+/**
+ * Source accepted by the WebAssembly loader.
+ */
 public external interface WasmSource
 
+/**
+ * Scope class for the Proxy. It intercepts operations like property access (get) and
+ * property setting (set), and adds support for deep change tracking and observer-like
+ * behavior.
+ */
 public external interface WasmTarget {
-    public fun `$batch`(p0: () -> dynamic = definedExternally): dynamic
-    public fun `$broadcast`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$destroy`(): Unit
-    public fun `$emit`(p0: String = definedExternally, vararg p1: dynamic): dynamic
-    public fun `$getById`(p0: dynamic = definedExternally): dynamic
-    public var `$handler`: dynamic
-    public var `$id`: Double
-    public fun `$merge`(p0: dynamic = definedExternally): Unit
-    public fun `$new`(p0: dynamic = definedExternally): dynamic
-    public fun `$newIsolate`(p0: dynamic = definedExternally): dynamic
-    public fun `$on`(p0: String = definedExternally, p1: Function<*> = definedExternally): () -> Unit
-    public var `$parent`: dynamic
-    public var `$proxy`: dynamic
-    public var `$root`: dynamic
-    public var `$scopename`: String
-    public fun `$searchByName`(p0: String = definedExternally): dynamic
-    public var `$target`: dynamic
-    public fun `$transcluded`(p0: dynamic = definedExternally): dynamic
-    public fun `$watch`(p0: String = definedExternally, p1: (dynamic, dynamic) -> Unit = definedExternally, p2: Boolean = definedExternally, p3: Boolean = definedExternally): () -> Unit
-    public fun deleteProperty(p0: dynamic = definedExternally, p1: dynamic = definedExternally): Boolean
-    public fun get(p0: dynamic = definedExternally, p1: dynamic = definedExternally, p2: dynamic = definedExternally): dynamic
-    public fun set(p0: dynamic = definedExternally, p1: String = definedExternally, p2: dynamic = definedExternally, p3: dynamic = definedExternally): Boolean
+    /**
+     * Runs synchronous scope mutations as one batch. Listener notifications are queued while
+     * the callback runs and flushed once after the outermost batch exits. Mutations are not
+     * rolled back if the callback throws.
+     * @param fn Value supplied for the fn parameter.
+     */
+    public fun batch(fn: () -> dynamic = definedExternally): dynamic
+    /**
+     * Broadcasts an event downward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun broadcast(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * The deleteProperty member of ng.WasmTarget.
+     * @param target The target object.
+     * @param property The name of the property being deleted.
+     */
+    public fun deleteProperty(target: dynamic = definedExternally, property: dynamic = definedExternally): Boolean
+    /**
+     * Destroys this scope and its descendants.
+     */
+    public fun destroy(): Unit
+    /**
+     * Emits an event upward through the scope hierarchy.
+     * @param name Value supplied for the name parameter.
+     * @param args Value supplied for the args parameter.
+     */
+    public fun emit(name: String = definedExternally, vararg args: dynamic): dynamic
+    /**
+     * Intercepts property access on the target object. It checks for specific properties
+     * (`watch` and `sync`) and binds their methods. For other properties, it returns the value
+     * directly.
+     * @param target The target object.
+     * @param property The name of the property being accessed.
+     * @param proxy The proxy object being invoked.
+     */
+    public fun get(target: dynamic = definedExternally, property: dynamic = definedExternally, proxy: dynamic = definedExternally): dynamic
+    /**
+     * Searches this scope tree for a scope with the given id.
+     * @param id Value supplied for the id parameter.
+     */
+    public fun getById(id: dynamic = definedExternally): dynamic
+    /**
+     * The id member of ng.WasmTarget.
+     */
+    public var id: Double
+    /**
+     * Merges enumerable properties from the provided object into the current scope target.
+     * @param newTarget Value supplied for the newTarget parameter.
+     */
+    public fun merge(newTarget: dynamic = definedExternally): Unit
+    /**
+     * Creates a prototypically inherited child scope.
+     * @param childInstance Value supplied for the childInstance parameter.
+     */
+    public fun new(childInstance: dynamic = definedExternally): dynamic
+    /**
+     * Creates an isolate child scope that does not inherit watchable properties directly.
+     * @param instance Value supplied for the instance parameter.
+     */
+    public fun newIsolate(instance: dynamic = definedExternally): dynamic
+    /**
+     * Registers an event listener on this scope and returns a deregistration function.
+     * @param name Value supplied for the name parameter.
+     * @param listener Value supplied for the listener parameter.
+     */
+    public fun on(name: String = definedExternally, listener: Function<*> = definedExternally): () -> Unit
+    /**
+     * The parent member of ng.WasmTarget.
+     */
+    public var parent: dynamic
+    /**
+     * The root member of ng.WasmTarget.
+     */
+    public var root: dynamic
+    /**
+     * The scopeName member of ng.WasmTarget.
+     */
+    public var scopeName: String
+    /**
+     * Searches the scope tree for a scope registered under the provided name.
+     * @param name Value supplied for the name parameter.
+     */
+    public fun searchByName(name: String = definedExternally): dynamic
+    /**
+     * Intercepts and handles property assignments on the target object. Scopeable objects are
+     * stored as raw model values and proxied lazily when read.
+     * @param target The target object.
+     * @param property The name of the property being set.
+     * @param value The new value being assigned to the property.
+     * @param proxy The proxy intercepting property access.
+     */
+    public fun set(target: dynamic = definedExternally, property: String = definedExternally, value: dynamic = definedExternally, proxy: dynamic = definedExternally): Boolean
+    /**
+     * Creates a transcluded child scope linked to this scope and an optional parent instance.
+     * @param parentInstance Value supplied for the parentInstance parameter.
+     */
+    public fun transcluded(parentInstance: dynamic = definedExternally): dynamic
+    /**
+     * Registers a watcher for a property along with a listener function. The listener function
+     * is invoked when changes to that property are detected.
+     * @param watchProp An expression to be watched in the context of this model.
+     * @param listenerFn A function to execute when changes are detected on watched context.
+     * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
+     * @param directLeaf Value supplied for the directLeaf parameter.
+     */
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
 }

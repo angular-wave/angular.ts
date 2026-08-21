@@ -27,7 +27,7 @@ element directly.
 WASM scope parity is view-scope parity only. Scala `WasmScope` wrappers should
 target DOM/root-scoped state. App-owned state belongs to `app.model(...)` and
 should synchronize with external runtimes through host-side AngularTS services
-or `model.$sync(...)` targets.
+or `model.sync(...)` targets.
 
 ## Dart Parity Target
 

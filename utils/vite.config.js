@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const coverageEnabled = process.env.PW_COVERAGE === "1";
 const port = Number(process.env.PORT || 4000);
+const apiPort = process.env.PW_API_PORT || "3000";
+const apiUrl = `http://localhost:${apiPort}/`;
 const jasmineCore = createRequire(import.meta.url)("jasmine-core");
 const jasmineAssets = new Set([
   ...jasmineCore.files.bootFiles,
@@ -101,11 +103,11 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://localhost:3000/",
+        target: apiUrl,
         changeOrigin: true,
       },
       "/mock": {
-        target: "http://localhost:3000/",
+        target: apiUrl,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/mock/, ""),
       },

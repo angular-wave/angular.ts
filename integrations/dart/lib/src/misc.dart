@@ -70,7 +70,7 @@ final class ScopeEvent {
   final void Function()? preventDefault;
 }
 
-/// Object provider with a typed `$get` injectable factory.
+/// Object provider with a typed `get` injectable factory.
 final class ServiceProvider<TValue> {
   /// Creates a service provider.
   const ServiceProvider(this.get);
@@ -78,12 +78,9 @@ final class ServiceProvider<TValue> {
   /// The get.
   final InjectableFactory<TValue> get;
 
-  /// The JS `$get` provider factory.
-  InjectableFactory<TValue> get $get => get;
-
   /// The to js object.
   JSObject toJsObject() {
-    return unsafe.object({'$get': unsafe.JsValue(get.toAnnotatedArray())});
+    return unsafe.object({'get': unsafe.JsValue(get.toAnnotatedArray())});
   }
 }
 

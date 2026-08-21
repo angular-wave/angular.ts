@@ -3,6 +3,9 @@
 This package is the C#/.NET binding plan and low-level facade seed for the
 shared AngularTS `WasmScope` ABI.
 
+Generated model contract descriptions are preserved as XML documentation
+comments from the shared JSON contract manifest.
+
 The facade in `src/AngularTsWasm.cs` provides:
 
 - `angular_ts` host import declarations for the shared scope ABI.
@@ -38,7 +41,7 @@ to AngularTS templates.
 
 App-owned state belongs to `app.model(...)`. If a .NET WebAssembly runtime
 needs durable or shared state, wrap the runtime with a host-side AngularTS
-service or `model.$sync(...)` target and pass plain snapshots across that
+service or `model.sync(...)` target and pass plain snapshots across that
 boundary. Do not add model handles, model path writes, or model watch imports
 to this binding until the shared ABI explicitly adds a model surface.
 
@@ -47,6 +50,13 @@ to this binding until the shared ABI explicitly adds a model surface.
 C# currently exposes the shared `WasmScope` ABI surface only. It does not
 publish AngularTS `ng` namespace service or authoring types, so the Rust/Go
 namespace parity checklist does not apply to this binding yet.
+
+## Programmatic Views
+
+Programmatic views are registered by the JavaScript host adapter and construct
+real DOM through `angular.tags`; .NET code supplies reactive state through the
+bound `WasmScope`. The unmanaged export ABI cannot return browser DOM objects,
+so the C# facade intentionally does not expose a misleading view type.
 
 ## Checks
 

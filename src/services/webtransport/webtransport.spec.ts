@@ -784,7 +784,7 @@ describe("ngWebTransport", () => {
         data-config="transportConfig"
         data-as="session"
         data-transform="json"
-        on-error="errors.push($error.name + ':' + $text)"
+        on-error="errors.push(error.name + ':' + $text)"
       ></div>
     `);
 

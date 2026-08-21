@@ -128,7 +128,7 @@ async function runWasmBenchmark(): Promise<WasmBenchmarkResult> {
 
   angular.bootstrap(root, []);
 
-  const service = angular.$injector.get("$wasm");
+  const service = angular.currentInjector.get("$wasm");
   const context = angular._appContext;
   const module = await WebAssembly.compile(EMPTY_WASM);
   const sharedResponse = new Response(EMPTY_WASM, {
@@ -248,7 +248,7 @@ async function runWasmBenchmark(): Promise<WasmBenchmarkResult> {
 
         dispose();
         bound.dispose();
-        target.$destroy();
+        target.destroy();
       },
     ),
   );

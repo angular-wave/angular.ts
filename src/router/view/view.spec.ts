@@ -62,7 +62,7 @@ describe("view", () => {
       compile: $injector.get("$compile"),
       controller: $injector.get("$controller"),
       rootScope: {
-        $on: () => () => undefined,
+        on: () => () => undefined,
       },
       injector: $injector,
     });
@@ -156,6 +156,34 @@ describe("view", () => {
   });
 
   describe("service helpers", () => {
+    it("broadcasts destroy when linking synchronously destroys the view scope", () => {
+      const viewService = createTestViewService();
+      const host = document.createElement("ng-view");
+      const scope = {
+        _target: {},
+        _handler: { _destroyed: false },
+        broadcast: jasmine.createSpy("broadcast"),
+      };
+
+      viewService._compile = jasmine
+        .createSpy("compile")
+        .and.returnValue(() => {
+          scope._handler._destroyed = true;
+        });
+
+      viewService._fillView({
+        host,
+        rootNodes: [],
+        scope,
+        config: undefined,
+        initial: "",
+        activeNgView: {},
+        animation: {},
+      });
+
+      expect(scope.broadcast).toHaveBeenCalledOnceWith("$destroy");
+    });
+
     it("creates view configs for entered states", () => {
       const state = register({
         name: "withView",
@@ -177,11 +205,11 @@ describe("view", () => {
       const viewService = stateService._viewService;
       const retainedElement = document.createElement("section");
       const retainedScope = {
-        $handler: {
+        _handler: {
           _destroyed: false,
         },
-        $destroy: jasmine.createSpy("$destroy").and.callFake(() => {
-          retainedScope.$handler._destroyed = true;
+        destroy: jasmine.createSpy("destroy").and.callFake(() => {
+          retainedScope._handler._destroyed = true;
         }),
       };
 
@@ -203,9 +231,9 @@ describe("view", () => {
         _lastUsed: 1,
       });
 
-      $injector.get("$rootScope").$destroy();
+      $injector.get("$rootScope").destroy();
 
-      expect(retainedScope.$destroy).toHaveBeenCalled();
+      expect(retainedScope.destroy).toHaveBeenCalled();
       expect(viewService._retainedViews.size).toBe(0);
       expect(viewService._retentionDiagnostics).toEqual([
         jasmine.objectContaining({
@@ -223,10 +251,10 @@ describe("view", () => {
       const viewService = createTestViewService();
       const retainedElement = document.createElement("section");
       const retainedScope = {
-        $handler: {
+        _handler: {
           _destroyed: false,
         },
-        $destroy: jasmine.createSpy("$destroy"),
+        destroy: jasmine.createSpy("destroy"),
       };
       const config = {
         _targetKey: "retained.$default",
@@ -275,18 +303,18 @@ describe("view", () => {
       const firstElement = document.createElement("section");
       const secondElement = document.createElement("section");
       const firstScope = {
-        $handler: {
+        _handler: {
           _destroyed: false,
         },
-        $destroy: jasmine.createSpy("$destroy").and.callFake(() => {
-          firstScope.$handler._destroyed = true;
+        destroy: jasmine.createSpy("destroy").and.callFake(() => {
+          firstScope._handler._destroyed = true;
         }),
       };
       const secondScope = {
-        $handler: {
+        _handler: {
           _destroyed: false,
         },
-        $destroy: jasmine.createSpy("$destroy"),
+        destroy: jasmine.createSpy("destroy"),
       };
       const firstConfig = {
         _targetKey: "retainedA.$default",
@@ -325,7 +353,7 @@ describe("view", () => {
         _animation: {},
       });
 
-      expect(firstScope.$destroy).toHaveBeenCalled();
+      expect(firstScope.destroy).toHaveBeenCalled();
       expect(viewService._retainedViews.has("retained-a")).toBe(false);
       expect(viewService._retainedViews.has("retained-b")).toBe(true);
       expect(viewService._retentionDiagnostics).toEqual([
@@ -354,11 +382,11 @@ describe("view", () => {
       const viewService = createTestViewService();
       const retainedElement = document.createElement("section");
       const retainedScope = {
-        $handler: {
+        _handler: {
           _destroyed: false,
         },
-        $destroy: jasmine.createSpy("$destroy").and.callFake(() => {
-          retainedScope.$handler._destroyed = true;
+        destroy: jasmine.createSpy("destroy").and.callFake(() => {
+          retainedScope._handler._destroyed = true;
         }),
       };
 
@@ -378,7 +406,7 @@ describe("view", () => {
         _animation: {},
       });
 
-      expect(retainedScope.$destroy).toHaveBeenCalled();
+      expect(retainedScope.destroy).toHaveBeenCalled();
       expect(viewService._retainedViews.size).toBe(0);
       expect(viewService._retentionDiagnostics).toEqual([
         jasmine.objectContaining({
@@ -394,18 +422,18 @@ describe("view", () => {
       const firstElement = document.createElement("section");
       const secondElement = document.createElement("section");
       const firstScope = {
-        $handler: {
+        _handler: {
           _destroyed: false,
         },
-        $destroy: jasmine.createSpy("$destroy").and.callFake(() => {
-          firstScope.$handler._destroyed = true;
+        destroy: jasmine.createSpy("destroy").and.callFake(() => {
+          firstScope._handler._destroyed = true;
         }),
       };
       const secondScope = {
-        $handler: {
+        _handler: {
           _destroyed: false,
         },
-        $destroy: jasmine.createSpy("$destroy"),
+        destroy: jasmine.createSpy("destroy"),
       };
       const config = {
         _targetKey: "replace.$default",
@@ -433,7 +461,7 @@ describe("view", () => {
         _animation: {},
       });
 
-      expect(firstScope.$destroy).toHaveBeenCalled();
+      expect(firstScope.destroy).toHaveBeenCalled();
       expect(viewService._retainedViews.get("replace")._scope).toBe(
         secondScope,
       );
@@ -451,11 +479,11 @@ describe("view", () => {
       const host = document.createElement("div");
       const retainedElement = document.createElement("section");
       const retainedScope = {
-        $handler: {
+        _handler: {
           _destroyed: false,
         },
-        $destroy: jasmine.createSpy("$destroy").and.callFake(() => {
-          retainedScope.$handler._destroyed = true;
+        destroy: jasmine.createSpy("destroy").and.callFake(() => {
+          retainedScope._handler._destroyed = true;
         }),
       };
 
@@ -477,7 +505,7 @@ describe("view", () => {
           _scope: retainedScope,
         });
 
-        expect(retainedScope.$destroy).toHaveBeenCalled();
+        expect(retainedScope.destroy).toHaveBeenCalled();
         expect(host.contains(retainedElement)).toBe(false);
       } finally {
         dealoc(host);
@@ -500,8 +528,8 @@ describe("view", () => {
         _element: document.createElement("section"),
         _nodes: [],
         _scope: {
-          $handler: { _destroyed: false },
-          $destroy: jasmine.createSpy("$destroy"),
+          _handler: { _destroyed: false },
+          destroy: jasmine.createSpy("destroy"),
         },
         _animation: {},
         _createdAt: 1,
@@ -517,8 +545,8 @@ describe("view", () => {
     it("leaves retained views untouched when eviction selection returns nothing", () => {
       const viewService = createTestViewService();
       const retainedScope = {
-        $handler: { _destroyed: false },
-        $destroy: jasmine.createSpy("$destroy"),
+        _handler: { _destroyed: false },
+        destroy: jasmine.createSpy("destroy"),
       };
 
       viewService._retainedViews.set("unselected", {
@@ -545,7 +573,7 @@ describe("view", () => {
       viewService._evictRetainedViews(0, "lru");
 
       expect(viewService._retainedViews.has("unselected")).toBe(true);
-      expect(retainedScope.$destroy).not.toHaveBeenCalled();
+      expect(retainedScope.destroy).not.toHaveBeenCalled();
     });
 
     it("falls back when a policy eviction target is not selected", () => {
@@ -566,8 +594,8 @@ describe("view", () => {
         _element: document.createElement("section"),
         _nodes: [],
         _scope: {
-          $handler: { _destroyed: false },
-          $destroy: jasmine.createSpy("$destroy"),
+          _handler: { _destroyed: false },
+          destroy: jasmine.createSpy("destroy"),
         },
         _animation: {},
         _createdAt: 1,
@@ -595,8 +623,8 @@ describe("view", () => {
         _element: document.createElement("section"),
         _nodes: [],
         _scope: {
-          $handler: { _destroyed: false },
-          $destroy: jasmine.createSpy("$destroy"),
+          _handler: { _destroyed: false },
+          destroy: jasmine.createSpy("destroy"),
         },
         _animation: {},
         _createdAt: 1,
@@ -615,8 +643,8 @@ describe("view", () => {
         _element: document.createElement("section"),
         _nodes: [],
         _scope: {
-          $handler: { _destroyed: false },
-          $destroy: jasmine.createSpy("$destroy"),
+          _handler: { _destroyed: false },
+          destroy: jasmine.createSpy("destroy"),
         },
         _animation: {},
         _createdAt: 2,

@@ -225,10 +225,10 @@ describe("$serviceWorker", () => {
 
     scope.sw = service;
     const scopedService = scope.sw as ng.ServiceWorkerService;
-    scope.$watch("sw.status", (value) => {
+    scope.watch("sw.status", (value) => {
       statuses.push(value as string);
     });
-    scope.$watch("sw.registrationState.registered", (value) => {
+    scope.watch("sw.registrationState.registered", (value) => {
       registered.push(value as boolean);
     });
     await wait();
@@ -254,7 +254,7 @@ describe("$serviceWorker", () => {
 
     scope.sw = service;
     const scopedService = scope.sw as ng.ServiceWorkerService;
-    scope.$watch("sw.controller", (value) => {
+    scope.watch("sw.controller", (value) => {
       controllers.push(value as ServiceWorker | null);
     });
     await wait();
@@ -290,7 +290,7 @@ describe("$serviceWorker", () => {
 
     scope.sw = service;
     const scopedService = scope.sw as ng.ServiceWorkerService;
-    scope.$watch("sw.updateState.phase", (value) => {
+    scope.watch("sw.updateState.phase", (value) => {
       phases.push(value as ServiceWorkerState | undefined);
     });
     await wait();
@@ -318,13 +318,13 @@ describe("$serviceWorker", () => {
 
     scope.sw = service;
     const scopedService = scope.sw as ng.ServiceWorkerService;
-    scope.$watch("sw.status", (value) => {
+    scope.watch("sw.status", (value) => {
       statuses.push(value as string);
     });
     await wait();
     statuses.length = 0;
 
-    scope.$destroy();
+    scope.destroy();
     await scopedService.register("/sw.js");
     await wait();
 

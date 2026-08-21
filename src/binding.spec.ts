@@ -900,16 +900,16 @@ describe("binding", () => {
       $injector = window.angular.bootstrap(elem, ["myModule"]);
       $rootScope = $injector.get("$rootScope");
 
-      const nestedA = $rootScope.$new();
+      const nestedA = $rootScope.new();
 
-      const nestedB = $rootScope.$new();
+      const nestedB = $rootScope.new();
 
       const destroyA = jasmine.createSpy("nestedA destroy");
 
       const destroyB = jasmine.createSpy("nestedB destroy");
 
-      nestedA.$on("$destroy", destroyA);
-      nestedB.$on("$destroy", destroyB);
+      nestedA.on("$destroy", destroyA);
+      nestedB.on("$destroy", destroyB);
 
       $rootScope.items = [
         { a: "A", nested: nestedA },
@@ -926,8 +926,8 @@ describe("binding", () => {
       expect(elem.textContent).toBe("BA");
       expect(destroyA).not.toHaveBeenCalled();
       expect(destroyB).not.toHaveBeenCalled();
-      expect(nestedA.$handler._destroyed).toBeFalse();
-      expect(nestedB.$handler._destroyed).toBeFalse();
+      expect(nestedA._handler._destroyed).toBeFalse();
+      expect(nestedB._handler._destroyed).toBeFalse();
       elem.remove();
     });
   });
@@ -980,16 +980,16 @@ describe("binding", () => {
     $injector = window.angular.bootstrap(elem, ["myModule"]);
     $rootScope = $injector.get("$rootScope");
 
-    const nestedA = $rootScope.$new();
+    const nestedA = $rootScope.new();
 
-    const nestedB = $rootScope.$new();
+    const nestedB = $rootScope.new();
 
     const destroyA = jasmine.createSpy("nestedA destroy");
 
     const destroyB = jasmine.createSpy("nestedB destroy");
 
-    nestedA.$on("$destroy", destroyA);
-    nestedB.$on("$destroy", destroyB);
+    nestedA.on("$destroy", destroyA);
+    nestedB.on("$destroy", destroyB);
 
     $rootScope.items = [
       { a: "A", nested: nestedA },
@@ -1006,8 +1006,8 @@ describe("binding", () => {
     expect(elem.textContent).toBe("BA");
     expect(destroyA).not.toHaveBeenCalled();
     expect(destroyB).not.toHaveBeenCalled();
-    expect(nestedA.$handler._destroyed).toBeFalse();
-    expect(nestedB.$handler._destroyed).toBeFalse();
+    expect(nestedA._handler._destroyed).toBeFalse();
+    expect(nestedB._handler._destroyed).toBeFalse();
     elem.remove();
   });
 
@@ -1331,7 +1331,7 @@ describe("binding", () => {
   it("should fire change listeners before the bound DOM is updated", async () => {
     element = $compile('<div ng-bind="name"></div>')($rootScope);
     $rootScope.name = "";
-    $rootScope.$watch("watched", () => {
+    $rootScope.watch("watched", () => {
       $rootScope.name = 123;
     });
     $rootScope.watched = "change";

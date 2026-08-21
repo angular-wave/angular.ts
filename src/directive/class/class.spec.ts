@@ -412,7 +412,7 @@ describe("ngClass", () => {
 
   it("should not mess up class value due to observing an interpolated class attribute", async () => {
     $rootScope.foo = true;
-    $rootScope.$watch("anything", () => {
+    $rootScope.watch("anything", () => {
       $rootScope.foo = false;
     });
     element = $compile('<div ng-class="{foo:foo}"></div>')($rootScope);

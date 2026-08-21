@@ -13,21 +13,17 @@ test("J2CL todo demo registers its AngularTS module before bootstrap", async ({
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Application JavaScript compiled from Java with J2CL and AngularTS JsInterop bindings",
+      "Application JavaScript compiled from Java with J2CL and AngularTS Java bindings",
     ),
   ).toBeVisible();
   await expect(page.locator(".todo-row")).toHaveCount(2);
-  await expect(page.locator("#j2cl-remaining")).toContainText(
-    "2 of 2 remaining",
-  );
+  await expect(page.locator("#j2cl-count")).toContainText("2 todos");
 
   await page.getByLabel("New todo").fill("Ship J2CL integration");
   await page.getByRole("button", { name: "Add" }).click();
   await expect(page.locator(".todo-row")).toHaveCount(3);
   await expect(page.getByText("Ship J2CL integration")).toBeVisible();
-  await expect(page.locator("#j2cl-remaining")).toContainText(
-    "3 of 3 remaining",
-  );
+  await expect(page.locator("#j2cl-count")).toContainText("3 todos");
 
   const addedRow = page
     .locator(".todo-row")
@@ -42,12 +38,11 @@ test("J2CL todo demo registers its AngularTS module before bootstrap", async ({
   await expect(addedCheckbox).toBeChecked();
   await expect(addedRow).toHaveClass(/is-done/);
   await expect(addedRow.locator(".todo-status")).toContainText("Done");
-  await expect(page.locator("#j2cl-remaining")).toContainText(
-    "2 of 3 remaining",
-  );
+  await expect(page.locator("#j2cl-count")).toContainText("3 todos");
 
   await page.getByRole("button", { name: "Archive completed" }).click();
   await expect(page.locator(".todo-row")).toHaveCount(2);
+  await expect(page.locator("#j2cl-count")).toContainText("2 todos");
   await expect(page.getByText("Ship J2CL integration")).toHaveCount(0);
   expect(errors).toEqual([]);
 });

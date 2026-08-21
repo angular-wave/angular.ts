@@ -1,4 +1,4 @@
-import { _templateRequest, _scope, _injector } from '../../injection-tokens.js';
+import { _templateRequest, _scope, _injector, _sce } from '../../injection-tokens.js';
 import { setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, hasNormalizedAttr, getDirectiveHostElement, getNormalizedAttr, getBooleanAttrName, FUTURE_PARENT_ELEMENT_KEY, cloneTranscludedHostElements, setNormalizedAttr } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { identifierForController } from '../controller/controller.js';
@@ -13,6 +13,7 @@ import { ngObserveDirective } from '../../directive/observe/observe.js';
 import { AFTER_RENDER_EVENT_SCHEDULER_KEY, queueScopedAfterRender } from '../render/after-render.js';
 import { getCompiledFragmentRecord, addCompiledFragmentAsyncWork, createPublicLinkSingleNodeCompiledFragmentRecord, createPublicLinkCompiledFragmentRecord, registerCompiledFragmentNode, registerCompiledFragmentNodes, findCompiledFragmentRecord, addCompiledFragmentChild, removeCompiledFragmentAsyncWork, shouldRunCompiledFragmentCallback } from './incremental-fragment.js';
 import { createComponentTemplateInvocationLocals } from './invocation-context.js';
+import { createProgrammaticDirectiveCompile, PROGRAMMATIC_VIEW_TEMPLATE, sanitizeProgrammaticSrcset } from './programmatic-view.js';
 
 const compileAttributeObserverScopes = new WeakMap();
 const attributeObserverScopeStates = new WeakMap();
@@ -36,7 +37,7 @@ function notifyAttributeObserverCallbacks(state, normalizedName, value) {
         return;
     arrayFrom(callbacks).forEach((registration) => {
         const { _scope, _callback } = registration;
-        if (_scope?.$handler._destroyed) {
+        if (_scope?._handler._destroyed) {
             return;
         }
         if (_scope) {
@@ -47,13 +48,13 @@ function notifyAttributeObserverCallbacks(state, normalizedName, value) {
     });
 }
 function queueAttributeObserverCallback(scope, callback, value) {
-    if (scope.$handler._destroyed) {
+    if (scope._handler._destroyed) {
         return;
     }
     const state = getAttributeObserverScopeState(scope);
     if (state._paused) {
         state._pending.push(() => {
-            if (scope.$handler._destroyed)
+            if (scope._handler._destroyed)
                 return;
             callback(toObservedAttributeValue(value));
         });
@@ -83,13 +84,13 @@ function getAttributeObserverScopeState(scope) {
     if (state)
         return state;
     let nextState;
-    const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+    const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
         if (!shouldHandleViewRetentionPause(args, "schedulers")) {
             return;
         }
         nextState._paused = true;
     });
-    const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+    const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
         if (!shouldHandleViewRetentionPause(args, "schedulers")) {
             return;
         }
@@ -99,7 +100,7 @@ function getAttributeObserverScopeState(scope) {
         nextState._paused = false;
         flushAttributeObserverScopeQueue(nextState);
     });
-    const deregisterDestroy = scope.$on("$destroy", () => {
+    const deregisterDestroy = scope.on("$destroy", () => {
         nextState._pending.length = 0;
         nextState._deregisterPause();
         nextState._deregisterResume();
@@ -181,7 +182,7 @@ function rememberPendingAttributeMutation(element, normalizedName, value) {
 /** @internal */
 class CompileAttributeState {
     constructor($injector, $exceptionHandler, stateToCopy) {
-        this.$normalize = directiveNormalize;
+        this._normalize = directiveNormalize;
         this._getAnimate = getLazyAnimate($injector);
         this._exceptionHandler = $exceptionHandler;
         this._attributeNames = {};
@@ -271,7 +272,7 @@ function observeElementAttribute(scope, element, normalizedName, callback) {
     }
     let deregisterDestroy;
     if (scope) {
-        deregisterDestroy = scope.$on("$destroy", () => {
+        deregisterDestroy = scope.on("$destroy", () => {
             deregister();
         });
     }
@@ -575,6 +576,19 @@ class CompileRegistry {
             }
             return bindings;
         }
+        function sanitizeProgrammaticProperty($injector, element, propertyName, value) {
+            const elementName = element.localName.toLowerCase();
+            const normalizedPropertyName = propertyName.toLowerCase();
+            const security = $injector.get(_sce);
+            if (normalizedPropertyName === "srcset" &&
+                (elementName === "img" || elementName === "source")) {
+                return sanitizeProgrammaticSrcset(value, security.valueOf.bind(security), security.getTrustedMediaUrl.bind(security));
+            }
+            const trustedContext = (PROP_CONTEXTS[`${elementName}|${normalizedPropertyName}`] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]);
+            return trustedContext
+                ? security.getTrusted(trustedContext, value)
+                : value;
+        }
         function instantiateDirectiveDefinitions(name, $injector, $exceptionHandler) {
             const directives = [];
             const factories = directiveFactoryRegistry[name];
@@ -588,6 +602,47 @@ class CompileRegistry {
                         : directive;
                     if (!normalizedDirective.compile && normalizedDirective.link) {
                         normalizedDirective.compile = valueFn(normalizedDirective.link);
+                    }
+                    if (normalizedDirective.view) {
+                        if (normalizedDirective.template !== undefined ||
+                            normalizedDirective.templateUrl !== undefined) {
+                            throw $compileError("multiview", "Directive '{0}' cannot define view together with template or templateUrl.", name);
+                        }
+                        if (normalizedDirective.replace) {
+                            throw $compileError("viewreplace", "Programmatic directive '{0}' cannot use replace.", name);
+                        }
+                        const originalCompile = normalizedDirective.compile;
+                        const viewCompile = createProgrammaticDirectiveCompile({
+                            name,
+                            view: normalizedDirective.view,
+                            hasRequire: normalizedDirective.require != null,
+                            injector: $injector,
+                            sanitizeProperty: (element, propertyName, value) => sanitizeProgrammaticProperty($injector, element, propertyName, value),
+                        });
+                        normalizedDirective.template = PROGRAMMATIC_VIEW_TEMPLATE;
+                        normalizedDirective.compile = function (...args) {
+                            const viewLinks = viewCompile.apply(this, args);
+                            const originalLinks = originalCompile?.apply(this, args);
+                            const originalPre = isFunction(originalLinks)
+                                ? undefined
+                                : originalLinks?.pre;
+                            const originalPost = isFunction(originalLinks)
+                                ? originalLinks
+                                : originalLinks?.post;
+                            const pre = function (...linkArgs) {
+                                if (viewLinks.pre)
+                                    Reflect.apply(viewLinks.pre, this, linkArgs);
+                                if (originalPre)
+                                    Reflect.apply(originalPre, this, linkArgs);
+                            };
+                            const post = function (...linkArgs) {
+                                if (viewLinks.post)
+                                    Reflect.apply(viewLinks.post, this, linkArgs);
+                                if (originalPost)
+                                    Reflect.apply(originalPost, this, linkArgs);
+                            };
+                            return { pre, post };
+                        };
                     }
                     normalizedDirective.priority = normalizedDirective.priority || 0;
                     normalizedDirective.index = index;
@@ -690,6 +745,15 @@ class CompileRegistry {
                 return this;
             }
             const componentOptions = assertDefined(options);
+            const componentName = name;
+            if (componentOptions.view &&
+                (componentOptions.template !== undefined ||
+                    componentOptions.templateUrl !== undefined)) {
+                throw $compileError("multiview", "Component '{0}' cannot define view together with template or templateUrl.", name);
+            }
+            if (componentOptions.view && componentOptions.replace) {
+                throw $compileError("viewreplace", "Programmatic component '{0}' cannot use replace.", name);
+            }
             (componentBindingRegistry[name] ?? (componentBindingRegistry[name] = [])).push({
                 ...(componentOptions.bindings ?? {}),
             });
@@ -709,9 +773,11 @@ class CompileRegistry {
                     }
                     return fn;
                 };
-                const template = !componentOptions.template && !componentOptions.templateUrl
-                    ? ""
-                    : componentOptions.template;
+                const template = componentOptions.view
+                    ? PROGRAMMATIC_VIEW_TEMPLATE
+                    : !componentOptions.template && !componentOptions.templateUrl
+                        ? ""
+                        : componentOptions.template;
                 const ddo = {
                     controller,
                     controllerAs: identifierForController(componentOptions.controller) ??
@@ -725,6 +791,15 @@ class CompileRegistry {
                     restrict: "E",
                     replace: componentOptions.replace,
                     require: componentOptions.require,
+                    compile: componentOptions.view
+                        ? createProgrammaticDirectiveCompile({
+                            name: componentName,
+                            view: componentOptions.view,
+                            hasRequire: componentOptions.require != null,
+                            injector: $injector,
+                            sanitizeProperty: (element, propertyName, value) => sanitizeProgrammaticProperty($injector, element, propertyName, value),
+                        })
+                        : undefined,
                 };
                 // Copy annotations (starting with $) over to the DDO
                 for (const key in componentOptions) {
@@ -939,12 +1014,12 @@ class CompileRegistry {
                         state._changes = undefined;
                         return;
                     }
-                    if (state._destAny.$onChanges && state._changes) {
-                        callFunction(state._destAny.$onChanges, state._destAny, state._changes);
+                    if (state._destAny.onChanges && state._changes) {
+                        callFunction(state._destAny.onChanges, state._destAny, state._changes);
                     }
                     state._changes = undefined;
                 }
-                /** Flushes queued `$onChanges` hooks in one deferred turn. */
+                /** Flushes queued `onChanges` hooks in one deferred turn. */
                 function flushDirectiveBindingOnChangesQueue(queueState) {
                     queueState._scheduled = false;
                     const queue = queueState._queue;
@@ -966,17 +1041,17 @@ class CompileRegistry {
                     queueMicrotask(queueState._flush);
                 }
                 function scheduleControllerAfterRender(controllerInstance, scope) {
-                    const controllerTarget = (controllerInstance.$target ??
+                    const controllerTarget = (controllerInstance._target ??
                         controllerInstance);
-                    if (!isFunction(controllerTarget.$afterRender)) {
+                    if (!isFunction(controllerTarget.afterRender)) {
                         return;
                     }
-                    queueScopedAfterRender(controllerTarget, scope.$proxy, () => {
+                    queueScopedAfterRender(controllerTarget, scope._proxy, () => {
                         if (scope._destroyed || controllerInstance._destroyed) {
                             return;
                         }
                         try {
-                            callFunction(assertDefined(controllerTarget.$afterRender), controllerTarget);
+                            callFunction(assertDefined(controllerTarget.afterRender), controllerTarget);
                         }
                         catch (err) {
                             $exceptionHandler(err);
@@ -993,7 +1068,7 @@ class CompileRegistry {
                 }
                 function recordDirectiveBindingChange(state, key, currentValue, initial) {
                     scheduleControllerAfterRender(state._destAny, state._scope);
-                    if (!isFunction(state._destAny.$onChanges)) {
+                    if (!isFunction(state._destAny.onChanges)) {
                         return;
                     }
                     scheduleDirectiveBindingOnChangesQueue(state._onChangesQueue);
@@ -1055,10 +1130,10 @@ class CompileRegistry {
                         return;
                     }
                     callFunction(state._parentSet, undefined, state._scopeTarget, (state._lastValue = val));
-                    const attributeWatchers = state._scope.$handler._watchers.get(String(state._attrExpression));
+                    const attributeWatchers = state._scope._handler._watchers.get(String(state._attrExpression));
                     if (attributeWatchers) {
                         for (let i = 0, l = attributeWatchers.length; i < l; i++) {
-                            attributeWatchers[i]._listenerFn(val, state._scope.$target);
+                            attributeWatchers[i]._listenerFn(val, state._scope._target);
                         }
                     }
                     scheduleControllerAfterRender(state._destAny, state._scope);
@@ -1092,8 +1167,8 @@ class CompileRegistry {
                     }
                     const currentValue = state._literal || val === null || typeof val !== "object"
                         ? val
-                        : createScope(val, state._bindingChangeState._scope.$handler);
-                    const destinationTarget = state._destAny.$target;
+                        : createScope(val, state._bindingChangeState._scope._handler);
+                    const destinationTarget = state._destAny._target;
                     if (!state._firstChange &&
                         simpleCompare(state._lastParentValue, val) &&
                         simpleCompare(destinationTarget[state._scopeName], currentValue)) {
@@ -1189,7 +1264,7 @@ class CompileRegistry {
                         // for transclusion, which caused us to lose a layer of element on which
                         // we could hold the new transclusion scope, so we will create it manually
                         // here.
-                        scope = scope.$parent?.$new() ?? scope.$new();
+                        scope = scope.parent?.new() ?? scope.new();
                     }
                     options = options ?? {};
                     let { _parentBoundTranscludeFn } = options;
@@ -1213,7 +1288,10 @@ class CompileRegistry {
                         $linkNode = nodes;
                     }
                     const linkedNodeCount = getTemplateNodeCount($linkNode);
-                    const ownsLinkedNodes = state._ownsNodes || !!cloneConnectFn || state._namespace !== "html";
+                    const ownsLinkedNodes = state._ownsNodes ||
+                        options._ownsNodes === true ||
+                        !!cloneConnectFn ||
+                        state._namespace !== "html";
                     const singleLinkedNode = linkedNodeCount === 1
                         ? getTemplateNodeAt($linkNode, 0)
                         : null;
@@ -1262,7 +1340,7 @@ class CompileRegistry {
                     executeTemplateLinkMappings(plan, stableNodeList, scope, _parentBoundTranscludeFn ?? null);
                 }
                 function invokeBoundTransclude(state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
-                    transcludedScope ?? (transcludedScope = state._scope.$transcluded(containingScope));
+                    transcludedScope ?? (transcludedScope = state._scope.transcluded(containingScope));
                     return state._transcludeFn(transcludedScope, cloneFn, {
                         _parentBoundTranscludeFn: state._previousBoundTranscludeFn,
                         _transcludeControllers: controllers,
@@ -1312,7 +1390,7 @@ class CompileRegistry {
                     let childScope;
                     let childBoundTranscludeFn;
                     if (nodeLinkPlan) {
-                        childScope = nodeLinkPlan._newScope ? scope.$new() : scope;
+                        childScope = nodeLinkPlan._newScope ? scope.new() : scope;
                         if (nodeLinkPlan._transcludeOnThisElement) {
                             childBoundTranscludeFn = createBoundTranscludeFn(scope, nodeLinkPlan._transclude, _parentBoundTranscludeFn ?? null);
                         }
@@ -1754,7 +1832,7 @@ class CompileRegistry {
                 /** Shared post-link executor for text interpolation directives. */
                 function textInterpolateLinkFn(linkState, scope, node) {
                     if (linkState._singleExpression) {
-                        scope.$watch(linkState._watchExpression, (value) => {
+                        scope.watch(linkState._watchExpression, (value) => {
                             applyTextInterpolationValue(node, stringify(value));
                         });
                         return;
@@ -1765,7 +1843,7 @@ class CompileRegistry {
                         _node: node,
                     };
                     handleTextInterpolationWatch(bindingState);
-                    scope.$watch(linkState._watchExpression, () => {
+                    scope.watch(linkState._watchExpression, () => {
                         handleTextInterpolationWatch(bindingState);
                     });
                 }
@@ -1828,7 +1906,7 @@ class CompileRegistry {
                     }
                     const value = interpolateFn(bindingState._scope);
                     if (bindingState._lastValue === value &&
-                        "$index" in bindingState._scope.$target) {
+                        "$index" in bindingState._scope._target) {
                         return;
                     }
                     bindingState._lastValue = value;
@@ -1866,7 +1944,7 @@ class CompileRegistry {
                     if (expressions.length > 0) {
                         const targetScope = getCompileAttributeObserverScope(node, name) ?? scope;
                         const watchExpression = buildInterpolationWatchExpression(expressions);
-                        targetScope.$watch(watchExpression, () => {
+                        targetScope.watch(watchExpression, () => {
                             handleAttrInterpolationWatch(bindingState);
                         });
                     }
@@ -1903,10 +1981,10 @@ class CompileRegistry {
                         _element: $element,
                     };
                     updatePropertyDirectiveValue(bindingState);
-                    scope.$watch(linkState._propName, () => {
+                    scope.watch(linkState._propName, () => {
                         handlePropertyDirectiveValueWatch(bindingState);
                     });
-                    scope.$watch(linkState._attrExpression, (val) => {
+                    scope.watch(linkState._attrExpression, (val) => {
                         handlePropertyDirectiveAttrWatch(bindingState, val);
                     });
                 }
@@ -2029,7 +2107,7 @@ class CompileRegistry {
                         addCompiledFragmentAsyncWork(fragmentRecord, asyncWork);
                         linkQueue[linkQueue.length - 1] = asyncWork;
                     }
-                    const removeOnDestroy = scope.$on("$destroy", () => {
+                    const removeOnDestroy = scope.on("$destroy", () => {
                         removeOnDestroy();
                         removeDelayedTemplateLinkQueueEntry(delayedState, scope, node, fragmentRecord, asyncWork, boundTranscludeFn);
                     });
@@ -2199,10 +2277,10 @@ class CompileRegistry {
                         : undefined;
                     controllerScope = scope;
                     if (nodeLinkState._newIsolateScopeDirective) {
-                        isolateScope = scope.$newIsolate();
+                        isolateScope = scope.newIsolate();
                     }
                     else if (nodeLinkState._newScopeDirective) {
-                        controllerScope = scope.$parent;
+                        controllerScope = scope.parent;
                     }
                     controllerScope = controllerScope ?? scope;
                     let transcludeFn = nodeLinkState._transcludeFn;
@@ -2216,7 +2294,7 @@ class CompileRegistry {
                             _elementNode: elementNode,
                         };
                         const currentTranscludeState = transcludeState;
-                        scope.$on("$destroy", () => {
+                        scope.on("$destroy", () => {
                             releaseControllersBoundTranscludeState(currentTranscludeState);
                         });
                         transcludeFn = createControllersBoundTranscludeFn(transcludeState);
@@ -2229,12 +2307,12 @@ class CompileRegistry {
                         }
                     }
                     if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
-                        isolateScope.$target._isolateBindings =
+                        isolateScope._target._isolateBindings =
                             nodeLinkState._newIsolateScopeDirective._isolateBindings;
-                        scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope.$target
+                        scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope._target
                             ._isolateBindings, nodeLinkState._newIsolateScopeDirective, elementNode);
                         if (scopeBindingInfo._removeWatches) {
-                            isolateScope.$on("$destroy", scopeBindingInfo._removeWatches);
+                            isolateScope.on("$destroy", scopeBindingInfo._removeWatches);
                         }
                     }
                     for (const name in elementControllers) {
@@ -2242,17 +2320,17 @@ class CompileRegistry {
                         const controller = assertDefined(elementControllers[name]);
                         const bindings = assertDefined(controllerDirective._bindings)
                             ._bindToController;
-                        const reactiveControllerInstance = controllerScope.$newIsolate(controller._instance);
+                        const reactiveControllerInstance = controllerScope.newIsolate(controller._instance);
                         const controllerInstance = controller(reactiveControllerInstance);
                         if (controllerInstance === reactiveControllerInstance) {
                             controller._instance = reactiveControllerInstance;
                         }
                         else {
-                            reactiveControllerInstance.$destroy?.();
-                            controller._instance = controllerScope.$newIsolate(controllerInstance);
+                            reactiveControllerInstance.destroy?.();
+                            controller._instance = controllerScope.newIsolate(controllerInstance);
                         }
                         const controllerIdentifier = controllerDirective.controllerAs ??
-                            controllerInstance.$controllerIdentifier;
+                            controllerInstance._controllerIdentifier;
                         if (isString(controllerIdentifier)) {
                             controller._scope[controllerIdentifier] =
                                 controller._instance;
@@ -2281,18 +2359,18 @@ class CompileRegistry {
                         const controllerDirective = controllerDirectives[name];
                         const controller = assertDefined(elementControllers[name]);
                         const controllerInstance = controller._instance;
-                        if (isFunction(controllerInstance.$onChanges)) {
+                        if (isFunction(controllerInstance.onChanges)) {
                             try {
-                                callFunction(controllerInstance.$onChanges, controllerInstance, assertDefined(controller._bindingInfo)._initialChanges);
+                                callFunction(controllerInstance.onChanges, controllerInstance, assertDefined(controller._bindingInfo)._initialChanges);
                             }
                             catch (err) {
                                 $exceptionHandler(err);
                             }
                         }
-                        if (isFunction(controllerInstance.$onInit)) {
+                        if (isFunction(controllerInstance.onInit)) {
                             try {
-                                const controllerTarget = controllerInstance.$target ?? controllerInstance;
-                                callFunction(controllerTarget.$onInit, controllerTarget);
+                                const controllerTarget = controllerInstance._target ?? controllerInstance;
+                                callFunction(controllerTarget.onInit, controllerTarget);
                             }
                             catch (err) {
                                 $exceptionHandler(err);
@@ -2310,16 +2388,16 @@ class CompileRegistry {
                         if (lifecycleRecord) {
                             $compileLifecycle._emitControllerCreated(lifecycleRecord);
                         }
-                        if (isFunction(controllerInstance.$onDestroy)) {
-                            controllerScope.$on("$destroy", () => {
-                                callFunction(assertDefined(controllerInstance.$onDestroy), controllerInstance);
+                        if (isFunction(controllerInstance.onDestroy)) {
+                            controllerScope.on("$destroy", () => {
+                                callFunction(assertDefined(controllerInstance.onDestroy), controllerInstance);
                             });
                         }
-                        controllerScope.$on("$destroy", () => {
+                        controllerScope.on("$destroy", () => {
                             const wasDestroyed = controllerInstance._destroyed;
                             controllerInstance._destroyed = true;
-                            if (!wasDestroyed && isFunction(controllerInstance.$destroy)) {
-                                callFunction(controllerInstance.$destroy, controllerInstance);
+                            if (!wasDestroyed && isFunction(controllerInstance.destroy)) {
+                                callFunction(controllerInstance.destroy, controllerInstance);
                             }
                             if (lifecycleRecord) {
                                 $compileLifecycle._emitControllerDestroyed(lifecycleRecord);
@@ -2366,8 +2444,8 @@ class CompileRegistry {
                     for (const name in elementControllers) {
                         const controller = assertDefined(elementControllers[name]);
                         const controllerInstance = controller._instance;
-                        if (isFunction(controllerInstance.$postLink)) {
-                            callFunction(controllerInstance.$postLink, controllerInstance);
+                        if (isFunction(controllerInstance.postLink)) {
+                            callFunction(controllerInstance.postLink, controllerInstance);
                         }
                         scheduleControllerAfterRender(controllerInstance, controllerScope);
                     }
@@ -3408,8 +3486,8 @@ class CompileRegistry {
                     const removeWatchCollection = [];
                     const initialChanges = {};
                     const destAny = destination;
-                    const scopeTarget = scope.$target;
-                    const destinationTarget = assertDefined(destAny.$target);
+                    const scopeTarget = scope._target;
+                    const destinationTarget = assertDefined(destAny._target);
                     const bindingChangeState = {
                         _destAny: destAny,
                         _onChangesQueue: onChangesQueueState,
@@ -3525,7 +3603,7 @@ class CompileRegistry {
                                         ? callFunction(parentGet, undefined, scopeTarget)
                                         : undefined;
                                     lastValue = destinationTarget[scopeName] = isArray(initialValue)
-                                        ? createScope(initialValue, destination.$handler)
+                                        ? createScope(initialValue, destination._handler)
                                         : initialValue;
                                     const twoWayBindingState = {
                                         _attrExpression: attr,
@@ -3545,12 +3623,12 @@ class CompileRegistry {
                                     if (typeof twoWayAttrExpression === "string") {
                                         const syncParentValue = $parse(twoWayAttrExpression, (parentValue) => syncTwoWayParentValue(twoWayBindingState, parentValue));
                                         // make it lazy as we dont want to trigger the two way data binding at this point
-                                        removeWatch = scope.$watch(twoWayAttrExpression, (val) => {
+                                        removeWatch = scope.watch(twoWayAttrExpression, (val) => {
                                             handleTwoWayExpressionChange(twoWayBindingState, syncParentValue, val);
                                         }, true);
                                         removeWatchCollection.push(removeWatch);
                                     }
-                                    removeWatch = destination.$watch(attrName, (val) => {
+                                    removeWatch = destination._handler.watch(attrName, (val) => {
                                         handleTwoWayDestinationChange(twoWayBindingState, val);
                                     }, true);
                                     removeWatchCollection.push(removeWatch);
@@ -3574,12 +3652,12 @@ class CompileRegistry {
                                     const initialOneWayValue = parentGet
                                         ? callFunction(parentGet, undefined, scopeTarget)
                                         : undefined;
-                                    assertDefined(destAny.$target)[scopeName] =
+                                    assertDefined(destAny._target)[scopeName] =
                                         parentGet?._literal ||
                                             initialOneWayValue === null ||
                                             typeof initialOneWayValue !== "object"
                                             ? initialOneWayValue
-                                            : createScope(initialOneWayValue, scope.$handler);
+                                            : createScope(initialOneWayValue, scope._handler);
                                     const oneWayBindingState = {
                                         _bindingChangeState: bindingChangeState,
                                         _destAny: destAny,
@@ -3593,11 +3671,11 @@ class CompileRegistry {
                                     oneWayBindingState._lastInputs =
                                         evaluateOneWayBindingInputs(oneWayBindingState);
                                     initialChanges[scopeName] = {
-                                        currentValue: assertDefined(destAny.$target)[scopeName],
+                                        currentValue: assertDefined(destAny._target)[scopeName],
                                         firstChange: oneWayBindingState._firstChange,
                                     };
                                     if (typeof oneWayAttrExpression === "string") {
-                                        removeWatch = scope.$watch(oneWayAttrExpression, (val) => {
+                                        removeWatch = scope.watch(oneWayAttrExpression, (val) => {
                                             handleOneWayBindingChange(oneWayBindingState, val);
                                         }, true);
                                         removeWatchCollection.push(removeWatch);
@@ -3620,7 +3698,7 @@ class CompileRegistry {
                                         _parentGet: parentGet,
                                         _scopeTarget: scopeTarget,
                                     };
-                                    assertDefined(destAny.$target)[scopeName] = function (locals) {
+                                    assertDefined(destAny._target)[scopeName] = function (locals) {
                                         return invokeExpressionBinding(expressionBindingState, locals);
                                     };
                                     break;
@@ -3712,7 +3790,7 @@ function buildStableNodeList(plan, nodeList) {
     return stableNodeList;
 }
 /**
- * Serializes one or more interpolation inputs into the watch expression used by `$watch`.
+ * Serializes one or more interpolation inputs into the watch expression used by `watch`.
  * Single expressions stay unchanged; multi-input interpolations are packed into an array expression.
  */
 function buildInterpolationWatchExpression(expressions) {

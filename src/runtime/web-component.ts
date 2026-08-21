@@ -108,7 +108,7 @@ export function defineAngularElement<
 
   const injector = angular.injector([ngModuleName, elementModuleName]);
 
-  (angular as ng.Angular & { $rootScope?: ng.Scope }).$rootScope =
+  (angular as ng.Angular & { rootScope?: ng.Scope }).rootScope =
     injector.get(_rootScope);
 
   const element = customElements.get(name);

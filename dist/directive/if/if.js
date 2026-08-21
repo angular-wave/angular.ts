@@ -27,7 +27,7 @@ function ngIfDirective($injector) {
                 let blockFragments = [];
                 let previousNodes = [];
                 let previousFragments = [];
-                $scope.$watch(expression, (value) => {
+                $scope.watch(expression, (value) => {
                     if (value) {
                         if (!childScope) {
                             $transclude((clone, newScope) => {
@@ -58,7 +58,7 @@ function ngIfDirective($injector) {
                             previousFragments = [];
                         }
                         if (childScope) {
-                            childScope.$destroy();
+                            childScope.destroy();
                             childScope = null;
                         }
                         if (blockNodes.length) {

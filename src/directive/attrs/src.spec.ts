@@ -18,7 +18,7 @@ describe("ngSrc", () => {
       "$rootScope",
       "$compile",
       ($rootScope, _$compile_) => {
-        $scope = $rootScope.$new();
+        $scope = $rootScope.new();
         $compile = _$compile_;
       },
     ]);
@@ -103,7 +103,7 @@ describe("ngSrc", () => {
         "$compile",
         "$sce",
         ($rootScope, _$compile_, _$sce_) => {
-          $scope = $rootScope.$new();
+          $scope = $rootScope.new();
           $compile = _$compile_;
           $sce = _$sce_;
         },

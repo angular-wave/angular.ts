@@ -15,12 +15,12 @@ describe("$state", () => {
 
   let stateRuntime;
 
-  function $get(what) {
+  function get(what) {
     return $injector.get(what);
   }
 
   async function initStateTo(state, params) {
-    const $state = $get("$state");
+    const $state = get("$state");
 
     return $state.transitionTo(state, params || {});
   }
@@ -415,8 +415,8 @@ describe("$state", () => {
 
     describe("basic functionality", () => {
       it("provides a fallback current transition option when one is not supplied", () => {
-        const $state = $get("$state");
-        const $transitions = $get("$transitions");
+        const $state = get("$state");
+        const $transitions = get("$transitions");
         const target = $state.target(A, {}, {});
         const transition = $transitions.create($state.getCurrentPath(), target);
 
@@ -546,7 +546,7 @@ describe("$state", () => {
       });
 
       it("builds lazy error policy context from root and current route states", async () => {
-        const $state = $get("$state");
+        const $state = get("$state");
         const originalInjector = $state._routerState._injector;
         const originalCurrent = $state._routerState._current;
         const originalCurrentState = $state._routerState._currentState;
@@ -780,7 +780,7 @@ describe("$state", () => {
           },
           template: "dyn state. <div ng-view></div>",
           controller: function () {
-            this.$onParamsChanged = function (updatedParams) {
+            this.onParamsChanged = function (updatedParams) {
               const paramNames = Object.keys(updatedParams).sort();
 
               const keyValues = paramNames.map(function (key) {
@@ -807,7 +807,7 @@ describe("$state", () => {
           },
           template: "dyn.child state",
           controller: function () {
-            this.$onParamsChanged = function (updatedParams) {
+            this.onParamsChanged = function (updatedParams) {
               const paramNames = Object.keys(updatedParams).sort();
 
               const keyValues = paramNames.map(function (key) {
@@ -825,7 +825,7 @@ describe("$state", () => {
           url: "/noparams",
           template: "dyn.noparams state",
           controller: function () {
-            this.$onParamsChanged = function (updatedParams) {
+            this.onParamsChanged = function (updatedParams) {
               const paramNames = Object.keys(updatedParams).sort();
 
               const keyValues = paramNames.map(function (key) {
@@ -853,7 +853,7 @@ describe("$state", () => {
         });
 
         app.innerHTML = "<div>Test: <ng-view></ng-view></div>";
-        $compile("<div><ng-view></ng-view></div>")($rootScope.$new());
+        $compile("<div><ng-view></ng-view></div>")($rootScope.new());
         await initStateTo(dynamicstate, {
           path: "p1",
           pathDyn: "pd1",
@@ -1114,7 +1114,7 @@ describe("$state", () => {
         // in this runtime, even though the shared params object itself is updated.
       });
 
-      describe("[ $onParamsChanged ]", function () {
+      describe("[ onParamsChanged ]", function () {
         beforeEach(() => (dynlog = ""));
         it("should be called when dynamic parameter values change", async () => {
           await $state.go(".", { searchDyn: "sd2" });
@@ -1146,7 +1146,7 @@ describe("$state", () => {
           expect(paramsChangedLog).toBe("config,configDyn;");
         });
 
-        it("should be called, when reactivating the $onParamsChanged state, if a dynamic parameter changed", async () => {
+        it("should be called, when reactivating the onParamsChanged state, if a dynamic parameter changed", async () => {
           await initStateTo(childNoParam, {
             path: "p1",
             pathDyn: "pd1",
@@ -1160,7 +1160,7 @@ describe("$state", () => {
           expect(paramsChangedLog).toBe("pathDyn;");
         });
 
-        it('should not be called, when reactivating the $onParamsChanged state "dyn", if any of dyns non-dynamic parameters changed', async () => {
+        it('should not be called, when reactivating the onParamsChanged state "dyn", if any of dyns non-dynamic parameters changed', async () => {
           await initStateTo(childNoParam, {
             path: "p1",
             pathDyn: "pd1",
@@ -1188,7 +1188,7 @@ describe("$state", () => {
           );
         });
 
-        it("should be called on all active controllers that have a $onParamsChanged", async () => {
+        it("should be called on all active controllers that have a onParamsChanged", async () => {
           await initStateTo(childWithParam, {
             path: "p1",
             pathDyn: "pd1",
@@ -1334,7 +1334,7 @@ describe("$state", () => {
         err = "Could not resolve '^.Z' from state 'DD'";
 
       await $state
-        .transitionTo("^.Z", null, { relative: $state.$current })
+        .transitionTo("^.Z", null, { relative: $state._current })
         .catch(function (err) {
           actual = err;
         });

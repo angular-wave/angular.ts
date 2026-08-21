@@ -131,7 +131,7 @@ through the `RestCacheStore` methods and should treat it as opaque.
 
 When the default HTTP backend is used, request data is serialized by `$http`.
 Scope proxies are deproxied before JSON serialization, so proxy helper
-properties such as `$target`, `$handler`, and `$proxy` are not sent to the
+properties such as `_target`, `_handler`, and `_proxy` are not sent to the
 server. AngularTS-generated repeat identity is stored in internal metadata, not
 on the object, so it is not included in write payloads either.
 

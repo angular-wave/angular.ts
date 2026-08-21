@@ -22,7 +22,7 @@ class StateRegistryRuntime {
         this._matcher = new StateMatcher(this._states);
         this._builder = new StateBuilder(this._matcher, routerState, compileRegistry);
         this._queue = [];
-        this.registerRoot();
+        this._registerRoot();
         routerState._currentState = this._root;
         routerState._current = routerState._currentState.self;
     }
@@ -46,9 +46,9 @@ class StateRegistryRuntime {
         });
     }
     /**
-     * @private
+     * @internal
      */
-    registerRoot() {
+    _registerRoot() {
         const rootStateDef = {
             name: "",
             url: "^",

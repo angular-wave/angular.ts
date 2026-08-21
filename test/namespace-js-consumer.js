@@ -182,7 +182,7 @@ export const tileClassValue = ["tile", tileClasses];
  * @param {ng.Scope} $scope
  */
 export function batchScopeUpdate($scope) {
-  return $scope.$batch(() => {
+  return $scope.batch(() => {
     $scope.status = "playing";
 
     return $scope.status;

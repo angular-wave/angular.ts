@@ -171,7 +171,7 @@ describe("$interpolate", () => {
     expect(interpolateFn.exp).toBe("Hello {{name}}!");
     expect(interpolateFn.expressions).toEqual(["name"]);
 
-    const scope = $rootScope.$new();
+    const scope = $rootScope.new();
 
     scope.name = "Bubu";
 
@@ -199,7 +199,7 @@ describe("$interpolate", () => {
     it("correctly returns new value", async () => {
       const interp = $interpolate("{{expr}}");
 
-      $rootScope.$watch("expr", () => {
+      $rootScope.watch("expr", () => {
         /* empty */
       });
       $rootScope.expr = 42;
@@ -446,7 +446,7 @@ describe("$interpolate", () => {
     });
 
     it("should NOT interpolate non-trusted expressions", async () => {
-      const scope = $rootScope.$new();
+      const scope = $rootScope.new();
 
       scope.foo = "foo";
       await wait();

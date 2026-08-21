@@ -620,7 +620,7 @@ describe("custom runtime", () => {
 
   it("registers high-level injectables as services through provider factories", () => {
     class RestProvider {
-      $get = () => (url, entityClass, options) => ({
+      get = () => (url, entityClass, options) => ({
         type: "rest",
         url,
         entityClass,
@@ -629,7 +629,7 @@ describe("custom runtime", () => {
     }
 
     class WorkerProvider {
-      $get = () => (scriptPath, config) => ({
+      get = () => (scriptPath, config) => ({
         type: "worker",
         scriptPath,
         config,
@@ -637,17 +637,17 @@ describe("custom runtime", () => {
     }
 
     class WasmProvider {
-      $get = () => ({
+      get = () => ({
         load: (config) => ({ type: "wasm", config }),
       });
     }
 
     class SseProvider {
-      $get = () => (url, config) => ({ type: "sse", url, config });
+      get = () => (url, config) => ({ type: "sse", url, config });
     }
 
     class WebSocketProvider {
-      $get = () => (url, config) => ({
+      get = () => (url, config) => ({
         type: "websocket",
         url,
         config,
@@ -655,7 +655,7 @@ describe("custom runtime", () => {
     }
 
     class WebTransportProvider {
-      $get = () => (url, config) => ({
+      get = () => (url, config) => ({
         type: "webTransport",
         url,
         config,
@@ -758,7 +758,7 @@ describe("custom runtime", () => {
 
   it("resolves high-level transport/service options from injectables", () => {
     class RestProvider {
-      $get = () => (url, entityClass, options) => ({
+      get = () => (url, entityClass, options) => ({
         type: "rest",
         url,
         entityClass,
@@ -767,11 +767,11 @@ describe("custom runtime", () => {
     }
 
     class SseProvider {
-      $get = () => (url, config) => ({ type: "sse", url, config });
+      get = () => (url, config) => ({ type: "sse", url, config });
     }
 
     class WebSocketProvider {
-      $get = () => (url, config) => ({
+      get = () => (url, config) => ({
         type: "websocket",
         url,
         config,
@@ -779,7 +779,7 @@ describe("custom runtime", () => {
     }
 
     class WebTransportProvider {
-      $get = () => (url, config) => ({
+      get = () => (url, config) => ({
         type: "webTransport",
         url,
         config,
@@ -787,7 +787,7 @@ describe("custom runtime", () => {
     }
 
     class WorkerProvider {
-      $get = () => (scriptPath, config) => ({
+      get = () => (scriptPath, config) => ({
         type: "worker",
         scriptPath,
         config,
@@ -795,7 +795,7 @@ describe("custom runtime", () => {
     }
 
     class WasmProvider {
-      $get = () => ({
+      get = () => ({
         load: (config) => ({ type: "wasm", config }),
       });
     }
@@ -1054,7 +1054,7 @@ describe("custom runtime", () => {
       },
     });
 
-    expect(definition.angular.$rootScope).toBeDefined();
+    expect(definition.angular.rootScope).toBeDefined();
     expect(definition.injector.get("labelService").value).toBe(
       "custom runtime service",
     );
@@ -1074,9 +1074,7 @@ describe("custom runtime", () => {
     await wait();
     await wait();
 
-    expect(getScope(element).$parent.$id).toBe(
-      definition.angular.$rootScope.$id,
-    );
+    expect(getScope(element).parent.id).toBe(definition.angular.rootScope.id);
     expect(element.shadowRoot.textContent).toContain(
       "Standalone / 2 / custom runtime service",
     );

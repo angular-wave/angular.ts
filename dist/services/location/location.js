@@ -7,7 +7,7 @@ const PATH_MATCH = /^([^?#]*)(\?([^#]*))?(#(.*))?$/;
 const $locationError = createErrorFactory("$location");
 const locationCleanupByRootElement = new WeakMap();
 /**
- * @ignore
+ * @internal
  */
 function isLinkRewritingEnabled(rewriteLinks) {
     return !!rewriteLinks;
@@ -327,14 +327,13 @@ class LocationRuntimeState {
             },
         };
         this._urlChangeListeners = [];
-        /** @private */
         this._urlChangeInit = false;
         this._cachedState = null;
         this._lastHistoryState = null;
         this._destroyed = false;
         this._window = browserWindow;
         this._lastBrowserUrl = browserWindow.location.href;
-        this.cacheState();
+        this._cacheState();
     }
     /// ///////////////////////////////////////////////////////////
     // URL API
@@ -358,7 +357,7 @@ class LocationRuntimeState {
             this._lastBrowserUrl = url;
             this._lastHistoryState = state;
             this._window.history.pushState(state, "", url);
-            this.cacheState();
+            this._cacheState();
         }
         return this;
     }
@@ -381,9 +380,9 @@ class LocationRuntimeState {
     /**
      * Caches the current state.
      *
-     * @private
+     * @internal
      */
-    cacheState() {
+    _cacheState() {
         const currentState = this._window.history.state ?? null;
         if (!equals(currentState, this.lastCachedState)) {
             this._cachedState = currentState;
@@ -397,7 +396,7 @@ class LocationRuntimeState {
      */
     _fireStateOrUrlChange() {
         const prevLastHistoryState = this._lastHistoryState;
-        this.cacheState();
+        this._cacheState();
         if (this._lastBrowserUrl === this.getBrowserUrl() &&
             prevLastHistoryState === this._cachedState) {
             return;
@@ -463,7 +462,7 @@ class LocationRuntimeState {
                 $exceptionHandler(err);
             }
         };
-        const broadcastRootScopeEvent = (name, ...args) => $rootScope.$broadcast(name, ...args);
+        const broadcastRootScopeEvent = (name, ...args) => $rootScope.broadcast(name, ...args);
         const clickHandler = ((event) => {
             const { rewriteLinks } = this.config.html5Mode;
             // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
@@ -529,7 +528,7 @@ class LocationRuntimeState {
         };
         this._serviceCleanup = cleanupLocation;
         locationCleanupByRootElement.set($rootElement, cleanupLocation);
-        $rootScope.$on("$destroy", () => {
+        $rootScope.on("$destroy", () => {
             cleanupLocation();
         });
         // rewrite hashbang url <> html5 url
@@ -603,7 +602,7 @@ class LocationRuntimeState {
         };
         $location._updateBrowser = updateBrowser;
         updateBrowser();
-        $rootScope.$on("$updateBrowser", updateBrowser);
+        $rootScope.on("$updateBrowser", updateBrowser);
         return $location;
         function afterLocationChange(oldUrl, oldState) {
             if (destroyed)
@@ -656,7 +655,7 @@ function applyLocationConfiguration(state, config) {
  * ///////////////////////////
  */
 /**
- * @ignore
+ * @internal
  * Encodes a URL path by encoding each path segment individually using `encodeUriSegment`,
  * while preserving forward slashes (`/`) as segment separators.
  *
@@ -692,7 +691,7 @@ function encodePath(path) {
     return segments.join("/");
 }
 /**
- * @ignore
+ * @internal
  * Decodes each segment of a URL path.
  *
  * Splits the input path by "/", decodes each segment using decodeURIComponent,
@@ -716,7 +715,7 @@ function decodePath(path, html5Mode) {
     return segments.join("/");
 }
 /**
- * @ignore
+ * @internal
  * Normalizes a URL path by encoding the path segments, query parameters, and hash fragment.
  *
  * - Path segments are encoded using `encodePath`, which encodes each segment individually.
@@ -749,7 +748,7 @@ function normalizePath(pathValue, searchValue, hashValue) {
     return path + (search ? `?${search}` : "") + hash;
 }
 /**
- * @ignore
+ * @internal
  * Parses an application URL into isolated path, search, and hash values.
  *
  * @param url - The URL string to parse.
@@ -780,7 +779,7 @@ function parseAppUrl(url, html5Mode) {
     };
 }
 /**
- * @ignore
+ * @internal
  * Returns the substring of `url` after the `base` string if `url` starts with `base`.
  * Returns `undefined` if `url` does not start with `base`.
  * @returns Text from `url` after `base`, or `undefined` if it does not begin with the expected string.
@@ -792,7 +791,7 @@ function stripBaseUrl(base, url) {
     return undefined;
 }
 /**
- * @ignore
+ * @internal
  * Removes the hash fragment (including the '#') from the given URL string.
  *
  * @param url - The URL string to process.
@@ -803,7 +802,7 @@ function stripHash(url) {
     return index === -1 ? url : url.substring(0, index);
 }
 /**
- * @ignore
+ * @internal
  * Removes the file name (and any hash) from a URL, returning the base directory path.
  *
  * For example:
@@ -820,7 +819,7 @@ function stripFile(url) {
     return url.substring(0, stripHash(url).lastIndexOf("/") + 1);
 }
 /**
- * @ignore
+ * @internal
  * Extracts the base server URL (scheme, host, and optional port) from a full URL.
  *
  * If no path is present, returns the full URL.
@@ -841,7 +840,7 @@ function serverBase(url) {
     return slashIndex === -1 ? url : url.substring(0, slashIndex);
 }
 /**
- * @ignore
+ * @internal
  * Determines if two URLs are equal despite potential differences in encoding,
  * trailing slashes, or empty hash fragments, such as between $location.absUrl() and $browser.url().
  *
@@ -853,7 +852,7 @@ function urlsEqual(x, y) {
     return normalizeUrl(x) === normalizeUrl(y);
 }
 /**
- * @ignore
+ * @internal
  * Normalizes a URL by resolving it via a DOM anchor element,
  * removing trailing slashes (except root), and trimming empty hashes.
  *

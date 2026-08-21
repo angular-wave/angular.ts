@@ -49,7 +49,7 @@ describe("view hooks", () => {
       "$rootScope",
       (_$state_, $compile, $rootScope) => {
         $state = _$state_;
-        $compile("<div><ng-view></ng-view></div>")($rootScope.$new());
+        $compile("<div><ng-view></ng-view></div>")($rootScope.new());
       },
     ]);
   });
@@ -62,7 +62,7 @@ describe("view hooks", () => {
     );
   }
 
-  describe("$canExit", () => {
+  describe("canExit", () => {
     beforeEach(() => {
       log = "";
     });
@@ -76,7 +76,7 @@ describe("view hooks", () => {
 
     it("can cancel a transition that would exit the view's state by returning false", async () => {
       $state._defaultErrorHandler = function () {};
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += "canexit;";
 
         return false;
@@ -89,7 +89,7 @@ describe("view hooks", () => {
     });
 
     it("can allow the transition by returning true", async () => {
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += "canexit;";
 
         return true;
@@ -103,7 +103,7 @@ describe("view hooks", () => {
     });
 
     it("can allow the transition by returning nothing", async () => {
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += "canexit;";
       };
       await initial();
@@ -115,7 +115,7 @@ describe("view hooks", () => {
     });
 
     it("can redirect the transition", async () => {
-      ctrl.prototype.$canExit = function (trans) {
+      ctrl.prototype.canExit = function (trans) {
         log += "canexit;";
 
         return $state.target("baz");
@@ -129,7 +129,7 @@ describe("view hooks", () => {
     });
 
     it("can cancel the transition by returning a rejected promise", async () => {
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += "canexit;";
 
         return false;
@@ -145,7 +145,7 @@ describe("view hooks", () => {
 
     it("can wait for a promise and then reject the transition", async () => {
       $state._defaultErrorHandler = function () {};
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += "canexit;";
 
         return new Promise((resolve) => {
@@ -164,7 +164,7 @@ describe("view hooks", () => {
     });
 
     it("can wait for a promise and then allow the transition", async () => {
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += "canexit;";
 
         return new Promise((resolve) => {
@@ -183,7 +183,7 @@ describe("view hooks", () => {
     });
 
     it("has 'this' bound to the controller", async () => {
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += this.data;
       };
       await initial();
@@ -197,7 +197,7 @@ describe("view hooks", () => {
     it("receives the new Transition as the first argument", async () => {
       const _state = $state;
 
-      ctrl.prototype.$canExit = function (trans) {
+      ctrl.prototype.canExit = function (trans) {
         log += "canexit;";
         expect(trans._treeChanges).toBeDefined();
         // expect(trans.injector().get("$state")).toBe(_state);
@@ -211,7 +211,7 @@ describe("view hooks", () => {
     });
 
     it("should trigger once when answered truthy even if redirected", async () => {
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += "canexit;";
 
         return true;
@@ -225,7 +225,7 @@ describe("view hooks", () => {
     });
 
     it("should trigger only once if returns a redirect", async () => {
-      ctrl.prototype.$canExit = function () {
+      ctrl.prototype.canExit = function () {
         log += "canexit;";
 
         return $state.target("bar");

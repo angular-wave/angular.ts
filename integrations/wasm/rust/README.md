@@ -13,7 +13,10 @@ The integration is strict by default:
   shapes at compile time once the procedural macros are implemented.
 - Raw JavaScript interop is isolated behind explicit unsafe APIs.
 - Public API coverage is tracked against the published AngularTS `ng`
-  namespace in [NG_NAMESPACE_PARITY.md](NG_NAMESPACE_PARITY.md).
+namespace in [NG_NAMESPACE_PARITY.md](NG_NAMESPACE_PARITY.md).
+
+Generated model contract descriptions are preserved as Rustdoc from the shared
+JSON contract manifest.
 - The guest exports `ng_abi_version` so incompatible host and facade builds
   fail before scope binding.
 
@@ -27,6 +30,15 @@ WebSocket/SSE, core `$rest` resource APIs, and `$machine` state-machine
 facades. `$worker` exposes managed `WorkerHandle` lifecycle, correlated JSON
 requests, model synchronization channels, typed restart configuration, and
 native message/error subscriptions for browser Wasm applications.
+
+## Programmatic Views
+
+`ComponentMetadata::view(...)` registers a Rust export as a component view.
+Wasm builds expose `ComponentViewContext` and `ComponentViewTags`; the former
+reads the controller, scope, host element, and transclusion callback, while the
+latter delegates real-DOM construction to `angular.tags`. View exports return
+`JsValue`, allowing DOM nodes and supported reactive children to cross the
+`wasm-bindgen` boundary.
 
 ## Scope ABI And App Models
 
@@ -88,16 +100,16 @@ app.controller("SessionCtrl", class {
 
   constructor(session, rustRuntimeSync, $scope) {
     this.session = session;
-    const stopSync = session.$sync(rustRuntimeSync);
+    const stopSync = session.sync(rustRuntimeSync);
 
-    $scope.$on("$destroy", stopSync);
+    $scope.on("$destroy", stopSync);
   }
 });
 ```
 
 The Rust facade should not add model handles or model watch imports to the raw
 Wasm ABI yet. Use `WasmScope` for view scopes; use `app.model(...)` plus
-`$sync()` targets for app state that must survive root destruction, coordinate
+`sync()` targets for app state that must survive root destruction, coordinate
 multiple roots, or synchronize with storage, workers, engines, machines,
 workflows, or network services.
 

@@ -29,7 +29,7 @@ export function ngChannelDirective(
         (value: unknown) => {
           if (hasTemplateContent) {
             if (isObject(value)) {
-              scope.$merge(value);
+              scope.merge(value);
             }
           } else {
             element.innerHTML = isString(value) ? value : JSON.stringify(value);

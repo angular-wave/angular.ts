@@ -19,7 +19,7 @@ describe("ng-style", () => {
       "$rootScope",
       "$compile",
       ($rootScope, _$compile_) => {
-        $scope = $rootScope.$new();
+        $scope = $rootScope.new();
         $compile = _$compile_;
       },
     ]);

@@ -10,217 +10,599 @@ Statuses:
 - `planned`: tracked but not implemented yet.
 - `unsupported`: intentionally unavailable with a reason in the roadmap.
 
-| ng type | Scala.js status |
-| --- | --- |
-| `Angular` | manual |
-| `AnnotatedDirectiveFactory` | manual |
-| `Component` | manual |
-| `Controller` | manual |
-| `ClassMap` | manual |
-| `ClassValue` | manual |
-| `Directive` | manual |
-| `DirectiveRestrict` | manual |
-| `DirectiveFactory` | manual |
-| `NgModule` | manual |
-| `RouterModule` | planned |
-| `LinkFn` | manual |
-| `Scope` | manual |
-| `TranscludeFn` | manual |
-| `AriaConfig` | manual |
-| `InterpolateConfig` | manual |
-| `AngularService` | planned |
-| `ScopeService` | planned |
-| `RootScopeService` | planned |
-| `ElementService` | planned |
-| `RootElementService` | planned |
-| `DocumentService` | planned |
-| `WindowService` | planned |
-| `AnchorScrollService` | manual |
-| `AnimateService` | manual |
-| `AnimationHandle` | manual |
-| `AnimationContext` | manual |
-| `AnimationLifecycleCallback` | manual |
-| `AriaService` | manual |
-| `CompileService` | manual |
-| `ControllerService` | manual |
-| `CookieService` | manual |
-| `EventBusService` | manual |
-| `ExceptionHandlerService` | manual |
-| `HtmlCanvasConfig` | manual |
-| `HtmlCanvasRuntimeSupport` | planned |
-| `HtmlCanvasService` | planned |
-| `FilterFn` | manual |
-| `FilterFactory` | manual |
-| `FilterService` | manual |
-| `EntryFilterItem` | manual |
-| `CurrencyFilterOptions` | manual |
-| `HttpParamSerializerService` | manual |
-| `HttpService` | manual |
-| `InjectorService` | manual |
-| `InjectionTokenMap` | planned |
-| `Model` | planned |
-| `ModelChange` | planned |
-| `ModelRestoreOptions` | planned |
-| `ModelSyncFailureMode` | planned |
-| `ModelSyncOptions` | planned |
-| `ModelSyncTarget` | planned |
-| `InterpolateService` | manual |
-| `LocationService` | manual |
-| `LogBeaconConfig` | planned |
-| `LogBeaconSerializer` | planned |
-| `LogEntry` | planned |
-| `LogLevel` | planned |
-| `LogService` | manual |
-| `MachineService` | manual |
-| `StorageService` | planned |
-| `WorkflowService` | manual |
-| `WorkflowSupervisorService` | planned |
-| `ParseService` | manual |
-| `Policy` | planned |
-| `PolicyContext` | planned |
-| `PolicyDecision` | planned |
-| `EventBusConfig` | manual |
-| `EventDeliveryPolicy` | manual |
-| `EventDeliveryPolicyContext` | manual |
-| `SceService` | manual |
-| `SceDelegateService` | manual |
-| `SseService` | manual |
-| `SseConfig` | manual |
-| `SseConnection` | manual |
-| `SecurityPolicy` | planned |
-| `SecurityConfig` | planned |
-| `SecurityCredentialsConfig` | planned |
-| `StateRegistryService` | planned |
-| `ServiceWorkerService` | manual |
-| `RealtimeProtocolEventDetail` | manual |
-| `RealtimeProtocolMessage` | manual |
-| `SwapMode` | manual |
-| `TemplateCacheService` | manual |
-| `TemplateRequestService` | manual |
-| `TransitionsService` | manual |
-| `WorkerService` | manual |
-| `AnnotatedFactory` | manual |
-| `AnimationOptions` | manual |
-| `AnimationPhase` | manual |
-| `AnimationPreset` | manual |
-| `AnimationPresetHandler` | manual |
-| `AnimationResult` | manual |
-| `AngularElementDefinition` | manual |
-| `AngularElementModuleOptions` | manual |
-| `AngularElementOptions` | manual |
-| `ControllerConstructor` | manual |
-| `CookieOptions` | manual |
-| `CookieStoreOptions` | manual |
-| `EntityClass` | manual |
-| `ErrorHandlingConfig` | manual |
-| `Expression` | manual |
-| `HttpMethod` | manual |
-| `HttpDefaults` | manual |
-| `HttpResponse` | manual |
-| `HttpResponseStatus` | manual |
-| `Injectable` | manual |
-| `ProviderDefinition` | planned |
-| `InterpolationFunction` | manual |
-| `ListenerFn` | manual |
-| `Machine` | manual |
-| `MachineContract` | planned |
-| `MachineConfig` | planned |
-| `MachineSnapshot` | manual |
-| `MachineSendResult` | manual |
-| `MachineSendStatus` | manual |
-| `Workflow` | manual |
-| `WorkflowContract` | manual |
-| `WorkflowCommand` | manual |
-| `WorkflowCommandContract` | manual |
-| `WorkflowCommandContext` | manual |
-| `WorkflowCommandDefinition` | manual |
-| `WorkflowResult` | manual |
-| `WorkflowSnapshot` | manual |
-| `WorkflowSupervisor` | manual |
-| `WorkflowSupervisorConfig` | manual |
-| `WorkflowSupervisorPersistenceConfig` | manual |
-| `WorkflowSupervisorPersistence` | manual |
-| `WorkflowSupervisorSnapshot` | manual |
-| `NgModelController` | manual |
-| `HttpRequestConfig` | manual |
-| `HttpRequestOptions` | manual |
-| `RestFactory` | manual |
-| `RestBackend` | manual |
-| `RestCachePolicy` | manual |
-| `RestCachePolicyContext` | manual |
-| `RestCacheStore` | manual |
-| `RestCacheStrategy` | manual |
-| `RestOptions` | manual |
-| `RestRequest` | manual |
-| `RestResponse` | manual |
-| `RestRevalidateEvent` | manual |
-| `CachedRestBackendOptions` | manual |
-| `RestService` | manual |
-| `ScopeEvent` | manual |
-| `RouterModuleDeclaration` | manual |
-| `RouterConfig` | manual |
-| `RouteContract` | manual |
-| `RouteMap` | manual |
-| `RoutesOf` | planned |
-| `ParamsOf` | planned |
-| `ResolvesOf` | planned |
-| `StateService` | manual |
-| `StateDeclaration` | manual |
-| `StatePolicyDeclaration` | manual |
-| `StorageBackend` | manual |
-| `StorageType` | manual |
-| `ConnectionConfig` | manual |
-| `ConnectionEvent` | manual |
-| `ServiceWorkerConfig` | manual |
-| `ServiceWorkerErrorCode` | manual |
-| `ServiceWorkerMessageEvent` | manual |
-| `ServiceWorkerMessageTarget` | manual |
-| `ServiceWorkerPostOptions` | planned |
-| `ServiceWorkerRegistrationState` | manual |
-| `ServiceWorkerRequestOptions` | manual |
-| `ServiceWorkerUpdateState` | manual |
-| `StreamService` | manual |
-| `Transition` | manual |
-| `TransitionRouteContract` | planned |
-| `Validator` | manual |
-| `ElementScopeOptions` | manual |
-| `AppComponentOptions` | manual |
-| `ScopeElement` | manual |
-| `ScopeElementConstructor` | manual |
-| `WebComponentContext` | manual |
-| `WebComponentConfig` | planned |
-| `WebComponentInput` | manual |
-| `WebComponentInputConfig` | manual |
-| `WebComponentInputs` | manual |
-| `WebComponentService` | manual |
-| `WebSocketConfig` | manual |
-| `WebSocketConnection` | manual |
-| `WebSocketService` | manual |
-| `WebTransportBufferInput` | manual |
-| `WebTransportConfig` | manual |
-| `WebTransportConnection` | manual |
-| `WebTransportDatagramEvent` | manual |
-| `WebTransportReconnectEvent` | manual |
-| `WebTransportRetryDelay` | manual |
-| `WebTransportService` | manual |
-| `WorkerConfig` | manual |
-| `WorkerError` | manual |
-| `WorkerErrorCode` | planned |
-| `WorkerHandle` | manual |
-| `WorkerModelMessage` | planned |
-| `WorkerRequest` | planned |
-| `WorkerRequestOptions` | planned |
-| `WorkerResponse` | planned |
-| `WorkerStatus` | manual |
-| `WasmBinding` | planned |
-| `WasmBindingOptions` | planned |
-| `WasmCompileOptions` | planned |
-| `WasmError` | planned |
-| `WasmErrorCode` | planned |
-| `WasmErrorStage` | planned |
-| `WasmLoadOptions` | planned |
-| `WasmResource` | planned |
-| `WasmResourceStatus` | planned |
-| `WasmService` | manual |
-| `WasmSource` | planned |
-| `WasmTarget` | planned |
+| ng type | AngularTS contract | Scala.js status |
+| --- | --- | --- |
+| `Angular` | Main AngularTS runtime entry point with the full built-in `ng` module configured by default. | manual |
+| `AnnotatedDirectiveFactory` | Public AngularTS AnnotatedDirectiveFactory contract exposed through the ng namespace. | manual |
+| `Component` | Defines a component's configuration object (a simplified directive definition object). | manual |
+| `ComponentView` | Programmatic real-DOM factory used instead of a component template. | planned |
+| `ComponentViewChild` | DOM content accepted from programmatic component and directive views. Functions are reactive child readers, arrays are flattened recursively, and existing nodes are moved rather than cloned. `null`, `undefined`, and `false` render no DOM content. Document fragments contribute their children. | planned |
+| `ComponentViewContext` | Runtime context passed to a component's programmatic view. | planned |
+| `ComponentViewPrimitive` | Primitive text value accepted as a programmatic view child. | planned |
+| `ComponentViewProperties` | Typed DOM properties plus arbitrary attribute and custom-element values. | planned |
+| `ComponentViewPropertyValue` | Property, attribute, event listener, or reactive property reader accepted by a programmatic view tag factory. | planned |
+| `ComponentViewTag` | Factory that creates one real DOM element without parsing HTML. | planned |
+| `ComponentViewTags` | Typed HTML tag factories. Calling the object with a namespace URI returns factories for namespaced elements such as SVG and MathML. | planned |
+| `Controller` | AngularTS component lifecycle interface. Directive controllers have a well-defined lifecycle. Each controller can implement "lifecycle hooks". These are methods that will be called by Angular at certain points in the life cycle of the directive. https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks https://docs.angularjs.org/guide/component | manual |
+| `ClassMap` | Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values add the class; `false`, `null`, and `undefined` remove it. | manual |
+| `ClassValue` | Public shape accepted by `ng-class` for class binding expressions. | manual |
+| `Directive` | Defines the structure of an AngularTS directive. | manual |
+| `DirectiveRestrict` | Supported directive matching locations. | manual |
+| `DirectiveFactory` | Public AngularTS DirectiveFactory contract exposed through the ng namespace. | manual |
+| `DirectiveFactoryFn` | Public AngularTS DirectiveFactoryFn contract exposed through the ng namespace. | planned |
+| `DirectiveCompileFn` | A compile function used to prepare directives before linking. | planned |
+| `DirectiveController` | A controller instance or object map used in directives. | planned |
+| `DirectiveLinkFn` | Public AngularTS DirectiveLinkFn contract exposed through the ng namespace. | planned |
+| `DirectivePrePost` | Defines optional pre/post link functions in directive compile phase. | planned |
+| `DirectiveView` | Programmatic real-DOM factory used instead of a directive template. | planned |
+| `DirectiveViewContext` | Runtime context passed to a directive's programmatic view. | planned |
+| `NgModule` | Modules are collections of application configuration information for components: controllers, directives, filters, etc. They provide recipes for the injector to do the actual instantiation. A module itself has no behaviour but only state. A such, it acts as a data structure between the Angular instance and the injector service. | manual |
+| `RouterModule` | Public AngularTS RouterModule contract exposed through the ng namespace. | planned |
+| `LinkFn` | A function returned by the `$compile` service that links a compiled template to a scope. | manual |
+| `Scope` | Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior. | manual |
+| `TranscludeFn` | A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive. | manual |
+| `AriaConfig` | Public AngularTS AriaConfig contract exposed through the ng namespace. | manual |
+| `InterpolateConfig` | Delimiter configuration accepted by `NgModule.config()`. | manual |
+| `AngularService` | Main AngularTS runtime entry point with the full built-in `ng` module configured by default. | planned |
+| `ScopeService` | Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior. | planned |
+| `RootScopeService` | Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior. | planned |
+| `ElementService` | **`Element`** is the most general base class from which all element objects (i.e., objects that represent elements) in a Document inherit. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element) | planned |
+| `RootElementService` | The **`HTMLElement`** interface represents any HTML element. [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement) | planned |
+| `DocumentService` | The **`Document`** interface represents any web page loaded in the browser and serves as an entry point into the web page's content, which is the DOM tree. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document) | planned |
+| `WindowService` | The **`Window`** interface represents a window containing a DOM document; the `document` property points to the DOM document loaded in that window. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window) | planned |
+| `AnchorScrollService` | Public AngularTS AnchorScrollService contract exposed through the ng namespace. | manual |
+| `AnimateService` | Public AngularTS AnimateService contract exposed through the ng namespace. | manual |
+| `AnimationHandle` | Public AngularTS AnimationHandle contract exposed through the ng namespace. | manual |
+| `AnimationContext` | Public AngularTS AnimationContext contract exposed through the ng namespace. | manual |
+| `AnimationLifecycleCallback` | Public AngularTS AnimationLifecycleCallback contract exposed through the ng namespace. | manual |
+| `AriaService` | Public AngularTS AriaService contract exposed through the ng namespace. | manual |
+| `CompileService` | Entry point for the `$compile` service. | manual |
+| `ControllerService` | Public AngularTS ControllerService contract exposed through the ng namespace. | manual |
+| `CookieService` | High-level API for reading, writing, serializing, and removing browser cookies through the injectable `$cookie` service. | manual |
+| `EventBusService` | Application-wide asynchronous publish/subscribe utility. `EventBus` powers `$eventBus` for cross-boundary domain events, browser callbacks, worker messages, realtime messages, and non-Angular integrations. It is intentionally not a state store and should not replace scope events for parent/child scope-tree communication. | manual |
+| `ExceptionHandlerService` | A callback type for handling errors. | manual |
+| `HtmlCanvasConfig` | Declarative config accepted by `NgModule.config({ $htmlCanvas: ... })`. The integration is disabled by default and has no AngularTS fallback. | manual |
+| `HtmlCanvasRuntimeSupport` | Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the ng namespace. | planned |
+| `HtmlCanvasService` | Public AngularTS HtmlCanvasService contract exposed through the ng namespace. | planned |
+| `FilterFn` | Public AngularTS FilterFn contract exposed through the ng namespace. | manual |
+| `FilterFactory` | Public AngularTS FilterFactory contract exposed through the ng namespace. | manual |
+| `FilterService` | Public AngularTS FilterService contract exposed through the ng namespace. | manual |
+| `EntryFilterItem` | Public AngularTS EntryFilterItem contract exposed through the ng namespace. | manual |
+| `CurrencyFilterOptions` | Public AngularTS CurrencyFilterOptions contract exposed through the ng namespace. | manual |
+| `HttpParamSerializerService` | Function that serializes query params into a URL-encoded string. | manual |
+| `HttpService` | Runtime surface of the `$http` service. Call the service directly with a full HttpRequestConfig, or use a shorthand method for common HTTP verbs. All methods return an `Promise<HttpResponse<T>>` that resolves for successful 2xx responses and rejects with HttpError for errors. | manual |
+| `InjectorService` | Injector for factories and services | manual |
+| `InjectionTokenMap` | Public injectable contracts keyed by their canonical runtime token. Every single-dollar token exposed by [[PublicInjectionTokens]] must map to a named, documented contract here. Double-dollar framework internals are intentionally excluded. | planned |
+| `Model` | Public AngularTS Model contract exposed through the ng namespace. | planned |
+| `ModelChange` | Public AngularTS ModelChange contract exposed through the ng namespace. | planned |
+| `ModelRestoreOptions` | Public AngularTS ModelRestoreOptions contract exposed through the ng namespace. | planned |
+| `ModelSyncFailureMode` | Public AngularTS ModelSyncFailureMode contract exposed through the ng namespace. | planned |
+| `ModelSyncOptions` | Public AngularTS ModelSyncOptions contract exposed through the ng namespace. | planned |
+| `ModelSyncTarget` | Public AngularTS ModelSyncTarget contract exposed through the ng namespace. | planned |
+| `InterpolateService` | Public AngularTS InterpolateService contract exposed through the ng namespace. | manual |
+| `LocationService` | Public AngularTS LocationService contract exposed through the ng namespace. | manual |
+| `LogBeaconConfig` | Declarative remote logging configuration for `navigator.sendBeacon()`. | planned |
+| `LogBeaconSerializer` | Converts a structured log entry into a Beacon-compatible request body. | planned |
+| `LogEntry` | Structured record passed to a configured Beacon serializer. | planned |
+| `LogLevel` | Logging severity attached to a structured remote log entry. | planned |
+| `LogService` | Service for logging messages at various levels. | manual |
+| `MachineService` | Public AngularTS MachineService contract exposed through the ng namespace. | manual |
+| `StorageService` | Creates a proxy that automatically persists an object's state into a storage backend whenever a property is set. The proxy also restores previously serialized state on creation and persists deletions in addition to property assignments. | planned |
+| `WorkflowService` | Public AngularTS WorkflowService contract exposed through the ng namespace. | manual |
+| `WorkflowSupervisorService` | Public AngularTS WorkflowSupervisorService contract exposed through the ng namespace. | planned |
+| `ParseService` | Parses a string or expression function into a compiled expression. | manual |
+| `Policy` | Public AngularTS Policy contract exposed through the ng namespace. | planned |
+| `PolicyContext` | Public AngularTS PolicyContext contract exposed through the ng namespace. | planned |
+| `PolicyDecision` | Public AngularTS PolicyDecision contract exposed through the ng namespace. | planned |
+| `EventBusConfig` | Public AngularTS EventBusConfig contract exposed through the ng namespace. | manual |
+| `EventDeliveryPolicy` | Public AngularTS EventDeliveryPolicy contract exposed through the ng namespace. | manual |
+| `EventDeliveryPolicyContext` | Public AngularTS EventDeliveryPolicyContext contract exposed through the ng namespace. | manual |
+| `SceService` | Public AngularTS SceService contract exposed through the ng namespace. | manual |
+| `SceDelegateService` | Public AngularTS SceDelegateService contract exposed through the ng namespace. | manual |
+| `SseService` | $sse service type Returns a managed SSE connection that automatically reconnects when needed. | manual |
+| `SseConfig` | SSE-specific configuration | manual |
+| `SseConnection` | Managed SSE connection object returned by $sse. Provides a safe way to close the connection and stop reconnection attempts. | manual |
+| `SecurityPolicy` | Public AngularTS SecurityPolicy contract exposed through the ng namespace. | planned |
+| `SecurityConfig` | Public AngularTS SecurityConfig contract exposed through the ng namespace. | planned |
+| `SecurityCredentialsConfig` | Public AngularTS SecurityCredentialsConfig contract exposed through the ng namespace. | planned |
+| `StateRegistryService` | Public `$stateRegistry` contract for dynamic route registration. Module-owned static routes should normally use [[NgModule.router]]. Use this service when routes must be added or removed at runtime. | planned |
+| `ServiceWorkerService` | Injectable service-worker lifecycle and messaging facade. | manual |
+| `RealtimeProtocolEventDetail` | Public AngularTS RealtimeProtocolEventDetail contract exposed through the ng namespace. | manual |
+| `RealtimeProtocolMessage` | Public AngularTS RealtimeProtocolMessage contract exposed through the ng namespace. | manual |
+| `SwapMode` | Possible values for `data-swap` and realtime protocol `swap` fields. Union type representing all possible DOM insertion modes. | manual |
+| `TemplateCacheService` | Public contract implemented by the `$templateCache` injectable. | manual |
+| `TemplateRequestService` | Downloads a template using $http and, upon success, stores the contents inside of $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true). | manual |
+| `TransitionsService` | This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started. | manual |
+| `WorkerService` | Injectable factory for typed managed Web Worker connections. | manual |
+| `AnnotatedFactory` | Dependency-annotated factory array used by AngularTS DI system. Example: ['dep1', 'dep2', (dep1, dep2) => new MyController(dep1, dep2)] | manual |
+| `AnimationOptions` | Public AngularTS AnimationOptions contract exposed through the ng namespace. | manual |
+| `AnimationPhase` | Public AngularTS AnimationPhase contract exposed through the ng namespace. | manual |
+| `AnimationPreset` | Public AngularTS AnimationPreset contract exposed through the ng namespace. | manual |
+| `AnimationPresetHandler` | Public AngularTS AnimationPresetHandler contract exposed through the ng namespace. | manual |
+| `AnimationResult` | Public AngularTS AnimationResult contract exposed through the ng namespace. | manual |
+| `AngularElementDefinition` | Runtime metadata returned after defining a standalone custom element. | manual |
+| `AngularElementModuleOptions` | Configuration for the application module that owns the custom element. | manual |
+| `AngularElementOptions` | Options for a standalone AngularTS-backed custom element runtime. | manual |
+| `ControllerConstructor` | A controller constructor function used in AngularTS. | manual |
+| `CookieOptions` | Public AngularTS CookieOptions contract exposed through the ng namespace. | manual |
+| `CookieStoreOptions` | Serialization options for cookie-backed stores. | manual |
+| `EntityClass` | Creates a new entity instance from raw response data. | manual |
+| `ErrorHandlingConfig` | Error configuration object. May only contain the options that need to be updated. | manual |
+| `Expression` | A JavaScript expression represented as a string, typically used in interpolation bindings. Example: ```html <span title="{{ attrBinding }}">{{ textBinding }}</span> ``` | manual |
+| `HttpMethod` | HTTP method accepted by HttpRequestConfig.method. | manual |
+| `HttpDefaults` | Default request settings configured through `app.config({ $http })` and exposed at runtime through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape only includes the fields that the runtime reads from provider-level defaults. https://docs.angularjs.org/api/ng/service/$http#defaults https://docs.angularjs.org/api/ng/service/$http#usage | manual |
+| `HttpResponse` | Response object returned by `$http` requests. | manual |
+| `HttpResponseStatus` | Final transport status reported by transport completion handlers. | manual |
+| `Injectable` | Public AngularTS Injectable contract exposed through the ng namespace. | manual |
+| `ProviderDefinition` | A user-defined service recipe accepted by ng.NgModule.provider. Object recipes define an injectable `get` factory directly. Injectable functions and classes are instantiated first and must produce an object with an injectable `get` factory. | planned |
+| `InterpolationFunction` | Public AngularTS InterpolationFunction contract exposed through the ng namespace. | manual |
+| `ListenerFn` | Public watcher callback shape. The first argument is the resolved watched value. The second argument is the original target object used when the watcher was registered. | manual |
+| `Machine` | Public AngularTS Machine contract exposed through the ng namespace. | manual |
+| `MachineContract` | Labeled type contract carried by a machine definition and instance. | planned |
+| `MachineConfig` | Public AngularTS MachineConfig contract exposed through the ng namespace. | planned |
+| `MachineSnapshot` | Public AngularTS MachineSnapshot contract exposed through the ng namespace. | manual |
+| `MachineSendResult` | Public AngularTS MachineSendResult contract exposed through the ng namespace. | manual |
+| `MachineSendStatus` | Public AngularTS MachineSendStatus contract exposed through the ng namespace. | manual |
+| `Workflow` | Public AngularTS Workflow contract exposed through the ng namespace. | manual |
+| `WorkflowContract` | Labeled type contract carried by a workflow definition and instance. | manual |
+| `WorkflowCommand` | Public AngularTS WorkflowCommand contract exposed through the ng namespace. | manual |
+| `WorkflowCommandContract` | Input and output carried by a workflow command. | manual |
+| `WorkflowCommandContext` | Public AngularTS WorkflowCommandContext contract exposed through the ng namespace. | manual |
+| `WorkflowCommandDefinition` | Public AngularTS WorkflowCommandDefinition contract exposed through the ng namespace. | manual |
+| `WorkflowResult` | Public AngularTS WorkflowResult contract exposed through the ng namespace. | manual |
+| `WorkflowSnapshot` | Public AngularTS WorkflowSnapshot contract exposed through the ng namespace. | manual |
+| `WorkflowSupervisor` | Public AngularTS WorkflowSupervisor contract exposed through the ng namespace. | manual |
+| `WorkflowSupervisorConfig` | Public AngularTS WorkflowSupervisorConfig contract exposed through the ng namespace. | manual |
+| `WorkflowSupervisorPersistenceConfig` | Built-in IndexedDB persistence selected by a workflow supervisor. | manual |
+| `WorkflowSupervisorPersistence` | Public AngularTS WorkflowSupervisorPersistence contract exposed through the ng namespace. | manual |
+| `WorkflowSupervisorSnapshot` | Public AngularTS WorkflowSupervisorSnapshot contract exposed through the ng namespace. | manual |
+| `NgModelController` | Public AngularTS NgModelController contract exposed through the ng namespace. | manual |
+| `HttpRequestConfig` | Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage | manual |
+| `HttpRequestOptions` | Request options shared by the `$http` shortcut methods. See http://docs.angularjs.org/api/ng/service/$http#usage | manual |
+| `RestFactory` | Factory service exposed as `$rest`. Creates a typed RestService for a base URL, optional entity mapper, and optional backend request defaults. | manual |
+| `RestBackend` | Backend abstraction used by RestService. Implement this interface to route REST operations through `$http`, IndexedDB, the Cache API, a test double, or a composed backend such as CachedRestBackend. | manual |
+| `RestCachePolicy` | Public AngularTS RestCachePolicy contract exposed through the ng namespace. | manual |
+| `RestCachePolicyContext` | Public AngularTS RestCachePolicyContext contract exposed through the ng namespace. | manual |
+| `RestCacheStore` | Async cache store used by CachedRestBackend. The interface is deliberately small so implementations can be backed by IndexedDB, the browser Cache API, local storage, memory, or test fixtures. | manual |
+| `RestCacheStrategy` | Cache read strategies shared by HTTP, REST, and router transports. | manual |
+| `RestOptions` | Extra backend options merged into requests made by a REST resource. | manual |
+| `RestRequest` | Normalized request object passed from RestService to a RestBackend. Backends receive expanded URLs and already-separated request options, so they can focus on transport, persistence, or cache policy. | manual |
+| `RestResponse` | Response shape returned by RestBackend implementations. HTTP-backed responses may include the usual HttpResponse metadata, while local or cached backends can return only `data` plus optional cache source metadata. | manual |
+| `RestRevalidateEvent` | Event emitted after a stale-while-revalidate background refresh succeeds. | manual |
+| `CachedRestBackendOptions` | Configuration for CachedRestBackend. | manual |
+| `RestService` | Typed REST resource client backed by RestBackend. A `RestService` is usually created by injecting `$rest` and calling it with a base URL, optional EntityClass, and optional backend request defaults. | manual |
+| `ScopeEvent` | Event object passed to `emit` and `broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods. | manual |
+| `RouterModuleDeclaration` | Module-owned router state tree declaration. Use this with [[NgModule.router]] when a module owns a route subtree. Child state names are relative to their parent unless they contain a dot. | manual |
+| `RouterConfig` | Public AngularTS RouterConfig contract exposed through the ng namespace. | manual |
+| `RouteContract` | Public route contract entry used by router helper types. This is an author-written TypeScript shape. It is intentionally separate from built router state records so generated docs and language bindings do not expose internal state/runtime implementation details. | manual |
+| `RouteMap` | Public route-name to route-contract map used by `StateService`, generic `Transition`, `ParamsOf`, and `ResolvesOf`. | manual |
+| `RoutesOf` | Derives the public route map for a literal `router(...)` tree. | planned |
+| `ParamsOf` | Params declared by one route in a public route map. | planned |
+| `ResolvesOf` | Resolve values declared by one route in a public route map. | planned |
+| `StateService` | Public AngularTS StateService contract exposed through the ng namespace. | manual |
+| `StateDeclaration` | The StateDeclaration object is used to define a state or nested state. #### Example: ```js // StateDeclaration object var foldersState = { name: 'folders', url: '/folders', component: FoldersComponent, resolve: { allfolders: ['FolderService', function(FolderService) { return FolderService.list(); }] }, } registry.register(foldersState); ``` | manual |
+| `StatePolicyDeclaration` | Public AngularTS StatePolicyDeclaration contract exposed through the ng namespace. | manual |
+| `StorageBackend` | Public AngularTS StorageBackend contract exposed through the ng namespace. | manual |
+| `StorageType` | Built-in persistent storage backends understood by `NgModule.store()`. | manual |
+| `ConnectionConfig` | Public AngularTS ConnectionConfig contract exposed through the ng namespace. | manual |
+| `ConnectionEvent` | Public AngularTS ConnectionEvent contract exposed through the ng namespace. | manual |
+| `ServiceWorkerConfig` | Declarative defaults used when registering an application service worker. This config intentionally maps only browser registration options and safe observation policy. Activation, reload, cache strategy, push, and background sync remain explicit application or adapter policy. | manual |
+| `ServiceWorkerErrorCode` | Stable failure codes reported by ServiceWorkerError. | manual |
+| `ServiceWorkerMessageEvent` | Message event normalized by `$serviceWorker`. | manual |
+| `ServiceWorkerMessageTarget` | Explicit message target for `$serviceWorker.post(...)`. | manual |
+| `ServiceWorkerPostOptions` | Options for ServiceWorkerService.post. | planned |
+| `ServiceWorkerRegistrationState` | Template-friendly snapshot of the current registration. | manual |
+| `ServiceWorkerRequestOptions` | Per-request options for ServiceWorkerService.request. | manual |
+| `ServiceWorkerUpdateState` | Template-friendly snapshot of update-related service-worker state. | manual |
+| `StreamService` | Public AngularTS StreamService contract exposed through the ng namespace. | manual |
+| `Transition` | Represents a transition between two states. A transition contains the source and destination states, parameters, resolves, and the states entered or exited during navigation. | manual |
+| `TransitionRouteContract` | Names the destination and source routes carried by a typed transition. | planned |
+| `Validator` | Public AngularTS Validator contract exposed through the ng namespace. | manual |
+| `ElementScopeOptions` | Public AngularTS ElementScopeOptions contract exposed through the ng namespace. | manual |
+| `AppComponentOptions` | Public AngularTS AppComponentOptions contract exposed through the ng namespace. | manual |
+| `ScopeElement` | Native custom element base class backed by an AngularTS child scope. | manual |
+| `ScopeElementConstructor` | Public AngularTS ScopeElementConstructor contract exposed through the ng namespace. | manual |
+| `WebComponentContext` | Public AngularTS WebComponentContext contract exposed through the ng namespace. | manual |
+| `WebComponentConfig` | Application-wide defaults for scoped custom elements. | planned |
+| `WebComponentInput` | Public AngularTS WebComponentInput contract exposed through the ng namespace. | manual |
+| `WebComponentInputConfig` | Public AngularTS WebComponentInputConfig contract exposed through the ng namespace. | manual |
+| `WebComponentInputs` | Public AngularTS WebComponentInputs contract exposed through the ng namespace. | manual |
+| `WebComponentService` | Public AngularTS WebComponentService contract exposed through the ng namespace. | manual |
+| `WebSocketConfig` | WebSocket-specific configuration | manual |
+| `WebSocketConnection` | Managed WebSocket connection returned by $websocket. | manual |
+| `WebSocketService` | Public AngularTS WebSocketService contract exposed through the ng namespace. | manual |
+| `WebTransportBufferInput` | Public AngularTS WebTransportBufferInput contract exposed through the ng namespace. | manual |
+| `WebTransportConfig` | Options passed to `$webTransport`. | manual |
+| `WebTransportConnection` | Managed WebTransport connection returned by `$webTransport`. The connection wraps the browser-native `WebTransport` object and keeps its promise/stream model visible while adding small conveniences for sending bytes, text, datagrams, and unidirectional streams. | manual |
+| `WebTransportDatagramEvent` | Event emitted for each incoming WebTransport datagram. | manual |
+| `WebTransportReconnectEvent` | Event passed to WebTransport reconnect and renegotiation hooks. | manual |
+| `WebTransportRetryDelay` | Delay, in milliseconds, before a reconnect attempt is opened. | manual |
+| `WebTransportService` | Factory function exposed as `$webTransport`. | manual |
+| `WorkerConfig` | Native worker options plus AngularTS decoding and restart policy. | manual |
+| `WorkerError` | Typed failure reported by a managed worker. | manual |
+| `WorkerErrorCode` | Public AngularTS WorkerErrorCode contract exposed through the ng namespace. | planned |
+| `WorkerHandle` | Managed, scope-bindable handle to one page-owned Web Worker. | manual |
+| `WorkerModelMessage` | Standard messages used by WorkerHandle.model. | planned |
+| `WorkerRequest` | Request envelope understood by WorkerHandle.request. | planned |
+| `WorkerRequestOptions` | Options for one correlated worker request. | planned |
+| `WorkerResponse` | Response envelope returned for a correlated worker request. | planned |
+| `WorkerStatus` | Lifecycle state exposed by a managed WorkerHandle. | manual |
+| `WasmBinding` | Active connection between one AngularTS target and a WebAssembly guest. | planned |
+| `WasmBindingOptions` | Options for binding one reactive target to a WebAssembly guest. | planned |
+| `WasmCompileOptions` | Standard WebAssembly compilation options forwarded without translation. | planned |
+| `WasmError` | Structured error raised by the high-level WebAssembly host. | planned |
+| `WasmErrorCode` | Error categories reported by the high-level WebAssembly host. | planned |
+| `WasmErrorStage` | Lifecycle stage at which a WebAssembly operation failed. | planned |
+| `WasmLoadOptions` | Declarative options for loading one WebAssembly module. | planned |
+| `WasmResource` | Loaded WebAssembly module with owned reactive bindings and lifecycle. | planned |
+| `WasmResourceStatus` | Lifecycle state of a WebAssembly resource. | planned |
+| `WasmService` | High-level WebAssembly host service. | manual |
+| `WasmSource` | Source accepted by the WebAssembly loader. | planned |
+| `WasmTarget` | Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior. | planned |
+
+## Public Method Documentation
+
+Descriptions, parameter names, and parameter types are generated from the same TypeScript declarations as the Scala.js parity inventory.
+
+| ng member | Description | Parameters |
+| --- | --- | --- |
+| `Angular.bootstrap` | Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as \`ng-if\`, \`ng-include\`, or \`ng-view\`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. \`\`\`html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> \`\`\` | `element: string \| HTMLElement \| HTMLDocument` - DOM element which is the root of AngularTS application.<br>`modules: ModuleLike[]` - an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a \`config\` block. See \`angular.module()\`. |
+| `Angular.call` | Await result. Accepts a single string: \`"<target>.<expression>"\` | `input: string` - Value supplied for the input parameter. |
+| `Angular.dispatchEvent` | Dispatches an invocation event to either an injectable service or a named scope. The event \`type\` identifies the target and the payload contains the expression to evaluate against that target. | `event: Event` - Value supplied for the event parameter. |
+| `Angular.emit` | Fire-and-forget. Accepts a single string: \`"<target>.<expression>"\` | `input: string` - Value supplied for the input parameter. |
+| `Angular.errorHandlingConfig` | Global framework error-handling configuration. | `config: ErrorHandlingConfig` - Value supplied for the config parameter. |
+| `Angular.getController` | Retrieve the controller instance cached on a compiled DOM element. | `element: Element` - The DOM element to get data from.<br>`name: string` - Controller name. |
+| `Angular.getInjector` | Retrieve the injector cached on a bootstrapped DOM element. | `element: Element` - Value supplied for the element parameter. |
+| `Angular.getNormalizedAttr` | Read an element attribute by normalized directive-style name. | `element: Element \| Node` - Value supplied for the element parameter.<br>`normalizedName: string` - Value supplied for the normalizedName parameter. |
+| `Angular.getNormalizedAttrName` | Return the actual DOM attribute name for a normalized directive-style name. | `element: Element \| Node` - Value supplied for the element parameter.<br>`normalizedName: string` - Value supplied for the normalizedName parameter. |
+| `Angular.getScope` | Retrieve the scope cached on a compiled DOM element. | `element: Element` - The DOM element to get data from. |
+| `Angular.getScopeByName` | Find a scope by its registered \`scopeName\`. | `name: string` - Scope name to search for. |
+| `Angular.hasNormalizedAttr` | Return whether an element has an attribute matching a normalized name. | `element: Element \| Node` - Value supplied for the element parameter.<br>`normalizedName: string` - Value supplied for the normalizedName parameter. |
+| `Angular.init` | Find \`ng-app\` roots under the provided element and bootstrap them. The first root uses this instance. Additional roots are bootstrapped as sub-applications and stored in subapps. | `element: HTMLElement \| HTMLDocument` - Root element or document to scan. |
+| `Angular.injector` | Create a standalone injector without bootstrapping the DOM. | `modules: ModuleLike[]` - Module names or config functions to load. |
+| `Angular.module` | The \`angular.module\` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. \`angular.module\` is used to configure the auto.$injector \`$injector\`. \`\`\`js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object config. myModule.config({ location: { hashPrefix: '!', }, }); \`\`\` Then you can create an injector and load your modules like this: \`\`\`js let injector = angular.injector(['ng', 'myModule']) \`\`\` However it's more likely that you'll use the \`ng-app\` directive or \`bootstrap()\` to simplify this process. | `name: string` - The name of the module to create or retrieve.<br>`requires: string[]` - If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.<br>`configFn: ModuleConfigFn` - Optional configuration function for the module that gets passed to \`NgModule.config()\`. |
+| `Angular.registerNgModule` | Registers the configured built-in \`ng\` module for this runtime instance. | None |
+| `Angular.tags` | JSX-free real-DOM tag factories for programmatic component views. | `namespaceUri: string` - Value supplied for the namespaceUri parameter. |
+| `AngularElementModuleOptions.configure` | Optional hook for adding services, filters, directives, or config to the element module. | `module: NgModule` - Value supplied for the module parameter.<br>`angular: Angular` - Value supplied for the angular parameter. |
+| `AnimateService.addClass` | Invokes the addClass member of ng.AnimateService. | `element: Element` - Value supplied for the element parameter.<br>`className: string` - Value supplied for the className parameter.<br>`options: AnimationOptions` - Value supplied for the options parameter. |
+| `AnimateService.animate` | Invokes the animate member of ng.AnimateService. | `element: Element` - Value supplied for the element parameter.<br>`from: Record<string, string \| number>` - Value supplied for the from parameter.<br>`to: Record<string, string \| number>` - Value supplied for the to parameter.<br>`className: string` - Value supplied for the className parameter.<br>`options: AnimationOptions` - Value supplied for the options parameter. |
+| `AnimateService.cancel` | Invokes the cancel member of ng.AnimateService. | `handle: AnimationHandle` - Value supplied for the handle parameter. |
+| `AnimateService.define` | Invokes the define member of ng.AnimateService. | `name: string` - Value supplied for the name parameter.<br>`preset: AnimationPreset` - Value supplied for the preset parameter. |
+| `AnimateService.enter` | Invokes the enter member of ng.AnimateService. | `element: Element` - Value supplied for the element parameter.<br>`parent: ParentNode` - Value supplied for the parent parameter.<br>`after: ChildNode` - Value supplied for the after parameter.<br>`options: AnimationOptions` - Value supplied for the options parameter. |
+| `AnimateService.leave` | Invokes the leave member of ng.AnimateService. | `element: Element` - Value supplied for the element parameter.<br>`options: AnimationOptions` - Value supplied for the options parameter. |
+| `AnimateService.move` | Invokes the move member of ng.AnimateService. | `element: Element` - Value supplied for the element parameter.<br>`parent: ParentNode` - Value supplied for the parent parameter.<br>`after: ChildNode` - Value supplied for the after parameter.<br>`options: AnimationOptions` - Value supplied for the options parameter. |
+| `AnimateService.removeClass` | Invokes the removeClass member of ng.AnimateService. | `element: Element` - Value supplied for the element parameter.<br>`className: string` - Value supplied for the className parameter.<br>`options: AnimationOptions` - Value supplied for the options parameter. |
+| `AnimateService.setClass` | Invokes the setClass member of ng.AnimateService. | `element: Element` - Value supplied for the element parameter.<br>`add: string` - Value supplied for the add parameter.<br>`remove: string` - Value supplied for the remove parameter.<br>`options: AnimationOptions` - Value supplied for the options parameter. |
+| `AnimateService.transition` | Invokes the transition member of ng.AnimateService. | `update: () => void \| Promise<void>` - Value supplied for the update parameter. |
+| `AnimationHandle.cancel` | Invokes the cancel member of ng.AnimationHandle. | None |
+| `AnimationHandle.catch` | Invokes the catch member of ng.AnimationHandle. | `onrejected: (reason: unknown) => TResult \| PromiseLike<TResult>` - Value supplied for the onrejected parameter. |
+| `AnimationHandle.complete` | Invokes the complete member of ng.AnimationHandle. | `status: boolean` - Value supplied for the status parameter. |
+| `AnimationHandle.done` | Invokes the done member of ng.AnimationHandle. | `callback: (ok: boolean) => void` - Value supplied for the callback parameter. |
+| `AnimationHandle.finally` | Invokes the finally member of ng.AnimationHandle. | `onfinally: () => void` - Value supplied for the onfinally parameter. |
+| `AnimationHandle.finish` | Invokes the finish member of ng.AnimationHandle. | None |
+| `AnimationHandle.pause` | Invokes the pause member of ng.AnimationHandle. | None |
+| `AnimationHandle.play` | Invokes the play member of ng.AnimationHandle. | None |
+| `AnimationHandle.then` | Attaches callbacks for the resolution and/or rejection of the Promise. | `onfulfilled: (value: undefined) => TResult1 \| PromiseLike<TResult1>` - Value supplied for the onfulfilled parameter.<br>`onrejected: (reason: unknown) => TResult2 \| PromiseLike<TResult2>` - Value supplied for the onrejected parameter. |
+| `AnimationOptions.onCancel` | Invokes the onCancel member of ng.AnimationOptions. | `element: Element` - Value supplied for the element parameter.<br>`context: AnimationContext` - Value supplied for the context parameter. |
+| `AnimationOptions.onDone` | Invokes the onDone member of ng.AnimationOptions. | `element: Element` - Value supplied for the element parameter.<br>`context: AnimationContext` - Value supplied for the context parameter. |
+| `AnimationOptions.onStart` | Invokes the onStart member of ng.AnimationOptions. | `element: Element` - Value supplied for the element parameter.<br>`context: AnimationContext` - Value supplied for the context parameter. |
+| `AppComponentOptions.attributeChanged` | Called after an observed input attribute changes. | `name: string` - Value supplied for the name parameter.<br>`oldValue: string` - Value supplied for the oldValue parameter.<br>`newValue: string` - Value supplied for the newValue parameter.<br>`context: WebComponentContext<T>` - Value supplied for the context parameter. |
+| `AppComponentOptions.connected` | Called after the scope exists and the template has been linked. | `context: WebComponentContext<T>` - Value supplied for the context parameter. |
+| `AppComponentOptions.disconnected` | Called before the scope is destroyed. | `context: WebComponentContext<T>` - Value supplied for the context parameter. |
+| `AriaService.config` | Invokes the config member of ng.AriaService. | `key: K` - Value supplied for the key parameter. |
+| `CachedRestBackendOptions.onRevalidate` | Notified after a stale-while-revalidate refresh succeeds. | `event: RestRevalidateEvent<unknown>` - Value supplied for the event parameter. |
+| `CachedRestBackendOptions.policy` | Runtime policy used to choose the read strategy for each cacheable request. | `context: RestCachePolicyContext` - Value supplied for the context parameter. |
+| `Component.view` | Programmatic real-DOM view factory. It runs during linking after controller bindings and \`onInit\`, and is mutually exclusive with template, templateUrl, and replace. | `context: ComponentViewContext<Controller>` - Value supplied for the context parameter. |
+| `ComponentViewContext.onDestroy` | Registers cleanup owned by the compiled view and returns a cancellation function. | `cleanup: () => void` - Value supplied for the cleanup parameter. |
+| `ComponentViewContext.transclude` | Component transclusion function, when transclusion is enabled. | `scope: Scope` - Value supplied for the scope parameter.<br>`cloneAttachFn: CloneAttachFn` - Value supplied for the cloneAttachFn parameter.<br>`futureParentElement: Element \| Node` - Value supplied for the futureParentElement parameter.<br>`slotName: string \| number` - Value supplied for the slotName parameter. |
+| `Controller.afterRender` | Called after this controller has been linked, AngularTS has applied DOM mutations for the current flush, and the browser has had one animation frame to settle layout. Multiple schedules for the same controller in one flush are coalesced into one call. | None |
+| `Controller.onChanges` | Called whenever one-way bindings are updated. The onChangesObj is a hash whose keys are the names of the bound properties that have changed, and the values are a ChangesObject object of the form { currentValue, previousValue, isFirstChange() }. Use this hook to trigger updates within a component such as cloning the bound value to prevent accidental mutation of the outer value. | `changes: OnChangesObject` - Value supplied for the changes parameter. |
+| `Controller.onDestroy` | Called on a controller when its containing scope is destroyed. Use this hook for releasing external resources, watches and event handlers. | None |
+| `Controller.onInit` | Called on each controller after all the controllers on an element have been constructed and had their bindings initialized (and before the pre & post linking functions for the directives on this element). This is a good place to put initialization code for your controller. | None |
+| `Controller.postLink` | Called after this controller's element and its children have been linked. Similar to the post-link function this hook can be used to set up DOM event handlers and do direct DOM manipulation. Note that child elements that contain templateUrl directives will not have been compiled and linked since they are waiting for their template to load asynchronously and their own compilation and linking has been suspended until that occurs. This hook can be considered analogous to the ngAfterViewInit and ngAfterContentInit hooks in Angular 2. Since the compilation process is rather different in Angular 1 there is no direct mapping and care should be taken when upgrading. | None |
+| `CookieService.get` | Retrieves a raw cookie value. | `key: string` - Cookie name to read. |
+| `CookieService.getAll` | Returns an object containing all raw cookies. | None |
+| `CookieService.getObject` | Retrieves a cookie and deserializes its JSON content. | `key: string` - Cookie name to read. |
+| `CookieService.put` | Sets a raw cookie value. | `key: string` - Cookie name to write.<br>`value: string` - String value to write.<br>`options: CookieOptions` - Cookie attributes for this write. |
+| `CookieService.putObject` | Serializes an object as JSON and stores it as a cookie. | `key: string` - Cookie name to write.<br>`value: unknown` - JSON-serializable value.<br>`options: CookieOptions` - Cookie attributes for this write. |
+| `CookieService.remove` | Removes a cookie by setting an expired date. | `key: string` - Cookie name to remove.<br>`options: CookieOptions` - Cookie attributes that must match the existing cookie. |
+| `CookieStoreOptions.deserialize` | Convert stored strings back to values after reading. | `text: string` - Value supplied for the text parameter. |
+| `CookieStoreOptions.serialize` | Convert values to strings before writing. | `value: unknown` - Value supplied for the value parameter. |
+| `Directive.compile` | Compile function for the directive | `templateElement: HTMLElement` - Value supplied for the templateElement parameter.<br>`transclude: ChildTranscludeOrLinkFn` - Value supplied for the transclude parameter. |
+| `Directive.view` | Programmatic real-DOM view factory. It is mutually exclusive with template, templateUrl, and replace and composes with compile/link. | `context: DirectiveViewContext<TController, DirectiveController>` - Value supplied for the context parameter. |
+| `DirectivePrePost.post` | Invokes the post member of ng.DirectivePrePost. | `args: [scope: Scope, element: HTMLElement, transclude: TranscludeFn]` - Value supplied for the args parameter. |
+| `DirectivePrePost.pre` | Invokes the pre member of ng.DirectivePrePost. | `args: [scope: Scope, element: HTMLElement, transclude: TranscludeFn]` - Value supplied for the args parameter. |
+| `DirectiveViewContext.onDestroy` | Registers cleanup owned by the compiled view and returns a cancellation function. | `cleanup: () => void` - Value supplied for the cleanup parameter. |
+| `DirectiveViewContext.transclude` | Directive transclusion function, when transclusion is enabled. | `scope: Scope` - Value supplied for the scope parameter.<br>`cloneAttachFn: CloneAttachFn` - Value supplied for the cloneAttachFn parameter.<br>`futureParentElement: Element \| Node` - Value supplied for the futureParentElement parameter.<br>`slotName: string \| number` - Value supplied for the slotName parameter. |
+| `EventBusConfig.deliveryPolicy` | Invokes the deliveryPolicy member of ng.EventBusConfig. | `context: EventDeliveryPolicyContext` - Value supplied for the context parameter. |
+| `EventBusService.dispose` | Dispose the instance, removing all topics and listeners. | None |
+| `EventBusService.getCount` | Get the number of subscribers for a topic. This is the public diagnostic surface for \`$eventBus\`. It reports active registered listeners only; topic listings, leak reports, and reactive diagnostics are intentionally not exposed. | `topic: string` - Topic name to inspect. |
+| `EventBusService.isDisposed` | Checks if instance has been disposed. | None |
+| `EventBusService.publish` | Publish a value to a topic asynchronously. All listeners are invoked in the order they were added. Delivery is scheduled with \`queueMicrotask\`. Scope-owned listeners are skipped if their scope is destroyed before the queued delivery runs. | `topic: string` - The topic to publish.<br>`args: unknown[]` - Arguments to pass to listeners. |
+| `EventBusService.reset` | Reset the bus to its initial state without disposing it. All topics and listeners are removed, and the instance can be reused. | None |
+| `EventBusService.setDeliveryPolicy` | Replace the runtime delivery policy used by future publications. The default policy delivers every active listener. Configured policies can drop deliveries for specific topics, scopes, or application metadata. | `policy: EventDeliveryPolicy` - Value supplied for the policy parameter. |
+| `EventBusService.subscribe` | Subscribe a function to a topic. The returned function removes only this listener registration. When \`context\` is provided, it becomes the listener \`this\` binding. When \`context\` is an AngularTS scope proxy, the scope also owns the listener lifecycle: destroying the scope removes the listener and prevents queued delivery from reaching the destroyed scope. | `topic: string` - Value supplied for the topic parameter.<br>`fn: EventBusListener<NoInfer<TContext>>` - Value supplied for the fn parameter.<br>`context: TContext` - Value supplied for the context parameter. |
+| `EventBusService.subscribeOnce` | Subscribe a function to a topic only once. Listener is removed before the first invocation. When \`context\` is provided, it becomes the listener \`this\` binding. When \`context\` is an AngularTS scope proxy, scope destruction before first delivery removes the one-time listener. | `topic: string` - Value supplied for the topic parameter.<br>`fn: EventBusListener<NoInfer<TContext>>` - Value supplied for the fn parameter.<br>`context: TContext` - Value supplied for the context parameter. |
+| `EventBusService.unsubscribe` | Unsubscribe a specific function from a topic. Matches by function reference and optional context. | `topic: string` - Value supplied for the topic parameter.<br>`fn: EventBusListener<NoInfer<TContext>>` - Value supplied for the fn parameter.<br>`context: TContext` - Value supplied for the context parameter. |
+| `HtmlCanvasService.invalidate` | Invokes the invalidate member of ng.HtmlCanvasService. | `canvas: HTMLCanvasElement` - Value supplied for the canvas parameter. |
+| `HtmlCanvasService.registerRoot` | Invokes the registerRoot member of ng.HtmlCanvasService. | `canvas: HTMLCanvasElement` - Value supplied for the canvas parameter.<br>`options: HtmlCanvasRootOptions` - Value supplied for the options parameter. |
+| `HtmlCanvasService.registerSource` | Invokes the registerSource member of ng.HtmlCanvasService. | `canvas: HTMLCanvasElement` - Value supplied for the canvas parameter.<br>`source: Element` - Value supplied for the source parameter.<br>`options: HtmlCanvasSourceOptions` - Value supplied for the options parameter. |
+| `HtmlCanvasService.requestPaint` | Invokes the requestPaint member of ng.HtmlCanvasService. | `canvas: HTMLCanvasElement` - Value supplied for the canvas parameter. |
+| `HttpResponse.headers` | Lazy response header reader. | `headerName: string` - Value supplied for the headerName parameter. |
+| `HttpService.delete` | Send a \`DELETE\` request. | `url: string` - Value supplied for the url parameter.<br>`config: HttpRequestOptions` - Value supplied for the config parameter. |
+| `HttpService.get` | Send a \`GET\` request. | `url: string` - Value supplied for the url parameter.<br>`config: HttpRequestOptions` - Value supplied for the config parameter. |
+| `HttpService.head` | Send a \`HEAD\` request. | `url: string` - Value supplied for the url parameter.<br>`config: HttpRequestOptions` - Value supplied for the config parameter. |
+| `HttpService.patch` | Send a \`PATCH\` request with a request body. | `url: string` - Value supplied for the url parameter.<br>`data: unknown` - Value supplied for the data parameter.<br>`config: HttpRequestOptions` - Value supplied for the config parameter. |
+| `HttpService.post` | Send a \`POST\` request with a request body. | `url: string` - Value supplied for the url parameter.<br>`data: unknown` - Value supplied for the data parameter.<br>`config: HttpRequestOptions` - Value supplied for the config parameter. |
+| `HttpService.put` | Send a \`PUT\` request with a request body. | `url: string` - Value supplied for the url parameter.<br>`data: unknown` - Value supplied for the data parameter.<br>`config: HttpRequestOptions` - Value supplied for the config parameter. |
+| `InjectionTokenMap.$anchorScroll` | Invokes the $anchorScroll member of ng.InjectionTokenMap. | `hashOrElement: string \| number \| HTMLElement` - Value supplied for the hashOrElement parameter. |
+| `InjectionTokenMap.$compile` | Invokes the $compile member of ng.InjectionTokenMap. | `compileNode: string \| Element \| Node \| ChildNode \| NodeList` - Value supplied for the compileNode parameter.<br>`transcludeFn: ChildTranscludeOrLinkFn` - Value supplied for the transcludeFn parameter.<br>`maxPriority: number` - Value supplied for the maxPriority parameter.<br>`ignoreDirective: string` - Value supplied for the ignoreDirective parameter.<br>`previousCompileContext: PreviousCompileContext` - Value supplied for the previousCompileContext parameter. |
+| `InjectionTokenMap.$controller` | Invokes the $controller member of ng.InjectionTokenMap. | `expression: ControllerExpression` - Value supplied for the expression parameter.<br>`locals: ControllerLocals` - Value supplied for the locals parameter.<br>`later: boolean` - Value supplied for the later parameter.<br>`ident: string` - Value supplied for the ident parameter. |
+| `InjectionTokenMap.$exceptionHandler` | Invokes the $exceptionHandler member of ng.InjectionTokenMap. | `exception: unknown` - Value supplied for the exception parameter. |
+| `InjectionTokenMap.$filter` | Invokes the $filter member of ng.InjectionTokenMap. | `name: string` - Value supplied for the name parameter. |
+| `InjectionTokenMap.$http` | Invokes the $http member of ng.InjectionTokenMap. | `config: HttpRequestConfig` - Value supplied for the config parameter. |
+| `InjectionTokenMap.$httpParamSerializer` | Invokes the $httpParamSerializer member of ng.InjectionTokenMap. | `params: HttpParams` - Value supplied for the params parameter. |
+| `InjectionTokenMap.$interpolate` | Invokes the $interpolate member of ng.InjectionTokenMap. | `text: string` - Value supplied for the text parameter.<br>`mustHaveExpression: boolean` - Value supplied for the mustHaveExpression parameter.<br>`trustedContext: SceContext` - Value supplied for the trustedContext parameter.<br>`allOrNothing: boolean` - Value supplied for the allOrNothing parameter. |
+| `InjectionTokenMap.$machine` | Invokes the $machine member of ng.InjectionTokenMap. | `config: { data: TData; } & Omit<MachineConfig<MachineContractOf<TData, MachineEventsFromStates<TStates>, Extract<keyof TStates, string>>>, "data" \| "initial" \| "states"> & { initial: Extract<keyof TStates, string>; states: TStates & MachineStateMap<MachineContractOf<TData, MachineEventsFromStates<TStates>, Extract<keyof TStates, string>>>; }` - Value supplied for the config parameter. |
+| `InjectionTokenMap.$parse` | Invokes the $parse member of ng.InjectionTokenMap. | `expression: string` - Value supplied for the expression parameter.<br>`interceptorFn: (value: unknown) => unknown` - Value supplied for the interceptorFn parameter. |
+| `InjectionTokenMap.$rest` | Invokes the $rest member of ng.InjectionTokenMap. | `baseUrl: string` - Value supplied for the baseUrl parameter.<br>`entityClass: EntityClass<T>` - Value supplied for the entityClass parameter.<br>`options: RestOptions` - Value supplied for the options parameter. |
+| `InjectionTokenMap.$sse` | Invokes the $sse member of ng.InjectionTokenMap. | `url: string` - Value supplied for the url parameter.<br>`config: SseConfig` - Value supplied for the config parameter. |
+| `InjectionTokenMap.$storage` | Invokes the $storage member of ng.InjectionTokenMap. | `target: T` - Value supplied for the target parameter.<br>`key: string` - Value supplied for the key parameter.<br>`storage: StorageLike` - Value supplied for the storage parameter.<br>`options: { serialize?: (value: T) => string; deserialize?: (value: string) => Partial<T>; }` - Value supplied for the options parameter. |
+| `InjectionTokenMap.$templateRequest` | Invokes the $templateRequest member of ng.InjectionTokenMap. | `templateUrl: string` - Value supplied for the templateUrl parameter. |
+| `InjectionTokenMap.$websocket` | Invokes the $websocket member of ng.InjectionTokenMap. | `url: string` - Value supplied for the url parameter.<br>`config: WebSocketConfig` - Value supplied for the config parameter. |
+| `InjectionTokenMap.$webTransport` | Invokes the $webTransport member of ng.InjectionTokenMap. | `url: string` - Value supplied for the url parameter.<br>`config: WebTransportConfig` - Value supplied for the config parameter. |
+| `InjectionTokenMap.$worker` | Invokes the $worker member of ng.InjectionTokenMap. | `scriptPath: string \| URL` - Value supplied for the scriptPath parameter.<br>`config: WorkerConfig<TReceive>` - Value supplied for the config parameter. |
+| `InjectionTokenMap.$workflow` | Invokes the $workflow member of ng.InjectionTokenMap. | `config: WorkflowConfig<TContract>` - Value supplied for the config parameter. |
+| `InjectionTokenMap.$workflowSupervisor` | Invokes the $workflowSupervisor member of ng.InjectionTokenMap. | `config: WorkflowSupervisorConfig<TWorkflows>` - Value supplied for the config parameter. |
+| `InjectorService.get` | Get a service by name. | `serviceName: TKey` - Value supplied for the serviceName parameter. |
+| `InjectorService.has` | Invokes the has member of ng.InjectorService. | `name: string` - Value supplied for the name parameter. |
+| `InjectorService.instantiate` | Instantiate a type constructor with optional locals. | `type: Constructor<TInstance> \| AnnotatedInjectable<TInstance>` - Value supplied for the type parameter.<br>`locals: object` - Value supplied for the locals parameter.<br>`serviceName: string` - Value supplied for the serviceName parameter. |
+| `InjectorService.invoke` | Invoke a function with optional context and locals. | `fn: Injectable<Callable<TResult>>` - Value supplied for the fn parameter.<br>`self: unknown` - Value supplied for the self parameter.<br>`locals: string \| object` - Value supplied for the locals parameter.<br>`serviceName: string` - Value supplied for the serviceName parameter. |
+| `InjectorService.loadNewModules` | Invokes the loadNewModules member of ng.InjectorService. | `mods: (string \| Callable<unknown> \| AnnotatedFactory<Callable<unknown>>)[]` - Value supplied for the mods parameter. |
+| `InterpolateService.endSymbol` | Return the configured interpolation end delimiter. | None |
+| `InterpolateService.startSymbol` | Return the configured interpolation start delimiter. | None |
+| `LocationService.getHash` | Returns the hash fragment when called without any parameters. | None |
+| `LocationService.getPath` | Returns the path of the current URL. | None |
+| `LocationService.getSearch` | Returns the search part of the current URL as an object. | None |
+| `LocationService.getState` | Returns the current history state object. | None |
+| `LocationService.getUrl` | Return URL (e.g. \`/path?a=b#hash\`) when called without any parameter. | None |
+| `LocationService.hash` | Invokes the hash member of ng.LocationService. | `hash: string \| number` - Value supplied for the hash parameter. |
+| `LocationService.parse` | Parse given HTML5 (regular) URL string into properties | `url: string` - HTML5 URL |
+| `LocationService.parseLinkUrl` | Attempts to parse a clicked link into an app-relative URL update. | `url: string` - Value supplied for the url parameter.<br>`relHref: string` - Value supplied for the relHref parameter. |
+| `LocationService.path` | Invokes the path member of ng.LocationService. | `path: string \| number` - Value supplied for the path parameter. |
+| `LocationService.search` | Invokes the search member of ng.LocationService. | `search: string \| number \| Record<string, unknown>` - Value supplied for the search parameter.<br>`paramValue: string \| number \| boolean \| string[]` - Value supplied for the paramValue parameter. |
+| `LocationService.setHash` | Changes the hash fragment when called with a parameter and returns \`$location\`. | `hash: string \| number` - New hash fragment. |
+| `LocationService.setPath` | Changes the path parameter and returns \`$location\`. | `path: string \| number` - New path. |
+| `LocationService.setSearch` | Sets the search part of the current URL as an object. | `search: string \| number \| Record<string, unknown>` - New search params as a string or object.<br>`paramValue: string \| number \| boolean \| string[]` - If \`search\` is a string or number, overrides only a single search property. |
+| `LocationService.setState` | Change the history state object when called with one parameter and return \`$location\`. The state object is later passed to \`pushState\` or \`replaceState\`. See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state} NOTE: This method is supported only in HTML5 mode and only in browsers supporting the HTML5 History API (i.e. methods \`pushState\` and \`replaceState\`). If you need to support older browsers (like IE9 or Android < 4.0), don't use this method. | `state: unknown` - Value supplied for the state parameter. |
+| `LocationService.setUrl` | Change path, search and hash, when called with parameter and return \`$location\`. | `url: string` - New URL without base prefix (e.g. \`/path?a=b#hash\`). |
+| `LocationService.state` | Invokes the state member of ng.LocationService. | `state: unknown` - Value supplied for the state parameter. |
+| `LocationService.url` | Invokes the url member of ng.LocationService. | `url: string` - Value supplied for the url parameter. |
+| `LogService.debug` | Log a debug message. | `args: unknown[]` - Value supplied for the args parameter. |
+| `LogService.error` | Log an error message. | `args: unknown[]` - Value supplied for the args parameter. |
+| `LogService.info` | Log an info message. | `args: unknown[]` - Value supplied for the args parameter. |
+| `LogService.log` | Log a general message. | `args: unknown[]` - Value supplied for the args parameter. |
+| `LogService.warn` | Log a warning message. | `args: unknown[]` - Value supplied for the args parameter. |
+| `Machine.can` | Invokes the can member of ng.Machine. | `type: TType` - Value supplied for the type parameter.<br>`payload: MachineSendPayload<TContract["events"], TType>` - Value supplied for the payload parameter. |
+| `Machine.matches` | Invokes the matches member of ng.Machine. | `state: TContract["state"]` - Value supplied for the state parameter. |
+| `Machine.restore` | Invokes the restore member of ng.Machine. | `snapshot: unknown` - Value supplied for the snapshot parameter. |
+| `Machine.send` | Invokes the send member of ng.Machine. | `type: TType` - Value supplied for the type parameter.<br>`payload: MachineSendPayload<TContract["events"], TType>` - Value supplied for the payload parameter. |
+| `Machine.snapshot` | Invokes the snapshot member of ng.Machine. | None |
+| `MachineConfig.policy` | Invokes the policy member of ng.MachineConfig. | `context: string extends keyof TContract["events"] ? MachineTransitionPolicyContext<TContract["data"], TContract["events"], TContract["events"] extends Record<keyof TContract["events"] & string, infer TPayload> ? TPayload : unknown, TContract["state"]> : { [TType in Extract<keyof TContract["events"], string>]: MachineTransitionPolicyContext<TContract["data"], TContract["events"], TContract["events"][TType], TContract["state"]> & { readonly type: TType; }; }[Extract<keyof TContract["events"], string>]` - Value supplied for the context parameter. |
+| `Model.restore` | Invokes the restore member of ng.Model. | `snapshot: T` - Value supplied for the snapshot parameter.<br>`options: ModelRestoreOptions` - Value supplied for the options parameter. |
+| `Model.snapshot` | Invokes the snapshot member of ng.Model. | None |
+| `Model.sync` | Invokes the sync member of ng.Model. | `target: ModelSyncTarget<T> \| Injectable<(...args: never[]) => ModelSyncTarget<T>>` - Value supplied for the target parameter.<br>`options: ModelSyncOptions` - Value supplied for the options parameter. |
+| `ModelSyncTarget.dispose` | Invokes the dispose member of ng.ModelSyncTarget. | None |
+| `ModelSyncTarget.receive` | Invokes the receive member of ng.ModelSyncTarget. | `apply: (snapshot: T, options?: ModelRestoreOptions) => void` - Value supplied for the apply parameter. |
+| `ModelSyncTarget.restore` | Invokes the restore member of ng.ModelSyncTarget. | None |
+| `ModelSyncTarget.write` | Invokes the write member of ng.ModelSyncTarget. | `snapshot: T` - Value supplied for the snapshot parameter.<br>`change: ModelChange` - Value supplied for the change parameter. |
+| `NgModelController.commitViewValue` | Commit a pending update to the \`modelValue\`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in \`ng-model-options\`. this method is rarely needed as \`NgModelController\` usually handles calling this in response to input events. | None |
+| `NgModelController.isEmpty` | This is called when we need to determine if the value of an input is empty. For instance, the required directive does this to work out if the input has data or not. The default \`isEmpty\` function checks whether the value is \`undefined\`, \`''\`, \`null\` or \`NaN\`. You can override this for input directives whose concept of being empty is different from the default. The \`checkboxInputType\` directive does this because in its case a value of \`false\` implies empty. | `value: unknown` - The value of the input to check for emptiness. |
+| `NgModelController.overrideModelOptions` | Override the current model options settings programmatically. The previous \`ModelOptions\` value will not be modified. Instead, a new \`ModelOptions\` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See \`ngModelOptions\` for information about what options can be specified and how model option inheritance works. <div class="alert alert-warning"> **Note:** this function only affects the options set on the \`ngModelController\`, and not the options on the \`ngModelOptions\` directive from which they might have been obtained initially. </div> <div class="alert alert-danger"> **Note:** it is not possible to override the \`getterSetter\` option. </div> | `options: ModelOptionsConfig` - a hash of settings to override the previous options |
+| `NgModelController.processModelValue` | Runs the model -> view pipeline on the current NgModelController.modelValuemodelValue. The following actions are performed by this method: - the \`modelValue\` is run through the NgModelController.formattersformatters and the result is set to the NgModelController.viewValueviewValue - the \`ng-empty\` or \`ng-not-empty\` class is set on the element - if the \`viewValue\` has changed: - NgModelController.renderrender is called on the control - the NgModelController.validatorsvalidators are run and the validation status is set. This method is called by ngModel internally when the bound scope value changes. Application developers usually do not have to call this function themselves. This function can be used when the \`viewValue\` or the rendered DOM value are not correctly formatted and the \`modelValue\` must be run through the \`formatters\` again. | None |
+| `NgModelController.render` | Called when the view needs to be updated. It is expected that the user of the ng-model directive will implement this method. The \`render()\` method is invoked in the following situations: * \`rollbackViewValue()\` is called. If we are rolling back the view value to the last committed value then \`render()\` is called to update the input control. * The value referenced by \`ng-model\` is changed programmatically and both the \`modelValue\` and the \`viewValue\` are different from last time. Since \`ng-model\` does not do a deep watch, \`render()\` is only invoked if the values of \`modelValue\` and \`viewValue\` are actually different from their previous values. If \`modelValue\` or \`viewValue\` are objects (rather than a string or number) then \`render()\` will not be invoked if you only change a property on the objects. | None |
+| `NgModelController.rollbackViewValue` | Cancel an update and reset the input element's value to prevent an update to the \`modelValue\`, which may be caused by a pending debounced event or because the input is waiting for some future event. If you have an input that uses \`ng-model-options\` to set up debounced updates or updates that depend on special events such as \`blur\`, there can be a period when the \`viewValue\` is out of sync with the ngModel's \`modelValue\`. In this case, you can use \`rollbackViewValue()\` to manually cancel the debounced / future update and reset the input to the last committed view value. It is also possible that you run into difficulties if you try to update the ngModel's \`modelValue\` programmatically before these debounced/future events have resolved/occurred, because AngularTS's dirty checking mechanism is not able to tell whether the model has actually changed or not. The \`rollbackViewValue()\` method should be called before programmatically changing the model of an input which may have such events pending. This is important in order to make sure that the input field will be updated with the new model value and any pending operations are cancelled. | None |
+| `NgModelController.setCustomValidity` | Sets the control's single native custom-validity message. Native controls expose this through \`ValidityState.customError\`; an empty message clears the custom error. | `message: string` - Value supplied for the message parameter. |
+| `NgModelController.setDirty` | Sets the control to its dirty state. This method can be called to remove the \`ng-pristine\` class and set the control to its dirty state (\`ng-dirty\` class). A model is considered to be dirty when the control has been changed from when first compiled. | None |
+| `NgModelController.setNativeValidity` | Invokes the setNativeValidity member of ng.NgModelController. | `state: boolean` - Value supplied for the state parameter. |
+| `NgModelController.setPristine` | Sets the control to its pristine state. This method can be called to remove the \`ng-dirty\` class and set the control to its pristine state (\`ng-pristine\` class). A model is considered to be pristine when the control has not been changed from when first compiled. | None |
+| `NgModelController.setTouched` | Sets the control to its touched state. This method can be called to remove the \`ng-untouched\` class and set the control to its touched state (\`ng-touched\` class). A model is considered to be touched when the user has first focused the control element and then shifted focus away from the control (blur event). | None |
+| `NgModelController.setUntouched` | Sets the control to its untouched state. This method can be called to remove the \`ng-touched\` class and set the control to its untouched state (\`ng-untouched\` class). Upon compilation, a model is set as untouched by default, however this function can be used to restore that state if the model has already been touched by the user. | None |
+| `NgModelController.setValidity` | Updates the validation state of the control and propagates it to the parent form. | `validationErrorKey: string` - Value supplied for the validationErrorKey parameter.<br>`state: PublicValidationState` - Value supplied for the state parameter. |
+| `NgModelController.setViewValue` | Update the view value. This method should be called when a control wants to change the view value; typically, this is done from within a DOM event handler. For example, the \`input\` directive calls it when the value of the input changes and \`select\` calls it when an option is selected. When \`setViewValue\` is called, the new \`value\` will be staged for committing through the \`parsers\` and \`validators\` pipelines. If there are no special \`ngModelOptions\` settings specified then the staged value is sent directly for processing through the \`parsers\` pipeline. After this, the \`validators\` and \`asyncValidators\` are called and the value is applied to \`modelValue\`. Finally, the value is set to the **expression** specified in the \`ng-model\` attribute and all the registered change listeners, in the \`viewChangeListeners\` list are called. In case the \`ngModelOptions\` directive is used with \`updateOn\` and the \`default\` trigger is not listed, all those actions will remain pending until one of the \`updateOn\` events is triggered on the DOM element. All these actions will be debounced if the \`ngModelOptions\` directive is used with a custom debounce for this particular event. The model commit and its reactive notifications run when an \`updateOn\` event fires, or after the configured debounce timer expires. Standard native inputs pass through browser-native values, such as strings from text-like controls, booleans from checkboxes, and \`FileList \| null\` from file inputs. However, custom controls might also pass objects to this method. In this case, we should make a copy of the object before passing it to \`setViewValue\`. This is because \`ngModel\` does not perform a deep watch of objects, it only looks for a change of identity. If you only change the property of the object then ngModel will not realize that the object has changed and will not invoke the \`parsers\` and \`validators\` pipelines. For this reason, you should not change properties of the copy once it has been passed to \`setViewValue\`. Otherwise you may cause the model value on the scope to change incorrectly. <div class="alert alert-info"> In any case, the value passed to the method should always reflect the current value of the control. For example, if you are calling \`setViewValue\` for an input element, you should pass the input DOM value. Otherwise, the control and the scope model become out of sync. It's also important to note that \`setViewValue\` does not call \`render\` or change the control's DOM value in any way. If we want to change the control's DOM value programmatically, we should update the \`ngModel\` scope expression. Its new value will be picked up by the model controller, which will run it through the \`formatters\`, \`render\` it to update the DOM, and finally call \`validate\` on it. </div> | `value: unknown` - value from the view.<br>`trigger: string` - Event that triggered the update. |
+| `NgModelController.validate` | Runs each of the registered validators (first synchronous validators and then asynchronous validators). If the validity changes to invalid, the model will be set to \`undefined\`, unless \`ngModelOptions.allowInvalid\` is \`true\`. If the validity changes to valid, it will set the model to the last available valid \`modelValue\`, i.e. either the last parsed value or the last value set from the scope. | None |
+| `NgModule.animation` | Invokes the animation member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`animationFactory: NamedInjectable` - Value supplied for the animationFactory parameter. |
+| `NgModule.appComponent` | Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope. | `name: string` - Custom element tag name.<br>`options: AppComponentOptions<T>` - App component options. |
+| `NgModule.component` | Invokes the component member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`options: ng.Component` - Value supplied for the options parameter. |
+| `NgModule.config` | Declare built-in AngularTS service configuration during the config phase. | `config: AngularConfigMap` - Built-in config map. |
+| `NgModule.constant` | Invokes the constant member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`object: string \| number \| object` - Value supplied for the object parameter. |
+| `NgModule.controller` | The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry. | `name: string` - Controller name<br>`ctlFn: Injectable<ControllerConstructor>` - Controller constructor fn (optionally decorated with DI annotations in the array notation) |
+| `NgModule.decorator` | Invokes the decorator member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`decorFn: NamedInjectable` - Value supplied for the decorFn parameter. |
+| `NgModule.directive` | Invokes the directive member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`directiveFactory: DirectiveFactory` - Value supplied for the directiveFactory parameter. |
+| `NgModule.factory` | Invokes the factory member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`providerFunction: NamedInjectable` - Value supplied for the providerFunction parameter. |
+| `NgModule.filter` | Invokes the filter member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`filterFn: FilterFactory` - Value supplied for the filterFn parameter. |
+| `NgModule.lazyState` | Register a lazy router state namespace during module configuration. Lazy route declarations use the same composed router runtime as static module routes. | `prefix: string` - State name prefix to load on demand.<br>`loader: LazyStateLoader` - Loader invoked by the router when a transition targets the prefix. |
+| `NgModule.machine` | Register a named reactive state machine as an injectable service. The machine is created by \`$machine\` when the named service is requested. The returned instance is not tied to any one scope lifetime; it registers with AngularTS scope proxies when assigned to a controller or scope. | `name: string` - Injectable name.<br>`config: InferredNamedMachineConfig<TData, TStates> \| Injectable<() => InferredNamedMachineConfig<TData, TStates>>` - Machine configuration or a resolvable config factory. |
+| `NgModule.model` | Register a named reactive model as an injectable app-owned service. The model is created lazily by the owning \`AppContext\` when the service is first injected. Models are shared across every root scope managed by the same \`AppContext\`; they are not children of \`$rootScope\`. Assign an injected model to a controller or scope property to bind it in a template. DOM interpolation, \`ng-bind\`, directive expressions, nested object reads, and array length reads update when the app model changes. Mutating the model proxy schedules every affected observer. The injected \`Model<T>\` value is proxy-backed. It exposes scope-proxy methods such as \`watch\`, \`batch\`, \`merge\`, \`on\`, \`emit\`, \`broadcast\`, and \`destroy\`, plus \`snapshot\`, \`restore\`, and \`sync\` for model lifecycle and synchronization. Prefer the factory form for nontrivial initial state: \`\`\`ts app.model("user", () => ({ name: "John", authenticated: false })); \`\`\` | `name: string` - Injectable model name.<br>`initial: ModelInitializer<T>` - Plain object state or an injectable factory that returns plain object state. |
+| `NgModule.provider` | Invokes the provider member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`providerType: ProviderDefinition` - Value supplied for the providerType parameter. |
+| `NgModule.rest` | Register a REST resource as an injectable service. The resource factory is delegated to the injected \`$rest\` service, keeping REST support configurable by custom runtimes. | `name: string` - Service name.<br>`url: string` - Base URL or URI template.<br>`entityClass: EntityClass<T>` - Optional constructor for mapping JSON.<br>`options: DynamicConfig<RestOptions>` - Optional RestService options, optionally produced by DI. |
+| `NgModule.router` | Register a module-owned router state tree during module configuration. Child state names are relative to their parent unless they contain a dot. Each route is queued for the composed router runtime, so module router trees compose with \`lazyState(...)\` and inherited route policies. | `declaration: TDeclaration` - Router tree root declaration. |
+| `NgModule.run` | Invokes the run member of ng.NgModule. | `block: ModuleConfigFn` - Value supplied for the block parameter. |
+| `NgModule.service` | Invokes the service member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`serviceFunction: NamedServiceInjectable` - Value supplied for the serviceFunction parameter. |
+| `NgModule.serviceWorker` | Configure the singleton \`$serviceWorker\` for this application. | `scriptUrl: string \| URL` - Value supplied for the scriptUrl parameter.<br>`config: ServiceWorkerConfig` - Value supplied for the config parameter. |
+| `NgModule.sse` | Register a pre-configured SSE connection as an injectable service. The connection is created by \`$sse\` when the named service is requested. | `name: string` - Injectable name.<br>`url: string` - SSE endpoint.<br>`config: DynamicConfig<SseConfig>` - SSE connection options, optionally produced by DI. |
+| `NgModule.store` | Register a persistent object store as an injectable service. Store construction is delegated to the internal provider registry, which creates the service through the injector and persists it through the selected backend. | `name: string` - Service name.<br>`ctor: object \| StoreCreator` - Constructor, factory, or object to persist.<br>`type: StorageType` - Storage backend type.<br>`backendOrConfig: StorageLike & PersistentStoreConfig` - Custom backend or persistence options. |
+| `NgModule.value` | Invokes the value member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`object: unknown` - Allows undefined |
+| `NgModule.wasm` | Register a named WebAssembly module as an injectable resource. The actual loading is delegated to the \`$wasm\` service, so custom runtimes can decide whether WebAssembly support is included. | `name: string` - Injectable name used to access the resource.<br>`config: DynamicConfig<WasmLoadOptions>` - Module source and imports, optionally produced by DI. |
+| `NgModule.webComponent` | Register a user-authored native custom element backed by an AngularTS scope. The element class must extend \`ScopeElement\`. Its static template, shadow, scope, inputs, and isolate properties configure the AngularTS wiring. | `name: string` - Custom element tag name.<br>`elementClass: ScopeElementConstructor<T>` - Custom element class. |
+| `NgModule.websocket` | Register a pre-configured WebSocket connection as an injectable service. The connection is created by \`$websocket\` when the named service is requested. | `name: string` - Injectable name.<br>`url: string` - WebSocket endpoint.<br>`config: DynamicConfig<WebSocketConfig>` - WebSocket connection options, optionally produced by DI. |
+| `NgModule.webTransport` | Register a pre-configured WebTransport connection as an injectable service. The connection is created by \`$webTransport\` when the named service is requested. | `name: string` - Injectable name.<br>`url: string` - WebTransport endpoint.<br>`config: DynamicConfig<WebTransportConfig>` - WebTransport connection options, optionally produced by DI. |
+| `NgModule.worker` | Register a named Web Worker connection as an injectable service. The actual connection is delegated to the \`$worker\` provider, so worker support remains provider-driven instead of directive-driven. | `name: string` - Injectable name.<br>`scriptPath: DynamicConfig<string \| URL>` - Worker script URL, optionally produced by DI.<br>`config: DynamicConfig<WorkerConfig>` - Worker connection options, optionally produced by DI. |
+| `NgModule.workflow` | Register a named workflow as an injectable service. The workflow is created by \`$workflow\` when the named service is requested. Workflow behavior remains local to its \`WorkflowConfig\`; the provider does not apply global workflow defaults. | `name: string` - Injectable name.<br>`config: TDefinition \| Injectable<() => TDefinition>` - Workflow configuration or a resolvable config factory. |
+| `NgModule.workflowSupervisor` | Register a named workflow supervisor as an injectable service. The supervisor is created when the named service is requested. It composes existing workflow configs or workflow instances and keeps persistence and recovery policy local to the supervisor config. | `name: string` - Injectable name.<br>`config: (Omit<{ id: string; workflows: TWorkflows; } & { persistence?: undefined; autoPersist?: false; autoRecover?: false; }, "id"> & { id?: string; }) \| (Omit<{ id: string; workflows: TWorkflows; } & { persistence: WorkflowSupervisorPersistenceConfig \| "indexeddb" \| WorkflowSupervisorPersistence<WorkflowSupervisorSnapshot<WorkflowSupervisorSnapshotMap<TWorkflows>>>; autoPersist?: boolean; autoRecover?: boolean; }, "id"> & { id?: string; }) \| Injectable<() => (Omit<{ id: string; workflows: TWorkflows; } & { persistence?: undefined; autoPersist?: false; autoRecover?: false; }, "id"> & { id?: string; }) \| (Omit<{ id: string; workflows: TWorkflows; } & { persistence: WorkflowSupervisorPersistenceConfig \| "indexeddb" \| WorkflowSupervisorPersistence<WorkflowSupervisorSnapshot<WorkflowSupervisorSnapshotMap<TWorkflows>>>; autoPersist?: boolean; autoRecover?: boolean; }, "id"> & { id?: string; })>` - Supervisor configuration or a resolvable config factory. |
+| `RestBackend.request` | Execute one normalized REST request. | `request: RestRequest` - Request produced by \`RestService\`. |
+| `RestCacheStore.delete` | Delete one cached REST response. | `key: string` - Exact cache key to remove. |
+| `RestCacheStore.deletePrefix` | Delete cached REST responses whose keys start with the prefix. \`CachedRestBackend\` uses prefixes such as \`GET /api/users\` to invalidate collection and entity entries after successful writes. | `prefix: string` - Value supplied for the prefix parameter. |
+| `RestCacheStore.get` | Read a cached REST response by deterministic key. | `key: string` - Opaque cache key supplied by CachedRestBackend. |
+| `RestCacheStore.set` | Store a REST response by deterministic key. | `key: string` - Opaque cache key supplied by CachedRestBackend.<br>`response: RestResponse<T>` - Response to persist. |
+| `RestService.create` | Create a resource using \`POST\`. | `item: T` - Request body to create. |
+| `RestService.delete` | Delete a resource by ID. | `id: ID` - Resource identifier appended to the base URL. |
+| `RestService.get` | Fetch one resource by ID using \`GET\`. | `id: ID` - Resource identifier appended to the base URL.<br>`params: Record<string, unknown>` - Additional URI template or query parameters. |
+| `RestService.list` | Fetch a collection. Parameters are used for URI template expansion and are also forwarded to \`$http\` as query params. Non-array responses resolve to an empty array. | `params: Record<string, unknown>` - Value supplied for the params parameter. |
+| `RestService.update` | Update a resource using \`PUT\`. | `id: ID` - Resource identifier appended to the base URL.<br>`item: Partial<T>` - Request body to send. |
+| `RouterModule.lazyState` | Register a lazy state namespace while preserving this module route map. | `prefix: LazyRoutePrefix<TRouteMap>` - Value supplied for the prefix parameter.<br>`loader: LazyStateLoader` - Value supplied for the loader parameter. |
+| `RouterModule.router` | Register a router tree while preserving this module's route map. | `declaration: TDeclaration & RouterDeclarationFor<TRouteMap, TDeclaration>` - Value supplied for the declaration parameter. |
+| `SceDelegateService.getTrusted` | Invokes the getTrusted member of ng.SceDelegateService. | `type: SceContext` - Value supplied for the type parameter.<br>`mayBeTrusted: unknown` - Value supplied for the mayBeTrusted parameter. |
+| `SceDelegateService.trustAs` | Invokes the trustAs member of ng.SceDelegateService. | `type: SceContext` - Value supplied for the type parameter.<br>`value: unknown` - Value supplied for the value parameter. |
+| `SceDelegateService.valueOf` | Invokes the valueOf member of ng.SceDelegateService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.getTrusted` | Invokes the getTrusted member of ng.SceService. | `type: SceContext` - Value supplied for the type parameter.<br>`mayBeTrusted: unknown` - Value supplied for the mayBeTrusted parameter. |
+| `SceService.getTrustedHtml` | Invokes the getTrustedHtml member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.getTrustedMediaUrl` | Invokes the getTrustedMediaUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.getTrustedResourceUrl` | Invokes the getTrustedResourceUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.getTrustedUrl` | Invokes the getTrustedUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.isEnabled` | Invokes the isEnabled member of ng.SceService. | None |
+| `SceService.parse` | Invokes the parse member of ng.SceService. | `type: SceContext` - Value supplied for the type parameter.<br>`expression: string` - Value supplied for the expression parameter. |
+| `SceService.parseAsHtml` | Invokes the parseAsHtml member of ng.SceService. | `expression: string` - Value supplied for the expression parameter. |
+| `SceService.parseAsMediaUrl` | Invokes the parseAsMediaUrl member of ng.SceService. | `expression: string` - Value supplied for the expression parameter. |
+| `SceService.parseAsResourceUrl` | Invokes the parseAsResourceUrl member of ng.SceService. | `expression: string` - Value supplied for the expression parameter. |
+| `SceService.parseAsUrl` | Invokes the parseAsUrl member of ng.SceService. | `expression: string` - Value supplied for the expression parameter. |
+| `SceService.trustAs` | Invokes the trustAs member of ng.SceService. | `type: SceContext` - Value supplied for the type parameter.<br>`value: unknown` - Value supplied for the value parameter. |
+| `SceService.trustAsHtml` | Invokes the trustAsHtml member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.trustAsMediaUrl` | Invokes the trustAsMediaUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.trustAsResourceUrl` | Invokes the trustAsResourceUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.trustAsUrl` | Invokes the trustAsUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `SceService.valueOf` | Invokes the valueOf member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
+| `Scope.batch` | Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws. | `fn: () => T` - Value supplied for the fn parameter. |
+| `Scope.broadcast` | Broadcasts an event downward through the scope hierarchy. | `name: string` - Value supplied for the name parameter.<br>`args: unknown[]` - Value supplied for the args parameter. |
+| `Scope.deleteProperty` | Invokes the deleteProperty member of ng.Scope. | `target: ScopeTarget` - The target object.<br>`property: string \| number \| symbol` - The name of the property being deleted. |
+| `Scope.destroy` | Destroys this scope and its descendants. | None |
+| `Scope.emit` | Emits an event upward through the scope hierarchy. | `name: string` - Value supplied for the name parameter.<br>`args: unknown[]` - Value supplied for the args parameter. |
+| `Scope.get` | Intercepts property access on the target object. It checks for specific properties (\`watch\` and \`sync\`) and binds their methods. For other properties, it returns the value directly. | `target: ScopeTarget` - The target object.<br>`property: string \| number \| symbol` - The name of the property being accessed.<br>`proxy: Scope` - The proxy object being invoked. |
+| `Scope.getById` | Searches this scope tree for a scope with the given id. | `id: string \| number` - Value supplied for the id parameter. |
+| `Scope.merge` | Merges enumerable properties from the provided object into the current scope target. | `newTarget: object` - Value supplied for the newTarget parameter. |
+| `Scope.new` | Creates a prototypically inherited child scope. | `childInstance: Scope` - Value supplied for the childInstance parameter. |
+| `Scope.newIsolate` | Creates an isolate child scope that does not inherit watchable properties directly. | `instance: Scope` - Value supplied for the instance parameter. |
+| `Scope.on` | Registers an event listener on this scope and returns a deregistration function. | `name: string` - Value supplied for the name parameter.<br>`listener: (...args: unknown[]) => unknown` - Value supplied for the listener parameter. |
+| `Scope.searchByName` | Searches the scope tree for a scope registered under the provided name. | `name: string` - Value supplied for the name parameter. |
+| `Scope.set` | Intercepts and handles property assignments on the target object. Scopeable objects are stored as raw model values and proxied lazily when read. | `target: ScopeTarget` - The target object.<br>`property: string` - The name of the property being set.<br>`value: unknown` - The new value being assigned to the property.<br>`proxy: Scope` - The proxy intercepting property access. |
+| `Scope.transcluded` | Creates a transcluded child scope linked to this scope and an optional parent instance. | `parentInstance: Scope` - Value supplied for the parentInstance parameter. |
+| `Scope.watch` | Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected. | `watchProp: string` - An expression to be watched in the context of this model.<br>`listenerFn: (newValue?: unknown, originalTarget?: object) => void` - A function to execute when changes are detected on watched context.<br>`lazy: boolean` - A flag to indicate if the listener should be invoked immediately. Defaults to false.<br>`directLeaf: boolean` - Value supplied for the directLeaf parameter. |
+| `ScopeElement.attributeChanged` | Called after an observed input attribute changes. | `name: string` - Value supplied for the name parameter.<br>`oldValue: string` - Value supplied for the oldValue parameter.<br>`newValue: string` - Value supplied for the newValue parameter. |
+| `ScopeElement.attributeChangedCallback` | Invokes the attributeChangedCallback member of ng.ScopeElement. | `attribute: string` - Value supplied for the attribute parameter.<br>`oldValue: string` - Value supplied for the oldValue parameter.<br>`newValue: string` - Value supplied for the newValue parameter. |
+| `ScopeElement.connected` | Called after the AngularTS scope and template are connected. | None |
+| `ScopeElement.connectedCallback` | Invokes the connectedCallback member of ng.ScopeElement. | None |
+| `ScopeElement.disconnected` | Called before the AngularTS scope is destroyed. | None |
+| `ScopeElement.disconnectedCallback` | Invokes the disconnectedCallback member of ng.ScopeElement. | None |
+| `ScopeElement.dispatch` | Dispatch a composed bubbling DOM event from this custom element. | `type: string` - Value supplied for the type parameter.<br>`detail: unknown` - Value supplied for the detail parameter.<br>`init: CustomEventInit<any>` - Value supplied for the init parameter. |
+| `ScopeEvent.preventDefault` | Invokes the preventDefault member of ng.ScopeEvent. | None |
+| `ScopeEvent.stopPropagation` | Invokes the stopPropagation member of ng.ScopeEvent. | None |
+| `SecurityPolicy.check` | Invokes the check member of ng.SecurityPolicy. | `context: RequestPolicyContext` - Value supplied for the context parameter. |
+| `ServiceWorkerService.onControllerChange` | Subscribe to controller-change notifications. | `callback: (controller: ServiceWorker \| null) => void` - Value supplied for the callback parameter. |
+| `ServiceWorkerService.onMessage` | Subscribe to messages from the service worker container. | `callback: (event: ServiceWorkerMessageEvent<TData>) => void` - Value supplied for the callback parameter. |
+| `ServiceWorkerService.onUpdate` | Subscribe to update-state notifications. | `callback: (state: ServiceWorkerUpdateState) => void` - Value supplied for the callback parameter. |
+| `ServiceWorkerService.post` | Send a message to the current controller or an explicit worker target. | `message: unknown` - Value supplied for the message parameter.<br>`options: ServiceWorkerPostOptions` - Value supplied for the options parameter. |
+| `ServiceWorkerService.ready` | Resolve when the browser reports an active ready registration. | None |
+| `ServiceWorkerService.register` | Register the configured script or an explicit script URL. | `scriptOrOptions: string \| URL \| RegistrationOptions` - Value supplied for the scriptOrOptions parameter.<br>`options: RegistrationOptions` - Value supplied for the options parameter. |
+| `ServiceWorkerService.request` | Send a request through a dedicated \`MessageChannel\`. | `message: unknown` - Value supplied for the message parameter.<br>`options: ServiceWorkerRequestOptions` - Value supplied for the options parameter. |
+| `ServiceWorkerService.unregister` | Unregister the latest known registration. | None |
+| `ServiceWorkerService.update` | Ask the latest known registration to check for an updated worker. | None |
+| `SseConfig.onClose` | Called when a WebSocket connection closes | `event: CloseEvent` - Value supplied for the event parameter. |
+| `SseConfig.onError` | Called when an error occurs | `err: Event` - Value supplied for the err parameter. |
+| `SseConfig.onEvent` | Called with every registered connection message, including custom SSE event types | `message: ConnectionEvent<unknown>` - Value supplied for the message parameter. |
+| `SseConfig.onMessage` | Called when a message is received | `data: unknown` - Value supplied for the data parameter.<br>`event: Event \| MessageEvent<any>` - Value supplied for the event parameter. |
+| `SseConfig.onOpen` | Called when the connection opens | `event: Event` - Value supplied for the event parameter. |
+| `SseConfig.onReconnect` | Called when a reconnect attempt happens | `attempt: number` - Value supplied for the attempt parameter. |
+| `SseConfig.transformMessage` | Function to transform incoming messages | `data: string` - Value supplied for the data parameter. |
+| `SseConnection.close` | Manually close the SSE connection and stop all reconnect attempts | None |
+| `SseConnection.reconnect` | Manually restart the SSE connection. | None |
+| `StateRegistryService.deregister` | Invokes the deregister member of ng.StateRegistryService. | `stateOrName: StateOrName` - Value supplied for the stateOrName parameter. |
+| `StateRegistryService.get` | Invokes the get member of ng.StateRegistryService. | `stateOrName: StateOrName` - Value supplied for the stateOrName parameter.<br>`base: StateOrName` - Value supplied for the base parameter. |
+| `StateRegistryService.getAll` | Invokes the getAll member of ng.StateRegistryService. | None |
+| `StateRegistryService.onStatesChanged` | Invokes the onStatesChanged member of ng.StateRegistryService. | `listener: (event: "registered" \| "deregistered", states: StateDeclaration[]) => void` - Value supplied for the listener parameter. |
+| `StateRegistryService.register` | Invokes the register member of ng.StateRegistryService. | `stateDefinition: StateDeclaration` - Value supplied for the stateDefinition parameter. |
+| `StateRegistryService.root` | Invokes the root member of ng.StateRegistryService. | None |
+| `StateService.get` | Get all states or a matching public state declaration. | `stateOrName: StateOrName` - Value supplied for the stateOrName parameter.<br>`base: StateOrName` - Value supplied for the base parameter. |
+| `StateService.go` | Overload for typed route names and params. Untyped overload used when no route map is supplied. | `to: TRouteMap extends Record<string, never> ? StateOrName : StateDeclaration \| StateObject` - Value supplied for the to parameter.<br>`params: RawParams` - Value supplied for the params parameter.<br>`options: TransitionOptions` - Value supplied for the options parameter. |
+| `StateService.href` | Overload for typed route names and params. Untyped overload used when no route map is supplied. | `stateOrName: TRouteMap extends Record<string, never> ? StateOrName : StateDeclaration \| StateObject` - Value supplied for the stateOrName parameter.<br>`params: RawParams` - Value supplied for the params parameter.<br>`options: HrefOptions` - Value supplied for the options parameter. |
+| `StateService.matches` | Check whether the current state matches a state, ancestor, or glob. | `stateOrName: StateOrName` - Value supplied for the stateOrName parameter.<br>`params: RawParams` - Value supplied for the params parameter.<br>`options: { exact?: boolean; relative?: StateOrName; }` - Value supplied for the options parameter. |
+| `StateService.prefetch` | Prefetch lazy declarations and templates for a typed route. Prefetch lazy declarations and templates without navigating. | `stateOrName: TRouteMap extends Record<string, never> ? StateOrName : StateDeclaration \| StateObject` - Value supplied for the stateOrName parameter.<br>`params: RawParams` - Value supplied for the params parameter.<br>`options: TransitionOptions` - Value supplied for the options parameter. |
+| `StateService.target` | Build a target that can be returned from a transition hook. | `identifier: StateOrName` - Value supplied for the identifier parameter.<br>`params: RawParams` - Value supplied for the params parameter.<br>`options: TransitionOptions` - Value supplied for the options parameter. |
+| `StorageBackend.get` | Read a stored serialized value. | `key: string` - Value supplied for the key parameter. |
+| `StorageBackend.remove` | Remove a stored value. | `key: string` - Value supplied for the key parameter. |
+| `StorageBackend.set` | Store a serialized value. | `key: string` - Value supplied for the key parameter.<br>`value: string` - Value supplied for the value parameter. |
+| `StreamService.consumeJsonLines` | Decodes newline-delimited JSON without retaining parsed values. | `stream: ReadableStream<Uint8Array<ArrayBufferLike>>` - Value supplied for the stream parameter.<br>`options: JsonLineStreamReadOptions<T>` - Value supplied for the options parameter. |
+| `StreamService.consumeText` | Decodes a byte stream and calls \`onChunk\` without retaining decoded text. | `stream: ReadableStream<Uint8Array<ArrayBufferLike>>` - Value supplied for the stream parameter.<br>`options: TextStreamReadOptions` - Value supplied for the options parameter. |
+| `StreamService.isReadableStream` | Returns true when a value is a native readable byte stream. | `value: unknown` - Value supplied for the value parameter. |
+| `StreamService.readJsonLines` | Decodes newline-delimited JSON and returns all parsed values. | `stream: ReadableStream<Uint8Array<ArrayBufferLike>>` - Value supplied for the stream parameter.<br>`options: JsonLineStreamReadOptions<T>` - Value supplied for the options parameter. |
+| `StreamService.readLines` | Decodes a byte stream and emits complete lines. | `stream: ReadableStream<Uint8Array<ArrayBufferLike>>` - Value supplied for the stream parameter.<br>`options: LineStreamReadOptions` - Value supplied for the options parameter. |
+| `StreamService.readText` | Decodes a byte stream into text chunks. | `stream: ReadableStream<Uint8Array<ArrayBufferLike>>` - Value supplied for the stream parameter.<br>`options: TextStreamReadOptions` - Value supplied for the options parameter. |
+| `TranscludeFn.isSlotFilled` | Added by your \`controllersBoundTransclude\` wrapper. | `slotName: string \| number` - Value supplied for the slotName parameter. |
+| `Transition.abort` | Aborts this transition Imperative API to abort a Transition. This only applies to Transitions that are not yet complete. | None |
+| `Transition.applyViewConfigs` | Invokes the applyViewConfigs member of ng.Transition. | None |
+| `Transition.dynamic` | Returns true if the transition is dynamic. A transition is dynamic if no states are entered nor exited, but at least one dynamic parameter has changed. | None |
+| `Transition.entering` | Gets the states being entered. | None |
+| `Transition.exiting` | Gets the states being exited. | None |
+| `Transition.from` | Returns the "from state" Returns the state that the transition is coming *from*. | None |
+| `Transition.isActive` | Checks if this transition is currently active/running. | None |
+| `Transition.params` | Invokes the params member of ng.Transition. | `pathname: "to"` - Value supplied for the pathname parameter. |
+| `Transition.redirect` | Creates a new transition that is a redirection of the current one. This transition can be returned from a [[TransitionService]] hook to redirect a transition to a new state and/or set of parameters. | `targetState: TargetState` - the new target state for the redirected transition |
+| `Transition.to` | Returns the "to state" Returns the state that the transition is going *to*. | None |
+| `Transition.toString` | A string representation of the Transition | None |
+| `Transition.valid` | Checks if the Transition is valid | None |
+| `TransitionsService.onBefore` | Registers a [[TransitionHookFn]], called *before a transition starts*. Registers a transition lifecycle hook, which is invoked before a transition even begins. This hook can be useful to implement logic which prevents a transition from even starting, such as authentication, redirection See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object \`{}\`. ### Lifecycle \`onBefore\` hooks are invoked *before a Transition starts*. No resolves have been fetched yet. Each \`onBefore\` hook is invoked synchronously, in the same call stack as [[StateService.transitionTo]]. The registered \`onBefore\` hooks are invoked in priority order. Note: during the \`onBefore\` phase, additional hooks can be added to the specific [[Transition]] instance. These "on-the-fly" hooks only affect the currently running transition.. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. If any hook modifies the transition *synchronously* (by throwing, returning \`false\`, or returning a [[TargetState]]), the remainder of the hooks are skipped. If a hook returns a promise, the remainder of the \`onBefore\` hooks are still invoked synchronously. All promises are resolved, and processed asynchronously before the \`onStart\` phase of the Transition. ### Examples #### Default Substate This example redirects any transition from 'home' to 'home.dashboard'. This is commonly referred to as a "default substate". | `matchCriteria: HookMatchCriteria` - defines which Transitions the Hook should be invoked for.<br>`callback: TransitionHookFn` - the hook function which will be invoked.<br>`options: HookRegOptions` - Value supplied for the options parameter. |
+| `TransitionsService.onEnter` | Registers a [[TransitionStateHookFn]], called when a specific state is entered. Registers a lifecycle hook, which is invoked (during a transition) when a specific state is being entered. Since this hook is run only when the specific state is being *entered*, it can be useful for performing tasks when entering a submodule/feature area such as initializing a stateful service, or for guarding access to a submodule/feature area. See [[TransitionStateHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. \`onEnter\` hooks generally specify \`{ entering: 'somestate' }\`. To match all Transitions, use an empty criteria object \`{}\`. ### Lifecycle \`onEnter\` hooks are invoked when the Transition is entering a state. States are entered after the \`onRetain\` phase is complete. If more than one state is being entered, the parent state is entered first. The registered \`onEnter\` hooks for a state are invoked in priority order. Note: A built-in \`onEnter\` hook with high priority is used to fetch lazy resolve data for states being entered. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering \`onEnter\` hooks using the [[TransitionService]], you may define an \`onEnter\` hook directly on a state declaration (see: [[StateDeclaration.onEnter]]). ### Examples #### Audit Log This example uses a service to log that a user has entered the admin section of an app. This assumes that there are substates of the "admin" state, such as "admin.users", "admin.pages", etc. | `matchCriteria: HookMatchCriteria` - defines which Transitions the Hook should be invoked for.<br>`callback: TransitionStateHookFn` - the hook function which will be injected and invoked.<br>`options: HookRegOptions` - Value supplied for the options parameter. |
+| `TransitionsService.onError` | Registers a [[TransitionHookFn]], called after a transition has errored. Registers a transition lifecycle hook, which is invoked after a transition has been rejected for any reason. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object \`{}\`. ### Lifecycle The \`onError\` hooks are chained off the Transition's promise (see [[Transition.promise]]). If a Transition fails, its promise is rejected and the \`onError\` hooks are invoked. The \`onError\` hooks are invoked in priority order. Since these hooks are run after the transition is over, their return value is ignored. A transition "errors" if it was started, but failed to complete (for any reason). A *non-exhaustive list* of reasons a transition can error: - A transition was cancelled because a new transition started while it was still running (\`Transition superseded\`) - A transition was cancelled by a Transition Hook returning false - A transition was redirected by a Transition Hook returning a [[TargetState]] - A Transition Hook or resolve function threw an error - A Transition Hook returned a rejected promise - A resolve function returned a rejected promise To check the failure reason, inspect the return value of [[Transition.error]]. Note: \`onError\` should be used for targeted error handling, or error recovery. For catch-all error reporting, configure \`$router.error\` or \`$exceptionHandler\`. ### Return value Since the Transition is already completed, the hook's return value is ignored | `matchCriteria: HookMatchCriteria` - defines which Transitions the Hook should be invoked for.<br>`callback: TransitionHookFn` - the hook function which will be injected and invoked.<br>`options: HookRegOptions` - Value supplied for the options parameter. |
+| `TransitionsService.onExit` | Registers a [[TransitionStateHookFn]], called when a specific state is exited. Registers a lifecycle hook, which is invoked (during a transition) when a specific state is being exited. Since this hook is run only when the specific state is being *exited*, it can be useful for performing tasks when leaving a submodule/feature area such as cleaning up a stateful service, or for preventing the user from leaving a state or submodule until some criteria is satisfied. See [[TransitionStateHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. \`onExit\` hooks generally specify \`{ exiting: 'somestate' }\`. To match all Transitions, use an empty criteria object \`{}\`. ### Lifecycle \`onExit\` hooks are invoked when the Transition is exiting a state. States are exited after any \`onStart\` phase is complete. If more than one state is being exited, the child states are exited first. The registered \`onExit\` hooks for a state are invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering \`onExit\` hooks using the [[TransitionService]], you may define an \`onExit\` hook directly on a state declaration (see: [[StateDeclaration.onExit]]). | `matchCriteria: HookMatchCriteria` - defines which Transitions the Hook should be invoked for.<br>`callback: TransitionStateHookFn` - the hook function which will be injected and invoked.<br>`options: HookRegOptions` - Value supplied for the options parameter. |
+| `TransitionsService.onFinish` | Registers a [[TransitionHookFn]], called *just before a transition finishes*. Registers a transition lifecycle hook, which is invoked just before a transition finishes. This hook is a last chance to cancel or redirect a transition. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object \`{}\`. ### Lifecycle \`onFinish\` hooks are invoked after the \`onEnter\` phase is complete. These hooks are invoked just before the transition is "committed". Each hook is invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. | `matchCriteria: HookMatchCriteria` - defines which Transitions the Hook should be invoked for.<br>`callback: TransitionHookFn` - the hook function which will be injected and invoked.<br>`options: HookRegOptions` - Value supplied for the options parameter. |
+| `TransitionsService.onRetain` | Registers a [[TransitionStateHookFn]], called when a specific state is retained/kept. Registers a lifecycle hook, which is invoked (during a transition) for a specific state that was previously active will remain active (is not being entered nor exited). This hook is invoked when a state is "retained" or "kept". It means the transition is coming *from* a substate of the retained state *to* a substate of the retained state. This hook can be used to perform actions when the user moves from one substate to another, such as between steps in a wizard. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. \`onRetain\` hooks generally specify \`{ retained: 'somestate' }\`. To match all Transitions, use an empty criteria object \`{}\`. ### Lifecycle \`onRetain\` hooks are invoked after any \`onExit\` hooks have been fired. If more than one state is retained, the child states' \`onRetain\` hooks are invoked first. The registered \`onRetain\` hooks for a state are invoked in priority order. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Inside a state declaration Instead of registering \`onRetain\` hooks using the [[TransitionService]], you may define an \`onRetain\` hook directly on a state declaration (see: [[StateDeclaration.onRetain]]). | `matchCriteria: HookMatchCriteria` - defines which Transitions the Hook should be invoked for.<br>`callback: TransitionStateHookFn` - the hook function which will be injected and invoked.<br>`options: HookRegOptions` - Value supplied for the options parameter. |
+| `TransitionsService.onStart` | Registers a [[TransitionHookFn]], called when a transition starts. Registers a transition lifecycle hook, which is invoked as a transition starts running. This hook can be useful to perform some asynchronous action before completing a transition. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object \`{}\`. ### Lifecycle \`onStart\` hooks are invoked asynchronously when the Transition starts running. This happens after the \`onBefore\` phase is complete. At this point, the Transition has not yet exited nor entered any states. The registered \`onStart\` hooks are invoked in priority order. Note: A built-in \`onStart\` hook with high priority is used to fetch any eager resolve data. ### Return value The hook's return value can be used to pause, cancel, or redirect the current Transition. See [[HookResult]] for more information. ### Example #### Load feature shell data during transition This example pauses transitions into a reporting branch while an application-level feature shell loads. Use state \`resolve\` for route data and \`policy.navigation\` for security; use transition hooks for advanced orchestration that intentionally spans multiple states. #### Example: \`\`\`js $transitions.onStart({ to: 'reports.**' }, function(trans) { var reportsShell = trans.injector().get('ReportsShell'); return reportsShell.ensureLoaded(); }); \`\`\` | `matchCriteria: HookMatchCriteria` - defines which Transitions the Hook should be invoked for.<br>`callback: TransitionHookFn` - the hook function which will be injected and invoked.<br>`options: HookRegOptions` - Value supplied for the options parameter. |
+| `TransitionsService.onSuccess` | Registers a [[TransitionHookFn]], called after a successful transition completed. Registers a transition lifecycle hook, which is invoked after a transition successfully completes. See [[TransitionHookFn]] for the signature of the function. The [[HookMatchCriteria]] is used to determine which Transitions the hook should be invoked for. To match all Transitions, use an empty criteria object \`{}\`. ### Lifecycle \`onSuccess\` hooks are chained off the Transition's promise (see [[Transition.promise]]). If the Transition is successful and its promise is resolved, then the \`onSuccess\` hooks are invoked. Since these hooks are run after the transition is over, their return value is ignored. The \`onSuccess\` hooks are invoked in priority order. ### Return value Since the Transition is already completed, the hook's return value is ignored | `matchCriteria: HookMatchCriteria` - defines which Transitions the Hook should be invoked for.<br>`callback: TransitionHookFn` - the hook function which will be injected and invoked.<br>`options: HookRegOptions` - Value supplied for the options parameter. |
+| `WasmBinding.dispose` | Invokes the dispose member of ng.WasmBinding. | None |
+| `WasmResource.bind` | Invokes the bind member of ng.WasmResource. | `target: TTarget` - Value supplied for the target parameter.<br>`options: WasmBindingOptions` - Value supplied for the options parameter. |
+| `WasmResource.dispose` | Invokes the dispose member of ng.WasmResource. | None |
+| `WasmService.load` | Loads one module and returns its owned resource. | `options: WasmLoadOptions` - Value supplied for the options parameter. |
+| `WebComponentContext.dispatch` | Dispatch a composed bubbling DOM event from the host. | `type: string` - Value supplied for the type parameter.<br>`detail: unknown` - Value supplied for the detail parameter.<br>`init: CustomEventInit<any>` - Value supplied for the init parameter. |
+| `WebComponentInputConfig.type` | Attribute/property coercion function. Defaults to \`String\`. | `value: any` - Value supplied for the value parameter. |
+| `WebComponentService.createElementScope` | Create and attach a normal AngularTS child scope for a custom element. | `host: HTMLElement` - Value supplied for the host parameter.<br>`initialState: T` - Value supplied for the initialState parameter.<br>`options: ElementScopeOptions` - Value supplied for the options parameter. |
+| `WebComponentService.defineAppComponent` | Define an options-backed application host custom element. | `name: string` - Value supplied for the name parameter.<br>`options: AppComponentOptions<T>` - Value supplied for the options parameter. |
+| `WebComponentService.defineElement` | Define a native custom element backed by an AngularTS child scope. | `name: string` - Value supplied for the name parameter.<br>`elementClass: ScopeElementConstructor<T>` - Value supplied for the elementClass parameter. |
+| `WebSocketConfig.onProtocolMessage` | Called when a decoded message uses the realtime protocol shape. | `data: RealtimeProtocolMessage` - Value supplied for the data parameter.<br>`event: Event \| MessageEvent<any>` - Value supplied for the event parameter. |
+| `WebSocketConnection.close` | Close the WebSocket connection and stop reconnect attempts. | None |
+| `WebSocketConnection.reconnect` | Manually restart the WebSocket connection. | None |
+| `WebSocketConnection.send` | Send a JSON-serialized message through the native WebSocket. | `data: unknown` - Value supplied for the data parameter. |
+| `WebTransportConfig.onClose` | Called when the managed connection closes without another reconnect. | None |
+| `WebTransportConfig.onDatagram` | Called with each incoming datagram. | `event: WebTransportDatagramEvent<unknown>` - Value supplied for the event parameter. |
+| `WebTransportConfig.onError` | Called when opening, reading, writing, or closing fails. | `error: unknown` - Value supplied for the error parameter. |
+| `WebTransportConfig.onOpen` | Called whenever the current native transport resolves \`ready\`. | None |
+| `WebTransportConfig.onProtocolMessage` | Called when a decoded datagram uses the realtime protocol shape. | `message: RealtimeProtocolMessage` - Value supplied for the message parameter.<br>`event: WebTransportDatagramEvent<RealtimeProtocolMessage>` - Value supplied for the event parameter. |
+| `WebTransportConfig.onReconnect` | Called after a replacement session is ready so callers can renegotiate state. | `event: WebTransportReconnectEvent` - Value supplied for the event parameter. |
+| `WebTransportConfig.transformDatagram` | Converts incoming datagram bytes into the value passed as \`event.message\`. | `data: Uint8Array<ArrayBufferLike>` - Value supplied for the data parameter. |
+| `WebTransportConnection.close` | Close the WebTransport session. | `closeInfo: WebTransportCloseInfo` - Value supplied for the closeInfo parameter. |
+| `WebTransportConnection.createBidirectionalStream` | Open a reliable bidirectional stream. | None |
+| `WebTransportConnection.sendDatagram` | Send one unreliable datagram. | `data: WebTransportBufferInput` - Value supplied for the data parameter. |
+| `WebTransportConnection.sendStream` | Send data on a client-opened reliable unidirectional stream. | `data: WebTransportBufferInput` - Value supplied for the data parameter. |
+| `WebTransportConnection.sendText` | Send UTF-8 text as one unreliable datagram. | `data: string` - Value supplied for the data parameter. |
+| `WorkerConfig.decode` | Decode an inbound native message before delivering it to subscribers. | `data: unknown` - Value supplied for the data parameter.<br>`event: MessageEvent<unknown>` - Value supplied for the event parameter. |
+| `WorkerHandle.model` | Adapt this handle to the standard model synchronization contract. | `channel: string` - Value supplied for the channel parameter. |
+| `WorkerHandle.onError` | Subscribe to runtime, message, decoding, and request failures. | `listener: (error: WorkerError) => void` - Value supplied for the listener parameter. |
+| `WorkerHandle.onMessage` | Subscribe to decoded worker messages. | `listener: (data: TReceive, event: MessageEvent<unknown>) => void` - Value supplied for the listener parameter. |
+| `WorkerHandle.post` | Send a typed message and optional transferable ownership list. | `message: TSend` - Value supplied for the message parameter.<br>`transfer: readonly Transferable[]` - Value supplied for the transfer parameter. |
+| `WorkerHandle.request` | Send a correlated request using the AngularTS worker envelope. | `message: TSend` - Value supplied for the message parameter.<br>`options: WorkerRequestOptions` - Value supplied for the options parameter. |
+| `WorkerHandle.restart` | Replace the native worker unless this connection was terminated. | None |
+| `WorkerHandle.terminate` | Permanently terminate this managed connection. | None |
+| `Workflow.can` | Invokes the can member of ng.Workflow. | `command: Extract<keyof TContract["commands"], string>` - Value supplied for the command parameter. |
+| `Workflow.cancel` | Invokes the cancel member of ng.Workflow. | `command: Extract<keyof TContract["commands"], string>` - Value supplied for the command parameter. |
+| `Workflow.restore` | Invokes the restore member of ng.Workflow. | `snapshot: unknown` - Value supplied for the snapshot parameter. |
+| `Workflow.run` | Invokes the run member of ng.Workflow. | `command: TName` - Value supplied for the command parameter.<br>`input: WorkflowCommandInputArgs<WorkflowCommandInput<TContract["commands"], TName>>` - Value supplied for the input parameter. |
+| `Workflow.snapshot` | Invokes the snapshot member of ng.Workflow. | None |
+| `WorkflowCommandContext.cleanup` | Invokes the cleanup member of ng.WorkflowCommandContext. | `callback: () => void` - Value supplied for the callback parameter. |
+| `WorkflowCommandContext.reject` | Stop the command with a controlled, recorded diagnostic. | `diagnostic: WorkflowDiagnostic` - Value supplied for the diagnostic parameter. |
+| `WorkflowCommandDefinition.execute` | Invokes the execute member of ng.WorkflowCommandDefinition. | `context: WorkflowCommandContext<TContract, TCommand["input"]>` - Value supplied for the context parameter. |
+| `WorkflowSupervisor.cancelAll` | Invokes the cancelAll member of ng.WorkflowSupervisor. | None |
+| `WorkflowSupervisor.persist` | Invokes the persist member of ng.WorkflowSupervisor. | None |
+| `WorkflowSupervisor.recover` | Invokes the recover member of ng.WorkflowSupervisor. | None |
+| `WorkflowSupervisor.restore` | Invokes the restore member of ng.WorkflowSupervisor. | `snapshot: unknown` - Value supplied for the snapshot parameter. |
+| `WorkflowSupervisor.snapshot` | Invokes the snapshot member of ng.WorkflowSupervisor. | None |
+| `WorkflowSupervisor.workflow` | Invokes the workflow member of ng.WorkflowSupervisor. | `name: TWorkflowName` - Value supplied for the name parameter. |
+| `WorkflowSupervisorPersistence.load` | Invokes the load member of ng.WorkflowSupervisorPersistence. | `id: string` - Value supplied for the id parameter. |
+| `WorkflowSupervisorPersistence.save` | Invokes the save member of ng.WorkflowSupervisorPersistence. | `id: string` - Value supplied for the id parameter.<br>`snapshot: TSnapshot` - Value supplied for the snapshot parameter. |

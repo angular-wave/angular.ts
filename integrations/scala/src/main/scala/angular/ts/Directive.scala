@@ -40,6 +40,7 @@ final case class Directive(
     template: js.UndefOr[String] = js.undefined,
     templateNamespace: js.UndefOr[String] = js.undefined,
     templateUrl: js.UndefOr[String] = js.undefined,
+    view: js.UndefOr[ProgrammaticView[js.Any, js.Any]] = js.undefined,
     transclude: js.UndefOr[Boolean] = js.undefined,
 ):
   private[ts] def factory: js.Function0[js.Object] =
@@ -62,5 +63,6 @@ final case class Directive(
         "template" -> template,
         "templateNamespace" -> templateNamespace,
         "templateUrl" -> templateUrl,
+        "view" -> view,
         "transclude" -> transclude,
       )

@@ -69,7 +69,7 @@ angular.module("demo", []).directive("highlight", () => {
 
       paint(scope.color);
 
-      scope.$watch("color", paint);
+      scope.watch("color", paint);
     },
   };
 });

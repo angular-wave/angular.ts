@@ -42,7 +42,7 @@ describe("ngOptions", () => {
   }
 
   async function bootstrapSelect() {
-    const initialScopeValues = { ...(scope.$target ?? scope) };
+    const initialScopeValues = { ...(scope._target ?? scope) };
 
     injector = window.angular.bootstrap(element, ["myModule"]);
     scope = injector.get("$rootScope");
@@ -250,11 +250,11 @@ describe("ngOptions", () => {
 
     injector = createInjector(["myModule"]);
     $compile = injector.get("$compile");
-    scope = injector.get("$rootScope").$new(); // create a child scope because the root scope can't be $destroy-ed
+    scope = injector.get("$rootScope").new(); // create a child scope because the root scope can't be $destroy-ed
   });
 
   afterEach(() => {
-    // scope.$destroy(); // disables unknown option work during destruction
+    // scope.destroy(); // disables unknown option work during destruction
     // dealoc(formElement);
     // ngModelCtrl = null;
   });
@@ -3253,7 +3253,7 @@ describe("ngOptions", () => {
       await wait();
       expect(element.classList.contains("ng-valid")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeFalsy();
+      expect(ngModelCtrl.error.required).toBeFalsy();
 
       await wait();
 
@@ -3265,7 +3265,7 @@ describe("ngOptions", () => {
       await wait();
       expect(element.classList.contains("ng-invalid")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeTruthy();
+      expect(ngModelCtrl.error.required).toBeTruthy();
 
       await wait();
 
@@ -3273,7 +3273,7 @@ describe("ngOptions", () => {
       await wait();
       expect(element.classList.contains("ng-valid")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeFalsy();
+      expect(ngModelCtrl.error.required).toBeFalsy();
 
       // // model -> view
       scope.selection = null;
@@ -3282,7 +3282,7 @@ describe("ngOptions", () => {
       await wait();
       expect(element.classList.contains("ng-invalid")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeTruthy();
+      expect(ngModelCtrl.error.required).toBeTruthy();
     });
 
     it("should validate with empty option and bound ngRequired", async () => {
@@ -3356,7 +3356,7 @@ describe("ngOptions", () => {
 
       {
         // ngModelWatch does not set objectEquality flag
-        // array must be replaced in order to trigger $formatters
+        // array must be replaced in order to trigger formatters
         scope.value = [scope.values[0]];
       }
       await wait();
@@ -3378,7 +3378,7 @@ describe("ngOptions", () => {
       await wait();
       expect(element.classList.contains("ng-pristine")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeFalsy();
+      expect(ngModelCtrl.error.required).toBeFalsy();
     });
 
     it("should NOT set the error if the unknown option is selected", async () => {
@@ -3397,7 +3397,7 @@ describe("ngOptions", () => {
 
       expect(element.classList.contains("ng-valid")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeFalsy();
+      expect(ngModelCtrl.error.required).toBeFalsy();
 
       scope.selection = "c";
       await wait();
@@ -3405,7 +3405,7 @@ describe("ngOptions", () => {
       await wait();
       expect(element.classList.contains("ng-valid")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeFalsy();
+      expect(ngModelCtrl.error.required).toBeFalsy();
     });
 
     it("should allow falsy values as values", async () => {
@@ -3462,7 +3462,7 @@ describe("ngOptions", () => {
       await wait();
       expect(element.classList.contains("ng-valid")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeFalsy();
+      expect(ngModelCtrl.error.required).toBeFalsy();
 
       {
         scope.values = ["C", "D"];
@@ -3474,7 +3474,7 @@ describe("ngOptions", () => {
       await wait();
       expect(element.classList.contains("ng-invalid")).toBeTrue();
       await wait();
-      expect(ngModelCtrl.$error.required).toBeTruthy();
+      expect(ngModelCtrl.error.required).toBeTruthy();
       // ngModel sets undefined for invalid values
       await wait();
       expect(scope.selection).toBeUndefined();
@@ -3507,14 +3507,14 @@ describe("ngOptions", () => {
   });
 
   describe("ngModelCtrl", () => {
-    it('should prefix the model value with the word "the" using $parsers', async () => {
+    it('should prefix the model value with the word "the" using parsers', async () => {
       await createSelect({
         name: "select",
         "ng-model": "value",
         "ng-options": "item for item in ['first', 'second', 'third', 'fourth']",
       });
 
-      scope.form.select.$parsers.push((value) => `the ${value}`);
+      scope.form.select.parsers.push((value) => `the ${value}`);
 
       await wait();
 
@@ -3525,7 +3525,7 @@ describe("ngOptions", () => {
       expect(element).toEqualSelectValue("third");
     });
 
-    it('should prefix the view value with the word "the" using $formatters', async () => {
+    it('should prefix the view value with the word "the" using formatters', async () => {
       await createSelect({
         name: "select",
         "ng-model": "value",
@@ -3533,7 +3533,7 @@ describe("ngOptions", () => {
           "item for item in ['the first', 'the second', 'the third', 'the fourth']",
       });
 
-      scope.form.select.$formatters.push((value) => `the ${value}`);
+      scope.form.select.formatters.push((value) => `the ${value}`);
 
       {
         scope.value = "third";
@@ -3542,14 +3542,14 @@ describe("ngOptions", () => {
       expect(element).toEqualSelectValue("the third");
     });
 
-    it("should fail validation when $validators fail", async () => {
+    it("should fail validation when validators fail", async () => {
       await createSelect({
         name: "select",
         "ng-model": "value",
         "ng-options": "item for item in ['first', 'second', 'third', 'fourth']",
       });
 
-      scope.form.select.$validators.fail = function () {
+      scope.form.select.validators.fail = function () {
         return false;
       };
 
@@ -3564,14 +3564,14 @@ describe("ngOptions", () => {
       expect(element).toEqualSelectValue("third");
     });
 
-    it("should pass validation when $validators pass", async () => {
+    it("should pass validation when validators pass", async () => {
       await createSelect({
         name: "select",
         "ng-model": "value",
         "ng-options": "item for item in ['first', 'second', 'third', 'fourth']",
       });
 
-      scope.form.select.$validators.pass = function () {
+      scope.form.select.validators.pass = function () {
         return true;
       };
 
@@ -3586,7 +3586,7 @@ describe("ngOptions", () => {
       expect(element).toEqualSelectValue("third");
     });
 
-    it("should fail validation when $asyncValidators fail", async () => {
+    it("should fail validation when asyncValidators fail", async () => {
       let defer;
 
       await createSelect({
@@ -3595,7 +3595,7 @@ describe("ngOptions", () => {
         "ng-options": "item for item in ['first', 'second', 'third', 'fourth']",
       });
 
-      scope.form.select.$asyncValidators.async = function () {
+      scope.form.select.asyncValidators.async = function () {
         defer = Promise.withResolvers();
 
         return defer.promise;
@@ -3605,7 +3605,7 @@ describe("ngOptions", () => {
 
       setSelectValue(element, 3);
       await wait();
-      expect(scope.form.select.$pending).toBeDefined();
+      expect(scope.form.select.pending).toBeDefined();
       await wait();
       expect(scope.value).toBeUndefined();
       await wait();
@@ -3613,14 +3613,14 @@ describe("ngOptions", () => {
 
       defer.reject();
       await wait();
-      expect(scope.form.select.$pending).toBeUndefined();
+      expect(scope.form.select.pending).toBeUndefined();
       await wait();
       expect(scope.value).toBeUndefined();
       await wait();
       expect(element).toEqualSelectValue("third");
     });
 
-    it("should pass validation when $asyncValidators pass", async () => {
+    it("should pass validation when asyncValidators pass", async () => {
       let defer;
 
       await createSelect({
@@ -3629,7 +3629,7 @@ describe("ngOptions", () => {
         "ng-options": "item for item in ['first', 'second', 'third', 'fourth']",
       });
 
-      scope.form.select.$asyncValidators.async = function () {
+      scope.form.select.asyncValidators.async = function () {
         defer = Promise.withResolvers();
 
         return defer.promise;
@@ -3639,7 +3639,7 @@ describe("ngOptions", () => {
 
       setSelectValue(element, 3);
       await wait();
-      expect(scope.form.select.$pending).toBeDefined();
+      expect(scope.form.select.pending).toBeDefined();
       await wait();
       expect(scope.value).toBeUndefined();
       await wait();
@@ -3647,14 +3647,14 @@ describe("ngOptions", () => {
 
       defer.resolve();
       await wait();
-      expect(scope.form.select.$pending).toBeUndefined();
+      expect(scope.form.select.pending).toBeUndefined();
       await wait();
       expect(scope.value).toBe("third");
       await wait();
       expect(element).toEqualSelectValue("third");
     });
 
-    it("should not set $dirty with select-multiple after compilation", async () => {
+    it("should not set dirty with select-multiple after compilation", async () => {
       scope.values = ["a", "b"];
       scope.selected = ["b"];
 
@@ -3669,7 +3669,7 @@ describe("ngOptions", () => {
 
       expect(element.querySelectorAll("option")[1].selected).toBe(true);
       await wait();
-      expect(scope.form.select.$pristine).toBe(true);
+      expect(scope.form.select.pristine).toBe(true);
     });
   });
 
@@ -3685,16 +3685,16 @@ describe("ngOptions", () => {
       scope.isBlank = true;
       await wait();
 
-      expect(typeof selectCtrl.$hasEmptyOption()).toBe("boolean");
-      expect(typeof selectCtrl.$isEmptyOptionSelected()).toBe("boolean");
-      expect(typeof selectCtrl.$isUnknownOptionSelected()).toBe("boolean");
+      expect(typeof selectCtrl.hasEmptyOption()).toBe("boolean");
+      expect(typeof selectCtrl.isEmptyOptionSelected()).toBe("boolean");
+      expect(typeof selectCtrl.isUnknownOptionSelected()).toBe("boolean");
 
       scope.selected = "unmatched";
       await wait();
 
-      expect(typeof selectCtrl.$hasEmptyOption()).toBe("boolean");
-      expect(typeof selectCtrl.$isEmptyOptionSelected()).toBe("boolean");
-      expect(typeof selectCtrl.$isUnknownOptionSelected()).toBe("boolean");
+      expect(typeof selectCtrl.hasEmptyOption()).toBe("boolean");
+      expect(typeof selectCtrl.isEmptyOptionSelected()).toBe("boolean");
+      expect(typeof selectCtrl.isUnknownOptionSelected()).toBe("boolean");
     });
   });
 });

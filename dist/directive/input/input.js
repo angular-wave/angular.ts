@@ -26,7 +26,7 @@ function toNativeInputString(value) {
 }
 function unwrapNgModelController(ctrl) {
     while (isProxy(ctrl)) {
-        ctrl = ctrl.$target;
+        ctrl = ctrl._target;
     }
     return ctrl;
 }
@@ -106,19 +106,19 @@ function createInputControlBinding(element, ctrl, type, valueKind, updateEvent) 
     const eventRemovers = new Set();
     let composing = false;
     function syncNativeValidity() {
-        ctrl.$setNativeValidity(!element.willValidate || element.validity.valid);
+        ctrl.setNativeValidity(!element.willValidate || element.validity.valid);
     }
     function syncViewToModel(trigger) {
-        ctrl.$setViewValue(readViewValue(element, valueKind), trigger);
+        ctrl.setViewValue(readViewValue(element, valueKind), trigger);
         syncNativeValidity();
     }
     function syncModelToView() {
-        writeViewValue(element, type, valueKind, ctrl.$viewValue);
+        writeViewValue(element, type, valueKind, ctrl.viewValue);
         syncNativeValidity();
     }
     function syncNativeViewValue(trigger = "input") {
-        ctrl.$setViewValue(readViewValue(element, valueKind), trigger);
-        ctrl.$commitViewValue();
+        ctrl.setViewValue(readViewValue(element, valueKind), trigger);
+        ctrl.commitViewValue();
         syncNativeValidity();
     }
     function disconnect() {
@@ -142,16 +142,16 @@ function createInputControlBinding(element, ctrl, type, valueKind, updateEvent) 
             ctrl._hasNativeValidators = true;
             ctrl._setNativeCustomValidity = setNativeCustomValidity;
             ctrl._syncNativeViewValue = syncNativeViewValue;
-            Object.defineProperty(ctrl, "$validity", {
+            Object.defineProperty(ctrl, "validity", {
                 configurable: true,
                 get: () => element.validity,
             });
-            Object.defineProperty(ctrl, "$validationMessage", {
+            Object.defineProperty(ctrl, "validationMessage", {
                 configurable: true,
                 get: () => element.validationMessage,
             });
-            ctrl.$isEmpty = (value) => isEmptyViewValue(valueKind, value);
-            ctrl.$render = () => {
+            ctrl.isEmpty = (value) => isEmptyViewValue(valueKind, value);
+            ctrl.render = () => {
                 syncModelToView();
             };
             syncNativeValidity();

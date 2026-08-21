@@ -85,6 +85,7 @@ class ManagedWebTransportConnection {
             this._settleClosed();
         }
     }
+    /** @internal */
     _open(attempt = 0, previousError) {
         let transport;
         try {
@@ -120,6 +121,7 @@ class ManagedWebTransportConnection {
             this._handleNativeClose(error, transport);
         });
     }
+    /** @internal */
     async _notifyReconnect(attempt, error) {
         if (!this._config.onReconnect)
             return;
@@ -138,6 +140,7 @@ class ManagedWebTransportConnection {
             this._log.error("WebTransport reconnect hook failed", nextError);
         }
     }
+    /** @internal */
     _handleNativeClose(error, transport = this.transport) {
         if (transport !== this.transport || this._closedSettled)
             return;
@@ -157,6 +160,7 @@ class ManagedWebTransportConnection {
         this._config.onClose?.();
         this._settleClosed();
     }
+    /** @internal */
     _scheduleReconnect(error) {
         if (this._closedSettled || !this._config.reconnect)
             return false;
@@ -172,6 +176,7 @@ class ManagedWebTransportConnection {
         }, delay);
         return true;
     }
+    /** @internal */
     _resolveRetryDelay(attempt, error) {
         const retryDelay = this._config.retryDelay ?? 1000;
         const delay = isFunction(retryDelay)
@@ -179,6 +184,7 @@ class ManagedWebTransportConnection {
             : retryDelay;
         return isNumber(delay) && Number.isFinite(delay) && delay > 0 ? delay : 0;
     }
+    /** @internal */
     _settleClosed(error) {
         if (this._closedSettled)
             return;
@@ -191,12 +197,14 @@ class ManagedWebTransportConnection {
             this._closedResolve();
         }
     }
+    /** @internal */
     _clearReconnectTimer() {
         if (!this._reconnectTimer)
             return;
         clearTimeout(this._reconnectTimer);
         this._reconnectTimer = undefined;
     }
+    /** @internal */
     async _readDatagrams(transport) {
         if (!this._config.onDatagram && !this._config.onProtocolMessage)
             return;
@@ -238,6 +246,7 @@ class ManagedWebTransportConnection {
             reader.releaseLock();
         }
     }
+    /** @internal */
     _toBytes(data) {
         if (isString(data)) {
             return this._encoder.encode(data);

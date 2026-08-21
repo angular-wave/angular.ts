@@ -64,7 +64,7 @@ describe("EventBus composition", () => {
     const second = createInjector(["secondEventBusInjector"]).get("$eventBus");
 
     expect(second).toBe(first);
-    expect(angular.$eventBus).toBe(first);
+    expect(angular.eventBus).toBe(first);
 
     angular._composition.destroy();
 
@@ -259,7 +259,7 @@ describe("EventBus", function () {
 
     expect(eventBus.getCount("scopeTopic")).toBe(1);
 
-    scope.$destroy();
+    scope.destroy();
 
     expect(eventBus.getCount("scopeTopic")).toBe(0);
     expect(eventBus.publish("scopeTopic")).toBe(false);
@@ -275,14 +275,14 @@ describe("EventBus", function () {
     const cleanup = eventBus.subscribe("scopeTopic", listener, scope);
 
     expect(eventBus.getCount("scopeTopic")).toBe(1);
-    expect(scope.$handler._listeners.get("$destroy").length).toBe(2);
+    expect(scope._handler._listeners.get("$destroy").length).toBe(2);
 
     expect(cleanup()).toBe(true);
 
     expect(eventBus.getCount("scopeTopic")).toBe(0);
-    expect(scope.$handler._listeners.get("$destroy").length).toBe(1);
+    expect(scope._handler._listeners.get("$destroy").length).toBe(1);
 
-    scope.$destroy();
+    scope.destroy();
 
     expect(cleanup()).toBe(false);
     expect(eventBus.getCount("scopeTopic")).toBe(0);
@@ -291,12 +291,12 @@ describe("EventBus", function () {
   it("should keep plain context lifecycle behavior unchanged", function () {
     const listener = jasmine.createSpy("listener");
     const context = {
-      $on: jasmine.createSpy("$on"),
+      on: jasmine.createSpy("on"),
     };
 
     const cleanup = eventBus.subscribe("plainTopic", listener, context);
 
-    expect(context.$on).not.toHaveBeenCalled();
+    expect(context.on).not.toHaveBeenCalled();
     expect(eventBus.getCount("plainTopic")).toBe(1);
     expect(cleanup()).toBe(true);
     expect(cleanup()).toBe(false);
@@ -357,7 +357,7 @@ describe("EventBus", function () {
 
     expect(eventBus.getCount("diagnosticsTopic")).toBe(2);
 
-    scope.$destroy();
+    scope.destroy();
 
     expect(eventBus.getCount("diagnosticsTopic")).toBe(1);
 
@@ -438,10 +438,10 @@ describe("EventBus", function () {
     );
 
     expect(eventBus.getCount("someTopic")).toBe(1);
-    expect(scope.$handler._listeners.get("$destroy").length).toBe(2);
+    expect(scope._handler._listeners.get("$destroy").length).toBe(2);
 
     eventBus.publish("someTopic");
-    scope.$destroy();
+    scope.destroy();
 
     await wait();
 
@@ -462,7 +462,7 @@ describe("EventBus", function () {
     );
 
     expect(eventBus.getCount("someTopic")).toBe(1);
-    expect(scope.$handler._listeners.get("$destroy").length).toBe(2);
+    expect(scope._handler._listeners.get("$destroy").length).toBe(2);
 
     eventBus.publish("someTopic", "first");
     eventBus.publish("someTopic", "second");
@@ -472,7 +472,7 @@ describe("EventBus", function () {
     expect(scope.callCount).toBe(1);
     expect(scope.value).toBe("first");
     expect(eventBus.getCount("someTopic")).toBe(0);
-    expect(scope.$handler._listeners.get("$destroy").length).toBe(1);
+    expect(scope._handler._listeners.get("$destroy").length).toBe(1);
     expect(cleanup()).toBe(false);
   });
 
@@ -711,7 +711,7 @@ describe("EventBus", function () {
 
       expect(eventBus.publish(SOME_TOPIC, "queued")).toBe(true);
 
-      scope.$destroy();
+      scope.destroy();
 
       await wait();
 
@@ -733,7 +733,7 @@ describe("EventBus", function () {
         scope,
       );
 
-      scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
       expect(eventBus.publish(SOME_TOPIC, "first")).toBe(true);
       expect(eventBus.publish(SOME_TOPIC, "second")).toBe(true);
 
@@ -742,7 +742,7 @@ describe("EventBus", function () {
       expect(scope.calls).toEqual([]);
       expect(calls).toEqual([]);
 
-      scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
 
       await wait();
 
@@ -768,22 +768,22 @@ describe("EventBus", function () {
         scope,
       );
 
-      scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
       expect(eventBus.publish(SOME_TOPIC, "queued")).toBe(true);
 
       await wait();
 
       expect(scope.calls).toEqual([]);
 
-      scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
 
       await wait();
 
       expect(scope.calls).toEqual(["first:queued", "second:queued"]);
-      expect(scope.$handler._listeners.get("$viewRetentionPause").length).toBe(
+      expect(scope._handler._listeners.get("$viewRetentionPause").length).toBe(
         1,
       );
-      expect(scope.$handler._listeners.get("$viewRetentionResume").length).toBe(
+      expect(scope._handler._listeners.get("$viewRetentionResume").length).toBe(
         1,
       );
     });
@@ -799,17 +799,17 @@ describe("EventBus", function () {
         scope,
       );
 
-      scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
       expect(eventBus.publish(SOME_TOPIC, "queued")).toBe(true);
 
-      scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
-      scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
 
       await wait();
 
       expect(scope.calls).toEqual([]);
 
-      scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
 
       await wait();
 
@@ -827,17 +827,17 @@ describe("EventBus", function () {
         scope,
       );
 
-      scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
-      scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
       expect(eventBus.publish(SOME_TOPIC, "queued")).toBe(true);
 
-      scope.$broadcast("$viewRetentionResume", { _pause: "background" });
+      scope.broadcast("$viewRetentionResume", { _pause: "background" });
 
       await wait();
 
       expect(scope.calls).toEqual([]);
 
-      scope.$broadcast("$viewRetentionResume", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionResume", { _pause: "schedulers" });
 
       await wait();
 
@@ -863,7 +863,7 @@ describe("EventBus", function () {
       expect(calls).toEqual(["immediate"]);
 
       eventBus.publish(SOME_TOPIC, "first");
-      scope.$broadcast("$viewRetentionPause", { _pause: "background" });
+      scope.broadcast("$viewRetentionPause", { _pause: "background" });
       eventBus.publish(SOME_TOPIC, "background");
       await wait();
 
@@ -884,10 +884,10 @@ describe("EventBus", function () {
         scope,
       );
 
-      scope.$broadcast("$viewRetentionPause", { _pause: "schedulers" });
+      scope.broadcast("$viewRetentionPause", { _pause: "schedulers" });
       expect(eventBus.publish(SOME_TOPIC, "first")).toBe(true);
 
-      scope.$destroy();
+      scope.destroy();
       await wait();
 
       expect(scope.calls).toEqual([]);

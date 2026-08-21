@@ -60,7 +60,7 @@ class AngularRuntime extends EventTarget {
         /** Global framework error-handling configuration. */
         this.errorHandlingConfig = errorHandlingConfig;
         /** Public injection token names keyed by token value. */
-        this.$t = {};
+        this.tokens = {};
         const runtimeOptions = normalizeRuntimeOptions(options);
         this._subapp = runtimeOptions.subapp;
         const hostRuntime = runtimeOptions.subapp
@@ -75,7 +75,7 @@ class AngularRuntime extends EventTarget {
         this._moduleRegistry = hostRuntime?._moduleRegistry ?? {};
         if (runtimeInjectionTokens) {
             values(runtimeInjectionTokens).forEach((token) => {
-                this.$t[token] = token;
+                this.tokens[token] = token;
             });
         }
         if (!runtimeOptions.subapp) {
@@ -114,10 +114,10 @@ class AngularRuntime extends EventTarget {
      */
     dispatchEvent(event) {
         const customEvent = event;
-        const $parse = this.$injector.get(_parse);
+        const $parse = this.currentInjector.get(_parse);
         const injectable = customEvent.type;
-        const target = this.$injector.has(injectable)
-            ? this.$injector.get(injectable)
+        const target = this.currentInjector.has(injectable)
+            ? this.currentInjector.get(injectable)
             : this.getScopeByName(injectable);
         if (!target) {
             const { detail } = customEvent;
@@ -237,8 +237,8 @@ class AngularRuntime extends EventTarget {
             (scope, el, compile, $injector) => {
                 const appContext = this._composition.appContext;
                 this._appContext = appContext;
-                this.$rootScope = scope;
-                this.$injector = $injector;
+                this.rootScope = scope;
+                this.currentInjector = $injector;
                 this._injectorCreated = true;
                 const rootElement = el;
                 appContext.attachRoot(scope, {
@@ -247,11 +247,11 @@ class AngularRuntime extends EventTarget {
                 });
                 rootScopeCleanupByElement.set(rootElement, () => {
                     const existingScope = getInheritedData(rootElement, _scope);
-                    if (existingScope?.$handler && !existingScope.$handler._destroyed) {
-                        existingScope.$destroy();
+                    if (existingScope?._handler && !existingScope._handler._destroyed) {
+                        existingScope.destroy();
                     }
-                    else if (!scope.$handler._destroyed) {
-                        scope.$destroy();
+                    else if (!scope._handler._destroyed) {
+                        scope.destroy();
                     }
                     if (rootScopeCleanupByElement.get(rootElement)) {
                         rootScopeCleanupByElement.delete(rootElement);
@@ -260,7 +260,7 @@ class AngularRuntime extends EventTarget {
                 setCacheData(el, _injector, $injector);
                 const compileFn = compile(el);
                 compileFn(scope);
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                     if (rootScopeCleanupByElement.get(rootElement)) {
                         rootScopeCleanupByElement.delete(rootElement);
                     }
@@ -277,12 +277,12 @@ class AngularRuntime extends EventTarget {
      */
     injector(modules) {
         if (this._injectorCreated) {
-            this.$injector.loadNewModules(modules);
-            return this.$injector;
+            this.currentInjector.loadNewModules(modules);
+            return this.currentInjector;
         }
-        this.$injector = createInjector(modules, undefined, (name) => this.module(name));
+        this.currentInjector = createInjector(modules, undefined, (name) => this.module(name));
         this._injectorCreated = true;
-        return this.$injector;
+        return this.currentInjector;
     }
     /**
      * Find `ng-app` roots under the provided element and bootstrap them.
@@ -326,20 +326,21 @@ class AngularRuntime extends EventTarget {
         });
     }
     /**
-     * Find a scope by its registered `$scopename`.
+     * Find a scope by its registered `scopeName`.
      *
      * @param name - Scope name to search for.
      * @returns The matching scope proxy, or `undefined`.
      */
     getScopeByName(name) {
         validateIsString(name, "name");
-        const $rootScope = this.$injector.get(_rootScope);
-        const scope = $rootScope.$searchByName(name);
-        return scope ? scope.$proxy : undefined;
+        const $rootScope = this.currentInjector.get(_rootScope);
+        const scope = $rootScope.searchByName(name);
+        return scope ? scope._proxy : undefined;
     }
     /**
      * Splits `"target.expression"` into the dispatch target and parse expression.
      */
+    /** @internal */
     static _splitInvocation(input) {
         if (!isString(input)) {
             throw new TypeError("Invocation must be a string.");

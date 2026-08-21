@@ -38,15 +38,15 @@ class ControllerRegistry {
         this._destroyed = false;
     }
     has(name) {
-        this.assertActive();
+        this._assertActive();
         return this._controllers.has(name);
     }
     get(name) {
-        this.assertActive();
+        this._assertActive();
         return this._controllers.get(name);
     }
     register(name, constructor) {
-        this.assertActive();
+        this._assertActive();
         if (isString(name)) {
             assertNotHasOwnProperty(name, "controller");
             this._controllers.set(name, normalizeControllerDef(constructor, name));
@@ -66,7 +66,8 @@ class ControllerRegistry {
         this._destroyed = true;
         this._controllers.clear();
     }
-    assertActive() {
+    /** @internal */
+    _assertActive() {
         if (this._destroyed) {
             throw new Error("Controller registry has already been disposed.");
         }
@@ -78,7 +79,7 @@ function addIdentifier(locals, identifier, instance, name) {
     }
     const scope = locals.$scope;
     scope[identifier] = instance;
-    scope.$controllerIdentifier = identifier;
+    scope._controllerIdentifier = identifier;
 }
 /** @internal */
 function createControllerService(registry, $injector) {
@@ -108,18 +109,18 @@ function createControllerService(registry, $injector) {
             instance = createObject(meta.prototype ?? null);
             const exportName = constructorName ?? meta.name;
             if (identifier) {
-                instance.$controllerIdentifier = identifier;
+                instance._controllerIdentifier = identifier;
                 addIdentifier(locals, identifier, instance, exportName);
             }
-            if (instance.constructor?.$scopename && locals?.$scope) {
-                locals.$scope.$scopename =
-                    instance.constructor.$scopename;
+            if (instance.constructor?.scopeName && locals?.$scope) {
+                locals.$scope.scopeName =
+                    instance.constructor.scopeName;
             }
             const initialize = ((instanceOverride) => {
                 if (instanceOverride) {
                     instance = instanceOverride;
                     if (identifier) {
-                        instance.$controllerIdentifier = identifier;
+                        instance._controllerIdentifier = identifier;
                         addIdentifier(locals, identifier, instance, exportName);
                     }
                 }
@@ -127,7 +128,7 @@ function createControllerService(registry, $injector) {
                 if (result !== instance && (isObject(result) || isFunction(result))) {
                     instance = result;
                     if (identifier) {
-                        instance.$controllerIdentifier = identifier;
+                        instance._controllerIdentifier = identifier;
                         addIdentifier(locals, identifier, instance, exportName);
                     }
                 }

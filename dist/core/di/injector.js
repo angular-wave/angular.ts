@@ -22,7 +22,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
     const protoInstanceInjector = new InjectorService(providerInjector);
     providerCache.$injectorProvider = {
         // $injectionProvider return instance injector
-        $get: () => protoInstanceInjector,
+        get: () => protoInstanceInjector,
     };
     let instanceInjector = protoInstanceInjector;
     const providerRegistry = {
@@ -63,8 +63,8 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
         else {
             newProvider = providerDefinition;
         }
-        if (!newProvider.$get) {
-            throw $injectorError("pget", "Provider '{0}' must define $get factory method.", name);
+        if (!newProvider.get) {
+            throw $injectorError("pget", "Provider '{0}' must define get factory method.", name);
         }
         providerCache[name + providerSuffix] = newProvider;
         return newProvider;
@@ -74,10 +74,10 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
      */
     function factory(name, factoryFn) {
         return provider(name, {
-            $get() {
+            get() {
                 const result = instanceInjector.invoke(factoryFn, this);
                 if (isUndefined(result)) {
-                    throw $injectorError("undef", "Provider '{0}' must return a value from $get factory method.", name);
+                    throw $injectorError("undef", "Provider '{0}' must return a value from get factory method.", name);
                 }
                 return result;
             },
@@ -103,7 +103,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
      */
     function value(name, val) {
         return (providerCache[name + providerSuffix] = {
-            $get: () => val,
+            get: () => val,
         });
     }
     /**
@@ -121,8 +121,8 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
      */
     function decorator(serviceName, decorFn) {
         const origProvider = providerInjector.get(serviceName + providerSuffix);
-        const origGet = origProvider.$get;
-        origProvider.$get = function () {
+        const origGet = origProvider.get;
+        origProvider.get = function () {
             const origInstance = instanceInjector.invoke(origGet, origProvider);
             return instanceInjector.invoke(decorFn, null, createServiceDecorationInvocationLocals(origInstance));
         };
@@ -136,7 +136,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
      */
     function store(name, ctor, type, backendOrConfig) {
         return provider(name, {
-            $get: [
+            get: [
                 _injector,
                 ($injector) => {
                     switch (type) {

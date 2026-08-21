@@ -2,6 +2,9 @@
 
 This package is the C++ binding for the shared AngularTS `WasmScope` ABI.
 
+Generated model contract descriptions are preserved as C++ documentation
+comments from the shared JSON contract manifest.
+
 Phase A provides a header-only facade in `include/angular_ts/wasm.hpp`:
 
 - `angular_ts` host import declarations with wasm import attributes.
@@ -27,7 +30,7 @@ needs to project JSON-compatible values into the DOM.
 
 Do not route app-owned AngularTS model state through C++ scope helpers just to
 make it persistent or shared. Use `app.model(...)` and a host-side
-`model.$sync(...)` target around the C++ runtime, passing plain snapshots across
+`model.sync(...)` target around the C++ runtime, passing plain snapshots across
 that boundary. The C++ binding should not add model handles, model path writes,
 or model watch imports unless the shared ABI adds that surface later.
 
@@ -36,6 +39,13 @@ or model watch imports unless the shared ABI adds that surface later.
 C++ currently exposes the shared `WasmScope` ABI surface only. It does not
 publish AngularTS `ng` namespace service or authoring types, so the Rust/Go
 namespace parity checklist does not apply to this binding yet.
+
+## Programmatic Views
+
+Programmatic views live in the JavaScript host adapter: register `view` in the
+component definition, construct DOM with `angular.tags`, and project C++ state
+through the bound `WasmScope`. The low-level C++ ABI remains free of fictitious
+DOM handles.
 
 ## Checks
 

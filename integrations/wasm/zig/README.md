@@ -2,6 +2,9 @@
 
 This package is the Zig binding for the shared AngularTS `WasmScope` ABI.
 
+Generated model contract descriptions are preserved as Zig documentation
+comments from the shared JSON contract manifest.
+
 The binding provides:
 
 - `angular_ts` host import declarations for the shared scope ABI.
@@ -74,7 +77,7 @@ controller, component, or directive scope.
 
 App-owned state should stay in AngularTS models. If a Zig runtime needs durable
 or shared state, wrap the runtime with an AngularTS service or
-`model.$sync(...)` target and pass plain snapshots across that boundary. Do not
+`model.sync(...)` target and pass plain snapshots across that boundary. Do not
 add model handles or model watch imports to this binding until the shared ABI
 adds a model surface.
 
@@ -83,6 +86,13 @@ adds a model surface.
 Zig currently exposes the shared `WasmScope` ABI surface only. It does not
 publish AngularTS `ng` namespace service or authoring types, so the Rust/Go
 namespace parity checklist does not apply to this binding yet.
+
+## Programmatic Views
+
+Register programmatic views in the JavaScript host adapter, construct real DOM
+with `angular.tags`, and project Zig-owned state through the bound `WasmScope`.
+The numeric/byte ABI cannot return JavaScript DOM nodes, so Zig does not expose
+a guest-side view callback until a real object bridge exists.
 
 ## Checks
 

@@ -81,7 +81,7 @@ Use `trigger="load"` to fire the request immediately when the element is linked 
 <form ng-post="/api/contact" name="contactForm">
   <input name="email" type="email" ng-model="contact.email" required />
   <textarea name="message" ng-model="contact.message" required></textarea>
-  <button type="submit" ng-disabled="contactForm.$invalid">Send</button>
+  <button type="submit" ng-disabled="contactForm.invalid">Send</button>
 </form>
 ```
 
@@ -347,6 +347,6 @@ Sets the `Content-Type` request header and URL-encodes form data. Use `"applicat
   <input type="email" name="email" ng-model="credentials.email" required />
   <input type="password" name="password" ng-model="credentials.password" required />
   <p ng-if="authError" ng-bind="authError"></p>
-  <button type="submit" ng-disabled="loginForm.$invalid">Log in</button>
+  <button type="submit" ng-disabled="loginForm.invalid">Log in</button>
 </form>
 ```

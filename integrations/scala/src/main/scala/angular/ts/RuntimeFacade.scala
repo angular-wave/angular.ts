@@ -7,11 +7,23 @@ import scala.scalajs.js.annotation.*
 @js.native
 @JSGlobal("angular")
 private[ts] object RuntimeAngular extends js.Object:
+  val tags: js.Dynamic = js.native
+  val view: js.Dynamic = js.native
   def module(name: String): RuntimeNgModule = js.native
   def module(name: String, requires: js.Array[String]): RuntimeNgModule =
     js.native
   def bootstrap(element: dom.Element, modules: js.Array[String]): RuntimeInjector =
     js.native
+
+@js.native
+@JSGlobal("Reflect")
+private[ts] object RuntimeReflect extends js.Object:
+  @JSName("apply")
+  def invoke(
+      target: js.Function,
+      thisArgument: js.Any,
+      argumentsList: js.Array[js.Any],
+  ): js.Any = js.native
 
 @js.native
 private[ts] trait RuntimeNgModule extends js.Object:

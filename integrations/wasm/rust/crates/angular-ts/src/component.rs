@@ -3,6 +3,7 @@
 pub enum TemplateSource {
     Inline(&'static str),
     Url(&'static str),
+    View(&'static str),
 }
 
 /// Component metadata consumed by generated AngularTS glue.
@@ -46,6 +47,24 @@ impl ComponentMetadata {
         Self {
             selector,
             template: TemplateSource::Url(template_url),
+            injections,
+        }
+    }
+
+    /// Creates metadata for an exported programmatic view function.
+    pub const fn view(selector: &'static str, view_export: &'static str) -> Self {
+        Self::view_with_injections(selector, view_export, &[])
+    }
+
+    /// Creates programmatic view metadata with controller injections.
+    pub const fn view_with_injections(
+        selector: &'static str,
+        view_export: &'static str,
+        injections: &'static [InjectionMetadata],
+    ) -> Self {
+        Self {
+            selector,
+            template: TemplateSource::View(view_export),
             injections,
         }
     }

@@ -18,7 +18,7 @@
       try {
         const writes = [];
         const model = angular._appContext.createReactive({ count: 0 });
-        const stop = model.$sync({
+        const stop = model.sync({
           write(snapshot, change) {
             writes.push({ snapshot, change });
           },
@@ -72,7 +72,7 @@
 
         stop();
         abi.dispose();
-        model.$destroy();
+        model.destroy();
       } catch (error) {
         window.__wasmPackageError = error?.stack || String(error);
       }

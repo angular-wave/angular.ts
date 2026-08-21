@@ -42,7 +42,7 @@ app.controller("zigTodoController", [
         runCommand("archive", guest.exports.todo_archive_completed),
       );
 
-    $scope.$on("$destroy", () => {
+    $scope.on("$destroy", () => {
       if (guest.status === "ready") guest.exports.todo_unbind();
     });
   },

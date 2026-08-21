@@ -70,6 +70,7 @@ class StateObject {
     fqn() {
         return this._pathName();
     }
+    /** @internal */
     _pathName() {
         return (this.path ?? [])
             .map((state) => state.name)

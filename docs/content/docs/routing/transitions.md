@@ -33,7 +33,7 @@ The `Transition` exposes these paths through `trans.exiting()`,
 `StateDeclaration` objects. Use `trans.treeChanges(pathname)` for the raw
 `PathNode[]` arrays.
 
-Each transition has a numeric `$id` and a `promise` that resolves to the
+Each transition has a numeric `id` and a `promise` that resolves to the
 `StateDeclaration` for the to-state on success, or rejects with an error object
 on failure.
 
@@ -330,7 +330,7 @@ The active transition is stored on `$router.transition`. Inside any hook, the
   console.log('Params:', transition.params());
   console.log('Entering:', transition.entering().map(s => s.name));
   console.log('Exiting:', transition.exiting().map(s => s.name));
-  console.log('ID:', transition.$id);
+  console.log('ID:', transition.id);
 });
 ```
 

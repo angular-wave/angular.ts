@@ -116,9 +116,9 @@ type AppDestroyHook = () => void;
 export type Model<T extends Record<string, unknown> = Record<string, unknown>> =
   T &
     ng.Scope & {
-      $snapshot(): T;
-      $restore(snapshot: T, options?: ModelRestoreOptions): void;
-      $sync(
+      snapshot(): T;
+      restore(snapshot: T, options?: ModelRestoreOptions): void;
+      sync(
         target:
           | ModelSyncTarget<T>
           | Injectable<(...args: never[]) => ModelSyncTarget<T>>,
@@ -214,7 +214,7 @@ export class AppContext {
     this._scopeRuntime = runtime;
 
     this._reactiveModels.forEach((model) => {
-      model.$handler._setRuntimeDependencies(runtime);
+      model._handler._setRuntimeDependencies(runtime);
     });
   }
 
@@ -254,7 +254,7 @@ export class AppContext {
           return;
         }
 
-        root.rootScope.$destroy();
+        root.rootScope.destroy();
       },
     };
 
@@ -265,7 +265,7 @@ export class AppContext {
       this._rootsByElement.set(root.rootElement, root);
     }
 
-    root.rootScope.$on("$destroy", () => {
+    root.rootScope.on("$destroy", () => {
       this._markRootDestroyed(root);
     });
 
@@ -364,7 +364,7 @@ export class AppContext {
     ) as Model<T>;
 
     if (this._scopeRuntime) {
-      model.$handler._setRuntimeDependencies(this._scopeRuntime);
+      model._handler._setRuntimeDependencies(this._scopeRuntime);
     }
 
     attachModelLifecycle(this, model, options);
@@ -429,7 +429,7 @@ export class AppContext {
     const reactiveModels = Array.from(this._reactiveModels);
 
     for (let i = 0, l = reactiveModels.length; i < l; i++) {
-      reactiveModels[i].$destroy();
+      reactiveModels[i].destroy();
     }
 
     this.modelScheduler.destroy();
@@ -558,8 +558,8 @@ function attachModelLifecycle<T extends ModelState>(
   model: Model<T>,
   options: AppModelRegisterOptions & { name?: string },
 ): void {
-  const handler = model.$handler as Scope;
-  const target = model.$target as T;
+  const handler = model._handler as Scope;
+  const target = model._target as T;
   const syncRecords = new Set<ModelSyncRecord<T>>();
   const pendingKeys = new Set<string>();
   let pendingOrigin: string | undefined;
@@ -626,15 +626,15 @@ function attachModelLifecycle<T extends ModelState>(
   };
 
   handler._modelChangeTracker = tracker;
-  model.$on("$destroy", () => {
+  model.on("$destroy", () => {
     context._releaseReactive(model);
 
     for (const record of Array.from(syncRecords)) {
       disposeModelSyncRecord(context, syncRecords, record);
     }
   });
-  handler._propertyMap.$snapshot = snapshot;
-  handler._propertyMap.$restore = (
+  handler._propertyMap.snapshot = snapshot;
+  handler._propertyMap.restore = (
     incoming: T,
     restoreOptions: ModelRestoreOptions = {},
   ): void => {
@@ -647,7 +647,7 @@ function attachModelLifecycle<T extends ModelState>(
     currentOrigin = normalizedRestoreOptions.origin;
 
     try {
-      model.$batch(() => {
+      model.batch(() => {
         if (normalizedRestoreOptions.mode !== "merge") {
           const currentKeys = Object.keys(target);
 
@@ -670,7 +670,7 @@ function attachModelLifecycle<T extends ModelState>(
       currentOrigin = previousOrigin;
     }
   };
-  handler._propertyMap.$sync = (
+  handler._propertyMap.sync = (
     input: ModelSyncTargetInput<T>,
     syncOptions: ModelSyncOptions = {},
   ): (() => void) => {
@@ -697,7 +697,7 @@ function attachModelLifecycle<T extends ModelState>(
             const normalizedRestoreOptions =
               normalizeModelRestoreOptions(restoreOptions);
 
-            model.$restore(incoming, {
+            model.restore(incoming, {
               ...normalizedRestoreOptions,
               origin: normalizedRestoreOptions.origin ?? origin,
             });
@@ -729,7 +729,7 @@ function attachModelLifecycle<T extends ModelState>(
             return;
           }
 
-          model.$restore(incoming, { origin });
+          model.restore(incoming, { origin });
         };
 
         if (isPromiseLike(result)) {
@@ -964,6 +964,7 @@ function createAppModelScheduler(
       return listenerScheduler._queue.length - listenerScheduler._index;
     },
 
+    /** @internal */
     get _listenerScheduler(): ScopeListenerScheduler {
       return listenerScheduler;
     },

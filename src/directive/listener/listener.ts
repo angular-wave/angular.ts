@@ -26,7 +26,7 @@ export function ngListenerDirective(): ng.Directive {
 
         if (hasTemplateContent) {
           if (isObject(value)) {
-            scope.$merge(value);
+            scope.merge(value);
           }
         } else if (isString(value)) {
           element.innerHTML = value;
@@ -35,7 +35,7 @@ export function ngListenerDirective(): ng.Directive {
 
       element.addEventListener(channel, fn);
 
-      scope.$on("$destroy", () => {
+      scope.on("$destroy", () => {
         element.removeEventListener(channel, fn);
       });
     },

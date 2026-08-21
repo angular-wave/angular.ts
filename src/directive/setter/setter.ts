@@ -57,7 +57,7 @@ export function ngSetterDirective(
         characterData: true,
       });
 
-      scope.$on("$destroy", () => {
+      scope.on("$destroy", () => {
         observer.disconnect();
       });
       updateModel(element.innerHTML);

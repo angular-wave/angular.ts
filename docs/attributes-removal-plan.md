@@ -398,9 +398,9 @@ but access should be through lookup APIs, not object property decoration.
       messages live-region handling, and ngModel shape/range checks. Preserved
       existing `$observe(...)` behavior for dynamic range and required values.
 
-- [x] Remove ARIA dependency on `Attributes.$normalize`.
+- [x] Remove ARIA dependency on `Attributes._normalize`.
 
-      Replaced the remaining `attr.$normalize(...)` call in
+      Replaced the remaining `attr._normalize(...)` call in
       `src/directive/aria/aria.ts` with the shared `directiveNormalize(...)`
       helper. ARIA no longer needs the attrs object for normalized read checks;
       the remaining attrs dependencies in this area are observer/write behavior
@@ -467,7 +467,7 @@ associated with a scope.
 - [x] Write characterization tests for: - initial observer callback value, -
       interpolated attribute updates, - direct DOM attribute mutation through
       `setAttribute`/`removeAttribute`, - observer deregistration, - cleanup on
-      `scope.$destroy`, - exception handling through `$exceptionHandler`, -
+      `scope.destroy`, - exception handling through `$exceptionHandler`, -
       boolean/aliased attributes.
 
       Covered across `$attributes` service characterization, compile
@@ -479,7 +479,7 @@ associated with a scope.
 
       Added service-level tests for initial callback delivery, normalized
       `data-*` observation, direct `setAttribute`/`removeAttribute`, explicit
-      deregistration, cleanup through `scope.$destroy`, and exception routing
+      deregistration, cleanup through `scope.destroy`, and exception routing
       through `$exceptionHandler`. Interpolated attribute updates and
       boolean/aliased attributes remain as separate characterization tasks
       before migrating directive callers.
@@ -528,7 +528,7 @@ associated with a scope.
       - schedule callback delivery through the normal microtask path,
       - deregister individual callbacks when the returned teardown runs,
       - disconnect the element observer when the last callback is removed,
-      - register teardown on `scope.$destroy`.
+      - register teardown on `scope.destroy`.
 
       Implemented the first registry inside `$attributes`: one
       `MutationObserver` per element, callbacks keyed by normalized attribute
@@ -828,7 +828,7 @@ associated with a scope.
   compile `Attributes` helper methods are `$addClass`, `$removeClass`, and
   `$updateClass`, with focused coverage in `compile.spec.ts`. Broad `$set*`
   matches in `src/directive` are unrelated form/model controller APIs such as
-  `$setViewValue`, `$setValidity`, and `$setPristine`.
+  `setViewValue`, `setValidity`, and `setPristine`.
 
 - [x] Extract element-based helpers for: - normalized attribute writes, -
       boolean attribute/property writes, - aliased attributes, - observer
@@ -1029,7 +1029,7 @@ associated with a scope.
     `$updateClass` matches remain in non-test, non-README source outside
     internal compile attribute naming.
   - Broad `$set*` matches in directives are form/model controller APIs such as
-    `$setViewValue`, `$setValidity`, `$setPristine`, and are unrelated to the
+    `setViewValue`, `setValidity`, `setPristine`, and are unrelated to the
     removed attribute mutation facade.
   - Public documentation intentionally keeps `ng.Attributes` as the structural
     directive `$attrs` type while steering reads/writes to `$attributes`.

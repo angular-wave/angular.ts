@@ -146,12 +146,12 @@ describe("$location", () => {
       };
       let onBroadcast;
       const rootScope = {
-        $on(name, listener) {
+        on(name, listener) {
           scopeListeners[name] = listener;
 
           return () => delete scopeListeners[name];
         },
-        $broadcast(name, ...args) {
+        broadcast(name, ...args) {
           const event = {
             defaultPrevented: false,
             preventDefault() {
@@ -202,7 +202,7 @@ describe("$location", () => {
 
       expect(() =>
         runtime.createService(
-          { $on() {}, $broadcast() {} },
+          { on() {}, broadcast() {} },
           document.createElement("div"),
           () => undefined,
         ),
@@ -370,7 +370,7 @@ describe("$location", () => {
 
       harness.fakeLocation.href = "http://localhost/queued";
       harness.windowListeners.popstate();
-      harness.scopeListeners.$destroy();
+      harness.scopeListeners["$destroy"]();
       await wait();
 
       expect(harness.location.getPath()).toBe("/");
@@ -395,7 +395,7 @@ describe("$location", () => {
       harness.broadcasts.length = 0;
       harness.setBroadcastHandler((name) => {
         if (name === "$locationChangeStart") {
-          harness.scopeListeners.$destroy();
+          harness.scopeListeners["$destroy"]();
         }
       });
       harness.location.setPath("/destroyed");
@@ -1789,7 +1789,7 @@ describe("$location", () => {
   //     });
   //     inject(($browser, $location, $rootScope, $window) => {
   //       let handlerCalled = false;
-  //       $rootScope.$on("$locationChangeSuccess", () => {
+  //       $rootScope.on("$locationChangeSuccess", () => {
   //         handlerCalled = true;
   //         if ($location.getPath() !== "/") {
   //           $location.setPath("/").replace();
@@ -1923,7 +1923,7 @@ describe("$location", () => {
 
   //   function updatePathOnLocationChangeSuccessTo(newPath, newParams) {
   //     inject(($rootScope, $location) => {
-  //       $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //       $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //         $location.setPath(newPath);
   //         if (newParams) {
   //           $location.setSearch(newParams);
@@ -2165,7 +2165,7 @@ describe("$location", () => {
   //       const NEW_URL = "http://new.com/a/b#!/new";
   //       let notRunYet = true;
 
-  //       $rootScope.$watch(() => {
+  //       $rootScope.watch(() => {
   //         if (notRunYet) {
   //           notRunYet = false;
   //           $window.location.href = NEW_URL;
@@ -2205,7 +2205,7 @@ describe("$location", () => {
   //       ).and.callThrough();
   //       $location.setPath("/new/path");
 
-  //       $rootScope.$watch(() => {
+  //       $rootScope.watch(() => {
   //         $location.setSearch("a=b");
   //       });
 
@@ -2259,7 +2259,7 @@ describe("$location", () => {
   //     initService({ html5Mode: false, hashPrefix: "!", supportHistory: true });
   //     mockUpBrowser({ initialUrl: "http://new.com/a/b#!", baseHref: "/a/b" });
   //     inject(($rootScope, $browser, $location) => {
-  //       $rootScope.$watch(
+  //       $rootScope.watch(
   //         () => true,
   //         () => {
   //           $location.setPath("/changed");
@@ -3506,10 +3506,10 @@ describe("$location", () => {
   //   ) => {
   //     expect($browser.url()).toEqual("http://server/");
 
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("before", newUrl, oldUrl, $browser.url());
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       $log.info("after", newUrl, oldUrl, $browser.url());
   //     });
 
@@ -3544,11 +3544,11 @@ describe("$location", () => {
   //     expect($browser.url()).toEqual("http://server/");
   //     expect($location.getUrl()).toEqual("");
 
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("before", newUrl, oldUrl, $browser.url());
   //       event.preventDefault();
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       throw new Error("location should have been canceled");
   //     });
 
@@ -3575,13 +3575,13 @@ describe("$location", () => {
   //     $rootScope,
   //     $log,
   //   ) => {
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("before", newUrl, oldUrl, $browser.url());
   //       if (newUrl === "http://server/#!/somePath") {
   //         $location.setUrl("/redirectPath");
   //       }
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       $log.info("after", newUrl, oldUrl, $browser.url());
   //     });
 
@@ -3616,14 +3616,14 @@ describe("$location", () => {
   //     $rootScope,
   //     $log,
   //   ) => {
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("before", newUrl, oldUrl, $browser.url());
   //       if (newUrl === "http://server/#!/somePath") {
   //         event.preventDefault();
   //         $location.setUrl("/redirectPath");
   //       }
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       $log.info("after", newUrl, oldUrl, $browser.url());
   //     });
 
@@ -3658,7 +3658,7 @@ describe("$location", () => {
   //     $rootScope,
   //     $log,
   //   ) => {
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("before", newUrl, oldUrl, $browser.url());
   //       if (newUrl === "http://server/#!/somePath") {
   //         $location.setUrl("/redirectPath");
@@ -3666,7 +3666,7 @@ describe("$location", () => {
   //         $location.setUrl("/redirectPath2");
   //       }
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       $log.info("after", newUrl, oldUrl, $browser.url());
   //     });
 
@@ -3711,10 +3711,10 @@ describe("$location", () => {
   //     expect($browser.url()).toEqual("http://server/");
   //     expect($location.getUrl()).toEqual("");
 
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("start", newUrl, oldUrl);
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       $log.info("after", newUrl, oldUrl);
   //     });
 
@@ -3744,10 +3744,10 @@ describe("$location", () => {
   //     expect($browser.url()).toEqual("http://server/#!/somepath");
   //     expect($location.getUrl()).toEqual("/somepath");
 
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("start", newUrl, oldUrl);
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       $log.info("after", newUrl, oldUrl);
   //     });
 
@@ -3772,13 +3772,13 @@ describe("$location", () => {
   //     $rootScope,
   //     $log,
   //   ) => {
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("before", newUrl, oldUrl, $browser.url());
   //       if (newUrl === "http://server/#!/somePath") {
   //         $location.setUrl("/redirectPath");
   //       }
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       $log.info("after", newUrl, oldUrl, $browser.url());
   //     });
 
@@ -3814,14 +3814,14 @@ describe("$location", () => {
   //     $rootScope,
   //     $log,
   //   ) => {
-  //     $rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   //       $log.info("before", newUrl, oldUrl, $browser.url());
   //       if (newUrl === "http://server/#!/somePath") {
   //         event.preventDefault();
   //         $location.setUrl("/redirectPath");
   //       }
   //     });
-  //     $rootScope.$on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
+  //     $rootScope.on("$locationChangeSuccess", (event, newUrl, oldUrl) => {
   //       $log.info("after", newUrl, oldUrl, $browser.url());
   //     });
 
@@ -3865,11 +3865,11 @@ describe("$location", () => {
   //       let log = "";
   //       const link = $rootElement.find("a");
 
-  //       $rootScope.$on("$locationChangeStart", (event) => {
+  //       $rootScope.on("$locationChangeStart", (event) => {
   //         event.preventDefault();
   //         log += "$locationChangeStart";
   //       });
-  //       $rootScope.$on("$locationChangeSuccess", () => {
+  //       $rootScope.on("$locationChangeSuccess", () => {
   //         throw new Error("after cancellation in hashbang mode");
   //       });
 
@@ -3897,11 +3897,11 @@ describe("$location", () => {
   //       const link = $rootElement.querySelector("a");
   //       const browserUrlBefore = $browser.url();
 
-  //       $rootScope.$on("$locationChangeStart", (event) => {
+  //       $rootScope.on("$locationChangeStart", (event) => {
   //         event.preventDefault();
   //         log += "$locationChangeStart";
   //       });
-  //       $rootScope.$on("$locationChangeSuccess", () => {
+  //       $rootScope.on("$locationChangeSuccess", () => {
   //         throw new Error("after cancellation in html5 mode");
   //       });
 
@@ -3922,7 +3922,7 @@ describe("$location", () => {
   //   ) => {
   //     const base = $browser.url();
 
-  //     $rootScope.$on("$locationChangeStart", () => {
+  //     $rootScope.on("$locationChangeStart", () => {
   //       log($location.getPath());
   //     });
 
@@ -4187,7 +4187,7 @@ describe("$location", () => {
   //     const parser = document.createElement("a");
   //     parser.href = options.initialUrl;
 
-  //     $windowProvider.$get = () => {
+  //     $windowProvider.get = () => {
   //       const win = {};
   //       angular.extend(win, window);
   //       // Ensure `window` is a reference to the mock global object, so that
@@ -4235,7 +4235,7 @@ describe("$location", () => {
   //       };
   //       return win;
   //     };
-  //     $browserProvider.$get = function (
+  //     $browserProvider.get = function (
   //
   //       $window,
   //       $log,

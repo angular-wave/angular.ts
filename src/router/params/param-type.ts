@@ -7,7 +7,7 @@ import {
 } from "../../shared/utils.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
 
-type ArrayUnaryMethod = "encode" | "decode" | "is" | "$normalize";
+type ArrayUnaryMethod = "encode" | "decode" | "is" | "_normalize";
 
 export type ParamTypeConfig = Partial<ParamTypeDefinition> &
   Record<string, unknown>;
@@ -92,14 +92,18 @@ export class ParamType {
   }
 
   /**
+   * @internal
+   *
    * Given an encoded string, or a decoded object, returns a decoded object
    * @param {unknown} val
    */
-  $normalize(val: unknown): unknown {
+  _normalize(val: unknown): unknown {
     return this.is(val) ? val : this.decode(val);
   }
 
   /**
+   * @internal
+   *
    * Wraps an existing custom ParamType as an array of ParamType, depending on 'mode'.
    * e.g.:
    * - urlmatcher pattern "/path?{queryParam[]:int}"
@@ -110,9 +114,11 @@ export class ParamType {
    * - url: "/path?queryParam=1&queryParam=2 will create `$state.params.queryParam: [1, 2]`
    * @param {boolean |'auto'} mode
    */
-  $asArray(mode: false): this;
-  $asArray(mode: true | "auto"): ArrayParamType;
-  $asArray(mode: boolean | "auto"): this | ArrayParamType {
+  _asArray(mode: false): this;
+  /** @internal */
+  _asArray(mode: true | "auto"): ArrayParamType;
+  /** @internal */
+  _asArray(mode: boolean | "auto"): this | ArrayParamType {
     if (!mode) return this;
 
     return new ArrayParamType(this, mode);
@@ -201,8 +207,9 @@ export class ArrayParamType extends ParamType {
     return this._mapArray("decode", val);
   }
 
-  $normalize(val: unknown): unknown {
-    return this._mapArray("$normalize", val);
+  /** @internal */
+  _normalize(val: unknown): unknown {
+    return this._mapArray("_normalize", val);
   }
 
   is(val: unknown): boolean {

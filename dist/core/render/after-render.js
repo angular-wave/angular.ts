@@ -19,7 +19,7 @@ function queueAfterRender(instance, callback, options) {
 /**
  * Queue one post-render callback that is owned by a scope.
  *
- * This internal helper lets compile-owned controller `$afterRender` callbacks
+ * This internal helper lets compile-owned controller `afterRender` callbacks
  * defer while a retained route subtree is inactive. The public `afterRender`
  * utility intentionally remains scope-free.
  */
@@ -117,13 +117,13 @@ function getScopeAfterRenderRetentionState(scope) {
         _paused: false,
         _pending: new Map(),
     };
-    const deregisterPause = scope.$on("$viewRetentionPause", (...args) => {
+    const deregisterPause = scope.on("$viewRetentionPause", (...args) => {
         if (!shouldHandleViewRetentionPause(args, "schedulers")) {
             return;
         }
         state._paused = true;
     });
-    const deregisterResume = scope.$on("$viewRetentionResume", (...args) => {
+    const deregisterResume = scope.on("$viewRetentionResume", (...args) => {
         if (!shouldHandleViewRetentionPause(args, "schedulers")) {
             return;
         }
@@ -132,7 +132,7 @@ function getScopeAfterRenderRetentionState(scope) {
         state._paused = false;
         flushPausedScopeAfterRenderEntries(state);
     });
-    const deregisterDestroy = scope.$on("$destroy", () => {
+    const deregisterDestroy = scope.on("$destroy", () => {
         state._pending.clear();
         deregisterPause();
         deregisterResume();

@@ -271,6 +271,7 @@ class NativeHtmlCanvasRoot implements HtmlCanvasRoot {
     this._onDispose();
   }
 
+  /** @internal */
   private _paint(event: ExperimentalPaintEvent): void {
     if (this.mode !== "2d") {
       return;
@@ -508,8 +509,8 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
     canvas: HTMLCanvasElement,
     options: HtmlCanvasRootOptions = {},
   ): HtmlCanvasRoot {
-    this.assertActive();
-    this.assertEnabled();
+    this._assertActive();
+    this._assertEnabled();
 
     const existing = this._roots.get(canvas);
 
@@ -539,19 +540,19 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
     source: Element,
     options: HtmlCanvasSourceOptions = {},
   ): () => void {
-    const root = this.getRoot(canvas);
+    const root = this._getRoot(canvas);
 
     return root.addSource(source, options);
   }
 
   invalidate(canvas: HTMLCanvasElement): void {
-    this.assertActive();
-    this.assertEnabled();
+    this._assertActive();
+    this._assertEnabled();
     this._roots.get(canvas)?.invalidate();
   }
 
   requestPaint(canvas: HTMLCanvasElement): void {
-    this.assertActive();
+    this._assertActive();
     const requestPaint = (canvas as ExperimentalCanvas).requestPaint;
 
     if (!isCallable(requestPaint)) {
@@ -562,7 +563,7 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
   }
 
   requestAnimationFrame(callback: () => void): void {
-    this.assertActive();
+    this._assertActive();
     this._window.requestAnimationFrame(callback);
   }
 
@@ -577,7 +578,8 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
     this._ownedRoots.clear();
   }
 
-  private getRoot(canvas: HTMLCanvasElement): NativeHtmlCanvasRoot {
+  /** @internal */
+  private _getRoot(canvas: HTMLCanvasElement): NativeHtmlCanvasRoot {
     const existing = this._roots.get(canvas);
 
     if (existing) return existing;
@@ -585,7 +587,8 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
     return this.registerRoot(canvas) as NativeHtmlCanvasRoot;
   }
 
-  private assertEnabled(): void {
+  /** @internal */
+  private _assertEnabled(): void {
     if (this.enabled) return;
 
     if (this.config.enabled === false) {
@@ -597,7 +600,8 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
     );
   }
 
-  private assertActive(): void {
+  /** @internal */
+  private _assertActive(): void {
     if (this._disposed) {
       throw new Error("HTML-in-Canvas runtime has already been disposed.");
     }

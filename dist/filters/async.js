@@ -39,7 +39,7 @@ function settleAsyncValue($rootScope, promise, value) {
         _status: "settled",
         _value: value,
     });
-    const handler = $rootScope.$handler;
+    const handler = $rootScope._handler;
     handler._scheduleWatchKeys(["async"]);
 }
 

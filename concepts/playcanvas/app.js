@@ -14,7 +14,7 @@ window.angular
       constructor(cubeModel, $scope) {
         this.cube = cubeModel;
         this.destroyRuntime = () => {};
-        $scope.$on('$destroy', () => this.destroyRuntime());
+        $scope.on('$destroy', () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 

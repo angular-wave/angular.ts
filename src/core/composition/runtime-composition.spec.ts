@@ -247,9 +247,10 @@ describe("RuntimeComposition", () => {
         return definition;
       },
     } as unknown as ProviderRegistry;
-    const firstProvider = { $get: () => "first" };
-    const secondProvider = { $get: () => "second" };
+    const firstProvider = { get: () => "first" };
+    const secondProvider = { get: () => "second" };
     const composedRecipe = class {
+      /** @internal */
       static _compose(context: {
         runtime: typeof composition;
         platform: typeof composition.platform;
@@ -264,7 +265,7 @@ describe("RuntimeComposition", () => {
         return secondProvider;
       }
 
-      $get = () => "unused";
+      get = () => "unused";
     };
 
     const providers = registerRuntimeProviders(

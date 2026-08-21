@@ -33,7 +33,7 @@ function ngTranscludeDirective($compile) {
                     const nodes = normalizeNodes(clone);
                     if (hasRenderableContent(nodes)) {
                         const destroyScope = () => {
-                            transcludedScope?.$destroy();
+                            transcludedScope?.destroy();
                         };
                         const lastNode = nodes[nodes.length - 1];
                         if (transcludedScope &&
@@ -49,7 +49,7 @@ function ngTranscludeDirective($compile) {
                     }
                     else {
                         useFallbackContent();
-                        transcludedScope?.$destroy();
+                        transcludedScope?.destroy();
                     }
                 }
                 function useFallbackContent() {

@@ -64,8 +64,8 @@ export function isProxy(value: unknown): value is ng.Scope {
  * @param val - A value that might be a proxy.
  * @returns The unproxied value.
  */
-export function deProxy<T>(val: T | (T & { $target: T })): T {
-  return isProxy(val) ? (val as T & { $target: T }).$target : val;
+export function deProxy<T>(val: T | (T & { _target: T })): T {
+  return isProxy(val) ? (val as T & { _target: T })._target : val;
 }
 
 const ngError = createErrorFactory("ng");
@@ -325,7 +325,7 @@ export function isWindow(obj: unknown): obj is Window {
  * Returns whether a value looks like an Angular scope object.
  */
 export function isScope(obj: unknown): boolean {
-  return isObject(obj) && isFunction((obj as { $watch?: unknown }).$watch);
+  return isObject(obj) && isFunction((obj as { watch?: unknown }).watch);
 }
 
 /**
@@ -1247,7 +1247,7 @@ export function toDebugString(obj: unknown): string {
   if (!isString(obj)) {
     const seen: object[] = [];
 
-    const copyObj: unknown = structuredClone(isProxy(obj) ? obj.$target : obj);
+    const copyObj: unknown = structuredClone(isProxy(obj) ? obj._target : obj);
 
     return JSON.stringify(copyObj, (key, val) => {
       const replace = toJsonReplacer(key, val);

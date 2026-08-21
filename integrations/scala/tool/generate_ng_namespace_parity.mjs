@@ -3,15 +3,19 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import ts from "typescript";
+import {
+  parameterDocumentation,
+  symbolDocumentation,
+  typeDocumentation,
+} from "../../shared/typescript-documentation.mjs";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const namespacePath = path.join(root, "@types/namespace.d.ts");
 const outputPath = path.join(root, "integrations/scala/NG_NAMESPACE_PARITY.md");
 const check = process.argv.includes("--check");
 
-const namespace = fs.readFileSync(namespacePath, "utf8");
-const types = extractNamespaceTypes(namespace);
-const output = renderParity(types);
+const namespace = extractNamespace(namespacePath);
+const output = renderParity(namespace.types, namespace.methods);
 
 if (check) {
   const current = fs.existsSync(outputPath)
@@ -25,21 +29,29 @@ if (check) {
     process.exit(1);
   }
 
-  console.log(`Scala namespace parity artifact is fresh for ${types.length} ng types.`);
+  console.log(
+    `Scala namespace parity artifact is fresh for ${namespace.types.length} ng types and ${namespace.methods.length} public methods.`,
+  );
 } else {
   fs.writeFileSync(outputPath, output);
-  console.log(`Wrote ${path.relative(root, outputPath)} with ${types.length} ng types.`);
+  console.log(
+    `Wrote ${path.relative(root, outputPath)} with ${namespace.types.length} ng types and ${namespace.methods.length} public methods.`,
+  );
 }
 
-function extractNamespaceTypes(sourceText) {
-  const sourceFile = ts.createSourceFile(
-    namespacePath,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
+function extractNamespace(sourcePath) {
+  const program = ts.createProgram([sourcePath], {
+    noEmit: true,
+    skipLibCheck: true,
+    target: ts.ScriptTarget.Latest,
+  });
+  const checker = program.getTypeChecker();
+  const sourceFile = program.getSourceFile(sourcePath);
   const types = [];
+  const methods = [];
+  const seenMethods = new Set();
+
+  if (!sourceFile) throw new Error(`Unable to load ${sourcePath}`);
 
   function visit(node, inNgNamespace = false) {
     if (ts.isModuleDeclaration(node)) {
@@ -52,7 +64,18 @@ function extractNamespaceTypes(sourceText) {
     }
 
     if (inNgNamespace && ts.isTypeAliasDeclaration(node)) {
-      types.push(node.name.escapedText);
+      const type = checker.getTypeFromTypeNode(node.type);
+      types.push({
+        documentation: typeDocumentation(checker, node, type),
+        name: node.name.escapedText.toString(),
+      });
+      collectMethods(
+        checker,
+        node.name.escapedText.toString(),
+        type,
+        methods,
+        seenMethods,
+      );
       return;
     }
 
@@ -60,10 +83,68 @@ function extractNamespaceTypes(sourceText) {
   }
 
   visit(sourceFile);
-  return types;
+  return { methods, types };
 }
 
-function renderParity(typeNames) {
+function collectMethods(checker, typeName, type, methods, seenMethods) {
+  for (const property of checker.getPropertiesOfType(type)) {
+    const declaration = property.valueDeclaration ?? property.declarations?.[0];
+    if (!isAngularTsDeclaration(declaration) || property.name.startsWith("_")) continue;
+
+    const signatures = checker.getSignaturesOfType(
+      checker.getTypeOfSymbolAtLocation(property, declaration),
+      ts.SignatureKind.Call,
+    );
+    if (signatures.length === 0) continue;
+
+    const key = `${declaration.getSourceFile().fileName}:${declaration.pos}`;
+    if (seenMethods.has(key)) continue;
+    seenMethods.add(key);
+
+    const signature = signatures.reduce((selected, candidate) =>
+      !selected || candidate.parameters.length > selected.parameters.length
+        ? candidate
+        : selected,
+    );
+    methods.push({
+      documentation: symbolDocumentation(
+        checker,
+        property,
+        `Invokes the ${property.name} member of ng.${typeName}.`,
+      ),
+      name: `${typeName}.${property.name}`,
+      parameters: signature.parameters.map((parameter) => {
+        const parameterDeclaration =
+          parameter.valueDeclaration ?? parameter.declarations?.[0] ?? declaration;
+
+        return {
+          documentation: parameterDocumentation(checker, parameter),
+          name: parameter.name,
+          type: publicTypeName(
+            checker.typeToString(
+              checker.getTypeOfSymbolAtLocation(parameter, parameterDeclaration),
+              parameterDeclaration,
+              ts.TypeFormatFlags.NoTruncation |
+                ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope,
+            ),
+          ),
+        };
+      }),
+    });
+  }
+}
+
+function isAngularTsDeclaration(declaration) {
+  return Boolean(
+    declaration &&
+      declaration
+        .getSourceFile()
+        .fileName.replaceAll("\\", "/")
+        .includes("/@types/"),
+  );
+}
+
+function renderParity(typeNames, methods) {
   const lines = [
     "# AngularTS Scala.js Namespace Parity",
     "",
@@ -77,8 +158,8 @@ function renderParity(typeNames) {
     "- `planned`: tracked but not implemented yet.",
     "- `unsupported`: intentionally unavailable with a reason in the roadmap.",
     "",
-    "| ng type | Scala.js status |",
-    "| --- | --- |",
+    "| ng type | AngularTS contract | Scala.js status |",
+    "| --- | --- | --- |",
   ];
 
   const manual = new Set([
@@ -281,10 +362,45 @@ function renderParity(typeNames) {
     "Validator",
   ]);
 
-  for (const typeName of typeNames) {
+  for (const { documentation, name: typeName } of typeNames) {
     const status = manual.has(typeName) ? "manual" : "planned";
-    lines.push(`| \`${typeName}\` | ${status} |`);
+    lines.push(
+      `| \`${typeName}\` | ${documentation.replaceAll("|", "\\|")} | ${status} |`,
+    );
+  }
+
+  lines.push(
+    "",
+    "## Public Method Documentation",
+    "",
+    "Descriptions, parameter names, and parameter types are generated from the same TypeScript declarations as the Scala.js parity inventory.",
+    "",
+    "| ng member | Description | Parameters |",
+    "| --- | --- | --- |",
+  );
+
+  for (const method of methods.sort((left, right) => left.name.localeCompare(right.name))) {
+    const parameters =
+      method.parameters.length === 0
+        ? "None"
+        : method.parameters
+            .map(
+              (parameter) =>
+                `\`${escapeMarkdown(parameter.name)}: ${escapeMarkdown(parameter.type)}\` - ${escapeMarkdown(parameter.documentation)}`,
+            )
+            .join("<br>");
+    lines.push(
+      `| \`${escapeMarkdown(method.name)}\` | ${escapeMarkdown(method.documentation)} | ${parameters} |`,
+    );
   }
 
   return `${lines.join("\n")}\n`;
+}
+
+function escapeMarkdown(value) {
+  return value.replaceAll("|", "\\|").replaceAll("`", "\\`");
+}
+
+function publicTypeName(value) {
+  return value.replace(/import\("[^"]+"\)\./gu, "");
 }

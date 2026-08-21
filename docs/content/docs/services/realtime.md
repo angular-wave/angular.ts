@@ -54,7 +54,7 @@ class NewsFeedController {
       },
     });
 
-    $scope.$on("$destroy", () => this.connection.close());
+    $scope.on("$destroy", () => this.connection.close());
   }
 }
 ```
@@ -87,7 +87,7 @@ class ChatController {
       },
     });
 
-    $scope.$on("$destroy", () => this.socket.close());
+    $scope.on("$destroy", () => this.socket.close());
   }
 
   send(text: string) {
@@ -159,7 +159,7 @@ evaluates lifecycle expressions. `data-mode="datagram"` is the default;
   data-reconnect="true"
   on-message="events.push($message)"
   on-reconnect="reconnects = $attempt"
-  on-error="error = $error"
+  on-error="error = error"
 ></div>
 ```
 
@@ -167,7 +167,7 @@ evaluates lifecycle expressions. `data-mode="datagram"` is the default;
 `$connection`, `$data`, `$message`, `$event`, and `$text` for text/json modes.
 Reconnect is opt-in with `data-reconnect="true"`; tune it with
 `data-retry-delay` and `data-max-retries`. `on-reconnect` runs after the
-replacement session is ready and receives `$attempt`, `$connection`, `$error`,
+replacement session is ready and receives `$attempt`, `$connection`, `error`,
 and `$url`.
 
 ## Web Workers
@@ -179,7 +179,7 @@ Use `ng-worker` when a view action should run CPU-heavy JavaScript outside the m
   ng-worker="./workers/compress.js"
   data-params="vm.fileBuffer"
   on-result="vm.compressed = $result"
-  on-error="vm.error = $error"
+  on-error="vm.error = error"
   trigger="click"
 >
   Compress
@@ -214,7 +214,7 @@ app.worker("compressWorker", "./workers/compress.js", {
   data-request
   data-params="vm.fileBuffer"
   on-result="vm.compressed = $result"
-  on-error="vm.error = $error"
+  on-error="vm.error = error"
 >
   Compress
 </button>

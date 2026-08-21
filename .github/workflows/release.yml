@@ -20,9 +20,138 @@ jobs:
     permissions:
       contents: read
 
+  publish-java:
+    name: Publish Java package to Maven Central
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Set up Maven Central publishing
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          server-id: central
+          server-username: MAVEN_CENTRAL_USERNAME
+          server-password: MAVEN_CENTRAL_TOKEN
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Java release metadata
+        run: make -f integrations/closure/Makefile java-version-check
+
+      - name: Reject an existing Maven Central version
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          pom_url="https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-java/$version/angular-ts-java-$version.pom"
+          status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$pom_url")"
+
+          case "$status" in
+            404) ;;
+            200)
+              echo "io.github.angular-wave:angular-ts-java:$version is already published" >&2
+              exit 1
+              ;;
+            *)
+              echo "Maven Central lookup failed with HTTP $status" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Publish Java package to Maven Central
+        env:
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: >-
+          mvn --batch-mode --no-transfer-progress
+          -f integrations/closure/java/pom.xml
+          -Prelease
+          -Dgpg.signer=bc
+          clean deploy
+
+  publish-clojurescript:
+    name: Publish ClojureScript package to Maven Central
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Set up Maven Central publishing
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          server-id: central
+          server-username: MAVEN_CENTRAL_USERNAME
+          server-password: MAVEN_CENTRAL_TOKEN
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate ClojureScript release metadata and package
+        run: make -f integrations/closure/Makefile clojurescript-package-check
+
+      - name: Reject an existing Maven Central version
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          pom_url="https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-cljs/$version/angular-ts-cljs-$version.pom"
+          status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$pom_url")"
+
+          case "$status" in
+            404) ;;
+            200)
+              echo "io.github.angular-wave:angular-ts-cljs:$version is already published" >&2
+              exit 1
+              ;;
+            *)
+              echo "Maven Central lookup failed with HTTP $status" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Publish ClojureScript package to Maven Central
+        env:
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: >-
+          mvn --batch-mode --no-transfer-progress
+          -f integrations/closure/clojurescript/pom.xml
+          -Prelease
+          -Dgpg.signer=bc
+          clean deploy
+
   publish:
     name: Publish npm package and GitHub Release
-    needs: verify
+    needs:
+      - verify
+      - publish-java
+      - publish-clojurescript
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

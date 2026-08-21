@@ -451,16 +451,16 @@ describe("$controller", () => {
         expect(scope.vm.mark).toBe("instance");
       });
 
-      it("should propagate $scopename to locals.$scope in later mode", () => {
+      it("should propagate scopeName to locals.$scope in later mode", () => {
         const scope = {};
 
         function MyController() {}
-        MyController.$scopename = "my-scope-name";
+        MyController.scopeName = "my-scope-name";
 
         const init = $controller(MyController, { $scope: scope }, true);
 
         expect(typeof init).toBe("function");
-        expect(scope.$scopename).toBe("my-scope-name");
+        expect(scope.scopeName).toBe("my-scope-name");
       });
     });
 
@@ -515,7 +515,7 @@ describe("$controller", () => {
         expect(scope.bar).toBe(ctrl);
         expect(scope.bar.mark).toBe("foo");
         expect(scope.foo).toBeUndefined();
-        expect(scope.$controllerIdentifier).toBe("bar");
+        expect(scope._controllerIdentifier).toBe("bar");
       });
 
       it("should publish identifier to scope when expression is a function and ident is provided", () => {
@@ -529,7 +529,7 @@ describe("$controller", () => {
 
         expect(scope.foo).toBe(ctrl);
         expect(scope.foo.mark).toBe("foo");
-        expect(scope.$controllerIdentifier).toBe("foo");
+        expect(scope._controllerIdentifier).toBe("foo");
       });
     });
 

@@ -3,6 +3,9 @@
 This package is the initial standard Go Wasm facade for the language-neutral
 AngularTS Wasm scope ABI.
 
+Generated model contract descriptions are preserved as Go documentation
+comments from the shared JSON contract manifest.
+
 The package does not define a Go-specific scope protocol. It calls the shared
 `angular_ts` imports documented in `../ABI.md` and exports the standard guest
 allocation and scope callback symbols.
@@ -56,6 +59,14 @@ parity tracking, and browser tests for Go-owned state flowing through
 - `NG_NAMESPACE_PARITY.md` tracks every published `ng` namespace type and
   `make parity` checks it against `@types/namespace.d.ts`.
 
+## Programmatic Views
+
+`ProgrammaticView("exportName")` registers a JavaScript-visible Go export as a
+component view. Browser Wasm builds expose `ComponentViewContext` and
+`ComponentViewTags`; use `Tags()` and `Tag(...)` to delegate real-DOM creation
+to `angular.tags`. Go view callbacks return `syscall/js.Value` DOM nodes or
+other supported AngularTS view children.
+
 See `PLAN.md` for the Rust feature parity checklist.
 
 ## Scope ABI And App Models
@@ -66,14 +77,14 @@ scope ABI.
 
 Do not use the scope ABI as a substitute for app-owned AngularTS models. Shared
 or durable app state should stay in `app.model(...)` and synchronize with Go
-Wasm through a host-side AngularTS service or `model.$sync(...)` target. The Go
+Wasm through a host-side AngularTS service or `model.sync(...)` target. The Go
 binding should not add model handles, model path writes, or model watch imports
 until the shared ABI explicitly grows that surface.
 
 Current rule:
 
 - `WasmScope`: view-local DOM/controller state;
-- `app.model(...)` plus `$sync()`: state that survives root destruction,
+- `app.model(...)` plus `sync()`: state that survives root destruction,
   coordinates multiple roots, or synchronizes with storage, workers, engines,
   machines, workflows, or network services.
 

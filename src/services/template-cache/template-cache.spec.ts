@@ -107,6 +107,7 @@ class LocalStorageMap {
     this.prefix = prefix;
   }
 
+  /** @internal */
   _key(key: any) {
     return `${this.prefix}${key}`;
   }

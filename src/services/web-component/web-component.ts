@@ -295,7 +295,7 @@ export function destroyWebComponentRuntimeState(
   }
 
   for (const scope of Array.from(state.scopes)) {
-    if (!scope.$handler._destroyed) scope.$destroy();
+    if (!scope._handler._destroyed) scope.destroy();
   }
 
   for (const definition of state.definitions) {
@@ -334,11 +334,11 @@ export function createWebComponentService(
       rootScope) as ng.Scope;
 
     const scope = options.isolate
-      ? parentScope.$newIsolate(initialState as ng.Scope)
-      : parentScope.$new(initialState as ng.Scope);
+      ? parentScope.newIsolate(initialState as ng.Scope)
+      : parentScope.new(initialState as ng.Scope);
 
     state.scopes.add(scope);
-    scope.$on("$destroy", () => {
+    scope.on("$destroy", () => {
       state.scopes.delete(scope);
     });
     setScope(host, scope);
@@ -599,7 +599,7 @@ function syncScopeElementAttribute(
 function connectScopeElement(host: HTMLElement): void {
   const existingScope = scopeElementScopes.get(host);
 
-  if (existingScope && !existingScope.$handler._destroyed) return;
+  if (existingScope && !existingScope._handler._destroyed) return;
 
   const definition = getScopeElementDefinition(host);
 
@@ -654,8 +654,8 @@ function disconnectScopeElement(host: HTMLElement): void {
 
   element.disconnected?.();
 
-  if (!scope.$handler._destroyed) {
-    scope.$destroy();
+  if (!scope._handler._destroyed) {
+    scope.destroy();
   }
 
   scopeElementScopes.delete(host);

@@ -236,7 +236,7 @@ export function createHttpDirective(
           });
           observer.observe(element, { attributes: true });
 
-          let deregisterDestroy: (() => void) | undefined = scope.$on(
+          let deregisterDestroy: (() => void) | undefined = scope.on(
             "$destroy",
             deregister,
           );
@@ -260,7 +260,7 @@ export function createHttpDirective(
 
         const destroyController = new AbortController();
 
-        scope.$on("$destroy", () => {
+        scope.on("$destroy", () => {
           resolveDestroy?.();
           resolveDestroy = undefined;
           destroyController.abort("scope destroyed");
@@ -609,7 +609,7 @@ export function createHttpDirective(
 
                 sourceRef.current = source;
 
-                scope.$on("$destroy", () => {
+                scope.on("$destroy", () => {
                   $log.info(`${attrName}: closing SSE connection`);
                   dispatchSseEvent("close", { source });
                   source.close();

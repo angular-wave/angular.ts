@@ -46,20 +46,20 @@ function retainedTab(label, key) {
         $scope.pauseCount = 0;
         $scope.resumeCount = 0;
 
-        $scope.$on('$viewRetentionPause', () => {
+        $scope.on('$viewRetentionPause', () => {
           $scope.pauseCount += 1;
           retentionQueuedWork[key] += 1;
           window.renderRoutingRetentionDiagnostics?.();
         });
 
-        $scope.$on('$viewRetentionResume', () => {
+        $scope.on('$viewRetentionResume', () => {
           $scope.resumeCount += 1;
           retentionSchedulerRuns[key] += retentionQueuedWork[key];
           retentionQueuedWork[key] = 0;
           window.renderRoutingRetentionDiagnostics?.();
         });
 
-        $scope.$on('$destroy', () => {
+        $scope.on('$destroy', () => {
           retentionDestroys[key] += 1;
           retentionQueuedWork[key] = 0;
           window.renderRoutingRetentionDiagnostics?.();

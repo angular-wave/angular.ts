@@ -347,24 +347,24 @@ export function ngOptionsDirective(
           if (optionEl.value === "") {
             selectCtrl._hasEmptyOption = true;
             selectCtrl._emptyOption = optionEl;
-            ngModelCtrl.$render();
+            ngModelCtrl.render();
 
             optionEl.addEventListener("$destroy", () => {
-              const needsRerender = selectCtrl.$isEmptyOptionSelected();
+              const needsRerender = selectCtrl.isEmptyOptionSelected();
 
               selectCtrl._hasEmptyOption = false;
               selectCtrl._emptyOption = undefined;
 
-              if (needsRerender) ngModelCtrl.$render();
+              if (needsRerender) ngModelCtrl.render();
             });
           }
         };
       }
     }
 
-    scope.$watch(
+    scope.watch(
       ngOptions._getWatchables,
-      updateOptions as unknown as Parameters<typeof scope.$watch>[1],
+      updateOptions as unknown as Parameters<typeof scope.watch>[1],
     );
 
     function _addOptionElement(
@@ -451,9 +451,9 @@ export function ngOptionsDirective(
 
       selectNode.appendChild(listFragment);
 
-      ngModelCtrl.$render();
+      ngModelCtrl.render();
 
-      if (!ngModelCtrl.$isEmpty(previousValue)) {
+      if (!ngModelCtrl.isEmpty(previousValue)) {
         const nextValue = selectCtrl._readValue();
 
         const isNotPrimitive = multiple;
@@ -463,8 +463,8 @@ export function ngOptionsDirective(
             ? !equals(previousValue, nextValue)
             : previousValue !== nextValue
         ) {
-          ngModelCtrl.$setViewValue(nextValue);
-          ngModelCtrl.$render();
+          ngModelCtrl.setViewValue(nextValue);
+          ngModelCtrl.render();
         }
       }
     }

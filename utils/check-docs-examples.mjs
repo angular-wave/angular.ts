@@ -91,7 +91,7 @@ function collectMarkdownExamples(filePath, examples) {
   // Markdown docs contain examples in three forms:
   // - fenced source blocks, such as ```ts
   // - Docsy/Hugo codecard shortcodes
-  // - short inline API examples, such as `$scope.$watch(...)`
+  // - short inline API examples, such as `$scope.watch(...)`
   const fencePattern = /^```([^\n`]*)\n([\s\S]*?)^```/gm;
   const codecardPattern =
     /{{<\s*codecard\b[^>]*>}}([\s\S]*?){{<\s*\/codecard\s*>}}/gm;
@@ -148,7 +148,7 @@ function collectMemberAccesses(examples) {
       if (member === "$inject") continue;
 
       // Application scopes often include arbitrary user model fields. Only
-      // validate framework members like $watch, $applyAsync, and $destroy.
+      // validate framework members like watch and destroy.
       if (
         (base === "$scope" ||
           base === "$rootScope" ||

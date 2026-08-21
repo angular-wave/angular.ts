@@ -101,7 +101,7 @@ BOOLEAN_ATTR.forEach((i) => {
     element: Element,
     expression: string,
   ): void => {
-    scope.$watch(expression, (value) => {
+    scope.watch(expression, (value) => {
       setNormalizedAttr(element, i, !!value);
     });
   };
@@ -165,7 +165,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
         }
 
         return (scope: ng.Scope, element: Element): void => {
-          scope.$watch(expression, (value) => {
+          scope.watch(expression, (value) => {
             setNormalizedAttr(
               element,
               ngAttr,
@@ -315,7 +315,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
             });
             observer.observe(element, { attributes: true });
 
-            let deregisterDestroy: (() => void) | undefined = scope.$on(
+            let deregisterDestroy: (() => void) | undefined = scope.on(
               "$destroy",
               deregister,
             );

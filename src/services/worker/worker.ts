@@ -666,7 +666,7 @@ function createManagedWorkerHandle<TSend, TReceive>(
 
   Object.defineProperty(handle, SCOPE_PROXY_BIND, {
     value(handler: Scope) {
-      if (!terminated) bindings.set(handler.$id, handler);
+      if (!terminated) bindings.set(handler.id, handler);
     },
   });
 

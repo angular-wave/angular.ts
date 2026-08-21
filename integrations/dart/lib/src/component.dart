@@ -1,6 +1,7 @@
 import 'dart:js_interop';
 
 import 'injectable.dart';
+import 'programmatic_view.dart';
 import 'unsafe.dart' as unsafe;
 
 /// AngularTS component binding mode.
@@ -103,6 +104,7 @@ final class Component<TController> implements unsafe.JsConvertible {
     required this.controller,
     this.template,
     this.templateUrl,
+    this.view,
     this.bindings = const {},
     this.controllerAs,
     this.transclude = const NoTransclusion(),
@@ -114,6 +116,9 @@ final class Component<TController> implements unsafe.JsConvertible {
 
   /// The template url.
   final String? templateUrl;
+
+  /// Programmatic real-DOM view factory.
+  final ProgrammaticView<TController, JSAny?>? view;
 
   /// The controller.
   final InjectableFactory<TController> controller;
@@ -135,6 +140,7 @@ final class Component<TController> implements unsafe.JsConvertible {
     return unsafe.object({
       if (template != null) 'template': template,
       if (templateUrl != null) 'templateUrl': templateUrl,
+      if (view != null) 'view': unsafe.JsValue(programmaticViewToJs(view!)),
       'controller': controller.toAnnotatedArray(),
       if (bindings.isNotEmpty) 'bindings': _bindingsToJs(),
       if (controllerAs != null) 'controllerAs': controllerAs,

@@ -31,8 +31,8 @@
           <p id="email-hint">Use an address we can message.</p>
           <div
             class="error-box"
-            ng-messages="contactForm.email.$error"
-            ng-show="contactForm.email.$dirty || contactForm.$submitted"
+            ng-messages="contactForm.email.error"
+            ng-show="contactForm.email.dirty || contactForm.submitted"
           >
             <p ng-message="required">Email is required.</p>
             <p ng-message="email">Please provide a valid email.</p>

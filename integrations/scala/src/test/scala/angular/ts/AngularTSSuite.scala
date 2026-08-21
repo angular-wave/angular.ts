@@ -161,6 +161,32 @@ class AngularTSSuite extends munit.FunSuite:
       "^form",
     )
 
+  test("programmatic views expose typed context and delegated tags"):
+    val host = js.Dynamic.literal(nodeName = "SECTION")
+    val transclude: js.Function0[Unit] = () => ()
+    val context = js.Dynamic
+      .literal(
+        controller = "ready",
+        scope = js.Dynamic.literal(),
+        element = host,
+        transclude = transclude,
+      )
+      .asInstanceOf[ProgrammaticViewContext[String, js.Any]]
+    val rawTags = js.Dynamic.literal()
+    val section: js.Function2[js.Any, String, js.Dynamic] = (_, child) =>
+      js.Dynamic.literal(textContent = child)
+    rawTags.updateDynamic("section")(section)
+    val element = ProgrammaticTags(rawTags).tag(
+      "section",
+      children = "view",
+    )
+
+    assertEquals(context.controller.get, "ready")
+    assertEquals(
+      element.asInstanceOf[js.Dynamic].selectDynamic("textContent").asInstanceOf[String],
+      "view",
+    )
+
   test("app component builder emits typed options"):
     final class CardScope(val label: String) extends js.Object
 
@@ -477,49 +503,49 @@ class AngularTSSuite extends munit.FunSuite:
       AngularTS.inject0(() => "value")
 
     val runtimeModel = js.Dynamic.literal(
-      $viewValue = "draft",
-      $modelValue = "saved",
-      $validators = js.Dictionary.empty[ModelValidator],
-      $asyncValidators = js.Dictionary.empty[AsyncModelValidator],
-      $parsers = js.Array[ModelParser]((value: js.Any) => value),
-      $formatters = js.Array[ModelFormatter]((value: js.Any) => value),
-      $viewChangeListeners = js.Array[ModelViewChangeListener](() => ()),
-      $untouched = true,
-      $touched = false,
-      $pristine = true,
-      $dirty = false,
-      $valid = true,
-      $invalid = false,
-      $validity = null,
-      $validationMessage = "",
-      $error = js.Dictionary.empty[Boolean],
-      $name = "field",
-      $target = js.Dynamic.literal(),
-      $options = js.Dynamic.literal(),
+      viewValue = "draft",
+      modelValue = "saved",
+      validators = js.Dictionary.empty[ModelValidator],
+      asyncValidators = js.Dictionary.empty[AsyncModelValidator],
+      parsers = js.Array[ModelParser]((value: js.Any) => value),
+      formatters = js.Array[ModelFormatter]((value: js.Any) => value),
+      viewChangeListeners = js.Array[ModelViewChangeListener](() => ()),
+      untouched = true,
+      touched = false,
+      pristine = true,
+      dirty = false,
+      valid = true,
+      invalid = false,
+      validity = null,
+      validationMessage = "",
+      error = js.Dictionary.empty[Boolean],
+      controlName = "field",
+      _target = js.Dynamic.literal(),
+      options = js.Dynamic.literal(),
     )
     var viewValue: js.Any = js.undefined
     var validity: js.UndefOr[(String, PublicValidationState)] = js.undefined
-    runtimeModel.updateDynamic("$setViewValue") {
+    runtimeModel.updateDynamic("setViewValue") {
       (value: js.Any, _: js.UndefOr[String]) => viewValue = value
     }
-    runtimeModel.updateDynamic("$setValidity") {
+    runtimeModel.updateDynamic("setValidity") {
       (key: String, state: PublicValidationState) => validity = (key, state)
     }
-    runtimeModel.updateDynamic("$isEmpty") {
+    runtimeModel.updateDynamic("isEmpty") {
       (value: js.Any) => value == null || value.asInstanceOf[String].isEmpty
     }
-    runtimeModel.updateDynamic("$render") { () => () }
-    runtimeModel.updateDynamic("$setNativeValidity") { (_: Boolean | Null) => () }
-    runtimeModel.updateDynamic("$setCustomValidity") { (_: String) => () }
-    runtimeModel.updateDynamic("$setPristine") { () => () }
-    runtimeModel.updateDynamic("$setDirty") { () => () }
-    runtimeModel.updateDynamic("$setUntouched") { () => () }
-    runtimeModel.updateDynamic("$setTouched") { () => () }
-    runtimeModel.updateDynamic("$rollbackViewValue") { () => () }
-    runtimeModel.updateDynamic("$validate") { () => () }
-    runtimeModel.updateDynamic("$commitViewValue") { () => () }
-    runtimeModel.updateDynamic("$overrideModelOptions") { (_: js.Object) => () }
-    runtimeModel.updateDynamic("$processModelValue") { () => () }
+    runtimeModel.updateDynamic("render") { () => () }
+    runtimeModel.updateDynamic("setNativeValidity") { (_: Boolean | Null) => () }
+    runtimeModel.updateDynamic("setCustomValidity") { (_: String) => () }
+    runtimeModel.updateDynamic("setPristine") { () => () }
+    runtimeModel.updateDynamic("setDirty") { () => () }
+    runtimeModel.updateDynamic("setUntouched") { () => () }
+    runtimeModel.updateDynamic("setTouched") { () => () }
+    runtimeModel.updateDynamic("rollbackViewValue") { () => () }
+    runtimeModel.updateDynamic("validate") { () => () }
+    runtimeModel.updateDynamic("commitViewValue") { () => () }
+    runtimeModel.updateDynamic("overrideModelOptions") { (_: js.Object) => () }
+    runtimeModel.updateDynamic("processModelValue") { () => () }
     val model = runtimeModel.asInstanceOf[NgModelController]
 
     listener("next", js.Dynamic.literal(id = 1).asInstanceOf[js.Object])
@@ -530,12 +556,12 @@ class AngularTSSuite extends munit.FunSuite:
       injectable.annotated.asInstanceOf[js.Function0[String]].apply(),
       "value",
     )
-    assertEquals(model.$viewValue.asInstanceOf[String], "draft")
-    assertEquals(model.$modelValue.asInstanceOf[String], "saved")
-    assertEquals(model.$name.asInstanceOf[String], "field")
-    assert(model.$isEmpty(""))
-    model.$setViewValue("next", "input")
-    model.$setValidity("required", false)
+    assertEquals(model.viewValue.asInstanceOf[String], "draft")
+    assertEquals(model.modelValue.asInstanceOf[String], "saved")
+    assertEquals(model.controlName.asInstanceOf[String], "field")
+    assert(model.isEmpty(""))
+    model.setViewValue("next", "input")
+    model.setValidity("required", false)
     assertEquals(viewValue.asInstanceOf[String], "next")
     assertEquals(validity.get._1, "required")
     assertEquals(validity.get._2.asInstanceOf[Boolean], false)
@@ -963,10 +989,10 @@ class AngularTSSuite extends munit.FunSuite:
   test("wasm scope, ABI, and service facades expose typed helpers"):
     val angularScope = js.Dynamic
       .literal(
-        $watch = (_: String, _: js.Function) => (() => ()).asInstanceOf[js.Function0[Unit]],
-        $on = (_: String, _: js.Function) => (() => ()).asInstanceOf[js.Function0[Unit]],
-        $destroy = () => (),
-        $id = 1,
+        watch = (_: String, _: js.Function) => (() => ()).asInstanceOf[js.Function0[Unit]],
+        on = (_: String, _: js.Function) => (() => ()).asInstanceOf[js.Function0[Unit]],
+        destroy = () => (),
+        id = 1,
       )
       .asInstanceOf[Scope]
     var watchedPath = ""
@@ -1314,7 +1340,7 @@ class AngularTSSuite extends munit.FunSuite:
     val runtimeModel = js.Dynamic.literal()
     val model = runtimeModel.asInstanceOf[ModelLifecycle[PlayerModel]]
     var disposed = false
-    runtimeModel.updateDynamic("$sync") {
+    runtimeModel.updateDynamic("sync") {
       (target: js.Object, options: js.Object) =>
         capturedTarget = target
         capturedOptions = options

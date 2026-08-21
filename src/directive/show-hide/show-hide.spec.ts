@@ -20,7 +20,7 @@ describe("ngShow / ngHide", () => {
       "$rootScope",
       "$compile",
       ($rootScope, _$compile_) => {
-        $scope = $rootScope.$new();
+        $scope = $rootScope.new();
         $compile = _$compile_;
       },
     ]);
@@ -245,7 +245,7 @@ describe("ngShow / ngHide", () => {
 
       directive.link(
         {
-          $watch: (_expression: string, callback: (value: boolean) => void) => {
+          watch: (_expression: string, callback: (value: boolean) => void) => {
             onChange = callback;
             callback(false);
           },
@@ -285,7 +285,7 @@ describe("ngShow / ngHide", () => {
 
       directive.link(
         {
-          $watch: (_expression: string, callback: (value: boolean) => void) => {
+          watch: (_expression: string, callback: (value: boolean) => void) => {
             onChange = callback;
             callback(false);
           },
@@ -351,7 +351,7 @@ describe("ngShow / ngHide", () => {
 //       $animate,
 //     ) => {
 //       let item;
-//       const $scope = $rootScope.$new();
+//       const $scope = $rootScope.new();
 //       $scope.on = true;
 //       element = $compile(html('<div ng-show="on">data</div>'))($scope);
 //       ;
@@ -376,7 +376,7 @@ describe("ngShow / ngHide", () => {
 //       $animate,
 //     ) => {
 //       let item;
-//       const $scope = $rootScope.$new();
+//       const $scope = $rootScope.new();
 //       $scope.on = false;
 //       element = $compile(
 //         html('<div class="show-hide" ng-show="on">data</div>'),
@@ -402,7 +402,7 @@ describe("ngShow / ngHide", () => {
 //       $animate,
 //     ) => {
 //       let item;
-//       const $scope = $rootScope.$new();
+//       const $scope = $rootScope.new();
 //       $scope.off = true;
 //       element = $compile(html('<div ng-hide="off">datum</div>'))($scope);
 //       ;
@@ -427,7 +427,7 @@ describe("ngShow / ngHide", () => {
 //       $animate,
 //     ) => {
 //       let item;
-//       const $scope = $rootScope.$new();
+//       const $scope = $rootScope.new();
 //       $scope.on = false;
 //       element = $compile(
 //         html('<div class="show-hide" ng-hide="on">data</div>'),

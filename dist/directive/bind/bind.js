@@ -9,7 +9,7 @@ function ngBindDirective() {
             const expression = getNormalizedAttr(element, "ngBind");
             if (!isString(expression))
                 return;
-            scope.$watch(expression, (value) => {
+            scope.watch(expression, (value) => {
                 const text = stringify(deProxy(value));
                 element.textContent = isString(text) ? text : "";
             }, hasNormalizedAttr(element, "lazy"), true);
@@ -36,7 +36,7 @@ function ngBindTemplateDirective() {
                 }
             });
             observer.observe(element, { attributes: true });
-            let deregisterDestroy = scope.$on("$destroy", deregister);
+            let deregisterDestroy = scope.on("$destroy", deregister);
             function deregister() {
                 observer.disconnect();
                 deregisterDestroy?.();
@@ -58,7 +58,7 @@ function ngBindHtmlDirective($parse) {
             return (
             /** Watches the expression and writes the resulting HTML into the element. */
             (scope, element) => {
-                scope.$watch(expression, (val) => {
+                scope.watch(expression, (val) => {
                     const html = isUndefined(val) || isNull(val) ? "" : stringify(deProxy(val));
                     element.innerHTML = isString(html) ? html : "";
                 }, false, true);

@@ -152,6 +152,6 @@ describe("ngInit", () => {
     await wait();
 
     expect($rootScope.test).toBeUndefined();
-    expect($rootScope.$handler._children[1].test).toEqual(123);
+    expect($rootScope._handler._children[1].test).toEqual(123);
   });
 });

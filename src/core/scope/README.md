@@ -17,10 +17,10 @@ become observable dependencies when DOM expressions read them.
 - Create root, inherited, isolate, and transcluded scopes.
 - Lazily proxy scopeable objects when they are read, without writing proxy
   helper state into user model objects.
-- Track `$watch` listeners by the smallest known property keys extracted from
+- Track `watch` listeners by the smallest known property keys extracted from
   parsed expressions.
 - Schedule watcher callbacks asynchronously on the microtask queue.
-- Propagate `$emit` and `$broadcast` events through the scope tree.
+- Propagate `emit` and `broadcast` events through the scope tree.
 - Keep array, `Map`, `Set`, `Date`, and promise assignments observable without
   breaking their native method behavior.
 - Tear down watchers, foreign listeners, child links, object listener indexes,
@@ -40,15 +40,15 @@ become observable dependencies when DOM expressions read them.
 - `isNonScope(target)`: tells whether a value should be excluded from scope
   proxying.
 
-Public methods exposed through scope proxies include `$watch`, `$new`,
-`$newIsolate`, `$transcluded`, `$merge`, `$on`, `$emit`, `$broadcast`,
-`$destroy`, `$getById`, and `$searchByName`.
+Public methods exposed through scope proxies include `watch`, `new`,
+`newIsolate`, `transcluded`, `merge`, `on`, `emit`, `broadcast`,
+`destroy`, `getById`, and `searchByName`.
 
 ## Core Model
 
 Every scope proxy has a `Scope` handler. The handler owns the reactive indexes
 and exposes scope methods through `_propertyMap`. The raw model object is stored
-as `$target`; the proxy currently being handled is stored as `$proxy`.
+as `_target`; the proxy currently being handled is stored as `_proxy`.
 
 Nested values are proxied lazily in the `get` trap:
 
@@ -92,7 +92,7 @@ Important timing invariants:
 
 ## Watcher Indexes
 
-The implementation avoids a digest-style full scan. `$watch` parses the
+The implementation avoids a digest-style full scan. `watch` parses the
 expression once, extracts candidate watch keys from the AST, and registers a
 `Listener` under those keys.
 
@@ -117,9 +117,9 @@ filter to avoid firing on unrelated owners.
 
 ## Scope Hierarchy
 
-`$new()` creates a child object that inherits from the current `$target`.
-`$newIsolate()` creates a child that does not inherit watchable properties.
-`$transcluded()` creates an inherited child with an explicit parent instance for
+`new()` creates a child object that inherits from the current `_target`.
+`newIsolate()` creates a child that does not inherit watchable properties.
+`transcluded()` creates an inherited child with an explicit parent instance for
 transclusion ownership.
 
 Child scopes are tracked in:
@@ -130,42 +130,42 @@ Child scopes are tracked in:
   scope values are displaced.
 
 Foreign listener registration bridges inherited-property watches back to the
-scope that owns the value. This is why a child `$watch("parentValue", ...)` can
+scope that owns the value. This is why a child `watch("parentValue", ...)` can
 react when the parent writes `parentValue`.
 
 ## Events
 
-`$on(name, listener)` stores event listeners on the current scope only.
-`$emit` walks upward through `$parent`; `$broadcast` walks downward through
+`on(name, listener)` stores event listeners on the current scope only.
+`emit` walks upward through `parent`; `broadcast` walks downward through
 `_children`.
 
 The shared `ScopeEvent` object is created at the first scope that handles the
 event and is reused through propagation. `currentScope` is set for each scope
 while its listeners run, then reset to `null` before propagation continues.
 `stopPropagation()` stops later propagation from the current branch, including
-remaining descendants and sibling branches in `$broadcast`; it does not prevent
+remaining descendants and sibling branches in `broadcast`; it does not prevent
 listener execution already queued on the current scope. `preventDefault()`
 only marks the event.
 
-`$broadcast` iterates over a snapshot of child scopes for the current hop, so
+`broadcast` iterates over a snapshot of child scopes for the current hop, so
 children added or removed during traversal do not affect the active pass. This
 prevents sibling skips when a child is destroyed mid-broadcast and prevents new
 descendants from receiving the same event in the same pass.
 
-Events are separate from `$watch` scheduling. Event listeners run synchronously
-inside `$emit`/`$broadcast`, while watch listeners run from the microtask
+Events are separate from `watch` scheduling. Event listeners run synchronously
+inside `emit`/`broadcast`, while watch listeners run from the microtask
 scheduler.
 
 ## Production readiness gates
 
 Before treating scope behavior as production-ready, this module should satisfy:
 
-- `$emit` must always return a `ScopeEvent` object with `currentScope` reset to `null`
+- `emit` must always return a `ScopeEvent` object with `currentScope` reset to `null`
   after traversal, even when no listeners are registered on any ancestor.
-- `$emit` and `$broadcast` must reuse a single `ScopeEvent` instance while
+- `emit` and `broadcast` must reuse a single `ScopeEvent` instance while
   traversing their chain so listener metadata (`name`, `defaultPrevented`, etc.)
   remains coherent.
-- `$broadcast` must only traverse child scopes captured at the time a scope begins
+- `broadcast` must only traverse child scopes captured at the time a scope begins
   dispatching in that branch, avoiding listeners added/removed by same-pass
   listeners from altering active propagation.
 - `$destroy` must keep ancestry usable during destroy delivery and clear scope links
@@ -218,7 +218,7 @@ This prevents stale promise settlements from overwriting newer user writes.
 
 ## Destruction
 
-`$destroy()` broadcasts `$destroy` when needed, deregisters owned local and
+`destroy()` broadcasts `$destroy` when needed, deregisters owned local and
 foreign watchers, removes the scope from the parent child list, clears listener
 indexes, and marks the scope destroyed.
 
@@ -241,8 +241,8 @@ Treat these checks as mandatory before merging any scope behavior changes.
    - `Set` membership watchers
    - `Date` mutator/getter watcher links
 4. Event propagation is explicitly covered for:
-   - `$emit` parent-chain traversal
-   - `$broadcast` child traversal snapshot behavior
+   - `emit` parent-chain traversal
+   - `broadcast` child traversal snapshot behavior
    - stop/protect semantics under child add/remove during dispatch
 5. Destroy lifecycle has explicit coverage for:
    - child scope detachment
@@ -311,7 +311,7 @@ and foreign deregistration fast paths.
 tracks how many listeners may require nested object collection scans.
 
 `WatcherRef`
-: Owned local watcher reference. Stored so `$destroy()` can deregister all
+: Owned local watcher reference. Stored so `destroy()` can deregister all
 watchers created by the scope.
 
 `ListenerScheduleFilter`
@@ -343,12 +343,12 @@ deletion flags, and swap indices.
 that together represent a swap.
 
 `ScopeEvent`
-: Event object passed to `$emit`/`$broadcast` listeners. It tracks target scope,
+: Event object passed to `emit`/`broadcast` listeners. It tracks target scope,
 current scope, name, propagation/default flags, and control methods.
 
 `ScopeProxied<T>`
-: Helper type for values known to be scope proxies. It adds `$handler` and
-`$target` to the target object shape.
+: Helper type for values known to be scope proxies. It adds `_handler` and
+`_target` to the target object shape.
 
 `ScopeProxy`
 : Alias for `ng.Scope`, used where the code is dealing with a proxy rather than
@@ -359,7 +359,7 @@ the handler.
 metadata.
 
 `ScopeEventListener`
-: Internal event listener callback shape for `$on`.
+: Internal event listener callback shape for `on`.
 
 `ArrayMutationWrapper`
 : Cached wrapper type for array mutator methods exposed through the proxy `get`
@@ -413,7 +413,7 @@ proxy.
   remain.
 - Watcher deregistration must update both the listener array and its index map.
 - Hash indexes must stay consistent with their primary listener lists.
-- Foreign listeners must be owned by the watcher scope so `$destroy()` can clean
+- Foreign listeners must be owned by the watcher scope so `destroy()` can clean
   them up.
 - Array mutation metadata must be cleared or replaced whenever an array mutation
   path runs.

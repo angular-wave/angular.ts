@@ -71,7 +71,7 @@ export function selectDirective(): ng.Directive {
     selectCtrl._ngModelCtrl = ngModelCtrl;
 
     const syncNativeValidity = () => {
-      ngModelCtrl.$setNativeValidity(
+      ngModelCtrl.setNativeValidity(
         !selectElement.willValidate || selectElement.validity.valid,
       );
     };
@@ -80,7 +80,7 @@ export function selectDirective(): ng.Directive {
       selectCtrl._removeUnknownOption();
       const viewValue = selectCtrl._readValue();
 
-      ngModelCtrl.$setViewValue(viewValue);
+      ngModelCtrl.setViewValue(viewValue);
       syncNativeValidity();
     });
 
@@ -128,18 +128,18 @@ export function selectDirective(): ng.Directive {
 
       let lastViewRef: unknown = NaN;
 
-      _scope.$watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
+      _scope.watch(getNormalizedAttr(element, "ngModel") ?? "", () => {
         if (
-          lastViewRef === ngModelCtrl.$viewValue &&
-          !equals(lastView, ngModelCtrl.$viewValue)
+          lastViewRef === ngModelCtrl.viewValue &&
+          !equals(lastView, ngModelCtrl.viewValue)
         ) {
-          lastView = shallowCopy(ngModelCtrl.$viewValue);
-          ngModelCtrl.$render();
+          lastView = shallowCopy(ngModelCtrl.viewValue);
+          ngModelCtrl.render();
         }
-        lastViewRef = ngModelCtrl.$viewValue;
+        lastViewRef = ngModelCtrl.viewValue;
       });
 
-      ngModelCtrl.$isEmpty = function (value: unknown[] | null | undefined) {
+      ngModelCtrl.isEmpty = function (value: unknown[] | null | undefined) {
         return !value || value.length === 0;
       };
     }
@@ -157,13 +157,13 @@ export function selectDirective(): ng.Directive {
     const selectElement = element as HTMLSelectElement;
 
     const syncNativeValidity = () => {
-      ngModelCtrl.$setNativeValidity(
+      ngModelCtrl.setNativeValidity(
         !selectElement.willValidate || selectElement.validity.valid,
       );
     };
 
-    ngModelCtrl.$render = function () {
-      selectCtrl._writeValue(ngModelCtrl.$viewValue);
+    ngModelCtrl.render = function () {
+      selectCtrl._writeValue(ngModelCtrl.viewValue);
       syncNativeValidity();
     };
 

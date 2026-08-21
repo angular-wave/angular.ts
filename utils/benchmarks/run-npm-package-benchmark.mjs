@@ -298,8 +298,8 @@ type LinkFn = (
 ) => Element | Node | ChildNode | Node[];
 type CloneAttachFn = (clone: Node[], scope: Scope) => void;
 type Scope = {
-  $destroy(): void;
-  $new(): Scope;
+  destroy(): void;
+  new(): Scope;
 } & Record<string, unknown>;
 
 declare global {
@@ -397,7 +397,7 @@ function linkWithNewScope(
   $rootScope: Scope,
   createScopeData?: () => Record<string, unknown>,
 ): unknown {
-  const scope = $rootScope.$new();
+  const scope = $rootScope.new();
 
   if (createScopeData) {
     Object.assign(scope, createScopeData());
@@ -406,7 +406,7 @@ function linkWithNewScope(
   try {
     return linkFn(scope, captureClone);
   } finally {
-    scope.$destroy();
+    scope.destroy();
   }
 }
 

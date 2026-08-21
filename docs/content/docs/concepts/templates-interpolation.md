@@ -124,7 +124,7 @@ The `$interpolate` service is what `$compile` uses internally to process interpo
 ): InterpolationFunction | undefined
 ```
 
-The returned `InterpolationFunction` is callable with `(context, cb?)`. When `cb` is provided, `$interpolate` sets up `$watch` calls on the scope so `cb` is invoked whenever any expression in the template changes.
+The returned `InterpolationFunction` is callable with `(context, cb?)`. When `cb` is provided, `$interpolate` sets up `watch` calls on the scope so `cb` is invoked whenever any expression in the template changes.
 
 ```typescript
 

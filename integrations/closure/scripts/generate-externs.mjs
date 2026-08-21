@@ -50,11 +50,33 @@ semanticTypedefs.set(
   `(!ng.AnnotatedDirectiveFactory|function(...?): (!ng.Directive|${directiveLinkTypedef}))`,
 );
 
+semanticTypedefs.set(
+  "DirectiveCompileFn",
+  "function(!HTMLElement, (!ng.LinkFn|!ng.TranscludeFn|undefined)): (!ng.DirectiveLinkFn|!ng.DirectivePrePost|undefined)",
+);
+
 const memberTypeOverrides = new Map([
   ["Angular.subapps", "!Array<!ng.Angular>"],
-  ["Angular.$t", "!Object"],
-  ["Scope.$target", "!Object"],
+  ["Angular.tokens", "!Object"],
+  ["Scope._target", "!Object"],
 ]);
+
+memberTypeOverrides.set(
+  "Directive.compile",
+  "!ng.DirectiveCompileFn",
+);
+memberTypeOverrides.set(
+  "Directive.link",
+  "(!ng.DirectiveLinkFn|!ng.DirectivePrePost|undefined)",
+);
+memberTypeOverrides.set(
+  "DirectivePrePost.pre",
+  "(!ng.DirectiveLinkFn|undefined)",
+);
+memberTypeOverrides.set(
+  "DirectivePrePost.post",
+  "(!ng.DirectiveLinkFn|undefined)",
+);
 
 const moduleListType = "!Array<(string|!ng.Injectable)>";
 const constantValueType = "(!Object|number|string)";
@@ -94,7 +116,7 @@ const parameterTypeOverrides = new Map([
   ["TransitionService.onError.callback", transitionHookFnType],
   ["Scope.get.property", "(number|string|symbol)"],
   ["Scope.deleteProperty.property", "(number|string|symbol)"],
-  ["Scope.$merge.newTarget", "!Object"],
+  ["Scope.merge.newTarget", "!Object"],
 ]);
 
 const memberReturnTypeOverrides = new Map([
@@ -288,7 +310,20 @@ function typeDescription(checker, name, type) {
   return symbol ? symbolDescription(checker, symbol, fallback) : fallback;
 }
 
+const activeClosureTypes = new Set();
+
 function closureType(checker, type) {
+  if (activeClosureTypes.has(type)) return "?";
+
+  activeClosureTypes.add(type);
+  try {
+    return resolveClosureType(checker, type);
+  } finally {
+    activeClosureTypes.delete(type);
+  }
+}
+
+function resolveClosureType(checker, type) {
   if (type.flags & ts.TypeFlags.Any) return "?";
   if (type.flags & ts.TypeFlags.Unknown) return "?";
   if (type.flags & ts.TypeFlags.Never) return "?";
@@ -541,8 +576,8 @@ function memberExtern(checker, typeName, symbol) {
     const paramDocs = params
       .map((parameter) =>
         parameter.rest
-          ? ` * @param {...${parameter.type}} ${parameter.name}`
-          : ` * @param {${parameter.type}} ${parameter.name}`,
+          ? ` * @param {...${parameter.type}} ${parameter.name} ${parameter.description}`
+          : ` * @param {${parameter.type}} ${parameter.name} ${parameter.description}`,
       )
       .join("\n");
     const args = params.map((parameter) => parameter.name).join(", ");
@@ -566,8 +601,8 @@ function callExtern(checker, typeName, type) {
   const paramDocs = params
     .map((parameter) =>
       parameter.rest
-        ? ` * @param {...${parameter.type}} ${parameter.name}`
-        : ` * @param {${parameter.type}} ${parameter.name}`,
+        ? ` * @param {...${parameter.type}} ${parameter.name} ${parameter.description}`
+        : ` * @param {${parameter.type}} ${parameter.name} ${parameter.description}`,
     )
     .join("\n");
   const args = params.map((parameter) => parameter.name).join(", ");
@@ -600,6 +635,11 @@ function closureParameters(
         );
 
     return {
+      description: symbolDescription(
+        checker,
+        parameter,
+        `Value supplied for the ${parameter.name} parameter.`,
+      ).replace(/^-\s+/u, ""),
       name: rest ? "var_args" : parameterName(parameter, index),
       rest,
       type,
@@ -689,7 +729,7 @@ function generateExterns() {
   );
   const typeBlocks = aliases.map((alias) => typeExtern(checker, alias));
 
-  return `/**\n * @externs\n * Public externs for AngularTS [VI]{version}[/VI] applications compiled with Google Closure.\n *\n * Version-pinned to @angular-wave/angular.ts [VI]{version}[/VI]; regenerate\n * this file when updating the public ng namespace.\n *\n * This file is generated from src/namespace.ts by\n * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases\n * reuse Closure Compiler's built-in browser externs instead of duplicating DOM\n * API surfaces under the public ng namespace.\n */\n\n/** @const */\nvar angular = {};\n\n/** @const Closure mirror of AngularTS's public TypeScript ng namespace. */\nvar ng = {};\n\n/**\n * Retrieve or create an AngularTS module.\n * @param {string} name\n * @param {!Array<string>=} requires\n * @return {!ng.NgModule}\n */\nangular.module = function(name, requires) {};\n\n${typeBlocks.join("\n\n")}\n`;
+  return `/**\n * @externs\n * Public externs for AngularTS [VI]{version}[/VI] applications compiled with Google Closure.\n *\n * Version-pinned to @angular-wave/angular.ts [VI]{version}[/VI]; regenerate\n * this file when updating the public ng namespace.\n *\n * This file is generated from src/namespace.ts by\n * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases\n * reuse Closure Compiler's built-in browser externs instead of duplicating DOM\n * API surfaces under the public ng namespace.\n */\n\n/** @const */\nvar angular = {};\n\n/** @const Closure mirror of AngularTS's public TypeScript ng namespace. */\nvar ng = {};\n\n/**\n * Retrieve or create an AngularTS module.\n * @param {string} name Module name to create or retrieve.\n * @param {!Array<string>=} requires Dependency module names when creating a module.\n * @return {!ng.NgModule}\n */\nangular.module = function(name, requires) {};\n\n${typeBlocks.join("\n\n")}\n`;
 }
 
 const output = generateExterns();

@@ -123,7 +123,7 @@ final class Transition {
       unsafe.getProperty(raw, 'promise') as JSPromise<JSAny?>;
 
   /// The transition id.
-  int? get $id => unsafe.jsToDart<int?>(unsafe.getProperty(raw, r'$id'));
+  int? get id => unsafe.jsToDart<int?>(unsafe.getProperty(raw, r'id'));
 
   /// Whether this transition succeeded.
   bool? get success {
@@ -138,12 +138,6 @@ final class Transition {
 
   /// Runs this transition.
   Object? run() => unsafe.callMethod(raw, 'run');
-
-  /// Internal source state object.
-  Object? $from() => unsafe.callMethod(raw, r'$from');
-
-  /// Internal target state object.
-  Object? $to() => unsafe.callMethod(raw, r'$to');
 
   /// Source state declaration.
   Object? from() => unsafe.callMethod(raw, 'from');

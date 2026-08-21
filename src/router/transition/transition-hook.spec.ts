@@ -32,6 +32,7 @@ function createHook({
     },
     _callback: callback,
     _invokeCount: 0,
+    /** @internal */
     _deregister() {},
     ...registeredHook,
   };
@@ -244,6 +245,7 @@ describe("TransitionHook", () => {
 
     await TransitionHook._chain([
       {
+        /** @internal */
         _invokeHook() {
           order.push("hook");
         },
@@ -259,6 +261,7 @@ describe("TransitionHook", () => {
     const result = await TransitionHook._invokeHooks(
       [
         {
+          /** @internal */
           _invokeHook() {
             order.push("first");
 
@@ -266,6 +269,7 @@ describe("TransitionHook", () => {
           },
         },
         {
+          /** @internal */
           _invokeHook() {
             order.push("second");
           },

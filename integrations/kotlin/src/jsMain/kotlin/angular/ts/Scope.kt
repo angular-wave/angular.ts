@@ -16,7 +16,7 @@ public class Scope<TState : Any> internal constructor(
         lazy: Boolean = false,
         listener: (newValue: Any?, state: TState) -> Unit,
     ): (() -> Unit)? {
-        val disposer = raw.`$watch`(
+        val disposer = raw.`watch`(
             expression,
             { newValue: dynamic, originalTarget: dynamic ->
                 listener(newValue, originalTarget.unsafeCast<TState>())
@@ -31,31 +31,31 @@ public class Scope<TState : Any> internal constructor(
         name: String,
         listener: (event: Any?) -> Unit,
     ): () -> Unit =
-        raw.`$on`(name, listener).unsafeCast<() -> Unit>()
+        raw.`on`(name, listener).unsafeCast<() -> Unit>()
 
     public fun emit(
         name: String,
         vararg args: Any?,
     ): Any? =
-        raw.`$emit`(name, *args.unsafeCast<Array<dynamic>>())
+        raw.`emit`(name, *args.unsafeCast<Array<dynamic>>())
 
     public fun broadcast(
         name: String,
         vararg args: Any?,
     ): Any? =
-        raw.`$broadcast`(name, *args.unsafeCast<Array<dynamic>>())
+        raw.`broadcast`(name, *args.unsafeCast<Array<dynamic>>())
 
     public fun child(): Scope<TState> =
-        Scope(raw.`$new`().unsafeCast<RawScope>())
+        Scope(raw.`new`().unsafeCast<RawScope>())
 
     public fun isolateChild(): Scope<TState> =
-        Scope(raw.`$newIsolate`().unsafeCast<RawScope>())
+        Scope(raw.`newIsolate`().unsafeCast<RawScope>())
 
     public fun merge(value: Any) {
-        raw.`$merge`(value)
+        raw.`merge`(value)
     }
 
     public fun destroy() {
-        raw.`$destroy`()
+        raw.destroy()
     }
 }

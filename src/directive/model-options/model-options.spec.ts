@@ -61,7 +61,7 @@ describe("ngModelOptions", () => {
           )($rootScope);
           inputElm = formElm.querySelector("input");
 
-          const inputOptions = $rootScope.form.alias.$options;
+          const inputOptions = $rootScope.form.alias.options;
 
           expect(inputOptions.getOption("updateOn")).toEqual(
             defaultModelOptions.getOption("updateOn"),
@@ -86,7 +86,7 @@ describe("ngModelOptions", () => {
           )($rootScope);
           inputElm = formElm.querySelector("input");
 
-          const inputOptions = $rootScope.form.alias.$options;
+          const inputOptions = $rootScope.form.alias.options;
 
           expect(inputOptions.getOption("debounce")).toEqual(
             defaultModelOptions.getOption("debounce"),
@@ -103,7 +103,7 @@ describe("ngModelOptions", () => {
           )($rootScope);
           inputElm = formElm.querySelector("input");
 
-          const inputOptions = $rootScope.form.alias.$options;
+          const inputOptions = $rootScope.form.alias.options;
 
           expect(inputOptions.getOption("updateOn")).toBe("blur");
           expect(inputOptions.getOption("updateOnDefault")).toBe(false);
@@ -116,7 +116,7 @@ describe("ngModelOptions", () => {
               "</form>",
           )($rootScope);
 
-          const inputOptions = $rootScope.form.alias.$options;
+          const inputOptions = $rootScope.form.alias.options;
 
           expect(inputOptions.getOption("debounce")).toEqual(
             defaultModelOptions.getOption("debounce"),
@@ -146,11 +146,11 @@ describe("ngModelOptions", () => {
           const containerOptions = getController(
             container,
             "ngModelOptions",
-          ).$options;
+          ).options;
 
-          const formOptions = getController(form, "ngModelOptions").$options;
+          const formOptions = getController(form, "ngModelOptions").options;
 
-          const inputOptions = getController(input, "ngModelOptions").$options;
+          const inputOptions = getController(input, "ngModelOptions").options;
 
           expect(containerOptions.getOption("allowInvalid")).toEqual(true);
           expect(formOptions.getOption("allowInvalid")).toEqual(false);
@@ -166,10 +166,10 @@ describe("ngModelOptions", () => {
           dealoc(container);
         });
 
-        it('should inherit options that are marked with "$inherit" from the nearest ancestor `ngModelOptions` directive', () => {
+        it('should inherit options that are marked with "_inherit" from the nearest ancestor `ngModelOptions` directive', () => {
           const container = $compile(
             '<div ng-model-options="{ allowInvalid: true }">' +
-              "<form ng-model-options=\"{ updateOn: 'blur', allowInvalid: '$inherit' }\">" +
+              "<form ng-model-options=\"{ updateOn: 'blur', allowInvalid: '_inherit' }\">" +
               "<input ng-model-options=\"{ updateOn: 'default' }\">" +
               "</form>" +
               "</div>",
@@ -182,11 +182,11 @@ describe("ngModelOptions", () => {
           const containerOptions = getController(
             container,
             "ngModelOptions",
-          ).$options;
+          ).options;
 
-          const formOptions = getController(form, "ngModelOptions").$options;
+          const formOptions = getController(form, "ngModelOptions").options;
 
-          const inputOptions = getController(input, "ngModelOptions").$options;
+          const inputOptions = getController(input, "ngModelOptions").options;
 
           expect(containerOptions.getOption("allowInvalid")).toEqual(true);
           expect(formOptions.getOption("allowInvalid")).toEqual(true);
@@ -202,10 +202,10 @@ describe("ngModelOptions", () => {
           dealoc(container);
         });
 
-        it('should inherit all unspecified options if the options object contains a `"*"` property with value "$inherit"', () => {
+        it('should inherit all unspecified options if the options object contains a `"*"` property with value "_inherit"', () => {
           const container = $compile(
             "<div ng-model-options=\"{ allowInvalid: true, debounce: 100, updateOn: 'keyup' }\">" +
-              "<form ng-model-options=\"{ updateOn: 'blur', '*': '$inherit' }\">" +
+              "<form ng-model-options=\"{ updateOn: 'blur', '*': '_inherit' }\">" +
               "<input ng-model-options=\"{ updateOn: 'default' }\">" +
               "</form>" +
               "</div>",
@@ -218,11 +218,11 @@ describe("ngModelOptions", () => {
           const containerOptions = getController(
             container,
             "ngModelOptions",
-          ).$options;
+          ).options;
 
-          const formOptions = getController(form, "ngModelOptions").$options;
+          const formOptions = getController(form, "ngModelOptions").options;
 
-          const inputOptions = getController(input, "ngModelOptions").$options;
+          const inputOptions = getController(input, "ngModelOptions").options;
 
           expect(containerOptions.getOption("allowInvalid")).toEqual(true);
           expect(formOptions.getOption("allowInvalid")).toEqual(true);
@@ -245,13 +245,13 @@ describe("ngModelOptions", () => {
         it("should correctly inherit default and another specified event for `updateOn`", () => {
           const container = $compile(
             "<div ng-model-options=\"{updateOn: 'default blur'}\">" +
-              "<input ng-model-options=\"{'*': '$inherit'}\">" +
+              "<input ng-model-options=\"{'*': '_inherit'}\">" +
               "</div>",
           )($rootScope);
 
           const input = container.querySelector("input");
 
-          const inputOptions = getController(input, "ngModelOptions").$options;
+          const inputOptions = getController(input, "ngModelOptions").options;
 
           expect(inputOptions.getOption("updateOn")).toEqual("blur");
           expect(inputOptions.getOption("updateOnDefault")).toEqual(true);
@@ -259,32 +259,26 @@ describe("ngModelOptions", () => {
           dealoc(container);
         });
 
-        it('should `updateOnDefault` as well if we have `updateOn: "$inherit"`', () => {
+        it('should `updateOnDefault` as well if we have `updateOn: "_inherit"`', () => {
           const container = $compile(
             "<div ng-model-options=\"{updateOn: 'keyup'}\">" +
-              "<input ng-model-options=\"{updateOn: '$inherit'}\">" +
+              "<input ng-model-options=\"{updateOn: '_inherit'}\">" +
               "<div ng-model-options=\"{updateOn: 'default blur'}\">" +
-              "<input ng-model-options=\"{updateOn: '$inherit'}\">" +
+              "<input ng-model-options=\"{updateOn: '_inherit'}\">" +
               "</div>" +
               "</div>",
           )($rootScope);
 
           const input1 = container.querySelectorAll("input")[0];
 
-          const inputOptions1 = getController(
-            input1,
-            "ngModelOptions",
-          ).$options;
+          const inputOptions1 = getController(input1, "ngModelOptions").options;
 
           expect(inputOptions1.getOption("updateOn")).toEqual("keyup");
           expect(inputOptions1.getOption("updateOnDefault")).toEqual(false);
 
           const input2 = container.querySelectorAll("input")[1];
 
-          const inputOptions2 = getController(
-            input2,
-            "ngModelOptions",
-          ).$options;
+          const inputOptions2 = getController(input2, "ngModelOptions").options;
 
           expect(inputOptions2.getOption("updateOn")).toEqual("blur");
           expect(inputOptions2.getOption("updateOnDefault")).toEqual(true);
@@ -300,7 +294,7 @@ describe("ngModelOptions", () => {
               "/></from>",
           )($rootScope);
           expect($rootScope.options).toEqual({ updateOn: "default" });
-          expect($rootScope.form.alias.$options).not.toBe($rootScope.options);
+          expect($rootScope.form.alias.options).not.toBe($rootScope.options);
         });
 
         it("should be retrieved from an ancestor element containing an `ngModelOptions` directive", async () => {
@@ -363,10 +357,10 @@ describe("ngModelOptions", () => {
               "/></form>",
           )($rootScope);
           inputElm = formElm.querySelector("input");
-          expect($rootScope.form.alias.$pristine).toBeTruthy();
+          expect($rootScope.form.alias.pristine).toBeTruthy();
           browserTrigger(inputElm, "blur");
 
-          expect($rootScope.form.alias.$pristine).toBeTruthy();
+          expect($rootScope.form.alias.pristine).toBeTruthy();
         });
 
         it("should allow overriding the model update trigger event on text areas", () => {
@@ -503,7 +497,7 @@ describe("ngModelOptions", () => {
           expect($rootScope.color).toBe("blue");
         });
 
-        it("should re-set the trigger events when overridden with $overrideModelOptions", async () => {
+        it("should re-set the trigger events when overridden with overrideModelOptions", async () => {
           inputElm = $compile(
             '<input type="text" ng-model="name" name="alias" ' +
               "ng-model-options=\"{ updateOn: 'blur' }\"" +
@@ -528,7 +522,7 @@ describe("ngModelOptions", () => {
           $rootScope.name = undefined;
           await wait();
           expect(inputElm.value).toBe("");
-          ctrl.$overrideModelOptions({ updateOn: "click" });
+          ctrl.overrideModelOptions({ updateOn: "click" });
 
           changeGivenInputTo(inputElm, "a");
           await wait();
@@ -598,7 +592,7 @@ describe("ngModelOptions", () => {
             "{ updateOn: 'default blur', debounce: { default: 30, blur: 10, '*': 20 } }",
           );
 
-          ctrl.$setViewValue("a");
+          ctrl.setViewValue("a");
           expect($rootScope.name).toBeUndefined();
           await wait(10);
           expect($rootScope.name).toBeUndefined();
@@ -618,17 +612,17 @@ describe("ngModelOptions", () => {
           expect($rootScope.name).toBe("a");
         });
 
-        it("should flush debounced events when calling $commitViewValue directly", async () => {
+        it("should flush debounced events when calling commitViewValue directly", async () => {
           const ctrl = compileDebouncedInput("{ debounce: 30 }");
 
           changeGivenInputTo(inputElm, "a");
           expect($rootScope.name).toBeUndefined();
-          ctrl.$commitViewValue();
+          ctrl.commitViewValue();
           expect($rootScope.name).toBe("a");
 
-          ctrl.$setPristine();
+          ctrl.setPristine();
           await wait(40);
-          expect(ctrl.$pristine).toBeTrue();
+          expect(ctrl.pristine).toBeTrue();
         });
 
         it("should reset input value if rollbackViewValue is called during a pending update", async () => {
@@ -636,7 +630,7 @@ describe("ngModelOptions", () => {
 
           changeGivenInputTo(inputElm, "a");
           expect(inputElm.value).toBe("a");
-          ctrl.$rollbackViewValue();
+          ctrl.rollbackViewValue();
           expect(inputElm.value).toBe("");
 
           browserTrigger(inputElm, "blur");
@@ -650,7 +644,7 @@ describe("ngModelOptions", () => {
 
           changeGivenInputTo(inputElm, "a");
           expect($rootScope.name).toBeUndefined();
-          ctrl.$rollbackViewValue();
+          ctrl.rollbackViewValue();
 
           browserTrigger(inputElm, "blur");
           await wait();
@@ -663,7 +657,7 @@ describe("ngModelOptions", () => {
           changeGivenInputTo(inputElm, "a");
           expect($rootScope.name).toBeUndefined();
           await wait(10);
-          ctrl.$rollbackViewValue();
+          ctrl.rollbackViewValue();
 
           await wait(40);
           expect($rootScope.name).toBeUndefined();
@@ -674,7 +668,7 @@ describe("ngModelOptions", () => {
 
           changeGivenInputTo(inputElm, "a");
           expect(inputElm.value).toBe("a");
-          ctrl.$rollbackViewValue();
+          ctrl.rollbackViewValue();
           expect(inputElm.value).toBe("");
 
           await wait(40);
@@ -822,7 +816,7 @@ describe("ngModelOptions", () => {
 
           let defer;
 
-          $rootScope.form.input.$asyncValidators.promiseValidator = function (
+          $rootScope.form.input.asyncValidators.promiseValidator = function (
             value,
           ) {
             defer = Promise.withResolvers();
@@ -832,7 +826,7 @@ describe("ngModelOptions", () => {
           changeGivenInputTo(inputElm, "12345");
           await wait();
           expect($rootScope.value).toBe("12345");
-          expect($rootScope.form.input.$pending.promiseValidator).toBe(true);
+          expect($rootScope.form.input.pending.promiseValidator).toBe(true);
           defer.reject();
           await wait();
           expect($rootScope.value).toBe("12345");
@@ -848,7 +842,7 @@ describe("ngModelOptions", () => {
           inputElm = formElm.querySelector("input");
           let defer;
 
-          $rootScope.form.input.$asyncValidators.promiseValidator = function (
+          $rootScope.form.input.asyncValidators.promiseValidator = function (
             value,
           ) {
             defer = Promise.withResolvers();
@@ -858,7 +852,7 @@ describe("ngModelOptions", () => {
           $rootScope.value = "12345";
           await wait();
           expect(inputElm.value).toBe("12345");
-          expect($rootScope.form.input.$pending.promiseValidator).toBe(true);
+          expect($rootScope.form.input.pending.promiseValidator).toBe(true);
           defer.reject();
           await wait();
           expect(inputElm.value).toBe("12345");
@@ -873,7 +867,7 @@ describe("ngModelOptions", () => {
           await wait();
           inputElm = formElm.querySelector("input");
           $rootScope.changed = jasmine.createSpy("changed");
-          $rootScope.form.input.$parsers.push((value) => "modelValue");
+          $rootScope.form.input.parsers.push((value) => "modelValue");
 
           changeGivenInputTo(inputElm, "input1");
           await wait();
@@ -907,7 +901,7 @@ describe("ngModelOptions", () => {
         $rootScope = injector.get("$rootScope");
         const ngModelCtrl = getController(ELEMENT.firstChild, "ngModel");
 
-        expect(ngModelCtrl.$options.getOption("debounce")).toBe(1000);
+        expect(ngModelCtrl.options.getOption("debounce")).toBe(1000);
       });
     });
   });

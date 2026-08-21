@@ -89,7 +89,7 @@ function observeModelAttr(
   });
   observer.observe(element, { attributes: true });
 
-  let deregisterDestroy: (() => void) | undefined = scope.$on(
+  let deregisterDestroy: (() => void) | undefined = scope.on(
     "$destroy",
     deregister,
   );
@@ -134,44 +134,44 @@ export interface NgModelOptions {
 }
 
 /**
- * @property $viewValue The actual value from the control's view.
+ * @property viewValue The actual value from the control's view.
  *
- * @property $modelValue The value in the model that the control is bound to.
- * @property $parsers Array of functions to execute, as a pipeline, whenever
- *  the control updates the ngModelController with a new `$viewValue` from the DOM, usually via user input.
+ * @property modelValue The value in the model that the control is bound to.
+ * @property parsers Array of functions to execute, as a pipeline, whenever
+ *  the control updates the ngModelController with a new `viewValue` from the DOM, usually via user input.
  *
- * @property $formatters Array of functions to execute, as a pipeline, whenever
-    the bound ngModel expression changes programmatically. The `$formatters` are not called when the
+ * @property formatters Array of functions to execute, as a pipeline, whenever
+    the bound ngModel expression changes programmatically. The `formatters` are not called when the
     value of the control is changed by user interaction.
  *
- * @property $validators A collection of validators that are applied whenever the model value changes.
+ * @property validators A collection of validators that are applied whenever the model value changes.
  * The key value within the object refers to the name of the validator while the function refers to the validation operation.
  * The validation operation is provided with the model value as an argument and must return a true or false value depending on the response of that validation.
  *
- * @property $asyncValidators A collection of validations that are expected to perform an asynchronous validation (e.g. a HTTP request).
+ * @property asyncValidators A collection of validations that are expected to perform an asynchronous validation (e.g. a HTTP request).
  *  The validation function that is provided is expected to return a promise when it is run during the model validation process
  *
- * @property $viewChangeListeners Array of functions to execute whenever
- *     a change to {@link NgModelController.$viewValue `$viewValue`} has caused a change
- *     to {@link NgModelController.$modelValue `$modelValue`}.
+ * @property viewChangeListeners Array of functions to execute whenever
+ *     a change to {@link NgModelController.viewValue `viewValue`} has caused a change
+ *     to {@link NgModelController.modelValue `modelValue`}.
  *     It is called with no arguments, and its return value is ignored.
- *     This can be used in place of additional $watches against the model value.
+ *     This can be used in place of additional observers on the model value.
  *
- * @property $error An object hash with all failing validator ids as keys.
- * @property $pending An object hash with all pending validator ids as keys.
+ * @property error An object hash with all failing validator ids as keys.
+ * @property pending An object hash with all pending validator ids as keys.
  *
- * @property $untouched True if control has not lost focus yet.
- * @property $touched True if control has lost focus.
- * @property $pristine True if user has not interacted with the control yet.
- * @property $dirty True if user has already interacted with the control.
- * @property $valid True if there is no error.
- * @property $invalid True if at least one error on the control.
- * @property $name The name attribute of the control.
+ * @property untouched True if control has not lost focus yet.
+ * @property touched True if control has lost focus.
+ * @property pristine True if user has not interacted with the control yet.
+ * @property dirty True if user has already interacted with the control.
+ * @property valid True if there is no error.
+ * @property invalid True if at least one error on the control.
+ * @property name The name attribute of the control.
  */
 
 export class NgModelController {
-  /* @ignore */ static $nonscope = true;
-  /* @ignore */ static $inject = [
+  static $nonscope = true;
+  static $inject = [
     _scope,
     _exceptionHandler,
     _element,
@@ -185,40 +185,40 @@ export class NgModelController {
   /** @internal */
   _isAnimated: boolean;
 
-  $viewValue: unknown;
+  viewValue: unknown;
 
-  $modelValue: unknown;
+  modelValue: unknown;
 
   /** @internal */
   _rawModelValue: unknown;
 
-  $validators: ModelValidators;
+  validators: ModelValidators;
 
-  $asyncValidators: AsyncModelValidators;
+  asyncValidators: AsyncModelValidators;
 
-  $parsers: ((value: unknown) => unknown)[];
+  parsers: ((value: unknown) => unknown)[];
 
-  $formatters: ((value: unknown) => unknown)[];
+  formatters: ((value: unknown) => unknown)[];
 
-  $viewChangeListeners: (() => void)[];
+  viewChangeListeners: (() => void)[];
 
-  $untouched: boolean;
+  untouched: boolean;
 
-  $touched: boolean;
+  touched: boolean;
 
-  $pristine: boolean;
+  pristine: boolean;
 
-  $dirty: boolean;
+  dirty: boolean;
 
-  $valid: boolean | undefined;
+  valid: boolean | undefined;
 
-  $invalid: boolean | undefined;
+  invalid: boolean | undefined;
 
-  $validity: ValidityState | null;
+  validity: ValidityState | null;
 
-  $validationMessage: string;
+  validationMessage: string;
 
-  $error: Record<string, boolean>;
+  error: Record<string, boolean>;
 
   /** @internal */
   _customValidationStates: Map<string, CustomValidationState>;
@@ -226,16 +226,16 @@ export class NgModelController {
   /** @internal */
   _validationStates: Map<string, CustomValidationState>;
 
-  $pending: Record<string, boolean> | undefined;
+  pending: Record<string, boolean> | undefined;
 
-  $name: ControlName;
+  controlName: ControlName;
 
-  declare $target: FormControlTarget;
+  declare _target: FormControlTarget;
 
   /** @internal */
   _parentForm: ParentFormController;
 
-  $options: ModelOptions;
+  options: ModelOptions;
 
   /** @internal */
   _updateEvents: string;
@@ -330,34 +330,34 @@ export class NgModelController {
     $interpolate: ng.InterpolateService,
   ) {
     this._isAnimated = hasAnimate($element);
-    this.$viewValue = Number.NaN;
-    this.$modelValue = Number.NaN;
+    this.viewValue = Number.NaN;
+    this.modelValue = Number.NaN;
     this._rawModelValue = undefined; // stores the parsed modelValue / model set from scope regardless of validity.
-    this.$validators = {};
-    this.$asyncValidators = {};
-    this.$parsers = [];
-    this.$formatters = [];
-    this.$viewChangeListeners = [];
-    this.$untouched = true;
-    this.$touched = false;
-    this.$pristine = true;
-    this.$dirty = false;
-    this.$valid = true;
-    this.$invalid = false;
-    this.$validity = null;
-    this.$validationMessage = "";
-    this.$error = {}; // keep invalid keys here
+    this.validators = {};
+    this.asyncValidators = {};
+    this.parsers = [];
+    this.formatters = [];
+    this.viewChangeListeners = [];
+    this.untouched = true;
+    this.touched = false;
+    this.pristine = true;
+    this.dirty = false;
+    this.valid = true;
+    this.invalid = false;
+    this.validity = null;
+    this.validationMessage = "";
+    this.error = {}; // keep invalid keys here
     this._customValidationStates = new Map();
     this._validationStates = this._customValidationStates;
-    this.$pending = undefined; // keep pending keys here
+    this.pending = undefined; // keep pending keys here
     const interpolatedName: unknown = $interpolate(
       readModelAttr($element, "name") ?? "",
       false,
     )?.($scope);
 
-    this.$name = isString(interpolatedName) ? interpolatedName : "";
+    this.controlName = isString(interpolatedName) ? interpolatedName : "";
     this._parentForm = nullFormCtrl;
-    this.$options = defaultModelOptions;
+    this.options = defaultModelOptions;
     this._updateEvents = "";
     this._modelExpression = readModelAttr($element, "ngModel") ?? "";
     this._parsedNgModel = $parse(this._modelExpression);
@@ -397,7 +397,7 @@ export class NgModelController {
   /**
    * Updates the validation state of the control and propagates it to the parent form.
    */
-  $setValidity(validationErrorKey: string, state: PublicValidationState): void {
+  setValidity(validationErrorKey: string, state: PublicValidationState): void {
     if (this._destroyed) {
       return;
     }
@@ -441,15 +441,15 @@ export class NgModelController {
 
     this._syncPublicCustomValidationObjects();
 
-    if (this.$pending) {
+    if (this.pending) {
       cachedToggleClass(this, PENDING_CLASS, true);
-      this.$valid = this.$invalid = undefined;
+      this.valid = this.invalid = undefined;
       toggleValidationCss(this, "", null);
     } else {
       cachedToggleClass(this, PENDING_CLASS, false);
-      this.$valid = isObjectEmpty(this.$error) && (this._nativeValid ?? true);
-      this.$invalid = !this.$valid;
-      toggleValidationCss(this, "", this.$valid);
+      this.valid = isObjectEmpty(this.error) && (this._nativeValid ?? true);
+      this.invalid = !this.valid;
+      toggleValidationCss(this, "", this.valid);
     }
 
     // Re-read after syncing the custom-validation state map.
@@ -468,11 +468,11 @@ export class NgModelController {
     }
 
     toggleValidationCss(this, validationErrorKey, combinedState);
-    this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+    this._parentForm.setValidity(validationErrorKey, combinedState, this);
     this._lastValidityParentVersions[validationErrorKey] = parentVersion;
   }
 
-  $setNativeValidity(state: boolean | null): void {
+  setNativeValidity(state: boolean | null): void {
     if (this._destroyed) {
       return;
     }
@@ -486,15 +486,15 @@ export class NgModelController {
 
     this._nativeValid = nextState;
 
-    if (!this.$pending) {
-      this.$valid = isObjectEmpty(this.$error) && nextState;
-      this.$invalid = !this.$valid;
+    if (!this.pending) {
+      this.valid = isObjectEmpty(this.error) && nextState;
+      this.invalid = !this.valid;
       cachedToggleClass(this, PENDING_CLASS, false);
-      cachedToggleClass(this, VALID_CLASS, this.$valid);
-      cachedToggleClass(this, INVALID_CLASS, this.$invalid);
+      cachedToggleClass(this, VALID_CLASS, this.valid);
+      cachedToggleClass(this, INVALID_CLASS, this.invalid);
     }
 
-    this._parentForm.$setNativeValidity(nextState, this);
+    this._parentForm.setNativeValidity(nextState, this);
   }
 
   /** @internal */
@@ -508,7 +508,7 @@ export class NgModelController {
    * Native controls expose this through `ValidityState.customError`; an empty
    * message clears the custom error.
    */
-  $setCustomValidity(message: string): void {
+  setCustomValidity(message: string): void {
     if (this._destroyed) {
       return;
     }
@@ -548,8 +548,8 @@ export class NgModelController {
       }
     });
 
-    this.$error = errors;
-    this.$pending = isObjectEmpty(pending) ? undefined : pending;
+    this.error = errors;
+    this.pending = isObjectEmpty(pending) ? undefined : pending;
   }
 
   /** @internal Returns the current parent form chain version for validity propagation. */
@@ -574,7 +574,7 @@ export class NgModelController {
 
   /** @internal */
   _initGetterSetters() {
-    if (this.$options.getOption("getterSetter")) {
+    if (this.options.getOption("getterSetter")) {
       const invokeModelGetter = this._parse(`${this._modelExpression}()`);
 
       const invokeModelSetter = this._parse(`${this._modelExpression}(_$p)`);
@@ -609,19 +609,19 @@ export class NgModelController {
    * Called when the view needs to be updated. It is expected that the user of the ng-model
    * directive will implement this method.
    *
-   * The `$render()` method is invoked in the following situations:
+   * The `render()` method is invoked in the following situations:
    *
-   * * `$rollbackViewValue()` is called.  If we are rolling back the view value to the last
-   *   committed value then `$render()` is called to update the input control.
-   * * The value referenced by `ng-model` is changed programmatically and both the `$modelValue` and
-   *   the `$viewValue` are different from last time.
+   * * `rollbackViewValue()` is called.  If we are rolling back the view value to the last
+   *   committed value then `render()` is called to update the input control.
+   * * The value referenced by `ng-model` is changed programmatically and both the `modelValue` and
+   *   the `viewValue` are different from last time.
    *
-   * Since `ng-model` does not do a deep watch, `$render()` is only invoked if the values of
-   * `$modelValue` and `$viewValue` are actually different from their previous values. If `$modelValue`
-   * or `$viewValue` are objects (rather than a string or number) then `$render()` will not be
+   * Since `ng-model` does not do a deep watch, `render()` is only invoked if the values of
+   * `modelValue` and `viewValue` are actually different from their previous values. If `modelValue`
+   * or `viewValue` are objects (rather than a string or number) then `render()` will not be
    * invoked if you only change a property on the objects.
    */
-  $render() {
+  render() {
     /* empty */
   }
 
@@ -630,7 +630,7 @@ export class NgModelController {
    *
    * For instance, the required directive does this to work out if the input has data or not.
    *
-   * The default `$isEmpty` function checks whether the value is `undefined`, `''`, `null` or `NaN`.
+   * The default `isEmpty` function checks whether the value is `undefined`, `''`, `null` or `NaN`.
    *
    * You can override this for input directives whose concept of being empty is different from the
    * default. The `checkboxInputType` directive does this because in its case a value of `false`
@@ -639,7 +639,7 @@ export class NgModelController {
    * @param  value The value of the input to check for emptiness.
    * @returns True if `value` is "empty".
    */
-  $isEmpty(value: unknown): boolean {
+  isEmpty(value: unknown): boolean {
     return (
       isUndefined(value) || value === "" || isNull(value) || Number.isNaN(value)
     );
@@ -659,7 +659,7 @@ export class NgModelController {
       return;
     }
 
-    if (this.$isEmpty(value)) {
+    if (this.isEmpty(value)) {
       const animate = this._getAnimateIfEnabled();
 
       if (animate) {
@@ -687,9 +687,9 @@ export class NgModelController {
    * state (`ng-pristine` class). A model is considered to be pristine when the control
    * has not been changed from when first compiled.
    */
-  $setPristine() {
-    this.$dirty = false;
-    this.$pristine = true;
+  setPristine() {
+    this.dirty = false;
+    this.pristine = true;
 
     if (this._destroyed) return;
 
@@ -710,9 +710,9 @@ export class NgModelController {
    * state (`ng-dirty` class). A model is considered to be dirty when the control has been changed
    * from when first compiled.
    */
-  $setDirty() {
-    this.$dirty = true;
-    this.$pristine = false;
+  setDirty() {
+    this.dirty = true;
+    this.pristine = false;
 
     if (this._destroyed) {
       return;
@@ -726,7 +726,7 @@ export class NgModelController {
       this._element.classList.remove(PRISTINE_CLASS);
       this._element.classList.add(DIRTY_CLASS);
     }
-    this._parentForm.$setDirty();
+    this._parentForm.setDirty();
   }
 
   /**
@@ -737,9 +737,9 @@ export class NgModelController {
    * by default, however this function can be used to restore that state if the model has
    * already been touched by the user.
    */
-  $setUntouched() {
-    this.$touched = false;
-    this.$untouched = true;
+  setUntouched() {
+    this.touched = false;
+    this.untouched = true;
 
     if (this._destroyed) {
       return;
@@ -762,9 +762,9 @@ export class NgModelController {
    * touched state (`ng-touched` class). A model is considered to be touched when the user has
    * first focused the control element and then shifted focus away from the control (blur event).
    */
-  $setTouched() {
-    this.$touched = true;
-    this.$untouched = false;
+  setTouched() {
+    this.touched = true;
+    this.untouched = false;
 
     if (this._destroyed) {
       return;
@@ -781,22 +781,22 @@ export class NgModelController {
   }
 
   /**
-   * Cancel an update and reset the input element's value to prevent an update to the `$modelValue`,
+   * Cancel an update and reset the input element's value to prevent an update to the `modelValue`,
    * which may be caused by a pending debounced event or because the input is waiting for some
    * future event.
    *
    * If you have an input that uses `ng-model-options` to set up debounced updates or updates that
-   * depend on special events such as `blur`, there can be a period when the `$viewValue` is out of
-   * sync with the ngModel's `$modelValue`.
+   * depend on special events such as `blur`, there can be a period when the `viewValue` is out of
+   * sync with the ngModel's `modelValue`.
    *
-   * In this case, you can use `$rollbackViewValue()` to manually cancel the debounced / future update
+   * In this case, you can use `rollbackViewValue()` to manually cancel the debounced / future update
    * and reset the input to the last committed view value.
    *
-   * It is also possible that you run into difficulties if you try to update the ngModel's `$modelValue`
+   * It is also possible that you run into difficulties if you try to update the ngModel's `modelValue`
    * programmatically before these debounced/future events have resolved/occurred, because AngularTS's
    * dirty checking mechanism is not able to tell whether the model has actually changed or not.
    *
-   * The `$rollbackViewValue()` method should be called before programmatically changing the model of an
+   * The `rollbackViewValue()` method should be called before programmatically changing the model of an
    * input which may have such events pending. This is important in order to make sure that the
    * input field will be updated with the new model value and any pending operations are cancelled.
    *
@@ -812,7 +812,7 @@ export class NgModelController {
    *         if (e.keyCode === 27) {
    *           e.preventDefault();
    *           if (rollback) {
-   *             $scope.myForm[value].$rollbackViewValue();
+   *             $scope.myForm[value].rollbackViewValue();
    *           }
    *           $scope.model[value] = '';
    *         }
@@ -839,14 +839,14 @@ export class NgModelController {
    *
    *       <form name="myForm" ng-model-options="{ updateOn: 'blur' }">
    *         <div>
-   *           <p id="inputDescription1">Without $rollbackViewValue():</p>
+   *           <p id="inputDescription1">Without rollbackViewValue():</p>
    *           <input name="value1" aria-describedby="inputDescription1" ng-model="model.value1"
    *                  ng-keydown="setEmpty($event, 'value1')">
    *           value1: "{{ model.value1 }}"
    *         </div>
    *
    *         <div>
-   *           <p id="inputDescription2">With $rollbackViewValue():</p>
+   *           <p id="inputDescription2">With rollbackViewValue():</p>
    *           <input name="value2" aria-describedby="inputDescription2" ng-model="model.value2"
    *                  ng-keydown="setEmpty($event, 'value2', true)">
    *           value2: "{{ model.value2 }}"
@@ -865,13 +865,13 @@ export class NgModelController {
         </file>
    * </example>
    */
-  $rollbackViewValue() {
+  rollbackViewValue() {
     if (this._pendingDebounce) {
       clearTimeout(this._pendingDebounce);
     }
     this._pendingViewValue = undefined;
-    this.$viewValue = this._lastCommittedViewValue;
-    this.$render();
+    this.viewValue = this._lastCommittedViewValue;
+    this.render();
   }
 
   /**
@@ -880,27 +880,27 @@ export class NgModelController {
    * If the validity changes to invalid, the model will be set to `undefined`,
    * unless `ngModelOptions.allowInvalid` is `true`.
    * If the validity changes to valid, it will set the model to the last available valid
-   * `$modelValue`, i.e. either the last parsed value or the last value set from the scope.
+   * `modelValue`, i.e. either the last parsed value or the last value set from the scope.
    */
-  $validate() {
-    // ignore $validate before model is initialized
-    if (isNumberNaN(this.$modelValue)) {
+  validate() {
+    // ignore validate before model is initialized
+    if (isNumberNaN(this.modelValue)) {
       return;
     }
 
     const viewValue = this._lastCommittedViewValue;
 
-    // Note: we use the _rawModelValue as $modelValue might have been
+    // Note: we use the _rawModelValue as modelValue might have been
     // set to undefined during a view -> model update that found validation
     // errors. We can't parse the view here, since that could change
     // the model although neither viewValue nor the model on the scope changed
     const modelValue = this._rawModelValue;
 
-    const prevValid = this.$valid;
+    const prevValid = this.valid;
 
-    const prevModelValue = this.$modelValue;
+    const prevModelValue = this.modelValue;
 
-    const allowInvalid = this.$options.getOption("allowInvalid");
+    const allowInvalid = this.options.getOption("allowInvalid");
 
     this._runValidators(
       modelValue,
@@ -911,20 +911,20 @@ export class NgModelController {
         if (!allowInvalid && prevValid !== allValid) {
           if (
             allValid &&
-            this.$isEmpty(viewValue) &&
-            !this.$isEmpty(modelValue) &&
+            this.isEmpty(viewValue) &&
+            !this.isEmpty(modelValue) &&
             isUndefined(prevModelValue)
           ) {
             return;
           }
 
-          // Note: Don't check this.$valid here, as we could have
+          // Note: Don't check this.valid here, as we could have
           // external validators (e.g. calculated on the server),
-          // that just call $setValidity and need the model value
+          // that just call setValidity and need the model value
           // to calculate their validity.
-          this.$modelValue = allValid ? modelValue : undefined;
+          this.modelValue = allValid ? modelValue : undefined;
 
-          if (this.$modelValue !== prevModelValue) {
+          if (this.modelValue !== prevModelValue) {
             this._writeModelToScope();
           }
         }
@@ -951,15 +951,15 @@ export class NgModelController {
         setValidity(errorKey, null);
       } else {
         if (!this._parserValid) {
-          keys(this.$validators).forEach((name) => {
+          keys(this.validators).forEach((name) => {
             setValidity(name, null);
           });
-          keys(this.$asyncValidators).forEach((name) => {
+          keys(this.asyncValidators).forEach((name) => {
             setValidity(name, null);
           });
         }
 
-        // Set the parse error last, to prevent unsetting it, should a $validators key == parserName
+        // Set the parse error last, to prevent unsetting it, should a validators key == parserName
         setValidity(errorKey, this._parserValid);
 
         return this._parserValid;
@@ -971,7 +971,7 @@ export class NgModelController {
     const processSyncValidators = () => {
       let syncValidatorsValid = true;
 
-      for (const [name, validator] of entries(this.$validators)) {
+      for (const [name, validator] of entries(this.validators)) {
         const result = Boolean(validator(modelValue, viewValue));
 
         syncValidatorsValid = syncValidatorsValid && result;
@@ -979,7 +979,7 @@ export class NgModelController {
       }
 
       if (!syncValidatorsValid) {
-        keys(this.$asyncValidators).forEach((name) => {
+        keys(this.asyncValidators).forEach((name) => {
           setValidity(name, null);
         });
 
@@ -994,7 +994,7 @@ export class NgModelController {
 
       let allValid = true;
 
-      entries(this.$asyncValidators).forEach(([name, validator]) => {
+      entries(this.asyncValidators).forEach(([name, validator]) => {
         const promise = validator(modelValue, viewValue);
 
         if (!isPromiseLike(promise)) {
@@ -1040,7 +1040,7 @@ export class NgModelController {
      */
     const setValidity = (name: string, isValid: boolean | undefined | null) => {
       if (localValidationRunId === this._currentValidationRunId) {
-        this.$setValidity(name, isValid);
+        this.setValidity(name, isValid);
       }
     };
 
@@ -1069,13 +1069,13 @@ export class NgModelController {
   }
 
   /**
-   * Commit a pending update to the `$modelValue`.
+   * Commit a pending update to the `modelValue`.
    *
    * Updates may be pending by a debounced event or because the input is waiting for a some future
    * event defined in `ng-model-options`. this method is rarely needed as `NgModelController`
    * usually handles calling this in response to input events.
    */
-  $commitViewValue() {
+  commitViewValue() {
     if (this._destroyed) {
       return;
     }
@@ -1086,26 +1086,26 @@ export class NgModelController {
     // a native validator on the element. In this case the validation state may have changed even though
     // the viewValue has stayed empty.
     if (
-      this._lastCommittedViewValue === this.$viewValue &&
-      (this.$viewValue !== "" || !this._hasNativeValidators)
+      this._lastCommittedViewValue === this.viewValue &&
+      (this.viewValue !== "" || !this._hasNativeValidators)
     ) {
       return;
     }
 
     if (
       isUndefined(this._lastCommittedViewValue) &&
-      Number.isNaN(this.$viewValue)
+      Number.isNaN(this.viewValue)
     ) {
       return;
     }
 
-    this._updateEmptyClasses(this.$viewValue);
-    this._lastCommittedViewValue = this.$viewValue;
+    this._updateEmptyClasses(this.viewValue);
+    this._lastCommittedViewValue = this.viewValue;
     this._pendingViewValue = undefined;
 
     // change to dirty
-    if (this.$pristine) {
-      this.$setDirty();
+    if (this.pristine) {
+      this.setDirty();
     }
     this._parseAndValidate();
   }
@@ -1117,12 +1117,12 @@ export class NgModelController {
     this._parserValid = isUndefined(modelValue) ? undefined : true;
 
     // Reset any previous parse error
-    this.$setValidity(this._parserName, null);
+    this.setValidity(this._parserName, null);
     this._parserName = "parse";
 
     if (this._parserValid) {
-      for (let i = 0; i < this.$parsers.length; i++) {
-        modelValue = this.$parsers[i](modelValue);
+      for (let i = 0; i < this.parsers.length; i++) {
+        modelValue = this.parsers[i](modelValue);
 
         if (isUndefined(modelValue)) {
           this._parserValid = false;
@@ -1131,45 +1131,45 @@ export class NgModelController {
       }
     }
 
-    if (isNumberNaN(this.$modelValue)) {
-      // this.$modelValue has not been touched yet...
+    if (isNumberNaN(this.modelValue)) {
+      // this.modelValue has not been touched yet...
 
-      this.$modelValue = this._ngModelGet(this._scope);
+      this.modelValue = this._ngModelGet(this._scope);
     }
-    const prevModelValue = this.$modelValue;
+    const prevModelValue = this.modelValue;
 
-    const allowInvalid = this.$options.getOption("allowInvalid");
+    const allowInvalid = this.options.getOption("allowInvalid");
 
     this._rawModelValue = modelValue;
 
     const writeToModelIfNeeded = () => {
-      if (this.$modelValue != prevModelValue) {
-        if (isNull(this.$modelValue) && prevModelValue === "") return;
+      if (this.modelValue != prevModelValue) {
+        if (isNull(this.modelValue) && prevModelValue === "") return;
 
         this._writeModelToScope();
       }
     };
 
     if (allowInvalid) {
-      this.$modelValue = modelValue;
+      this.modelValue = modelValue;
       writeToModelIfNeeded();
     }
 
     // Pass the _lastCommittedViewValue here, because the cached viewValue might be out of date.
-    // This can happen if e.g. $setViewValue is called from inside a parser
+    // This can happen if e.g. setViewValue is called from inside a parser
     this._runValidators(
       modelValue,
       this._lastCommittedViewValue,
       (allValid: boolean) => {
         if (!allowInvalid) {
-          // Note: Don't check this.$valid here, as we could have
+          // Note: Don't check this.valid here, as we could have
           // external validators (e.g. calculated on the server),
-          // that just call $setValidity and need the model value
+          // that just call setValidity and need the model value
           // to calculate their validity.
-          // if (this.$modelValue ?? this.$modelValue[isProxySymbol]) {
-          //   delete this.$modelValue;
+          // if (this.modelValue ?? this.modelValue[isProxySymbol]) {
+          //   delete this.modelValue;
           // }
-          this.$modelValue = allValid ? modelValue : undefined;
+          this.modelValue = allValid ? modelValue : undefined;
           writeToModelIfNeeded();
         }
       },
@@ -1178,8 +1178,8 @@ export class NgModelController {
 
   /** @internal */
   _writeModelToScope() {
-    callFunction(this._ngModelSet, undefined, this._scope, this.$modelValue);
-    values(this.$viewChangeListeners).forEach((listener) => {
+    callFunction(this._ngModelSet, undefined, this._scope, this.modelValue);
+    values(this.viewChangeListeners).forEach((listener) => {
       try {
         listener();
       } catch (err) {
@@ -1196,51 +1196,51 @@ export class NgModelController {
    * directive calls it when the value of the input changes and `select`
    * calls it when an option is selected.
    *
-   * When `$setViewValue` is called, the new `value` will be staged for committing through the `$parsers`
-   * and `$validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged
-   * value is sent directly for processing through the `$parsers` pipeline. After this, the `$validators` and
-   * `$asyncValidators` are called and the value is applied to `$modelValue`.
+   * When `setViewValue` is called, the new `value` will be staged for committing through the `parsers`
+   * and `validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged
+   * value is sent directly for processing through the `parsers` pipeline. After this, the `validators` and
+   * `asyncValidators` are called and the value is applied to `modelValue`.
    * Finally, the value is set to the **expression** specified in the `ng-model` attribute and
-   * all the registered change listeners, in the `$viewChangeListeners` list are called.
+   * all the registered change listeners, in the `viewChangeListeners` list are called.
    *
    * In case the `ngModelOptions` directive is used with `updateOn`
    * and the `default` trigger is not listed, all those actions will remain pending until one of the
    * `updateOn` events is triggered on the DOM element.
    * All these actions will be debounced if the `ngModelOptions`
    * directive is used with a custom debounce for this particular event.
-   * Note that a `$digest` is only triggered once the `updateOn` events are fired, or if `debounce`
-   * is specified, once the timer runs out.
+   * The model commit and its reactive notifications run when an `updateOn`
+   * event fires, or after the configured debounce timer expires.
    *
    * Standard native inputs pass through browser-native values, such as strings
    * from text-like controls, booleans from checkboxes, and `FileList | null`
    * from file inputs.
    * However, custom controls might also pass objects to this method. In this case, we should make
-   * a copy of the object before passing it to `$setViewValue`. This is because `ngModel` does not
+   * a copy of the object before passing it to `setViewValue`. This is because `ngModel` does not
    * perform a deep watch of objects, it only looks for a change of identity. If you only change
    * the property of the object then ngModel will not realize that the object has changed and
-   * will not invoke the `$parsers` and `$validators` pipelines. For this reason, you should
-   * not change properties of the copy once it has been passed to `$setViewValue`.
+   * will not invoke the `parsers` and `validators` pipelines. For this reason, you should
+   * not change properties of the copy once it has been passed to `setViewValue`.
    * Otherwise you may cause the model value on the scope to change incorrectly.
    *
    * <div class="alert alert-info">
    * In any case, the value passed to the method should always reflect the current value
-   * of the control. For example, if you are calling `$setViewValue` for an input element,
+   * of the control. For example, if you are calling `setViewValue` for an input element,
    * you should pass the input DOM value. Otherwise, the control and the scope model become
-   * out of sync. It's also important to note that `$setViewValue` does not call `$render` or change
+   * out of sync. It's also important to note that `setViewValue` does not call `render` or change
    * the control's DOM value in any way. If we want to change the control's DOM value
    * programmatically, we should update the `ngModel` scope expression. Its new value will be
-   * picked up by the model controller, which will run it through the `$formatters`, `$render` it
-   * to update the DOM, and finally call `$validate` on it.
+   * picked up by the model controller, which will run it through the `formatters`, `render` it
+   * to update the DOM, and finally call `validate` on it.
    * </div>
    *
    * @param  value value from the view.
    * @param  [trigger] Event that triggered the update.
    */
-  $setViewValue(value: unknown, trigger?: string) {
-    this.$viewValue = value;
+  setViewValue(value: unknown, trigger?: string) {
+    this.viewValue = value;
     this._pendingViewValue = value;
 
-    if (this.$options.getOption("updateOnDefault")) {
+    if (this.options.getOption("updateOnDefault")) {
       this._debounceViewValueCommit(trigger);
     }
   }
@@ -1250,12 +1250,12 @@ export class NgModelController {
    */
   /** @internal */
   _debounceViewValueCommit(trigger?: string) {
-    let debounceDelay = this.$options.getOption("debounce");
+    let debounceDelay = this.options.getOption("debounce");
 
     const debounceDelayMap =
       typeof debounceDelay === "object" ? debounceDelay : {};
 
-    const updateOn = this.$options.getOption("updateOn") as string;
+    const updateOn = this.options.getOption("updateOn") as string;
 
     if (trigger) {
       const debounceVal = debounceDelayMap[trigger];
@@ -1275,18 +1275,18 @@ export class NgModelController {
     if (this._pendingDebounce) {
       clearTimeout(this._pendingDebounce);
     }
-    const pendingViewValue = this.$viewValue;
+    const pendingViewValue = this.viewValue;
 
     const normalizedDebounceDelay = isNumber(debounceDelay) ? debounceDelay : 0;
 
     if (normalizedDebounceDelay > 0) {
       // this fails if debounceDelay is an object
       this._pendingDebounce = setTimeout(() => {
-        this.$viewValue = pendingViewValue;
-        this.$commitViewValue();
+        this.viewValue = pendingViewValue;
+        this.commitViewValue();
       }, normalizedDebounceDelay);
     } else {
-      this.$commitViewValue();
+      this.commitViewValue();
     }
   }
 
@@ -1314,42 +1314,42 @@ export class NgModelController {
    * @param  options a hash of settings to override the previous options
    *
    */
-  $overrideModelOptions(options: ModelOptionsConfig) {
+  overrideModelOptions(options: ModelOptionsConfig) {
     this._removeUpdateOnEventListeners();
-    this.$options = this.$options.createChild(options);
-    this._updateEvents = this.$options._options.updateOn ?? "";
+    this.options = this.options.createChild(options);
+    this._updateEvents = this.options._options.updateOn ?? "";
     this._setUpdateOnEvents();
   }
 
   /**
    * Runs the model -> view pipeline on the current
-   * {@link NgModelController.$modelValue $modelValue}.
+   * {@link NgModelController.modelValue modelValue}.
    *
    * The following actions are performed by this method:
    *
-   * - the `$modelValue` is run through the {@link NgModelController.$formatters $formatters}
-   * and the result is set to the {@link NgModelController.$viewValue $viewValue}
+   * - the `modelValue` is run through the {@link NgModelController.formatters formatters}
+   * and the result is set to the {@link NgModelController.viewValue viewValue}
    * - the `ng-empty` or `ng-not-empty` class is set on the element
-   * - if the `$viewValue` has changed:
-   *   - {@link NgModelController.$render $render} is called on the control
-   *   - the {@link NgModelController.$validators $validators} are run and
+   * - if the `viewValue` has changed:
+   *   - {@link NgModelController.render render} is called on the control
+   *   - the {@link NgModelController.validators validators} are run and
    *   the validation status is set.
    *
    * This method is called by ngModel internally when the bound scope value changes.
    * Application developers usually do not have to call this function themselves.
    *
-   * This function can be used when the `$viewValue` or the rendered DOM value are not correctly
-   * formatted and the `$modelValue` must be run through the `$formatters` again.
+   * This function can be used when the `viewValue` or the rendered DOM value are not correctly
+   * formatted and the `modelValue` must be run through the `formatters` again.
    *
    * @example
    * Consider a text input with an autocomplete list (for fruit), where the items are
    * objects with a name and an id.
    * A user enters `ap` and then selects `Apricot` from the list.
-   * Based on this, the autocomplete widget will call `$setViewValue({name: 'Apricot', id: 443})`,
+   * Based on this, the autocomplete widget will call `setViewValue({name: 'Apricot', id: 443})`,
    * but the rendered value will still be `ap`.
-   * The widget can then call `ctrl.$processModelValue()` to run the model -> view
+   * The widget can then call `ctrl.processModelValue()` to run the model -> view
    * pipeline again, which formats the object to the string `Apricot`,
-   * then updates the `$viewValue`, and finally renders it in the DOM.
+   * then updates the `viewValue`, and finally renders it in the DOM.
    *
    * <example module="inputExample" name="ng-model-process">
      <file name="index.html">
@@ -1385,14 +1385,14 @@ export class NgModelController {
             let that = this;
             let ngModel;
    *
-            that.$postLink = function() {
+            that.postLink = function() {
               ngModel = $element.querySelectorAll('input').controller('ngModel');
    *
-              ngModel.$formatters.push(function(value) {
+              ngModel.formatters.push(function(value) {
                 return (value && value.name) || value;
               });
    *
-              ngModel.$parsers.push(function(value) {
+              ngModel.parsers.push(function(value) {
                 let match = value;
                 for (let i = 0; i < that.items.length; i++) {
                   if (that.items[i].name === value) {
@@ -1406,8 +1406,8 @@ export class NgModelController {
             };
    *
             that.selectItem = function(item) {
-              ngModel.$setViewValue(item);
-              ngModel.$processModelValue();
+              ngModel.setViewValue(item);
+              ngModel.processModelValue();
               that.onSelect({item: item});
             };
           }]
@@ -1426,34 +1426,34 @@ export class NgModelController {
    * </example>
    *
    */
-  $processModelValue() {
+  processModelValue() {
     if (this._destroyed) {
       return;
     }
 
     const viewValue = this._format();
 
-    if (this.$viewValue !== viewValue) {
+    if (this.viewValue !== viewValue) {
       this._updateEmptyClasses(viewValue);
-      this.$viewValue = this._lastCommittedViewValue = viewValue;
-      this.$render();
+      this.viewValue = this._lastCommittedViewValue = viewValue;
+      this.render();
       // It is possible that model and view value have been updated during render
-      this._runValidators(this.$modelValue, this.$viewValue, () => {
+      this._runValidators(this.modelValue, this.viewValue, () => {
         /* empty */
       });
     }
   }
 
   /**
-   * This method is called internally to run the $formatters on the $modelValue
+   * This method is called internally to run the formatters on the modelValue
    */
   /** @internal */
   _format() {
-    const formatters = this.$formatters;
+    const formatters = this.formatters;
 
     let idx = formatters.length;
 
-    let viewValue = this.$modelValue;
+    let viewValue = this.modelValue;
 
     while (idx--) {
       viewValue = formatters[idx](viewValue);
@@ -1463,22 +1463,20 @@ export class NgModelController {
   }
 
   /**
-   * @ignore This method is called internally when the bound scope value changes.
+   * This method is called internally when the bound scope value changes.
+   *
+   * @internal
    */
-  /** @internal */
   _setModelValue(modelValue: unknown): void {
     if (this._destroyed) {
       return;
     }
 
-    this.$modelValue = this._rawModelValue = modelValue;
+    this.modelValue = this._rawModelValue = modelValue;
     this._parserValid = undefined;
-    this.$processModelValue();
+    this.processModelValue();
   }
 
-  /**
-   * @ignore
-   */
   /** @internal */
   _removeAllEventListeners() {
     this._eventRemovers.forEach((removeCallback: () => void) => {
@@ -1507,7 +1505,7 @@ export class NgModelController {
       });
     }
 
-    this._updateEvents = this.$options.getOption("updateOn") as string;
+    this._updateEvents = this.options.getOption("updateOn") as string;
 
     if (this._updateEvents) {
       this._updateEvents.split(" ").forEach((ev: string) => {
@@ -1525,7 +1523,7 @@ export class NgModelController {
   /** @internal */
   _updateEventHandler = (ev: Event) => {
     if (!isUndefined(this._pendingViewValue)) {
-      this.$viewValue = this._pendingViewValue;
+      this.viewValue = this._pendingViewValue;
     }
 
     this._debounceViewValueCommit(ev.type);
@@ -1537,17 +1535,17 @@ export class NgModelController {
  */
 function setupModelWatcher(ctrl: NgModelController): () => void {
   // model -> value
-  // Note: we cannot use a normal scope.$watch as we want to detect the following:
+  // Note: we cannot use a normal scope.watch as we want to detect the following:
   // 1. scope value is 'a'
   // 2. user enters 'b'
   // 3. ng-change kicks in and reverts scope value to 'a'
   //    -> scope value did not change since the last digest as
   //       ng-change executes in apply phase
   // 4. view should be changed back to 'a'
-  return (ctrl._scope.$watch("value", () => {
+  return (ctrl._scope.watch("value", () => {
     const modelValue = callFunction(ctrl._ngModelGet, undefined, ctrl._scope);
 
-    if (isUndefined(modelValue) && Number.isNaN(ctrl.$modelValue)) {
+    if (isUndefined(modelValue) && Number.isNaN(ctrl.modelValue)) {
       return;
     }
 
@@ -1555,10 +1553,10 @@ function setupModelWatcher(ctrl: NgModelController): () => void {
     // This cannot be moved to the action function, because it would not catch the
     // case where the model is changed in the ngChange function or the model setter
     if (
-      modelValue !== ctrl.$modelValue &&
+      modelValue !== ctrl.modelValue &&
       // checks for NaN is needed to allow setting the model to NaN when there's an asyncValidator
 
-      (!Number.isNaN(ctrl.$modelValue) || !Number.isNaN(modelValue))
+      (!Number.isNaN(ctrl.modelValue) || !Number.isNaN(modelValue))
     ) {
       ctrl._setModelValue(modelValue);
     }
@@ -1592,7 +1590,7 @@ export function ngModelDirective(): ng.Directive {
           ctrls: [
             NgModelController,
             ParentFormController | undefined,
-            { $options: ModelOptions } | undefined,
+            { options: ModelOptions } | undefined,
           ],
         ) => {
           const [modelCtrl, parentFormCtrl, optionsCtrl] = ctrls;
@@ -1600,17 +1598,17 @@ export function ngModelDirective(): ng.Directive {
           const formCtrl = parentFormCtrl ?? modelCtrl._parentForm;
 
           if (optionsCtrl) {
-            modelCtrl.$options = optionsCtrl.$options;
+            modelCtrl.options = optionsCtrl.options;
           }
           modelCtrl._initGetterSetters();
 
           // notify others, especially parent forms
-          formCtrl.$addControl(modelCtrl);
+          formCtrl.addControl(modelCtrl);
 
           const handleNameChange = (newValue?: string) => {
             const nextName = newValue ?? "";
 
-            if (modelCtrl.$name !== nextName) {
+            if (modelCtrl.controlName !== nextName) {
               modelCtrl._parentForm._renameControl(modelCtrl, nextName);
             }
           };
@@ -1622,15 +1620,14 @@ export function ngModelDirective(): ng.Directive {
             handleNameChange,
           );
 
-          const deregisterWatch = (scope.$watch(
+          const deregisterWatch = (scope.watch(
             modelCtrl._modelExpression,
             (val: unknown) => {
               const modelValue: unknown = deProxy<unknown>(val);
 
               if (
-                modelValue === modelCtrl.$modelValue ||
-                (Number.isNaN(modelValue) &&
-                  Number.isNaN(modelCtrl.$modelValue))
+                modelValue === modelCtrl.modelValue ||
+                (Number.isNaN(modelValue) && Number.isNaN(modelCtrl.modelValue))
               ) {
                 return;
               }
@@ -1642,7 +1639,7 @@ export function ngModelDirective(): ng.Directive {
               /* empty */
             })) as () => void;
 
-          scope.$on("$destroy", () => {
+          scope.on("$destroy", () => {
             modelCtrl._destroyed = true;
 
             if (modelCtrl._pendingDebounce) {
@@ -1651,14 +1648,14 @@ export function ngModelDirective(): ng.Directive {
             }
 
             modelCtrl._removeAllEventListeners();
-            modelCtrl.$viewChangeListeners.length = 0;
+            modelCtrl.viewChangeListeners.length = 0;
             modelCtrl._deregisterModelWatcher();
             modelCtrl._deregisterModelWatcher = () => {
               /* empty */
             };
             modelCtrl._element = undefined as never;
             deregisterNameObserver();
-            modelCtrl._parentForm.$removeControl(modelCtrl);
+            modelCtrl._parentForm.removeControl(modelCtrl);
             modelCtrl._parentForm = nullFormCtrl;
             deregisterWatch();
           });
@@ -1677,20 +1674,20 @@ export function ngModelDirective(): ng.Directive {
           modelCtrl._setUpdateOnEvents();
 
           function setTouched() {
-            modelCtrl.$setTouched();
+            modelCtrl.setTouched();
           }
 
           const blurListener = () => {
-            if (modelCtrl.$touched) return;
+            if (modelCtrl.touched) return;
             setTouched();
           };
 
           elementPost.addEventListener("blur", blurListener);
-          scope.$on("$destroy", () => {
+          scope.on("$destroy", () => {
             elementPost.removeEventListener("blur", blurListener);
           });
 
-          modelCtrl.$viewChangeListeners.push(() => {
+          modelCtrl.viewChangeListeners.push(() => {
             if (changeFn) {
               callFunction(changeFn, undefined, scope);
             }

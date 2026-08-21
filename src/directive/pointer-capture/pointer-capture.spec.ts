@@ -88,7 +88,7 @@ describe("ngPointerCapture", () => {
     element.dispatchEvent(pointerEvent("pointerdown", 9));
     element.dispatchEvent(pointerEvent("lostpointercapture", 9));
 
-    $rootScope.$destroy();
+    $rootScope.destroy();
 
     expect(releasePointerCapture).not.toHaveBeenCalled();
   });
@@ -102,7 +102,7 @@ describe("ngPointerCapture", () => {
 
     element.dispatchEvent(pointerEvent("pointerdown", 10));
 
-    $rootScope.$destroy();
+    $rootScope.destroy();
 
     expect(releasePointerCapture).toHaveBeenCalledWith(10);
   });

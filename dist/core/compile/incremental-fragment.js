@@ -270,7 +270,7 @@ function disposeCompiledFragmentRecord(record, releaseOwnedNodes = true) {
         disposer();
     }, errors);
     disposeReverse(getFragmentArray(record, "childScopes"), (scope) => {
-        scope.$destroy();
+        scope.destroy();
     }, errors);
     for (const node of record.nodes) {
         if (compiledFragmentsByNode.get(node) === record) {
@@ -422,7 +422,7 @@ function registerCompiledFragmentScopeLifecycle(record) {
     const root = record.root;
     if (!parentScope || !root || parentScope === root.rootScope)
         return;
-    const deregister = parentScope.$on("$destroy", () => {
+    const deregister = parentScope.on("$destroy", () => {
         compiledFragmentScopeDestroyDeregisters.delete(record);
         disposeCompiledFragmentRecord(record, false);
     });
@@ -442,7 +442,7 @@ function registerRootCompiledFragment(record) {
         const nextState = {
             records: new Set(),
             destroying: false,
-            deregisterDestroy: root.rootScope.$on("$destroy", () => {
+            deregisterDestroy: root.rootScope.on("$destroy", () => {
                 disposeRootCompiledFragments(root, nextState);
             }),
         };
@@ -488,14 +488,14 @@ function registerCompiledFragmentRetentionDomAdapter(record) {
         paused: false,
         pending: [],
         deferredPrefixCount: 0,
-        deregisterPause: parentScope.$on("$viewRetentionPause", (...args) => {
+        deregisterPause: parentScope.on("$viewRetentionPause", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
             state.paused = true;
             state.deferredPrefixCount = 0;
         }),
-        deregisterResume: parentScope.$on("$viewRetentionResume", (...args) => {
+        deregisterResume: parentScope.on("$viewRetentionResume", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }

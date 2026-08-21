@@ -289,7 +289,10 @@ const mergeRegistration = (runtime, registration = {{}}) => {{
     bridgeMetadata.scopeUpdateRoutes ||
     [];
 
-  if (merged.template) {{
+  if (merged.view) {{
+    delete merged.template;
+    delete merged.templateUrl;
+  }} else if (merged.template) {{
     delete merged.templateUrl;
   }}
 
@@ -300,7 +303,7 @@ let nextWasmScopeId = 0;
 
 const createComponent = (controllerName, options) => {{
   const controller = requireExport(controllerName);
-  const {{ inject, syncProperties, methods, controllerAs, kind, name, export: exportName, ...component }} = options;
+  const {{ inject, syncProperties, methods, controllerAs, kind, name, export: exportName, view, ...component }} = options;
   const angularController = createController(controllerName, {{
     inject,
     syncProperties,
@@ -315,6 +318,7 @@ const createComponent = (controllerName, options) => {{
   }}
   return {{
     ...component,
+    ...(view ? {{ view: requireExport(view) }} : {{}}),
     ...(controllerAs ? {{ controllerAs }} : {{}}),
     controller: angularController,
   }};
@@ -386,7 +390,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       this.syncScope();
     }}
 
-    $onInit() {{
+    onInit() {{
       const inner = this[innerSlot];
 
       if (inner && typeof inner.onInit === "function") {{
@@ -396,7 +400,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
       }}
     }}
 
-    $onDestroy() {{
+    onDestroy() {{
       const inner = this[innerSlot];
 
       if (inner && typeof inner.onDestroy === "function") {{
@@ -485,7 +489,7 @@ const createControllerBridge = (RustController, syncProperties, methods, bridgeC
     }}
 
     syncRustProperties() {{
-      const target = this[controllerProxySlot] || this.$proxy || this;
+      const target = this[controllerProxySlot] || this._proxy || this;
 
       for (const property of syncProperties) {{
         const next = this[innerSlot][property];
@@ -792,6 +796,7 @@ impl AngularTsManifest {
                     template: None,
                     template_path: None,
                     template_url: None,
+                    view: None,
                     controller_as: Some(alias),
                     inject: Vec::new(),
                     sync_properties: None,
@@ -842,6 +847,8 @@ struct RegistrationManifest {
     #[serde(default)]
     template_url: Option<String>,
     #[serde(default)]
+    view: Option<String>,
+    #[serde(default)]
     controller_as: Option<String>,
     #[serde(default)]
     inject: Vec<String>,
@@ -872,6 +879,7 @@ impl RegistrationManifest {
             export: self.export_name(),
             template: self.template.as_ref(),
             template_url: self.template_url.as_ref(),
+            view: self.view.as_ref(),
             controller_as: self.component_controller_as(),
             inject: non_empty(self.inject.clone()),
             sync_properties: self.sync_properties.clone(),
@@ -1157,6 +1165,8 @@ struct RegistrationConfig<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     template_url: Option<&'a String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    view: Option<&'a String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     controller_as: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     inject: Option<Vec<String>>,
@@ -1222,6 +1232,7 @@ mod tests {
                     template: None,
                     template_path: None,
                     template_url: None,
+                    view: None,
                     controller_as: None,
                     inject: vec![],
                     sync_properties: None,
@@ -1237,6 +1248,7 @@ mod tests {
                     template: None,
                     template_path: None,
                     template_url: None,
+                    view: None,
                     controller_as: None,
                     inject: vec![],
                     sync_properties: None,
@@ -1252,6 +1264,7 @@ mod tests {
                     template: None,
                     template_path: None,
                     template_url: None,
+                    view: None,
                     controller_as: Some("info".to_string()),
                     inject: vec!["appTitle".to_string()],
                     sync_properties: None,
@@ -1273,6 +1286,7 @@ mod tests {
                     ),
                     template_path: None,
                     template_url: None,
+                    view: None,
                     controller_as: None,
                     inject: vec!["todoStore".to_string(), "$scope".to_string()],
                     sync_properties: None,
@@ -1326,7 +1340,7 @@ mod tests {
         assert!(source.contains("globalThis.__angularTsWasmScopeAbi = scopeAbi;"));
         assert!(source.contains("const readBridgeMetadata = (registration) =>"));
         assert!(source.contains("app[`${exportName}_bridgeMetadata`]"));
-        assert!(!source.contains("angularScope.$watch("));
+        assert!(!source.contains("angularScope.watch("));
         assert!(!source.contains("$watchCollection"));
         assert_snapshot(
             "controller_bridge.snapshot.js",
@@ -1391,6 +1405,7 @@ mod tests {
             template: None,
             template_path: None,
             template_url: None,
+            view: None,
             controller_as: None,
             inject: vec!["appTitle".to_string()],
             sync_properties: None,
@@ -1422,6 +1437,7 @@ mod tests {
             ),
             template_path: None,
             template_url: None,
+            view: None,
             controller_as: None,
             inject: vec![],
             sync_properties: None,

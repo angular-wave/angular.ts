@@ -48,7 +48,7 @@ export function ngIfDirective($injector: ng.InjectorService): ng.Directive {
 
         let previousFragments: CompiledFragmentRecord[] = [];
 
-        $scope.$watch(expression, (value: unknown) => {
+        $scope.watch(expression, (value: unknown) => {
           if (value) {
             if (!childScope) {
               $transclude((clone, newScope) => {
@@ -86,7 +86,7 @@ export function ngIfDirective($injector: ng.InjectorService): ng.Directive {
             }
 
             if (childScope) {
-              childScope.$destroy();
+              childScope.destroy();
               childScope = null;
             }
 

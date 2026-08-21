@@ -107,24 +107,24 @@ DOM scope.
 
 Model-specific methods use a `$` prefix:
 
-- `$snapshot()` creates a plain snapshot of model state.
-- `$restore(snapshot, options?)` restores model state and notifies observers.
-- `$sync(target)` synchronizes model updates with a direct target or injectable
+- `snapshot()` creates a plain snapshot of model state.
+- `restore(snapshot, options?)` restores model state and notifies observers.
+- `sync(target)` synchronizes model updates with a direct target or injectable
   target factory.
 
 `$persist(target)` and `$subscribe(listener)` are deferred convenience methods.
-Persistence should first be proven as a durability-focused `$sync()` target, and
-whole-model subscription should first be proven as `$sync()` implementation
+Persistence should first be proven as a durability-focused `sync()` target, and
+whole-model subscription should first be proven as `sync()` implementation
 machinery.
 
-`$sync()` is intended for integrations such as Unity, WebSocket sessions,
+`sync()` is intended for integrations such as Unity, WebSocket sessions,
 workers, CRDT documents, and custom stores. The external runtime may update the
 model imperatively, but AngularTS keeps the rest of the app declarative:
 
 ```text
 runtime event
   -> model assignment
-  -> model.$sync(...)
+  -> model.sync(...)
   -> websocket/store/worker/crdt target
 ```
 
@@ -132,14 +132,14 @@ Target factories should use normal AngularTS injectable form. Bare string
 service-name shortcuts are intentionally avoided for consistency:
 
 ```js
-playerModel.$sync([
+playerModel.sync([
   "playerSocketSync",
   (playerSocketSync) => playerSocketSync,
 ]);
 ```
 
 ```js
-settingsModel.$sync([
+settingsModel.sync([
   "$cookie",
   ($cookie) => ({
     restore: () => $cookie.getObject("settings"),
@@ -158,7 +158,7 @@ app.run([
   "playerModel",
   "physicsWorker",
   (playerModel, physicsWorker) =>
-    playerModel.$sync(physicsWorker.model("player")),
+    playerModel.sync(physicsWorker.model("player")),
 ]);
 ```
 
@@ -166,11 +166,11 @@ The worker exchanges standard `ng.WorkerModelMessage` envelopes. Incoming
 snapshots update every DOM scope that consumes the model, while model mutations
 are sent back with change metadata and loop-prevention origin tracking.
 
-`$sync()` batches synchronous model mutations, sends a plain snapshot plus
+`sync()` batches synchronous model mutations, sends a plain snapshot plus
 modest change metadata, and uses origin metadata to prevent bidirectional sync
 loops. Failures should report through AngularTS exception handling by default.
 
-Durable storage should start as an explicit `$sync()` target. A settings model
+Durable storage should start as an explicit `sync()` target. A settings model
 can restore from `$cookie` and write future snapshots back to the same storage
 boundary without adding persistence behavior to the model declaration itself.
 
@@ -178,7 +178,7 @@ A sync target can implement any combination of `restore`, `write`, `receive`,
 and `dispose`:
 
 ```js
-playerModel.$sync([
+playerModel.sync([
   "playerSocketSync",
   (socketSync) => ({
     restore: () => socketSync.latest(),
@@ -189,7 +189,7 @@ playerModel.$sync([
 ]);
 ```
 
-`$sync()` validates this runtime boundary. A target must implement at least one
+`sync()` validates this runtime boundary. A target must implement at least one
 recognized operation, and every supplied operation must be a function.
 `restore()` results and snapshots passed to `receive()` must be plain objects;
 invalid external values are reported through the configured sync failure
@@ -200,7 +200,7 @@ Runtime validation establishes the model container contract, but it cannot
 recover erased TypeScript property types. Sync targets remain responsible for
 decoding and validating domain fields received from untrusted external data.
 
-`$restore(snapshot, { mode: "merge" })` keeps existing model keys and writes the
+`restore(snapshot, { mode: "merge" })` keeps existing model keys and writes the
 incoming keys. The default mode replaces the model root's keys with the
 snapshot's keys.
 

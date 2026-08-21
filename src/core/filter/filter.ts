@@ -46,6 +46,7 @@ export class FilterRegistry {
     this._assertActive();
   }
 
+  /** @internal */
   private _bind(name: string, factory: FilterFactory): void {
     if (!this._providerRegistry) return;
     if (this._boundFactories.get(name) === factory) return;
@@ -54,6 +55,7 @@ export class FilterRegistry {
     this._boundFactories.set(name, factory);
   }
 
+  /** @internal */
   private _assertActive(): void {
     if (this._destroyed) {
       throw new Error("Filter registry has been destroyed");

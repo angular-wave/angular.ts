@@ -10,19 +10,21 @@ export class StateParams {
   }
 
   /**
+   * @internal
+   *
    * Merges a set of parameters with all parameters inherited between the common parents of the
    * current state and a given destination state.
    *
    * @param {Object} newParams The set of parameters which will be composited with inherited params.
-   * @param {StateObject} $current Internal definition of object representing the current state.
-   * @param {StateObject} $to Internal definition of object representing state to transition to.
+   * @param {StateObject} _current Internal definition of object representing the current state.
+   * @param {StateObject} to Internal definition of object representing state to transition to.
    */
-  $inherit(
+  _inherit(
     newParams: RawParams,
-    $current: StateObject,
-    $to: StateObject,
+    _current: StateObject,
+    to: StateObject,
   ): RawParams {
-    const parents = ancestors($current, $to);
+    const parents = ancestors(_current, to);
 
     const inherited: RawParams = {};
 

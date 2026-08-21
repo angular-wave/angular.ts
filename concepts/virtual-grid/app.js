@@ -25,7 +25,7 @@ window.angular
       constructor(gridModel, $scope) {
         this.grid = gridModel;
         this.destroyRuntime = () => {};
-        $scope.$on("$destroy", () => this.destroyRuntime());
+        $scope.on("$destroy", () => this.destroyRuntime());
         requestAnimationFrame(() => this.mount());
       }
 

@@ -250,22 +250,22 @@ export type ServiceProviderFactory = (...args: Dynamic[]) => ServiceProvider;
 /**
  * An object that defines how a service is constructed.
  *
- * It must define a `$get` property that provides the instance of the service,
+ * It must define a `get` property that provides the instance of the service,
  * either as a plain factory function or as an {@link AnnotatedFactory}.
  */
 export interface ServiceProvider {
-  $get: Injectable<(...args: Dynamic[]) => unknown>;
+  get: Injectable<(...args: Dynamic[]) => unknown>;
 }
 
 /**
  * A user-defined service recipe accepted by {@link ng.NgModule.provider}.
  *
- * Object recipes define an injectable `$get` factory directly. Injectable
+ * Object recipes define an injectable `get` factory directly. Injectable
  * functions and classes are instantiated first and must produce an object with
- * an injectable `$get` factory.
+ * an injectable `get` factory.
  */
 export type ProviderDefinition =
-  | { $get: Injectable<(...args: Dynamic[]) => unknown> }
+  | { get: Injectable<(...args: Dynamic[]) => unknown> }
   | Injectable<(...args: Dynamic[]) => unknown>
   | Injectable<Constructor>;
 
@@ -277,7 +277,7 @@ export type ControllerConstructor =
   | ((...args: Dynamic[]) => undefined | Controller);
 
 /**
- * Describes the changes in component bindings during `$onChanges`.
+ * Describes the changes in component bindings during `onChanges`.
  */
 export interface ChangesObject<T = unknown> {
   /** New value of the binding */
@@ -292,7 +292,7 @@ export interface ChangesObject<T = unknown> {
 export type OnChangesObject = Record<string, ChangesObject>;
 
 /**
- * Interface for the $onInit lifecycle hook
+ * Interface for the onInit lifecycle hook
  * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
  */
 export interface OnInit {
@@ -301,11 +301,11 @@ export interface OnInit {
    * initialized (and before the pre & post linking functions for the directives on this element). This is a good
    * place to put initialization code for your controller.
    */
-  $onInit(): void;
+  onInit(): void;
 }
 
 /**
- * Interface for the $onChanges lifecycle hook
+ * Interface for the onChanges lifecycle hook
  * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
  */
 export interface OnChanges {
@@ -315,11 +315,11 @@ export interface OnChanges {
    * { currentValue, previousValue, isFirstChange() }. Use this hook to trigger updates within a component such as
    * cloning the bound value to prevent accidental mutation of the outer value.
    */
-  $onChanges(onChangesObj: OnChangesObject): void;
+  onChanges(onChangesObj: OnChangesObject): void;
 }
 
 /**
- * Interface for the $onDestroy lifecycle hook
+ * Interface for the onDestroy lifecycle hook
  * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
  */
 export interface OnDestroy {
@@ -327,11 +327,11 @@ export interface OnDestroy {
    * Called on a controller when its containing scope is destroyed. Use this hook for releasing external resources,
    * watches and event handlers.
    */
-  $onDestroy(): void;
+  onDestroy(): void;
 }
 
 /**
- * Interface for the $postLink lifecycle hook
+ * Interface for the postLink lifecycle hook
  * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
  */
 export interface PostLink {
@@ -343,11 +343,11 @@ export interface PostLink {
    * analogous to the ngAfterViewInit and ngAfterContentInit hooks in Angular 2. Since the compilation process is rather
    * different in Angular 1 there is no direct mapping and care should be taken when upgrading.
    */
-  $postLink(): void;
+  postLink(): void;
 }
 
 /**
- * Interface for the $afterRender lifecycle hook.
+ * Interface for the afterRender lifecycle hook.
  */
 export interface AfterRender {
   /**
@@ -356,7 +356,7 @@ export interface AfterRender {
    * to settle layout. External resources such as fonts and images are not waited
    * on by default.
    */
-  $afterRender(): void;
+  afterRender(): void;
 }
 
 /**
@@ -374,19 +374,19 @@ export type Controller = object & {
    * initialized (and before the pre & post linking functions for the directives on this element). This is a good
    * place to put initialization code for your controller.
    */
-  $onInit?: () => void;
+  onInit?: () => void;
   /**
    * Called whenever one-way bindings are updated. The onChangesObj is a hash whose keys are the names of the bound
    * properties that have changed, and the values are a {@link ChangesObject} object of the form
    * { currentValue, previousValue, isFirstChange() }. Use this hook to trigger updates within a component such as
    * cloning the bound value to prevent accidental mutation of the outer value.
    */
-  $onChanges?: (changes: OnChangesObject) => void;
+  onChanges?: (changes: OnChangesObject) => void;
   /**
    * Called on a controller when its containing scope is destroyed. Use this hook for releasing external resources,
    * watches and event handlers.
    */
-  $onDestroy?: () => void;
+  onDestroy?: () => void;
   /**
    * Called after this controller's element and its children have been linked. Similar to the post-link function this
    * hook can be used to set up DOM event handlers and do direct DOM manipulation. Note that child elements that contain
@@ -395,20 +395,87 @@ export type Controller = object & {
    * analogous to the ngAfterViewInit and ngAfterContentInit hooks in Angular 2. Since the compilation process is rather
    * different in Angular 1 there is no direct mapping and care should be taken when upgrading.
    */
-  $postLink?: () => void;
+  postLink?: () => void;
   /**
    * Called after this controller has been linked, AngularTS has applied DOM
    * mutations for the current flush, and the browser has had one animation frame
    * to settle layout. Multiple schedules for the same controller in one flush are
    * coalesced into one call.
    */
-  $afterRender?: () => void;
+  afterRender?: () => void;
 };
+
+/** Primitive text value accepted as a programmatic view child. */
+export type ComponentViewPrimitive = string | number | boolean | bigint;
+
+/**
+ * DOM content accepted from programmatic component and directive views.
+ * Functions are reactive child readers, arrays are flattened recursively, and
+ * existing nodes are moved rather than cloned. `null`, `undefined`, and
+ * `false` render no DOM content. Document fragments contribute their children.
+ */
+export type ComponentViewChild =
+  | ComponentViewPrimitive
+  | Node
+  | null
+  | undefined
+  | (() => ComponentViewChild)
+  | readonly ComponentViewChild[];
+
+/** Runtime context passed to a component's programmatic view. */
+export interface ComponentViewContext<
+  TController extends Controller = Controller,
+> {
+  /** Component controller after bindings and `onInit` have run. */
+  readonly controller: TController;
+  /** Scope that owns the generated DOM and reactive child readers. */
+  readonly scope: ng.Scope;
+  /** Native component host element. */
+  readonly element: HTMLElement;
+  /** Component transclusion function, when transclusion is enabled. */
+  readonly transclude: ng.TranscludeFn | undefined;
+  /** Registers cleanup owned by the compiled view and returns a cancellation function. */
+  readonly onDestroy: (cleanup: () => void) => () => void;
+}
+
+/** Programmatic real-DOM factory used instead of a component template. */
+export type ComponentView<TController extends Controller = Controller> = (
+  context: ComponentViewContext<TController>,
+) => ComponentViewChild;
+
+/** Runtime context passed to a directive's programmatic view. */
+export interface DirectiveViewContext<
+  TController = unknown,
+  TRequired = DirectiveController,
+> {
+  /** Directive controller, when the directive declares one. */
+  readonly controller: TController | undefined;
+  /** Controllers resolved through the directive's `require` declaration. */
+  readonly required: TRequired | undefined;
+  /** Scope that owns the generated DOM and reactive child readers. */
+  readonly scope: ng.Scope;
+  /** Native element matched by the directive. */
+  readonly element: Element;
+  /** Directive transclusion function, when transclusion is enabled. */
+  readonly transclude: ng.TranscludeFn | undefined;
+  /** Registers cleanup owned by the compiled view and returns a cancellation function. */
+  readonly onDestroy: (cleanup: () => void) => () => void;
+}
+
+/** Programmatic real-DOM factory used instead of a directive template. */
+export type DirectiveView<
+  TController = unknown,
+  TRequired = DirectiveController,
+> = {
+  bivarianceHack(
+    context: DirectiveViewContext<TController, TRequired>,
+  ): ComponentViewChild;
+}["bivarianceHack"];
 
 /**
  * Defines a component's configuration object (a simplified directive definition object).
  */
-export interface Component {
+export interface Component<TController extends Controller = Controller> {
   controller?: string | Injectable<ControllerConstructor> | undefined;
   /**
    * An identifier name for a reference to the controller. If present, the controller will be published to its scope under
@@ -431,6 +498,12 @@ export interface Component {
    */
   templateUrl?: string | Injectable<(...args: never[]) => string> | undefined;
   /**
+   * Programmatic real-DOM view factory. It runs during linking after controller
+   * bindings and `onInit`, and is mutually exclusive with template, templateUrl,
+   * and replace.
+   */
+  view?: ComponentView<TController> | undefined;
+  /**
    * Define DOM attribute binding to component properties. Component properties are always bound to the component
    * controller and not to the scope.
    */
@@ -447,7 +520,7 @@ export interface Component {
    * Requires the controllers of other directives and binds them to this component's controller.
    * The object keys specify the property names under which the required controllers (object values) will be bound.
    * Note that the required controllers will not be available during the instantiation of the controller,
-   * but they are guaranteed to be available just before the $onInit method is executed!
+   * but they are guaranteed to be available just before the onInit method is executed!
    */
   require?: Record<string, string> | undefined;
 }
@@ -519,6 +592,11 @@ export interface Directive<TCtrl = unknown> {
   restrict?: DirectiveRestrict;
   /** Compile function for the directive */
   compile?: DirectiveCompileFn;
+  /**
+   * Programmatic real-DOM view factory. It is mutually exclusive with
+   * template, templateUrl, and replace and composes with compile/link.
+   */
+  view?: DirectiveView<TCtrl>;
   /** Controller constructor or injectable string name */
   controller?: string | Injectable<ControllerConstructor>;
   /** Alias name for the controller in templates */
