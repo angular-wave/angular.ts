@@ -1190,7 +1190,7 @@ class AngularTSSuite extends munit.FunSuite:
         remove = (key: String) => removed = key,
       )
       .asInstanceOf[StorageBackend]
-    val errorConfig = ErrorHandlingConfig(objectMaxDepth = 3).toJS.asInstanceOf[js.Dynamic]
+    val errorConfig = ErrorFormattingConfig(objectMaxDepth = 3).toJS.asInstanceOf[js.Dynamic]
     val htmlCanvas = HtmlCanvasConfig(
       enabled = false,
       throwOnUnsupported = true,

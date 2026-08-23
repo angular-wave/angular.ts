@@ -1,6 +1,6 @@
 import { setCacheData, removeElement, dealoc } from '../../shared/dom.js';
 import { removeFrom } from '../../shared/common.js';
-import { assertDefined, isString, assign } from '../../shared/utils.js';
+import { assertInvariantDefined, isString, assign } from '../../shared/utils.js';
 import { registerViewControllerCallbacks } from '../directives/view-controller-hooks.js';
 import { ResolveContext, createResolveInvocationLocals } from '../resolve/resolve-context.js';
 import { kebobString } from '../../shared/strings.js';
@@ -30,7 +30,7 @@ function viewDeclTargetKey(viewDecl) {
     return viewContext ? `${viewContext}.${viewName}` : viewName;
 }
 function viewDeclDepth(viewDecl) {
-    let context = assertDefined(viewDecl._context);
+    let context = assertInvariantDefined(viewDecl._context);
     let count = 0;
     while (++count && context.parent) {
         context = context.parent;
@@ -140,7 +140,7 @@ class ViewService {
     /** @internal */
     _fillView(options) {
         const { host, rootNodes, scope, config, initial, activeNgView, animation } = options;
-        const $compile = assertDefined(this._compile);
+        const $compile = assertInvariantDefined(this._compile);
         const viewData = {
             _config: config,
             $ngView: activeNgView,
@@ -153,7 +153,7 @@ class ViewService {
         }
         const plan = config?._fillPlan;
         const resolveContext = config && plan?._needsResolveContext
-            ? new ResolveContext(config._path, assertDefined(this._injector))
+            ? new ResolveContext(config._path, assertInvariantDefined(this._injector))
             : undefined;
         if (host.childNodes.length || this._filledHosts.has(host)) {
             scope.broadcast("$destroy");
@@ -162,8 +162,7 @@ class ViewService {
             this._filledHosts.add(host);
         }
         host.innerHTML = config
-            ? (getViewTemplate(config, host, assertDefined(resolveContext)) ??
-                initial)
+            ? (getViewTemplate(config, host, assertInvariantDefined(resolveContext)) ?? initial)
             : initial;
         if (config && plan?._kind === "component") {
             this._markComponentView(host, config, scope);
@@ -176,14 +175,14 @@ class ViewService {
         targetScope.$resolve = locals;
         const controller = plan?._hasController ? config?._controller : undefined;
         if (controller) {
-            const controllerConfig = assertDefined(config);
-            const controllerInstance = assertDefined(this._controller)(controller, createRouterViewControllerInvocationLocals(locals, scope, host));
+            const controllerConfig = assertInvariantDefined(config);
+            const controllerInstance = assertInvariantDefined(this._controller)(controller, createRouterViewControllerInvocationLocals(locals, scope, host));
             setCacheData(host, "$ngControllerController", controllerInstance);
             const { children } = host;
             for (let i = 0; i < children.length; i++) {
                 setCacheData(children[i], "$ngControllerController", controllerInstance);
             }
-            registerViewControllerCallbacks(assertDefined(this._transitions), controllerInstance, scope, controllerConfig);
+            registerViewControllerCallbacks(assertInvariantDefined(this._transitions), controllerInstance, scope, controllerConfig);
         }
         link(scope);
         if (scope._handler._destroyed) {
@@ -451,7 +450,7 @@ class ViewService {
         const vcContext = viewDecl._ngViewContextAnchor ?? "";
         if (normalizedTarget !== ngView._fqn)
             return false;
-        const viewContext = assertDefined(viewDecl._context);
+        const viewContext = assertInvariantDefined(viewDecl._context);
         if (viewContext.name !== ngViewContext.name &&
             vcContext !== ngViewContext.name) {
             return false;

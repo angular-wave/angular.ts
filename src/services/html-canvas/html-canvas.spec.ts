@@ -9,9 +9,9 @@ import {
   ngHtmlCanvasSourceDirective,
 } from "../../directive/html-canvas/html-canvas.ts";
 import {
-  assertHtmlCanvasConfigInactive,
+  validateHtmlCanvasConfigInactive,
   applyHtmlCanvasConfiguration,
-  assertHtmlCanvasRuntimeSupported,
+  requireHtmlCanvasRuntimeSupport,
   createHtmlCanvasRuntimeState,
   createHtmlCanvasService,
   destroyHtmlCanvasRuntimeState,
@@ -210,10 +210,10 @@ describe("HTML-in-Canvas", () => {
 
   it("keeps inactive and active config accepted after the runtime slice lands", () => {
     expect(() =>
-      assertHtmlCanvasConfigInactive({ enabled: false }),
+      validateHtmlCanvasConfigInactive({ enabled: false }),
     ).not.toThrow();
     expect(() =>
-      assertHtmlCanvasConfigInactive({
+      validateHtmlCanvasConfigInactive({
         enabled: "auto",
         throwOnUnsupported: true,
         defaultScheduler: "paint",
@@ -224,7 +224,7 @@ describe("HTML-in-Canvas", () => {
 
   it("allows disabled config through the runtime gate", () => {
     expect(
-      assertHtmlCanvasRuntimeSupported(
+      requireHtmlCanvasRuntimeSupport(
         { enabled: false },
         { support: unsupportedRuntime },
       ),
@@ -233,7 +233,7 @@ describe("HTML-in-Canvas", () => {
 
   it("throws for active config when the browser has no native support", () => {
     expect(() =>
-      assertHtmlCanvasRuntimeSupported(
+      requireHtmlCanvasRuntimeSupport(
         {
           enabled: true,
           throwOnUnsupported: true,
@@ -247,7 +247,7 @@ describe("HTML-in-Canvas", () => {
 
   it("allows auto config to remain inactive when unsupported and configured not to throw", () => {
     expect(
-      assertHtmlCanvasRuntimeSupported(
+      requireHtmlCanvasRuntimeSupport(
         {
           enabled: "auto",
           throwOnUnsupported: false,
@@ -261,7 +261,7 @@ describe("HTML-in-Canvas", () => {
 
   it("accepts active config only when the requested native mode exists", () => {
     expect(
-      assertHtmlCanvasRuntimeSupported(
+      requireHtmlCanvasRuntimeSupport(
         {
           enabled: true,
           throwOnUnsupported: true,
@@ -275,7 +275,7 @@ describe("HTML-in-Canvas", () => {
 
   it("checks the current runtime when no support override is provided", () => {
     expect(() =>
-      assertHtmlCanvasRuntimeSupported({
+      requireHtmlCanvasRuntimeSupport({
         enabled: true,
         throwOnUnsupported: true,
         defaultScheduler: "paint",

@@ -1,6 +1,10 @@
 import { dealoc, removeElement, setCacheData } from "../../shared/dom.ts";
 import { removeFrom } from "../../shared/common.ts";
-import { assign, assertDefined, isString } from "../../shared/utils.ts";
+import {
+  assign,
+  assertInvariantDefined,
+  isString,
+} from "../../shared/utils.ts";
 import type { CompileControllerLifecycleRecord } from "../../core/compile/compile.ts";
 import type { CompiledFragmentRecord } from "../../core/compile/incremental-fragment.ts";
 import {
@@ -199,7 +203,7 @@ function viewDeclTargetKey(viewDecl: ViewDeclaration): string {
 }
 
 function viewDeclDepth(viewDecl: ViewDeclaration): number {
-  let context = assertDefined(viewDecl._context);
+  let context = assertInvariantDefined(viewDecl._context);
 
   let count = 0;
 
@@ -388,7 +392,7 @@ export class ViewService {
     const { host, rootNodes, scope, config, initial, activeNgView, animation } =
       options;
 
-    const $compile = assertDefined(this._compile);
+    const $compile = assertInvariantDefined(this._compile);
 
     const viewData: NgViewData = {
       _config: config,
@@ -407,7 +411,10 @@ export class ViewService {
 
     const resolveContext =
       config && plan?._needsResolveContext
-        ? new ResolveContext(config._path, assertDefined(this._injector))
+        ? new ResolveContext(
+            config._path,
+            assertInvariantDefined(this._injector),
+          )
         : undefined;
 
     if (host.childNodes.length || this._filledHosts.has(host)) {
@@ -417,8 +424,11 @@ export class ViewService {
     }
 
     host.innerHTML = config
-      ? (getViewTemplate(config, host, assertDefined(resolveContext)) ??
-        initial)
+      ? (getViewTemplate(
+          config,
+          host,
+          assertInvariantDefined(resolveContext),
+        ) ?? initial)
       : initial;
 
     if (config && plan?._kind === "component") {
@@ -440,8 +450,8 @@ export class ViewService {
     const controller = plan?._hasController ? config?._controller : undefined;
 
     if (controller) {
-      const controllerConfig = assertDefined(config);
-      const controllerInstance = assertDefined(this._controller)(
+      const controllerConfig = assertInvariantDefined(config);
+      const controllerInstance = assertInvariantDefined(this._controller)(
         controller,
         createRouterViewControllerInvocationLocals(locals, scope, host),
       ) as ViewControllerInstance;
@@ -458,7 +468,7 @@ export class ViewService {
       }
 
       registerViewControllerCallbacks(
-        assertDefined(this._transitions),
+        assertInvariantDefined(this._transitions),
         controllerInstance,
         scope,
         controllerConfig,
@@ -850,7 +860,7 @@ export class ViewService {
 
     if (normalizedTarget !== ngView._fqn) return false;
 
-    const viewContext = assertDefined(viewDecl._context);
+    const viewContext = assertInvariantDefined(viewDecl._context);
 
     if (
       viewContext.name !== ngViewContext.name &&

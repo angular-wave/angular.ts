@@ -10,28 +10,31 @@ pub type Angular
 pub type AnnotatedDirectiveFactory
 
 /// Defines a component's configuration object (a simplified directive definition object).
-pub type Component
+pub type Component(a, b, c)
+
+/// Component registration accepted by `NgModule.component()`. Programmatic and template-based
+/// rendering strategies are mutually exclusive.
+pub type ComponentDefinition(a, b, c)
 
 /// Programmatic real-DOM factory used instead of a component template.
 pub type ComponentView
 
 /// DOM content accepted from programmatic component and directive views. Functions are reactive
 /// child readers, arrays are flattened recursively, and existing nodes are moved rather than
-/// cloned. `null`, `undefined`, and `false` render no DOM content. Document fragments contribute
+/// cloned. `null`, `undefined`, and booleans render no DOM content. Document fragments contribute
 /// their children.
 pub type ComponentViewChild
 
 /// Runtime context passed to a component's programmatic view.
 pub type ComponentViewContext
 
-/// Primitive text value accepted as a programmatic view child.
+/// Primitive value accepted as a view child. Booleans render no DOM content.
 pub type ComponentViewPrimitive
 
 /// Typed DOM properties plus arbitrary attribute and custom-element values.
 pub type ComponentViewProperties
 
-/// Property, attribute, event listener, or reactive property reader accepted by a programmatic view
-/// tag factory.
+/// Compatibility alias for ViewPropertyValue.
 pub type ComponentViewPropertyValue
 
 /// Factory that creates one real DOM element without parsing HTML.
@@ -395,8 +398,8 @@ pub type CookieStoreOptions
 /// Creates a new entity instance from raw response data.
 pub type EntityClass(a)
 
-/// Error configuration object. May only contain the options that need to be updated.
-pub type ErrorHandlingConfig
+/// Controls how values embedded in framework error messages are formatted.
+pub type ErrorFormattingConfig
 
 /// A JavaScript expression represented as a string, typically used in interpolation bindings.
 /// Example: ```html <span title="{{ attrBinding }}">{{ textBinding }}</span> ```

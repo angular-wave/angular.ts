@@ -387,7 +387,7 @@ export function applyServiceWorkerConfiguration(
 
 interface ServiceWorkerFactoryOptions {
   log: ng.LogService;
-  err: ng.ExceptionHandlerService;
+  exceptionHandler: ng.ExceptionHandlerService;
   configuration?: ServiceWorkerRuntimeConfiguration;
   security?: SecurityPolicy;
   createMessageChannel?: () => MessageChannel;
@@ -609,7 +609,7 @@ export function createServiceWorkerService(
       try {
         callback(updateState);
       } catch (error) {
-        options.err(error);
+        options.exceptionHandler(error);
       }
     });
   };
@@ -715,7 +715,7 @@ export function createServiceWorkerService(
       try {
         callback(controller);
       } catch (error) {
-        options.err(error);
+        options.exceptionHandler(error);
       }
     });
   });
@@ -1020,7 +1020,7 @@ export function createServiceWorkerService(
             source: messageEvent.source,
           });
         } catch (error) {
-          options.err(error);
+          options.exceptionHandler(error);
         }
       });
     },
@@ -1093,7 +1093,9 @@ export function createServiceWorkerService(
   }
 
   if (supported && configuration.autoRegister && configuration.scriptUrl) {
-    void service.register().catch((error: unknown) => options.err(error));
+    void service
+      .register()
+      .catch((error: unknown) => options.exceptionHandler(error));
   }
 
   return service;

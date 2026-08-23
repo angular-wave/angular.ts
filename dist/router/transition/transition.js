@@ -1,5 +1,5 @@
 import { stringify } from '../../shared/strings.js';
-import { assign, assertDefined, isUndefined, isObject, keys } from '../../shared/utils.js';
+import { assign, assertInvariantDefined, isUndefined, isObject, keys } from '../../shared/utils.js';
 import { TransitionHookPhase, TransitionHook } from './transition-hook.js';
 import { buildHooksForPhase } from './hook-builder.js';
 import { TransitionRunner } from './transition-runner.js';
@@ -16,8 +16,8 @@ function createDeferredPromise() {
     });
     return {
         promise,
-        resolve: assertDefined(resolve),
-        reject: assertDefined(reject),
+        resolve: assertInvariantDefined(resolve),
+        reject: assertInvariantDefined(reject),
     };
 }
 function nodeIsReloading(node, reloadState) {
@@ -118,13 +118,13 @@ class Transition {
         const fromNode = fromPath.length
             ? fromPath[fromPath.length - 1]
             : undefined;
-        return assertDefined(fromNode).state;
+        return assertInvariantDefined(fromNode).state;
     }
     /** @internal */
     _to() {
         const toPath = this._treeChanges.to;
         const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
-        return assertDefined(toNode).state;
+        return assertInvariantDefined(toNode).state;
     }
     /**
      * Returns the "from state"

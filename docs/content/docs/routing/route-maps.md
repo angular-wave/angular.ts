@@ -6,13 +6,13 @@ description:
   ng-state examples auditable by TypeScript.'
 ---
 
-Route maps are optional TypeScript contracts for applications that want
-route names, params, and resolves checked at author time. They do not change the
+Route maps are optional TypeScript contracts for applications that want route
+names, params, and resolves checked at author time. They do not change the
 runtime router; they describe the route contract that the runtime already
 enforces.
 
-Use `StateService<TRoutes>` at injection boundaries where code calls
-`$state.go(...)` or `$state.href(...)`.
+Use [`StateService<TRoutes>`](../../../typedoc/types/StateService.html) at
+injection boundaries where code calls `$state.go(...)` or `$state.href(...)`.
 
 ```ts
 type AdminRoutes = {
@@ -79,48 +79,31 @@ const adminTree = {
   children: [
     {
       name: 'users',
-      url: '/users/{page:int}?{active:bool}',
-      params: {
-        page: { type: 'int' },
-      },
-      resolve: {
-        users: () => [{ id: '1' }],
-        total: () => Promise.resolve(1),
-      },
-    },
-    {
-      name: 'admin.profile',
-      params: {
-        userId: { type: 'string' },
-      },
-      resolve: {
-        profile: () => ({ id: '42' }),
-      },
+      url: '/users/{page:int}',
+      params: { page: { type: 'int' } },
+      resolve: { users: () => [{ id: '1' }] },
     },
   ],
 } as const;
 
 angular.module('admin', []).router(adminTree);
-
 type AdminRoutes = ng.RoutesOf<typeof adminTree>;
 declare const $state: ng.StateService<AdminRoutes>;
-
 $state.go('admin.users', { page: 1 });
-$state.go('admin.users', { page: 1, active: true });
-$state.href('admin.profile', { userId: '42' });
 ```
 
-`RoutesOf` infers dot-composed child names, absolute child names, explicit
-`params` keys, built-in literal URL parameter value types, custom
-`$router.paramTypes` value types, and object-style `resolve` return values.
+[`RoutesOf`](../../../typedoc/types/RoutesOf.html) infers dot-composed child
+names, absolute child names, explicit `params` keys, built-in literal URL
+parameter value types, custom `$router.paramTypes` value types, and object-style
+`resolve` return values.
 
 Pass the same custom param type map used by `$router.paramTypes` as the second
 generic argument. `decode` return types are used first; if a type has no
 `decode`, an `is(value): value is T` predicate is used as the value type.
 
 Large modules can pin the route contract directly on the module. This keeps
-subsequent route trees and lazy namespaces route-name aware without exposing
-provider APIs.
+later route trees and lazy namespaces route-name aware without exposing provider
+APIs.
 
 ```ts
 type AdminRoutes = ng.RoutesOf<typeof adminTree>;
@@ -132,12 +115,12 @@ angular
 ```
 
 When the tree is declared inline, `router(...)` infers a
-`ng.RouterModule<ng.RoutesOf<typeof tree>>` return type automatically.
-Typed router modules check the `router(...)` tree itself, keep route names
-checked across chained `router(...)` calls and `lazyState(...)` prefixes, and
-narrow object-style `params` and `resolve` declarations to the route contract.
-Array-style resolves remain available when a route needs explicit resolve
-metadata such as `token`, `deps`, or `eager`.
+[`ng.RouterModule<ng.RoutesOf<typeof tree>>`](../../../typedoc/types/RouterModule.html)
+return type automatically. Typed router modules check the `router(...)` tree
+itself, keep route names checked across chained `router(...)` calls and
+`lazyState(...)` prefixes, and narrow object-style `params` and `resolve`
+declarations to the route contract. Array-style resolves remain available when a
+route needs explicit resolve metadata such as `token`, `deps`, or `eager`.
 
 If a route map is supplied with `angular.module<Routes>(...)`, that explicit
 module contract is preserved after `router(...)`. This lets a feature module
@@ -181,9 +164,11 @@ declare const $state: ng.StateService<ItemRoutes>;
 $state.go('item', { id: 'b4f6eb70-3d2b-42df-8f14-4c7e8e88c208' as Uuid });
 ```
 
-Use `ng.Transition<TRoutes, { to: ToName; from: FromName }>` when code receives an injected
-`$transition$`. `params()` and `params('to')` read the destination route params;
-`params('from')` can be narrowed when the source route is known.
+Use
+[`ng.Transition<TRoutes, { to: ToName; from: FromName }>`](../../../typedoc/classes/Transition.html)
+when code receives an injected `$transition$`. `params()` and `params('to')`
+read the destination route params; `params('from')` can be narrowed when the
+source route is known.
 
 ```ts
 declare const $transition$: ng.Transition<
@@ -200,8 +185,8 @@ fromParams.page?.toFixed();
 
 The same route map should be the source of truth for resolves and routed
 component inputs. At runtime, routed components already receive resolve values
-by matching binding names. The route map makes that contract visible
-to TypeScript without asking application code to touch internal view records.
+by matching binding names. The route map makes that contract visible to
+TypeScript without asking application code to touch internal view records.
 
 ```ts
 type AdminUsersRoute = AdminRoutes['admin.users'];
@@ -228,8 +213,8 @@ void checkedUsersRouteContract;
 
 ### Component contracts at the route boundary
 
-Route maps should be mirrored by app-owned component contracts when you
-want typed, non-internal binding assertions.
+Route maps should be mirrored by app-owned component contracts when you want
+typed, non-internal binding assertions.
 
 ```ts
 type AdminUsersResolves = ng.ResolvesOf<AdminRoutes, 'admin.users'>;
@@ -255,8 +240,8 @@ require internal router records.
 
 ### Lazy route map composition
 
-Lazy route declarations are composed at module boundaries rather than
-centralized in one monolithic map.
+Lazy route declarations are composed per module rather than centralized in one
+monolithic map.
 
 ```ts
 type AppCoreRoutes = {
@@ -288,18 +273,18 @@ root module to own every lazy route declaration.
 
 The generated public surface exposes route maps as helper contracts:
 
-- `ng.RouteContract`
-- `ng.RouteMap`
-- `ng.RoutesOf<typeof tree>`
-- `ng.ParamsOf<TRoutes, TName>`
-- `ng.ResolvesOf<TRoutes, TName>`
-- `ng.RouterModule<TRoutes>`
-- `ng.StateService<TRoutes>`
-- `ng.Transition<TRoutes, { to: ToName; from: FromName }>`
+- [`ng.RouteContract`](../../../typedoc/types/RouteContract.html)
+- [`ng.RouteMap`](../../../typedoc/types/RouteMap.html)
+- [`ng.RoutesOf<typeof tree>`](../../../typedoc/types/RoutesOf.html)
+- [`ng.ParamsOf<TRoutes, TName>`](../../../typedoc/types/ParamsOf.html)
+- [`ng.ResolvesOf<TRoutes, TName>`](../../../typedoc/types/ResolvesOf.html)
+- [`ng.RouterModule<TRoutes>`](../../../typedoc/types/RouterModule.html)
+- [`ng.StateService<TRoutes>`](../../../typedoc/types/StateService.html)
+- [`ng.Transition<TRoutes, { to: ToName; from: FromName }>`](../../../typedoc/classes/Transition.html)
 
 These types are public authoring helpers only. They are not aliases for built
 state records, transition internals, retained-view cache entries, or view
-service records. If a route map needs to cross a lazy module boundary, compose
+service records. If a route map needs to include a lazy-loaded module, compose
 the public route-map types at the TypeScript boundary rather than importing
 router internals.
 
@@ -335,19 +320,23 @@ const profileLink: StaticNgStateLiteral<AdminRoutes, 'admin.profile'> = {
 Use expression-based `ng-state` only when the route name is genuinely dynamic.
 The AngularTS VS Code tooling checks simple TypeScript literal unions such as
 `$ctrl.route: 'admin.profile' | 'admin.users'`. A broad `string` cannot prove a
-finite target set, so use `StateService<TRoutes>` in the code that computes
-that value when it needs author-time validation.
+finite target set, so use
+[`StateService<TRoutes>`](../../../typedoc/types/StateService.html) in the code
+that computes that value when it needs author-time validation.
 
 Current boundary:
 
-- `$state.go(...)`, `$state.href(...)`, params, and
-  resolve maps have executable public type coverage.
-- `ng.Transition<TRoutes, { to: ToName; from: FromName }>` gives injected `$transition$` code
-  typed `params()`, `params('to')`, and `params('from')`.
-- `ng.RouterModule<TRoutes>` lets `angular.module<TRoutes>(...)` and
-  `router(...)` carry route-name checking into module declarations.
-- `ng.RoutesOf<typeof tree>` derives a route map from a literal `router(...)`
-  tree without exposing internal state, transition, or view records.
+- `$state.go(...)`, `$state.href(...)`, params, and resolve maps have executable
+  public type coverage.
+- [`ng.Transition<TRoutes, { to: ToName; from: FromName }>`](../../../typedoc/classes/Transition.html)
+  gives injected `$transition$` code typed `params()`, `params('to')`, and
+  `params('from')`.
+- [`ng.RouterModule<TRoutes>`](../../../typedoc/types/RouterModule.html) lets
+  `angular.module<TRoutes>(...)` and `router(...)` carry route-name checking
+  into module declarations.
+- [`ng.RoutesOf<typeof tree>`](../../../typedoc/types/RoutesOf.html) derives a
+  route map from a literal `router(...)` tree without exposing internal state,
+  transition, or view records.
 - Built-in literal URL parameter types and custom `$router.paramTypes` value
   types are inferred from route URL patterns.
 - Editor tooling completes and validates literal `ng-state` route names and

@@ -42,6 +42,7 @@ part of the Kotlin public facade.
 | `ClassMap` | generated |
 | `ClassValue` | generated |
 | `Component` | generated |
+| `ComponentDefinition` | generated |
 | `ComponentView` | generated |
 | `ComponentViewChild` | generated |
 | `ComponentViewContext` | generated |
@@ -301,7 +302,7 @@ part of the Kotlin public facade.
 | --- | --- |
 | `CookieOptions` | generated |
 | `CookieStoreOptions` | generated |
-| `ErrorHandlingConfig` | generated |
+| `ErrorFormattingConfig` | generated |
 | `InterpolationFunction` | generated |
 | `NgModelController` | generated |
 | `HtmlCanvasConfig` | generated |

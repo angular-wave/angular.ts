@@ -13,17 +13,24 @@ const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
 describe("$webTransport", () => {
-  let angular, webTransport, el;
+  let angular, webTransport, el, exceptions;
 
   const connections = [];
 
   beforeEach(() => {
     el = document.getElementById("app");
     el.innerHTML = "";
+    exceptions = [];
 
     angular = new Angular();
 
-    angular.bootstrap(el, []).invoke([
+    const module = angular.module("webTransportExceptionBoundary", []).config({
+      $exceptionHandler: {
+        handler: (error) => exceptions.push(error),
+      },
+    });
+
+    angular.bootstrap(el, [module.name]).invoke([
       "$webTransport",
       (_$webTransport_) => {
         webTransport = _$webTransport_;
@@ -206,6 +213,245 @@ describe("$webTransport", () => {
 
     expect(protocolMessages[0].target).toBe("#feed");
     expect(datagrams.length).toBe(1);
+  });
+
+  it("reports detached datagram callback failures without stopping delivery", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const callbackError = new Error("datagram callback failed");
+    let nativeTransport;
+
+    class MockWebTransport {
+      constructor() {
+        nativeTransport = this;
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream({
+            start(controller) {
+              controller.enqueue(new Uint8Array([1]));
+              controller.close();
+            },
+          }),
+          writable: new WritableStream(),
+        };
+      }
+
+      close() {
+        this.resolveClosed();
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      const connection = track(
+        webTransport("https://localhost:4433/callback", {
+          onDatagram: () => {
+            throw callbackError;
+          },
+        }),
+      );
+
+      await connection.ready;
+      await wait();
+
+      expect(exceptions).toEqual([callbackError]);
+      nativeTransport.resolveClosed();
+      await connection.closed;
+    } finally {
+      restoreWebTransport(descriptor);
+    }
+  });
+
+  it("routes transport errors separately from onError callback failures", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const transformError = new Error("transform failed");
+    const callbackError = new Error("onError failed");
+    let nativeTransport;
+
+    class MockWebTransport {
+      constructor() {
+        nativeTransport = this;
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream({
+            start(controller) {
+              controller.enqueue(new Uint8Array([1]));
+              controller.close();
+            },
+          }),
+          writable: new WritableStream(),
+        };
+      }
+
+      close() {
+        this.resolveClosed();
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      const connection = track(
+        webTransport("https://localhost:4433/transform", {
+          onDatagram: () => undefined,
+          onError: () => {
+            throw callbackError;
+          },
+          transformDatagram: () => {
+            throw transformError;
+          },
+        }),
+      );
+
+      await connection.ready;
+      await wait();
+
+      expect(exceptions).toEqual([callbackError]);
+      nativeTransport.resolveClosed();
+      await connection.closed;
+    } finally {
+      restoreWebTransport(descriptor);
+    }
+  });
+
+  it("reports native datagram read failures through onError", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const readError = new Error("read failed");
+    const errors = [];
+    let nativeTransport;
+
+    class MockWebTransport {
+      constructor() {
+        nativeTransport = this;
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream({
+            start(controller) {
+              controller.error(readError);
+            },
+          }),
+          writable: new WritableStream(),
+        };
+      }
+
+      close() {
+        this.resolveClosed();
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      const connection = track(
+        webTransport("https://localhost:4433/read", {
+          onDatagram: () => undefined,
+          onError: (error) => errors.push(error),
+        }),
+      );
+
+      await connection.ready;
+      await wait();
+
+      expect(errors).toEqual([readError]);
+      expect(exceptions).toEqual([]);
+      nativeTransport.resolveClosed();
+      await connection.closed;
+    } finally {
+      restoreWebTransport(descriptor);
+    }
+  });
+
+  it("reports retry policy failures and still reconnects", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "WebTransport",
+    );
+    const retryError = new Error("retry policy failed");
+    const reconnectError = new Error("reconnect hook failed");
+    const errors = [];
+    const instances = [];
+
+    class MockWebTransport {
+      constructor() {
+        this.ready = Promise.resolve();
+        this.closed = new Promise((resolve) => {
+          this.resolveClosed = resolve;
+        });
+        this.datagrams = {
+          readable: new ReadableStream(),
+          writable: new WritableStream(),
+        };
+        instances.push(this);
+      }
+
+      close() {
+        this.resolveClosed();
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, "WebTransport", {
+        configurable: true,
+        writable: true,
+        value: MockWebTransport,
+      });
+
+      const connection = track(
+        webTransport("https://localhost:4433/retry", {
+          maxRetries: 1,
+          reconnect: true,
+          retryDelay: () => {
+            throw retryError;
+          },
+          onReconnect: () => {
+            throw reconnectError;
+          },
+          onError: (error) => errors.push(error),
+        }),
+      );
+
+      await connection.ready;
+      instances[0].resolveClosed();
+      await wait(20);
+
+      expect(exceptions).toContain(retryError);
+      expect(errors).toEqual([reconnectError]);
+      expect(instances.length).toBe(2);
+      connection.close();
+      await connection.closed;
+    } finally {
+      restoreWebTransport(descriptor);
+    }
   });
 
   it("sends reliable unidirectional streams", async () => {

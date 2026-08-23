@@ -53,7 +53,7 @@
   "AngularTS Config": {
     "prefix": "ngconfig",
     "body": [
-      "angular.module(\"${1:app}\").config([\"${2:$provide}\", function(${3:$provide}) {",
+      "angular.module(\"${1:app}\").config([\"${2:\\$provide}\", function(${3:\\$provide}) {",
       "  $0",
       "}]);"
     ],
@@ -69,7 +69,7 @@
   "AngularTS Controller": {
     "prefix": "ngcontroller",
     "body": [
-      "angular.module(\"${1:app}\").controller(\"${2:MyController}\", [\"${3:$scope}\", function(${4:$scope}) {",
+      "angular.module(\"${1:app}\").controller(\"${2:MyController}\", [\"${3:\\$scope}\", function(${4:\\$scope}) {",
       "  $0",
       "}]);"
     ],
@@ -78,7 +78,7 @@
   "AngularTS DI Array": {
     "prefix": "ngdi",
     "body": [
-      "[\"${1:$scope}\", function(${2:$scope}) {",
+      "[\"${1:\\$scope}\", function(${2:\\$scope}) {",
       "  $0",
       "}]"
     ],
@@ -146,7 +146,7 @@
   "AngularTS Run": {
     "prefix": "ngrun",
     "body": [
-      "angular.module(\"${1:app}\").run([\"${2:$rootScope}\", function(${3:$rootScope}) {",
+      "angular.module(\"${1:app}\").run([\"${2:\\$rootScope}\", function(${3:\\$rootScope}) {",
       "  $0",
       "}]);"
     ],
@@ -164,7 +164,7 @@
   "AngularTS $inject": {
     "prefix": "nginject",
     "body": [
-      "${1:ControllerName}.$inject = [\"${2:$scope}\"];"
+      "${1:ControllerName}.\\$inject = [\"${2:\\$scope}\"];"
     ],
     "description": "AngularTS $inject assignment"
   },

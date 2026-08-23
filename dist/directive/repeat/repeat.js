@@ -1,5 +1,5 @@
 import { _injector } from '../../injection-tokens.js';
-import { createErrorFactory, isArrayLike, arrayFrom, hasOwn, deleteProperty, nullObject, isArray, assertDefined, isInstanceOf, callFunction, callBackOnce, isDefined, isFunction, setHashKey, hashKey, isProxy } from '../../shared/utils.js';
+import { createErrorFactory, isArrayLike, arrayFrom, hasOwn, deleteProperty, nullObject, isArray, assertInvariantDefined, isInstanceOf, callFunction, callBackOnce, isDefined, isFunction, setHashKey, hashKey, isProxy } from '../../shared/utils.js';
 import { getNormalizedAttr, hasNormalizedAttr, getBlockNodes, removeElement, removeElementData, createDocumentFragment } from '../../shared/dom.js';
 import { getArrayMutationMeta } from '../../core/scope/scope.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
@@ -684,7 +684,7 @@ function ngRepeatDirective($injector) {
                         block = remainingBlock;
                         const blockNodes = getBlockNodes(isArray(block._clone)
                             ? block._clone
-                            : [assertDefined(block._clone)]);
+                            : [assertInvariantDefined(block._clone)]);
                         const blockStart = getBlockStart(block);
                         elementsToRemove = isInstanceOf(blockStart, Element)
                             ? blockStart

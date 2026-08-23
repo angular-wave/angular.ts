@@ -183,7 +183,7 @@ export class AppContext {
 
   constructor() {
     this.modelScheduler = createAppModelScheduler((exception) => {
-      (this._exceptionHandler as (exception: unknown) => unknown)(exception);
+      this._exceptionHandler(exception);
     });
   }
 
@@ -204,7 +204,7 @@ export class AppContext {
   }
 
   setExceptionHandler(exceptionHandler: ng.ExceptionHandlerService): void {
-    this._assertAlive("configure AppContext exception handling");
+    this._ensureAlive("configure AppContext exception handling");
     this._exceptionHandler = exceptionHandler;
   }
 
@@ -219,7 +219,7 @@ export class AppContext {
   }
 
   runWithRoot<T>(root: AppRootRecord, operation: () => T): T {
-    this._assertAlive("run AppContext root work");
+    this._ensureAlive("run AppContext root work");
 
     const previousRoot = this._currentRoot;
 
@@ -233,7 +233,7 @@ export class AppContext {
   }
 
   createRoot(options: AppRootCreateOptions): AppRootRecord {
-    this._assertAlive("create AppContext roots");
+    this._ensureAlive("create AppContext roots");
 
     const existingRoot = this._rootsByScope.get(options.rootScope);
 
@@ -278,7 +278,7 @@ export class AppContext {
     rootOrScope: AppRootRecord | ng.Scope,
     options: AppRootAttachOptions,
   ): AppRootRecord {
-    this._assertAlive("attach metadata to AppContext roots");
+    this._ensureAlive("attach metadata to AppContext roots");
 
     const root = this._resolveRoot(rootOrScope);
 
@@ -309,7 +309,7 @@ export class AppContext {
     factory: ModelStateFactory<T>,
     options: AppModelRegisterOptions = {},
   ): Model<T> {
-    this._assertAlive("register AppContext models");
+    this._ensureAlive("register AppContext models");
 
     const existingFactory = this._modelFactories.get(name);
 
@@ -351,7 +351,7 @@ export class AppContext {
     target: T,
     options: AppModelRegisterOptions & { name?: string } = {},
   ): Model<T> {
-    this._assertAlive("create AppContext reactive models");
+    this._ensureAlive("create AppContext reactive models");
 
     if (!isPlainModelRoot(target)) {
       throw new Error("Reactive app models require a plain object root.");
@@ -380,7 +380,7 @@ export class AppContext {
 
   /** @internal */
   _reportModelException(exception: unknown): void {
-    (this._exceptionHandler as (exception: unknown) => unknown)(exception);
+    this._exceptionHandler(exception);
   }
 
   getRootByElement(element: Element | Document): AppRootRecord | undefined {
@@ -406,7 +406,7 @@ export class AppContext {
   }
 
   onDestroy(callback: AppDestroyHook): () => void {
-    this._assertAlive("register AppContext destroy hooks");
+    this._ensureAlive("register AppContext destroy hooks");
     this._appDestroyHooks.push(callback);
 
     return () => {
@@ -451,7 +451,7 @@ export class AppContext {
   }
 
   onRootAttach(callback: RootHook): () => void {
-    this._assertAlive("register AppContext root attach hooks");
+    this._ensureAlive("register AppContext root attach hooks");
     this._attachHooks.push(callback);
 
     return () => {
@@ -460,7 +460,7 @@ export class AppContext {
   }
 
   onRootDestroy(callback: RootHook): () => void {
-    this._assertAlive("register AppContext root destroy hooks");
+    this._ensureAlive("register AppContext root destroy hooks");
     this._destroyHooks.push(callback);
 
     return () => {
@@ -469,7 +469,7 @@ export class AppContext {
   }
 
   /** @internal */
-  private _assertAlive(operation: string): void {
+  private _ensureAlive(operation: string): void {
     if (this.destroyed) {
       throw new Error(`Cannot ${operation} after AppContext is destroyed.`);
     }
@@ -638,7 +638,7 @@ function attachModelLifecycle<T extends ModelState>(
     incoming: T,
     restoreOptions: ModelRestoreOptions = {},
   ): void => {
-    assertPlainModelSnapshot(incoming);
+    validatePlainModelSnapshot(incoming);
     const normalizedRestoreOptions =
       normalizeModelRestoreOptions(restoreOptions);
     const next = cloneModelData(incoming);
@@ -771,7 +771,7 @@ function resolveModelSyncTarget<T extends ModelState>(
   }
 
   if (isModelSyncTarget(input)) {
-    assertModelSyncTarget(input, "Model sync target");
+    validateModelSyncTarget(input, "Model sync target");
 
     return input;
   }
@@ -788,12 +788,12 @@ function resolveModelSyncTarget<T extends ModelState>(
     throw new Error("Injectable model sync target must resolve to an object.");
   }
 
-  assertModelSyncTarget(resolved, "Injectable model sync target");
+  validateModelSyncTarget(resolved, "Injectable model sync target");
 
   return resolved;
 }
 
-function assertModelSyncTarget<T extends ModelState>(
+function validateModelSyncTarget<T extends ModelState>(
   target: ModelSyncTarget<T>,
   label: string,
 ): void {
@@ -859,7 +859,7 @@ function normalizeModelRestoreOptions(options: unknown): ModelRestoreOptions {
   return candidate as ModelRestoreOptions;
 }
 
-function assertPlainModelSnapshot(
+function validatePlainModelSnapshot(
   snapshot: unknown,
 ): asserts snapshot is ModelState {
   if (!isPlainModelRoot(snapshot)) {

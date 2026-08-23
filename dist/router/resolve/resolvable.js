@@ -1,5 +1,5 @@
 import { stringify } from '../../shared/strings.js';
-import { isInstanceOf, isFunction, assert, isNullOrUndefined, isObject, hasOwn, isArray } from '../../shared/utils.js';
+import { isInstanceOf, isFunction, isNullOrUndefined, isObject, hasOwn, isArray } from '../../shared/utils.js';
 
 async function resolveResolvable(resolvable, resolveContext, trans) {
     const dependencies = resolveContext.getDependencies(resolvable);
@@ -46,7 +46,9 @@ class Resolvable {
             this.promise = arg1.promise;
         }
         else if (isFunction(resolveFn)) {
-            assert(!isNullOrUndefined(arg1), "token argument is required");
+            if (isNullOrUndefined(arg1)) {
+                throw new TypeError("Resolvable token argument is required");
+            }
             this.token = arg1;
             this.eager = !!eager;
             this.resolveFn = resolveFn;

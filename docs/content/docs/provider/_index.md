@@ -1,5 +1,6 @@
 ---
-title: 'provider'
+title: Legacy provider migration
+weight: 190
 description: >-
   Provider-era API migration notes for AngularTS.
 

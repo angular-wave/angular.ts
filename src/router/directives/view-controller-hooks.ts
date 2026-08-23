@@ -1,4 +1,4 @@
-import { assertDefined, isFunction } from "../../shared/utils.ts";
+import { assertInvariantDefined, isFunction } from "../../shared/utils.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import type { TargetState } from "../state/target-state.ts";
 import type { PathNode } from "../path/path-node.ts";
@@ -95,7 +95,7 @@ export function registerViewControllerCallbacks(
       cfg._factory?._injector,
     );
 
-    const viewCreationTrans = assertDefined(
+    const viewCreationTrans = assertInvariantDefined(
       resolveContext.getResolvable("$transition$"),
     ).data as ng.Transition;
 

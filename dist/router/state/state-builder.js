@@ -1,4 +1,4 @@
-import { assign, createObject, isString, hasOwn, isInstanceOf, assertDefined, isArray, isDefined, keys, isFunction } from '../../shared/utils.js';
+import { assign, createObject, isString, hasOwn, isInstanceOf, assertInvariantDefined, isArray, isDefined, keys, isFunction } from '../../shared/utils.js';
 import { stringify } from '../../shared/strings.js';
 import { ResolveContext, createResolveInvocationLocals } from '../resolve/resolve-context.js';
 import { Resolvable } from '../resolve/resolvable.js';
@@ -34,7 +34,9 @@ function buildUrl(stateObject, routerState, root) {
     if (!isInstanceOf(url, UrlMatcher))
         throw new Error(`Invalid url '${String(url)}' in state '${String(stateObject)}'`);
     const base = (parent?.navigable ?? root);
-    return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
+    return parsed && parsed.root
+        ? url
+        : assertInvariantDefined(base._url)._append(url);
 }
 /**
  * @param {ParamFactory} paramFactory
@@ -71,7 +73,7 @@ function presentViewKeys(keyItems, values) {
     });
     return present.join(", ");
 }
-function assertNoRemovedViewKeys(keyItems, values, description) {
+function validateNoRemovedViewKeys(keyItems, values, description) {
     const present = [];
     keyItems.forEach((key) => {
         if (isDefined(values[key])) {
@@ -111,7 +113,7 @@ function viewsBuilder(state, registrar) {
     if (!state.parent) {
         return {};
     }
-    assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, state, `State '${state.name}'`);
+    validateNoRemovedViewKeys(REMOVED_VIEW_KEYS, state, `State '${state.name}'`);
     if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
         throw new Error(`State '${state.name}' has a 'views' object. It cannot also have view properties at the state level. Move these properties into a view declaration: ${presentViewKeys(ALL_VIEW_KEYS, state)}`);
     }
@@ -135,7 +137,7 @@ function viewsBuilder(state, registrar) {
         }
         config = assign({}, config);
         normalizeComponentDeclaration(registrar, name, config);
-        assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
+        validateNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
         if (hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
             hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)) {
             throw new Error(`Cannot combine: ${COMPONENT_VIEW_KEYS.join("|")} with: ${NON_COMPONENT_VIEW_KEYS.join("|")} in state view '${name}@${state.name}'`);
@@ -226,7 +228,7 @@ function invokeStateLifecycleHook(trans, state, hookName, pathname) {
     if (!hook)
         return undefined;
     const hookContext = stateObject._hookContext;
-    const $injector = assertDefined(hookContext._$injector);
+    const $injector = assertInvariantDefined(hookContext._$injector);
     const resolveContext = new ResolveContext(trans._treeChanges[pathname], $injector);
     const subContext = resolveContext.subContext(stateObject);
     const locals = {
@@ -299,7 +301,7 @@ class StateBuilder {
     /** @internal */
     _build(state) {
         const { _matcher: matcher, _routerState: routerState } = this;
-        assertNavigationPolicy(state.self);
+        validateNavigationPolicy(state.self);
         const parent = StateBuilder._parentName(state);
         if (parent && !matcher.find(parent, undefined, false)) {
             return null;
@@ -366,7 +368,7 @@ class StateBuilder {
         return parentName ? `${parentName}.${name}` : name;
     }
 }
-function assertNavigationPolicy(state) {
+function validateNavigationPolicy(state) {
     const navigation = state.policy?.navigation;
     if (navigation?.public !== true)
         return;

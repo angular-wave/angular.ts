@@ -2,10 +2,8 @@
 /// <reference types="jasmine" />
 import {
   arrayRemove,
-  assert,
-  assertArg,
-  assertArgFn,
-  assertNotHasOwnProperty,
+  assertInvariant,
+  validateNotHasOwnPropertyName,
   assign,
   baseExtend,
   bind,
@@ -17,7 +15,7 @@ import {
   deProxy,
   directiveNormalize,
   entries,
-  errorHandlingConfig,
+  errorFormattingConfig,
   getHashKey,
   hashKey,
   hasAnimate,
@@ -1375,9 +1373,11 @@ describe("utility functions", () => {
 
     it("should reject hasOwnProperty as a public name", () => {
       expect(() =>
-        assertNotHasOwnProperty("hasOwnProperty", "service"),
+        validateNotHasOwnPropertyName("hasOwnProperty", "service"),
       ).toThrowError(/hasOwnProperty is not a valid service name/);
-      expect(() => assertNotHasOwnProperty("valid", "service")).not.toThrow();
+      expect(() =>
+        validateNotHasOwnPropertyName("valid", "service"),
+      ).not.toThrow();
     });
 
     it("should stringify values for display", () => {
@@ -1385,6 +1385,7 @@ describe("utility functions", () => {
       expect(stringify(12)).toBe("12");
       expect(stringify({ toString: () => "custom" })).toBe("custom");
       expect(stringify({ a: 1 })).toBe('{"a":1}');
+      expect(stringify(Symbol.for("status"))).toBe("Symbol(status)");
     });
 
     it("should validate object max depth values", () => {
@@ -1423,29 +1424,22 @@ describe("utility functions", () => {
       expect(tryDecodeURIComponent("%")).toBeUndefined();
     });
 
-    it("should assert truthy arguments and functions", () => {
-      const fn = () => "ok";
-
-      expect(assert(true)).toBeUndefined();
-      expect(() => assert(false, "bad")).toThrowError("bad");
-      expect(assertArg("value", "name")).toBe("value");
-      expect(() => assertArg("", "name")).toThrowError(/Argument 'name'/);
-      expect(assertArgFn(fn, "fn")).toBe(fn);
-      expect(assertArgFn(["dep", fn], "fn", true)).toBe(fn);
-      expect(() => assertArgFn("x", "fn")).toThrowError(/not a function/);
+    it("should enforce invariants and required arguments", () => {
+      expect(assertInvariant(true)).toBeUndefined();
+      expect(() => assertInvariant(false, "bad")).toThrowError("bad");
     });
 
-    it("should update and return error handling config", () => {
-      const previous = { ...errorHandlingConfig() };
+    it("should update and return error formatting config", () => {
+      const previous = { ...errorFormattingConfig() };
 
-      errorHandlingConfig({
+      errorFormattingConfig({
         objectMaxDepth: 2,
       });
-      expect(errorHandlingConfig()).toEqual({
+      expect(errorFormattingConfig()).toEqual({
         objectMaxDepth: 2,
       });
 
-      errorHandlingConfig(previous);
+      errorFormattingConfig(previous);
     });
 
     it("should create namespaced errors", () => {

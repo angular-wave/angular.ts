@@ -1,5 +1,5 @@
 import { defaults } from '../../shared/common.js';
-import { isObject, isString, isInstanceOf, isDefined, assertDefined, isNullOrUndefined, isArray, createErrorFactory } from '../../shared/utils.js';
+import { isObject, isString, isInstanceOf, isDefined, assertInvariantDefined, isNullOrUndefined, isArray, createErrorFactory } from '../../shared/utils.js';
 import { isInjectable } from '../../core/di/injectable.js';
 import { PathNode } from '../path/path-node.js';
 import { buildPath } from '../path/path-utils.js';
@@ -227,7 +227,7 @@ class StateRuntime {
             this._getRegistry().register(stateDefinition);
         }
         catch (err) {
-            throw stateRuntimeError("stateinvalid", err.message);
+            throw stateRuntimeError("stateinvalid", err instanceof Error ? err.message : String(err));
         }
         return this;
     }
@@ -663,7 +663,7 @@ class StateRuntime {
         if (!isDefined(state))
             return null;
         if (options?.inherit !== false)
-            params = this._routerState._params._inherit(params, assertDefined(this._current), state);
+            params = this._routerState._params._inherit(params, assertInvariantDefined(this._current), state);
         const nav = options?.lossy !== false ? state.navigable : state;
         if (!nav || isNullOrUndefined(nav._url)) {
             return null;

@@ -6,22 +6,23 @@ description:
   injectors, and bridge external code.'
 ---
 
-`Angular` is the runtime entry point for AngularTS. It owns module registration,
-application bootstrap, injector creation, cached DOM helpers, and the
-event-based invocation helpers exposed through `window.angular`.
+[`Angular`](../../../typedoc/classes/Angular.html) is the runtime entry point
+for AngularTS. It owns module registration, application bootstrap, injector
+creation, cached DOM helpers, and the event-based invocation helpers exposed
+through `window.angular`.
 
 Exact runtime contracts live in TypeDoc:
 
 - [`Angular`](../../../typedoc/classes/Angular.html)
 - [`NgModule`](../../../typedoc/classes/NgModule.html)
-- [`InjectorService`](../../../typedoc/interfaces/InjectorService.html)
+- [`InjectorService`](../../../typedoc/types/InjectorService.html)
 
 ## Create Modules
 
 Use `angular.module()` to create or retrieve modules. Passing a dependency array
 creates a module; passing only the name retrieves one.
 
-```typescript
+```ts
 const app = angular.module('myApp', ['ng']);
 
 app.service('UserService', UserService);
@@ -43,7 +44,7 @@ same `nomod` error as AngularJS.
 `angular.bootstrap()` starts an application on a DOM element. It is the
 programmatic alternative to `ng-app`.
 
-```typescript
+```ts
 document.addEventListener('DOMContentLoaded', () => {
   angular.bootstrap(document.body, ['myApp']);
 });
@@ -58,10 +59,11 @@ already has an injector throws `ng:btstrpd`.
 ## Auto-Bootstrap
 
 `angular.init()` scans an element or document for `ng-app` roots. The first root
-uses the current `Angular` instance. Additional roots are bootstrapped as
-sub-applications and stored in `angular.subapps`.
+uses the current [`Angular`](../../../typedoc/classes/Angular.html) instance.
+Additional roots are bootstrapped as sub-applications and stored in
+`angular.subapps`.
 
-```typescript
+```ts
 window.addEventListener('DOMContentLoaded', () => {
   angular.init(document);
 });
@@ -76,7 +78,7 @@ adding new `ng-app` roots.
 Use `angular.injector()` when tests or non-DOM code need services without
 compiling an application root.
 
-```typescript
+```ts
 const injector = angular.injector(['ng', 'myApp'], true);
 const $http = injector.get('$http');
 ```
@@ -92,15 +94,16 @@ and builds the injector without requiring a host page bootstrap.
 Custom runtime core providers include only the compile, scope, controller,
 parse, interpolation, and exception-handling services needed to render
 templates. Orchestration services such as `$machine` and `$workflow` are not
-part of that core set. Include the orchestration module only when a custom
-runtime needs reactive state machines or workflows.
+part of that core set. Include `machineModule` for reactive state machines,
+`workflowModule` for workflows, or the compatible `orchestrationModule`
+aggregate when the runtime needs both.
 
-```typescript
+```ts
 import { createAngular } from '@angular-wave/angular.ts/runtime';
-import { orchestrationModule } from '@angular-wave/angular.ts/runtime/orchestration';
+import { machineModule } from '@angular-wave/angular.ts/runtime/orchestration';
 
 const angular = createAngular({
-  modules: [orchestrationModule],
+  modules: [machineModule],
 });
 ```
 
@@ -108,7 +111,7 @@ Include `wasmModule` when a custom runtime loads WebAssembly or exposes
 AngularTS scope state through the language-neutral WASM ABI. The bridge remains
 owned by that runtime and is disposed with it.
 
-```typescript
+```ts
 import { createAngular } from '@angular-wave/angular.ts/runtime';
 import { wasmModule } from '@angular-wave/angular.ts/runtime/wasm';
 
@@ -125,17 +128,18 @@ await playerGuest.bind(player, { name: 'player' });
 player.score = 42;
 ```
 
-Include `realtimeModule` for managed websocket, SSE, and WebTransport
-connections without including the rest of the browser integration group.
-Connection defaults still use the normal typed module configuration, and all
-active connections close when the custom runtime is destroyed.
+Include `sseModule`, `websocketModule`, or `webTransportModule` when a custom
+runtime uses one transport. Include the compatible `realtimeModule` aggregate
+when it uses all three. Connection defaults still use the normal typed module
+configuration, and all active connections close when the custom runtime is
+destroyed.
 
-```typescript
+```ts
 import { createAngular } from '@angular-wave/angular.ts/runtime';
-import { realtimeModule } from '@angular-wave/angular.ts/runtime/realtime';
+import { websocketModule } from '@angular-wave/angular.ts/runtime/realtime';
 
 const angular = createAngular({
-  modules: [realtimeModule],
+  modules: [websocketModule],
 });
 
 angular.module('app', []).config({
@@ -150,7 +154,7 @@ URL state, navigation security, route links, routed views, ARIA state, anchor
 scrolling, and route-template fetching, while leaving unrelated browser and
 orchestration services out of the build.
 
-```typescript
+```ts
 import { createAngular } from '@angular-wave/angular.ts/runtime';
 import { routerModule } from '@angular-wave/angular.ts/runtime/router';
 
@@ -172,7 +176,7 @@ and messaging without including the full browser integration group. The native
 listeners owned by `$serviceWorker` are released when the custom runtime is
 destroyed.
 
-```typescript
+```ts
 import { createAngular } from '@angular-wave/angular.ts/runtime';
 import { serviceWorkerModule } from '@angular-wave/angular.ts/runtime/service-worker';
 
@@ -196,7 +200,7 @@ appWorker.onMessage((event) => {
 Include `webComponentModule` when a custom runtime defines scoped custom
 elements directly. `defineAngularElement(...)` includes it automatically.
 
-```typescript
+```ts
 import { createAngular } from '@angular-wave/angular.ts/runtime';
 import { webComponentModule } from '@angular-wave/angular.ts/runtime/web-component';
 
@@ -205,13 +209,13 @@ const angular = createAngular({
 });
 ```
 
-```typescript
+```ts
 import { defineAngularElement } from '@angular-wave/angular.ts/runtime/web-component';
-import { ngClickDirective } from '@angular-wave/angular.ts/directives/events';
+import { ngEventDirectives } from '@angular-wave/angular.ts/directive/events';
 
 defineAngularElement('billing-summary', {
   directives: {
-    ngClick: ngClickDirective,
+    ngClick: ngEventDirectives.ngClick,
   },
   services: {
     billingApi: BillingApi,
@@ -254,22 +258,22 @@ dispatched with the `dispatch()` helper from the component context.
 `angular.emit()` and `angular.call()` evaluate expressions against an injectable
 service or a named scope. The input format is `"<target>.<expression>"`.
 
-```typescript
+```ts
 angular.emit('UserService.logout()');
 
 const count = await angular.call('cartScope.items.length');
 ```
 
-Use these helpers for small integration boundaries such as browser callbacks,
-legacy scripts, or embedded widgets. Normal application code should prefer
-dependency injection.
+Use these helpers for small integrations such as browser callbacks, legacy
+scripts, or embedded widgets. Normal application code should prefer dependency
+injection.
 
 ## Locate Named Scopes
 
 `getScopeByName()` searches from `$rootScope` for a scope with a matching
 `scopeName`.
 
-```typescript
+```ts
 $scope.scopeName = 'dashboard';
 
 const scope = angular.getScopeByName('dashboard');
@@ -280,7 +284,7 @@ scope?.refresh();
 
 The runtime exposes DOM cache helpers for integration and debugging:
 
-```typescript
+```ts
 const el = document.querySelector("[ng-controller='MyCtrl']") as Element;
 
 const ctrl = angular.getController(el);
@@ -292,9 +296,9 @@ These helpers read metadata attached during compilation and bootstrap.
 
 ## Use Injection Tokens
 
-`angular.tokens` exposes public injection token strings as a typed object. Prefer it
-when writing `$inject` arrays in TypeScript.
+`angular.tokens` exposes public injection token strings as a typed object.
+Prefer it when writing `$inject` arrays in TypeScript.
 
-```typescript
+```ts
 MyService.$inject = [angular.tokens.$http, angular.tokens.$rootScope];
 ```

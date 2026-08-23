@@ -5,8 +5,8 @@ import {
   _rootScope,
   _webComponent,
 } from "../injection-tokens.ts";
-import type { RuntimeComposition } from "../core/composition/runtime-composition.ts";
 import { createAngular, type AngularComposition } from "./index.ts";
+import { getRuntimeComposition } from "./custom-ng.ts";
 import {
   createWebComponentRuntimeState,
   createWebComponentService,
@@ -16,12 +16,11 @@ import {
 
 /** Register scoped custom-element support in a custom AngularTS runtime. */
 export const webComponentModule: RuntimeModule = (angular) => {
-  const runtime = angular as ng.Angular & {
-    _composition: RuntimeComposition;
-  };
+  const composition = getRuntimeComposition(angular);
   const state = createWebComponentRuntimeState();
+  const exceptionHandler = composition.exceptionHandlerState.service;
 
-  runtime._composition.platform.addDisposer(() => {
+  composition.platform.addDisposer(() => {
     destroyWebComponentRuntimeState(state);
   });
 
@@ -35,7 +34,14 @@ export const webComponentModule: RuntimeModule = (angular) => {
         $injector: ng.InjectorService,
         $rootScope: ng.Scope,
         $compile: ng.CompileService,
-      ) => createWebComponentService($injector, $rootScope, $compile, state),
+      ) =>
+        createWebComponentService(
+          $injector,
+          $rootScope,
+          $compile,
+          state,
+          exceptionHandler,
+        ),
     ]);
 };
 
@@ -90,7 +96,7 @@ export function defineAngularElement<
 
   const angular = createAngular({
     ...composition,
-    modules: Array.from(new Set([...(modules ?? []), webComponentModule])),
+    modules: [...(modules ?? []), webComponentModule],
   }) as unknown as ng.Angular;
 
   const ngModuleName = composition.name ?? "ng";

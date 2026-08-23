@@ -2,6 +2,7 @@ import { _scope } from "../../injection-tokens.ts";
 import { dealoc, getInheritedData, setScope } from "../../shared/dom.ts";
 import { kebobString } from "../../shared/strings.ts";
 import {
+  assertInvariantDefined,
   deleteProperty,
   hasOwn,
   isArray,
@@ -208,6 +209,7 @@ type AnyScopeElementConstructor = ScopeElementConstructor;
 interface ScopeElementDefinition {
   compile: ng.CompileService;
   createElementScope: WebComponentService["createElementScope"];
+  exceptionHandler: ng.ExceptionHandlerService;
   injector: ng.InjectorService;
   inputs: InputDefinition[];
   options: AppComponentOptions;
@@ -314,8 +316,9 @@ export function createWebComponentService(
   rootScope: ng.Scope,
   compile: ng.CompileService,
   state: WebComponentRuntimeState,
+  exceptionHandler: ng.ExceptionHandlerService,
 ): WebComponentService {
-  const assertActive = (): void => {
+  const ensureActive = (): void => {
     if (state.destroyed) {
       throw new Error("Cannot use $webComponent after runtime teardown");
     }
@@ -326,7 +329,7 @@ export function createWebComponentService(
     initialState: T = {} as T,
     options: ElementScopeOptions = {},
   ): ng.Scope & T => {
-    assertActive();
+    ensureActive();
 
     const parentScope = (options.parentScope ??
       getInheritedData(host, _scope) ??
@@ -352,7 +355,7 @@ export function createWebComponentService(
       name: string,
       options: AppComponentOptions<T>,
     ) => {
-      assertActive();
+      ensureActive();
 
       const mergedOptions = {
         ...state.defaults,
@@ -366,13 +369,14 @@ export function createWebComponentService(
         compile,
         createElementScope,
         state,
+        exceptionHandler,
       );
     },
     defineElement: <T extends object = Record<string, unknown>>(
       name: string,
       elementClass: ScopeElementConstructor<T>,
     ) => {
-      assertActive();
+      ensureActive();
 
       return defineScopeElement(
         name,
@@ -382,6 +386,7 @@ export function createWebComponentService(
         compile,
         createElementScope,
         state,
+        exceptionHandler,
       );
     },
   };
@@ -394,6 +399,7 @@ function defineAppComponent<T extends object>(
   compile: ng.CompileService,
   createElementScope: WebComponentService["createElementScope"],
   state: WebComponentRuntimeState,
+  exceptionHandler: ng.ExceptionHandlerService,
 ): CustomElementConstructor {
   class AngularTsAppComponent extends ScopeElement<T> {
     static template = options.template;
@@ -442,6 +448,7 @@ function defineAppComponent<T extends object>(
     compile,
     createElementScope,
     state,
+    exceptionHandler,
   );
 }
 
@@ -453,6 +460,7 @@ function defineScopeElement<T extends object>(
   compile: ng.CompileService,
   createElementScope: WebComponentService["createElementScope"],
   state: WebComponentRuntimeState,
+  exceptionHandler: ng.ExceptionHandlerService,
 ): CustomElementConstructor {
   const existing = customElements.get(name);
 
@@ -463,6 +471,7 @@ function defineScopeElement<T extends object>(
   scopeElementDefinitions.set(elementClass as AnyScopeElementConstructor, {
     compile,
     createElementScope,
+    exceptionHandler,
     injector,
     inputs,
     options: options as AppComponentOptions,
@@ -593,7 +602,9 @@ function syncScopeElementAttribute(
     scopeElementScopes.get(host),
   );
 
-  (host as ScopeElement).attributeChanged?.(attribute, oldValue, newValue);
+  invokeScopeElementCallback(definition, () => {
+    (host as ScopeElement).attributeChanged?.(attribute, oldValue, newValue);
+  });
 }
 
 function connectScopeElement(host: HTMLElement): void {
@@ -631,7 +642,9 @@ function connectScopeElement(host: HTMLElement): void {
   applyPendingValues(host, definition.inputs, scope);
   renderTemplate(renderRoot, host, scope, options.template, definition.compile);
 
-  const cleanup = element.connected?.();
+  const cleanup = invokeScopeElementCallback(definition, () =>
+    element.connected?.(),
+  );
 
   if (isFunction(cleanup)) {
     scopeElementCleanupFns.set(host, cleanup);
@@ -645,14 +658,23 @@ function disconnectScopeElement(host: HTMLElement): void {
 
   const cleanup = scopeElementCleanupFns.get(host);
 
-  cleanup?.();
-  scopeElementCleanupFns.delete(host);
-
-  const definition = getScopeElementDefinition(host);
+  const definition = assertInvariantDefined(getScopeElementDefinition(host));
   const context = scopeElementContexts.get(host);
   const element = host as ScopeElement;
+  const callbackErrors: unknown[] = [];
 
-  element.disconnected?.();
+  try {
+    cleanup?.();
+  } catch (error) {
+    callbackErrors.push(error);
+  }
+  scopeElementCleanupFns.delete(host);
+
+  try {
+    element.disconnected?.();
+  } catch (error) {
+    callbackErrors.push(error);
+  }
 
   if (!scope._handler._destroyed) {
     scope.destroy();
@@ -660,9 +682,26 @@ function disconnectScopeElement(host: HTMLElement): void {
 
   scopeElementScopes.delete(host);
   scopeElementContexts.delete(host);
-  definition?.state.hosts.delete(host);
+  definition.state.hosts.delete(host);
 
   if (context) clearRenderedContent(context.root);
+
+  for (const error of callbackErrors) {
+    definition.exceptionHandler(error);
+  }
+}
+
+function invokeScopeElementCallback<T>(
+  definition: ScopeElementDefinition,
+  callback: () => T,
+): T | undefined {
+  try {
+    return callback();
+  } catch (error) {
+    definition.exceptionHandler(error);
+
+    return undefined;
+  }
 }
 
 function getScopeElementDefinition(

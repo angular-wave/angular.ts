@@ -1,6 +1,6 @@
 ---
 title: ng-window-* and ng-document-*
-linkTitle: "Window Directives"
+linkTitle: 'Window directives'
 description: >
   Handler for window and document events
 ---

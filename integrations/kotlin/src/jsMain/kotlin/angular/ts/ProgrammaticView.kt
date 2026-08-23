@@ -19,6 +19,9 @@ public class ProgrammaticViewContext<TController, TRequired> internal constructo
     public val scope: Scope<Any>
         get() = Scope(raw.scope.unsafeCast<RawScope>())
 
+    public val host: HTMLElement
+        get() = raw.asDynamic().host.unsafeCast<HTMLElement>()
+
     public val element: HTMLElement
         get() = raw.element.unsafeCast<HTMLElement>()
 
@@ -61,6 +64,9 @@ public class ProgrammaticTags internal constructor(
 public class ProgrammaticViewApi internal constructor(
     internal val raw: RawAngular,
 ) {
+    public val tags: ProgrammaticTags
+        get() = ProgrammaticTags(raw.view.tags)
+
     public fun event(
         listener: (dynamic) -> Unit,
         options: dynamic = undefined,

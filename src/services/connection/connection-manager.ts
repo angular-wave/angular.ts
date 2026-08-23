@@ -70,6 +70,8 @@ export class ConnectionManager {
   /** @internal */
   _log: ng.LogService;
   /** @internal */
+  private readonly _exceptionHandler: ng.ExceptionHandlerService;
+  /** @internal */
   _retryCount: number;
   /** @internal */
   _closed: boolean;
@@ -80,8 +82,9 @@ export class ConnectionManager {
 
   constructor(
     createFn: () => EventSource | WebSocket,
-    config: ng.ConnectionConfig = {},
-    log: ng.LogService = console as unknown as ng.LogService,
+    config: ng.ConnectionConfig,
+    log: ng.LogService,
+    exceptionHandler: ng.ExceptionHandlerService,
   ) {
     this._createFn = createFn;
     this._config = {
@@ -98,6 +101,7 @@ export class ConnectionManager {
       ...config,
     };
     this._log = log;
+    this._exceptionHandler = exceptionHandler;
     this._retryCount = 0;
     this._closed = false;
     this._heartbeatTimer = undefined;
@@ -175,8 +179,12 @@ export class ConnectionManager {
   /** @internal */
   private _handleOpen(event: Event): void {
     this._retryCount = 0;
-    this._config.onOpen?.(event);
-    this._resetHeartbeat();
+
+    try {
+      this._invokeCallback(this._config.onOpen, event);
+    } finally {
+      this._resetHeartbeat();
+    }
   }
 
   /** @internal */
@@ -189,29 +197,39 @@ export class ConnectionManager {
       transformedData = isString(data)
         ? (this._config.transformMessage(data) ?? data)
         : data;
-    } catch {
-      /* empty */
+    } catch (error) {
+      this._exceptionHandler(error);
     }
-    this._config.onEvent?.({
-      type: event.type || "message",
-      data: transformedData,
-      rawData,
-      event,
-    });
-    this._config.onMessage?.(transformedData, event);
-    this._resetHeartbeat();
+
+    try {
+      this._invokeCallback(this._config.onEvent, {
+        type: event.type || "message",
+        data: transformedData,
+        rawData,
+        event,
+      });
+      this._invokeCallback(this._config.onMessage, transformedData, event);
+    } finally {
+      this._resetHeartbeat();
+    }
   }
 
   /** @internal */
   private _handleError(err: Event): void {
-    this._config.onError?.(err);
-    this._scheduleReconnect();
+    try {
+      this._invokeCallback(this._config.onError, err);
+    } finally {
+      this._scheduleReconnect();
+    }
   }
 
   /** @internal */
   private _handleClose(event: CloseEvent): void {
-    this._config.onClose?.(event);
-    this._scheduleReconnect();
+    try {
+      this._invokeCallback(this._config.onClose, event);
+    } finally {
+      this._scheduleReconnect();
+    }
   }
 
   /** @internal */
@@ -220,10 +238,17 @@ export class ConnectionManager {
 
     if (this._retryCount < this._config.maxRetries) {
       this._retryCount++;
-      this._config.onReconnect?.(this._retryCount);
-      setTimeout(() => {
-        this.reconnect();
-      }, this._config.retryDelay);
+      try {
+        this._invokeCallback(this._config.onReconnect, this._retryCount);
+      } finally {
+        setTimeout(() => {
+          try {
+            this.reconnect();
+          } catch (error) {
+            this._exceptionHandler(error);
+          }
+        }, this._config.retryDelay);
+      }
     } else {
       this._log.warn("ConnectionManager: Max retries reached");
     }
@@ -253,5 +278,19 @@ export class ConnectionManager {
     }
 
     this._connection?.close();
+  }
+
+  /** @internal */
+  private _invokeCallback<TArgs extends unknown[]>(
+    callback: ((...args: TArgs) => void) | undefined,
+    ...args: TArgs
+  ): void {
+    if (!callback) return;
+
+    try {
+      callback(...args);
+    } catch (error) {
+      this._exceptionHandler(error);
+    }
   }
 }

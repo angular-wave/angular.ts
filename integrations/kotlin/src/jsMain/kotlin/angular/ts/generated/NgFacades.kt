@@ -54,10 +54,10 @@ public external interface Angular {
      */
     public fun emit(input: String = definedExternally): Unit
     /**
-     * Global framework error-handling configuration.
+     * Configure how values embedded in framework error messages are formatted.
      * @param config Value supplied for the config parameter.
      */
-    public fun errorHandlingConfig(config: dynamic = definedExternally): dynamic
+    public fun errorFormattingConfig(config: dynamic = definedExternally): dynamic
     /**
      * Application-wide event bus, available after bootstrap providers are created.
      */
@@ -175,7 +175,7 @@ public external interface AnnotatedDirectiveFactory
 /**
  * Defines a component's configuration object (a simplified directive definition object).
  */
-public external interface Component {
+public external interface Component<TControllerInstance, TScopeInstance, TElement> {
     /**
      * Define DOM attribute binding to component properties. Component properties are always
      * bound to the component controller and not to the scope.
@@ -229,6 +229,57 @@ public external interface Component {
 }
 
 /**
+ * Component registration accepted by `NgModule.component()`. Programmatic and
+ * template-based rendering strategies are mutually exclusive.
+ */
+public external interface ComponentDefinition<TControllerInstance, TScopeInstance, TElement> {
+    /**
+     * Define DOM attribute binding to component properties. Component properties are always
+     * bound to the component controller and not to the scope.
+     */
+    public var bindings: dynamic
+    /**
+     * The controller member of ng.ComponentDefinition.
+     */
+    public var controller: dynamic
+    /**
+     * An identifier name for a reference to the controller. If present, the controller will be
+     * published to its scope under the specified name. If not present, this will default to
+     * '$ctrl'.
+     */
+    public var controllerAs: String
+    /**
+     * The replace member of ng.ComponentDefinition.
+     */
+    public var replace: Boolean
+    /**
+     * Requires the controllers of other directives and binds them to this component's
+     * controller. The object keys specify the property names under which the required
+     * controllers (object values) will be bound. Note that the required controllers will not
+     * be available during the instantiation of the controller, but they are guaranteed to be
+     * available just before the onInit method is executed!
+     */
+    public var require: dynamic
+    /**
+     * The template member of ng.ComponentDefinition.
+     */
+    public var template: dynamic
+    /**
+     * The templateUrl member of ng.ComponentDefinition.
+     */
+    public var templateUrl: dynamic
+    /**
+     * Whether transclusion is enabled. Disabled by default.
+     */
+    public var transclude: dynamic
+    /**
+     * The view member of ng.ComponentDefinition.
+     * @param context Value supplied for the context parameter.
+     */
+    public fun view(context: dynamic = definedExternally): dynamic
+}
+
+/**
  * Programmatic real-DOM factory used instead of a component template.
  */
 public external interface ComponentView {
@@ -242,7 +293,7 @@ public external interface ComponentView {
 /**
  * DOM content accepted from programmatic component and directive views. Functions are
  * reactive child readers, arrays are flattened recursively, and existing nodes are moved
- * rather than cloned. `null`, `undefined`, and `false` render no DOM content. Document
+ * rather than cloned. `null`, `undefined`, and booleans render no DOM content. Document
  * fragments contribute their children.
  */
 public external interface ComponentViewChild
@@ -256,20 +307,24 @@ public external interface ComponentViewContext {
      */
     public var controller: dynamic
     /**
-     * Native component host element.
+     * The element member of ng.ComponentViewContext.
      */
     public var element: org.w3c.dom.HTMLElement
     /**
-     * Registers cleanup owned by the compiled view and returns a cancellation function.
+     * Native host element matched by the component or directive.
+     */
+    public var host: org.w3c.dom.HTMLElement
+    /**
+     * Registers cleanup and returns a cancellation function.
      * @param cleanup Value supplied for the cleanup parameter.
      */
     public fun onDestroy(cleanup: () -> Unit = definedExternally): () -> Unit
     /**
-     * Scope that owns the generated DOM and reactive child readers.
+     * Scope that owns the generated DOM and reactive readers.
      */
     public var scope: dynamic
     /**
-     * Component transclusion function, when transclusion is enabled.
+     * Transclusion function, when transclusion is enabled.
      * @param scope Value supplied for the scope parameter.
      * @param cloneAttachFn Value supplied for the cloneAttachFn parameter.
      * @param futureParentElement Value supplied for the futureParentElement parameter.
@@ -279,7 +334,7 @@ public external interface ComponentViewContext {
 }
 
 /**
- * Primitive text value accepted as a programmatic view child.
+ * Primitive value accepted as a view child. Booleans render no DOM content.
  */
 public external interface ComponentViewPrimitive
 
@@ -288,14 +343,21 @@ public external interface ComponentViewPrimitive
  */
 public external interface ComponentViewProperties {
     /**
+     * The class member of ng.ComponentViewProperties.
+     */
+    public var `class`: dynamic
+    /**
      * The is member of ng.ComponentViewProperties.
      */
     public var `is`: String
+    /**
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/role)
+     */
+    public var role: dynamic
 }
 
 /**
- * Property, attribute, event listener, or reactive property reader accepted by a
- * programmatic view tag factory.
+ * Compatibility alias for ViewPropertyValue.
  */
 public external interface ComponentViewPropertyValue
 
@@ -461,8 +523,8 @@ public external interface Directive<TController> {
      */
     public var transclude: dynamic
     /**
-     * Programmatic real-DOM view factory. It is mutually exclusive with template, templateUrl,
-     * and replace and composes with compile/link.
+     * Real-DOM view factory. It is mutually exclusive with template, templateUrl, and replace
+     * and composes with compile/link.
      * @param context Value supplied for the context parameter.
      */
     public fun view(context: dynamic = definedExternally): dynamic
@@ -552,15 +614,19 @@ public external interface DirectiveView<TController, TRequired> {
  */
 public external interface DirectiveViewContext<TController, TRequired> {
     /**
-     * Directive controller, when the directive declares one.
+     * Controller associated with the view.
      */
     public var controller: dynamic
     /**
-     * Native element matched by the directive.
+     * The element member of ng.DirectiveViewContext.
      */
     public var element: org.w3c.dom.Element
     /**
-     * Registers cleanup owned by the compiled view and returns a cancellation function.
+     * Native host element matched by the component or directive.
+     */
+    public var host: org.w3c.dom.Element
+    /**
+     * Registers cleanup and returns a cancellation function.
      * @param cleanup Value supplied for the cleanup parameter.
      */
     public fun onDestroy(cleanup: () -> Unit = definedExternally): () -> Unit
@@ -569,11 +635,11 @@ public external interface DirectiveViewContext<TController, TRequired> {
      */
     public var required: dynamic
     /**
-     * Scope that owns the generated DOM and reactive child readers.
+     * Scope that owns the generated DOM and reactive readers.
      */
     public var scope: dynamic
     /**
-     * Directive transclusion function, when transclusion is enabled.
+     * Transclusion function, when transclusion is enabled.
      * @param scope Value supplied for the scope parameter.
      * @param cloneAttachFn Value supplied for the cloneAttachFn parameter.
      * @param futureParentElement Value supplied for the futureParentElement parameter.
@@ -1311,10 +1377,10 @@ public external interface AngularService {
      */
     public fun emit(input: String = definedExternally): Unit
     /**
-     * Global framework error-handling configuration.
+     * Configure how values embedded in framework error messages are formatted.
      * @param config Value supplied for the config parameter.
      */
-    public fun errorHandlingConfig(config: dynamic = definedExternally): dynamic
+    public fun errorFormattingConfig(config: dynamic = definedExternally): dynamic
     /**
      * Application-wide event bus, available after bootstrap providers are created.
      */
@@ -1985,9 +2051,10 @@ public external interface EventBusService {
      */
     public fun isDisposed(): Boolean
     /**
-     * Publish a value to a topic asynchronously. All listeners are invoked in the order they
-     * were added. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are
-     * skipped if their scope is destroyed before the queued delivery runs.
+     * Publish a value to a topic asynchronously. Listeners are invoked in the order they were
+     * added until delivery finishes or `$exceptionHandler` terminates the publication.
+     * Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their
+     * scope is destroyed before the queued delivery runs.
      * @param topic The topic to publish.
      * @param args Arguments to pass to listeners.
      */
@@ -4065,9 +4132,9 @@ public external interface CookieStoreOptions {
 public external interface EntityClass<T>
 
 /**
- * Error configuration object. May only contain the options that need to be updated.
+ * Controls how values embedded in framework error messages are formatted.
  */
-public external interface ErrorHandlingConfig {
+public external interface ErrorFormattingConfig {
     /**
      * The max depth for stringifying objects. Setting to a non-positive or non-numeric value
      * removes the max depth limit. Default: 5.

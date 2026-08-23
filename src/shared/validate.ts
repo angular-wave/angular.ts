@@ -3,6 +3,7 @@ import {
   type InstanceConstructor,
   isArray,
   isDefined,
+  isFunction,
   isInstanceOf,
   isNumber,
   isString,
@@ -54,6 +55,11 @@ export function validateRequired<T>(arg: T, name: string): NonNullable<T> {
   return validate(notNullOrUndefined, arg, name) as NonNullable<T>;
 }
 
+/** Validates a public API value whose contract excludes all falsy values. */
+export function validateTruthy<T>(arg: T, name: string): NonNullable<T> {
+  return validate(Boolean, arg, name, "required") as NonNullable<T>;
+}
+
 export function validateArray<T>(arg: T[], name: string): T[] {
   return validate(isArray, arg, name);
 }
@@ -64,6 +70,20 @@ export function validateIsString(arg: string, name: string): string {
 
 export function validateIsNumber(arg: number, name: string): number {
   return validate(isNumber, arg, name);
+}
+
+/** Validates a function argument, optionally unwrapping array annotation. */
+export function validateFunction(
+  arg: unknown,
+  name: string,
+  acceptArrayAnnotation = false,
+): (...args: never[]) => unknown {
+  const candidate =
+    acceptArrayAnnotation && isArray(arg) ? arg[arg.length - 1] : arg;
+
+  return validate(isFunction, candidate, name, "notfunction") as (
+    ...args: never[]
+  ) => unknown;
 }
 
 export function validateInstanceOf<T>(

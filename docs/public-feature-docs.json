@@ -1,0 +1,327 @@
+{
+  "moduleCategories": {
+    "directives": {
+      "root": "src/directive",
+      "mode": "directories",
+      "entries": {
+        "aria": { "page": "directive/aria.md", "coverage": "dedicated" },
+        "attrs": {
+          "page": "directives/data-binding.md",
+          "coverage": "canonical"
+        },
+        "bind": { "page": "directive/bind.md", "coverage": "dedicated" },
+        "channel": { "page": "directive/channel.md", "coverage": "dedicated" },
+        "class": { "page": "directive/class.md", "coverage": "dedicated" },
+        "cloak": { "page": "directive/cloak.md", "coverage": "dedicated" },
+        "controller": {
+          "page": "concepts/components.md",
+          "coverage": "canonical"
+        },
+        "el": { "page": "directive/el.md", "coverage": "dedicated" },
+        "events": { "page": "directives/overview.md", "coverage": "canonical" },
+        "form": { "page": "directive/forms.md", "coverage": "dedicated" },
+        "html-canvas": {
+          "page": "directives/advanced.md",
+          "coverage": "canonical"
+        },
+        "http": { "page": "directives/http.md", "coverage": "canonical" },
+        "if": { "page": "directive/if.md", "coverage": "dedicated" },
+        "include": { "page": "directive/include.md", "coverage": "dedicated" },
+        "init": { "page": "directives/advanced.md", "coverage": "canonical" },
+        "inject": { "page": "directive/inject.md", "coverage": "dedicated" },
+        "input": { "page": "directives/forms.md", "coverage": "canonical" },
+        "listener": {
+          "page": "directives/advanced.md",
+          "coverage": "canonical"
+        },
+        "messages": { "page": "directives/forms.md", "coverage": "canonical" },
+        "model": { "page": "directive/model.md", "coverage": "dedicated" },
+        "model-options": {
+          "page": "directive/model-options.md",
+          "coverage": "dedicated"
+        },
+        "non-bindable": {
+          "page": "directive/non-bindable.md",
+          "coverage": "dedicated"
+        },
+        "observe": {
+          "page": "directives/advanced.md",
+          "coverage": "canonical"
+        },
+        "on": { "page": "directives/advanced.md", "coverage": "canonical" },
+        "options": { "page": "directives/forms.md", "coverage": "canonical" },
+        "pointer-capture": {
+          "page": "directive/pointer-capture.md",
+          "coverage": "dedicated"
+        },
+        "realtime": { "page": "services/realtime.md", "coverage": "canonical" },
+        "ref": { "page": "directives/advanced.md", "coverage": "canonical" },
+        "repeat": { "page": "directive/repeat.md", "coverage": "dedicated" },
+        "scope": { "page": "concepts/scopes.md", "coverage": "canonical" },
+        "script": { "page": "directives/advanced.md", "coverage": "canonical" },
+        "select": { "page": "directives/forms.md", "coverage": "canonical" },
+        "setter": { "page": "directives/advanced.md", "coverage": "canonical" },
+        "show-hide": {
+          "page": "directives/structural.md",
+          "coverage": "canonical"
+        },
+        "style": {
+          "page": "directives/data-binding.md",
+          "coverage": "canonical"
+        },
+        "switch": { "page": "directive/switch.md", "coverage": "dedicated" },
+        "transclude": {
+          "page": "directives/advanced.md",
+          "coverage": "canonical"
+        },
+        "validators": {
+          "page": "directives/forms.md",
+          "coverage": "canonical"
+        },
+        "viewport": {
+          "page": "directives/advanced.md",
+          "coverage": "canonical"
+        },
+        "wasm": { "page": "integrations/_index.md", "coverage": "canonical" },
+        "webtransport": {
+          "page": "services/realtime.md",
+          "coverage": "canonical"
+        },
+        "worker": {
+          "page": "reference/public-features.md",
+          "coverage": "canonical"
+        }
+      }
+    },
+    "services": {
+      "root": "src/services",
+      "mode": "directories",
+      "entries": {
+        "anchor-scroll": {
+          "page": "service/anchorScroll.md",
+          "coverage": "dedicated"
+        },
+        "browser-runtime": {
+          "page": "concepts/angular-runtime.md",
+          "coverage": "canonical"
+        },
+        "cache": {
+          "page": "services/storage-cookie.md",
+          "coverage": "canonical"
+        },
+        "connection": {
+          "page": "services/realtime.md",
+          "coverage": "canonical"
+        },
+        "cookie": { "page": "service/cookie.md", "coverage": "dedicated" },
+        "event-bus": { "page": "service/eventBus.md", "coverage": "dedicated" },
+        "exception": {
+          "page": "service/exceptionHandler.md",
+          "coverage": "dedicated"
+        },
+        "html-canvas": {
+          "page": "directives/advanced.md",
+          "coverage": "canonical"
+        },
+        "http": { "page": "service/http.md", "coverage": "dedicated" },
+        "location": { "page": "service/location.md", "coverage": "dedicated" },
+        "log": { "page": "service/log.md", "coverage": "dedicated" },
+        "machine": { "page": "service/machine.md", "coverage": "dedicated" },
+        "realtime": { "page": "services/realtime.md", "coverage": "canonical" },
+        "rest": { "page": "service/rest.md", "coverage": "dedicated" },
+        "sce": { "page": "service/sce.md", "coverage": "dedicated" },
+        "security": { "page": "service/security.md", "coverage": "dedicated" },
+        "service-worker": {
+          "page": "service/serviceWorker.md",
+          "coverage": "dedicated"
+        },
+        "sse": { "page": "services/realtime.md", "coverage": "canonical" },
+        "storage": {
+          "page": "services/storage-cookie.md",
+          "coverage": "canonical"
+        },
+        "stream": { "page": "services/realtime.md", "coverage": "canonical" },
+        "template-cache": {
+          "page": "service/templateCache.md",
+          "coverage": "dedicated"
+        },
+        "template-request": {
+          "page": "service/templateRequest.md",
+          "coverage": "dedicated"
+        },
+        "utility": {
+          "page": "reference/public-features.md",
+          "coverage": "canonical"
+        },
+        "wasm": { "page": "integrations/_index.md", "coverage": "canonical" },
+        "web-component": {
+          "page": "concepts/components.md",
+          "coverage": "canonical"
+        },
+        "websocket": {
+          "page": "services/realtime.md",
+          "coverage": "canonical"
+        },
+        "webtransport": {
+          "page": "services/realtime.md",
+          "coverage": "canonical"
+        },
+        "worker": {
+          "page": "reference/public-features.md",
+          "coverage": "canonical"
+        },
+        "workflow": { "page": "service/workflow.md", "coverage": "dedicated" }
+      }
+    },
+    "filters": {
+      "root": "src/filters",
+      "mode": "source-files",
+      "entries": {
+        "async": { "page": "filter/async.md", "coverage": "dedicated" },
+        "collection": {
+          "page": "filter/collection.md",
+          "coverage": "dedicated"
+        },
+        "date": { "page": "filter/date.md", "coverage": "dedicated" },
+        "filter": { "page": "filter/filter.md", "coverage": "dedicated" },
+        "json": { "page": "filter/json.md", "coverage": "dedicated" },
+        "limit-to": { "page": "filter/limit-to.md", "coverage": "dedicated" },
+        "number": { "page": "filter/number.md", "coverage": "dedicated" },
+        "order-by": { "page": "filter/order-by.md", "coverage": "dedicated" },
+        "relative-time": {
+          "page": "filter/relative-time.md",
+          "coverage": "dedicated"
+        }
+      }
+    }
+  },
+  "injectionTokens": {
+    "$angular": "concepts/angular-runtime.md",
+    "$scope": "concepts/scopes.md",
+    "$element": "directive/el.md",
+    "$anchorScroll": "service/anchorScroll.md",
+    "$animate": "animations/overview.md",
+    "$aria": "directive/aria.md",
+    "$compile": "service/compile.md",
+    "$controller": "service/controller.md",
+    "$cookie": "service/cookie.md",
+    "$document": "values/document.md",
+    "$eventBus": "service/eventBus.md",
+    "$exceptionHandler": "service/exceptionHandler.md",
+    "$filter": "filter/_index.md",
+    "$htmlCanvas": "directives/advanced.md",
+    "$http": "service/http.md",
+    "$httpParamSerializer": "service/http.md",
+    "$injector": "concepts/dependency-injection.md",
+    "$interpolate": "service/interpolation.md",
+    "$location": "service/location.md",
+    "$log": "service/log.md",
+    "$machine": "service/machine.md",
+    "$parse": "service/parse.md",
+    "$rest": "service/rest.md",
+    "$rootElement": "service/rootElement.md",
+    "$rootScope": "service/rootScope.md",
+    "$sce": "service/sce.md",
+    "$sceDelegate": "service/sce.md",
+    "$security": "service/security.md",
+    "$serviceWorker": "service/serviceWorker.md",
+    "$sse": "services/realtime.md",
+    "$state": "routing/states.md",
+    "$stateRegistry": "routing/states.md",
+    "$storage": "services/storage-cookie.md",
+    "$stream": "services/realtime.md",
+    "$templateCache": "service/templateCache.md",
+    "$templateRequest": "service/templateRequest.md",
+    "$transitions": "routing/transitions.md",
+    "$wasm": "integrations/_index.md",
+    "$webComponent": "concepts/components.md",
+    "$websocket": "services/realtime.md",
+    "$webTransport": "services/realtime.md",
+    "$window": "values/window.md",
+    "$workflow": "service/workflow.md",
+    "$workflowSupervisor": "service/workflow.md",
+    "$worker": "reference/public-features.md"
+  },
+  "configuration": {
+    "$compile": "service/compile.md",
+    "$anchorScroll": "service/anchorScroll.md",
+    "$aria": "directive/aria.md",
+    "$cookie": "service/cookie.md",
+    "$eventBus": "service/eventBus.md",
+    "$exceptionHandler": "service/exceptionHandler.md",
+    "$htmlCanvas": "directives/advanced.md",
+    "$http": "service/http.md",
+    "$interpolate": "service/interpolation.md",
+    "$location": "service/location.md",
+    "$log": "service/log.md",
+    "$rest": "service/rest.md",
+    "$router": "guides/routing.md",
+    "$sce": "service/sce.md",
+    "$sceDelegate": "service/sce.md",
+    "$security": "service/security.md",
+    "$sse": "services/realtime.md",
+    "$templateCache": "service/templateCache.md",
+    "$templateRequest": "service/templateRequest.md",
+    "$webComponent": "concepts/components.md",
+    "$webTransport": "services/realtime.md",
+    "$websocket": "services/realtime.md"
+  },
+  "integrationExamples": {
+    "closure": {
+      "page": "integrations/closure.md",
+      "artifacts": ["integrations/closure/demo/index.html"]
+    },
+    "clojurescript": {
+      "page": "integrations/clojurescript.md",
+      "artifacts": ["integrations/closure/clojurescript/demo/index.html"]
+    },
+    "java-j2cl": {
+      "page": "integrations/java-j2cl.md",
+      "artifacts": ["integrations/closure/java/demo/index.html"]
+    },
+    "kotlin": {
+      "page": "integrations/kotlin.md",
+      "artifacts": ["integrations/kotlin/examples/basic_app/build.gradle.kts"]
+    },
+    "scala": {
+      "page": "integrations/scala.md",
+      "artifacts": ["integrations/scala/examples/basic_app/index.html"]
+    },
+    "dart": {
+      "page": "integrations/dart.md",
+      "artifacts": ["integrations/dart/example/basic_app/lib/main.dart"]
+    },
+    "gleam": {
+      "page": "integrations/gleam.md",
+      "artifacts": ["integrations/gleam/examples/basic_app/src/main.gleam"]
+    },
+    "wasm-assemblyscript": {
+      "page": "integrations/wasm-assemblyscript.md",
+      "artifacts": ["integrations/wasm/assemblyscript/examples/todo/main.ts"]
+    },
+    "wasm-c": {
+      "page": "integrations/wasm-c.md",
+      "artifacts": ["integrations/wasm/c/examples/todo/main.c"]
+    },
+    "wasm-cpp": {
+      "page": "integrations/wasm-cpp.md",
+      "artifacts": ["integrations/wasm/cpp/examples/todo/main.cpp"]
+    },
+    "wasm-csharp": {
+      "page": "integrations/wasm-csharp.md",
+      "artifacts": ["integrations/wasm/csharp/examples/todo/Program.cs"]
+    },
+    "wasm-go": {
+      "page": "integrations/wasm-go.md",
+      "artifacts": ["integrations/wasm/go/examples/basic_app/main.go"]
+    },
+    "wasm-rust": {
+      "page": "integrations/wasm-rust.md",
+      "artifacts": ["integrations/wasm/rust/tests/todo_basic.test.ts"]
+    },
+    "wasm-zig": {
+      "page": "integrations/wasm-zig.md",
+      "artifacts": ["integrations/wasm/zig/examples/todo/main.zig"]
+    }
+  }
+}

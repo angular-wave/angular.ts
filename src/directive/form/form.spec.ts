@@ -8,7 +8,7 @@ import {
   getController,
 } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
-import { assert, isFunction } from "../../shared/utils.ts";
+import { assertInvariant, isFunction } from "../../shared/utils.ts";
 import { FormController, nullFormCtrl } from "./form.ts";
 
 describe("form", () => {
@@ -1511,16 +1511,16 @@ describe("form", () => {
 
       const nestedForm = form.querySelector("div");
 
-      assert(nestedForm);
+      assertInvariant(nestedForm);
       const nestedFormCtrl = getController(nestedForm, "form");
 
-      assert(nestedFormCtrl);
+      assertInvariant(nestedFormCtrl);
       const nestedInput = form.children[0].children[0];
 
-      assert(nestedInput);
+      assertInvariant(nestedInput);
       const nestedInputCtrl = getController(nestedInput, "ngModel");
 
-      assert(nestedInputCtrl);
+      assertInvariant(nestedInputCtrl);
 
       nestedInputCtrl.setViewValue("xx");
       await wait();

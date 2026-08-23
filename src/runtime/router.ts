@@ -1,5 +1,4 @@
 import type { RuntimeModule } from "../angular-runtime.ts";
-import type { RuntimeComposition } from "../core/composition/runtime-composition.ts";
 import {
   _anchorScroll,
   _aria,
@@ -59,6 +58,7 @@ import {
   createSecurityRuntimeConfiguration,
   type SecurityConfig,
 } from "../services/security/security.ts";
+import { getRuntimeComposition } from "./custom-ng.ts";
 
 function createRouteTemplateRequest(
   runtimeWindow: Window,
@@ -83,10 +83,7 @@ function createRouteTemplateRequest(
  * directives in a custom AngularTS runtime.
  */
 export const routerModule: RuntimeModule = (angular) => {
-  const runtime = angular as ng.Angular & {
-    _composition: RuntimeComposition;
-  };
-  const composition = runtime._composition;
+  const composition = getRuntimeComposition(angular);
   const { platform } = composition;
   const location = createLocationRuntimeState(platform.window);
   const securityConfiguration = createSecurityRuntimeConfiguration();

@@ -119,6 +119,14 @@ describe("$animate", () => {
     expect(Array.from(host.children)).toEqual([anchor, entered, moved]);
   });
 
+  it("requires an insertion parent or attached anchor", () => {
+    const entered = document.createElement("div");
+    const moved = document.createElement("div");
+
+    expect(() => $animate.enter(entered)).toThrowError(/\$animate:noparent/);
+    expect(() => $animate.move(moved, null)).toThrowError(/\$animate:noparent/);
+  });
+
   it("applies class changes directly", async () => {
     const child = createElementFromHTML('<div animate="fade"></div>');
 

@@ -1,4 +1,10 @@
-# JSON Filter
+---
+title: JSON
+description: Render a value as formatted JSON for inspection and debugging.
+weight: 20
+---
+
+# JSON filter
 
 ## Description
 

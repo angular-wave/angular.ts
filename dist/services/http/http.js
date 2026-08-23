@@ -1,6 +1,6 @@
 import { _httpParamSerializer } from '../../injection-tokens.js';
 import { urlIsAllowedOriginFactory, trimEmptyHash } from '../../shared/url-utils/url-utils.js';
-import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isNumber, isPromiseLike, isObject, isDate, toJson, isFile, isBlob, isFormData, hasOwn, lowercase, deleteProperty, createErrorFactory, isInstanceOf, stringify, deProxy, assertDefined, trim, nullObject } from '../../shared/utils.js';
+import { keys, isNullOrUndefined, isFunction, isArray, encodeUriQuery, shallowCopy, isString, extend, fromJson, entries, isDefined, uppercase, isUndefined, isNumber, isPromiseLike, isObject, isDate, toJson, isFile, isBlob, isFormData, hasOwn, lowercase, deleteProperty, createErrorFactory, isInstanceOf, stringify, deProxy, assertInvariantDefined, trim, nullObject } from '../../shared/utils.js';
 import { isCacheStrategy, executeCacheStrategy } from '../cache/cache.js';
 
 const APPLICATION_JSON = "application/json";
@@ -13,8 +13,8 @@ function withResolvers() {
     });
     return {
         promise,
-        resolve: assertDefined(resolve),
-        reject: assertDefined(reject),
+        resolve: assertInvariantDefined(resolve),
+        reject: assertInvariantDefined(reject),
     };
 }
 /** @internal */
@@ -626,7 +626,7 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
         const { promise, resolve, reject } = withResolvers();
         let cache;
         let cachedResp;
-        const reqHeaders = assertDefined(config.headers);
+        const reqHeaders = assertInvariantDefined(config.headers);
         config.headers = reqHeaders;
         let { url } = config;
         if (!isString(url)) {

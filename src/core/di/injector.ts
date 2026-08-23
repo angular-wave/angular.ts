@@ -1,8 +1,6 @@
 import { _cookie, _injector } from "../../injection-tokens.ts";
 import {
-  assert,
-  assertArgFn,
-  assertNotHasOwnProperty,
+  validateNotHasOwnPropertyName,
   callFunction,
   isArray,
   isFunction,
@@ -19,7 +17,7 @@ import {
   ProviderInjector,
 } from "./internal-injector.ts";
 import { createPersistentProxy } from "../../services/storage/storage.ts";
-import { validateArray } from "../../shared/validate.ts";
+import { validateArray, validateFunction } from "../../shared/validate.ts";
 import type {
   Constructor,
   Injectable,
@@ -58,7 +56,9 @@ export function createInjector(
   configure?: (registry: ProviderRegistry) => void,
   resolveModule: ModuleResolver = (name) => window.angular.module(name),
 ): InjectorService {
-  assert(isArray(modulesToLoad), "modules required");
+  if (!isArray(modulesToLoad)) {
+    throw $injectorError("modules", "Modules to load must be an array.");
+  }
 
   const loadedModules = new Map<unknown, boolean>();
 
@@ -116,7 +116,7 @@ export function createInjector(
     name: string,
     providerDefinition: ServiceProvider | Injectable<InjectableFunction>,
   ): ServiceProvider {
-    assertNotHasOwnProperty(name, "service");
+    validateNotHasOwnPropertyName(name, "service");
     let newProvider: Partial<ServiceProvider>;
 
     if (isFunction(providerDefinition) || isArray(providerDefinition)) {
@@ -200,7 +200,7 @@ export function createInjector(
    * Register a constant value (available during config).
    */
   function constant(name: string, constantValue: unknown): void {
-    assertNotHasOwnProperty(name, "constant");
+    validateNotHasOwnPropertyName(name, "constant");
     providerInjector._cache[name] = constantValue;
     protoInstanceInjector._cache[name] = constantValue;
   }
@@ -441,7 +441,7 @@ export function createInjector(
             ) as RunBlock,
           );
         } else {
-          assertArgFn(module, "module");
+          validateFunction(module, "module");
         }
       } catch (err) {
         // If module is array, fallback to last element for error message

@@ -85,9 +85,9 @@ final class ServiceProvider<TValue> {
 }
 
 /// Shared error-formatting options.
-final class ErrorHandlingConfig {
+final class ErrorFormattingConfig {
   /// Creates a error handling config.
-  const ErrorHandlingConfig({this.objectMaxDepth});
+  const ErrorFormattingConfig({this.objectMaxDepth});
 
   /// The object max depth.
   final int? objectMaxDepth;

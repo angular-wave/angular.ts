@@ -327,6 +327,14 @@ describe("angular", () => {
       expect(injector.get("$angular")).toBe(angular);
     });
 
+    it("reports when an element has no attached injector", () => {
+      const element = createElementFromHTML("<div></div>");
+
+      expect(() => angular.getInjector(element)).toThrowError(
+        "No AngularTS injector is attached to this element.",
+      );
+    });
+
     it("should complain if app module can't be found", () => {
       const element = createElementFromHTML("<div>{{1+2}}</div>");
 

@@ -1,21 +1,19 @@
 import type { RuntimeModule } from "../angular-runtime.ts";
-import type { RuntimeComposition } from "../core/composition/runtime-composition.ts";
 import { _animate, _injector } from "../injection-tokens.ts";
 import {
   AnimationRegistry,
   createAnimateService,
 } from "../animations/animate.ts";
+import { getRuntimeComposition } from "./custom-ng.ts";
 
 /**
  * Registers animation declarations and the `$animate` service for custom runtimes.
  */
 export const animationModule: RuntimeModule = (angular) => {
-  const runtime = angular as ng.Angular & {
-    _composition: RuntimeComposition;
-  };
+  const composition = getRuntimeComposition(angular);
   const animationRegistry = new AnimationRegistry();
 
-  runtime._composition._installAnimationRegistry(animationRegistry);
+  composition._installAnimationRegistry(animationRegistry);
 
   return angular
     .module("ng.animation", [])

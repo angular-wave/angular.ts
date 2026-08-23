@@ -6,7 +6,7 @@ import {
   setNormalizedAttr,
 } from "../../shared/dom.ts";
 import {
-  assertNotHasOwnProperty,
+  validateNotHasOwnPropertyName,
   deProxy,
   deleteProperty,
   directiveNormalize,
@@ -316,7 +316,7 @@ export class SelectController {
 
     if (element.nodeType === NodeType._COMMENT_NODE) return;
 
-    assertNotHasOwnProperty(String(optionValue), '"option value"');
+    validateNotHasOwnPropertyName(String(optionValue), '"option value"');
 
     if (optionValue === "") {
       this._hasEmptyOption = true;

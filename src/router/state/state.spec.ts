@@ -155,6 +155,16 @@ describe("$state", () => {
       expect(stateRuntime.get("named").url).toBe("/named");
     });
 
+    it("normalizes non-Error registration failures", () => {
+      spyOn(stateRuntime._getRegistry(), "register").and.callFake(() => {
+        throw "registration failed";
+      });
+
+      expect(() => {
+        stateRuntime.state({ name: "broken", url: "/broken" });
+      }).toThrowError(/registration failed/);
+    });
+
     it("should reject mismatched separate state names", () => {
       expect(() => {
         stateRuntime.state("expected", {

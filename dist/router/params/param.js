@@ -1,5 +1,5 @@
 import { isInjectable } from '../../core/di/injectable.js';
-import { isDefined, isUndefined, stringify, isString, hasOwn, assertDefined, isInstanceOf, isArray } from '../../shared/utils.js';
+import { isDefined, isUndefined, stringify, isString, hasOwn, isInstanceOf, isArray } from '../../shared/utils.js';
 import { ParamType } from './param-type.js';
 
 const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
@@ -61,11 +61,11 @@ function unwrapShorthand(cfg) {
 function getType(cfg, urlType, location, id, paramTypes) {
     if (cfg.type && urlType && urlType.name !== "string")
         throw new Error(`Param '${id}' has two type configurations.`);
-    if (cfg.type &&
-        urlType?.name === "string" &&
-        isString(cfg.type) &&
-        paramTypes[cfg.type])
-        return assertDefined(paramTypes[cfg.type]);
+    if (cfg.type && urlType?.name === "string" && isString(cfg.type)) {
+        const configuredType = paramTypes[cfg.type];
+        if (configuredType)
+            return configuredType;
+    }
     if (urlType)
         return urlType;
     if (!cfg.type) {
@@ -76,9 +76,13 @@ function getType(cfg, urlType, location, id, paramTypes) {
                 : "query";
         return paramTypes[type];
     }
-    return isInstanceOf(cfg.type, ParamType)
-        ? cfg.type
-        : assertDefined(paramTypes[cfg.type]);
+    if (isInstanceOf(cfg.type, ParamType))
+        return cfg.type;
+    const configuredType = paramTypes[cfg.type];
+    if (!configuredType) {
+        throw new Error(`Param '${id}' uses unknown type '${cfg.type}'.`);
+    }
+    return configuredType;
 }
 /**
  * Returns false, true, or the replacement value for an optional URL parameter.

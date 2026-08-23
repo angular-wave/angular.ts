@@ -153,7 +153,8 @@ class EventBus {
     /**
      * Publish a value to a topic asynchronously.
      *
-     * All listeners are invoked in the order they were added.
+     * Listeners are invoked in the order they were added until delivery finishes
+     * or `$exceptionHandler` terminates the publication.
      * Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are
      * skipped if their scope is destroyed before the queued delivery runs.
      *

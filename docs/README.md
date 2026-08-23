@@ -1,4 +1,14 @@
-# Docsy Example
+# AngularTS documentation
+
+The documentation is a Hugo/Docsy site written for developers who may know
+nothing about AngularTS or frontend frameworks. Read
+[STYLE_GUIDE.md](STYLE_GUIDE.md) before changing prose or examples.
+
+Use `make docs-requirement` from the repository root to generate TypeDoc and run
+every documentation gate. Use the narrower `make docs-learning-check` while
+editing the beginner curriculum.
+
+The remaining sections describe local Docsy development and troubleshooting.
 
 [Docsy][] is a [Hugo theme module][] for technical documentation sites,
 providing easy site navigation, structure, and more. This **Docsy Example

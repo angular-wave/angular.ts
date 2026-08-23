@@ -534,10 +534,13 @@
                     <div class="tsd-comment tsd-typography">
                       <p>Publish a value to a topic asynchronously.</p>
                       <p>
-                        All listeners are invoked in the order they were added.
-                        Delivery is scheduled with <code>queueMicrotask</code>.
-                        Scope-owned listeners are skipped if their scope is
-                        destroyed before the queued delivery runs.
+                        Listeners are invoked in the order they were added until
+                        delivery finishes or
+                        <code>$exceptionHandler</code> terminates the
+                        publication. Delivery is scheduled with
+                        <code>queueMicrotask</code>. Scope-owned listeners are
+                        skipped if their scope is destroyed before the queued
+                        delivery runs.
                       </p>
                     </div>
                     <div class="tsd-parameters">

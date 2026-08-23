@@ -191,7 +191,8 @@ function getHtmlCanvasRuntimeSupport(options = {}) {
         supported: modes["2d"] || modes.webgl || modes.webgpu,
     };
 }
-function assertHtmlCanvasConfigInactive(config) {
+/** Accepts HTML-in-Canvas config when the optional runtime is not active. */
+function validateHtmlCanvasConfigInactive(config) {
 }
 function normalizeHtmlCanvasConfig(config = {}) {
     return {
@@ -199,7 +200,11 @@ function normalizeHtmlCanvasConfig(config = {}) {
         ...config,
     };
 }
-function assertHtmlCanvasRuntimeSupported(config, options = {}) {
+/**
+ * Returns detected HTML-in-Canvas support or throws when active configuration
+ * requires a browser capability that is unavailable.
+ */
+function requireHtmlCanvasRuntimeSupport(config, options = {}) {
     const support = getHtmlCanvasRuntimeSupport(options);
     const normalized = normalizeHtmlCanvasConfig(config);
     if (normalized.enabled === false) {
@@ -221,7 +226,7 @@ class NativeHtmlCanvasService {
         this._disposed = false;
         this._window = win;
         this.config = normalizeHtmlCanvasConfig(config);
-        this.support = assertHtmlCanvasRuntimeSupported(this.config, {
+        this.support = requireHtmlCanvasRuntimeSupport(this.config, {
             document: doc,
             window: win,
             ...supportOptions,
@@ -232,8 +237,8 @@ class NativeHtmlCanvasService {
                 (this.config.enabled === "auto" && this.supported);
     }
     registerRoot(canvas, options = {}) {
-        this._assertActive();
-        this._assertEnabled();
+        this._ensureActive();
+        this._ensureEnabled();
         const existing = this._roots.get(canvas);
         if (existing)
             return existing;
@@ -253,12 +258,12 @@ class NativeHtmlCanvasService {
         return root.addSource(source, options);
     }
     invalidate(canvas) {
-        this._assertActive();
-        this._assertEnabled();
+        this._ensureActive();
+        this._ensureEnabled();
         this._roots.get(canvas)?.invalidate();
     }
     requestPaint(canvas) {
-        this._assertActive();
+        this._ensureActive();
         const requestPaint = canvas.requestPaint;
         if (!isCallable(requestPaint)) {
             throw new Error(`${htmlCanvasRuntimeUnsupportedMessage} Missing paint.`);
@@ -266,7 +271,7 @@ class NativeHtmlCanvasService {
         requestPaint.call(canvas);
     }
     requestAnimationFrame(callback) {
-        this._assertActive();
+        this._ensureActive();
         this._window.requestAnimationFrame(callback);
     }
     /** @internal */
@@ -286,7 +291,7 @@ class NativeHtmlCanvasService {
         return this.registerRoot(canvas);
     }
     /** @internal */
-    _assertEnabled() {
+    _ensureEnabled() {
         if (this.enabled)
             return;
         if (this.config.enabled === false) {
@@ -295,7 +300,7 @@ class NativeHtmlCanvasService {
         throw new Error(`${htmlCanvasRuntimeUnsupportedMessage} Missing ${this.config.defaultMode}.`);
     }
     /** @internal */
-    _assertActive() {
+    _ensureActive() {
         if (this._disposed) {
             throw new Error("HTML-in-Canvas runtime has already been disposed.");
         }
@@ -335,4 +340,4 @@ function destroyHtmlCanvasRuntimeState(state) {
     state.service = undefined;
 }
 
-export { NativeHtmlCanvasService, applyHtmlCanvasConfiguration, assertHtmlCanvasConfigInactive, assertHtmlCanvasRuntimeSupported, createHtmlCanvasRuntimeState, createHtmlCanvasService, destroyHtmlCanvasRuntimeState, getHtmlCanvasRuntimeSupport, htmlCanvasRuntimeDisabledMessage, htmlCanvasRuntimeUnsupportedMessage, normalizeHtmlCanvasConfig };
+export { NativeHtmlCanvasService, applyHtmlCanvasConfiguration, createHtmlCanvasRuntimeState, createHtmlCanvasService, destroyHtmlCanvasRuntimeState, getHtmlCanvasRuntimeSupport, htmlCanvasRuntimeDisabledMessage, htmlCanvasRuntimeUnsupportedMessage, normalizeHtmlCanvasConfig, requireHtmlCanvasRuntimeSupport, validateHtmlCanvasConfigInactive };

@@ -1,44 +1,65 @@
 ---
-title: "Advanced directives: workers, WASM, channels, viewport"
-linkTitle: "Advanced"
+title: 'Advanced directives: workers, WASM, channels, viewport'
+linkTitle: 'Advanced'
 weight: 240
-description: "AngularTS advanced directives for Web Workers, WebAssembly, lazy loading, event channels, DOM references, and accessibility — all declarative in HTML."
+description:
+  'AngularTS advanced directives for Web Workers, WebAssembly, lazy loading,
+  event channels, DOM references, and accessibility — all declarative in HTML.'
 ---
-AngularTS ships several advanced directives that expose modern browser APIs — Web Workers, WebAssembly, Intersection Observer, and custom event channels — directly in HTML without requiring JavaScript. These directives are registered as part of the core `ng` module and are available in every AngularTS application.
+
+AngularTS ships several advanced directives that expose modern browser APIs —
+Web Workers, WebAssembly, Intersection Observer, and custom event channels —
+directly in HTML without requiring JavaScript. These directives are registered
+as part of the core `ng` module and are available in every AngularTS
+application.
+
 ## Controller and scope directives
+
 ### `ng-controller`
 
-Attaches a controller function to a section of the DOM, creating a new child scope populated by the controller.
+Attaches a controller function to a section of the DOM, creating a new child
+scope populated by the controller.
 
 ```html
+<div ng-controller="TodoController as ctrl">
   <p>{{ ctrl.title }}</p>
 </div>
 ```
 
-```javascript
+```js
   .controller('TodoController', ['$scope', function($scope) {
     $scope.title = 'My Todos';
   }]);
 ```
+
 ### `ng-scope`
 
-Marks an explicit scope boundary. Useful for isolating a section of the page without a controller.
+Assigns a stable name to the current scope so debugging tools and integration
+code can find it later. The name is required. `ng-scope` does not create a child
+or isolate scope.
 
 ```html
+<div ng-controller="UserController" ng-scope="userPanel">
   <p>Hello {{ user.name }}</p>
 </div>
 ```
+
 ### `ng-init`
 
-Initializes scope variables inline in the template. Best suited for simple one-off values or prototyping.
+Initializes scope variables inline in the template. Best suited for simple
+one-off values or prototyping.
 
 ```html
+<div ng-init="name = 'World'; count = 0">
   Hello {{ name }}, count is {{ count }}
 </div>
 ```
 
-> **Tip:** Prefer controllers or services over `ng-init` for any real application logic. `ng-init` is ideal for zero-JS demos and quick prototypes.
+> **Tip:** Prefer controllers or services over `ng-init` for any real
+> application logic. `ng-init` is ideal for zero-JS demos and quick prototypes.
+
 ## DOM reference directives
+
 ### `ng-el`
 
 Use `ng-el` when you only need the native DOM element. It is the simple DOM
@@ -51,14 +72,14 @@ layout measurement, and pointer-driven UI.
 </section>
 ```
 
-```javascript
+```js
 function BoardController() {
   this.boardEl = null;
 }
 ```
 
-`ng-el="$ctrl.boardEl"` stores the element on the controller. Use this form
-with controller-as syntax.
+`ng-el="$ctrl.boardEl"` stores the element on the controller. Use this form with
+controller-as syntax.
 
 For simple scope shorthand, pass a bare name:
 
@@ -97,37 +118,45 @@ assigns.
 Use `ng-ref-read="$element"` only when you specifically need the DOM element
 through an assignable expression. For the common DOM-only case, prefer `ng-el`.
 
-```javascript
+```js
 function BoardController() {
   this.boardEl = null;
 }
 ```
+
 ## Event and communication directives
+
 ### `ng-channel`
 
-Subscribes to a named event channel (backed by `$eventBus`). When an event is published on the channel, the expression is evaluated.
+Subscribes to a named event channel (backed by `$eventBus`). When an event is
+published on the channel, the expression is evaluated.
 
 ```html
-  Latest: {{ lastNotification }}
-</div>
+<div>Latest: {{ lastNotification }}</div>
 ```
+
 ### `ng-listener`
 
-Attaches a DOM event listener to the element using the native `addEventListener` API — without the overhead of Angular's event directive wiring.
+Attaches a DOM event listener to the element using the native `addEventListener`
+API — without the overhead of Angular's event directive wiring.
 
 ```html
-  Scroll-tracked content
-</div>
+<div>Scroll-tracked content</div>
 ```
+
 ### `ng-inject`
 
-Injects a named service directly into the scope, making it accessible in the template without a controller.
+Injects a named service directly into the scope, making it accessible in the
+template without a controller.
 
 ```html
+<div ng-inject="$http">
   <!-- $http is now available in this scope -->
 </div>
 ```
+
 ## Lazy loading and performance
+
 ### `ng-viewport`
 
 Uses the browser's Intersection Observer API to run expressions when an element
@@ -158,33 +187,38 @@ Use `data-viewport-once` when the enter expression should run only once:
 
 Supported attributes:
 
-| Attribute                  | Description                                                       |
-| -------------------------- | ----------------------------------------------------------------- |
-| `on-enter`                 | Expression evaluated when the element intersects the viewport.    |
-| `on-leave`                 | Expression evaluated when the element stops intersecting.         |
-| `data-viewport-threshold`  | Intersection threshold, such as `0.5` or `0, 0.5, 1`.             |
-| `data-viewport-margin`     | Root margin passed to IntersectionObserver, such as `200px 0px`.  |
-| `data-viewport-once`       | Disconnects the observer after the first enter callback.          |
+| Attribute                 | Description                                                      |
+| ------------------------- | ---------------------------------------------------------------- |
+| `on-enter`                | Expression evaluated when the element intersects the viewport.   |
+| `on-leave`                | Expression evaluated when the element stops intersecting.        |
+| `data-viewport-threshold` | Intersection threshold, such as `0.5` or `0, 0.5, 1`.            |
+| `data-viewport-margin`    | Root margin passed to IntersectionObserver, such as `200px 0px`. |
+| `data-viewport-once`      | Disconnects the observer after the first enter callback.         |
 
 `on-enter` and `on-leave` receive `$entry` and `$entries` locals from the
 Intersection Observer callback.
 
 ### `ng-cloak`
 
-Prevents the browser from briefly displaying uncompiled template syntax (`{{ }}`) before AngularTS bootstraps. Add to the root element or any element with interpolation.
+Prevents the browser from briefly displaying uncompiled template syntax
+(`{{ }}`) before AngularTS bootstraps. Add to the root element or any element
+with interpolation.
 
 ```html
-
 <div ng-cloak>
   <p>Hello {{ user.name }}</p>
 </div>
 ```
 
-> **Note:** Always include the CSS rule `[ng-cloak] { display: none; }` in your stylesheet when using `ng-cloak`.
+> **Note:** Always include the CSS rule `[ng-cloak] { display: none; }` in your
+> stylesheet when using `ng-cloak`.
+
 ## Web Workers and WebAssembly
+
 ### `ng-worker`
 
-Runs a JavaScript file in a Web Worker and binds the result back to scope. The worker communicates via `postMessage`.
+Runs a JavaScript file in a Web Worker and binds the result back to scope. The
+worker communicates via `postMessage`.
 
 ```html
 <div
@@ -195,6 +229,7 @@ Runs a JavaScript file in a Web Worker and binds the result back to scope. The w
   <div ng-repeat="item in sortedItems">{{ item.name }}</div>
 </div>
 ```
+
 #### `ng-worker`
 
 - **Type:** `string`
@@ -205,16 +240,19 @@ Path to the Web Worker JavaScript file.
 Use an empty `ng-worker` with `data-handle="name"` to reuse a worker registered
 through `app.worker(name, script)`. Shared handles are application-owned rather
 than terminated with the directive scope.
+
 #### `data-params`
 
 - **Type:** `expression`
 
 Data to pass to the worker as the message payload.
+
 #### `on-result`
 
 - **Type:** `expression`
 
-Expression evaluated when the worker posts a result. `$result` contains the worker's response.
+Expression evaluated when the worker posts a result. `$result` contains the
+worker's response.
 
 Worker results are not inserted as HTML when this expression is absent.
 
@@ -224,11 +262,13 @@ Worker results are not inserted as HTML when this expression is absent.
 
 Use the standard correlated request protocol instead of consuming every stream
 message. This is the preferred mode for shared workers.
+
 #### `interval`
 
 - **Type:** `number`
 
 Re-send the params to the worker on a millisecond interval.
+
 #### `throttle`
 
 - **Type:** `number`
@@ -237,41 +277,49 @@ Throttle worker invocations to at most once per N milliseconds.
 
 The worker file uses standard `onmessage` / `postMessage`:
 
-```javascript
+```js
   var sorted = e.data.items.slice().sort((a, b) => a.name.localeCompare(b.name));
   postMessage(sorted);
 };
 ```
+
 ### `ng-wasm`
 
-Loads a WebAssembly module and makes its `WasmResource` available on scope.
+Loads a WebAssembly module and makes its
+[`WasmResource`](../../../typedoc/interfaces/WasmResource.html) available on
+scope.
 
 ```html
 <div ng-wasm src="/wasm/math.wasm" as="math"></div>
 <p>
-  Result:
-  {{ math.status === 'ready' ? math.exports.add(3, 4) : 'Loading...' }}
+  Result: {{ math.status === 'ready' ? math.exports.add(3, 4) : 'Loading...' }}
 </p>
 ```
+
 #### `ng-wasm`
 
 - **Type:** `string`
 - **Required:** yes
 
 Path to the `.wasm` file to load.
+
 #### `as`
 
 - **Type:** `string`
 
-Scope property name to assign the `WasmResource` to. Defaults to `wasm`.
-The reserved object keys `__proto__`, `constructor`, and `prototype` are
+Scope property name to assign the
+[`WasmResource`](../../../typedoc/interfaces/WasmResource.html) to. Defaults to
+`wasm`. The reserved object keys `__proto__`, `constructor`, and `prototype` are
 rejected.
+
 ## Transclusion
+
 ### `ng-transclude`
 
-Used inside custom directive templates to mark where transcluded content should be inserted.
+Used inside custom directive templates to mark where transcluded content should
+be inserted.
 
-```javascript
+```js
   return {
     transclude: true,
     template: '<div class="panel"><ng-transclude></ng-transclude></div>'
@@ -280,22 +328,29 @@ Used inside custom directive templates to mark where transcluded content should 
 ```
 
 ```html
+<my-panel>
   <p>This content is transcluded into the panel.</p>
 </my-panel>
 ```
+
 ## Non-bindable sections
+
 ### `ng-non-bindable`
 
-Prevents AngularTS from compiling or interpolating a subtree. Use this for displaying raw Angular syntax as documentation or code examples.
+Prevents AngularTS from compiling or interpolating a subtree. Use this for
+displaying raw Angular syntax as documentation or code examples.
 
 ```html
+<pre ng-non-bindable>
   {{ this will not be interpolated }}
   ng-repeat="item in items"
 </pre>
 ```
+
 ## Aria directives
 
-AngularTS automatically manages ARIA attributes for accessibility. These directives are applied alongside their functional counterparts:
+AngularTS automatically manages ARIA attributes for accessibility. These
+directives are applied alongside their functional counterparts:
 
 | Directive             | ARIA attribute managed |
 | --------------------- | ---------------------- |
@@ -309,7 +364,7 @@ AngularTS automatically manages ARIA attributes for accessibility. These directi
 The `$aria` service and module config let you configure which ARIA attributes
 are automatically managed:
 
-```javascript
+```js
 angular.module('app', []).config({
   $aria: {
     ariaDisabled: true,
@@ -322,9 +377,11 @@ angular.module('app', []).config({
   },
 });
 ```
+
 ## Event directives
 
-AngularTS generates event directives for all common DOM events. They all follow the `ng-<eventname>="expression"` pattern:
+AngularTS generates event directives for all common DOM events. They all follow
+the `ng-<eventname>="expression"` pattern:
 
 | Directive       | DOM event           |
 | --------------- | ------------------- |
@@ -334,7 +391,6 @@ AngularTS generates event directives for all common DOM events. They all follow 
 | `ng-blur`       | `blur`              |
 | `ng-keydown`    | `keydown`           |
 | `ng-keyup`      | `keyup`             |
-| `ng-keypress`   | `keypress`          |
 | `ng-mouseenter` | `mouseenter`        |
 | `ng-mouseleave` | `mouseleave`        |
 | `ng-mousemove`  | `mousemove`         |
@@ -346,44 +402,41 @@ AngularTS generates event directives for all common DOM events. They all follow 
 | `ng-copy`       | `copy`              |
 | `ng-paste`      | `paste`             |
 | `ng-load`       | `load`              |
-| `ng-on`         | custom event name   |
 
-The expression is evaluated in the current scope. `$event` refers to the native DOM event object:
+The expression is evaluated in the current scope. `$event` refers to the native
+DOM event object:
 
 ```html
-<input ng-keydown="$event.key === 'Enter' && submit()">
+<input ng-keydown="$event.key === 'Enter' && submit()" />
 ```
 
-Event policy can be declared once on the same element and applies to every `ng-on-*` or generated event directive on that element:
+Event policy can be declared once on the same element and applies to generated
+event directives on that element:
 
 ```html
 <div
-  ng-on-pointerdown="$ctrl.startDrag($event)"
+  ng-click="$ctrl.activate($event)"
   data-event-prevent
-  data-event-capture>
-</div>
+  data-event-capture
+></div>
 ```
 
 Supported policy attributes:
 
-| Attribute             | Behavior                                      |
-| --------------------- | --------------------------------------------- |
-| `data-event-prevent`  | Calls `$event.preventDefault()` first         |
-| `data-event-stop`     | Calls `$event.stopPropagation()` first        |
-| `data-event-capture`  | Registers the listener with `capture: true`   |
-| `data-event-once`     | Registers the listener with `once: true`      |
-| `data-event-passive`  | Registers the listener with `passive: true`   |
+| Attribute            | Behavior                                    |
+| -------------------- | ------------------------------------------- |
+| `data-event-prevent` | Calls `$event.preventDefault()` first       |
+| `data-event-stop`    | Calls `$event.stopPropagation()` first      |
+| `data-event-capture` | Registers the listener with `capture: true` |
+| `data-event-once`    | Registers the listener with `once: true`    |
+| `data-event-passive` | Registers the listener with `passive: true` |
 
-`data-event-passive` cannot be combined with `data-event-prevent`, because passive listeners cannot cancel default browser behavior.
+`data-event-passive` cannot be combined with `data-event-prevent`, because
+passive listeners cannot cancel default browser behavior.
 
-`ng-pointer-capture` can be combined with `ng-on-pointer*` handlers for game and board interactions that need reliable pointer streams:
+`ng-pointer-capture` can be combined with an application directive that installs
+native pointer listeners for game and board interactions:
 
 ```html
-<div
-  ng-pointer-capture
-  ng-on-pointerdown="$ctrl.startDrag($event)"
-  ng-on-pointermove="$ctrl.drag($event)"
-  ng-on-pointerup="$ctrl.drop($event)"
-  data-event-prevent>
-</div>
+<div ng-pointer-capture pointer-drag></div>
 ```

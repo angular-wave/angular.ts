@@ -1,5 +1,4 @@
 import {
-  assert,
   callFunction,
   createObject,
   deleteProperty,
@@ -19,7 +18,7 @@ import {
   nextUid,
   nullObject,
   isString,
-  assertDefined,
+  assertInvariantDefined,
   simpleCompare,
 } from "../../shared/utils.ts";
 import { ASTType } from "../parse/ast-type.ts";
@@ -998,7 +997,7 @@ function getSimpleMemberExpression(node: ASTNode): string | undefined {
   }
 
   const objectExpression = getSimpleMemberExpression(
-    assertDefined(node._object),
+    assertInvariantDefined(node._object),
   );
 
   return objectExpression ? `${objectExpression}.${propertyName}` : undefined;
@@ -1247,13 +1246,13 @@ function collectForeignWatchDescriptors(
   if (node._type === ASTType._MemberExpression) {
     addMemberExpressionDependency(node, listener, keySet, seenKeys);
     collectForeignWatchDescriptors(
-      assertDefined((node as ExpressionNode)._object),
+      assertInvariantDefined((node as ExpressionNode)._object),
       listener,
       keySet,
       seenKeys,
     );
     collectForeignWatchDescriptors(
-      assertDefined((node as ExpressionNode)._property),
+      assertInvariantDefined((node as ExpressionNode)._property),
       listener,
       keySet,
       seenKeys,
@@ -1267,25 +1266,25 @@ function collectForeignWatchDescriptors(
 
     if (callee?._type === ASTType._MemberExpression) {
       addMemberExpressionDependency(
-        assertDefined((callee as ExpressionNode)._object),
+        assertInvariantDefined((callee as ExpressionNode)._object),
         listener,
         keySet,
         seenKeys,
       );
     } else {
       collectForeignWatchDescriptors(
-        assertDefined(callee),
+        assertInvariantDefined(callee),
         listener,
         keySet,
         seenKeys,
       );
     }
 
-    const callArguments = assertDefined(node._arguments);
+    const callArguments = assertInvariantDefined(node._arguments);
 
     for (let i = 0, l = callArguments.length; i < l; i++) {
       collectForeignWatchDescriptors(
-        assertDefined(callArguments[i]),
+        assertInvariantDefined(callArguments[i]),
         listener,
         keySet,
         seenKeys,
@@ -1297,13 +1296,13 @@ function collectForeignWatchDescriptors(
 
   if (node._type === ASTType._LogicalExpression) {
     collectForeignWatchDescriptors(
-      assertDefined(node._left),
+      assertInvariantDefined(node._left),
       listener,
       keySet,
       seenKeys,
     );
     collectForeignWatchDescriptors(
-      assertDefined(node._right),
+      assertInvariantDefined(node._right),
       listener,
       keySet,
       seenKeys,
@@ -1314,19 +1313,19 @@ function collectForeignWatchDescriptors(
 
   if (node._type === ASTType._ConditionalExpression) {
     collectForeignWatchDescriptors(
-      assertDefined(node._test),
+      assertInvariantDefined(node._test),
       listener,
       keySet,
       seenKeys,
     );
     collectForeignWatchDescriptors(
-      assertDefined(node._alternate),
+      assertInvariantDefined(node._alternate),
       listener,
       keySet,
       seenKeys,
     );
     collectForeignWatchDescriptors(
-      assertDefined(node._consequent),
+      assertInvariantDefined(node._consequent),
       listener,
       keySet,
       seenKeys,
@@ -3904,7 +3903,9 @@ export class Scope {
     lazy = false,
     directLeaf = false,
   ) {
-    assert(isString(watchProp), "Watched property required");
+    if (!isString(watchProp)) {
+      throw new TypeError("Watched property must be a string");
+    }
     watchProp = watchProp.trim();
     const get = this._parse(watchProp);
 
@@ -3997,7 +3998,7 @@ export class Scope {
       // 6
       case ASTType._BinaryExpression: {
         if (expr._isPure) {
-          const [watch] = assertDefined(expr._toWatch);
+          const [watch] = assertInvariantDefined(expr._toWatch);
 
           key = resolveNodeWatchKey(watch);
 
@@ -4008,7 +4009,7 @@ export class Scope {
           collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
           break;
         } else {
-          const toWatch = assertDefined(expr._toWatch);
+          const toWatch = assertInvariantDefined(expr._toWatch);
 
           const keyList = new Array<string | undefined>(toWatch.length);
 
@@ -4031,7 +4032,7 @@ export class Scope {
       }
       // 7
       case ASTType._UnaryExpression: {
-        const [x] = assertDefined(expr._toWatch);
+        const [x] = assertInvariantDefined(expr._toWatch);
 
         key = resolveNodeWatchKey(x);
 
@@ -4043,7 +4044,7 @@ export class Scope {
       }
       // 8 function
       case ASTType._CallExpression: {
-        const toWatch = assertDefined(expr._toWatch);
+        const toWatch = assertInvariantDefined(expr._toWatch);
 
         const filterInputWatchKeys = getFilterInputWatchKeys(expr);
 
@@ -4125,7 +4126,7 @@ export class Scope {
       // 12
       case ASTType._ArrayExpression: {
         listener._watchLiteralInput = true;
-        const elements = assertDefined(expr._elements);
+        const elements = assertInvariantDefined(expr._elements);
 
         for (let i = 0, l = elements.length; i < l; i++) {
           const element = elements[i];
@@ -4137,7 +4138,7 @@ export class Scope {
             collectForeignWatchDescriptors(element, listener, keySet, seenKeys);
 
             const memberExpression =
-              getSimpleMemberExpression(assertDefined(element)) ??
+              getSimpleMemberExpression(assertInvariantDefined(element)) ??
               getArrayWatchExpressionElement(watchProp, i);
 
             addForeignWatchDescriptor(listener, memberExpression, registerKey);
@@ -4154,7 +4155,7 @@ export class Scope {
 
           collectExpressionListenerKeys(element, keySet, seenKeys, listener);
           collectForeignWatchDescriptors(
-            assertDefined(element),
+            assertInvariantDefined(element),
             listener,
             keySet,
             seenKeys,
@@ -4177,17 +4178,17 @@ export class Scope {
       // 14
       case ASTType._ObjectExpression: {
         listener._watchLiteralInput = true;
-        const properties = assertDefined(expr._properties);
+        const properties = assertInvariantDefined(expr._properties);
 
         const collectedKeys = new Set<string>();
 
         for (let i = 0, l = properties.length; i < l; i++) {
           const prop = properties[i];
-          const value = assertDefined(prop._value) as ASTNode;
+          const value = assertInvariantDefined(prop._value) as ASTNode;
 
           let currentKey: string | undefined;
 
-          if (assertDefined(prop._key)._isPure === false) {
+          if (assertInvariantDefined(prop._key)._isPure === false) {
             listener._watchNestedObject = true;
             currentKey = resolveNodeWatchKey(prop._key);
 
@@ -4197,7 +4198,7 @@ export class Scope {
           } else if (getNodeName(value)) {
             currentKey = getNodeName(value);
           } else {
-            const [target] = assertDefined(expr._toWatch);
+            const [target] = assertInvariantDefined(expr._toWatch);
 
             currentKey = resolveNodeWatchKey(target);
 
@@ -4876,19 +4877,21 @@ export class Scope {
       event.currentScope = this
         ._target as unknown as ScopeEvent["currentScope"];
     } else {
-      event = {
+      const createdEvent: ScopeEvent = {
         name,
         targetScope: this._target as unknown as ScopeEvent["targetScope"],
         currentScope: this._target as unknown as ScopeEvent["currentScope"],
         stopped: false,
         stopPropagation() {
-          assertDefined(event).stopped = true;
+          createdEvent.stopped = true;
         },
         preventDefault() {
-          assertDefined(event).defaultPrevented = true;
+          createdEvent.defaultPrevented = true;
         },
         defaultPrevented: false,
       };
+
+      event = createdEvent;
     }
 
     const currentEvent = event;

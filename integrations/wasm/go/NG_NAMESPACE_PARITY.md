@@ -54,6 +54,7 @@ reference example makes one necessary.
 | `ClassMap` | deferred |
 | `ClassValue` | deferred |
 | `Component` | covered |
+| `ComponentDefinition` | covered |
 | `ComponentView` | covered |
 | `ComponentViewChild` | alias |
 | `ComponentViewContext` | covered |
@@ -312,7 +313,7 @@ reference example makes one necessary.
 | --- | --- |
 | `CookieOptions` | covered |
 | `CookieStoreOptions` | covered |
-| `ErrorHandlingConfig` | deferred |
+| `ErrorFormattingConfig` | deferred |
 | `HtmlCanvasRuntimeSupport` | deferred |
 | `HtmlCanvasService` | deferred |
 | `InterpolationFunction` | deferred |

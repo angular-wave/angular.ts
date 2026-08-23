@@ -13,8 +13,8 @@ should continue reaching the same element even when the pointer leaves its
 bounds.
 
 `ng-pointer-capture` does not implement dragging behavior. It only manages the
-browser pointer capture lifecycle. Use `ng-on-pointerdown`, `ng-on-pointermove`,
-`ng-on-pointerup`, and `ng-on-pointercancel` for your application logic.
+browser pointer capture lifecycle. Register native pointer listeners from an
+application directive for drag behavior.
 
 ### Parameters
 
@@ -35,11 +35,7 @@ browser pointer capture lifecycle. Use `ng-on-pointerdown`, `ng-on-pointermove`,
   ```html
   <div
     ng-pointer-capture
-    ng-on-pointerdown="$ctrl.startDrag($event)"
-    ng-on-pointermove="$ctrl.drag($event)"
-    ng-on-pointerup="$ctrl.drop($event)"
-    ng-on-pointercancel="$ctrl.cancelDrag($event)"
-    data-event-prevent
+    pointer-drag
   ></div>
   ```
 

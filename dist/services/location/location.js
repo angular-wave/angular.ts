@@ -1,5 +1,5 @@
 import { trimEmptyHash, urlResolve } from '../../shared/url-utils/url-utils.js';
-import { assertDefined, isUndefined, isString, isNumber, deleteProperty, parseKeyValue, isObject, entries, isNull, isDefined, equals, startsWith, encodeUriSegment, toKeyValue, createErrorFactory } from '../../shared/utils.js';
+import { isUndefined, isString, isNumber, deleteProperty, parseKeyValue, isObject, entries, isNull, isDefined, equals, startsWith, encodeUriSegment, toKeyValue, createErrorFactory } from '../../shared/utils.js';
 import { getBaseHref } from '../../shared/dom.js';
 import { validateRequired } from '../../shared/validate.js';
 
@@ -73,7 +73,9 @@ class Location {
         return this._url;
     }
     url(url) {
-        return arguments.length ? this.setUrl(assertDefined(url)) : this.getUrl();
+        return arguments.length
+            ? this.setUrl(validateRequired(url, "url"))
+            : this.getUrl();
     }
     /**
      * Changes the path parameter and returns `$location`.
@@ -177,7 +179,7 @@ class Location {
     }
     search(search, paramValue) {
         return arguments.length
-            ? this.setSearch(assertDefined(search), paramValue)
+            ? this.setSearch(validateRequired(search, "search"), paramValue)
             : this.getSearch();
     }
     /**
@@ -414,7 +416,7 @@ class LocationRuntimeState {
      * @param callback - Listener invoked with the new URL and history state.
      */
     _onUrlChange(callback) {
-        this._assertActive();
+        this._ensureActive();
         if (!this._urlChangeInit) {
             this._urlChangeHandler ?? (this._urlChangeHandler = this._fireStateOrUrlChange.bind(this));
             this._window.addEventListener("popstate", this._urlChangeHandler);
@@ -425,7 +427,7 @@ class LocationRuntimeState {
     }
     /** @internal */
     createService($rootScope, $rootElement, $exceptionHandler) {
-        this._assertActive();
+        this._ensureActive();
         const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
         const initialUrl = trimEmptyHash(this._window.location.href);
         let appBase;
@@ -627,7 +629,7 @@ class LocationRuntimeState {
         this._rootClickHandler = undefined;
     }
     /** @internal */
-    _assertActive() {
+    _ensureActive() {
         if (this._destroyed) {
             throw new Error("Location runtime has already been disposed.");
         }
@@ -639,7 +641,7 @@ function createLocationRuntimeState(browserWindow) {
 }
 /** @internal */
 function applyLocationConfiguration(state, config) {
-    state._assertActive();
+    state._ensureActive();
     if (config.html5Mode !== undefined) {
         Object.assign(state.config.html5Mode, typeof config.html5Mode === "boolean"
             ? { enabled: config.html5Mode }

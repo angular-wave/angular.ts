@@ -1,6 +1,6 @@
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 import { _element, _scope, _injector, _parse, _templateRequest, _compile } from '../../injection-tokens.js';
-import { isString, values, entries, assertDefined, deleteProperty, isInstanceOf, isArray, hasOwn } from '../../shared/utils.js';
+import { isString, values, entries, assertInvariantDefined, deleteProperty, isInstanceOf, isArray, hasOwn } from '../../shared/utils.js';
 import { getNormalizedAttr, createNodelistFromHTML, removeElement } from '../../shared/dom.js';
 
 const ACTIVE_CLASS = "ng-active";
@@ -77,7 +77,7 @@ class NgMessageCtrl {
         const messageMatched = unmatchedMessages.length !== totalMessages;
         const attachDefault = !!this._default && !messageMatched && truthyKeys > 0;
         if (attachDefault) {
-            assertDefined(this._default).attach();
+            assertInvariantDefined(this._default).attach();
         }
         else if (this._default) {
             this._default.detach();

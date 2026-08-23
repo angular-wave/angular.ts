@@ -1,7 +1,18 @@
 import { _machine, _workflow, _workflowSupervisor } from '../injection-tokens.js';
 import { createMachineService } from '../services/machine/machine.js';
 import { createWorkflowService, createWorkflowSupervisor } from '../services/workflow/workflow.js';
+import { memoizeRuntimeModule } from './custom-ng.js';
 
+/** Registers reactive state-machine declarations and the `$machine` service. */
+const machineModule = memoizeRuntimeModule((angular) => angular.module("ng.machine", []).factory(_machine, createMachineService));
+/** Registers workflow declarations, execution, and supervision. */
+const workflowModule = memoizeRuntimeModule((angular) => angular
+    .module("ng.workflow", [])
+    .factory(_workflow, createWorkflowService)
+    .factory(_workflowSupervisor, [
+    _workflow,
+    ($workflow) => (config) => createWorkflowSupervisor($workflow, config),
+]));
 /**
  * Registers the optional machine and workflow services as an AngularTS module.
  *
@@ -9,13 +20,9 @@ import { createWorkflowService, createWorkflowSupervisor } from '../services/wor
  * custom runtime needs `$machine`, `$workflow`, or module-level `machine(...)`
  * and `workflow(...)` declarations.
  */
-const orchestrationModule = (angular) => angular
-    .module("ng.orchestration", [])
-    .factory(_machine, createMachineService)
-    .factory(_workflow, createWorkflowService)
-    .factory(_workflowSupervisor, [
-    _workflow,
-    ($workflow) => (config) => createWorkflowSupervisor($workflow, config),
-]);
+const orchestrationModule = memoizeRuntimeModule((angular) => angular.module("ng.orchestration", [
+    machineModule(angular).name,
+    workflowModule(angular).name,
+]));
 
-export { orchestrationModule };
+export { machineModule, orchestrationModule, workflowModule };

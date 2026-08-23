@@ -1,4 +1,10 @@
-import { _injector, _log, _parse, _worker } from "../../injection-tokens.ts";
+import {
+  _exceptionHandler,
+  _injector,
+  _log,
+  _parse,
+  _worker,
+} from "../../injection-tokens.ts";
 import {
   callBackAfterFirst,
   directiveNormalize,
@@ -32,7 +38,13 @@ const workerDirectiveScopeStates = new WeakMap<
   ScopeWorkerQueueState
 >();
 
-ngWorkerDirective.$inject = [_parse, _log, _worker, _injector];
+ngWorkerDirective.$inject = [
+  _parse,
+  _log,
+  _worker,
+  _injector,
+  _exceptionHandler,
+];
 
 function getScopeWorkerQueueState(scope: ng.Scope): ScopeWorkerQueueState {
   let state = workerDirectiveScopeStates.get(scope);
@@ -132,6 +144,7 @@ export function ngWorkerDirective(
   $log: ng.LogService,
   $worker: WorkerService,
   $injector: ng.InjectorService,
+  $exceptionHandler: ng.ExceptionHandlerService,
 ): ng.Directive {
   return {
     restrict: "A",
@@ -213,7 +226,11 @@ export function ngWorkerDirective(
           const onResult = attr("onResult");
 
           if (isDefined(onResult)) {
-            $parse(onResult)(scope, { $result: result });
+            try {
+              $parse(onResult)(scope, { $result: result });
+            } catch (error) {
+              $exceptionHandler(error);
+            }
           }
         });
       };
@@ -224,7 +241,11 @@ export function ngWorkerDirective(
           const onError = attr("onError");
 
           if (isDefined(onError)) {
-            $parse(onError)(scope, { error: err });
+            try {
+              $parse(onError)(scope, { error: err });
+            } catch (error) {
+              $exceptionHandler(error);
+            }
           }
         });
       };
@@ -261,8 +282,9 @@ export function ngWorkerDirective(
             try {
               params = paramsFn?.(scope);
             } catch (err) {
-              $log.error("ngWorker: failed to evaluate data-params", err);
-              params = undefined;
+              $exceptionHandler(err);
+
+              return;
             }
 
             if (requestMode) {

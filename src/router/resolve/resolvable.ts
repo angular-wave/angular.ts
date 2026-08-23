@@ -1,6 +1,5 @@
 import { stringify } from "../../shared/strings.ts";
 import {
-  assert,
   hasOwn,
   isArray,
   isFunction,
@@ -90,7 +89,9 @@ export class Resolvable {
       this.resolved = arg1.resolved;
       this.promise = arg1.promise;
     } else if (isFunction(resolveFn)) {
-      assert(!isNullOrUndefined(arg1), "token argument is required");
+      if (isNullOrUndefined(arg1)) {
+        throw new TypeError("Resolvable token argument is required");
+      }
       this.token = arg1;
       this.eager = !!eager;
       this.resolveFn = resolveFn;

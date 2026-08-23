@@ -1,8 +1,8 @@
 import { _injector, _cookie } from '../../injection-tokens.js';
-import { assert, isArray, assertNotHasOwnProperty, isFunction, isUndefined, isObject, isString, callFunction, assertArgFn, isInstanceOf, createErrorFactory, isNullOrUndefined } from '../../shared/utils.js';
+import { isArray, validateNotHasOwnPropertyName, isFunction, isUndefined, isObject, isString, callFunction, isInstanceOf, createErrorFactory, isNullOrUndefined } from '../../shared/utils.js';
 import { ProviderInjector, InjectorService, providerSuffix } from './internal-injector.js';
 import { createPersistentProxy } from '../../services/storage/storage.js';
-import { validateArray } from '../../shared/validate.js';
+import { validateArray, validateFunction } from '../../shared/validate.js';
 import { isProviderRegistrationCommand } from './interface.js';
 import { createServiceDecorationInvocationLocals } from './invocation-context.js';
 
@@ -15,7 +15,9 @@ const appliedRuntimeCommands = new WeakSet();
  * @returns {InjectorService}
  */
 function createInjector(modulesToLoad, configure, resolveModule = (name) => window.angular.module(name)) {
-    assert(isArray(modulesToLoad), "modules required");
+    if (!isArray(modulesToLoad)) {
+        throw $injectorError("modules", "Modules to load must be an array.");
+    }
     const loadedModules = new Map();
     const providerCache = {};
     const providerInjector = (providerCache.$injector = new ProviderInjector(providerCache));
@@ -55,7 +57,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
      * Registers a provider.
      */
     function provider(name, providerDefinition) {
-        assertNotHasOwnProperty(name, "service");
+        validateNotHasOwnPropertyName(name, "service");
         let newProvider;
         if (isFunction(providerDefinition) || isArray(providerDefinition)) {
             newProvider = providerInjector.instantiate(providerDefinition);
@@ -111,7 +113,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
      * Register a constant value (available during config).
      */
     function constant(name, constantValue) {
-        assertNotHasOwnProperty(name, "constant");
+        validateNotHasOwnPropertyName(name, "constant");
         providerInjector._cache[name] = constantValue;
         protoInstanceInjector._cache[name] = constantValue;
     }
@@ -256,7 +258,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
                     moduleRunBlocks.push(providerInjector.invoke(module));
                 }
                 else {
-                    assertArgFn(module, "module");
+                    validateFunction(module, "module");
                 }
             }
             catch (err) {

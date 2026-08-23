@@ -93,7 +93,7 @@ by the WICG/Chromium shape:
 - WebGL `texElementImage2D(...)`
 - WebGPU `copyElementImageToTexture(...)`
 
-`assertHtmlCanvasRuntimeSupported(...)` is the runtime gate for active config.
+`requireHtmlCanvasRuntimeSupport(...)` is the runtime gate for active config.
 It allows disabled config, accepts active config only when the requested native
 mode exists, and throws with the no-fallback error otherwise.
 

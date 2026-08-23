@@ -1,3 +1,9 @@
+---
+title: Filter collections
+description: Select collection items with a string, object, or predicate.
+weight: 10
+---
+
 /\*\*
 
 - @ngdoc filter

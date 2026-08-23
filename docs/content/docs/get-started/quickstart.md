@@ -1,14 +1,21 @@
 ---
-title: "Build your first AngularTS app"
-linkTitle: "Quickstart"
-weight: 30
-description: "A step-by-step guide to creating modules, controllers, and directives in AngularTS — with a counter example and a complete todo list application."
+title: 'Build your first AngularTS app'
+linkTitle: 'Quickstart'
+weight: 60
+description:
+  'A step-by-step guide to creating modules, controllers, and directives in
+  AngularTS — with a counter example and a complete todo list application.'
 ---
-AngularTS apps are built from HTML and JavaScript — no compilation required. This guide walks through creating a module, wiring up a controller, and using directives to bind data to the DOM. By the end you will have a working counter and a functional todo list.
+
+AngularTS apps are built from HTML and JavaScript — no compilation required.
+This guide walks through creating a module, wiring up a controller, and using
+directives to bind data to the DOM. By the end you will have a working counter
+and a functional todo list.
 
 ### Add AngularTS to your page
 
-Create an HTML file and include the AngularTS script from the CDN. This single tag is all you need to get the full framework:
+Create an HTML file and include the AngularTS script from the CDN. This single
+tag is all you need to get the full framework:
 
 ```html
 <!doctype html>
@@ -30,19 +37,23 @@ If you are using npm, install the package and import the singleton instead:
 npm install @angular-wave/angular.ts
 ```
 
-```javascript
-import { angular } from "@angular-wave/angular.ts";
+```js
+import { angular } from '@angular-wave/angular.ts';
 ```
 
 ### Create a module
 
-A module is the top-level container for your application. It holds controllers, services, directives, and filters. Create one by calling `angular.module()` with a name and an empty dependency array:
+A module is the top-level container for your application. It holds controllers,
+services, directives, and filters. Create one by calling `angular.module()` with
+a name and an empty dependency array:
 
-```javascript
-const app = angular.module("myApp", []);
+```js
+const app = angular.module('myApp', []);
 ```
 
-The first argument is the module name. The second argument lists other modules your module depends on — an empty array means no dependencies. You reference this name in the `ng-app` attribute to tell AngularTS which module to bootstrap.
+The first argument is the module name. The second argument lists other modules
+your module depends on — an empty array means no dependencies. You reference
+this name in the `ng-app` attribute to tell AngularTS which module to bootstrap.
 
 Connect the module to your HTML by adding `ng-app` to a container element:
 
@@ -54,24 +65,29 @@ Connect the module to your HTML by adding `ng-app` to a container element:
 
 ### Add a controller
 
-Controllers attach behavior to a region of the DOM. They receive a `$scope` object — a plain JavaScript object that acts as the data model for their template. Anything you put on `$scope` becomes available in the HTML template.
+Controllers attach behavior to a region of the DOM. They receive a `$scope`
+object — a plain JavaScript object that acts as the data model for their
+template. Anything you put on `$scope` becomes available in the HTML template.
 
-```javascript
-const app = angular.module("myApp", []);
+```js
+const app = angular.module('myApp', []);
 
-app.controller("CounterController", ["$scope", function ($scope) {
-  $scope.count = 0;
+app.controller('CounterController', [
+  '$scope',
+  function ($scope) {
+    $scope.count = 0;
 
-  $scope.increment = function () {
-    $scope.count++;
-  };
+    $scope.increment = function () {
+      $scope.count++;
+    };
 
-  $scope.decrement = function () {
-    if ($scope.count > 0) {
-      $scope.count--;
-    }
-  };
-}]);
+    $scope.decrement = function () {
+      if ($scope.count > 0) {
+        $scope.count--;
+      }
+    };
+  },
+]);
 ```
 
 Attach the controller to a DOM element with `ng-controller`:
@@ -86,13 +102,19 @@ Attach the controller to a DOM element with `ng-controller`:
 </body>
 ```
 
-The `{{ count }}` expression is AngularTS's interpolation syntax — it renders the current value of `$scope.count` and updates automatically whenever the value changes. `ng-click` binds a click event to the controller method.
+The `{{ count }}` expression is AngularTS's interpolation syntax — it renders
+the current value of `$scope.count` and updates automatically whenever the value
+changes. `ng-click` binds a click event to the controller method.
 
 ### Use directives in your template
 
-Directives are the building blocks of AngularTS templates. They extend HTML with behavior declared as attributes or element names. The core library ships over 50 directives covering data binding, conditional rendering, list rendering, forms, and HTTP requests.
+Directives are the building blocks of AngularTS templates. They extend HTML with
+behavior declared as attributes or element names. The core library ships over 50
+directives covering data binding, conditional rendering, list rendering, forms,
+and HTTP requests.
 
-Here is a complete counter example using only HTML attributes and no separate JavaScript file:
+Here is a complete counter example using only HTML attributes and no separate
+JavaScript file:
 
 ```html
 <!doctype html>
@@ -112,93 +134,41 @@ Here is a complete counter example using only HTML attributes and no separate Ja
 
 Key directives used here:
 
-* `ng-app` — designates the root element of the application and triggers auto-bootstrap
-* `ng-cloak` — hides the element until AngularTS has compiled the template, preventing a flash of unrendered `{{ }}` expressions
-* `ng-init` — initializes a scope variable inline; useful for simple cases without a controller
-* `ng-click` — evaluates an expression when the element is clicked
+- `ng-app` — designates the root element of the application and triggers
+  auto-bootstrap
+- `ng-cloak` — hides the element until AngularTS has compiled the template,
+  preventing a flash of unrendered `{{ }}` expressions
+- `ng-init` — initializes a scope variable inline; useful for simple cases
+  without a controller
+- `ng-click` — evaluates an expression when the element is clicked
+
 ## Complete example: todo list
 
-The following example demonstrates a more complete application using a named module, a controller, two-way binding with `ng-model`, list rendering with `ng-repeat`, and conditional display with `ng-show`. Everything runs from a single HTML file.
+This excerpt combines a named module, two-way binding, and list rendering. Put
+the normal AngularTS script tag in the document head as shown above.
 
 ```html
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Todo List</title>
-    <script src="https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts/dist/angular-ts.umd.min.js"></script>
-    <style>
-      .done { text-decoration: line-through; color: #999; }
-    </style>
-  </head>
-  <body ng-app="todoApp">
-    <div ng-controller="TodoController">
-      <h1>Todo List</h1>
+<section ng-app="todoApp" ng-controller="TodoController">
+  <form ng-submit="addTodo()">
+    <input ng-model="newTodo" required />
+    <button>Add</button>
+  </form>
+  <li ng-repeat="todo in todos">
+    <input type="checkbox" ng-model="todo.done" />
+    {{ todo.text }}
+  </li>
+</section>
 
-      <!-- Add new item -->
-      <form ng-submit="addTodo()">
-        <input
-          ng-model="newTodo"
-          placeholder="What needs doing?"
-          required
-        />
-        <button type="submit">Add</button>
-      </form>
-
-      <!-- Remaining count -->
-      <p ng-show="todos.length > 0">
-        {{ remaining() }} of {{ todos.length }} remaining
-      </p>
-
-      <!-- List of todos -->
-      <ul>
-        <li ng-repeat="todo in todos">
-          <input type="checkbox" ng-model="todo.done" />
-          <span ng-class="{ done: todo.done }">{{ todo.text }}</span>
-          <button ng-click="removeTodo($index)">Remove</button>
-        </li>
-      </ul>
-
-      <!-- Clear completed -->
-      <button ng-click="clearDone()" ng-show="todos.length > remaining()">
-        Clear completed
-      </button>
-    </div>
-
-    <script>
-      angular.module("todoApp", []).controller("TodoController", ["$scope", function ($scope) {
-        $scope.todos = [
-          { text: "Learn AngularTS", done: true },
-          { text: "Build something", done: false },
-        ];
-
-        $scope.newTodo = "";
-
-        $scope.addTodo = function () {
-          if ($scope.newTodo.trim()) {
-            $scope.todos.push({ text: $scope.newTodo.trim(), done: false });
-            $scope.newTodo = "";
-          }
-        };
-
-        $scope.removeTodo = function (index) {
-          $scope.todos.splice(index, 1);
-        };
-
-        $scope.remaining = function () {
-          return $scope.todos.filter(function (t) {
-            return !t.done;
-          }).length;
-        };
-
-        $scope.clearDone = function () {
-          $scope.todos = $scope.todos.filter(function (t) {
-            return !t.done;
-          });
-        };
-      }]);
-    </script>
-  </body>
-</html>
+<script>
+  angular.module('todoApp', []).controller('TodoController', [
+    '$scope',
+    ($scope) => {
+      $scope.todos = [];
+      $scope.addTodo = () =>
+        $scope.todos.push({ text: $scope.newTodo, done: false });
+    },
+  ]);
+</script>
 ```
 
 This example uses:
@@ -211,12 +181,13 @@ This example uses:
 | `ng-class`  | Adds the `done` CSS class when `todo.done` is `true`         |
 | `ng-show`   | Shows the element only when the expression is truthy         |
 | `ng-click`  | Calls a scope function when the element is clicked           |
+
 ## Using TypeScript
 
-If you are working with npm and TypeScript, annotate the controller function using the `ng.Scope` type:
+If you are working with npm and TypeScript, annotate the controller function
+using the [`ng.Scope`](../../../typedoc/classes/Scope.html) type:
 
-```typescript
-
+```ts
 interface TodoItem {
   text: string;
   done: boolean;
@@ -229,27 +200,29 @@ interface TodoScope extends ng.Scope {
   remaining(): number;
 }
 
-angular.module("todoApp", []).controller(
-  "TodoController",
-  ["$scope", function ($scope: TodoScope) {
-    $scope.todos = [{ text: "Learn AngularTS", done: false }];
-    $scope.newTodo = "";
+angular.module('todoApp', []).controller('TodoController', [
+  '$scope',
+  function ($scope: TodoScope) {
+    $scope.todos = [{ text: 'Learn AngularTS', done: false }];
+    $scope.newTodo = '';
 
     $scope.addTodo = function () {
       if ($scope.newTodo.trim()) {
         $scope.todos.push({ text: $scope.newTodo.trim(), done: false });
-        $scope.newTodo = "";
+        $scope.newTodo = '';
       }
     };
 
     $scope.remaining = function () {
       return $scope.todos.filter((t) => !t.done).length;
     };
-  }]
-);
+  },
+]);
 ```
 
-> **Note:** TypeScript declarations ship with the package under `@types/`. No separate `@types/angular-wave__angular.ts` package is needed.
+> **Note:** TypeScript declarations ship with the package under `@types/`. No
+> separate `@types/angular-wave__angular.ts` package is needed.
+
 ## Next steps
 
 #### [Core concepts]({{< relref "/docs/concepts/modules" >}})

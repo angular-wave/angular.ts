@@ -1,8 +1,17 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import { createAngular } from "./index.ts";
-import { orchestrationModule } from "./orchestration.ts";
-import { realtimeModule } from "./realtime.ts";
+import {
+  machineModule,
+  orchestrationModule,
+  workflowModule,
+} from "./orchestration.ts";
+import {
+  realtimeModule,
+  sseModule,
+  websocketModule,
+  webTransportModule,
+} from "./realtime.ts";
 import { routerModule } from "./router.ts";
 import { serviceWorkerModule } from "./service-worker.ts";
 import { wasmModule } from "./wasm.ts";
@@ -1119,5 +1128,74 @@ describe("custom runtime", () => {
     angular._composition.destroy();
 
     expect(element).toBeDefined();
+  });
+
+  it("invokes duplicate runtime modules once", () => {
+    const runtimeModule = jasmine
+      .createSpy("runtimeModule")
+      .and.callFake((angular) =>
+        angular.module("ng.once", []).value("once", true),
+      );
+    const angular = createAngular({ modules: [runtimeModule, runtimeModule] });
+
+    expect(runtimeModule).toHaveBeenCalledTimes(1);
+    expect(angular.injector(["ng", "ng.once"]).get("once")).toBeTrue();
+    angular._composition.destroy();
+  });
+
+  it("destroys a partially composed runtime when a module throws", () => {
+    const failure = new Error("composition failed");
+    let destroy;
+    const runtimeModule = (angular) => {
+      destroy = spyOn(angular._composition, "destroy").and.callThrough();
+      throw failure;
+    };
+
+    expect(() => createAngular({ modules: [runtimeModule] })).toThrow(failure);
+    expect(destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("composes realtime transports independently", () => {
+    const cases = [
+      [sseModule, "$sse", ["$websocket", "$webTransport"]],
+      [websocketModule, "$websocket", ["$sse", "$webTransport"]],
+      [webTransportModule, "$webTransport", ["$sse", "$websocket"]],
+    ];
+
+    for (const [runtimeModule, included, omitted] of cases) {
+      const angular = createAngular({ modules: [runtimeModule] });
+      const injector = angular.injector(["ng"]);
+
+      expect(injector.has(included)).toBeTrue();
+      expect(omitted.every((token) => !injector.has(token))).toBeTrue();
+      angular._composition.destroy();
+    }
+  });
+
+  it("does not duplicate a specialized realtime module in the aggregate", () => {
+    const angular = createAngular({ modules: [realtimeModule, sseModule] });
+    const injector = angular.injector(["ng"]);
+
+    expect(injector.has("$sse")).toBeTrue();
+    expect(injector.has("$websocket")).toBeTrue();
+    expect(injector.has("$webTransport")).toBeTrue();
+    angular._composition.destroy();
+  });
+
+  it("composes machines and workflows independently", () => {
+    const machineAngular = createAngular({ modules: [machineModule] });
+    const machineInjector = machineAngular.injector(["ng"]);
+
+    expect(machineInjector.has("$machine")).toBeTrue();
+    expect(machineInjector.has("$workflow")).toBeFalse();
+    machineAngular._composition.destroy();
+
+    const workflowAngular = createAngular({ modules: [workflowModule] });
+    const workflowInjector = workflowAngular.injector(["ng"]);
+
+    expect(workflowInjector.has("$machine")).toBeFalse();
+    expect(workflowInjector.has("$workflow")).toBeTrue();
+    expect(workflowInjector.has("$workflowSupervisor")).toBeTrue();
+    workflowAngular._composition.destroy();
   });
 });

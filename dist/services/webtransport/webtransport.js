@@ -28,7 +28,7 @@ function destroyWebTransportRuntimeConfiguration(configuration) {
     configuration.connections.clear();
 }
 class ManagedWebTransportConnection {
-    constructor(url, TransportCtor, transportOptions, config, log) {
+    constructor(url, TransportCtor, transportOptions, config, log, exceptionHandler) {
         this._encoder = new TextEncoder();
         this._closing = false;
         this._closedSettled = false;
@@ -38,6 +38,7 @@ class ManagedWebTransportConnection {
         this._transportOptions = transportOptions;
         this._config = config;
         this._log = log;
+        this._exceptionHandler = exceptionHandler;
         this.closed = new Promise((resolve, reject) => {
             this._closedResolve = resolve;
             this._closedReject = reject;
@@ -112,12 +113,10 @@ class ManagedWebTransportConnection {
             this._handleNativeClose(error, transport);
             throw error;
         });
-        void transport.closed
-            .then(() => {
+        void transport.closed.then(() => {
             this._handleNativeClose(undefined, transport);
             return undefined;
-        })
-            .catch((error) => {
+        }, (error) => {
             this._handleNativeClose(error, transport);
         });
     }
@@ -136,7 +135,7 @@ class ManagedWebTransportConnection {
         catch (nextError) {
             if (this._closing || this._closedSettled)
                 return;
-            this._config.onError?.(nextError);
+            this._notifyError(nextError);
             this._log.error("WebTransport reconnect hook failed", nextError);
         }
     }
@@ -145,20 +144,32 @@ class ManagedWebTransportConnection {
         if (transport !== this.transport || this._closedSettled)
             return;
         if (this._closing) {
-            this._config.onClose?.();
-            this._settleClosed();
+            try {
+                this._invokeDetached(this._config.onClose);
+            }
+            finally {
+                this._settleClosed();
+            }
             return;
         }
         if (this._config.reconnect && this._scheduleReconnect(error)) {
             return;
         }
         if (error) {
-            this._config.onError?.(error);
-            this._settleClosed(error);
+            try {
+                this._notifyError(error);
+            }
+            finally {
+                this._settleClosed(error);
+            }
             return;
         }
-        this._config.onClose?.();
-        this._settleClosed();
+        try {
+            this._invokeDetached(this._config.onClose);
+        }
+        finally {
+            this._settleClosed();
+        }
     }
     /** @internal */
     _scheduleReconnect(error) {
@@ -168,7 +179,13 @@ class ManagedWebTransportConnection {
         if (this._reconnectAttempts >= maxRetries)
             return false;
         const attempt = ++this._reconnectAttempts;
-        const delay = this._resolveRetryDelay(attempt, error);
+        let delay = 0;
+        try {
+            delay = this._resolveRetryDelay(attempt, error);
+        }
+        catch (retryError) {
+            this._exceptionHandler(retryError);
+        }
         this._clearReconnectTimer();
         this._reconnectTimer = setTimeout(() => {
             this._reconnectTimer = undefined;
@@ -211,7 +228,20 @@ class ManagedWebTransportConnection {
         const reader = transport.datagrams.readable.getReader();
         try {
             for (;;) {
-                const result = await reader.read();
+                let result;
+                try {
+                    result = await reader.read();
+                }
+                catch (error) {
+                    if (this._closing ||
+                        this._closedSettled ||
+                        (this._config.reconnect && transport === this.transport)) {
+                        return;
+                    }
+                    this._notifyError(error);
+                    this._log.error("WebTransport datagram read failed", error);
+                    return;
+                }
                 if (result.done)
                     return;
                 const data = result.value;
@@ -222,25 +252,16 @@ class ManagedWebTransportConnection {
                         : data;
                 }
                 catch (error) {
-                    this._config.onError?.(error);
+                    this._notifyError(error);
                     this._log.error("WebTransport datagram transform failed", error);
                     continue;
                 }
                 const event = { data, message };
                 if (isRealtimeProtocolMessage(message)) {
-                    this._config.onProtocolMessage?.(message, event);
+                    this._invokeDetached(this._config.onProtocolMessage, message, event);
                 }
-                this._config.onDatagram?.(event);
+                this._invokeDetached(this._config.onDatagram, event);
             }
-        }
-        catch (error) {
-            if (this._closing ||
-                this._closedSettled ||
-                (this._config.reconnect && transport === this.transport)) {
-                return;
-            }
-            this._config.onError?.(error);
-            this._log.error("WebTransport datagram read failed", error);
         }
         finally {
             reader.releaseLock();
@@ -259,10 +280,25 @@ class ManagedWebTransportConnection {
         }
         return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     }
+    /** @internal */
+    _notifyError(error) {
+        this._invokeDetached(this._config.onError, error);
+    }
+    /** @internal */
+    _invokeDetached(callback, ...args) {
+        if (!callback)
+            return;
+        try {
+            callback(...args);
+        }
+        catch (callbackError) {
+            this._exceptionHandler(callbackError);
+        }
+    }
 }
 ManagedWebTransportConnection.$nonscope = true;
 /** @internal */
-function createWebTransportService(log, configuration, getWebTransportConstructor, baseUrl) {
+function createWebTransportService(log, configuration, getWebTransportConstructor, baseUrl, exceptionHandler) {
     return (url, config = {}) => {
         if (configuration.destroyed) {
             throw new Error("Cannot create a WebTransport connection after runtime teardown");
@@ -285,7 +321,7 @@ function createWebTransportService(log, configuration, getWebTransportConstructo
             retryDelay,
             maxRetries,
             onReconnect,
-        }, log);
+        }, log, exceptionHandler);
         const release = () => {
             configuration.connections.delete(connection);
         };

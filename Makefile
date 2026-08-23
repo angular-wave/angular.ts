@@ -1,4 +1,4 @@
-.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go public-namespace-api update-public-namespace-api docs-examples-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
+.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -109,6 +109,12 @@ dollar-prefixed-api-check:
 private-method-check:
 	@node ./utils/check-private-methods.mjs
 
+assert-policy-check:
+	@node ./utils/check-assert-policy.mjs
+
+error-policy-check:
+	@node ./utils/check-error-policy.mjs
+
 internal-composition-check:
 	@node ./utils/check-internal-composition.mjs
 
@@ -123,12 +129,19 @@ check: ensure-deps
 	@$(MAKE) generated-check
 	@$(MAKE) dollar-prefixed-api-check
 	@$(MAKE) private-method-check
+	@$(MAKE) assert-policy-check
+	@$(MAKE) error-policy-check
 	@echo "Typechecking source"
 	./node_modules/.bin/tsc 
 	@$(MAKE) test-types
 	@$(MAKE) test-namespace-js
 	@$(MAKE) wasm-parity
 	@$(MAKE) docs-examples-check
+	@$(MAKE) docs-runtime-api-check
+	@$(MAKE) docs-type-links-check
+	@$(MAKE) docs-snippets-check
+	@$(MAKE) docs-snippet-tests-check
+	@$(MAKE) docs-learning-check
 
 test-types: ensure-deps
 	@echo "Typechecking tests"
@@ -146,10 +159,31 @@ docs-examples-check: ensure-deps
 	@echo "Checking docs example API references"
 	@node ./utils/check-docs-examples.mjs
 
+docs-runtime-api-check: ensure-deps
+	@echo "Checking documentation runtime/API alignment"
+	@node ./utils/check-docs-runtime-api.mjs
+
+docs-type-links-check:
+	@echo "Checking documentation TypeDoc links"
+	@node ./utils/check-docs-type-links.mjs
+
+docs-snippets-check:
+	@echo "Checking documentation snippet style"
+	@node ./utils/check-docs-snippets.mjs
+
+.PHONY: docs-snippet-tests-check
+docs-snippet-tests-check:
+	@echo "Checking documentation snippet test coverage"
+	@node ./utils/check-docs-tested-snippets.mjs
+
+docs-learning-check:
+	@echo "Checking beginner documentation structure"
+	@node ./utils/check-docs-learning.mjs
+
 public-type-docs-check:
 	@node ./utils/check-public-type-docs.mjs
 
-docs-requirement: generated-check docs-examples-check doc public-type-docs-check
+docs-requirement: generated-check docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-snippet-tests-check docs-learning-check doc public-type-docs-check
 	@echo "Documentation requirement artifacts refreshed."
 
 release-notes-test:
@@ -289,3 +323,21 @@ coverage-open: ensure-deps
 
 hugo: ensure-docs-deps
 	cd docs && npm run _hugo-dev -- serve --disableFastRender --ignoreCache --noHTTPCache
+
+.PHONY: docs-public-surface-check
+docs-public-surface-check:
+	@echo "Checking public documentation surface parity"
+	@node utils/check-docs-public-surface.mjs
+
+check: docs-public-surface-check
+
+.PHONY: docs-links-check docs-tutorial-typecheck
+docs-links-check:
+	@echo "Checking documentation links and fragments"
+	@node utils/check-docs-links.mjs
+
+docs-tutorial-typecheck:
+	@echo "Typechecking executable documentation tutorial"
+	@./node_modules/.bin/tsc --project docs/examples/task-board/tsconfig.json
+
+check: docs-links-check docs-tutorial-typecheck

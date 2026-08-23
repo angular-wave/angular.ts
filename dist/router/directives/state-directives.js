@@ -1,6 +1,6 @@
 import { _scope, _element, _aria, _state, _rootScope, _stateRegistry, _transitions, _parse, _interpolate } from '../../injection-tokens.js';
 import { removeFrom } from '../../shared/common.js';
-import { stringify, assertDefined, isObject, keys, isString, isArray, directiveNormalize, arrayFrom, isNullOrUndefined, assign } from '../../shared/utils.js';
+import { stringify, assertInvariantDefined, isObject, keys, isString, isArray, directiveNormalize, arrayFrom, isNullOrUndefined, assign } from '../../shared/utils.js';
 import { getNormalizedAttr, getInheritedData, setNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
 import { _getRouterPrefetchDelay } from '../router.js';
 
@@ -451,7 +451,7 @@ function StateRefActiveDirective($state, $interpolate, $stateRegistry, $transiti
                     "ngStateActiveExact",
                 ]);
                 const activeEqExpr = activeEqRead ?? "";
-                const activeEqClass = stringify(assertDefined($interpolate(activeEqExpr, false))($scope) ?? "");
+                const activeEqClass = stringify(assertInvariantDefined($interpolate(activeEqExpr, false))($scope));
                 const activeRead = getFirstNormalizedAttr($element, ["ngStateActive"]);
                 const activeExpr = activeRead;
                 try {
@@ -465,7 +465,7 @@ function StateRefActiveDirective($state, $interpolate, $stateRegistry, $transiti
                 }
                 activeDefinition =
                     activeDefinition ??
-                        stringify(assertDefined($interpolate(activeExpr ?? "", false))($scope) ?? "");
+                        stringify(assertInvariantDefined($interpolate(activeExpr ?? "", false))($scope));
                 setStatesFromDefinitionObject(activeDefinition);
                 // Allow state-ref directives to communicate with active-state directives.
                 this._addStateInfo = function (newState, newParams) {

@@ -86,7 +86,7 @@
           <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
             <li><a href="" aria-current="page">Component</a></li>
           </ul>
-          <h1>Interface Component</h1>
+          <h1>Interface Component&lt;TController, TScope, TElement&gt;</h1>
         </div>
         <section class="tsd-panel tsd-comment">
           <div class="tsd-comment tsd-typography">
@@ -98,7 +98,45 @@
         </section>
         <div class="tsd-signature">
           <span class="tsd-signature-keyword">interface</span>
-          <span class="tsd-kind-interface">Component</span>
+          <span class="tsd-kind-interface">Component</span
+          ><span class="tsd-signature-symbol">&lt;</span><br />    <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tcontroller"
+            >TController</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <a
+            href="../types/Controller.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >Controller</a
+          >
+          <span class="tsd-signature-symbol">=</span>
+          <a
+            href="../types/Controller.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >Controller</a
+          ><span class="tsd-signature-symbol">,</span><br />    <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tscope"
+            >TScope</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <span class="tsd-signature-type">ng.Scope</span>
+          <span class="tsd-signature-symbol">=</span>
+          <span class="tsd-signature-type">ng.Scope</span
+          ><span class="tsd-signature-symbol">,</span><br />    <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#telement"
+            >TElement</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <span class="tsd-signature-type">HTMLElement</span>
+          <span class="tsd-signature-symbol">=</span>
+          <span class="tsd-signature-type">HTMLElement</span
+          ><span class="tsd-signature-symbol">,</span><br /><span
+            class="tsd-signature-symbol"
+            >&gt;</span
+          >
           <span class="tsd-signature-symbol">{</span><br />    <a
             class="tsd-kind-property"
             href="#bindings"
@@ -207,11 +245,70 @@
           ><span class="tsd-signature-symbol">,</span>
           <span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#view"
+            >view</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <a
+            href="../types/ComponentView.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >ComponentView</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tcontroller"
+            >TController</a
+          ><span class="tsd-signature-symbol">,</span>
+          <a class="tsd-signature-type tsd-kind-type-parameter" href="#tscope"
+            >TScope</a
+          ><span class="tsd-signature-symbol">,</span>
+          <a class="tsd-signature-type tsd-kind-type-parameter" href="#telement"
+            >TElement</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br /><span
             class="tsd-signature-symbol"
             >}</span
           >
         </div>
+        <section class="tsd-panel">
+          <h4>Type Parameters</h4>
+          <ul class="tsd-type-parameter-list">
+            <li>
+              <span id="tcontroller"
+                ><span class="tsd-kind-type-parameter">TController</span>
+                <span class="tsd-signature-keyword">extends</span>
+                <a
+                  href="../types/Controller.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >Controller</a
+                >
+                =
+                <a
+                  href="../types/Controller.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >Controller</a
+                ></span
+              >
+            </li>
+            <li>
+              <span id="tscope"
+                ><span class="tsd-kind-type-parameter">TScope</span>
+                <span class="tsd-signature-keyword">extends</span>
+                <span class="tsd-signature-type">ng.Scope</span> =
+                <span class="tsd-signature-type">ng.Scope</span></span
+              >
+            </li>
+            <li>
+              <span id="telement"
+                ><span class="tsd-kind-type-parameter">TElement</span>
+                <span class="tsd-signature-keyword">extends</span>
+                <span class="tsd-signature-type">HTMLElement</span> =
+                <span class="tsd-signature-type">HTMLElement</span></span
+              >
+            </li>
+          </ul>
+        </section>
         <section class="tsd-panel-group tsd-index-group">
           <section class="tsd-panel tsd-index-panel">
             <details class="tsd-index-content tsd-accordion" open>
@@ -302,6 +399,15 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>transclude?</span></a
+                    >
+                    <a href="#view" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>view?</span></a
                     >
                   </div>
                 </section>
@@ -575,6 +681,46 @@
                 <p>Whether transclusion is enabled. Disabled by default.</p>
               </div>
             </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="view">
+                <code class="tsd-tag">Optional</code><span>view</span
+                ><a href="#view" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">view</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <a
+                  href="../types/ComponentView.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ComponentView</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tcontroller"
+                  >TController</a
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tscope"
+                  >TScope</a
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#telement"
+                  >TElement</a
+                ><span class="tsd-signature-symbol">&gt;</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Programmatic real-DOM view factory. It runs during linking
+                  after controller bindings and <code>onInit</code>, and is
+                  mutually exclusive with template, templateUrl, and replace.
+                </p>
+              </div>
+            </section>
           </section>
         </details>
       </div>
@@ -802,6 +948,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>transclude</span></a
+                  ><a href="#view"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>view</span></a
                   >
                 </div>
               </details>

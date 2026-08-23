@@ -1,4 +1,10 @@
-# limitTo Filter
+---
+title: Limit to
+description: Return a bounded part of an array, string, or number.
+weight: 30
+---
+
+# Limit to filter
 
 ## Description
 

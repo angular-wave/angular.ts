@@ -12,7 +12,7 @@ function createMachine(scopeOrConfig, maybeConfig) {
         ...typedConfig,
         data: defaultMachineData(typedConfig.data),
     };
-    assertMachineConfig(config);
+    validateMachineConfig(config);
     const rawData = config.data;
     let currentState = config.initial;
     let activeBinding;
@@ -57,7 +57,7 @@ function createMachine(scopeOrConfig, maybeConfig) {
             };
         },
         restore(snapshot) {
-            assertMachineSnapshot(snapshot, config);
+            validateMachineSnapshot(snapshot, config);
             const binding = getActiveBinding();
             batch(binding?._handler, () => {
                 const previousDataKeys = collectMachineDataKeys(rawData);
@@ -408,7 +408,7 @@ function normalizeMachineArgs(scopeOrConfig, maybeConfig) {
         _config: scopeOrConfig,
     };
 }
-function assertMachineConfig(config) {
+function validateMachineConfig(config) {
     if (!isObject(config)) {
         throw new Error("$machine requires a config object.");
     }
@@ -424,9 +424,9 @@ function assertMachineConfig(config) {
     if (!hasOwn(config.states, config.initial)) {
         throw new Error("$machine initial state must exist in states.");
     }
-    assertMachineHooks(config.hooks);
+    validateMachineHooks(config.hooks);
 }
-function assertMachineSnapshot(snapshot, config) {
+function validateMachineSnapshot(snapshot, config) {
     if (!snapshot || !isObject(snapshot)) {
         throw new Error("$machine restore requires a snapshot object.");
     }
@@ -441,20 +441,20 @@ function assertMachineSnapshot(snapshot, config) {
         throw new Error("$machine restore state must exist in states.");
     }
 }
-function assertMachineHooks(hooks) {
+function validateMachineHooks(hooks) {
     if (hooks === undefined) {
         return;
     }
     if (!isPlainObject(hooks)) {
         throw new Error("$machine hooks must be an object.");
     }
-    assertMachineHookMap("enter", hooks.enter);
-    assertMachineHookMap("exit", hooks.exit);
+    validateMachineHookMap("enter", hooks.enter);
+    validateMachineHookMap("exit", hooks.exit);
     if (hooks.transition !== undefined && !isFunction(hooks.transition)) {
         throw new Error("$machine hooks.transition must be a function.");
     }
 }
-function assertMachineHookMap(name, hooks) {
+function validateMachineHookMap(name, hooks) {
     if (hooks === undefined) {
         return;
     }

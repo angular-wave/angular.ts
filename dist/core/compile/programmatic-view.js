@@ -38,11 +38,6 @@ function attrs(values) {
 function props(values) {
     return { [propertyGroup]: values };
 }
-/**
- * Creates a keyed reactive collection. Existing DOM is retained while items
- * with stable keys move or change identity. Renderers receive an item reader so
- * nested reactive bindings follow same-key replacements.
- */
 function each(read, key, render) {
     const binding = {
         _read: read,
@@ -59,7 +54,10 @@ function each(read, key, render) {
         }
         return children;
     };
-    return markBinding(wrapper, { _kind: "keyed-child", _binding: binding });
+    return markBinding(wrapper, {
+        _kind: "keyed-child",
+        _binding: binding,
+    });
 }
 const pendingBindings = new WeakMap();
 const tagProxyCache = new Map();
@@ -255,7 +253,7 @@ function materializeChild(value, nodes) {
         nodes.push(anchor);
         return;
     }
-    if (value !== null && value !== undefined && value !== false) {
+    if (value !== null && value !== undefined && typeof value !== "boolean") {
         nodes.push(document.createTextNode(String(value)));
     }
 }
@@ -306,7 +304,6 @@ function createTag(namespaceUri, name, ...args) {
 function tag(name, ...args) {
     return createTag(undefined, name, ...args);
 }
-/** Creates one namespaced element without parsing markup. */
 function tagNS(namespaceUri, name, ...args) {
     return createTag(namespaceUri, name, ...args);
 }
@@ -620,6 +617,7 @@ function createProgrammaticDirectiveCompile(options) {
                 controller,
                 required: requiredControllers,
                 scope,
+                host: element,
                 element,
                 transclude,
                 onDestroy(cleanup) {

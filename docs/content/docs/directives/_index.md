@@ -1,14 +1,17 @@
 ---
-title: "Directive Guides"
-weight: 40
+title: Directive guides
+weight: 60
+description:
+  'Learn AngularTS directives by the job they perform before using the
+  individual directive reference pages.'
 ---
 
-Directives are easier to learn by role than by name. Start here when you want
-to understand how AngularTS extends HTML, then use the
-[Directives reference]({{< relref "/docs/directive" >}}) for individual
-attributes and API details.
+Directives are easier to learn by role than by name. Start here when you want to
+understand how AngularTS extends HTML, then use the [Directives
+reference]({{< relref "/docs/directive" >}}) for individual attributes and API
+details.
 
-## Learning Path
+## Learning path
 
 1. [Overview]({{< relref "/docs/directives/overview" >}}): how directives are
    discovered, compiled, linked, and prioritized.
@@ -18,8 +21,8 @@ attributes and API details.
 3. [Structural Directives]({{< relref "/docs/directives/structural" >}}):
    directives that add, remove, repeat, switch, include, or protect DOM
    sections.
-4. [Forms]({{< relref "/docs/directives/forms" >}}): validation, model
-   options, form state, and messages.
+4. [Forms]({{< relref "/docs/directives/forms" >}}): validation, model options,
+   form state, and messages.
 5. [HTTP Directives]({{< relref "/docs/directives/http" >}}): declarative
    requests and Server-Sent Events from HTML.
 6. [Animation Directives]({{< relref "/docs/directives/animations" >}}): CSS
@@ -27,9 +30,9 @@ attributes and API details.
 7. [Advanced Directives]({{< relref "/docs/directives/advanced" >}}): workers,
    WebAssembly, channels, DOM references, accessibility, and event helpers.
 
-## Reference Lookup
+## Reference lookup
 
-When you already know the directive name, use the
-[per-directive reference]({{< relref "/docs/directive" >}}). The reference
-keeps pages small and specific, while this section keeps the conceptual grouping
-that helps new users build a mental model.
+When you already know the directive name, use the [per-directive
+reference]({{< relref "/docs/directive" >}}). The reference keeps pages small
+and specific, while this section keeps the conceptual grouping that helps new
+users build a mental model.

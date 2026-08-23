@@ -40,7 +40,7 @@ ng.Angular.prototype.ScopeElement;
 /**
  * JSX-free real-DOM tag factories for programmatic component views.
  * @param {string} namespaceUri Value supplied for the namespaceUri parameter.
- * @return {!Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}
+ * @return {!Object}
  */
 ng.Angular.prototype.tags = function(namespaceUri) {};
 
@@ -127,11 +127,11 @@ ng.Angular.prototype.getNormalizedAttrName = function(element, normalizedName) {
 ng.Angular.prototype.hasNormalizedAttr = function(element, normalizedName) {};
 
 /**
- * Global framework error-handling configuration.
- * @param {(!ng.ErrorHandlingConfig|undefined)} config Value supplied for the config parameter.
- * @return {!ng.ErrorHandlingConfig}
+ * Configure how values embedded in framework error messages are formatted.
+ * @param {(!ng.ErrorFormattingConfig|undefined)} config Value supplied for the config parameter.
+ * @return {!ng.ErrorFormattingConfig}
  */
-ng.Angular.prototype.errorHandlingConfig = function(config) {};
+ng.Angular.prototype.errorFormattingConfig = function(config) {};
 
 /**
  * Public injection token names keyed by token value.
@@ -212,6 +212,7 @@ ng.AnnotatedDirectiveFactory;
 
 /**
  * Public AngularTS Component contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TControllerInstance, TScopeInstance, TElement
  * @record
  */
 ng.Component = function() {};
@@ -271,13 +272,74 @@ ng.Component.prototype.transclude;
 ng.Component.prototype.require;
 
 /**
+ * Public AngularTS ComponentDefinition contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TControllerInstance, TScopeInstance, TElement
+ * @record
+ */
+ng.ComponentDefinition = function() {};
+
+/**
+ * Public ComponentDefinition.controller member exposed by the AngularTS namespace contract.
+ * @type {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string|undefined)}
+ */
+ng.ComponentDefinition.prototype.controller;
+
+/**
+ * An identifier name for a reference to the controller. If present, the controller will be published to its scope under the specified name. If not present, this will default to '$ctrl'.
+ * @type {(string|undefined)}
+ */
+ng.ComponentDefinition.prototype.controllerAs;
+
+/**
+ * Define DOM attribute binding to component properties. Component properties are always bound to the component controller and not to the scope.
+ * @type {(!Object<string, string>|undefined)}
+ */
+ng.ComponentDefinition.prototype.bindings;
+
+/**
+ * Whether transclusion is enabled. Disabled by default.
+ * @type {(!Object<string, string>|boolean|undefined)}
+ */
+ng.ComponentDefinition.prototype.transclude;
+
+/**
+ * Requires the controllers of other directives and binds them to this component's controller. The object keys specify the property names under which the required controllers (object values) will be bound. Note that the required controllers will not be available during the instantiation of the controller, but they are guaranteed to be available just before the onInit method is executed!
+ * @type {(!Object<string, string>|undefined)}
+ */
+ng.ComponentDefinition.prototype.require;
+
+/**
+ * Public ComponentDefinition.view member exposed by the AngularTS namespace contract.
+ * @type {(function(!ng.ComponentViewContext): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
+ */
+ng.ComponentDefinition.prototype.view;
+
+/**
+ * Public ComponentDefinition.template member exposed by the AngularTS namespace contract.
+ * @type {(!Array<function(...?): string>|function(...?): string|string|undefined)}
+ */
+ng.ComponentDefinition.prototype.template;
+
+/**
+ * Public ComponentDefinition.templateUrl member exposed by the AngularTS namespace contract.
+ * @type {(!Array<function(...?): string>|function(...?): string|string|undefined)}
+ */
+ng.ComponentDefinition.prototype.templateUrl;
+
+/**
+ * Public ComponentDefinition.replace member exposed by the AngularTS namespace contract.
+ * @type {(boolean|undefined)}
+ */
+ng.ComponentDefinition.prototype.replace;
+
+/**
  * Public AngularTS ComponentView contract exposed through the global ng namespace for Closure-annotated applications.
  * @typedef {function(!ng.ComponentViewContext): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
  */
 ng.ComponentView;
 
 /**
- * DOM content accepted from programmatic component and directive views. Functions are reactive child readers, arrays are flattened recursively, and existing nodes are moved rather than cloned. `null`, `undefined`, and `false` render no DOM content. Document fragments contribute their children.
+ * DOM content accepted from programmatic component and directive views. Functions are reactive child readers, arrays are flattened recursively, and existing nodes are moved rather than cloned. `null`, `undefined`, and booleans render no DOM content. Document fragments contribute their children.
  * @typedef {(!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
  */
 ng.ComponentViewChild;
@@ -295,32 +357,38 @@ ng.ComponentViewContext = function() {};
 ng.ComponentViewContext.prototype.controller;
 
 /**
- * Scope that owns the generated DOM and reactive child readers.
+ * Scope that owns the generated DOM and reactive readers.
  * @type {!ng.Scope}
  */
 ng.ComponentViewContext.prototype.scope;
 
 /**
- * Native component host element.
+ * Native host element matched by the component or directive.
+ * @type {!HTMLElement}
+ */
+ng.ComponentViewContext.prototype.host;
+
+/**
+ * Public ComponentViewContext.element member exposed by the AngularTS namespace contract.
  * @type {!HTMLElement}
  */
 ng.ComponentViewContext.prototype.element;
 
 /**
- * Component transclusion function, when transclusion is enabled.
+ * Transclusion function, when transclusion is enabled.
  * @type {(!ng.TranscludeFn|undefined)}
  */
 ng.ComponentViewContext.prototype.transclude;
 
 /**
- * Registers cleanup owned by the compiled view and returns a cancellation function.
+ * Registers cleanup and returns a cancellation function.
  * @param {function(): void} cleanup Value supplied for the cleanup parameter.
  * @return {function(): void}
  */
 ng.ComponentViewContext.prototype.onDestroy = function(cleanup) {};
 
 /**
- * Primitive text value accepted as a programmatic view child.
+ * Primitive value accepted as a view child. Booleans render no DOM content.
  * @typedef {(bigint|boolean|number|string)}
  */
 ng.ComponentViewPrimitive;
@@ -330,6 +398,18 @@ ng.ComponentViewPrimitive;
  * @record
  */
 ng.ComponentViewProperties = function() {};
+
+/**
+ * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/role)
+ * @type {(!Object|null|string|undefined)}
+ */
+ng.ComponentViewProperties.prototype.role;
+
+/**
+ * Public ComponentViewProperties.class member exposed by the AngularTS namespace contract.
+ * @type {(function(): (null|string|undefined)|null|string|undefined)}
+ */
+ng.ComponentViewProperties.prototype.class;
 
 /**
  * Public ComponentViewProperties.is member exposed by the AngularTS namespace contract.
@@ -351,7 +431,7 @@ ng.ComponentViewTag;
 
 /**
  * Typed HTML tag factories. Calling the object with a namespace URI returns factories for namespaced elements such as SVG and MathML.
- * @typedef {function(string): !Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}
+ * @typedef {function(string): !Object}
  */
 ng.ComponentViewTags;
 
@@ -435,8 +515,8 @@ ng.Directive.prototype.restrict;
 ng.Directive.prototype.compile;
 
 /**
- * Programmatic real-DOM view factory. It is mutually exclusive with template, templateUrl, and replace and composes with compile/link.
- * @type {(function(!ng.DirectiveViewContext<TController, (!Array<!Object>|!Object|!Object<string, !Object>)>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
+ * Real-DOM view factory. It is mutually exclusive with template, templateUrl, and replace and composes with compile/link.
+ * @type {(function(!ng.DirectiveViewContext<TController, (!Array<!Object>|!Object|!Object<string, !Object>|undefined)>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
  */
 ng.Directive.prototype.view;
 
@@ -592,37 +672,43 @@ ng.DirectiveView;
 ng.DirectiveViewContext = function() {};
 
 /**
- * Directive controller, when the directive declares one.
- * @type {(TController|undefined)}
- */
-ng.DirectiveViewContext.prototype.controller;
-
-/**
  * Controllers resolved through the directive's `require` declaration.
- * @type {(TRequired|undefined)}
+ * @type {TRequired}
  */
 ng.DirectiveViewContext.prototype.required;
 
 /**
- * Scope that owns the generated DOM and reactive child readers.
+ * Controller associated with the view.
+ * @type {TController}
+ */
+ng.DirectiveViewContext.prototype.controller;
+
+/**
+ * Scope that owns the generated DOM and reactive readers.
  * @type {!ng.Scope}
  */
 ng.DirectiveViewContext.prototype.scope;
 
 /**
- * Native element matched by the directive.
+ * Native host element matched by the component or directive.
+ * @type {!Element}
+ */
+ng.DirectiveViewContext.prototype.host;
+
+/**
+ * Public DirectiveViewContext.element member exposed by the AngularTS namespace contract.
  * @type {!Element}
  */
 ng.DirectiveViewContext.prototype.element;
 
 /**
- * Directive transclusion function, when transclusion is enabled.
+ * Transclusion function, when transclusion is enabled.
  * @type {(!ng.TranscludeFn|undefined)}
  */
 ng.DirectiveViewContext.prototype.transclude;
 
 /**
- * Registers cleanup owned by the compiled view and returns a cancellation function.
+ * Registers cleanup and returns a cancellation function.
  * @param {function(): void} cleanup Value supplied for the cleanup parameter.
  * @return {function(): void}
  */
@@ -672,8 +758,9 @@ ng.NgModule.prototype.run = function(block) {};
 
 /**
  * Public NgModule.component member exposed by the AngularTS namespace contract.
+ * @template TController
  * @param {string} name Value supplied for the name parameter.
- * @param {!ng.Component} options Value supplied for the options parameter.
+ * @param {!Object} options Value supplied for the options parameter.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.component = function(name, options) {};
@@ -901,6 +988,14 @@ ng.RouterModule = function() {};
 ng.RouterModule.prototype.filter = function(name, filterFn) {};
 
 /**
+ * The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry.
+ * @param {string} name Controller name
+ * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?))} ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
+ * @return {!ng.NgModule}
+ */
+ng.RouterModule.prototype.controller = function(name, ctlFn) {};
+
+/**
  * Public RouterModule.name member exposed by the AngularTS namespace contract.
  * @type {string}
  */
@@ -938,8 +1033,9 @@ ng.RouterModule.prototype.run = function(block) {};
 
 /**
  * Public RouterModule.component member exposed by the AngularTS namespace contract.
+ * @template TController
  * @param {string} name Value supplied for the name parameter.
- * @param {!ng.Component} options Value supplied for the options parameter.
+ * @param {!Object} options Value supplied for the options parameter.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.component = function(name, options) {};
@@ -991,14 +1087,6 @@ ng.RouterModule.prototype.directive = function(name, directiveFactory) {};
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.animation = function(name, animationFactory) {};
-
-/**
- * The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry.
- * @param {string} name Controller name
- * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?))} ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
- * @return {!ng.NgModule}
- */
-ng.RouterModule.prototype.controller = function(name, ctlFn) {};
 
 /**
  * Register a named reactive model as an injectable app-owned service. The model is created lazily by the owning `AppContext` when the service is first injected. Models are shared across every root scope managed by the same `AppContext`; they are not children of `$rootScope`. Assign an injected model to a controller or scope property to bind it in a template. DOM interpolation, `ng-bind`, directive expressions, nested object reads, and array length reads update when the app model changes. Mutating the model proxy schedules every affected observer. The injected `Model<T>` value is proxy-backed. It exposes scope-proxy methods such as `watch`, `batch`, `merge`, `on`, `emit`, `broadcast`, and `destroy`, plus `snapshot`, `restore`, and `sync` for model lifecycle and synchronization. Prefer the factory form for nontrivial initial state: ```ts app.model("user", () => ({ name: "John", authenticated: false })); ```
@@ -1461,7 +1549,7 @@ ng.AngularService.prototype.ScopeElement;
 /**
  * JSX-free real-DOM tag factories for programmatic component views.
  * @param {string} namespaceUri Value supplied for the namespaceUri parameter.
- * @return {!Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}
+ * @return {!Object}
  */
 ng.AngularService.prototype.tags = function(namespaceUri) {};
 
@@ -1548,11 +1636,11 @@ ng.AngularService.prototype.getNormalizedAttrName = function(element, normalized
 ng.AngularService.prototype.hasNormalizedAttr = function(element, normalizedName) {};
 
 /**
- * Global framework error-handling configuration.
- * @param {(!ng.ErrorHandlingConfig|undefined)} config Value supplied for the config parameter.
- * @return {!ng.ErrorHandlingConfig}
+ * Configure how values embedded in framework error messages are formatted.
+ * @param {(!ng.ErrorFormattingConfig|undefined)} config Value supplied for the config parameter.
+ * @return {!ng.ErrorFormattingConfig}
  */
-ng.AngularService.prototype.errorHandlingConfig = function(config) {};
+ng.AngularService.prototype.errorFormattingConfig = function(config) {};
 
 /**
  * Public injection token names keyed by token value.
@@ -2338,7 +2426,7 @@ ng.EventBusService.prototype.unsubscribe = function(topic, fn) {};
 ng.EventBusService.prototype.getCount = function(topic) {};
 
 /**
- * Publish a value to a topic asynchronously. All listeners are invoked in the order they were added. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their scope is destroyed before the queued delivery runs.
+ * Publish a value to a topic asynchronously. Listeners are invoked in the order they were added until delivery finishes or `$exceptionHandler` terminates the publication. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their scope is destroyed before the queued delivery runs.
  * @param {string} topic The topic to publish.
  * @param {...?} var_args Arguments to pass to listeners.
  * @return {boolean}
@@ -4732,16 +4820,16 @@ ng.CookieStoreOptions.prototype.cookie;
 ng.EntityClass;
 
 /**
- * Error configuration object. May only contain the options that need to be updated.
+ * Controls how values embedded in framework error messages are formatted.
  * @record
  */
-ng.ErrorHandlingConfig = function() {};
+ng.ErrorFormattingConfig = function() {};
 
 /**
  * The max depth for stringifying objects. Setting to a non-positive or non-numeric value removes the max depth limit. Default: 5.
  * @type {(number|undefined)}
  */
-ng.ErrorHandlingConfig.prototype.objectMaxDepth;
+ng.ErrorFormattingConfig.prototype.objectMaxDepth;
 
 /**
  * Public AngularTS Expression contract exposed through the global ng namespace for Closure-annotated applications.
@@ -6496,7 +6584,7 @@ ng.RouterModuleDeclaration.prototype.dynamic;
 
 /**
  * The name of the component to use for this view. The name of an AngularTS `.component()` which will be used for this view. Resolve data can be provided to the component via the component's `bindings` object. For each binding declared on the component, any resolve with the same name is set on the component's controller instance. Note: Mapping from resolve names to component inputs may be specified using [[bindings]]. #### Example: ```js .state('profile', { // Use the <my-profile></my-profile> component for this state. component: 'MyProfile', } ``` Note: When using `component` to define a view, you may _not_ use any of: `template`, `templateUrl`, `controller`.
- * @type {(!ng.Component|string|undefined)}
+ * @type {(!ng.Component<!Object, !ng.Scope, !HTMLElement>|string|undefined)}
  */
 ng.RouterModuleDeclaration.prototype.component;
 
@@ -6833,7 +6921,7 @@ ng.StateDeclaration.prototype.dynamic;
 
 /**
  * The name of the component to use for this view. The name of an AngularTS `.component()` which will be used for this view. Resolve data can be provided to the component via the component's `bindings` object. For each binding declared on the component, any resolve with the same name is set on the component's controller instance. Note: Mapping from resolve names to component inputs may be specified using [[bindings]]. #### Example: ```js .state('profile', { // Use the <my-profile></my-profile> component for this state. component: 'MyProfile', } ``` Note: When using `component` to define a view, you may _not_ use any of: `template`, `templateUrl`, `controller`.
- * @type {(!ng.Component|string|undefined)}
+ * @type {(!ng.Component<!Object, !ng.Scope, !HTMLElement>|string|undefined)}
  */
 ng.StateDeclaration.prototype.component;
 

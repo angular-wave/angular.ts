@@ -14,7 +14,7 @@ function throwNoconcat(text) {
         "required.", text);
 }
 function interr(text, err) {
-    throw $interpolateError("interr", "Can't interpolate: {0}\n{1}", text, err.toString());
+    throw $interpolateError("interr", "Can't interpolate: {0}\n{1}", text, String(err));
 }
 /** @internal */
 function createInterpolateRuntimeState() {
@@ -26,7 +26,7 @@ function createInterpolateRuntimeState() {
 }
 /** @internal */
 function applyInterpolateConfiguration(state, config) {
-    assertInterpolateRuntimeActive(state);
+    ensureInterpolateRuntimeActive(state);
     if (config.startSymbol !== undefined) {
         state.startSymbol = config.startSymbol;
     }
@@ -42,14 +42,14 @@ function destroyInterpolateRuntimeState(state) {
     state.startSymbol = "{{";
     state.endSymbol = "}}";
 }
-function assertInterpolateRuntimeActive(state) {
+function ensureInterpolateRuntimeActive(state) {
     if (state.destroyed) {
         throw new Error("Interpolation runtime has already been disposed.");
     }
 }
 /** @internal */
 function createInterpolateService(state, $parse, security) {
-    assertInterpolateRuntimeActive(state);
+    ensureInterpolateRuntimeActive(state);
     const interpolationStartSymbol = state.startSymbol;
     const interpolationEndSymbol = state.endSymbol;
     const startSymbolLength = interpolationStartSymbol.length;

@@ -1,5 +1,5 @@
 import { _parse, _element, _scope, _injector, _interpolate } from '../../injection-tokens.js';
-import { hasAnimate, isString, isFunction, callFunction, assertNotHasOwnProperty, shallowCopy, deProxy, deleteProperty, arrayRemove, isObjectEmpty, snakeCase, directiveNormalize, extend, isUndefined } from '../../shared/utils.js';
+import { hasAnimate, isString, isFunction, callFunction, validateNotHasOwnPropertyName, shallowCopy, deProxy, deleteProperty, arrayRemove, isObjectEmpty, snakeCase, directiveNormalize, extend, isUndefined } from '../../shared/utils.js';
 import { VALID_CLASS, INVALID_CLASS, DIRTY_CLASS, PRISTINE_CLASS } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { getNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
@@ -165,7 +165,7 @@ class FormController {
     addControl(control) {
         // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
         // and not added to the scope.  Now we throw an error.
-        assertNotHasOwnProperty(String(control.controlName), "input");
+        validateNotHasOwnPropertyName(String(control.controlName), "input");
         this._validityPropagationId = nextValidityPropagationId++;
         this._controls.push(control);
         if (control.controlName) {

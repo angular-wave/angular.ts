@@ -26,6 +26,12 @@
  *
  * IMPORTANT: custom implementation should always rethrow the error as the framework assumes that `$exceptionHandler` always does the throwing.
  *
+ * AngularTS reports exceptions here when they escape framework-owned detached
+ * work, including DOM events, browser transport events, timers, subscriptions,
+ * and lifecycle callbacks. Synchronous public API validation throws directly,
+ * and promise-returning operations reject their returned promise so callers can
+ * handle the failure at the operation boundary.
+ *
  * ### Manual Invocation
  *
  * You can invoke the exception handler directly when catching errors in your own code:
@@ -64,6 +70,9 @@ function applyExceptionHandlerConfiguration(state, config) {
         throw new Error("Exception handler runtime has already been disposed.");
     }
     if (config.handler !== undefined) {
+        if (typeof config.handler !== "function") {
+            throw new TypeError("$exceptionHandler handler must be a function.");
+        }
         state.handler = config.handler;
     }
 }

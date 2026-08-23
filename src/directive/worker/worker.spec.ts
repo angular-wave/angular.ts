@@ -15,6 +15,7 @@ describe("ngWorker", () => {
   let scope;
   let warn;
   let error;
+  let exceptions;
   let angular;
 
   class MockWorker {
@@ -42,6 +43,7 @@ describe("ngWorker", () => {
     RealWorker = window.Worker;
     window.Worker = MockWorker;
     workers = [];
+    exceptions = [];
     warn = spyOn(window.console, "warn");
     error = spyOn(window.console, "error");
 
@@ -51,6 +53,23 @@ describe("ngWorker", () => {
     angular = new Angular();
     const module = angular
       .module("workerDirectiveTests", [])
+      .config({
+        $exceptionHandler: {
+          handler: (exception) => {
+            exceptions.push(exception);
+
+            if (
+              ["bad params", "bad result", "bad error handler"].includes(
+                exception.message,
+              )
+            ) {
+              return;
+            }
+
+            throw exception;
+          },
+        },
+      })
       .worker("sharedWorker", "/workers/shared.js")
       .value("rejectingWorker", {
         error: undefined,
@@ -294,7 +313,7 @@ describe("ngWorker", () => {
     expect(scope.received).toBeUndefined();
   });
 
-  it("falls back to undefined params when params expression fails", async () => {
+  it("reports params expression failures and aborts dispatch", async () => {
     scope.throwParams = () => {
       throw new Error("bad params");
     };
@@ -305,8 +324,41 @@ describe("ngWorker", () => {
     element.click();
     await wait();
 
-    expect(error).toHaveBeenCalled();
-    expect(workers[0].sent).toEqual([undefined]);
+    expect(exceptions).toEqual([jasmine.any(Error)]);
+    expect(exceptions[0].message).toBe("bad params");
+    expect(workers[0].sent).toEqual([]);
+  });
+
+  it("reports result expression failures", async () => {
+    const callbackError = new Error("bad result");
+
+    scope.throwResult = () => {
+      throw callbackError;
+    };
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" on-result="throwResult($result)">Run</button>',
+    );
+
+    workers[0].onmessage({ data: "result" });
+    await wait();
+
+    expect(exceptions).toContain(callbackError);
+  });
+
+  it("reports error expression failures", async () => {
+    const callbackError = new Error("bad error handler");
+
+    scope.throwWorkerError = () => {
+      throw callbackError;
+    };
+    compileWorker(
+      '<button ng-worker="/workers/echo.js" on-error="throwWorkerError(error)">Run</button>',
+    );
+
+    workers[0].onerror({ message: "worker failed" });
+    await wait();
+
+    expect(exceptions).toContain(callbackError);
   });
 
   it("does not post while the host is disabled", async () => {

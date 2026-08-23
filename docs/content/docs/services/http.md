@@ -1,8 +1,10 @@
 ---
-title: "Making HTTP requests with the $http service"
-linkTitle: "HTTP Requests"
+title: 'Making HTTP requests with the $http service'
+linkTitle: 'HTTP requests'
 weight: 380
-description: "Send requests with the $http service and configure defaults, transforms, interceptors, and XSRF behavior."
+description:
+  'Send requests with the $http service and configure defaults, transforms,
+  interceptors, and XSRF behavior.'
 ---
 
 Use `$http` for application HTTP calls when you need request configuration,
@@ -94,9 +96,12 @@ angular.module('app', []).config({
 Runtime defaults are available through `$http.defaults`:
 
 ```ts
-angular.module('app').run(["$http", ($http) => {
-  $http.defaults.headers.common['X-App-Version'] = '2.1.0';
-}]);
+angular.module('app').run([
+  '$http',
+  ($http) => {
+    $http.defaults.headers.common['X-App-Version'] = '2.1.0';
+  },
+]);
 ```
 
 ## Interceptors
@@ -129,9 +134,9 @@ angular.module('app', []).config({
 
 ## Error Handling
 
-Rejected requests use the same response object shape as successful requests.
-Use `status` for HTTP errors and `xhrStatus` for transport outcomes such as
-timeouts and aborts.
+Rejected requests use the same response object shape as successful requests. Use
+`status` for HTTP errors and `xhrStatus` for transport outcomes such as timeouts
+and aborts.
 
 ```ts
 $http.get<User>('/api/users/99').catch((error) => {

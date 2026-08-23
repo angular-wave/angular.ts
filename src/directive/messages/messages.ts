@@ -19,7 +19,7 @@ import {
   isInstanceOf,
   values,
   isString,
-  assertDefined,
+  assertInvariantDefined,
 } from "../../shared/utils.ts";
 import {
   createNodelistFromHTML,
@@ -179,7 +179,7 @@ class NgMessageCtrl {
     const attachDefault = !!this._default && !messageMatched && truthyKeys > 0;
 
     if (attachDefault) {
-      assertDefined(this._default).attach();
+      assertInvariantDefined(this._default).attach();
     } else if (this._default) {
       this._default.detach();
     }

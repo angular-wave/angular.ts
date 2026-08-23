@@ -337,7 +337,6 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
   createService: (
     $injector: ng.InjectorService,
     $window: Window,
-    $exceptionHandler: ng.ExceptionHandlerService,
   ) => SceDelegateService;
 
   constructor() {
@@ -480,16 +479,13 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
     this.createService = function (
       $injector: ng.InjectorService,
       $window: Window,
-      $exceptionHandler: ng.ExceptionHandlerService,
     ) {
       const trustedTypesPolicy = getTrustedTypesPolicy($window);
 
       let htmlSanitizer: (...args: unknown[]) => unknown = function () {
-        $exceptionHandler(
-          $sceError(
-            "unsafe",
-            "Attempting to use an unsafe value in a safe context.",
-          ),
+        throw $sceError(
+          "unsafe",
+          "Attempting to use an unsafe value in a safe context.",
         );
       };
 
@@ -634,16 +630,12 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
           isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
 
         if (!Constructor) {
-          $exceptionHandler(
-            $sceError(
-              "icontext",
-              "Attempted to trust a value in invalid context. Context: {0}; Value: {1}",
-              type,
-              trustedValue,
-            ),
+          throw $sceError(
+            "icontext",
+            "Attempted to trust a value in invalid context. Context: {0}; Value: {1}",
+            type,
+            trustedValue,
           );
-
-          return undefined;
         }
 
         if (
@@ -657,15 +649,11 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
         // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
         // mutable objects, we ensure here that the value passed in is actually a string.
         if (!isString(trustedValue)) {
-          $exceptionHandler(
-            $sceError(
-              "itype",
-              "Attempted to trust a non-string value in a content requiring a string: Context: {0}",
-              type,
-            ),
+          throw $sceError(
+            "itype",
+            "Attempted to trust a non-string value in a content requiring a string: Context: {0}",
+            type,
           );
-
-          return undefined;
         }
 
         const tst = new Constructor(
@@ -767,15 +755,11 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
           if (isResourceUrlAllowedByPolicy(maybeTrusted as ResolvableUrl)) {
             return maybeTrusted;
           }
-          $exceptionHandler(
-            $sceError(
-              "insecurl",
-              "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}",
-              String(maybeTrusted),
-            ),
+          throw $sceError(
+            "insecurl",
+            "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}",
+            String(maybeTrusted),
           );
-
-          return undefined;
         }
 
         // htmlSanitizer throws its own error when no sanitizer is available.

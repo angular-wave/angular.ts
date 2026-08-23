@@ -1,21 +1,26 @@
 ---
-title: "ng-bind-html"
-description: "Bind trusted HTML content to an element."
+title: 'ng-bind-html'
+description:
+  'Bind an HTML string to an element after the application has sanitized it.'
 ---
-Sets the `innerHTML` of an element to a trusted HTML string. The value must be explicitly trusted through the `$sce` service to prevent XSS.
+
+Sets an element's `innerHTML` to the evaluated string.
 
 ```html
+<div ng-bind-html="articleHtml"></div>
 ```
 
-```javascript
-  $scope.trustedHtml = $sce.trustAsHtml('<strong>Hello</strong> <em>world</em>');
-});
+```js
+$scope.articleHtml = '<strong>Hello</strong> <em>world</em>';
 ```
+
 #### `ng-bind-html`
 
 - **Type:** `expression`
 - **Required:** yes
 
-Expression that evaluates to a value marked as trusted HTML via `$sce.trustAsHtml()`. Untrusted strings will throw an SCE error.
+Expression that evaluates to an HTML string. `null` and `undefined` clear the
+element.
 
-> **Warning:** Never pass user-supplied content directly to `$sce.trustAsHtml()`. Only trust HTML you control or have saniti
+> **Warning:** This directive does not sanitize the string. Never bind raw user
+> input or untrusted server content. Sanitize it before assigning it to scope.

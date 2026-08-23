@@ -9,7 +9,7 @@ import {
   removeElement,
 } from "../../shared/dom.ts";
 import {
-  assertDefined,
+  assertInvariantDefined,
   shouldHandleViewRetentionPause,
   values,
 } from "../../shared/utils.ts";
@@ -145,7 +145,8 @@ export function ngSwitchDirective(
                 (caseElementParam, selectedScopeParam) => {
                   const caseElement = caseElementParam as HTMLElement;
 
-                  const selectedScope = assertDefined(selectedScopeParam);
+                  const selectedScope =
+                    assertInvariantDefined(selectedScopeParam);
 
                   selectedScopes.push(selectedScope);
                   const anchor = selectedTransclude.element;

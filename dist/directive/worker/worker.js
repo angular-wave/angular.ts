@@ -1,11 +1,17 @@
-import { _parse, _log, _worker, _injector } from '../../injection-tokens.js';
+import { _parse, _log, _worker, _injector, _exceptionHandler } from '../../injection-tokens.js';
 import { directiveNormalize, shouldHandleViewRetentionPause, callBackAfterFirst, isDefined, wait } from '../../shared/utils.js';
 import { WorkerError } from '../../services/worker/worker.js';
 import { getEventNameForElement } from '../events/event-name.js';
 import { hasNormalizedAttr, getNormalizedAttr, setNormalizedAttr } from '../../shared/dom.js';
 
 const workerDirectiveScopeStates = new WeakMap();
-ngWorkerDirective.$inject = [_parse, _log, _worker, _injector];
+ngWorkerDirective.$inject = [
+    _parse,
+    _log,
+    _worker,
+    _injector,
+    _exceptionHandler,
+];
 function getScopeWorkerQueueState(scope) {
     let state = workerDirectiveScopeStates.get(scope);
     if (state)
@@ -75,7 +81,7 @@ function flushScopeWorkerQueue(state) {
 /**
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" on-result="callback($result)"></div>
  */
-function ngWorkerDirective($parse, $log, $worker, $injector) {
+function ngWorkerDirective($parse, $log, $worker, $injector, $exceptionHandler) {
     return {
         restrict: "A",
         link(scope, element) {
@@ -130,7 +136,12 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                 queueScopeWorkerOperation(scope, () => {
                     const onResult = attr("onResult");
                     if (isDefined(onResult)) {
-                        $parse(onResult)(scope, { $result: result });
+                        try {
+                            $parse(onResult)(scope, { $result: result });
+                        }
+                        catch (error) {
+                            $exceptionHandler(error);
+                        }
                     }
                 });
             };
@@ -139,7 +150,12 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                     $log.error(`[ng-worker:${workerLabel}]`, err);
                     const onError = attr("onError");
                     if (isDefined(onError)) {
-                        $parse(onError)(scope, { error: err });
+                        try {
+                            $parse(onError)(scope, { error: err });
+                        }
+                        catch (error) {
+                            $exceptionHandler(error);
+                        }
                     }
                 });
             };
@@ -170,8 +186,8 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                             params = paramsFn?.(scope);
                         }
                         catch (err) {
-                            $log.error("ngWorker: failed to evaluate data-params", err);
-                            params = undefined;
+                            $exceptionHandler(err);
+                            return;
                         }
                         if (requestMode) {
                             try {

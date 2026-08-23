@@ -1,6 +1,5 @@
 import type { RuntimeModule } from "../angular-runtime.ts";
 import { _angular, _eventBus, _exceptionHandler } from "../injection-tokens.ts";
-import type { RuntimeComposition } from "../core/composition/runtime-composition.ts";
 import {
   applyEventBusConfiguration,
   createEventBusRuntimeState,
@@ -9,18 +8,17 @@ import {
   type EventBus,
   type EventBusConfig,
 } from "../services/event-bus/event-bus.ts";
+import { getRuntimeComposition } from "./custom-ng.ts";
 
 /** Register the application-wide EventBus in a custom AngularTS runtime. */
 export const eventBusModule: RuntimeModule = (angular) => {
-  const runtime = angular as ng.Angular & {
-    _composition: RuntimeComposition;
-  };
+  const composition = getRuntimeComposition(angular);
   const state = createEventBusRuntimeState();
 
-  runtime._composition.configRegistry.register(_eventBus, (value) => {
+  composition.configRegistry.register(_eventBus, (value) => {
     applyEventBusConfiguration(state, value as EventBusConfig);
   });
-  runtime._composition.addDisposer(() => {
+  composition.addDisposer(() => {
     destroyEventBusRuntimeState(state);
   });
 

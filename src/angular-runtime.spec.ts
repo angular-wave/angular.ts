@@ -169,6 +169,81 @@ describe("AngularRuntime composition ownership", () => {
     expect(constructions).toBe(1);
   });
 
+  it("routes fire-and-forget invocation failures through the exception handler", async () => {
+    const runtime = new Angular();
+    const syncError = new Error("sync invocation failed");
+    const asyncError = new Error("async invocation failed");
+    const errors: unknown[] = [];
+
+    runtimes.push(runtime);
+
+    runtime
+      .module("invocationFailureBoundary", ["ng"])
+      .config({
+        $exceptionHandler: {
+          handler(exception): never {
+            errors.push(exception);
+
+            // The test sink absorbs failures so every detached path can be observed.
+            return undefined as never;
+          },
+        },
+      })
+      .value("invocationTarget", {
+        failAsync: () => Promise.reject(asyncError),
+        failSync: () => {
+          throw syncError;
+        },
+      });
+
+    runtime.injector(["invocationFailureBoundary"]);
+    runtime.emit("invocationTarget.failSync()");
+    runtime.emit("invocationTarget.failAsync()");
+    runtime.emit("missingTarget.run()");
+    await wait();
+
+    const missingTargetError = errors.find(
+      (error) => error !== syncError && error !== asyncError,
+    );
+
+    expect(errors).toHaveSize(3);
+    expect(errors).toContain(syncError);
+    expect(errors).toContain(asyncError);
+    expect(missingTargetError).toEqual(jasmine.any(Error));
+    expect((missingTargetError as Error).message).toBe(
+      'No target found for "missingTarget"',
+    );
+  });
+
+  it("keeps awaited invocation failures on the returned promise", async () => {
+    const runtime = new Angular();
+    const operationError = new Error("awaited invocation failed");
+    const errors: unknown[] = [];
+
+    runtimes.push(runtime);
+
+    runtime
+      .module("invocationPromiseBoundary", ["ng"])
+      .config({
+        $exceptionHandler: {
+          handler(exception): never {
+            errors.push(exception);
+            throw exception;
+          },
+        },
+      })
+      .value("invocationTarget", {
+        fail: () => Promise.reject(operationError),
+      });
+
+    runtime.injector(["invocationPromiseBoundary"]);
+
+    await expectAsync(runtime.call("invocationTarget.fail()")).toBeRejectedWith(
+      operationError,
+    );
+    expect(errors).toEqual([]);
+  });
+
   it("keeps scope runtime dependencies isolated between top-level runtimes", async () => {
     const firstErrors: unknown[] = [];
     const secondErrors: unknown[] = [];

@@ -1,7 +1,6 @@
 import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import {
-  assertArgFn,
-  assertNotHasOwnProperty,
+  validateNotHasOwnPropertyName,
   createObject,
   isArray,
   isFunction,
@@ -10,6 +9,7 @@ import {
   createErrorFactory,
   isString,
 } from "../../shared/utils.ts";
+import { validateFunction } from "../../shared/validate.ts";
 
 export interface ControllerLocals {
   $scope: ng.Scope;
@@ -83,7 +83,7 @@ function unwrapController(
     ? injectable[injectable.length - 1]
     : injectable;
 
-  assertArgFn(candidate, argNameForErrors ?? "controller", true);
+  validateFunction(candidate, argNameForErrors ?? "controller", true);
 
   const func = candidate as ControllerConstructor;
 
@@ -105,13 +105,13 @@ export class ControllerRegistry {
   private _destroyed = false;
 
   has(name: string): boolean {
-    this._assertActive();
+    this._ensureActive();
 
     return this._controllers.has(name);
   }
 
   get(name: string): InjectableController | undefined {
-    this._assertActive();
+    this._ensureActive();
 
     return this._controllers.get(name);
   }
@@ -120,10 +120,10 @@ export class ControllerRegistry {
     name: string | Record<string, unknown>,
     constructor?: unknown,
   ): void {
-    this._assertActive();
+    this._ensureActive();
 
     if (isString(name)) {
-      assertNotHasOwnProperty(name, "controller");
+      validateNotHasOwnPropertyName(name, "controller");
       this._controllers.set(name, normalizeControllerDef(constructor, name));
 
       return;
@@ -148,7 +148,7 @@ export class ControllerRegistry {
   }
 
   /** @internal */
-  private _assertActive(): void {
+  private _ensureActive(): void {
     if (this._destroyed) {
       throw new Error("Controller registry has already been disposed.");
     }
@@ -215,7 +215,7 @@ export function createControllerService(
       }
 
       expression = lookedUp;
-      assertArgFn(expression, constructorName, true);
+      validateFunction(expression, constructorName, true);
     }
 
     const injectable = expression as InjectableController;

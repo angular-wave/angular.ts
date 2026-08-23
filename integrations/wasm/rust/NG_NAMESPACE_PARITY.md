@@ -74,6 +74,7 @@ Rust reference example makes one necessary.
 | `ClassMap` | deferred |
 | `ClassValue` | deferred |
 | `Component` | covered |
+| `ComponentDefinition` | alias |
 | `ComponentView` | covered |
 | `ComponentViewChild` | alias |
 | `ComponentViewContext` | covered |
@@ -319,7 +320,7 @@ Rust reference example makes one necessary.
 | --- | --- |
 | `CookieOptions` | covered |
 | `CookieStoreOptions` | covered |
-| `ErrorHandlingConfig` | deferred |
+| `ErrorFormattingConfig` | deferred |
 | `InterpolationFunction` | deferred |
 | `NgModelController` | deferred |
 | `HtmlCanvasConfig` | deferred |

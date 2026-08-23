@@ -1,7 +1,7 @@
 import { _scope } from '../../injection-tokens.js';
 import { setScope, dealoc, getInheritedData } from '../../shared/dom.js';
 import { kebobString } from '../../shared/strings.js';
-import { isFunction, isInstanceOf, hasOwn, deleteProperty, isObject, isArray, uppercase, isNumber, isString, stringify } from '../../shared/utils.js';
+import { isFunction, assertInvariantDefined, isInstanceOf, hasOwn, deleteProperty, isObject, isArray, uppercase, isNumber, isString, stringify } from '../../shared/utils.js';
 
 /** Native custom element base class backed by an AngularTS child scope. */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-parameters */
@@ -82,14 +82,14 @@ function destroyWebComponentRuntimeState(state) {
     state.scopes.clear();
 }
 /** @internal */
-function createWebComponentService(injector, rootScope, compile, state) {
-    const assertActive = () => {
+function createWebComponentService(injector, rootScope, compile, state, exceptionHandler) {
+    const ensureActive = () => {
         if (state.destroyed) {
             throw new Error("Cannot use $webComponent after runtime teardown");
         }
     };
     const createElementScope = (host, initialState = {}, options = {}) => {
-        assertActive();
+        ensureActive();
         const parentScope = (options.parentScope ??
             getInheritedData(host, _scope) ??
             getInheritedData(host.parentNode ?? host, _scope) ??
@@ -107,20 +107,20 @@ function createWebComponentService(injector, rootScope, compile, state) {
     return {
         createElementScope,
         defineAppComponent: (name, options) => {
-            assertActive();
+            ensureActive();
             const mergedOptions = {
                 ...state.defaults,
                 ...options,
             };
-            return defineAppComponent(name, mergedOptions, injector, compile, createElementScope, state);
+            return defineAppComponent(name, mergedOptions, injector, compile, createElementScope, state, exceptionHandler);
         },
         defineElement: (name, elementClass) => {
-            assertActive();
-            return defineScopeElement(name, elementClass, resolveScopeElementOptions(elementClass), injector, compile, createElementScope, state);
+            ensureActive();
+            return defineScopeElement(name, elementClass, resolveScopeElementOptions(elementClass), injector, compile, createElementScope, state, exceptionHandler);
         },
     };
 }
-function defineAppComponent(name, options, injector, compile, createElementScope, state) {
+function defineAppComponent(name, options, injector, compile, createElementScope, state, exceptionHandler) {
     class AngularTsAppComponent extends ScopeElement {
         connected() {
             const context = getScopeElementContext(this);
@@ -145,9 +145,9 @@ function defineAppComponent(name, options, injector, compile, createElementScope
     Object.defineProperty(AngularTsAppComponent, "name", {
         value: customElementClassName(name),
     });
-    return defineScopeElement(name, AngularTsAppComponent, options, injector, compile, createElementScope, state);
+    return defineScopeElement(name, AngularTsAppComponent, options, injector, compile, createElementScope, state, exceptionHandler);
 }
-function defineScopeElement(name, elementClass, options, injector, compile, createElementScope, state) {
+function defineScopeElement(name, elementClass, options, injector, compile, createElementScope, state, exceptionHandler) {
     const existing = customElements.get(name);
     if (existing)
         return existing;
@@ -155,6 +155,7 @@ function defineScopeElement(name, elementClass, options, injector, compile, crea
     scopeElementDefinitions.set(elementClass, {
         compile,
         createElementScope,
+        exceptionHandler,
         injector,
         inputs,
         options: options,
@@ -240,7 +241,9 @@ function syncScopeElementAttribute(host, attribute, oldValue, newValue) {
     if (!input)
         return;
     writeInput(host, input, coerceAttributeValue(input, newValue), scopeElementScopes.get(host));
-    host.attributeChanged?.(attribute, oldValue, newValue);
+    invokeScopeElementCallback(definition, () => {
+        host.attributeChanged?.(attribute, oldValue, newValue);
+    });
 }
 function connectScopeElement(host) {
     const existingScope = scopeElementScopes.get(host);
@@ -268,7 +271,7 @@ function connectScopeElement(host) {
     applyAttributes(host, definition.inputs, scope);
     applyPendingValues(host, definition.inputs, scope);
     renderTemplate(renderRoot, host, scope, options.template, definition.compile);
-    const cleanup = element.connected?.();
+    const cleanup = invokeScopeElementCallback(definition, () => element.connected?.());
     if (isFunction(cleanup)) {
         scopeElementCleanupFns.set(host, cleanup);
     }
@@ -278,20 +281,43 @@ function disconnectScopeElement(host) {
     if (!scope)
         return;
     const cleanup = scopeElementCleanupFns.get(host);
-    cleanup?.();
-    scopeElementCleanupFns.delete(host);
-    const definition = getScopeElementDefinition(host);
+    const definition = assertInvariantDefined(getScopeElementDefinition(host));
     const context = scopeElementContexts.get(host);
     const element = host;
-    element.disconnected?.();
+    const callbackErrors = [];
+    try {
+        cleanup?.();
+    }
+    catch (error) {
+        callbackErrors.push(error);
+    }
+    scopeElementCleanupFns.delete(host);
+    try {
+        element.disconnected?.();
+    }
+    catch (error) {
+        callbackErrors.push(error);
+    }
     if (!scope._handler._destroyed) {
         scope.destroy();
     }
     scopeElementScopes.delete(host);
     scopeElementContexts.delete(host);
-    definition?.state.hosts.delete(host);
+    definition.state.hosts.delete(host);
     if (context)
         clearRenderedContent(context.root);
+    for (const error of callbackErrors) {
+        definition.exceptionHandler(error);
+    }
+}
+function invokeScopeElementCallback(definition, callback) {
+    try {
+        return callback();
+    }
+    catch (error) {
+        definition.exceptionHandler(error);
+        return undefined;
+    }
 }
 function getScopeElementDefinition(host) {
     return scopeElementDefinitions.get(host.constructor);

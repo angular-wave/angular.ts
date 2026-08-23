@@ -159,6 +159,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
   private readonly _transportOptions: WebTransportOptions;
   private readonly _config: WebTransportConfig;
   private readonly _log: LogService;
+  private readonly _exceptionHandler: ng.ExceptionHandlerService;
   private readonly _encoder = new TextEncoder();
   private _closing = false;
   private _closedSettled = false;
@@ -173,12 +174,14 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     transportOptions: WebTransportOptions,
     config: WebTransportConfig,
     log: LogService,
+    exceptionHandler: ng.ExceptionHandlerService,
   ) {
     this._url = url;
     this._TransportCtor = TransportCtor;
     this._transportOptions = transportOptions;
     this._config = config;
     this._log = log;
+    this._exceptionHandler = exceptionHandler;
     this.closed = new Promise<void>((resolve, reject) => {
       this._closedResolve = resolve;
       this._closedReject = reject;
@@ -272,15 +275,16 @@ class ManagedWebTransportConnection implements WebTransportConnection {
       },
     );
 
-    void transport.closed
-      .then(() => {
+    void transport.closed.then(
+      () => {
         this._handleNativeClose(undefined, transport);
 
         return undefined;
-      })
-      .catch((error: unknown) => {
+      },
+      (error: unknown) => {
         this._handleNativeClose(error, transport);
-      });
+      },
+    );
   }
 
   /** @internal */
@@ -300,7 +304,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     } catch (nextError) {
       if (this._closing || this._closedSettled) return;
 
-      this._config.onError?.(nextError);
+      this._notifyError(nextError);
       this._log.error("WebTransport reconnect hook failed", nextError);
     }
   }
@@ -313,8 +317,11 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     if (transport !== this.transport || this._closedSettled) return;
 
     if (this._closing) {
-      this._config.onClose?.();
-      this._settleClosed();
+      try {
+        this._invokeDetached(this._config.onClose);
+      } finally {
+        this._settleClosed();
+      }
 
       return;
     }
@@ -324,14 +331,20 @@ class ManagedWebTransportConnection implements WebTransportConnection {
     }
 
     if (error) {
-      this._config.onError?.(error);
-      this._settleClosed(error);
+      try {
+        this._notifyError(error);
+      } finally {
+        this._settleClosed(error);
+      }
 
       return;
     }
 
-    this._config.onClose?.();
-    this._settleClosed();
+    try {
+      this._invokeDetached(this._config.onClose);
+    } finally {
+      this._settleClosed();
+    }
   }
 
   /** @internal */
@@ -344,7 +357,13 @@ class ManagedWebTransportConnection implements WebTransportConnection {
 
     const attempt = ++this._reconnectAttempts;
 
-    const delay = this._resolveRetryDelay(attempt, error);
+    let delay = 0;
+
+    try {
+      delay = this._resolveRetryDelay(attempt, error);
+    } catch (retryError) {
+      this._exceptionHandler(retryError);
+    }
 
     this._clearReconnectTimer();
     this._reconnectTimer = setTimeout(() => {
@@ -397,7 +416,24 @@ class ManagedWebTransportConnection implements WebTransportConnection {
 
     try {
       for (;;) {
-        const result = await reader.read();
+        let result: ReadableStreamReadResult<Uint8Array>;
+
+        try {
+          result = await reader.read();
+        } catch (error) {
+          if (
+            this._closing ||
+            this._closedSettled ||
+            (this._config.reconnect && transport === this.transport)
+          ) {
+            return;
+          }
+
+          this._notifyError(error);
+          this._log.error("WebTransport datagram read failed", error);
+
+          return;
+        }
 
         if (result.done) return;
 
@@ -410,7 +446,7 @@ class ManagedWebTransportConnection implements WebTransportConnection {
             ? this._config.transformDatagram(data)
             : data;
         } catch (error) {
-          this._config.onError?.(error);
+          this._notifyError(error);
           this._log.error("WebTransport datagram transform failed", error);
 
           continue;
@@ -419,25 +455,15 @@ class ManagedWebTransportConnection implements WebTransportConnection {
         const event = { data, message };
 
         if (isRealtimeProtocolMessage(message)) {
-          this._config.onProtocolMessage?.(
+          this._invokeDetached(
+            this._config.onProtocolMessage,
             message,
             event as WebTransportDatagramEvent<RealtimeProtocolMessage>,
           );
         }
 
-        this._config.onDatagram?.(event);
+        this._invokeDetached(this._config.onDatagram, event);
       }
-    } catch (error) {
-      if (
-        this._closing ||
-        this._closedSettled ||
-        (this._config.reconnect && transport === this.transport)
-      ) {
-        return;
-      }
-
-      this._config.onError?.(error);
-      this._log.error("WebTransport datagram read failed", error);
     } finally {
       reader.releaseLock();
     }
@@ -459,6 +485,25 @@ class ManagedWebTransportConnection implements WebTransportConnection {
 
     return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
   }
+
+  /** @internal */
+  private _notifyError(error: unknown): void {
+    this._invokeDetached(this._config.onError, error);
+  }
+
+  /** @internal */
+  private _invokeDetached<TArgs extends unknown[]>(
+    callback: ((...args: TArgs) => void) | undefined,
+    ...args: TArgs
+  ): void {
+    if (!callback) return;
+
+    try {
+      callback(...args);
+    } catch (callbackError) {
+      this._exceptionHandler(callbackError);
+    }
+  }
 }
 
 /** @internal */
@@ -467,6 +512,7 @@ export function createWebTransportService(
   configuration: WebTransportRuntimeConfiguration,
   getWebTransportConstructor: () => WebTransportConstructor | undefined,
   baseUrl: string,
+  exceptionHandler: ng.ExceptionHandlerService,
 ): WebTransportService {
   return (url: string, config: WebTransportConfig = {}) => {
     if (configuration.destroyed) {
@@ -516,6 +562,7 @@ export function createWebTransportService(
         onReconnect,
       },
       log,
+      exceptionHandler,
     );
     const release = (): void => {
       configuration.connections.delete(connection);

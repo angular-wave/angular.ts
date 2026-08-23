@@ -1,7 +1,5 @@
-/**
- * Error configuration object. May only contain the options that need to be updated.
- */
-export interface ErrorHandlingConfig {
+/** Controls how values embedded in framework error messages are formatted. */
+export interface ErrorFormattingConfig {
   /**
    * The max depth for stringifying objects.
    * Setting to a non-positive or non-numeric value removes the max depth limit.

@@ -1299,7 +1299,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
       MAX_WASM_ABI_PATH_BYTES,
       "scope path",
     );
-    assertSafeWasmScopePath(path);
+    validateSafeWasmScopePath(path);
 
     return this._createResultBuffer(scope.get(path));
   }
@@ -1322,7 +1322,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
       MAX_WASM_ABI_PATH_BYTES,
       "scope path",
     );
-    assertSafeWasmScopePath(path);
+    validateSafeWasmScopePath(path);
     const value = this._readGuestJson(valuePtr, valueLen);
     const options = normalizeWasmScopeWriteOptions(undefined, false);
 
@@ -1368,7 +1368,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
       "scope path",
     );
 
-    assertSafeWasmScopePath(path);
+    validateSafeWasmScopePath(path);
 
     const bytes = scope.getBinary(path);
 
@@ -1397,7 +1397,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
       MAX_WASM_ABI_PATH_BYTES,
       "scope path",
     );
-    assertSafeWasmScopePath(path);
+    validateSafeWasmScopePath(path);
     const value = this._readGuestBytes(valuePtr, valueLen).slice();
     const options = normalizeWasmScopeWriteOptions(
       optionsLen === 0
@@ -1428,7 +1428,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
       "scope path",
     );
 
-    assertSafeWasmScopePath(path);
+    validateSafeWasmScopePath(path);
 
     const options = normalizeWasmScopeWriteOptions(undefined, false);
 
@@ -1470,7 +1470,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
       MAX_WASM_ABI_PATH_BYTES,
       "scope path",
     );
-    assertSafeWasmScopePath(path);
+    validateSafeWasmScopePath(path);
     const watchHandle = this._nextWatchHandle++;
     const dispose = scope.watch(path, (update) => {
       this._queueUpdate(update);
@@ -1557,7 +1557,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
   ): Uint8Array {
     const { memory } = this._requireExports();
 
-    assertWasmMemoryRange(memory, ptr, len, maximum, label);
+    validateWasmMemoryRange(memory, ptr, len, maximum, label);
 
     return new Uint8Array(memory.buffer, ptr, len);
   }
@@ -1589,7 +1589,7 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
 
     const ptr = exports.ng_abi_alloc(bytes.byteLength);
 
-    assertWasmMemoryRange(
+    validateWasmMemoryRange(
       exports.memory,
       ptr,
       bytes.byteLength,
@@ -2157,7 +2157,7 @@ export function destroyWasmRuntimeState(state: WasmRuntimeState): void {
 
 /** @internal */
 export function createWasmService(state: WasmRuntimeState): WasmService {
-  const assertActive = (): void => {
+  const ensureActive = (): void => {
     if (state.destroyed) {
       throw new WasmError(
         "disposed",
@@ -2170,7 +2170,7 @@ export function createWasmService(state: WasmRuntimeState): WasmService {
     load<TExports extends WebAssembly.Exports = WebAssembly.Exports>(
       options: WasmLoadOptions,
     ): WasmResource<TExports> {
-      assertActive();
+      ensureActive();
 
       const abi = new WasmScopeAbiImpl(
         (error) => {
@@ -2560,7 +2560,7 @@ function readWasmAbiVersion(
   return Number.isSafeInteger(version) ? version : -1;
 }
 
-function assertWasmMemoryRange(
+function validateWasmMemoryRange(
   memory: Pick<WebAssembly.Memory, "buffer">,
   ptr: number,
   len: number,
@@ -2702,7 +2702,7 @@ function normalizeWasmScopeTransaction(transaction: WasmScopeTransaction): {
   const deleted = new Set<string>();
 
   for (const path of Object.keys(inputSet)) {
-    assertSafeWasmScopePath(path);
+    validateSafeWasmScopePath(path);
     set[path] = inputSet[path];
   }
 
@@ -2711,7 +2711,7 @@ function normalizeWasmScopeTransaction(transaction: WasmScopeTransaction): {
       throw createWasmGuestError("invalidTransaction");
     }
 
-    assertSafeWasmScopePath(path);
+    validateSafeWasmScopePath(path);
 
     if (Object.prototype.hasOwnProperty.call(set, path) || deleted.has(path)) {
       throw createWasmGuestError("invalidTransaction");
@@ -2740,7 +2740,7 @@ function applyWasmScopeTransaction(
   }
 }
 
-function assertSafeWasmScopePath(path: string): void {
+function validateSafeWasmScopePath(path: string): void {
   const keys = scopePathKeys(path);
 
   if (keys.length === 0) {

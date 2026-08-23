@@ -31,7 +31,15 @@ export class Angular extends AngularRuntime {
   public readonly tags = tags;
 
   /** Explicit programmatic-view binding and element helpers. */
-  public readonly view = { attrs, each, event, props, tag, tagNS };
+  public readonly view = Object.freeze({
+    attrs,
+    each,
+    event,
+    props,
+    tag,
+    tagNS,
+    tags,
+  });
 }
 
 export { configureBuiltinRuntime, configureRuntimeInjectionTokens };

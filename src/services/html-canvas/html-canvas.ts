@@ -435,7 +435,10 @@ export function getHtmlCanvasRuntimeSupport(
   };
 }
 
-export function assertHtmlCanvasConfigInactive(config: HtmlCanvasConfig): void {
+/** Accepts HTML-in-Canvas config when the optional runtime is not active. */
+export function validateHtmlCanvasConfigInactive(
+  config: HtmlCanvasConfig,
+): void {
   void config;
 }
 
@@ -448,7 +451,11 @@ export function normalizeHtmlCanvasConfig(
   };
 }
 
-export function assertHtmlCanvasRuntimeSupported(
+/**
+ * Returns detected HTML-in-Canvas support or throws when active configuration
+ * requires a browser capability that is unavailable.
+ */
+export function requireHtmlCanvasRuntimeSupport(
   config: HtmlCanvasConfig | NormalizedHtmlCanvasConfig,
   options: HtmlCanvasRuntimeSupportOptions = {},
 ): HtmlCanvasRuntimeSupport {
@@ -494,7 +501,7 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
   ) {
     this._window = win;
     this.config = normalizeHtmlCanvasConfig(config);
-    this.support = assertHtmlCanvasRuntimeSupported(this.config, {
+    this.support = requireHtmlCanvasRuntimeSupport(this.config, {
       document: doc,
       window: win,
       ...supportOptions,
@@ -509,8 +516,8 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
     canvas: HTMLCanvasElement,
     options: HtmlCanvasRootOptions = {},
   ): HtmlCanvasRoot {
-    this._assertActive();
-    this._assertEnabled();
+    this._ensureActive();
+    this._ensureEnabled();
 
     const existing = this._roots.get(canvas);
 
@@ -546,13 +553,13 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
   }
 
   invalidate(canvas: HTMLCanvasElement): void {
-    this._assertActive();
-    this._assertEnabled();
+    this._ensureActive();
+    this._ensureEnabled();
     this._roots.get(canvas)?.invalidate();
   }
 
   requestPaint(canvas: HTMLCanvasElement): void {
-    this._assertActive();
+    this._ensureActive();
     const requestPaint = (canvas as ExperimentalCanvas).requestPaint;
 
     if (!isCallable(requestPaint)) {
@@ -563,7 +570,7 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
   }
 
   requestAnimationFrame(callback: () => void): void {
-    this._assertActive();
+    this._ensureActive();
     this._window.requestAnimationFrame(callback);
   }
 
@@ -588,7 +595,7 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
   }
 
   /** @internal */
-  private _assertEnabled(): void {
+  private _ensureEnabled(): void {
     if (this.enabled) return;
 
     if (this.config.enabled === false) {
@@ -601,7 +608,7 @@ export class NativeHtmlCanvasService implements HtmlCanvasService {
   }
 
   /** @internal */
-  private _assertActive(): void {
+  private _ensureActive(): void {
     if (this._disposed) {
       throw new Error("HTML-in-Canvas runtime has already been disposed.");
     }

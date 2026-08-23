@@ -1,6 +1,6 @@
 ---
 title: 'Dependency injection and the AngularTS injector'
-linkTitle: 'Dependency Injection'
+linkTitle: 'Dependency injection'
 weight: 200
 description:
   'Understand how the AngularTS injector resolves named tokens, how to annotate
@@ -26,10 +26,10 @@ internal caches:
 
 When a service is requested via `$injector.get('myService')`, the injector looks
 up `myServiceProvider`, calls its `get` method (injecting that method's own
-dependencies), caches the result, and returns it. Every subsequent `get` returns
-the same instance.
+dependencies), caches the result, and returns it. Every later `get` returns the
+same instance.
 
-```typescript
+```ts
 // Retrieve a service
 const $http = injector.get('$http');
 
@@ -59,7 +59,7 @@ service registry once. Built-in token inference remains available alongside the
 application services, and `invoke()` and `instantiate()` infer their return
 types.
 
-```typescript
+```ts
 interface AppServices {
   auth: AuthService;
   featureFlags: { enabled: boolean };
@@ -80,7 +80,7 @@ string, and the last element is the function.
 
 ### Array annotation (recommended)
 
-```typescript
+```ts
 angular.module('myApp', []).controller('UserCtrl', [
   '$scope',
   '$http',
@@ -97,7 +97,7 @@ angular.module('myApp', []).controller('UserCtrl', [
 
 ### $inject property
 
-```typescript
+```ts
 class UserCtrl {
   static $inject = ['$scope', '$http', 'userService'];
 
@@ -165,7 +165,7 @@ During the **config phase** the provider itself is injected (not the instance),
 allowing configuration. During the **run phase** and everywhere else, the
 instance produced by `get` is injected.
 
-```typescript
+```ts
   private prefix = 'Hello';
 
   // Configuration method — callable during config phase
@@ -202,11 +202,12 @@ angular.module('myApp', [])
 
 ## Public Injectable Contracts
 
-`ng.InjectionTokenMap` is the authoritative mapping from every public
-single-dollar token to its named contract. `InjectorService.get()` uses this map
-automatically:
+[`ng.InjectionTokenMap`](../../../typedoc/interfaces/InjectionTokenMap.html) is
+the authoritative mapping from every public single-dollar token to its named
+contract. [`InjectorService.get()`](../../../typedoc/types/InjectorService.html)
+uses this map automatically:
 
-```typescript
+```ts
 const compile: ng.CompileService = $injector.get('$compile');
 const rootScope: ng.RootScopeService = $injector.get('$rootScope');
 const stateRegistry: ng.StateRegistryService = $injector.get('$stateRegistry');
@@ -214,19 +215,20 @@ const browserWindow: ng.WindowService = $injector.get('$window');
 ```
 
 Framework-owned double-dollar tokens are internal implementation details and are
-deliberately absent from `PublicInjectionTokens`, `InjectionTokenMap`, and the
-`ng` namespace.
+deliberately absent from `PublicInjectionTokens`,
+[`InjectionTokenMap`](../../../typedoc/interfaces/InjectionTokenMap.html), and
+the `ng` namespace.
 
-Every `InjectionTokenMap` value is a named `ng.*` contract exported through the
-generated TypeDoc entry point. Adding a public token without both its namespace
-contract and documentation export fails `make check`.
+Every
+[`InjectionTokenMap[`](../../../typedoc/interfaces/InjectionTokenMap.html) value is a named `](../../../typedoc/interfaces/InjectionTokenMap.html)ng.\*`contract exported through the generated TypeDoc entry point. Adding a public token without both its namespace contract and documentation export fails`make
+check`.
 
 ## Decorating existing services
 
 A decorator intercepts an existing service and can replace, wrap, or augment it.
 The original instance is available as `$delegate`.
 
-```typescript
+```ts
   .decorator('$log', ['$delegate', function ($delegate) {
       const originalInfo = $delegate.info.bind($delegate);
 
@@ -245,7 +247,7 @@ The original instance is available as `$delegate`.
 Controllers receive `$scope` as their first dependency by convention, followed
 by any other services. Use array annotation or `$inject`.
 
-```typescript
+```ts
 app.controller('DashboardCtrl', [
   '$scope',
   '$http',
@@ -260,7 +262,7 @@ app.controller('DashboardCtrl', [
 Directive factories are injected like any other factory. The returned directive
 definition object is not itself injected.
 
-```typescript
+```ts
 app.directive('myWidget', [
   '$http',
   'dataService',
@@ -282,7 +284,7 @@ app.directive('myWidget', [
 Filter factories are injectable. The returned filter function itself is not — it
 receives only the value and optional arguments from the template.
 
-```typescript
+```ts
 app.filter('truncate', [
   '$log',
   function ($log) {
@@ -299,7 +301,7 @@ app.filter('truncate', [
 Framework configuration is a typed declarative object. Run blocks have access to
 runtime services.
 
-```typescript
+```ts
 app.config({
   $http: {
     defaults: {

@@ -896,12 +896,8 @@ const sceDelegateRuntimeRegistration: RuntimeRegistrationRecipe = {
     return registry.factory(name, [
       _injector,
       _window,
-      _exceptionHandler,
-      (
-        $injector: ng.InjectorService,
-        $window: Window,
-        $exceptionHandler: ng.ExceptionHandlerService,
-      ) => configuration.createService($injector, $window, $exceptionHandler),
+      ($injector: ng.InjectorService, $window: Window) =>
+        configuration.createService($injector, $window),
     ]);
   },
 };
@@ -1035,8 +1031,14 @@ const websocketRuntimeRegistration: RuntimeRegistrationRecipe = {
 
     return registry.factory(name, [
       _log,
-      ($log: ng.LogService) =>
-        createWebSocketService($log, configuration, runtimeWindow.WebSocket),
+      _exceptionHandler,
+      ($log: ng.LogService, $exceptionHandler: ng.ExceptionHandlerService) =>
+        createWebSocketService(
+          $log,
+          configuration,
+          runtimeWindow.WebSocket,
+          $exceptionHandler,
+        ),
     ]);
   },
 };
@@ -1058,8 +1060,14 @@ const sseRuntimeRegistration: RuntimeRegistrationRecipe = {
 
     return registry.factory(name, [
       _log,
-      ($log: ng.LogService) =>
-        createSseService($log, configuration, () => runtimeWindow.EventSource),
+      _exceptionHandler,
+      ($log: ng.LogService, $exceptionHandler: ng.ExceptionHandlerService) =>
+        createSseService(
+          $log,
+          configuration,
+          () => runtimeWindow.EventSource,
+          $exceptionHandler,
+        ),
     ]);
   },
 };
@@ -1089,12 +1097,14 @@ const webTransportRuntimeRegistration: RuntimeRegistrationRecipe = {
 
     return registry.factory(name, [
       _log,
-      ($log: ng.LogService) =>
+      _exceptionHandler,
+      ($log: ng.LogService, $exceptionHandler: ng.ExceptionHandlerService) =>
         createWebTransportService(
           $log,
           configuration,
           () => runtimeWindow.WebTransport,
           runtimeWindow.location.href,
+          $exceptionHandler,
         ),
     ]);
   },
@@ -1114,9 +1124,20 @@ const workerRuntimeRegistration: RuntimeRegistrationRecipe = {
 
     return registry.factory(name, [
       _log,
+      _exceptionHandler,
       _security,
-      ($log: ng.LogService, $security: SecurityPolicy) =>
-        createWorkerService($log, state, () => runtimeWindow.Worker, $security),
+      (
+        $log: ng.LogService,
+        $exceptionHandler: ng.ExceptionHandlerService,
+        $security: SecurityPolicy,
+      ) =>
+        createWorkerService(
+          $log,
+          state,
+          () => runtimeWindow.Worker,
+          $exceptionHandler,
+          $security,
+        ),
     ]);
   },
 };
@@ -1137,11 +1158,20 @@ const webComponentRuntimeRegistration: RuntimeRegistrationRecipe = {
       _injector,
       _rootScope,
       _compile,
+      _exceptionHandler,
       (
         $injector: ng.InjectorService,
         $rootScope: ng.Scope,
         $compile: ng.CompileService,
-      ) => createWebComponentService($injector, $rootScope, $compile, state),
+        $exceptionHandler: ng.ExceptionHandlerService,
+      ) =>
+        createWebComponentService(
+          $injector,
+          $rootScope,
+          $compile,
+          state,
+          $exceptionHandler,
+        ),
     ]);
   },
 };
@@ -1178,12 +1208,12 @@ const serviceWorkerRuntimeRegistration: RuntimeRegistrationRecipe = {
       _security,
       (
         log: ng.LogService,
-        err: ng.ExceptionHandlerService,
+        $exceptionHandler: ng.ExceptionHandlerService,
         security: SecurityPolicy,
       ) => {
         service = createServiceWorkerService(
           context.platform.window.navigator.serviceWorker,
-          { log, err, configuration, security },
+          { log, exceptionHandler: $exceptionHandler, configuration, security },
         );
 
         if (destroyed) destroyServiceWorkerService(service);

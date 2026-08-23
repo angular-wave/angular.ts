@@ -405,77 +405,100 @@ export type Controller = object & {
   afterRender?: () => void;
 };
 
-/** Primitive text value accepted as a programmatic view child. */
-export type ComponentViewPrimitive = string | number | boolean | bigint;
+/** Reactive value reader used by a view binding. */
+export type ViewReader<T> = () => T;
+
+/** Primitive value accepted as a view child. Booleans render no DOM content. */
+export type ViewPrimitive = string | number | boolean | bigint;
+
+/** Compatibility alias for {@link ViewPrimitive}. */
+export type ComponentViewPrimitive = ViewPrimitive;
 
 /**
  * DOM content accepted from programmatic component and directive views.
  * Functions are reactive child readers, arrays are flattened recursively, and
  * existing nodes are moved rather than cloned. `null`, `undefined`, and
- * `false` render no DOM content. Document fragments contribute their children.
+ * booleans render no DOM content. Document fragments contribute their children.
  */
-export type ComponentViewChild =
-  | ComponentViewPrimitive
+export type ViewChild =
+  | ViewPrimitive
   | Node
   | null
   | undefined
-  | (() => ComponentViewChild)
-  | readonly ComponentViewChild[];
+  | (() => ViewChild)
+  | readonly ViewChild[];
+
+/** Compatibility alias for {@link ViewChild}. */
+export type ComponentViewChild = ViewChild;
+
+/** Runtime context shared by component and directive views. */
+export interface ViewContext<
+  TController,
+  TScope extends ng.Scope = ng.Scope,
+  TElement extends Element = Element,
+> {
+  /** Controller associated with the view. */
+  readonly controller: TController;
+  /** Scope that owns the generated DOM and reactive readers. */
+  readonly scope: TScope;
+  /** Native host element matched by the component or directive. */
+  readonly host: TElement;
+  /** @deprecated Use {@link host}. */
+  readonly element: TElement;
+  /** Transclusion function, when transclusion is enabled. */
+  readonly transclude: ng.TranscludeFn | undefined;
+  /** Registers cleanup and returns a cancellation function. */
+  readonly onDestroy: (cleanup: () => void) => () => void;
+}
 
 /** Runtime context passed to a component's programmatic view. */
 export interface ComponentViewContext<
   TController extends Controller = Controller,
-> {
+  TScope extends ng.Scope = ng.Scope,
+  TElement extends HTMLElement = HTMLElement,
+> extends ViewContext<TController, TScope, TElement> {
   /** Component controller after bindings and `onInit` have run. */
   readonly controller: TController;
-  /** Scope that owns the generated DOM and reactive child readers. */
-  readonly scope: ng.Scope;
-  /** Native component host element. */
-  readonly element: HTMLElement;
-  /** Component transclusion function, when transclusion is enabled. */
-  readonly transclude: ng.TranscludeFn | undefined;
-  /** Registers cleanup owned by the compiled view and returns a cancellation function. */
-  readonly onDestroy: (cleanup: () => void) => () => void;
 }
 
 /** Programmatic real-DOM factory used instead of a component template. */
-export type ComponentView<TController extends Controller = Controller> = (
-  context: ComponentViewContext<TController>,
-) => ComponentViewChild;
+export type ComponentView<
+  TController extends Controller = Controller,
+  TScope extends ng.Scope = ng.Scope,
+  TElement extends HTMLElement = HTMLElement,
+> = (context: ComponentViewContext<TController, TScope, TElement>) => ViewChild;
 
 /** Runtime context passed to a directive's programmatic view. */
 export interface DirectiveViewContext<
   TController = unknown,
-  TRequired = DirectiveController,
-> {
-  /** Directive controller, when the directive declares one. */
-  readonly controller: TController | undefined;
+  TRequired = DirectiveController | undefined,
+  TScope extends ng.Scope = ng.Scope,
+  TElement extends Element = Element,
+> extends ViewContext<TController, TScope, TElement> {
   /** Controllers resolved through the directive's `require` declaration. */
-  readonly required: TRequired | undefined;
-  /** Scope that owns the generated DOM and reactive child readers. */
-  readonly scope: ng.Scope;
-  /** Native element matched by the directive. */
-  readonly element: Element;
-  /** Directive transclusion function, when transclusion is enabled. */
-  readonly transclude: ng.TranscludeFn | undefined;
-  /** Registers cleanup owned by the compiled view and returns a cancellation function. */
-  readonly onDestroy: (cleanup: () => void) => () => void;
+  readonly required: TRequired;
 }
 
 /** Programmatic real-DOM factory used instead of a directive template. */
 export type DirectiveView<
   TController = unknown,
-  TRequired = DirectiveController,
+  TRequired = DirectiveController | undefined,
+  TScope extends ng.Scope = ng.Scope,
+  TElement extends Element = Element,
 > = {
   bivarianceHack(
-    context: DirectiveViewContext<TController, TRequired>,
-  ): ComponentViewChild;
+    context: DirectiveViewContext<TController, TRequired, TScope, TElement>,
+  ): ViewChild;
 }["bivarianceHack"];
 
 /**
  * Defines a component's configuration object (a simplified directive definition object).
  */
-export interface Component<TController extends Controller = Controller> {
+export interface Component<
+  TController extends Controller = Controller,
+  TScope extends ng.Scope = ng.Scope,
+  TElement extends HTMLElement = HTMLElement,
+> {
   controller?: string | Injectable<ControllerConstructor> | undefined;
   /**
    * An identifier name for a reference to the controller. If present, the controller will be published to its scope under
@@ -502,7 +525,7 @@ export interface Component<TController extends Controller = Controller> {
    * bindings and `onInit`, and is mutually exclusive with template, templateUrl,
    * and replace.
    */
-  view?: ComponentView<TController> | undefined;
+  view?: ComponentView<TController, TScope, TElement> | undefined;
   /**
    * Define DOM attribute binding to component properties. Component properties are always bound to the component
    * controller and not to the scope.
@@ -524,6 +547,41 @@ export interface Component<TController extends Controller = Controller> {
    */
   require?: Record<string, string> | undefined;
 }
+
+/**
+ * Component registration accepted by `NgModule.component()`. Programmatic and
+ * template-based rendering strategies are mutually exclusive.
+ */
+export type ComponentDefinition<
+  TController extends Controller = Controller,
+  TScope extends ng.Scope = ng.Scope,
+  TElement extends HTMLElement = HTMLElement,
+> = Omit<
+  Component<TController, TScope, TElement>,
+  "replace" | "template" | "templateUrl" | "view"
+> &
+  (
+    | {
+        view: ComponentView<TController, TScope, TElement>;
+        template?: never;
+        templateUrl?: never;
+        replace?: never;
+      }
+    | {
+        view?: never;
+        template?: Component<TController, TScope, TElement>["template"];
+        templateUrl?: never;
+        replace?: boolean | undefined;
+      }
+    | {
+        view?: never;
+        template?: never;
+        templateUrl: NonNullable<
+          Component<TController, TScope, TElement>["templateUrl"]
+        >;
+        replace?: boolean | undefined;
+      }
+  );
 
 /**
  * A controller instance or object map used in directives.
@@ -585,7 +643,12 @@ export type DirectiveRestrict = "A" | "E" | "AE" | "EA";
 /**
  * Defines the structure of an AngularTS directive.
  */
-export interface Directive<TCtrl = unknown> {
+export interface Directive<
+  TCtrl = unknown,
+  TRequired = DirectiveController | undefined,
+  TScope extends ng.Scope = ng.Scope,
+  TElement extends Element = Element,
+> {
   /** Optional name (usually inferred) */
   name?: string;
   /** Restrict option: 'A' and/or 'E'. Defaults to 'EA' if not defined */
@@ -593,10 +656,10 @@ export interface Directive<TCtrl = unknown> {
   /** Compile function for the directive */
   compile?: DirectiveCompileFn;
   /**
-   * Programmatic real-DOM view factory. It is mutually exclusive with
+   * Real-DOM view factory. It is mutually exclusive with
    * template, templateUrl, and replace and composes with compile/link.
    */
-  view?: DirectiveView<TCtrl>;
+  view?: DirectiveView<TCtrl, TRequired, TScope, TElement>;
   /** Controller constructor or injectable string name */
   controller?: string | Injectable<ControllerConstructor>;
   /** Alias name for the controller in templates */

@@ -1,6 +1,6 @@
 ---
 title: 'Provider Migration'
-linkTitle: 'Provider Migration'
+linkTitle: 'Provider migration'
 weight: 260
 description:
   'Move provider-era AngularTS code to NgModule declarations, app.config, and
@@ -9,9 +9,10 @@ description:
 
 AngularTS keeps user-defined providers as an advanced module extension
 mechanism, but framework providers are not an application authoring API. Normal
-apps declare structure through `NgModule`, configure framework behavior through
-`app.config({ ... })`, and inject runtime services. The old provider paths below
-are migration references, not compatibility APIs.
+apps declare structure through
+[`NgModule`](../../../typedoc/classes/NgModule.html), configure framework
+behavior through `app.config({ ... })`, and inject runtime services. The old
+provider paths below are migration references, not compatibility APIs.
 
 Non-provider compatibility symbols are tracked in the
 [public API migration guide](../public-api-migration/).
@@ -49,7 +50,7 @@ Non-provider compatibility symbols are tracked in the
 
 Old provider-style configuration:
 
-```javascript
+```js
 angular.module('app', []).config([
   '$stateProvider',
   '$httpProvider',
@@ -70,7 +71,7 @@ angular.module('app', []).config([
 
 Preferred AngularTS authoring:
 
-```javascript
+```js
 angular
   .module('app', [])
   .router({ name: 'home', url: '/', template: '<home-page></home-page>' })
@@ -91,5 +92,6 @@ angular
 ## Cleanup Rules
 
 Provider compatibility aliases are not retained. Documentation must teach the
-current `NgModule` and `app.config({ ... })` APIs, generated surfaces must match
-that API, and new framework features must not expose provider recipes.
+current [`NgModule`](../../../typedoc/classes/NgModule.html) and
+`app.config({ ... })` APIs, generated surfaces must match that API, and new
+framework features must not expose provider recipes.

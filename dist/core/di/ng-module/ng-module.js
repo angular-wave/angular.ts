@@ -49,7 +49,7 @@ const angularConfigKeys = new Set([
     _webTransport,
     _websocket,
 ]);
-function assertKnownAngularConfigKey(key) {
+function validateKnownAngularConfigKey(key) {
     if (!angularConfigKeys.has(key)) {
         throw new Error(`Unknown AngularTS config key '${key}'.`);
     }
@@ -140,7 +140,7 @@ function getModelFactoryDependencies(name, initial) {
         }
     }
 }
-function assertAppSafeModelFactoryDependencies(name, initial) {
+function validateAppSafeModelFactoryDependencies(name, initial) {
     const dependencies = getModelFactoryDependencies(name, initial);
     const rootScopedDependency = dependencies.find((dependency) => rootScopedModelFactoryDependencies.has(dependency));
     if (rootScopedDependency) {
@@ -264,7 +264,7 @@ class NgModule {
         const normalized = {};
         validate(isObject, config, "config");
         for (const key of Object.keys(config)) {
-            assertKnownAngularConfigKey(key);
+            validateKnownAngularConfigKey(key);
             setAngularConfig(normalized, key, config[key]);
         }
         const compileConfig = normalized.$compile;
@@ -462,7 +462,7 @@ class NgModule {
     }
     /**
      * @param {string} name
-     * @param {ng.Component} options
+     * @param {ng.ComponentDefinition} options
      * @returns {NgModule}
      */
     component(name, options) {
@@ -622,7 +622,7 @@ class NgModule {
             throw new Error(`Model '${name}' is already registered.`);
         }
         if (isInjectable(initial)) {
-            assertAppSafeModelFactoryDependencies(name, initial);
+            validateAppSafeModelFactoryDependencies(name, initial);
         }
         let modelInjector;
         const modelFactory = createModelFactory(initial, () => modelInjector);

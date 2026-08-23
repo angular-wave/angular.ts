@@ -42,11 +42,7 @@
     <div
       class="pointer-capture-demo__board"
       ng-pointer-capture
-      ng-on-pointerdown="$ctrl.start($event)"
-      ng-on-pointermove="$ctrl.move($event)"
-      ng-on-pointerup="$ctrl.end($event)"
-      ng-on-pointercancel="$ctrl.cancel()"
-      data-event-prevent
+      pointer-drag
     >
       <div
         class="pointer-capture-demo__marker"
@@ -112,6 +108,28 @@
       this.cancel = function () {
         this.dragging = false;
         this.status = 'Pointer cancelled';
+      };
+    })
+    .directive('pointerDrag', function () {
+      return {
+        link(scope, element) {
+          const controller = scope.$ctrl;
+          const listeners = {
+            pointerdown: (event) => controller.start(event),
+            pointermove: (event) => controller.move(event),
+            pointerup: (event) => controller.end(event),
+            pointercancel: () => controller.cancel(),
+          };
+
+          for (const [name, listener] of Object.entries(listeners)) {
+            element.addEventListener(name, listener);
+          }
+          scope.on('$destroy', () => {
+            for (const [name, listener] of Object.entries(listeners)) {
+              element.removeEventListener(name, listener);
+            }
+          });
+        },
       };
     });
 </script>

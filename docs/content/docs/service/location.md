@@ -14,7 +14,7 @@ Exact signatures live in TypeDoc:
 
 ## Read The Current URL
 
-```typescript
+```ts
 $location.path();
 $location.search();
 $location.hash();
@@ -24,7 +24,7 @@ $location.absUrl();
 
 ## Update The URL
 
-```typescript
+```ts
 $location
   .path("/settings")
   .search({ tab: "profile" })
@@ -42,7 +42,7 @@ Setter methods return `$location`, so updates can be chained.
 listeners may also receive the new and old history state values when the browser
 supports the History API.
 
-```typescript
+```ts
 $rootScope.on("$locationChangeStart", (event, newUrl, oldUrl) => {
   if (shouldBlock(newUrl, oldUrl)) {
     event.preventDefault();

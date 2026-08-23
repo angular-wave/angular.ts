@@ -61,7 +61,7 @@ $http.get<Article[]>('/api/articles', {
 
 ## Response Behavior
 
-Successful 2xx responses resolve with an `HttpResponse<T>`. Non-2xx responses,
+Successful 2xx responses resolve with an [`HttpResponse<T>`](../../../typedoc/interfaces/HttpResponse.html). Non-2xx responses,
 timeouts, aborts, and network errors reject with the same response shape, so
 error handlers can inspect `status`, `statusText`, `headers`, `config`, and
 `xhrStatus`.

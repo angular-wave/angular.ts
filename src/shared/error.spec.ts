@@ -5,12 +5,12 @@ import {
   createErrorFactory,
   isDefined,
   toDebugString,
-  errorHandlingConfig,
+  errorFormattingConfig,
 } from "./utils.js";
 
 describe("errors", () => {
   afterEach(() => {
-    errorHandlingConfig({
+    errorFormattingConfig({
       objectMaxDepth: 5,
     });
   });
@@ -119,7 +119,7 @@ describe("errors", () => {
       [NaN, null, true, false, -1, 0].forEach((maxDepth) => {
         const a = { b: { c: { d: { e: { f: { g: 1 } } } } } };
 
-        errorHandlingConfig({ objectMaxDepth: maxDepth });
+        errorFormattingConfig({ objectMaxDepth: maxDepth });
         const myError = testError("26", "a is {0}", a);
 
         expect(myError.message).toMatch(

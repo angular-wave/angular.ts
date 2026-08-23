@@ -7,12 +7,13 @@ import {
   _scope,
 } from "./injection-tokens.ts";
 import {
-  assertNotHasOwnProperty,
-  errorHandlingConfig,
+  validateNotHasOwnPropertyName,
+  errorFormattingConfig,
   hasOwn,
   isArray,
   isInstanceOf,
   isObject,
+  isPromiseLike,
   createErrorFactory,
   ngAttrPrefixes,
   values,
@@ -145,8 +146,8 @@ export class AngularRuntime extends EventTarget {
   public getNormalizedAttrName = getNormalizedAttrName;
   /** Return whether an element has an attribute matching a normalized name. */
   public hasNormalizedAttr = hasNormalizedAttr;
-  /** Global framework error-handling configuration. */
-  public errorHandlingConfig = errorHandlingConfig;
+  /** Configure how values embedded in framework error messages are formatted. */
+  public errorFormattingConfig = errorFormattingConfig;
   /** Public injection token names keyed by token value. */
   public tokens: typeof PublicInjectionTokens =
     {} as typeof PublicInjectionTokens;
@@ -263,7 +264,7 @@ export class AngularRuntime extends EventTarget {
     requires?: string[],
     configFn?: ModuleConfigFn,
   ): NgModule | RouterModule {
-    assertNotHasOwnProperty(name, "module");
+    validateNotHasOwnPropertyName(name, "module");
 
     if (requires && hasOwn(this._moduleRegistry, name)) {
       this._moduleRegistry[name] = null;
@@ -326,6 +327,7 @@ export class AngularRuntime extends EventTarget {
       : isInvocationDetail(detail)
         ? detail.expr
         : "";
+    const $exceptionHandler = this._composition.exceptionHandlerState.service;
 
     try {
       const result = $parse(expr)(target);
@@ -342,10 +344,16 @@ export class AngularRuntime extends EventTarget {
           .catch((reason: unknown) => {
             reply.reject(reason);
           });
+      } else if (isPromiseLike(result)) {
+        void Promise.resolve(result).catch((reason: unknown) => {
+          $exceptionHandler(reason);
+        });
       }
     } catch (err) {
       if (isInvocationDetail(detail) && detail.reply) {
         detail.reply.reject(err);
+      } else {
+        $exceptionHandler(err);
       }
     }
 
@@ -358,7 +366,11 @@ export class AngularRuntime extends EventTarget {
   emit(input: string): void {
     const { type, expr } = AngularRuntime._splitInvocation(input);
 
-    this.dispatchEvent(new CustomEvent(type, { detail: expr }));
+    if (!this.dispatchEvent(new CustomEvent(type, { detail: expr }))) {
+      this._composition.exceptionHandlerState.service(
+        new Error(`No target found for "${type}"`),
+      );
+    }
   }
 
   /**

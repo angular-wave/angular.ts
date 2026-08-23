@@ -271,10 +271,10 @@ class SceDelegateConfiguration {
             return imgSrcSanitizationTrustedUrlList;
         };
         /** Creates `$sceDelegate` from the current policy configuration. */
-        this.createService = function ($injector, $window, $exceptionHandler) {
+        this.createService = function ($injector, $window) {
             const trustedTypesPolicy = getTrustedTypesPolicy($window);
             let htmlSanitizer = function () {
-                $exceptionHandler($sceError("unsafe", "Attempting to use an unsafe value in a safe context."));
+                throw $sceError("unsafe", "Attempting to use an unsafe value in a safe context.");
             };
             if ($injector.has("$sanitize")) {
                 htmlSanitizer =
@@ -381,8 +381,7 @@ class SceDelegateConfiguration {
             function trustAs(type, trustedValue) {
                 const Constructor = isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
                 if (!Constructor) {
-                    $exceptionHandler($sceError("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue));
-                    return undefined;
+                    throw $sceError("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue);
                 }
                 if (trustedValue === null ||
                     isUndefined(trustedValue) ||
@@ -392,8 +391,7 @@ class SceDelegateConfiguration {
                 // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
                 // mutable objects, we ensure here that the value passed in is actually a string.
                 if (!isString(trustedValue)) {
-                    $exceptionHandler($sceError("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type));
-                    return undefined;
+                    throw $sceError("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type);
                 }
                 const tst = new Constructor(trustedValue, createTrustedType(trustedTypesPolicy, type, trustedValue));
                 return tst;
@@ -477,8 +475,7 @@ class SceDelegateConfiguration {
                     if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
                         return maybeTrusted;
                     }
-                    $exceptionHandler($sceError("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", String(maybeTrusted)));
-                    return undefined;
+                    throw $sceError("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", String(maybeTrusted));
                 }
                 // htmlSanitizer throws its own error when no sanitizer is available.
                 return htmlSanitizer(maybeTrusted);

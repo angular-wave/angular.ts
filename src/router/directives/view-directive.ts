@@ -7,7 +7,7 @@ import {
 } from "../../injection-tokens.ts";
 import {
   arrayFrom,
-  assertDefined,
+  assertInvariantDefined,
   isArray,
   isDefined,
   isInstanceOf,
@@ -106,8 +106,8 @@ function withResolvers<T>(): PromiseResolvers<T> {
 
   return {
     promise,
-    resolve: assertDefined(resolve),
-    reject: assertDefined(reject),
+    resolve: assertInvariantDefined(resolve),
+    reject: assertInvariantDefined(reject),
   };
 }
 
@@ -198,7 +198,7 @@ export function ViewDirective(
     priority: 400,
     transclude: "element",
     compile(tElement: Element, $transclude?: ng.TranscludeFn) {
-      const transclude = assertDefined($transclude);
+      const transclude = assertInvariantDefined($transclude);
       const onloadExp = getNormalizedAttr(tElement, "onload") ?? "";
       const autoScrollExp = getNormalizedAttr(tElement, "autoscroll");
       const viewNameExp =
@@ -211,7 +211,9 @@ export function ViewDirective(
             (getInheritedData($element, "$ngView") as
               | ActiveNgViewRootData
               | undefined) ?? rootData,
-          rawName: unknown = assertDefined($interpolate(viewNameExp))(scope),
+          rawName: unknown = assertInvariantDefined($interpolate(viewNameExp))(
+            scope,
+          ),
           name = isString(rawName) && rawName ? rawName : "$default";
 
         const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
@@ -469,8 +471,8 @@ export function ViewDirective(
 
             enteredElement = elementClone;
             enteredNodes = cloneNodes;
-            enteredFragment = assertDefined(
-              getCompiledFragmentRecord(assertDefined(cloneNodes[0])),
+            enteredFragment = assertInvariantDefined(
+              getCompiledFragmentRecord(assertInvariantDefined(cloneNodes[0])),
             );
 
             $element.after(elementClone);
@@ -497,9 +499,9 @@ export function ViewDirective(
             return;
           }
 
-          const host = assertDefined(enteredElement);
+          const host = assertInvariantDefined(enteredElement);
 
-          const viewData = assertDefined(
+          const viewData = assertInvariantDefined(
             getCacheData(host, "$ngView") as NgViewData | undefined,
           );
 
@@ -508,7 +510,7 @@ export function ViewDirective(
             rootNodes: enteredNodes,
             scope: newScope,
             config,
-            initial: assertDefined(viewData._initial),
+            initial: assertInvariantDefined(viewData._initial),
             activeNgView,
             animation: $ngViewAnim,
           });
@@ -550,7 +552,7 @@ export function ViewDirective(
           currentEl = retained._element;
           currentScope = retained._scope;
           currentNodes = retained._nodes;
-          currentFragment = assertDefined(retained._fragment);
+          currentFragment = assertInvariantDefined(retained._fragment);
           currentAnimation = retained._animation;
           currentConfig = config;
           retained._scope.emit("$viewContentAnimationEnded");

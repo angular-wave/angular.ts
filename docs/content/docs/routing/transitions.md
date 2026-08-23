@@ -1,15 +1,16 @@
 ---
 title: 'Routing transitions and lifecycle hooks'
-linkTitle: 'Routing Transitions'
+linkTitle: 'Routing transitions'
 weight: 360
 description:
   'Understand the AngularTS transition lifecycle and use hooks like onBefore,
   onStart, onSuccess, and onError for auth guards, analytics, and redirects.'
 ---
 
-Every navigation in AngularTS is a `Transition`—a structured object that
-describes moving from one state (or set of states) to another. Transitions carry
-the from-state, the to-state, all parameter values, the tree of
+Every navigation in AngularTS is a
+[`Transition`](../../../typedoc/classes/Transition.html)—a structured object
+that describes moving from one state (or set of states) to another. Transitions
+carry the from-state, the to-state, all parameter values, the tree of
 entering/exiting/retained states, and the resolve context. You hook into their
 lifecycle to implement auth guards, loading indicators, analytics, scroll
 resets, and more.
@@ -17,8 +18,9 @@ resets, and more.
 ## What is a transition
 
 When you call `$state.go('contacts.detail', { contactId: 42 })`, the router
-creates a `Transition` instance. Internally it computes a `TreeChanges` object
-with five paths:
+creates a
+[`Transition[`](../../../typedoc/classes/Transition.html) instance. Internally it computes a `](../../../typedoc/classes/Transition.html)TreeChanges`
+object with five paths:
 
 | Path       | Description                                                                              |
 | ---------- | ---------------------------------------------------------------------------------------- |
@@ -28,14 +30,13 @@ with five paths:
 | `retained` | Nodes that are active both before and after (unchanged)                                  |
 | `entering` | Nodes that are not active now but will be active after (parent first)                    |
 
-The `Transition` exposes these paths through `trans.exiting()`,
-`trans.retained()`, and `trans.entering()`, each returning an array of
-`StateDeclaration` objects. Use `trans.treeChanges(pathname)` for the raw
-`PathNode[]` arrays.
+The
+[`Transition[`](../../../typedoc/classes/Transition.html) exposes these paths through `](../../../typedoc/classes/Transition.html)trans.exiting()`, `trans.retained()`, and `trans.entering()`, each returning an array of [`StateDeclaration`](../../../typedoc/interfaces/StateDeclaration.html) objects. Use `trans.treeChanges(pathname)`for the raw`PathNode[]`
+arrays.
 
 Each transition has a numeric `id` and a `promise` that resolves to the
-`StateDeclaration` for the to-state on success, or rejects with an error object
-on failure.
+[`StateDeclaration`](../../../typedoc/interfaces/StateDeclaration.html) for the
+to-state on success, or rejects with an error object on failure.
 
 ## Transition lifecycle
 
@@ -86,10 +87,11 @@ at this stage.
 ## Registering hooks
 
 All hook registration methods are on the `$transitions` service (injected as
-`$transitions` or typed as `ng.TransitionsService`). Each method returns a
-deregistration function.
+`$transitions` or typed as
+[`ng.TransitionsService`](../../../typedoc/types/TransitionsService.html)). Each
+method returns a deregistration function.
 
-```typescript
+```ts
 $transitions.onBefore(
   matchCriteria: HookMatchCriteria,
   callback: (transition: Transition) => HookResult,
@@ -99,14 +101,15 @@ $transitions.onBefore(
 
 ### Hook match criteria
 
-`HookMatchCriteria` is an object with optional keys `to`, `from`, `exiting`,
-`retained`, and `entering`. Each value is:
+[`HookMatchCriteria`](../../../typedoc/interfaces/HookMatchCriteria.html) is an
+object with optional keys `to`, `from`, `exiting`, `retained`, and `entering`.
+Each value is:
 
 - A **state name string** or **glob** (`'contacts.**'`)
 - A **function** `(state, transition) => boolean`
 - `true` to match any state (the default when the key is omitted)
 
-```javascript
+```js
 $transitions.onStart({}, callback);
 
 // Matches transitions going to any child of 'admin'
@@ -128,7 +131,7 @@ $transitions.onStart(
 
 ### Hook registration options
 
-```javascript
+```js
   priority: 10,       // higher priority runs first (default: 0)
   bind: myObject,     // `this` inside callback
   invokeLimit: 1      // auto-deregister after N invocations
@@ -139,14 +142,14 @@ $transitions.onStart(
 
 The return value of a hook controls the transition:
 
-| Return value           | Effect                                                              |
-| ---------------------- | ------------------------------------------------------------------- |
-| `undefined` / `true`   | Transition continues normally                                       |
-| `false`                | Transition is cancelled (aborted)                                   |
-| `TargetState`          | Transition is redirected to the new target                          |
-| `Promise<false>`       | Transition waits for the promise; cancels if it resolves to `false` |
-| `Promise<TargetState>` | Transition waits for the promise; redirects when it resolves        |
-| Rejected `Promise`     | Transition fails with the rejection reason                          |
+| Return value                                               | Effect                                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| `undefined` / `true`                                       | Transition continues normally                                       |
+| `false`                                                    | Transition is cancelled (aborted)                                   |
+| [`TargetState`](../../../typedoc/classes/TargetState.html) | Transition is redirected to the new target                          |
+| `Promise<false>`                                           | Transition waits for the promise; cancels if it resolves to `false` |
+| `Promise<TargetState>`                                     | Transition waits for the promise; redirects when it resolves        |
+| Rejected `Promise`                                         | Transition fails with the rejection reason                          |
 
 > **Note:** `onSuccess` and `onError` hooks run after the transition is
 > committed. Their return values are ignored—you cannot cancel or redirect from
@@ -154,9 +157,10 @@ The return value of a hook controls the transition:
 
 ## Redirecting from a hook
 
-Return a `TargetState` created with `$state.target()`:
+Return a [`TargetState`](../../../typedoc/classes/TargetState.html) created with
+`$state.target()`:
 
-```javascript
+```js
   // Always redirect 'home' to 'home.dashboard' as a default substate
   return $state.target('home.dashboard');
 });
@@ -170,7 +174,7 @@ redirect uses `location: 'replace'` so the original URL is removed from history.
 
 Return `false` from any hook that runs before `onSuccess`:
 
-```javascript
+```js
   if (appIsLocked) {
     return false; // abort
   }
@@ -187,7 +191,7 @@ browser URL is reset to the previous location by the built-in `updateUrl` hook.
 This pattern intercepts any transition to a state with a navigation policy and
 redirects unauthenticated users to the login page.
 
-```javascript
+```js
   .run(['$transitions', '$state', 'AuthService', function ($transitions, $state, AuthService) {
 
     $transitions.onBefore(
@@ -211,7 +215,7 @@ redirects unauthenticated users to the login page.
 
 Mark states that require authentication:
 
-```javascript
+```js
   name: 'admin.users',
   url: '/users',
   component: 'AdminUsers',
@@ -227,7 +231,7 @@ Mark states that require authentication:
 
 Show a spinner while any transition is in progress:
 
-```javascript
+```js
   .run(['$transitions', '$rootScope', function ($transitions, $rootScope) {
 
     $transitions.onStart({}, function () {
@@ -249,7 +253,7 @@ Show a spinner while any transition is in progress:
 
 Fire a page-view event after every successful navigation:
 
-```javascript
+```js
   .run(['$transitions', 'AnalyticsService', function ($transitions, AnalyticsService) {
 
     $transitions.onSuccess({}, function (transition) {
@@ -268,7 +272,7 @@ Fire a page-view event after every successful navigation:
 
 Scroll to the top of the page on each navigation:
 
-```javascript
+```js
   .run(['$transitions', function ($transitions) {
 
     $transitions.onSuccess({}, function () {
@@ -282,7 +286,7 @@ Scroll to the top of the page on each navigation:
 
 Allow users to authenticate mid-transition:
 
-```javascript
+```js
   var AuthService = transition.injector().get('AuthService');
 
   if (!AuthService.isAuthenticated()) {
@@ -297,20 +301,22 @@ Allow users to authenticate mid-transition:
 ## Transition outcomes
 
 `$state.go()` is an asynchronous navigation boundary, so it uses normal Promise
-control flow rather than returning an
-`{ ok, status }` object. Branch by awaiting the `TransitionPromise`: fulfillment
-means navigation completed or was ignored, while rejection carries the router
-failure. When present, the attached `Transition` records `success` and
-`error()` as evidence after settlement.
+control flow rather than returning an `{ ok, status }` object. Branch by
+awaiting the
+[`TransitionPromise`](../../../typedoc/interfaces/TransitionPromise.html):
+fulfillment means navigation completed or was ignored, while rejection carries
+the router failure. When present, the attached
+[`Transition[`](../../../typedoc/classes/Transition.html) records `](../../../typedoc/classes/Transition.html)success`and`error()`
+as evidence after settlement.
 
 A transition can finish in one of four states:
 
-| Result         | Description                                                                                                                                         |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Success**    | All hooks passed, the to-state is now active. `transition.success === true`.                                                                        |
-| **Error**      | A hook threw, returned a rejected promise, or a resolve failed. `transition.success === false`, `transition.error()` contains the reason.           |
-| **Ignored**    | The transition targets the same state with the same parameters that are currently active. Treated as successful navigation.                         |
-| **Superseded** | A newer transition started before this one finished. The older transition is abandoned; the newer one continues.                                    |
+| Result         | Description                                                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Success**    | All hooks passed, the to-state is now active. `transition.success === true`.                                                              |
+| **Error**      | A hook threw, returned a rejected promise, or a resolve failed. `transition.success === false`, `transition.error()` contains the reason. |
+| **Ignored**    | The transition targets the same state with the same parameters that are currently active. Treated as successful navigation.               |
+| **Superseded** | A newer transition started before this one finished. The older transition is abandoned; the newer one continues.                          |
 
 Redirected transitions are not an error from the caller's perspective:
 `$state.go()` transparently chains to the redirect target's promise.
@@ -322,9 +328,10 @@ machine or workflow snapshot.
 ## Accessing the transition object
 
 The active transition is stored on `$router.transition`. Inside any hook, the
-`Transition` instance is passed as the first argument.
+[`Transition`](../../../typedoc/classes/Transition.html) instance is passed as
+the first argument.
 
-```javascript
+```js
   console.log('Transitioned to:', transition.to().name);
   console.log('From:', transition.from().name);
   console.log('Params:', transition.params());
@@ -340,10 +347,11 @@ first transition.
 
 ## Per-transition hooks
 
-Hooks can also be registered on a specific `Transition` instance rather than
+Hooks can also be registered on a specific
+[`Transition`](../../../typedoc/classes/Transition.html) instance rather than
 globally on `$transitions`. These hooks only affect that single transition:
 
-```javascript
+```js
 trans.onSuccess({}, function () {
   console.log('This specific transition succeeded.');
 });
@@ -359,7 +367,7 @@ An `onBefore` hook can add additional resolve data to the current transition
 using `transition.addResolvable()`. The added resolvable is available to hooks
 and views that run after it:
 
-```javascript
+```js
   transition.addResolvable({
     token: 'requestId',
     resolveFn: function () { return generateRequestId(); }

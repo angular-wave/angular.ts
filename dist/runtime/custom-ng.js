@@ -10,6 +10,23 @@ import { createControllerService } from '../core/controller/controller.js';
 import { applyExceptionHandlerConfiguration, createExceptionHandlerService } from '../services/exception/exception.js';
 import { keys } from '../shared/utils.js';
 
+/** @internal */
+function getRuntimeComposition(angular) {
+    return angular._composition;
+}
+/** @internal */
+function memoizeRuntimeModule(registerModule) {
+    const registrations = new WeakMap();
+    return (angular) => {
+        const key = angular;
+        const existing = registrations.get(key);
+        if (existing)
+            return existing;
+        const module = registerModule(angular);
+        registrations.set(key, module);
+        return module;
+    };
+}
 /**
  * Registers a composed AngularTS `ng` module from core providers and a caller
  * supplied directive list.
@@ -17,18 +34,17 @@ import { keys } from '../shared/utils.js';
 function registerComposedNgModule(angular, options) {
     const moduleName = options.name ?? "ng";
     const providers = options.providers ?? {};
-    const directiveRegistrations = normalizeDirectiveRegistrations(options.directives);
-    const filterRegistrations = normalizeFilterRegistrations(options.filters);
-    const serviceRegistrations = normalizeServiceRegistrations(options.services);
-    const runtime = angular;
-    const compileRegistry = runtime._composition.compileRegistry;
-    const { platform } = runtime._composition;
+    const directiveRegistrations = normalizeRegistrations(options.directives);
+    const filterRegistrations = normalizeRegistrations(options.filters);
+    const serviceRegistrations = normalizeRegistrations(options.services);
+    const composition = getRuntimeComposition(angular);
+    const { compileRegistry, platform } = composition;
     const ngModule = angular.module(moduleName, options.requires);
     ngModule._registerProviders((registry) => {
         registry.value(_window, platform.window);
         registry.value(_document, platform.document);
-        runtime._composition.filterRegistry.attach(registry);
-        registry.factory(_filter, createFilterRegistration(runtime._composition.filterRegistry));
+        composition.filterRegistry.attach(registry);
+        registry.factory(_filter, createFilterRegistration(composition.filterRegistry));
         registry.factory(_parse, [
             _injector,
             ($injector) => createParseService($injector),
@@ -36,20 +52,20 @@ function registerComposedNgModule(angular, options) {
         registry.factory(_rootScope, [
             _exceptionHandler,
             _parse,
-            ($exceptionHandler, $parse) => createRootScopeService(runtime._composition.appContext, $exceptionHandler, $parse),
+            ($exceptionHandler, $parse) => createRootScopeService(composition.appContext, $exceptionHandler, $parse),
         ]);
-        runtime._composition.configRegistry.register(_interpolate, (value) => {
-            applyInterpolateConfiguration(runtime._composition.interpolateState, value);
+        composition.configRegistry.register(_interpolate, (value) => {
+            applyInterpolateConfiguration(composition.interpolateState, value);
         });
-        registry.factory(_interpolate, createInterpolateRegistration(runtime._composition.interpolateState, passThroughSecurityAdapter));
+        registry.factory(_interpolate, createInterpolateRegistration(composition.interpolateState, passThroughSecurityAdapter));
         registry.factory(_controller, [
             _injector,
-            ($injector) => createControllerService(runtime._composition.controllerRegistry, $injector),
+            ($injector) => createControllerService(composition.controllerRegistry, $injector),
         ]);
-        runtime._composition.configRegistry.register(_exceptionHandler, (value) => {
-            applyExceptionHandlerConfiguration(runtime._composition.exceptionHandlerState, value);
+        composition.configRegistry.register(_exceptionHandler, (value) => {
+            applyExceptionHandlerConfiguration(composition.exceptionHandlerState, value);
         });
-        registry.factory(_exceptionHandler, () => createExceptionHandlerService(runtime._composition.exceptionHandlerState));
+        registry.factory(_exceptionHandler, () => createExceptionHandlerService(composition.exceptionHandlerState));
         registry.factory(_compile, [
             _injector,
             _interpolate,
@@ -57,42 +73,32 @@ function registerComposedNgModule(angular, options) {
             _parse,
             _controller,
             _rootScope,
-            ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, passThroughSecurityAdapter, $exceptionHandler, $parse, $controller, requireAppRoot(runtime._composition.appContext, $rootScope)),
+            ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, passThroughSecurityAdapter, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
         ]);
         registry.value(_angular, angular);
-        registerRuntimeProviders(registry, providers, runtime._composition);
-        filterRegistrations.forEach((filters) => {
-            keys(filters).forEach((name) => {
-                runtime._composition.filterRegistry.register(name, filters[name]);
-            });
-        });
-        serviceRegistrations.forEach((services) => {
-            keys(services).forEach((name) => {
+        registerRuntimeProviders(registry, providers, composition);
+        for (const filters of filterRegistrations) {
+            for (const name of keys(filters)) {
+                composition.filterRegistry.register(name, filters[name]);
+            }
+        }
+        for (const services of serviceRegistrations) {
+            for (const name of keys(services)) {
                 registry.service(name, services[name]);
-            });
-        });
+            }
+        }
     });
-    directiveRegistrations.forEach((directives) => {
-        keys(directives).forEach((name) => {
+    for (const directives of directiveRegistrations) {
+        for (const name of keys(directives)) {
             ngModule.directive(name, directives[name]);
-        });
-    });
+        }
+    }
     return ngModule;
 }
-function normalizeDirectiveRegistrations(directives) {
-    if (!directives)
+function normalizeRegistrations(registrations) {
+    if (!registrations)
         return [];
-    return Array.isArray(directives) ? directives : [directives];
-}
-function normalizeFilterRegistrations(filters) {
-    if (!filters)
-        return [];
-    return Array.isArray(filters) ? filters : [filters];
-}
-function normalizeServiceRegistrations(services) {
-    if (!services)
-        return [];
-    return Array.isArray(services) ? services : [services];
+    return Array.isArray(registrations) ? registrations : [registrations];
 }
 
-export { registerComposedNgModule };
+export { getRuntimeComposition, memoizeRuntimeModule, registerComposedNgModule };

@@ -1,7 +1,7 @@
 import { stringify } from "../../shared/strings.ts";
 import {
   assign,
-  assertDefined,
+  assertInvariantDefined,
   isObject,
   isUndefined,
   keys,
@@ -57,8 +57,8 @@ function createDeferredPromise<T>(): DeferredPromise<T> {
 
   return {
     promise,
-    resolve: assertDefined(resolve),
-    reject: assertDefined(reject),
+    resolve: assertInvariantDefined(resolve),
+    reject: assertInvariantDefined(reject),
   };
 }
 
@@ -241,7 +241,7 @@ export class Transition<
       ? fromPath[fromPath.length - 1]
       : undefined;
 
-    return assertDefined(fromNode).state;
+    return assertInvariantDefined(fromNode).state;
   }
 
   /** @internal */
@@ -250,7 +250,7 @@ export class Transition<
 
     const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
 
-    return assertDefined(toNode).state;
+    return assertInvariantDefined(toNode).state;
   }
 
   /**

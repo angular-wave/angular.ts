@@ -121,6 +121,7 @@ import type {
   InjectionTokenMap as TInjectionTokenMap,
   AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
   Component as TComponent,
+  ComponentDefinition as TComponentDefinition,
   ComponentView as TComponentView,
   ComponentViewChild as TComponentViewChild,
   ComponentViewContext as TComponentViewContext,
@@ -148,7 +149,7 @@ import type {
   SseConfig as TSseConfig,
 } from "./services/sse/sse.ts";
 import type {
-  ErrorHandlingConfig as TErrorHandlingConfig,
+  ErrorFormattingConfig as TErrorFormattingConfig,
   Validator as TValidator,
 } from "./shared/interface.ts";
 import type {
@@ -310,7 +311,17 @@ declare global {
 
     export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
 
-    export type Component = TComponent;
+    export type Component<
+      TControllerInstance extends TController = TController,
+      TScopeInstance extends Scope = Scope,
+      TElement extends HTMLElement = HTMLElement,
+    > = TComponent<TControllerInstance, TScopeInstance, TElement>;
+
+    export type ComponentDefinition<
+      TControllerInstance extends TController = TController,
+      TScopeInstance extends Scope = Scope,
+      TElement extends HTMLElement = HTMLElement,
+    > = TComponentDefinition<TControllerInstance, TScopeInstance, TElement>;
 
     export type ComponentView = TComponentView;
 
@@ -552,7 +563,7 @@ declare global {
 
     export type EntityClass<T> = TEntityClass<T>;
 
-    export type ErrorHandlingConfig = TErrorHandlingConfig;
+    export type ErrorFormattingConfig = TErrorFormattingConfig;
 
     export type Expression = TExpression;
 

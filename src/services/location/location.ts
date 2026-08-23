@@ -14,7 +14,6 @@ import {
   parseKeyValue,
   startsWith,
   toKeyValue,
-  assertDefined,
 } from "../../shared/utils.ts";
 import { getBaseHref } from "../../shared/dom.ts";
 import { validateRequired } from "../../shared/validate.ts";
@@ -205,7 +204,9 @@ export class Location {
   url(): string;
   url(url: string): this;
   url(url?: string) {
-    return arguments.length ? this.setUrl(assertDefined(url)) : this.getUrl();
+    return arguments.length
+      ? this.setUrl(validateRequired(url, "url"))
+      : this.getUrl();
   }
 
   /**
@@ -343,7 +344,7 @@ export class Location {
     paramValue?: string | number | string[] | boolean | null,
   ) {
     return arguments.length
-      ? this.setSearch(assertDefined(search), paramValue)
+      ? this.setSearch(validateRequired(search, "search"), paramValue)
       : this.getSearch();
   }
 
@@ -658,7 +659,7 @@ export class LocationRuntimeState {
    * @param callback - Listener invoked with the new URL and history state.
    */
   _onUrlChange(callback: UrlChangeListener): void {
-    this._assertActive();
+    this._ensureActive();
 
     if (!this._urlChangeInit) {
       this._urlChangeHandler ??= this._fireStateOrUrlChange.bind(this);
@@ -675,7 +676,7 @@ export class LocationRuntimeState {
     $rootElement: HTMLElement,
     $exceptionHandler: ng.ExceptionHandlerService,
   ): Location {
-    this._assertActive();
+    this._ensureActive();
     const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
 
     const initialUrl = trimEmptyHash(this._window.location.href);
@@ -969,7 +970,7 @@ export class LocationRuntimeState {
   }
 
   /** @internal */
-  _assertActive(): void {
+  _ensureActive(): void {
     if (this._destroyed) {
       throw new Error("Location runtime has already been disposed.");
     }
@@ -988,7 +989,7 @@ export function applyLocationConfiguration(
   state: LocationRuntimeState,
   config: LocationConfig,
 ): void {
-  state._assertActive();
+  state._ensureActive();
 
   if (config.html5Mode !== undefined) {
     Object.assign(

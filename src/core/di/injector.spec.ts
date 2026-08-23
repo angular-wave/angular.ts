@@ -55,6 +55,12 @@ describe("injector.modules", () => {
     expect(injector).toBeDefined();
   });
 
+  it("validates the module list at the public boundary", () => {
+    expect(() => createInjector(null)).toThrowError(
+      /Modules to load must be an array/,
+    );
+  });
+
   it("should have $injector", () => {
     const $injector = createInjector([]);
 
@@ -2105,7 +2111,7 @@ describe("error handling", () => {
     expect(() => {
       createInjector([{}]);
     }).toThrowError(
-      /Failed to instantiate module \{\} due to:\n.*\[ng:areq] Argument 'module' is not a function, got Object/,
+      /Failed to instantiate module \{\} due to:\n.*badarg:notfunction module=\{\}/,
     );
   });
 
@@ -2327,7 +2333,7 @@ describe("method invoking", () => {
   it("should throw useful error on wrong argument type]", () => {
     expect(() => {
       $injector.invoke({});
-    }).toThrowError(/Argument 'fn' is not a function, got Object/);
+    }).toThrowError(/badarg:notfunction fn=\{\}/);
   });
 });
 

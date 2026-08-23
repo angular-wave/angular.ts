@@ -8,7 +8,7 @@ import {
   isInstanceOf,
   isString,
   keys,
-  assertDefined,
+  assertInvariantDefined,
 } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import {
@@ -106,7 +106,9 @@ function buildUrl(
 
   const base = (parent?.navigable ?? root) as StateObject;
 
-  return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
+  return parsed && parsed.root
+    ? url
+    : assertInvariantDefined(base._url)._append(url);
 }
 
 /**
@@ -164,7 +166,7 @@ function presentViewKeys(
   return present.join(", ");
 }
 
-function assertNoRemovedViewKeys(
+function validateNoRemovedViewKeys(
   keyItems: string[],
   values: Record<string, unknown>,
   description: string,
@@ -232,7 +234,7 @@ function viewsBuilder(
     return {};
   }
 
-  assertNoRemovedViewKeys(
+  validateNoRemovedViewKeys(
     REMOVED_VIEW_KEYS,
     state as unknown as Record<string, unknown>,
     `State '${state.name}'`,
@@ -275,7 +277,7 @@ function viewsBuilder(
 
     normalizeComponentDeclaration(registrar, name, config);
 
-    assertNoRemovedViewKeys(
+    validateNoRemovedViewKeys(
       REMOVED_VIEW_KEYS,
       config as Record<string, unknown>,
       `State view '${name}@${state.name}'`,
@@ -415,7 +417,7 @@ function invokeStateLifecycleHook(
 
   const hookContext = stateObject._hookContext as StateLifecycleHookContext;
 
-  const $injector = assertDefined(hookContext._$injector);
+  const $injector = assertInvariantDefined(hookContext._$injector);
 
   const resolveContext = new ResolveContext(
     trans._treeChanges[pathname],
@@ -547,7 +549,7 @@ export class StateBuilder {
   _build(state: StateObject): StateObject | null {
     const { _matcher: matcher, _routerState: routerState } = this;
 
-    assertNavigationPolicy(state.self);
+    validateNavigationPolicy(state.self);
 
     const parent = StateBuilder._parentName(state);
 
@@ -645,7 +647,7 @@ export class StateBuilder {
   }
 }
 
-function assertNavigationPolicy(state: StateDeclaration): void {
+function validateNavigationPolicy(state: StateDeclaration): void {
   const navigation = state.policy?.navigation;
 
   if (navigation?.public !== true) return;

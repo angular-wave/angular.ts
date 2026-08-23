@@ -40,7 +40,7 @@ function destroySseRuntimeConfiguration(configuration) {
     configuration.connections.clear();
 }
 /** @internal */
-function createSseService(log, configuration, getEventSourceConstructor) {
+function createSseService(log, configuration, getEventSourceConstructor, exceptionHandler) {
     return (url, config = {}) => {
         if (configuration.destroyed) {
             throw new Error("Cannot create an SSE connection after runtime teardown");
@@ -57,7 +57,7 @@ function createSseService(log, configuration, getEventSourceConstructor) {
             onMessage: (data, event) => {
                 mergedConfig.onMessage?.(data, event);
             },
-        }, log);
+        }, log, exceptionHandler);
         let closed = false;
         const connection = {
             reconnect() {

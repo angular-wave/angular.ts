@@ -1,7 +1,7 @@
 import { _injector } from '../../injection-tokens.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
 import { getNormalizedAttr, removeElement, domInsert } from '../../shared/dom.js';
-import { shouldHandleViewRetentionPause, values, assertDefined } from '../../shared/utils.js';
+import { shouldHandleViewRetentionPause, values, assertInvariantDefined } from '../../shared/utils.js';
 
 class NgSwitchController {
     constructor() {
@@ -72,7 +72,7 @@ function ngSwitchDirective($injector) {
                     values(selectedTranscludes).forEach((selectedTransclude) => {
                         selectedTransclude.transclude((caseElementParam, selectedScopeParam) => {
                             const caseElement = caseElementParam;
-                            const selectedScope = assertDefined(selectedScopeParam);
+                            const selectedScope = assertInvariantDefined(selectedScopeParam);
                             selectedScopes.push(selectedScope);
                             const anchor = selectedTransclude.element;
                             const block = {

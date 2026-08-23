@@ -14,7 +14,7 @@ function createSecurityRuntimeConfiguration() {
 }
 /** @internal */
 function applySecurityConfiguration(configuration, config) {
-    assertSecurityConfig(config);
+    validateSecurityConfig(config);
     if (config.fallback !== undefined) {
         configuration.fallback = config.fallback;
     }
@@ -34,7 +34,7 @@ function applySecurityConfiguration(configuration, config) {
         configuration.permissions = config.permissions;
     }
 }
-function assertSecurityConfig(config) {
+function validateSecurityConfig(config) {
     if (!isRecord(config)) {
         throw new Error("$security config must be an object.");
     }
@@ -49,7 +49,7 @@ function assertSecurityConfig(config) {
         throw new Error("$security allowInsecureOrigins must be an array of strings.");
     }
     if (config.credentials !== undefined) {
-        assertSecurityCredentialConfig(config.credentials);
+        validateSecurityCredentialConfig(config.credentials);
     }
     if (config.isAuthenticated !== undefined &&
         typeof config.isAuthenticated !== "boolean" &&
@@ -63,7 +63,7 @@ function assertSecurityConfig(config) {
         throw new Error("$security permissions must be an array of strings or function.");
     }
 }
-function assertSecurityCredentialConfig(config) {
+function validateSecurityCredentialConfig(config) {
     if (!isRecord(config)) {
         throw new Error("$security credentials must be an object.");
     }

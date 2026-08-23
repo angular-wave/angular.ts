@@ -14,7 +14,7 @@ export class FilterRegistry {
   private _destroyed = false;
 
   attach(providerRegistry: ProviderRegistry): void {
-    this._assertActive();
+    this._ensureActive();
     this._providerRegistry = providerRegistry;
     this._boundFactories.clear();
 
@@ -24,7 +24,7 @@ export class FilterRegistry {
   }
 
   register(name: string, factory: FilterFactory): this {
-    this._assertActive();
+    this._ensureActive();
     validateIsString(name, "name");
     validate(isInjectable, factory, "factory");
     this._factories.set(name, factory);
@@ -42,8 +42,8 @@ export class FilterRegistry {
     this._providerRegistry = undefined;
   }
 
-  assertActive(): void {
-    this._assertActive();
+  ensureActive(): void {
+    this._ensureActive();
   }
 
   /** @internal */
@@ -56,7 +56,7 @@ export class FilterRegistry {
   }
 
   /** @internal */
-  private _assertActive(): void {
+  private _ensureActive(): void {
     if (this._destroyed) {
       throw new Error("Filter registry has been destroyed");
     }
@@ -69,7 +69,7 @@ export function createFilterService(
   $injector: ng.InjectorService,
 ): FilterService {
   return (name: string) => {
-    registry.assertActive();
+    registry.ensureActive();
     validateIsString(name, "name");
 
     return $injector.get<ReturnType<FilterService>>(name + SUFFIX);

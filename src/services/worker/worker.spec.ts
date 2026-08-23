@@ -56,6 +56,7 @@ describe("$worker", () => {
       log,
       createWorkerRuntimeState(),
       () => MockWorker,
+      err,
     );
   });
 
@@ -167,6 +168,22 @@ describe("$worker", () => {
 
     expect(received).toEqual([{ data: '{"ok":true}', event }]);
     connection.terminate();
+  });
+
+  it("reports detached listener exceptions and continues delivery", () => {
+    const listenerError = new Error("listener failed");
+    const received = [];
+    const connection = createConnection("/workers/echo.js");
+
+    connection.onMessage(() => {
+      throw listenerError;
+    });
+    connection.onMessage((data) => received.push(data));
+
+    workers[0].onmessage({ data: "message" });
+
+    expect(err).toHaveBeenCalledOnceWith(listenerError);
+    expect(received).toEqual(["message"]);
   });
 
   it("passes non-JSON string messages through", () => {

@@ -1,3 +1,5 @@
+import '/src/auto.ts';
+
 window.routingRetryFallbackDiagnostics = {
   started: [],
   succeeded: [],

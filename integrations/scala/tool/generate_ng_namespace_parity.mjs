@@ -200,7 +200,7 @@ function renderParity(typeNames, methods) {
     "ElementScopeOptions",
     "EntityClass",
     "EntryFilterItem",
-    "ErrorHandlingConfig",
+    "ErrorFormattingConfig",
     "EventDeliveryPolicy",
     "EventDeliveryPolicyContext",
     "EventBusService",

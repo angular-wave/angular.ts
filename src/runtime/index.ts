@@ -48,19 +48,26 @@ export function createAngular(
 ): AngularRuntime {
   const { modules = [], subapp, ...moduleOptions } = options;
   const angular = createBareRuntime({ subapp });
-  const moduleNames = modules.map(
-    (registerModule) => registerModule(angular).name,
-  );
-  const requires = Array.from(
-    new Set([...moduleNames, ...(moduleOptions.requires ?? [])]),
-  );
 
-  registerComposedNgModule(angular as unknown as ng.Angular, {
-    ...moduleOptions,
-    requires,
-  });
+  try {
+    const moduleNames = Array.from(
+      new Set(modules),
+      (registerModule) => registerModule(angular).name,
+    );
+    const requires = Array.from(
+      new Set([...moduleNames, ...(moduleOptions.requires ?? [])]),
+    );
 
-  return angular;
+    registerComposedNgModule(angular as unknown as ng.Angular, {
+      ...moduleOptions,
+      requires,
+    });
+
+    return angular;
+  } catch (error) {
+    angular._composition.destroy();
+    throw error;
+  }
 }
 
 export { AngularRuntime };

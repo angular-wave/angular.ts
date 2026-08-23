@@ -958,7 +958,7 @@ trait ParseService
 type HttpParamSerializerService =
   js.Function1[js.UndefOr[js.Dictionary[js.Any]], String]
 
-final case class ErrorHandlingConfig(
+final case class ErrorFormattingConfig(
     objectMaxDepth: js.UndefOr[Double] = js.undefined,
 ):
   private[ts] def toJS: js.Object =

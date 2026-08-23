@@ -1,6 +1,6 @@
 ---
 title: 'URL matching and configuration in AngularTS router'
-linkTitle: 'URL Matching'
+linkTitle: 'URL matching'
 weight: 370
 description:
   'Configure URL parameters, typed path and query params, hash vs HTML5 mode,
@@ -33,7 +33,7 @@ Parameters are declared in the state's `url` string. The router uses a
 
 Use a colon prefix for named path segments:
 
-```javascript
+```js
   name: 'user',
   url: '/users/:userId',
   component: 'UserProfile'
@@ -44,7 +44,7 @@ Use a colon prefix for named path segments:
 
 Use curly braces for parameters with inline type annotations or custom regexps:
 
-```javascript
+```js
   name: 'product',
   url: '/products/{productId:int}',
   component: 'ProductDetail'
@@ -56,7 +56,7 @@ Use curly braces for parameters with inline type annotations or custom regexps:
 
 Custom regexp:
 
-```javascript
+```js
   name: 'article',
   url: '/articles/{slug:[a-z0-9-]+}',
   component: 'Article'
@@ -68,7 +68,7 @@ Custom regexp:
 Append a `?` followed by parameter names. Multiple query params are separated by
 `&`:
 
-```javascript
+```js
   name: 'search',
   url: '/search?q&page',
   component: 'SearchResults'
@@ -79,7 +79,7 @@ Append a `?` followed by parameter names. Multiple query params are separated by
 
 Typed query params:
 
-```javascript
+```js
   name: 'messages',
   url: '/messages?{before:date}&{after:date}',
   component: 'MessageList'
@@ -88,7 +88,7 @@ Typed query params:
 
 Mixed path and query params:
 
-```javascript
+```js
   name: 'mailbox',
   url: '/messages/:mailboxId?{before:date}&{after:date}',
   component: 'Mailbox'
@@ -102,7 +102,7 @@ make it optional. When the URL is visited without the parameter, the default
 value is used. When navigating with the default value, the parameter is omitted
 from the URL:
 
-```javascript
+```js
   name: 'userList',
   url: '/users/:page',
   params: {
@@ -129,7 +129,7 @@ Default for path parameters. Encodes and decodes as a plain string. Slashes
 within the value are encoded as `~2F` in AngularTS's patched path type to avoid
 ambiguity in Angular 1's `$location`.
 
-```javascript
+```js
 url: '/items/:name';
 // { name: 'foo bar' } → /items/foo%20bar
 ```
@@ -138,7 +138,7 @@ url: '/items/:name';
 
 Parses URL segments as integers using `parseInt`. The `pattern` is `/\d+/`.
 
-```javascript
+```js
 url: '/users/{id:int}';
 // /users/42 → { id: 42 }  (number, not string)
 ```
@@ -148,7 +148,7 @@ url: '/users/{id:int}';
 Represents boolean values. Encodes `true` as `"1"` and `false` as `"0"`. The
 pattern matches `1` or `0`.
 
-```javascript
+```js
 url: '/settings/{darkMode:bool}';
 // /settings/1 → { darkMode: true }
 ```
@@ -158,7 +158,7 @@ url: '/settings/{darkMode:bool}';
 Encodes arbitrary objects as a JSON string in the URL (URL-encoded). Useful for
 complex filter objects.
 
-```javascript
+```js
 url: '/search?{filters:json}';
 // { filters: { status: 'active', role: 'admin' } }
 // → /search?filters=%7B%22status%22%3A%22active%22%7D
@@ -169,7 +169,7 @@ url: '/search?{filters:json}';
 Encodes `Date` objects as `YYYY-MM-DD` strings. Parses the string back to a
 `Date` on the way in.
 
-```javascript
+```js
 url: '/events?{startDate:date}&{endDate:date}';
 // { startDate: new Date('2024-01-15') }
 // → /events?startDate=2024-01-15
@@ -189,7 +189,7 @@ transitions.
 
 URL matching is case-sensitive by default. Allow case-insensitive matching:
 
-```javascript
+```js
 angular.module('app').config({
   $router: {
     caseInsensitive: true,
@@ -202,7 +202,7 @@ angular.module('app').config({
 By default, `/users/` and `/users` are distinct. Disable strict mode to treat
 trailing slashes as equivalent:
 
-```javascript
+```js
 angular.module('app').config({
   $router: {
     strict: false, // /users/ matches /users
@@ -215,7 +215,7 @@ angular.module('app').config({
 Control the global default for how parameters with default values appear in
 URLs:
 
-```javascript
+```js
 angular.module('app').config({
   $router: {
     // 'false' (default): include the default value in the URL
@@ -228,39 +228,20 @@ angular.module('app').config({
 
 ### Custom parameter types
 
-Register a custom `ParamType` before using it in state URL patterns. The type
-must implement `encode`, `decode`, `is`, `equals`, and optionally `pattern`:
+Register a custom [`ParamType`](../../../typedoc/classes/ParamType.html) before
+using it in state URL patterns. The type must implement `encode`, `decode`,
+`is`, `equals`, and optionally `pattern`:
 
-```javascript
+```js
 angular.module('app', []).config({
   $router: {
     paramTypes: {
-      // Encodes an array of integers as a dash-separated string
       intarray: {
-        encode: function (array) {
-          return array.join('-');
-        },
-        decode: function (str) {
-          return str.split('-').map(function (x) {
-            return parseInt(x, 10);
-          });
-        },
-        is: function (val) {
-          return (
-            Array.isArray(val) &&
-            val.every(function (x) {
-              return typeof x === 'number' && !isNaN(x);
-            })
-          );
-        },
-        equals: function (a, b) {
-          return (
-            a.length === b.length &&
-            a.every(function (x, i) {
-              return x === b[i];
-            })
-          );
-        },
+        encode: (values) => values.join('-'),
+        decode: (value) => value.split('-').map(Number),
+        is: (value) => Array.isArray(value) && value.every(Number.isInteger),
+        equals: (a, b) =>
+          a.length === b.length && a.every((x, i) => x === b[i]),
         pattern: /[0-9]+(?:-[0-9]+)*/,
       },
     },
@@ -270,7 +251,7 @@ angular.module('app', []).config({
 
 Use the custom type in a state URL:
 
-```javascript
+```js
 angular.module('app').router({
   name: 'report',
   url: '/reports/{ids:intarray}',
@@ -296,7 +277,7 @@ AngularTS inherits Angular 1's `$location` modes. Configure the mode with
 URLs use a hash fragment: `http://example.com/app/#/contacts/42`. No server
 configuration is needed; the hash segment is never sent to the server.
 
-```javascript
+```js
 angular.module('app').config({
   $location: {
     html5Mode: false,
@@ -312,7 +293,7 @@ Generated hrefs are prefixed with `#` (plus the hash prefix) in hash mode.
 URLs use real paths: `http://example.com/contacts/42`. The server must return
 the app's `index.html` for all routes.
 
-```javascript
+```js
 angular.module('app').config({
   $location: {
     html5Mode: {
@@ -331,7 +312,8 @@ In HTML5 mode, the base href is read from the `<base>` tag in the document
 `<head>`:
 
 ```html
-  <base href="/myapp/">
+<head>
+  <base href="/myapp/" />
 </head>
 ```
 
@@ -344,7 +326,7 @@ entries.
 
 Use `$location` to read URL components:
 
-```javascript
+```js
 $location.path(); // "/contacts/42"
 $location.search(); // { tab: 'notes' }
 $location.hash(); // "section1"
@@ -356,7 +338,7 @@ $location.url(); // "/contacts/42?tab=notes#section1"
 Use `$location.url(newUrl)` to replace the current URL. The router then syncs
 the matching state:
 
-```javascript
+```js
 $location.url('/contacts/99?tab=history');
 ```
 
@@ -380,7 +362,7 @@ affect path scoring but must all be present if declared without defaults.
 
 Listen for `$locationChangeSuccess` when code needs URL-level notifications:
 
-```javascript
+```js
 const deregister = $rootScope.on('$locationChangeSuccess', () => {
   console.log('URL changed to:', $location.url());
 });
@@ -392,13 +374,17 @@ deregister();
 When loading states asynchronously, register them before enabling navigation
 links or calling `$state.go()` for URL-driven destinations:
 
-```javascript
-angular.module('app').run(["$stateRegistry", "$state", function ($stateRegistry, $state) {
+```js
+angular.module('app').run([
+  '$stateRegistry',
+  '$state',
+  function ($stateRegistry, $state) {
     fetch('/api/states')
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(function (states) {
-        states.forEach(s => $stateRegistry.register(s));
+        states.forEach((s) => $stateRegistry.register(s));
         $state.go('home');
       });
-}]);
+  },
+]);
 ```

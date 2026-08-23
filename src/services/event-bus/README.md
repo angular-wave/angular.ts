@@ -71,8 +71,10 @@ models, stores, scope-tree events, or durable message queues.
 ## Failure Contract
 
 Subscriber and policy exceptions are reported through `$exceptionHandler`.
-Publishing to an empty topic or disposed bus returns `false`. Invalid policy
-decisions are treated as errors and are not delivered.
+The default fail-fast handler terminates the current publication; later
+listeners are not guaranteed to run. Publishing to an empty topic or disposed
+bus returns `false`. Invalid policy decisions are treated as errors and are not
+delivered.
 
 ## Scheduling And Ordering
 

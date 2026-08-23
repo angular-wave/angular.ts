@@ -753,7 +753,7 @@ describe("ngMessages", () => {
       expect($templateCache.get("/mock/hello")).toBeDefined();
     });
 
-    it("should re-render the messages after download without an extra digest", (done) => {
+    it("should re-render the messages after download without an extra digest", async () => {
       element = $compile(
         '<div ng-messages="data">' +
           '  <div ng-messages-include="/mock/my-messages"></div>' +
@@ -770,11 +770,12 @@ describe("ngMessages", () => {
       //   "Your value is that of failure",
       // );
 
-      setTimeout(() => {
-        expect(messageChildren(element).length).toBe(1);
-        expect(trim(element.textContent)).toEqual("You did not enter a value");
-        done();
-      }, 10);
+      await waitUntil(
+        () => trim(element.textContent) === "You did not enter a value",
+      );
+
+      expect(messageChildren(element).length).toBe(1);
+      expect(trim(element.textContent)).toEqual("You did not enter a value");
     });
 
     it("should allow for overriding the remote template messages within the element depending on where the remote template is placed", async () => {

@@ -35,10 +35,10 @@ With `form` elements, the directive can be registered anywhere inside a form:
 ```
 
 In case of error, the directive displays a string error in place of the success
-result. JSON errors are available to `on-error` as `$res`. The behavior can
-be combined with other directivs to create complex form-handling strategies.
-Below is a form that dissappears in case of success or adds error state in case
-of validation errors.
+result. JSON errors are available to `on-error` as `$res`. The behavior can be
+combined with other directivs to create complex form-handling strategies. Below
+is a form that dissappears in case of success or adds error state in case of
+validation errors.
 
 #### Example
 
@@ -223,7 +223,7 @@ attributes provided below.
 
 - **Type:**
   [delay](https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout#delay)
-- **Description:** Ignores subsequent requests for N milliseconds
+- **Description:** Ignores later requests for N milliseconds
 - **Example:**
 
   ```html

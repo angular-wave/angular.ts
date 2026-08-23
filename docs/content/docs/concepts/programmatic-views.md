@@ -1,9 +1,9 @@
 ---
-title: 'Programmatic Views'
+title: 'Typed Component Views'
 weight: 70
 description:
-  'Construct component and directive views with real DOM nodes, reactive readers,
-  keyed collections, and normal AngularTS module registration.'
+  'Construct component and directive views with real DOM nodes, reactive
+  readers, keyed collections, and normal AngularTS module registration.'
 ---
 
 Programmatic views provide a JSX-free alternative to HTML templates. A view is
@@ -16,9 +16,9 @@ AngularTS module and let the compiler instantiate it from normal markup.
 
 ## Create a component view
 
-Import the tag factories and helpers from the package entry point:
+Import the helpers you use from the package entry point:
 
-```typescript
+```ts
 import {
   angular,
   attrs,
@@ -31,74 +31,25 @@ import {
 } from '@angular-wave/angular.ts';
 ```
 
-The same helpers are available from a runtime instance through `angular.tags`
-and `angular.view`.
+The same helpers are available together through `angular.view`.
 
-```typescript
-const {tags} = angular;
-const {attrs, each, event, props, tag, tagNS} = angular.view;
+```ts
+const { attrs, each, event, props, tag, tagNS, tags } = angular.view;
 ```
 
 Define the view directly on the component registration:
 
-```typescript
-class TodoListController {
-  draft = '';
-  todos = [
-    {id: 1, title: 'Read the programmatic-view guide'},
-  ];
-
-  get canAdd() {
-    return this.draft.trim().length > 0;
-  }
-
-  add() {
-    if (!this.canAdd) return;
-
-    this.todos.push({id: Date.now(), title: this.draft});
-    this.draft = '';
-  }
-
-  remove(id: number) {
-    const index = this.todos.findIndex((todo) => todo.id === id);
-    if (index >= 0) this.todos.splice(index, 1);
-  }
+```ts
+class CounterController {
+  count = 0;
 }
 
-const app = angular.module('todoApp', []);
-
-app.component('todoList', {
-  controller: TodoListController,
-  view: ({controller}) =>
-    tags.section(
-      tags.h1('Todos'),
-      tags.input({
-        value: () => controller.draft,
-        oninput: (event) => {
-          controller.draft = (event.currentTarget as HTMLInputElement).value;
-        },
-      }),
-      tags.button(
-        {
-          disabled: () => !controller.canAdd,
-          onclick: () => controller.add(),
-        },
-        'Add',
-      ),
-      tags.ul(
-        each(
-          () => controller.todos,
-          (todo) => todo.id,
-          (todo) =>
-            tags.li(
-              () => todo().title,
-              tags.button(
-                {onclick: () => controller.remove(todo().id)},
-                'Remove',
-              ),
-            ),
-        ),
-      ),
+angular.module('app', []).component('counterButton', {
+  controller: CounterController,
+  view: ({ controller }) =>
+    tags.button(
+      { onclick: () => controller.count++ },
+      () => `Count: ${controller.count}`,
     ),
 });
 ```
@@ -106,42 +57,41 @@ app.component('todoList', {
 The component is used like any template-backed component:
 
 ```html
-<todo-list></todo-list>
+<counter-button></counter-button>
 ```
 
 ## Return view children
 
-A component or directive view can return any `ComponentViewChild`:
+A component or directive view can return any
+[`ViewChild`](../../../typedoc/types/ViewChild.html). The former
+[`ComponentViewChild`](../../../typedoc/types/ComponentViewChild.html) name is
+retained as a compatibility alias.
 
 - A DOM `Node`.
 - A string, number, boolean, or bigint.
 - A reactive child reader function.
 - A nested array of view children.
 - A `DocumentFragment`.
-- `null`, `undefined`, or `false` to render nothing.
+- `null`, `undefined`, or either boolean to render nothing.
 
 Arrays are flattened recursively. Existing nodes are moved rather than cloned,
 and document fragments contribute their current child nodes.
 
-```typescript
-view: ({controller}) => [
+```ts
+view: ({ controller }) => [
   tags.h2(() => controller.title),
-  controller.showDetails
-    ? tags.p(controller.initialDetails)
-    : null,
-]
+  controller.showDetails ? tags.p(controller.initialDetails) : null,
+];
 ```
 
 The conditional expression in this example is evaluated only when the view is
 constructed. Make the condition itself a reader when it must remain reactive:
 
-```typescript
-view: ({controller}) => [
+```ts
+view: ({ controller }) => [
   tags.h2(() => controller.title),
-  () => controller.showDetails
-    ? tags.p(controller.details)
-    : null,
-]
+  () => (controller.showDetails ? tags.p(controller.details) : null),
+];
 ```
 
 ## Use reactive readers
@@ -150,27 +100,33 @@ A function in a child or ordinary non-event property position is a reactive
 reader. AngularTS executes it, tracks the proxied scope and controller state it
 reads, and updates only the corresponding DOM binding when that state changes.
 
-```typescript
-tags.output(() => controller.total)
+```ts
+tags.output(() => controller.total);
 
 tags.button({
   disabled: () => !controller.canSubmit,
-})
+});
 
 tags.input({
   value: () => controller.query,
-})
+});
 ```
 
 A value that is evaluated before the tag function is a static snapshot:
 
-```typescript
-tags.output(controller.total)
-tags.button({disabled: !controller.canSubmit})
+```ts
+tags.output(controller.total);
+tags.button({ disabled: !controller.canSubmit });
 ```
 
 Use reader functions whenever a child or property must be reevaluated
 reactively.
+
+Unlike string templates, programmatic views keep bindings between the model and
+the rendered DOM inside TypeScript's type system. Renaming a controller or model
+property updates through normal refactoring tools, while misspelled members and
+incompatible typed DOM property values fail at compile time rather than becoming
+runtime template errors.
 
 ## Properties and attributes
 
@@ -179,38 +135,42 @@ DOM property semantics, including properties exposed only by custom elements.
 For static values, AngularTS assigns a DOM property when it exists on the
 element and otherwise uses an attribute.
 
-```typescript
+Normal property maps are checked against the element's DOM type. Use `attrs()`
+for arbitrary attribute names and `props()` for custom-element properties;
+misspelled native properties are rejected by TypeScript.
+
+```ts
 tags.input({
   value: () => controller.name,
   disabled: () => controller.saving,
   'data-field': 'name',
-})
+});
 ```
 
 Use `attrs()` to force attribute semantics. Functions inside `attrs()` remain
 reactive readers.
 
-```typescript
+```ts
 tags.section({
   ...attrs({
     'aria-busy': () => controller.loading,
     'data-count': () => controller.items.length,
   }),
-})
+});
 ```
 
-Boolean HTML attributes use presence semantics. Other attributes, including
-ARIA attributes, are serialized normally. For example, an ARIA value of
-`false` becomes the string `"false"` rather than removing the attribute.
+Boolean HTML attributes use presence semantics. Other attributes, including ARIA
+attributes, are serialized normally. For example, an ARIA value of `false`
+becomes the string `"false"` rather than removing the attribute.
 
 Use `props()` to assign exact, literal DOM property values. Values inside
 `props()` are not reactive readers. This distinction permits function-valued
 properties on custom elements:
 
-```typescript
+```ts
 const grid = tag('data-grid', {
   ...props({
-    rowFormatter: (row: {name: string}) => row.name.toUpperCase(),
+    rowFormatter: (row: { name: string }) => row.name.toUpperCase(),
   }),
   hidden: () => controller.rows.length === 0,
 });
@@ -218,12 +178,12 @@ const grid = tag('data-grid', {
 
 Do not place reactive readers inside `props()`:
 
-```typescript
+```ts
 // Reactive property
-tags.input({value: () => controller.name})
+tags.input({ value: () => controller.name });
 
 // Literal function assigned as the value property
-tags.input(props({value: () => controller.name}))
+tags.input(props({ value: () => controller.name }));
 ```
 
 Potentially dangerous properties such as `innerHTML` and `srcdoc` still pass
@@ -234,23 +194,25 @@ content has been reviewed and is intentionally trusted.
 
 Functions assigned to native `on*` properties are event handlers:
 
-```typescript
+```ts
 tags.button({
   onclick: (event) => controller.submit(event),
-})
+});
 ```
 
 Use `event()` for listener options, object listeners, or custom event names. It
 uses native `addEventListener` semantics and is removed with the view.
 
-```typescript
+```ts
 tags.button({
-  click: event(() => controller.submit(), {once: true}),
-})
+  click: event(() => controller.submit(), { once: true }),
+});
 
 tag('data-grid', {
-  selectionchange: event((event) => controller.select(event)),
-})
+  selectionchange: event<CustomEvent<Selection>>((event) =>
+    controller.select(event.detail),
+  ),
+});
 ```
 
 Errors thrown by programmatic event handlers and reactive bindings are routed
@@ -260,10 +222,8 @@ through `$exceptionHandler`.
 
 Standard array methods are useful for static collections:
 
-```typescript
-tags.ul(
-  controller.todos.map((todo) => tags.li(todo.title)),
-)
+```ts
+tags.ul(controller.todos.map((todo) => tags.li(todo.title)));
 ```
 
 This calls `map()` once and creates a DOM snapshot. Changes to the array do not
@@ -271,22 +231,24 @@ insert, remove, or reorder list nodes.
 
 Use `each()` for a reactive collection:
 
-```typescript
+```ts
 tags.ul(
   each(
     () => controller.todos,
     (todo) => todo.id,
     (todo) => tags.li(() => todo().title),
   ),
-)
+);
 ```
 
 `each()` accepts three functions:
 
 - The collection reader returns an iterable, `null`, or `undefined`.
-- The key selector receives the concrete item and must return a unique,
-  stable key.
-- The renderer receives a reactive item reader rather than an item snapshot.
+- The key selector receives the concrete item and must return a unique, stable
+  key.
+- The renderer receives a reactive
+  [`ViewReader`](../../../typedoc/types/ViewReader.html) rather than an item
+  snapshot.
 
 Calling `todo()` reads the current value associated with that key. When a new
 object replaces an old object with the same key, AngularTS preserves its DOM
@@ -300,44 +262,47 @@ unique for the lifetime of each logical item.
 
 Use `tag()` when the HTML tag name is dynamic or cannot use property access:
 
-```typescript
-const widget = tag('account-summary', {accountId: controller.accountId});
+```ts
+const widget = tag('account-summary', { accountId: controller.accountId });
 ```
 
 Use `tagNS()` or call `tags` with a namespace URI for SVG, MathML, or another
 XML namespace:
 
-```typescript
+```ts
 const svg = tags('http://www.w3.org/2000/svg');
 
 const icon = svg.svg(
-  {viewBox: '0 0 24 24'},
-  svg.circle({cx: 12, cy: 12, r: 10}),
+  { viewBox: '0 0 24 24' },
+  svg.circle({ cx: 12, cy: 12, r: 10 }),
 );
 
-const otherCircle = tagNS(
-  'http://www.w3.org/2000/svg',
-  'circle',
-  {cx: 12, cy: 12, r: 10},
-);
+const otherCircle = tagNS('http://www.w3.org/2000/svg', 'circle', {
+  cx: 12,
+  cy: 12,
+  r: 10,
+});
 ```
 
 ## Access the view context
 
-Component views receive a `ComponentViewContext` with these members:
+Component views receive a
+[`ComponentViewContext`](../../../typedoc/interfaces/ComponentViewContext.html)
+with these members:
 
-| Member | Purpose |
-| --- | --- |
-| `controller` | The initialized component controller. |
-| `scope` | The scope that owns reactive bindings and generated DOM. |
-| `element` | The component host element. |
-| `transclude` | The transclusion function when transclusion is enabled. |
-| `onDestroy` | Registers view-owned cleanup and returns a cancellation function. |
+| Member       | Purpose                                                           |
+| ------------ | ----------------------------------------------------------------- |
+| `controller` | The initialized component controller.                             |
+| `scope`      | The scope that owns reactive bindings and generated DOM.          |
+| `host`       | The component host element.                                       |
+| `element`    | Deprecated alias for `host`.                                      |
+| `transclude` | The transclusion function when transclusion is enabled.           |
+| `onDestroy`  | Registers view-owned cleanup and returns a cancellation function. |
 
-Directive views receive a `DirectiveViewContext`. It has the same lifecycle and
-DOM members and also exposes `required`, containing controllers resolved from
-the directive's `require` declaration. The directive's own `controller` is
-`undefined` when it does not declare one.
+Directive views receive a
+[`DirectiveViewContext`](../../../typedoc/interfaces/DirectiveViewContext.html).
+It adds `required`, containing controllers resolved from the directive's
+`require` declaration. Its `controller` is `undefined` when none is declared.
 
 ## Create a directive view
 
@@ -345,21 +310,13 @@ Directives can provide `view` instead of a template. Generated nodes continue
 through the normal compile and link pipeline, so registered directives on those
 nodes remain available.
 
-```typescript
+```ts
 app.directive('liveClock', () => ({
-  view: ({scope, onDestroy}) => {
+  view: ({ scope, onDestroy }) => {
     scope.now = new Date();
-
-    const timer = window.setInterval(() => {
-      scope.now = new Date();
-    }, 1000);
-
-    onDestroy(() => window.clearInterval(timer));
-
-    return tags.time(
-      {datetime: () => scope.now.toISOString()},
-      () => scope.now.toLocaleTimeString(),
-    );
+    const timer = setInterval(() => (scope.now = new Date()), 1000);
+    onDestroy(() => clearInterval(timer));
+    return tags.time(() => scope.now.toLocaleTimeString());
   },
 }));
 ```
@@ -376,22 +333,18 @@ Reactive bindings, event listeners, keyed children, and compiled fragments are
 disposed automatically. Register resources created by application code with
 `onDestroy()`:
 
-```typescript
-view: ({onDestroy}) => {
-  const abort = new AbortController();
+```ts
+view: ({ onDestroy }) => {
   const socket = new WebSocket('/events');
-
-  onDestroy(() => abort.abort());
-  const cancelSocketCleanup = onDestroy(() => socket.close());
-
-  // Call cancelSocketCleanup() if ownership moves somewhere else.
+  onDestroy(() => socket.close());
   return tags.div('Connected');
-}
+};
 ```
 
 Cleanup runs when either the owning scope is destroyed or the host element is
-deallocated. A cleanup registered after destruction runs immediately. Cleanup
-errors are reported through `$exceptionHandler`.
+deallocated. The returned cancellation function transfers ownership elsewhere. A
+cleanup registered after destruction runs immediately. Cleanup errors are
+reported through `$exceptionHandler`.
 
 ## Language integrations
 

@@ -495,6 +495,17 @@ describe("$location", () => {
       expect(locationUrl.getUrl()).toBe("/path/b?search=a&b=c&d#hash");
     });
 
+    it("url() gets, sets, and validates the current URL", () => {
+      const locationUrl = createLocationHtml5Url();
+
+      expect(locationUrl.url()).toBe("/path/b?search=a&b=c&d#hash");
+      expect(locationUrl.url("/next?value=1#updated")).toBe(locationUrl);
+      expect(locationUrl.url()).toBe("/next?value=1#updated");
+      expect(() =>
+        (locationUrl.url as (url: undefined) => Location)(undefined),
+      ).toThrowError(/url/);
+    });
+
     it("clears a hash with null", () => {
       const locationUrl = createLocationHtml5Url();
 

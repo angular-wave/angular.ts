@@ -14,7 +14,7 @@ import {
   isString,
   snakeCase,
   uppercase,
-  assertDefined,
+  assertInvariantDefined,
 } from "./utils.ts";
 import { NodeType } from "./node.ts";
 import type { ExpandoStore } from "../interface.ts";
@@ -382,7 +382,7 @@ export function setCacheData(
   if (elementAcceptsData(element)) {
     const expandoStore = getExpando(element, true);
 
-    assertDefined(expandoStore)[kebabToCamel(key)] = value;
+    assertInvariantDefined(expandoStore)[kebabToCamel(key)] = value;
   } else {
     if (element.parentElement) {
       // TODO: check should occur perhaps prior at compilation level that this is a valid element
@@ -863,9 +863,13 @@ function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
 
 /** Returns the nearest injector service found while walking up the element tree. */
 export function getInjector(element: Element): ng.InjectorService {
-  return assertDefined(
-    getInheritedData(element, _injector),
-  ) as ng.InjectorService;
+  const injector = getInheritedData(element, _injector);
+
+  if (!injector) {
+    throw new Error("No AngularTS injector is attached to this element.");
+  }
+
+  return injector as ng.InjectorService;
 }
 
 /**

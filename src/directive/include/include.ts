@@ -6,7 +6,7 @@ import {
   _parse,
   _templateRequest,
 } from "../../injection-tokens.ts";
-import { assertDefined, isDefined, isInstanceOf } from "../../shared/utils.ts";
+import { assertInvariantDefined, isDefined } from "../../shared/utils.ts";
 import { getNormalizedAttr, removeElement } from "../../shared/dom.ts";
 import {
   getCompiledFragmentRecordFromNodes,
@@ -181,7 +181,7 @@ export function ngIncludeDirective(
 
                 currentScope = newScope;
                 currentElement = clone;
-                currentFragment = assertDefined(
+                currentFragment = assertInvariantDefined(
                   getCompiledFragmentRecordFromNodes(clone),
                 );
                 currentScope.emit("$includeContentLoaded", src);
@@ -196,9 +196,7 @@ export function ngIncludeDirective(
                   cleanupLastIncludeContent();
                   scope.emit("$includeContentError", src);
                 }
-                $exceptionHandler(
-                  isInstanceOf(err, Error) ? err : new Error(String(err)),
-                );
+                $exceptionHandler(err);
 
                 return undefined;
               });

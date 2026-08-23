@@ -160,7 +160,7 @@
                       ><span>current<wbr />Injector</span></a
                     >
                     <a
-                      href="#errorhandlingconfig"
+                      href="#errorformattingconfig"
                       class="tsd-index-link tsd-is-inherited"
                       ><svg
                         class="tsd-kind-icon"
@@ -168,7 +168,7 @@
                         aria-label="Property"
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>error<wbr />Handling<wbr />Config</span></a
+                      ><span>error<wbr />Formatting<wbr />Config</span></a
                     >
                     <a href="#eventbus" class="tsd-index-link tsd-is-inherited"
                       ><svg
@@ -272,6 +272,15 @@
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>subapps</span></a
                     >
+                    <a href="#tags" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>tags</span></a
+                    >
                     <a href="#tokens" class="tsd-index-link tsd-is-inherited"
                       ><svg
                         class="tsd-kind-icon"
@@ -289,6 +298,15 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>version</span></a
+                    >
+                    <a href="#view" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>view</span></a
                     >
                   </div>
                 </section>
@@ -565,10 +583,10 @@
               </aside>
             </section>
             <section class="tsd-panel tsd-member tsd-is-inherited">
-              <h3 class="tsd-anchor-link" id="errorhandlingconfig">
-                <span>error<wbr />Handling<wbr />Config</span
+              <h3 class="tsd-anchor-link" id="errorformattingconfig">
+                <span>error<wbr />Formatting<wbr />Config</span
                 ><a
-                  href="#errorhandlingconfig"
+                  href="#errorformattingconfig"
                   aria-label="Permalink"
                   class="tsd-anchor-icon"
                   ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -576,27 +594,30 @@
                 ></a>
               </h3>
               <div class="tsd-signature">
-                <span class="tsd-kind-property">errorHandlingConfig</span
+                <span class="tsd-kind-property">errorFormattingConfig</span
                 ><span class="tsd-signature-symbol">:</span>
                 <span class="tsd-signature-symbol">(</span
                 ><span class="tsd-kind-parameter">config</span
                 ><span class="tsd-signature-symbol">?:</span>
                 <a
-                  href="../interfaces/ErrorHandlingConfig.html"
+                  href="../interfaces/ErrorFormattingConfig.html"
                   class="tsd-signature-type tsd-kind-interface"
-                  >ErrorHandlingConfig</a
+                  >ErrorFormattingConfig</a
                 ><span class="tsd-signature-symbol">)</span>
                 <span class="tsd-signature-symbol">=&gt;</span>
                 <a
-                  href="../interfaces/ErrorHandlingConfig.html"
+                  href="../interfaces/ErrorFormattingConfig.html"
                   class="tsd-signature-type tsd-kind-interface"
-                  >ErrorHandlingConfig</a
+                  >ErrorFormattingConfig</a
                 ><span class="tsd-signature-symbol">
-                  = errorHandlingConfig</span
+                  = errorFormattingConfig</span
                 >
               </div>
               <div class="tsd-comment tsd-typography">
-                <p>Global framework error-handling configuration.</p>
+                <p>
+                  Configure how values embedded in framework error messages are
+                  formatted.
+                </p>
               </div>
               <div class="tsd-type-declaration">
                 <h4>Type Declaration</h4>
@@ -608,22 +629,21 @@
                         ><span class="tsd-kind-parameter">config</span
                         ><span class="tsd-signature-symbol">?:</span>
                         <a
-                          href="../interfaces/ErrorHandlingConfig.html"
+                          href="../interfaces/ErrorFormattingConfig.html"
                           class="tsd-signature-type tsd-kind-interface"
-                          >ErrorHandlingConfig</a
+                          >ErrorFormattingConfig</a
                         ><span class="tsd-signature-symbol">)</span
                         ><span class="tsd-signature-symbol">:</span>
                         <a
-                          href="../interfaces/ErrorHandlingConfig.html"
+                          href="../interfaces/ErrorFormattingConfig.html"
                           class="tsd-signature-type tsd-kind-interface"
-                          >ErrorHandlingConfig</a
+                          >ErrorFormattingConfig</a
                         >
                       </li>
                       <li class="tsd-description">
                         <div class="tsd-comment tsd-typography">
                           <p>
-                            Gets or updates the global error-handling
-                            configuration.
+                            Gets or updates global error-message formatting.
                           </p>
                           <p>
                             Omitted or undefined options leave the corresponding
@@ -638,9 +658,9 @@
                                 ><code class="tsd-tag">Optional</code
                                 ><span class="tsd-kind-parameter">config</span>:
                                 <a
-                                  href="../interfaces/ErrorHandlingConfig.html"
+                                  href="../interfaces/ErrorFormattingConfig.html"
                                   class="tsd-signature-type tsd-kind-interface"
-                                  >ErrorHandlingConfig</a
+                                  >ErrorFormattingConfig</a
                                 ></span
                               >
                             </li>
@@ -649,9 +669,9 @@
                         <h4 class="tsd-returns-title">
                           Returns
                           <a
-                            href="../interfaces/ErrorHandlingConfig.html"
+                            href="../interfaces/ErrorFormattingConfig.html"
                             class="tsd-signature-type tsd-kind-interface"
-                            >ErrorHandlingConfig</a
+                            >ErrorFormattingConfig</a
                           >
                         </h4>
                       </li>
@@ -663,8 +683,8 @@
                 <p>
                   Inherited from
                   <a href="AngularRuntime.html">AngularRuntime</a>.<a
-                    href="AngularRuntime.html#errorhandlingconfig"
-                    >errorHandlingConfig</a
+                    href="AngularRuntime.html#errorformattingconfig"
+                    >errorFormattingConfig</a
                   >
                 </p>
               </aside>
@@ -1496,6 +1516,30 @@
                 </p>
               </aside>
             </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="tags">
+                <code class="tsd-tag">Readonly</code><span>tags</span
+                ><a href="#tags" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">tags</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ComponentViewTags.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ComponentViewTags</a
+                ><span class="tsd-signature-symbol"> = tags</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  JSX-free real-DOM tag factories for programmatic component
+                  views.
+                </p>
+              </div>
+            </section>
             <section class="tsd-panel tsd-member tsd-is-inherited">
               <h3 class="tsd-anchor-link" id="tokens">
                 <span>tokens</span
@@ -1791,6 +1835,781 @@
                   >
                 </p>
               </aside>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="view">
+                <code class="tsd-tag">Readonly</code><span>view</span
+                ><a href="#view" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">view</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >{</span
+                ><br />        <span class="tsd-kind-property">attrs</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">(</span
+                ><br />            <span class="tsd-kind-parameter">values</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewAttributes.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributes</a
+                ><span class="tsd-signature-symbol">,</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >)</span
+                >
+                <span class="tsd-signature-symbol">=&gt;</span
+                ><br />            <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewAttributes.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributes</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">unknown</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />            <span class="tsd-signature-symbol">}</span
+                ><br />            <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><br />                    <span class="tsd-signature-type"
+                  >Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  href="../types/ViewPropertyValue.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewPropertyValue</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  href="../types/ViewAttributeValue.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributeValue</a
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                <span class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewLiteralProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewLiteralProperties</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />            <span class="tsd-signature-symbol">}</span
+                ><span class="tsd-signature-symbol">;</span><br />        <span
+                  class="tsd-kind-property"
+                  >each</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >T</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">(</span
+                ><br />            <span class="tsd-kind-parameter">read</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">Iterable</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >T</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">any</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">any</span
+                ><span class="tsd-signature-symbol">&gt;</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">null</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">undefined</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />            <span class="tsd-kind-parameter">key</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">(</span
+                ><span class="tsd-kind-parameter">item</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type tsd-kind-type-parameter">T</span
+                ><span class="tsd-signature-symbol">)</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">PropertyKey</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />            <span class="tsd-kind-parameter">render</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">(</span
+                ><span class="tsd-kind-parameter">item</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewReader.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewReader</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >T</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">)</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <a
+                  href="../types/ViewChild.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewChild</a
+                ><span class="tsd-signature-symbol">,</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >)</span
+                >
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <a
+                  href="../types/KeyedView.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >KeyedView</a
+                ><span class="tsd-signature-symbol">;</span><br />        <span
+                  class="tsd-kind-property"
+                  >event</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >TEvent</span
+                >
+                <span class="tsd-signature-keyword">extends</span>
+                <span class="tsd-signature-type">Event</span>
+                <span class="tsd-signature-symbol">=</span>
+                <span class="tsd-signature-type">Event</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">(</span
+                ><br />            <span class="tsd-kind-parameter"
+                  >listener</span
+                ><span class="tsd-signature-symbol">:</span
+                ><br />                <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">{</span>
+                <span class="tsd-kind-call-signature">handleEvent</span
+                ><span class="tsd-signature-symbol">(</span
+                ><span class="tsd-kind-parameter">event</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type tsd-kind-type-parameter"
+                  >TEvent</span
+                ><span class="tsd-signature-symbol">)</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">unknown</span>
+                <span class="tsd-signature-symbol">}</span
+                ><br />                <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                (<span class="tsd-signature-symbol">(</span
+                ><span class="tsd-kind-parameter">event</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type tsd-kind-type-parameter"
+                  >TEvent</span
+                ><span class="tsd-signature-symbol">)</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">unknown</span>)<span
+                  class="tsd-signature-symbol"
+                  >,</span
+                ><br />            <span class="tsd-kind-parameter"
+                  >options</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">boolean</span>
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">AddEventListenerOptions</span
+                ><span class="tsd-signature-symbol">,</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >)</span
+                >
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">EventListener</span
+                ><span class="tsd-signature-symbol">;</span><br />        <span
+                  class="tsd-kind-property"
+                  >props</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">(</span
+                ><br />            <span class="tsd-kind-parameter">values</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewLiteralProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewLiteralProperties</a
+                ><span class="tsd-signature-symbol">,</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >)</span
+                >
+                <span class="tsd-signature-symbol">=&gt;</span
+                ><br />            <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewAttributes.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributes</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">unknown</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />            <span class="tsd-signature-symbol">}</span
+                ><br />            <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><br />                    <span class="tsd-signature-type"
+                  >Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  href="../types/ViewPropertyValue.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewPropertyValue</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  href="../types/ViewAttributeValue.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributeValue</a
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                <span class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewLiteralProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewLiteralProperties</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />            <span class="tsd-signature-symbol">}</span
+                ><span class="tsd-signature-symbol">;</span><br />        <span
+                  class="tsd-kind-property"
+                  >tag</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />            <span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                >
+                <span class="tsd-signature-keyword">extends</span>
+                <span class="tsd-signature-keyword">keyof</span>
+                <span class="tsd-signature-type">HTMLElementTagNameMap</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">(</span
+                ><br />                <span class="tsd-kind-parameter"
+                  >name</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                <span class="tsd-signature-symbol"
+                  >...</span
+                ><span class="tsd-kind-parameter">args</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-keyword">readonly</span>
+                (<br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewAttributes.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributes</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">unknown</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >}</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">{</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><br />                            <span
+                  class="tsd-signature-type"
+                  >Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  href="../types/ViewPropertyValue.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewPropertyValue</a
+                ><span class="tsd-signature-symbol">&lt;</span>(...)<span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                        <span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewLiteralProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewLiteralProperties</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >}</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <a
+                  href="../types/ViewChild.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewChild</a
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <a
+                  href="../types/ComponentViewProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ComponentViewProperties</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Element</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><br />                )<span class="tsd-signature-symbol"
+                  >[]</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />            <span class="tsd-signature-symbol">)</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">HTMLElementTagNameMap</span
+                ><span class="tsd-signature-symbol">[</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                ><span class="tsd-signature-symbol">]</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />            <span class="tsd-signature-symbol">(</span
+                ><br />                <span class="tsd-kind-parameter"
+                  >name</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                <span class="tsd-signature-symbol"
+                  >...</span
+                ><span class="tsd-kind-parameter">args</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-keyword">readonly</span>
+                (<br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewAttributes.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributes</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">unknown</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >}</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">{</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><br />                            <span
+                  class="tsd-signature-type"
+                  >Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  href="../types/ViewPropertyValue.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewPropertyValue</a
+                ><span class="tsd-signature-symbol">&lt;</span>(...)<span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                        <span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewLiteralProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewLiteralProperties</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >}</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <a
+                  href="../types/ViewChild.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewChild</a
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <a
+                  href="../types/ComponentViewProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ComponentViewProperties</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Element</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><br />                )<span class="tsd-signature-symbol"
+                  >[]</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />            <span class="tsd-signature-symbol">)</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">HTMLElement</span
+                ><span class="tsd-signature-symbol">;</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >}</span
+                ><span class="tsd-signature-symbol">;</span><br />        <span
+                  class="tsd-kind-property"
+                  >tagNS</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />            <span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                >
+                <span class="tsd-signature-keyword">extends</span>
+                <span class="tsd-signature-keyword">keyof</span>
+                <span class="tsd-signature-type">SVGElementTagNameMap</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">(</span
+                ><br />                <span class="tsd-kind-parameter"
+                  >namespaceUri</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type"
+                  >&quot;http://www.w3.org/2000/svg&quot;</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                <span class="tsd-kind-parameter"
+                  >name</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                <span class="tsd-signature-symbol"
+                  >...</span
+                ><span class="tsd-kind-parameter">args</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-keyword">readonly</span>
+                (<br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewAttributes.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributes</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">unknown</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >}</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">{</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><br />                            <span
+                  class="tsd-signature-type"
+                  >Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  href="../types/ViewPropertyValue.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewPropertyValue</a
+                ><span class="tsd-signature-symbol">&lt;</span>(...)<span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                        <span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewLiteralProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewLiteralProperties</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >}</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <a
+                  href="../types/ViewChild.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewChild</a
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <a
+                  href="../types/ComponentViewProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ComponentViewProperties</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Element</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><br />                )<span class="tsd-signature-symbol"
+                  >[]</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />            <span class="tsd-signature-symbol">)</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">SVGElementTagNameMap</span
+                ><span class="tsd-signature-symbol">[</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                ><span class="tsd-signature-symbol">]</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />            <span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                >
+                <span class="tsd-signature-keyword">extends</span>
+                <span class="tsd-signature-keyword">keyof</span>
+                <span class="tsd-signature-type">MathMLElementTagNameMap</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">(</span
+                ><br />                <span class="tsd-kind-parameter"
+                  >namespaceUri</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type"
+                  >&quot;http://www.w3.org/1998/Math/MathML&quot;</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                <span class="tsd-kind-parameter"
+                  >name</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                <span class="tsd-signature-symbol"
+                  >...</span
+                ><span class="tsd-kind-parameter">args</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-keyword">readonly</span>
+                (<br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewAttributes.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewAttributes</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <span class="tsd-signature-type">unknown</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >}</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">{</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[attributeGroup]&quot;</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">Readonly</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><br />                            <span
+                  class="tsd-signature-type"
+                  >Record</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  href="../types/ViewPropertyValue.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewPropertyValue</a
+                ><span class="tsd-signature-symbol">&lt;</span>(...)<span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />                        <span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                        <span class="tsd-kind-property"
+                  >&quot;[propertyGroup]&quot;</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ViewLiteralProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewLiteralProperties</a
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >}</span
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <a
+                  href="../types/ViewChild.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewChild</a
+                ><br />                    <span class="tsd-signature-symbol"
+                  >|</span
+                >
+                <a
+                  href="../types/ComponentViewProperties.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ComponentViewProperties</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><span class="tsd-signature-type">Element</span
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><br />                )<span class="tsd-signature-symbol"
+                  >[]</span
+                ><span class="tsd-signature-symbol">,</span
+                ><br />            <span class="tsd-signature-symbol">)</span
+                ><span class="tsd-signature-symbol">:</span>
+                <span class="tsd-signature-type">MathMLElementTagNameMap</span
+                ><span class="tsd-signature-symbol">[</span
+                ><span class="tsd-signature-type tsd-kind-type-parameter"
+                  >Name</span
+                ><span class="tsd-signature-symbol">]</span
+                ><span class="tsd-signature-symbol">;</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >}</span
+                ><span class="tsd-signature-symbol">;</span><br />        <span
+                  class="tsd-kind-property"
+                  >tags</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/ComponentViewTags.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ComponentViewTags</a
+                ><span class="tsd-signature-symbol">;</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >}</span
+                ><span class="tsd-signature-symbol">,</span><br /><span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol"> = ...</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>Explicit programmatic-view binding and element helpers.</p>
+              </div>
             </section>
           </section>
         </details>
@@ -3235,14 +4054,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>current<wbr />Injector</span></a
-                  ><a href="#errorhandlingconfig" class="tsd-is-inherited"
+                  ><a href="#errorformattingconfig" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"
                       aria-label="Property"
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>error<wbr />Handling<wbr />Config</span></a
+                    ><span>error<wbr />Formatting<wbr />Config</span></a
                   ><a href="#eventbus" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"
@@ -3323,6 +4142,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>subapps</span></a
+                  ><a href="#tags"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>tags</span></a
                   ><a href="#tokens" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"
@@ -3339,6 +4166,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>version</span></a
+                  ><a href="#view"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>view</span></a
                   >
                 </div>
               </details>

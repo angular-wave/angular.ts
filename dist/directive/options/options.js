@@ -1,6 +1,6 @@
 import { _compile, _parse } from '../../injection-tokens.js';
 import { hasNormalizedAttr, emptyElement, getNormalizedAttr, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
-import { assertDefined, isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, createErrorFactory } from '../../shared/utils.js';
+import { assertInvariantDefined, isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, createErrorFactory } from '../../shared/utils.js';
 
 const ngOptionsError = createErrorFactory("ngOptions");
 const optionTemplate = document.createElement("option");
@@ -123,9 +123,9 @@ function ngOptionsDirective($compile, $parse) {
                     if (selectNode.value !== option._selectValue) {
                         selectCtrl._removeUnknownOption();
                         selectNode.value = option._selectValue;
-                        assertDefined(option._element).selected = true;
+                        assertInvariantDefined(option._element).selected = true;
                     }
-                    assertDefined(option._element).setAttribute("selected", "selected");
+                    assertInvariantDefined(option._element).setAttribute("selected", "selected");
                 }
                 else {
                     selectCtrl._selectUnknownOrEmptyOption(value);
@@ -172,8 +172,8 @@ function ngOptionsDirective($compile, $parse) {
             };
         }
         if (providedEmptyOption) {
-            const linkFn = $compile(assertDefined(selectCtrl._emptyOption));
-            selectNode.prepend(assertDefined(selectCtrl._emptyOption));
+            const linkFn = $compile(assertInvariantDefined(selectCtrl._emptyOption));
+            selectNode.prepend(assertInvariantDefined(selectCtrl._emptyOption));
             linkFn(scope);
         }
         scope.watch(ngOptions._getWatchables, updateOptions);

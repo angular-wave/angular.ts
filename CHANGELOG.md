@@ -2,13 +2,15 @@
 
 ## [Unreleased]
 
+- Simplified validation and exception ownership; renamed error formatting configuration.
+
 ## [0.32.0] - 2026-08-15
 
 - Improved asynchronous reactivity and nested component binding propagation.
 - Improved compiler, incremental compilation, and template loading performance.
 - Added router prefetching with optional Service Worker relay.
 - Unified cache strategies across HTTP and REST.
-- Added `$storage` and `$workflowSupervisor` sevices
+- Added `$storage` and `$workflowSupervisor` services.
 - Added `ng-patch` directive.
 - Enforced explicit dependency injection annotations.
 

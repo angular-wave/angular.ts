@@ -1,4 +1,10 @@
-# OrderBy Filter
+---
+title: Order by
+description: Order a collection by one or more computed values.
+weight: 40
+---
+
+# Order by filter
 
 ## Description
 
@@ -31,7 +37,7 @@ Ordering the specified `collection` happens in two phases:
    values are saved along with their type (`string`, `number`, etc). For
    example, an item `{label: 'foo'}`, passed through a predicate that extracts
    the value of the `label` property, would be transformed to:
-   ```javascript
+   ```js
    {
      value: 'foo',
      type: 'string',
@@ -63,16 +69,16 @@ the conversion:
 
 If the object has a valueOf() method that returns a primitive, its return value
 will be used instead. (If the object has a valueOf() method that returns another
-object, then the returned object will be used in subsequent steps.) If the
-object has a custom toString() method (i.e., not the one inherited from Object)
-that returns a primitive, its return value will be used instead. (If the object
-has a toString() method that returns another object, then the returned object
-will be used in subsequent steps.) No conversion; the object itself is used. The
-Default Comparator The default, built-in comparator should be sufficient for
-most use cases. In short, it compares numbers numerically, strings
-alphabetically (and case-insensitively), for objects falls back to using their
-index in the original collection, sorts values of different types by type, and
-puts undefined and null values at the end of the sorted list.
+object, then the returned object will be used in later steps.) If the object has
+a custom toString() method (i.e., not the one inherited from Object) that
+returns a primitive, its return value will be used instead. (If the object has a
+toString() method that returns another object, then the returned object will be
+used in later steps.) No conversion; the object itself is used. The Default
+Comparator The default, built-in comparator should be sufficient for most use
+cases. In short, it compares numbers numerically, strings alphabetically (and
+case-insensitively), for objects falls back to using their index in the original
+collection, sorts values of different types by type, and puts undefined and null
+values at the end of the sorted list.
 
 More specifically, it follows these steps to determine the relative order of
 items:
@@ -86,11 +92,11 @@ indices instead. Otherwise, return: 0, if the values are equal (by strict
 equality comparison, i.e., using ===). -1, if the 1st value is "less than" the
 2nd value (compared using the < operator). 1, otherwise. Note: If you notice
 numbers not being sorted as expected, make sure they are actually being saved as
-numbers and not strings. Note: For the purpose of sorting, null and undefined
-are considered "greater than" any other value (with undefined "greater than"
-null). This effectively means that null and undefined values end up at the end
-of a list sorted in ascending order. Note: null values use 'null' as their type
-to be able to distinguish them from objects.
+numbers and not strings. Note: For sorting, null and undefined are considered
+"greater than" any other value (with undefined "greater than" null). This
+effectively means that null and undefined values end up at the end of a list
+sorted in ascending order. Note: null values use 'null' as their type to be able
+to distinguish them from objects.
 
 Parameters collection {Array|ArrayLike}: The collection (array or array-like
 object) to sort.

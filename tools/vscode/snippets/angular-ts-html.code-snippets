@@ -23,7 +23,7 @@
   "AngularTS click": {
     "prefix": "ngclick",
     "body": [
-      "<button type=\"button\" ng-click=\"${1:handler}($event)\">$0</button>"
+      "<button type=\"button\" ng-click=\"${1:handler}(\\$event)\">$0</button>"
     ],
     "description": "AngularTS ng-click button"
   },

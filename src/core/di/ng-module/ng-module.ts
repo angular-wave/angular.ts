@@ -50,6 +50,7 @@ import { isInjectable } from "../injectable.ts";
 import { FilterRegistry } from "../../filter/filter.ts";
 import { validate, validateRequired } from "../../../shared/validate.ts";
 import type {
+  ComponentDefinition,
   Constructor,
   Injectable,
   ProviderDefinition,
@@ -360,7 +361,7 @@ const angularConfigKeys = new Set<string>([
   _websocket,
 ]);
 
-function assertKnownAngularConfigKey(
+function validateKnownAngularConfigKey(
   key: string,
 ): asserts key is AngularConfigKey {
   if (!angularConfigKeys.has(key)) {
@@ -502,7 +503,7 @@ function getModelFactoryDependencies(
   }
 }
 
-function assertAppSafeModelFactoryDependencies<T extends ModelState>(
+function validateAppSafeModelFactoryDependencies<T extends ModelState>(
   name: string,
   initial: ModelFactory<T>,
 ): void {
@@ -874,7 +875,7 @@ export class NgModule {
     validate(isObject, config, "config");
 
     for (const key of Object.keys(config)) {
-      assertKnownAngularConfigKey(key);
+      validateKnownAngularConfigKey(key);
 
       setAngularConfig(normalized, key, config[key]);
     }
@@ -1122,17 +1123,20 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {ng.Component} options
+   * @param {ng.ComponentDefinition} options
    * @returns {NgModule}
    */
-  component(name: string, options: ng.Component): this {
+  component<TController extends ng.Controller = ng.Controller>(
+    name: string,
+    options: ComponentDefinition<TController>,
+  ): this {
     validate(isString, name, "name");
     validate(isDefined, options, "object");
 
     this._invokeQueue.push([
       this._compileRegistry,
       "component",
-      [name, options],
+      [name, options as ng.Component],
     ]);
 
     return this;
@@ -1314,7 +1318,7 @@ export class NgModule {
     }
 
     if (isInjectable(initial)) {
-      assertAppSafeModelFactoryDependencies(name, initial);
+      validateAppSafeModelFactoryDependencies(name, initial);
     }
 
     let modelInjector: ng.InjectorService | undefined;

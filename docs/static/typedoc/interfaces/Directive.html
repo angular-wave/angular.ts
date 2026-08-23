@@ -86,7 +86,7 @@
           <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
             <li><a href="" aria-current="page">Directive</a></li>
           </ul>
-          <h1>Interface Directive&lt;TCtrl&gt;</h1>
+          <h1>Interface Directive&lt;TCtrl, TRequired, TScope, TElement&gt;</h1>
         </div>
         <section class="tsd-panel tsd-comment">
           <div class="tsd-comment tsd-typography">
@@ -96,13 +96,48 @@
         <div class="tsd-signature">
           <span class="tsd-signature-keyword">interface</span>
           <span class="tsd-kind-interface">Directive</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><a class="tsd-signature-type tsd-kind-type-parameter" href="#tctrl"
+          ><span class="tsd-signature-symbol">&lt;</span><br />    <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tctrl"
             >TCtrl</a
           >
           <span class="tsd-signature-symbol">=</span>
           <span class="tsd-signature-type">unknown</span
-          ><span class="tsd-signature-symbol">&gt;</span>
+          ><span class="tsd-signature-symbol">,</span><br />    <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#trequired"
+            >TRequired</a
+          >
+          <span class="tsd-signature-symbol">=</span>
+          <a
+            href="../types/DirectiveController.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >DirectiveController</a
+          >
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">undefined</span
+          ><span class="tsd-signature-symbol">,</span><br />    <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tscope"
+            >TScope</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <span class="tsd-signature-type">ng.Scope</span>
+          <span class="tsd-signature-symbol">=</span>
+          <span class="tsd-signature-type">ng.Scope</span
+          ><span class="tsd-signature-symbol">,</span><br />    <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#telement"
+            >TElement</a
+          >
+          <span class="tsd-signature-keyword">extends</span>
+          <span class="tsd-signature-type">Element</span>
+          <span class="tsd-signature-symbol">=</span>
+          <span class="tsd-signature-type">Element</span
+          ><span class="tsd-signature-symbol">,</span><br /><span
+            class="tsd-signature-symbol"
+            >&gt;</span
+          >
           <span class="tsd-signature-symbol">{</span><br />    <a
             class="tsd-kind-property"
             href="#bindtocontroller"
@@ -311,6 +346,43 @@
           ><span class="tsd-signature-symbol">,</span>
           <span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#view"
+            >view</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">(</span><br />        <span
+            class="tsd-kind-parameter"
+            >context</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            href="DirectiveViewContext.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >DirectiveViewContext</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a class="tsd-signature-type tsd-kind-type-parameter" href="#tctrl"
+            >TCtrl</a
+          ><span class="tsd-signature-symbol">,</span>
+          <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#trequired"
+            >TRequired</a
+          ><span class="tsd-signature-symbol">,</span>
+          <a class="tsd-signature-type tsd-kind-type-parameter" href="#tscope"
+            >TScope</a
+          ><span class="tsd-signature-symbol">,</span>
+          <a class="tsd-signature-type tsd-kind-type-parameter" href="#telement"
+            >TElement</a
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-signature-symbol"
+            >)</span
+          >
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <a
+            href="../types/ViewChild.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >ViewChild</a
           ><span class="tsd-signature-symbol">;</span><br /><span
             class="tsd-signature-symbol"
             >}</span
@@ -323,6 +395,34 @@
               <span id="tctrl"
                 ><span class="tsd-kind-type-parameter">TCtrl</span> =
                 <span class="tsd-signature-type">unknown</span></span
+              >
+            </li>
+            <li>
+              <span id="trequired"
+                ><span class="tsd-kind-type-parameter">TRequired</span> =
+                <a
+                  href="../types/DirectiveController.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >DirectiveController</a
+                >
+                <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-type">undefined</span></span
+              >
+            </li>
+            <li>
+              <span id="tscope"
+                ><span class="tsd-kind-type-parameter">TScope</span>
+                <span class="tsd-signature-keyword">extends</span>
+                <span class="tsd-signature-type">ng.Scope</span> =
+                <span class="tsd-signature-type">ng.Scope</span></span
+              >
+            </li>
+            <li>
+              <span id="telement"
+                ><span class="tsd-kind-type-parameter">TElement</span>
+                <span class="tsd-signature-keyword">extends</span>
+                <span class="tsd-signature-type">Element</span> =
+                <span class="tsd-signature-type">Element</span></span
               >
             </li>
           </ul>
@@ -498,6 +598,15 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>transclude?</span></a
+                    >
+                    <a href="#view" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>view?</span></a
                     >
                   </div>
                 </section>
@@ -967,6 +1076,64 @@
                 <p>Enables transclusion or configures named slots</p>
               </div>
             </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="view">
+                <code class="tsd-tag">Optional</code><span>view</span
+                ><a href="#view" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">view</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">(</span><br />    <span
+                  class="tsd-kind-parameter"
+                  >context</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="DirectiveViewContext.html"
+                  class="tsd-signature-type tsd-kind-interface"
+                  >DirectiveViewContext</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tctrl"
+                  >TCtrl</a
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#trequired"
+                  >TRequired</a
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tscope"
+                  >TScope</a
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#telement"
+                  >TElement</a
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">,</span><br /><span
+                  class="tsd-signature-symbol"
+                  >)</span
+                >
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <a
+                  href="../types/ViewChild.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ViewChild</a
+                >
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Real-DOM view factory. It is mutually exclusive with template,
+                  templateUrl, and replace and composes with compile/link.
+                </p>
+              </div>
+            </section>
           </section>
         </details>
       </div>
@@ -1266,6 +1433,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>transclude</span></a
+                  ><a href="#view"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>view</span></a
                   >
                 </div>
               </details>

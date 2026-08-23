@@ -22,7 +22,7 @@ object expression in the template:
 <button ng-class="tile.classes"></button>
 ```
 
-```javascript
+```js
 /**
  * @param {{ state: string, sunk: boolean }} tile
  * @returns {ng.ClassMap}
@@ -45,19 +45,19 @@ When the expression changes:
 
 **Important**: Avoid using interpolation (`{{ ... }}`) in the value of the
 `class` attribute together with `ng-class`. See
-[interpolation known issues](../../../docs/guide/interpolation#known-issues) for
-details.
+[template and interpolation guidance](/docs/concepts/templates-interpolation/)
+for details.
 
 ### Animations
 
 If `data-animate` attribute is present, the following animations will be applied
 to the element:
 
-| Animation                               | Occurs                                              |
-| --------------------------------------- | --------------------------------------------------- |
-| [`add-class`](../../service/animate)    | Before the class is applied to the element          |
-| [`remove-class`](../../service/animate) | Before the class is removed from the element        |
-| [`set-class`](../../service/animate)    | Before classes are simultaneously added and removed |
+| Animation                                    | Occurs                                              |
+| -------------------------------------------- | --------------------------------------------------- |
+| [`add-class`](/docs/animations/overview/)    | Before the class is applied to the element          |
+| [`remove-class`](/docs/animations/overview/) | Before the class is removed from the element        |
+| [`set-class`](/docs/animations/overview/)    | Before classes are simultaneously added and removed |
 
 > `ng-class` supports standard CSS3 transitions/animations even if they don’t
 > follow `$animate` service naming conventions.
@@ -69,7 +69,7 @@ to the element:
 #### `ng-class`
 
 - **Type:** `string | object | array`
-- **Type alias:** `ng.ClassValue`
+- **Type alias:** [`ng.ClassValue`](../../../typedoc/types/ClassValue.html)
 - **Description:** An expression whose result determines the CSS classes to
   apply.
 - **Example:**

@@ -87,7 +87,8 @@ Policy:
 Failure:
 
 - Subscriber exceptions are forwarded to `$exceptionHandler`.
-- One failing subscriber does not stop delivery to remaining subscribers.
+- The fail-fast handler terminates the current delivery. EventBus does not
+  promise continuation after an exception handler is invoked.
 - Disposed buses ignore subscription and publish attempts.
 
 Dependency replacement and composition:
@@ -119,8 +120,9 @@ Policy:
 
 Failure:
 
-- Invalid trust contexts and trust values route through `$exceptionHandler` or
-  throw according to the SCE delegate path.
+- Invalid trust contexts and trust values throw through the SCE delegate path;
+  a detached framework caller may then report the failure through
+  `$exceptionHandler`.
 - Untrusted resource URLs are blocked.
 - HTML sanitization requires a sanitizer; without one, unsafe HTML trust checks
   fail rather than silently rendering unsafe content.

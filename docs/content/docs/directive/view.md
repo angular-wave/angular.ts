@@ -21,7 +21,7 @@ Optional view name. When omitted, this outlet renders the unnamed (default) view
 
 States define their templates in `$stateRegistry`:
 
-```javascript
+```js
   name: 'home',
   url: '/home',
   template: '<h1>Home</h1>'

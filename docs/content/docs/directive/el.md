@@ -19,7 +19,7 @@ Use `ng-el` for the common case where you want the native element itself:
 </section>
 ```
 
-```javascript
+```js
 function BoardController() {
   this.boardEl = null;
 }

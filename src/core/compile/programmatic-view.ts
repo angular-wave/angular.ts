@@ -4,6 +4,7 @@ import type {
   ComponentViewChild,
   DirectiveView,
   DirectiveViewContext,
+  ViewReader,
 } from "../../interface.ts";
 import { addElementDisposer, getCacheData } from "../../shared/dom.ts";
 import { isArray, isFunction } from "../../shared/utils.ts";
@@ -18,11 +19,28 @@ export const PROGRAMMATIC_VIEW_MARKER = "ng-programmatic-view";
 
 export const PROGRAMMATIC_VIEW_TEMPLATE = `<!--${PROGRAMMATIC_VIEW_MARKER}-->`;
 
-/**
- * Property, attribute, event listener, or reactive property reader accepted by
- * a programmatic view tag factory.
- */
-export type ComponentViewPropertyValue = unknown;
+/** Static DOM attribute value accepted by {@link Angular.view | view.attrs()}. */
+export type ViewAttributeValue =
+  | string
+  | number
+  | boolean
+  | bigint
+  | null
+  | undefined;
+
+/** Static value or reactive reader accepted by a view property. */
+export type ViewPropertyValue<T = unknown> = T | ViewReader<T>;
+
+/** Compatibility alias for {@link ViewPropertyValue}. */
+export type ComponentViewPropertyValue<T = unknown> = ViewPropertyValue<T>;
+
+/** Explicit attribute map accepted by {@link Angular.view | view.attrs()}. */
+export type ViewAttributes = Readonly<
+  Record<string, ViewPropertyValue<ViewAttributeValue>>
+>;
+
+/** Explicit literal property map accepted by {@link Angular.view | view.props()}. */
+export type ViewLiteralProperties = Readonly<Record<string, unknown>>;
 
 /**
  * Property map passed as the first argument to a programmatic view tag.
@@ -31,6 +49,7 @@ export type ComponentViewPropertyValue = unknown;
  * Spread `attrs(...)` into this map to force attribute behavior. `props(...)`
  * assigns its enclosed values literally, including function values.
  */
+/** @inline */
 type ComponentViewEventProperties = Partial<{
   [Name in keyof GlobalEventHandlersEventMap as `on${Name}`]:
     | ((event: GlobalEventHandlersEventMap[Name]) => unknown)
@@ -40,10 +59,21 @@ type ComponentViewEventProperties = Partial<{
 /** Typed DOM properties plus arbitrary attribute and custom-element values. */
 export type ComponentViewProperties<TElement extends Element = Element> =
   Partial<{
-    [Name in keyof TElement]: TElement[Name] | (() => TElement[Name]);
+    [Name in keyof TElement as TElement[Name] extends (
+      ...args: never[]
+    ) => unknown
+      ? never
+      : Name]: ViewPropertyValue<TElement[Name]>;
   }> &
     ComponentViewEventProperties &
-    Record<string, ComponentViewPropertyValue> & {
+    Partial<
+      Record<
+        `aria-${string}` | `data-${string}`,
+        ViewPropertyValue<ViewAttributeValue>
+      >
+    > & {
+      class?: ViewPropertyValue<string | null | undefined>;
+      role?: ViewPropertyValue<string | null | undefined>;
       is?: string;
     };
 
@@ -67,10 +97,16 @@ type ViewBindingFunction<T> = (() => T) & {
   readonly [bindingMetadata]?: ViewBindingMetadata;
 };
 
-interface PropertyGroup {
-  readonly [attributeGroup]?: ComponentViewProperties;
-  readonly [propertyGroup]?: ComponentViewProperties;
-}
+/** @inline */
+type PropertyGroup =
+  | {
+      readonly [attributeGroup]: ViewAttributes;
+      readonly [propertyGroup]?: ViewLiteralProperties;
+    }
+  | {
+      readonly [attributeGroup]?: ViewAttributes;
+      readonly [propertyGroup]: ViewLiteralProperties;
+    };
 
 interface KeyedBinding<T> {
   readonly _read: () => Iterable<T> | null | undefined;
@@ -94,15 +130,17 @@ function getBindingMetadata(value: unknown): ViewBindingMetadata | undefined {
 }
 
 /** Marks a listener explicitly and optionally supplies native listener options. */
-export function event(
-  listener: EventListenerOrEventListenerObject,
+export function event<TEvent extends Event = Event>(
+  listener:
+    | ((event: TEvent) => unknown)
+    | { handleEvent(event: TEvent): unknown },
   options?: AddEventListenerOptions | boolean,
 ): EventListener {
   const wrapper: EventListener = function (this: EventTarget, value: Event) {
     if (isFunction(listener)) {
       Reflect.apply(listener, this, [value]);
     } else {
-      listener.handleEvent(value);
+      listener.handleEvent(value as TEvent);
     }
   };
 
@@ -110,17 +148,13 @@ export function event(
 }
 
 /** Forces the enclosed values to use DOM attribute semantics. */
-export function attrs(
-  values: ComponentViewProperties,
-): ComponentViewProperties {
-  return { [attributeGroup]: values } as ComponentViewProperties;
+export function attrs(values: ViewAttributes): PropertyGroup {
+  return { [attributeGroup]: values };
 }
 
 /** Assigns the enclosed values as literal DOM properties. */
-export function props(
-  values: ComponentViewProperties,
-): ComponentViewProperties {
-  return { [propertyGroup]: values } as ComponentViewProperties;
+export function props(values: ViewLiteralProperties): PropertyGroup {
+  return { [propertyGroup]: values };
 }
 
 /**
@@ -128,11 +162,18 @@ export function props(
  * with stable keys move or change identity. Renderers receive an item reader so
  * nested reactive bindings follow same-key replacements.
  */
+declare const keyedView: unique symbol;
+
+/** Opaque keyed collection binding returned by {@link Angular.view | view.each()}. */
+export type KeyedView = ViewReader<ComponentViewChild> & {
+  readonly [keyedView]: true;
+};
+
 export function each<T>(
   read: () => Iterable<T> | null | undefined,
   key: (item: T) => PropertyKey,
-  render: (item: () => T) => ComponentViewChild,
-): () => ComponentViewChild {
+  render: (item: ViewReader<T>) => ComponentViewChild,
+): KeyedView {
   const binding: KeyedBinding<unknown> = {
     _read: read as unknown as KeyedBinding<unknown>["_read"],
     _key: key as unknown as KeyedBinding<unknown>["_key"],
@@ -152,14 +193,24 @@ export function each<T>(
     return children;
   };
 
-  return markBinding(wrapper, { _kind: "keyed-child", _binding: binding });
+  return markBinding(wrapper, {
+    _kind: "keyed-child",
+    _binding: binding,
+  }) as KeyedView;
 }
 
 /** Factory that creates one real DOM element without parsing HTML. */
 export type ComponentViewTag<TElement extends Element = HTMLElement> = (
-  first?: ComponentViewProperties<TElement> | ComponentViewChild,
+  first?:
+    | ComponentViewProperties<TElement>
+    | PropertyGroup
+    | ComponentViewChild,
   ...children: readonly ComponentViewChild[]
 ) => TElement;
+
+/** Element factory used by component and directive views. */
+export type ViewTag<TElement extends Element = HTMLElement> =
+  ComponentViewTag<TElement>;
 
 /**
  * Typed HTML tag factories. Calling the object with a namespace URI returns
@@ -170,9 +221,26 @@ export type ComponentViewTags = Readonly<{
     HTMLElementTagNameMap[Name]
   >;
 }> &
+  ((namespaceUri: "http://www.w3.org/2000/svg") => Readonly<{
+    [Name in keyof SVGElementTagNameMap]: ComponentViewTag<
+      SVGElementTagNameMap[Name]
+    >;
+  }>) &
+  ((namespaceUri: "http://www.w3.org/1998/Math/MathML") => Readonly<{
+    [Name in keyof MathMLElementTagNameMap]: ComponentViewTag<
+      MathMLElementTagNameMap[Name]
+    >;
+  }>) &
   ((
     namespaceUri: string,
   ) => Readonly<Record<string, ComponentViewTag<Element>>>);
+
+/** Tag collection used by component and directive views. */
+export type ViewTags = ComponentViewTags;
+
+/** Property map accepted by a view tag. */
+export type ViewProperties<TElement extends Element = Element> =
+  ComponentViewProperties<TElement>;
 
 interface PropertyBinding {
   readonly _kind: "property";
@@ -499,7 +567,7 @@ function materializeChild(value: ComponentViewChild, nodes: Node[]): void {
     return;
   }
 
-  if (value !== null && value !== undefined && value !== false) {
+  if (value !== null && value !== undefined && typeof value !== "boolean") {
     nodes.push(
       document.createTextNode(
         String(value as string | number | boolean | bigint),
@@ -532,7 +600,11 @@ function appendChildren(
 function createTag(
   namespaceUri: string | undefined,
   name: string,
-  ...args: readonly (ComponentViewProperties | ComponentViewChild)[]
+  ...args: readonly (
+    | ComponentViewProperties
+    | PropertyGroup
+    | ComponentViewChild
+  )[]
 ): Element {
   const properties = isProperties(args[0]) ? args[0] : undefined;
   const children = properties ? args.slice(1) : args;
@@ -581,20 +653,50 @@ function createTag(
 /** Creates one HTML element without parsing markup. */
 export function tag<Name extends keyof HTMLElementTagNameMap>(
   name: Name,
-  ...args: readonly (ComponentViewProperties | ComponentViewChild)[]
+  ...args: readonly (
+    | ComponentViewProperties
+    | PropertyGroup
+    | ComponentViewChild
+  )[]
 ): HTMLElementTagNameMap[Name];
 export function tag(
   name: string,
-  ...args: readonly (ComponentViewProperties | ComponentViewChild)[]
+  ...args: readonly (
+    | ComponentViewProperties
+    | PropertyGroup
+    | ComponentViewChild
+  )[]
 ): HTMLElement;
 export function tag(
   name: string,
-  ...args: readonly (ComponentViewProperties | ComponentViewChild)[]
+  ...args: readonly (
+    | ComponentViewProperties
+    | PropertyGroup
+    | ComponentViewChild
+  )[]
 ): HTMLElement {
   return createTag(undefined, name, ...args) as HTMLElement;
 }
 
 /** Creates one namespaced element without parsing markup. */
+export function tagNS<Name extends keyof SVGElementTagNameMap>(
+  namespaceUri: "http://www.w3.org/2000/svg",
+  name: Name,
+  ...args: readonly (
+    | ComponentViewProperties
+    | PropertyGroup
+    | ComponentViewChild
+  )[]
+): SVGElementTagNameMap[Name];
+export function tagNS<Name extends keyof MathMLElementTagNameMap>(
+  namespaceUri: "http://www.w3.org/1998/Math/MathML",
+  name: Name,
+  ...args: readonly (
+    | ComponentViewProperties
+    | PropertyGroup
+    | ComponentViewChild
+  )[]
+): MathMLElementTagNameMap[Name];
 export function tagNS(
   namespaceUri: string,
   name: string,
@@ -1105,6 +1207,7 @@ export function createProgrammaticDirectiveCompile(
         controller,
         required: requiredControllers as DirectiveViewContext["required"],
         scope,
+        host: element,
         element,
         transclude,
         onDestroy(cleanup) {

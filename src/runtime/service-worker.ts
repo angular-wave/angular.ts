@@ -1,5 +1,4 @@
 import type { RuntimeModule } from "../angular-runtime.ts";
-import type { RuntimeComposition } from "../core/composition/runtime-composition.ts";
 import { _exceptionHandler, _serviceWorker } from "../injection-tokens.ts";
 import {
   createLogRuntimeConfiguration,
@@ -12,16 +11,15 @@ import {
   destroyServiceWorkerService,
   type ServiceWorkerService,
 } from "../services/service-worker/service-worker.ts";
+import { getRuntimeComposition } from "./custom-ng.ts";
 
 /**
  * Registers the managed `$serviceWorker` lifecycle and messaging facade in a
  * custom AngularTS runtime.
  */
 export const serviceWorkerModule: RuntimeModule = (angular) => {
-  const runtime = angular as ng.Angular & {
-    _composition: RuntimeComposition;
-  };
-  const { platform } = runtime._composition;
+  const composition = getRuntimeComposition(angular);
+  const { platform } = composition;
   const log = createLogService(
     createLogRuntimeConfiguration(),
     platform.console,
@@ -29,7 +27,7 @@ export const serviceWorkerModule: RuntimeModule = (angular) => {
   const configuration = createServiceWorkerRuntimeConfiguration();
   let service: ServiceWorkerService | undefined;
 
-  runtime._composition.configRegistry.register(_serviceWorker, (value) => {
+  composition.configRegistry.register(_serviceWorker, (value) => {
     const command = value as {
       scriptUrl: string | URL;
       config: import("../services/service-worker/service-worker.ts").ServiceWorkerConfig;
@@ -43,9 +41,7 @@ export const serviceWorkerModule: RuntimeModule = (angular) => {
   });
 
   platform.addDisposer(() => {
-    if (service) {
-      destroyServiceWorkerService(service);
-    }
+    if (service) destroyServiceWorkerService(service);
   });
 
   return angular.module("ng.serviceWorker", []).factory(_serviceWorker, [
@@ -55,7 +51,7 @@ export const serviceWorkerModule: RuntimeModule = (angular) => {
         platform.window.navigator.serviceWorker,
         {
           log,
-          err: $exceptionHandler,
+          exceptionHandler: $exceptionHandler,
           configuration,
         },
       );

@@ -1,10 +1,6 @@
 import { _injector } from "../../injection-tokens.ts";
-import {
-  assertArgFn,
-  isArray,
-  isFunction,
-  createErrorFactory,
-} from "../../shared/utils.ts";
+import { isArray, isFunction, createErrorFactory } from "../../shared/utils.ts";
+import { validateFunction } from "../../shared/validate.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
 import type {
   RuntimeConstructor,
@@ -41,13 +37,13 @@ export function annotate(fn: unknown, name?: string): string[] {
   } else if (isArray<string | RuntimeFunction>(fn)) {
     const last = fn.length - 1;
 
-    assertArgFn(fn[last], "fn");
+    validateFunction(fn[last], "fn");
     inject = (fn as AnnotatedFactory<(...args: unknown[]) => unknown>).slice(
       0,
       last,
     ) as string[];
   } else {
-    assertArgFn(fn as RuntimeFunction | RuntimeConstructor, "fn", true);
+    validateFunction(fn as RuntimeFunction | RuntimeConstructor, "fn", true);
   }
 
   return inject;

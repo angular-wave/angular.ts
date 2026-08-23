@@ -69,12 +69,25 @@ export type {
   ComponentViewPropertyValue,
   ComponentViewTag,
   ComponentViewTags,
+  KeyedView,
+  ViewProperties,
+  ViewPropertyValue,
+  ViewAttributeValue,
+  ViewAttributes,
+  ViewLiteralProperties,
+  ViewTag,
+  ViewTags,
 } from "./core/compile/programmatic-view.ts";
 export type {
   ComponentView,
   ComponentViewChild,
   ComponentViewContext,
   ComponentViewPrimitive,
+  ComponentDefinition,
+  ViewChild,
+  ViewContext,
+  ViewPrimitive,
+  ViewReader,
 } from "./interface.ts";
 
 export type {

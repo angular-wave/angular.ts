@@ -553,7 +553,7 @@ class WasmScopeAbiImpl {
         if (!scope)
             throw createWasmGuestError("invalidHandle");
         const path = this._readGuestString(pathPtr, pathLen, MAX_WASM_ABI_PATH_BYTES, "scope path");
-        assertSafeWasmScopePath(path);
+        validateSafeWasmScopePath(path);
         return this._createResultBuffer(scope.get(path));
     }
     /** @internal */
@@ -562,7 +562,7 @@ class WasmScopeAbiImpl {
         if (!scope)
             throw createWasmGuestError("invalidHandle");
         const path = this._readGuestString(pathPtr, pathLen, MAX_WASM_ABI_PATH_BYTES, "scope path");
-        assertSafeWasmScopePath(path);
+        validateSafeWasmScopePath(path);
         const value = this._readGuestJson(valuePtr, valueLen);
         const options = normalizeWasmScopeWriteOptions(undefined, false);
         scope.set(path, value, options);
@@ -584,7 +584,7 @@ class WasmScopeAbiImpl {
         if (!scope)
             throw createWasmGuestError("invalidHandle");
         const path = this._readGuestString(pathPtr, pathLen, MAX_WASM_ABI_PATH_BYTES, "scope path");
-        assertSafeWasmScopePath(path);
+        validateSafeWasmScopePath(path);
         const bytes = scope.getBinary(path);
         if (!bytes)
             throw createWasmGuestError("unsupportedValue");
@@ -596,7 +596,7 @@ class WasmScopeAbiImpl {
         if (!scope)
             throw createWasmGuestError("invalidHandle");
         const path = this._readGuestString(pathPtr, pathLen, MAX_WASM_ABI_PATH_BYTES, "scope path");
-        assertSafeWasmScopePath(path);
+        validateSafeWasmScopePath(path);
         const value = this._readGuestBytes(valuePtr, valueLen).slice();
         const options = normalizeWasmScopeWriteOptions(optionsLen === 0
             ? undefined
@@ -610,7 +610,7 @@ class WasmScopeAbiImpl {
         if (!scope)
             throw createWasmGuestError("invalidHandle");
         const path = this._readGuestString(pathPtr, pathLen, MAX_WASM_ABI_PATH_BYTES, "scope path");
-        assertSafeWasmScopePath(path);
+        validateSafeWasmScopePath(path);
         const options = normalizeWasmScopeWriteOptions(undefined, false);
         if (!scope.delete(path, options)) {
             throw createWasmGuestError("operationFailed");
@@ -634,7 +634,7 @@ class WasmScopeAbiImpl {
             throw createWasmGuestError("limitExceeded");
         }
         const path = this._readGuestString(pathPtr, pathLen, MAX_WASM_ABI_PATH_BYTES, "scope path");
-        assertSafeWasmScopePath(path);
+        validateSafeWasmScopePath(path);
         const watchHandle = this._nextWatchHandle++;
         const dispose = scope.watch(path, (update) => {
             this._queueUpdate(update);
@@ -691,7 +691,7 @@ class WasmScopeAbiImpl {
     /** @internal */
     _readGuestBytes(ptr, len, maximum = MAX_WASM_ABI_PAYLOAD_BYTES, label = "payload") {
         const { memory } = this._requireExports();
-        assertWasmMemoryRange(memory, ptr, len, maximum, label);
+        validateWasmMemoryRange(memory, ptr, len, maximum, label);
         return new Uint8Array(memory.buffer, ptr, len);
     }
     /** @internal */
@@ -713,7 +713,7 @@ class WasmScopeAbiImpl {
             throw new Error(`AngularTS Wasm ABI payload exceeds ${String(MAX_WASM_ABI_PAYLOAD_BYTES)} bytes`);
         }
         const ptr = exports$1.ng_abi_alloc(bytes.byteLength);
-        assertWasmMemoryRange(exports$1.memory, ptr, bytes.byteLength, MAX_WASM_ABI_PAYLOAD_BYTES, "guest allocation");
+        validateWasmMemoryRange(exports$1.memory, ptr, bytes.byteLength, MAX_WASM_ABI_PAYLOAD_BYTES, "guest allocation");
         new Uint8Array(exports$1.memory.buffer, ptr, bytes.byteLength).set(bytes);
         return { ptr, len: bytes.byteLength };
     }
@@ -1081,14 +1081,14 @@ function destroyWasmRuntimeState(state) {
 }
 /** @internal */
 function createWasmService(state) {
-    const assertActive = () => {
+    const ensureActive = () => {
         if (state.destroyed) {
             throw new WasmError("disposed", "Cannot use $wasm after runtime teardown");
         }
     };
     return {
         load(options) {
-            assertActive();
+            ensureActive();
             const abi = new WasmScopeAbiImpl((error) => {
                 state.appContext._reportModelException(error);
             }, options.diagnostics === true, options.source);
@@ -1347,7 +1347,7 @@ function readWasmAbiVersion(exports$1) {
     const version = exports$1.ng_abi_version();
     return Number.isSafeInteger(version) ? version : -1;
 }
-function assertWasmMemoryRange(memory, ptr, len, maximum, label) {
+function validateWasmMemoryRange(memory, ptr, len, maximum, label) {
     if (!Number.isSafeInteger(ptr) || ptr < 0) {
         throw new RangeError(`Invalid AngularTS Wasm ABI ${label} pointer`);
     }
@@ -1441,14 +1441,14 @@ function normalizeWasmScopeTransaction(transaction) {
     const set = Object.create(null);
     const deleted = new Set();
     for (const path of Object.keys(inputSet)) {
-        assertSafeWasmScopePath(path);
+        validateSafeWasmScopePath(path);
         set[path] = inputSet[path];
     }
     for (const path of inputDelete) {
         if (typeof path !== "string") {
             throw createWasmGuestError("invalidTransaction");
         }
-        assertSafeWasmScopePath(path);
+        validateSafeWasmScopePath(path);
         if (Object.prototype.hasOwnProperty.call(set, path) || deleted.has(path)) {
             throw createWasmGuestError("invalidTransaction");
         }
@@ -1467,7 +1467,7 @@ function applyWasmScopeTransaction(target, transaction) {
         deleteScopePath(target, path);
     }
 }
-function assertSafeWasmScopePath(path) {
+function validateSafeWasmScopePath(path) {
     const keys = scopePathKeys(path);
     if (keys.length === 0) {
         throw createWasmGuestError("invalidTransaction");

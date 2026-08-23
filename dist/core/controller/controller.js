@@ -1,4 +1,5 @@
-import { isString, assertNotHasOwnProperty, isObject, keys, isArray, isFunction, createErrorFactory, assertArgFn, createObject } from '../../shared/utils.js';
+import { isString, validateNotHasOwnPropertyName, isObject, keys, isArray, isFunction, createErrorFactory, createObject } from '../../shared/utils.js';
+import { validateFunction } from '../../shared/validate.js';
 
 const $controllerError = createErrorFactory("$controller");
 const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
@@ -22,7 +23,7 @@ function unwrapController(injectable, argNameForErrors) {
     const candidate = isArray(injectable)
         ? injectable[injectable.length - 1]
         : injectable;
-    assertArgFn(candidate, argNameForErrors ?? "controller", true);
+    validateFunction(candidate, argNameForErrors ?? "controller", true);
     const func = candidate;
     const funcMetadata = func;
     return {
@@ -38,17 +39,17 @@ class ControllerRegistry {
         this._destroyed = false;
     }
     has(name) {
-        this._assertActive();
+        this._ensureActive();
         return this._controllers.has(name);
     }
     get(name) {
-        this._assertActive();
+        this._ensureActive();
         return this._controllers.get(name);
     }
     register(name, constructor) {
-        this._assertActive();
+        this._ensureActive();
         if (isString(name)) {
-            assertNotHasOwnProperty(name, "controller");
+            validateNotHasOwnPropertyName(name, "controller");
             this._controllers.set(name, normalizeControllerDef(constructor, name));
             return;
         }
@@ -67,7 +68,7 @@ class ControllerRegistry {
         this._controllers.clear();
     }
     /** @internal */
-    _assertActive() {
+    _ensureActive() {
         if (this._destroyed) {
             throw new Error("Controller registry has already been disposed.");
         }
@@ -101,7 +102,7 @@ function createControllerService(registry, $injector) {
                 throw $controllerError("ctrlreg", "The controller with the name '{0}' is not registered.", constructorName);
             }
             expression = lookedUp;
-            assertArgFn(expression, constructorName, true);
+            validateFunction(expression, constructorName, true);
         }
         const injectable = expression;
         const meta = unwrapController(injectable, constructorName);

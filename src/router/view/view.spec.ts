@@ -184,6 +184,34 @@ describe("view", () => {
       expect(scope.broadcast).toHaveBeenCalledOnceWith("$destroy");
     });
 
+    it("uses initial content when a loaded view has no template", () => {
+      const state = register({
+        name: "withoutTemplate",
+        template: "placeholder",
+      });
+      const path = [root, state].map((_state) => new PathNode(_state));
+      const config = createViewConfig(
+        path,
+        state._views.$default,
+        stateService._viewService._templateFactory,
+      );
+      const host = document.createElement("ng-view");
+      const scope = $injector.get("$rootScope").new();
+
+      config._template = undefined;
+      createTestViewService()._fillView({
+        host,
+        rootNodes: [],
+        scope,
+        config,
+        initial: "<span>initial</span>",
+        activeNgView: {},
+        animation: {},
+      });
+
+      expect(host.textContent).toBe("initial");
+    });
+
     it("creates view configs for entered states", () => {
       const state = register({
         name: "withView",

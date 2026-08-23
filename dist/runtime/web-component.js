@@ -1,12 +1,14 @@
 import { _webComponent, _injector, _rootScope, _compile } from '../injection-tokens.js';
 import { createAngular } from './index.js';
+import { getRuntimeComposition } from './custom-ng.js';
 import { destroyWebComponentRuntimeState, createWebComponentService, createWebComponentRuntimeState } from '../services/web-component/web-component.js';
 
 /** Register scoped custom-element support in a custom AngularTS runtime. */
 const webComponentModule = (angular) => {
-    const runtime = angular;
+    const composition = getRuntimeComposition(angular);
     const state = createWebComponentRuntimeState();
-    runtime._composition.platform.addDisposer(() => {
+    const exceptionHandler = composition.exceptionHandlerState.service;
+    composition.platform.addDisposer(() => {
         destroyWebComponentRuntimeState(state);
     });
     return angular
@@ -15,7 +17,7 @@ const webComponentModule = (angular) => {
         _injector,
         _rootScope,
         _compile,
-        ($injector, $rootScope, $compile) => createWebComponentService($injector, $rootScope, $compile, state),
+        ($injector, $rootScope, $compile) => createWebComponentService($injector, $rootScope, $compile, state, exceptionHandler),
     ]);
 };
 /**
@@ -30,7 +32,7 @@ function defineAngularElement(name, options) {
     const { component, elementModule, modules, ...composition } = options;
     const angular = createAngular({
         ...composition,
-        modules: Array.from(new Set([...(modules ?? []), webComponentModule])),
+        modules: [...(modules ?? []), webComponentModule],
     });
     const ngModuleName = composition.name ?? "ng";
     const elementModuleName = elementModule?.name ?? defaultElementModuleName(name);

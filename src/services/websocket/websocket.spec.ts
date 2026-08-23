@@ -9,16 +9,26 @@ import {
 } from "./websocket.ts";
 
 describe("$websocket", () => {
-  let angular, websocket, el, RealWebSocket, sockets;
+  let angular, websocket, el, RealWebSocket, sockets, exceptions;
+  let failNextConnection;
 
   beforeEach(() => {
     el = document.getElementById("app");
     el.innerHTML = "";
     sockets = [];
+    exceptions = [];
+    failNextConnection = undefined;
     RealWebSocket = window.WebSocket;
 
     window.WebSocket = class MockWebSocket {
       constructor(url, protocols) {
+        if (failNextConnection) {
+          const error = failNextConnection;
+
+          failNextConnection = undefined;
+          throw error;
+        }
+
         this.url = url;
         this.protocols = protocols;
         this.sent = [];
@@ -39,7 +49,13 @@ describe("$websocket", () => {
 
     angular = new Angular();
 
-    angular.bootstrap(el, []).invoke([
+    const module = angular.module("websocketExceptionBoundary", []).config({
+      $exceptionHandler: {
+        handler: (error) => exceptions.push(error),
+      },
+    });
+
+    angular.bootstrap(el, [module.name]).invoke([
       "$websocket",
       (_$websocket_) => {
         websocket = _$websocket_;
@@ -106,6 +122,72 @@ describe("$websocket", () => {
     expect(protocolMessages.length).toBe(1);
     expect(protocolMessages[0].html).toBe("<strong>Live</strong>");
     expect(allMessages.length).toBe(1);
+    connection.close();
+  });
+
+  it("reports detached callback failures through $exceptionHandler", async () => {
+    const callbackError = new Error("message callback failed");
+    const connection = websocket("ws://example.test/socket", {
+      heartbeatTimeout: 0,
+      onMessage: () => {
+        throw callbackError;
+      },
+    });
+
+    await wait(10);
+    sockets[0].onmessage({ type: "message", data: "message" });
+
+    expect(exceptions).toEqual([callbackError]);
+    connection.close();
+  });
+
+  it("reports transform failures and delivers the raw message", async () => {
+    const transformError = new Error("transform failed");
+    const messages = [];
+    const connection = websocket("ws://example.test/socket", {
+      heartbeatTimeout: 0,
+      transformMessage: () => {
+        throw transformError;
+      },
+      onMessage: (message) => messages.push(message),
+    });
+
+    await wait(10);
+    sockets[0].onmessage({ type: "message", data: "raw" });
+
+    expect(exceptions).toEqual([transformError]);
+    expect(messages).toEqual(["raw"]);
+    connection.close();
+  });
+
+  it("uses the message event type when the native event omits one", async () => {
+    const events = [];
+    const connection = websocket("ws://example.test/socket", {
+      heartbeatTimeout: 0,
+      onEvent: (event) => events.push(event),
+    });
+
+    await wait(10);
+    sockets[0].onmessage({ data: "message" });
+
+    expect(events[0].type).toBe("message");
+    connection.close();
+  });
+
+  it("reports reconnect construction failures", async () => {
+    const reconnectError = new Error("reconnect construction failed");
+    const connection = websocket("ws://example.test/socket", {
+      heartbeatTimeout: 0,
+      maxRetries: 1,
+      retryDelay: 0,
+    });
+
+    await wait(10);
+    failNextConnection = reconnectError;
+    sockets[0].onclose({ type: "close", code: 1006 });
+    await wait(10);
+
+    expect(exceptions).toContain(reconnectError);
     connection.close();
   });
 

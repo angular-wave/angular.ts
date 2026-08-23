@@ -1,7 +1,9 @@
 ---
-title: "Directive Overview"
+title: 'Directive Overview'
 weight: 290
-description: "Learn how AngularTS directives attach behavior to HTML, how built-in directive groups are organized, and how to create custom directives."
+description:
+  'Learn how AngularTS directives attach behavior to HTML, how built-in
+  directive groups are organized, and how to create custom directives.'
 ---
 
 Directives are how AngularTS attaches behavior and structure to HTML. A
@@ -10,8 +12,8 @@ attach behavior, transform DOM, wire events, create scopes, or connect
 controllers.
 
 Every built-in directive in AngularTS is applied as an HTML attribute using the
-`ng-` prefix. The compiler normalizes prefixes, so `ng-bind`,
-`data-ng-bind`, and `x-ng-bind` all match the same directive.
+`ng-` prefix. The compiler normalizes prefixes, so `ng-bind`, `data-ng-bind`,
+and `x-ng-bind` all match the same directive.
 
 Exact custom directive contracts live in TypeDoc:
 
@@ -20,17 +22,17 @@ Exact custom directive contracts live in TypeDoc:
 - [`DirectiveFactoryFn`](../../../typedoc/types/DirectiveFactoryFn.html)
 - [`Component`](../../../typedoc/interfaces/Component.html)
 - [`CompileFn`](../../../typedoc/types/CompileFn.html)
-- [`LinkFn`](../../../typedoc/types/LinkFn.html)
-- [`TranscludeFn`](../../../typedoc/types/TranscludeFn.html)
+- [`LinkFn`](../../../typedoc/interfaces/LinkFn.html)
+- [`TranscludeFn`](../../../typedoc/interfaces/TranscludeFn.html)
 
 ## How Directives Are Matched
 
 The `restrict` option controls where a directive can appear.
 
-| Restrict | Match form | Example |
-| --- | --- | --- |
-| `A` | Attribute | `<span ng-bind="name"></span>` |
-| `E` | Element | `<my-widget></my-widget>` |
+| Restrict    | Match form           | Example                        |
+| ----------- | -------------------- | ------------------------------ |
+| `A`         | Attribute            | `<span ng-bind="name"></span>` |
+| `E`         | Element              | `<my-widget></my-widget>`      |
 | `AE` / `EA` | Attribute or element | `<div ng-form>` or `<ng-form>` |
 
 Attribute directives are the common case in AngularTS. They keep the host
@@ -41,35 +43,35 @@ element in place and augment it.
 AngularTS groups its built-in directives by the user-facing job they perform.
 Keep these groups in mind when choosing where to look in the docs.
 
-| Group | Purpose | Examples |
-| --- | --- | --- |
-| [Data binding]({{< relref "/docs/directives/data-binding" >}}) | Synchronize scope data with the view | `ng-bind`, `ng-model`, `ng-class`, `ng-style` |
-| [Structural]({{< relref "/docs/directives/structural" >}}) | Add, remove, repeat, or switch DOM | `ng-if`, `ng-repeat`, `ng-show`, `ng-hide`, `ng-switch` |
-| [Forms]({{< relref "/docs/directives/forms" >}}) | Track validity, dirty state, messages, and model options | `form`, `ng-model`, `ng-messages`, validators |
-| [HTTP]({{< relref "/docs/directives/http" >}}) | Trigger declarative network work from the DOM | `ng-get`, `ng-post`, `ng-put`, `ng-delete`, `ng-sse` |
-| [Animations]({{< relref "/docs/directives/animations" >}}) | Coordinate directive-driven animation hooks | `ng-animate-swap`, `ng-animate-children` |
-| [Advanced]({{< relref "/docs/directives/advanced" >}}) | Bridge browser APIs and integration boundaries | `ng-worker`, `ng-wasm`, `ng-viewport`, `ng-pointer-capture` |
+| Group                                                          | Purpose                                                  | Examples                                                    |
+| -------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------- |
+| [Data binding]({{< relref "/docs/directives/data-binding" >}}) | Synchronize scope data with the view                     | `ng-bind`, `ng-model`, `ng-class`, `ng-style`               |
+| [Structural]({{< relref "/docs/directives/structural" >}})     | Add, remove, repeat, or switch DOM                       | `ng-if`, `ng-repeat`, `ng-show`, `ng-hide`, `ng-switch`     |
+| [Forms]({{< relref "/docs/directives/forms" >}})               | Track validity, dirty state, messages, and model options | `form`, `ng-model`, `ng-messages`, validators               |
+| [HTTP]({{< relref "/docs/directives/http" >}})                 | Trigger declarative network work from the DOM            | `ng-get`, `ng-post`, `ng-put`, `ng-delete`, `ng-sse`        |
+| [Animations]({{< relref "/docs/directives/animations" >}})     | Coordinate directive-driven animation hooks              | `animate`, `$animate`, CSS hooks                            |
+| [Advanced]({{< relref "/docs/directives/advanced" >}})         | Connect browser APIs and integrations                    | `ng-worker`, `ng-wasm`, `ng-viewport`, `ng-pointer-capture` |
 
 ## Create A Custom Directive
 
 Register directives on a module with `.directive(name, factory)`. The factory
 returns a directive definition object.
 
-```javascript
-angular.module("demo", []).directive("highlight", () => {
+```js
+angular.module('demo', []).directive('highlight', () => {
   return {
-    restrict: "A",
+    restrict: 'A',
     scope: {
-      color: "@highlight",
+      color: '@highlight',
     },
     link(scope, element) {
       const paint = (color) => {
-        element.style.backgroundColor = color || "yellow";
+        element.style.backgroundColor = color || 'yellow';
       };
 
       paint(scope.color);
 
-      scope.watch("color", paint);
+      scope.watch('color', paint);
     },
   };
 });
@@ -101,10 +103,10 @@ directives are linked.
 ## Scope Choice
 
 Use the default inherited scope for simple behavior. Create a child scope when
-the directive needs local state. Use isolate scope bindings when the directive is
-designed as a reusable widget with explicit inputs and callbacks.
+the directive needs local state. Use isolate scope bindings when the directive
+is designed as a reusable widget with explicit inputs and callbacks.
 
-```javascript
+```js
 scope: {
   title: "@",
   value: "=",

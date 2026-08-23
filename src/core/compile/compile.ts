@@ -36,8 +36,7 @@ import {
   assign,
   arrayFrom,
   arrayRemove,
-  assertArg,
-  assertNotHasOwnProperty,
+  validateNotHasOwnPropertyName,
   callFunction,
   deleteProperty,
   directiveNormalize,
@@ -46,7 +45,6 @@ import {
   getNodeName,
   hasOwn,
   inherit,
-  isError,
   isArray,
   isFunction,
   isScope,
@@ -60,9 +58,10 @@ import {
   stringify,
   trim,
   uppercase,
-  assertDefined,
+  assertInvariantDefined,
   type RuntimeFunction,
 } from "../../shared/utils.ts";
+import { validateTruthy } from "../../shared/validate.ts";
 import { SCE_CONTEXTS, type SceContext } from "../../services/sce/context.ts";
 import { ALIASED_ATTR, PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
@@ -2167,13 +2166,15 @@ export class CompileRegistry {
       name: string | Record<string, ng.DirectiveFactory>,
       directiveFactory?: ng.DirectiveFactory,
     ) {
-      assertArg(name, "name");
+      validateTruthy(name, "name");
 
       if (typeof name === "string") {
-        assertNotHasOwnProperty(name, "directive");
-        assertValidDirectiveName(name);
-        assertArg(directiveFactory, "directiveFactory");
-        const normalizedDirectiveFactory = assertDefined(directiveFactory);
+        validateNotHasOwnPropertyName(name, "directive");
+        validateDirectiveName(name);
+        const normalizedDirectiveFactory = validateTruthy(
+          directiveFactory,
+          "directiveFactory",
+        );
 
         if (!hasOwn(directiveFactoryRegistry, name)) {
           directiveFactoryRegistry[name] = [];
@@ -2246,7 +2247,7 @@ export class CompileRegistry {
         return this;
       }
 
-      const componentOptions = assertDefined(options);
+      const componentOptions = validateTruthy(options, "options");
       const componentName = name;
 
       if (
@@ -2689,7 +2690,7 @@ export class CompileRegistry {
 
             try {
               callFunction(
-                assertDefined(controllerTarget.afterRender),
+                assertInvariantDefined(controllerTarget.afterRender),
                 controllerTarget,
               );
             } catch (err) {
@@ -3272,7 +3273,7 @@ export class CompileRegistry {
             options?: TemplateLinkingFunctionOptions,
           ) {
             return invokePublicLink(
-              assertDefined(
+              assertInvariantDefined(
                 (publicLinkFn as LinkFn & { _state?: PublicLinkState })._state,
               ),
               scope,
@@ -3718,7 +3719,7 @@ export class CompileRegistry {
             containingScope?: Scope,
           ) {
             return invokeBoundTransclude(
-              assertDefined(
+              assertInvariantDefined(
                 (
                   boundTranscludeFn as BoundTranscludeFn & {
                     _state?: BoundTranscludeState;
@@ -4187,7 +4188,7 @@ export class CompileRegistry {
             ...args: Parameters<LinkFn>
           ) {
             return invokeLazyCompilation(
-              assertDefined(
+              assertInvariantDefined(
                 (
                   lazyCompilation as LinkFn & {
                     _state?: LazyCompilationState;
@@ -4456,7 +4457,7 @@ export class CompileRegistry {
           scope: Scope,
           node: Node,
         ) {
-          const attr = assertDefined(linkState._attr);
+          const attr = assertInvariantDefined(linkState._attr);
 
           // Recompute interpolation if another compile step rewrote the attribute value.
           const name = linkState._name;
@@ -4775,7 +4776,7 @@ export class CompileRegistry {
           const fragmentRecord = getCompiledFragmentRecord(node) ?? null;
 
           delayedState._linkRequestCount++;
-          assertDefined(delayedState._linkQueue).push(
+          assertInvariantDefined(delayedState._linkQueue).push(
             scope,
             node,
             boundTranscludeFn,
@@ -4800,7 +4801,7 @@ export class CompileRegistry {
             : null;
 
           if (fragmentRecord && asyncWork) {
-            const linkQueue = assertDefined(delayedState._linkQueue);
+            const linkQueue = assertInvariantDefined(delayedState._linkQueue);
 
             addCompiledFragmentAsyncWork(fragmentRecord, asyncWork);
             linkQueue[linkQueue.length - 1] = asyncWork;
@@ -4941,7 +4942,9 @@ export class CompileRegistry {
               _templateAttrs: createEmptyCompileAttributeState(),
             };
 
-            const oldCompileNode = assertDefined(delayedState._compileNode);
+            const oldCompileNode = assertInvariantDefined(
+              delayedState._compileNode,
+            );
 
             replaceWith(
               oldCompileNode,
@@ -4978,7 +4981,9 @@ export class CompileRegistry {
               compileNode,
             );
           } else {
-            compileNode = assertDefined(delayedState._compileNode) as Element;
+            compileNode = assertInvariantDefined(
+              delayedState._compileNode,
+            ) as Element;
             compileNode.innerHTML = content;
           }
 
@@ -5008,7 +5013,7 @@ export class CompileRegistry {
 
           delayedState._compiledNode = compileNode;
           delayedState._afterTemplateChildLinkExecutor = compileTemplate(
-            assertDefined(delayedState._compileNode).childNodes,
+            assertInvariantDefined(delayedState._compileNode).childNodes,
             delayedState._childTranscludeFn,
             undefined,
             undefined,
@@ -5031,11 +5036,7 @@ export class CompileRegistry {
           delayedState._compiledNode = undefined;
           releaseDelayedTemplateLinkState(delayedState);
 
-          if (isError(error)) {
-            $exceptionHandler(error);
-          } else {
-            $exceptionHandler(new Error(String(error)));
-          }
+          $exceptionHandler(error);
         }
 
         /** Handles `$transclude(...)` calls for the shared node-link executor. */
@@ -5124,7 +5125,7 @@ export class CompileRegistry {
             slotName?: string | number,
           ) {
             return invokeControllersBoundTransclude(
-              assertDefined(
+              assertInvariantDefined(
                 (
                   wrapper as ControllersBoundTranscludeFn & {
                     _state?: ControllersBoundTranscludeState;
@@ -5276,10 +5277,11 @@ export class CompileRegistry {
           for (const name in elementControllers) {
             const controllerDirective = controllerDirectives[name];
 
-            const controller = assertDefined(elementControllers[name]);
+            const controller = assertInvariantDefined(elementControllers[name]);
 
-            const bindings = assertDefined(controllerDirective._bindings)
-              ._bindToController as IsolateBindingMap | undefined;
+            const bindings = assertInvariantDefined(
+              controllerDirective._bindings,
+            )._bindToController as IsolateBindingMap | undefined;
 
             const reactiveControllerInstance = controllerScope.newIsolate(
               controller._instance as Scope,
@@ -5344,7 +5346,7 @@ export class CompileRegistry {
                 typeof require === "object"
               ) {
                 extend(
-                  assertDefined(elementControllers[name])._instance,
+                  assertInvariantDefined(elementControllers[name])._instance,
                   getControllers(name, require, element, elementControllers),
                 );
               }
@@ -5353,7 +5355,7 @@ export class CompileRegistry {
 
           for (const name in elementControllers) {
             const controllerDirective = controllerDirectives[name];
-            const controller = assertDefined(elementControllers[name]);
+            const controller = assertInvariantDefined(elementControllers[name]);
 
             const controllerInstance = controller._instance;
 
@@ -5362,7 +5364,8 @@ export class CompileRegistry {
                 callFunction(
                   controllerInstance.onChanges,
                   controllerInstance,
-                  assertDefined(controller._bindingInfo)._initialChanges,
+                  assertInvariantDefined(controller._bindingInfo)
+                    ._initialChanges,
                 );
               } catch (err) {
                 $exceptionHandler(err);
@@ -5402,7 +5405,7 @@ export class CompileRegistry {
             if (isFunction(controllerInstance.onDestroy)) {
               controllerScope.on("$destroy", () => {
                 callFunction(
-                  assertDefined(controllerInstance.onDestroy),
+                  assertInvariantDefined(controllerInstance.onDestroy),
                   controllerInstance,
                 );
               });
@@ -5512,7 +5515,7 @@ export class CompileRegistry {
           }
 
           for (const name in elementControllers) {
-            const controller = assertDefined(elementControllers[name]);
+            const controller = assertInvariantDefined(elementControllers[name]);
 
             const controllerInstance = controller._instance;
 
@@ -5857,7 +5860,7 @@ export class CompileRegistry {
           templateDirective: ng.Directive | null | undefined,
           replaceDirective: InternalDirective | null | undefined,
         ): InlineTemplateDirectiveResult {
-          assertNoDuplicate(
+          validateNoDuplicate(
             "template",
             templateDirective,
             directive,
@@ -6011,7 +6014,7 @@ export class CompileRegistry {
           replaceDirective: InternalDirective | null | undefined,
           previousCompileContext: PreviousCompileContext,
         ): TemplateUrlDirectiveResult {
-          assertNoDuplicate(
+          validateNoDuplicate(
             "template",
             templateDirective,
             directive,
@@ -6364,7 +6367,7 @@ export class CompileRegistry {
           clearMovedTransclusionFragmentData(defaultSlotContent);
           clearMovedTransclusionSlotData(slots);
 
-          assertRequiredTransclusionSlotsFilled(filledSlots);
+          validateRequiredTransclusionSlotsFilled(filledSlots);
 
           compileFilledTransclusionSlots(
             slots,
@@ -6414,7 +6417,7 @@ export class CompileRegistry {
           }
         }
 
-        function assertRequiredTransclusionSlotsFilled(
+        function validateRequiredTransclusionSlotsFilled(
           filledSlots: Record<string, boolean>,
         ): void {
           for (const slotName in filledSlots) {
@@ -6471,7 +6474,7 @@ export class CompileRegistry {
           // Async templates are checked when their derived sync directive is compiled.
           if (!directive.templateUrl) {
             if (typeof directiveScope === "object") {
-              assertNoDuplicate(
+              validateNoDuplicate(
                 "new/isolated scope",
                 state._newIsolateScopeDirective ?? state._newScopeDirective,
                 directive,
@@ -6479,7 +6482,7 @@ export class CompileRegistry {
               );
               state._newIsolateScopeDirective = directive;
             } else {
-              assertNoDuplicate(
+              validateNoDuplicate(
                 "new/isolated scope",
                 state._newIsolateScopeDirective,
                 directive,
@@ -6523,7 +6526,7 @@ export class CompileRegistry {
             return nonTlbTranscludeDirective;
           }
 
-          assertNoDuplicate(
+          validateNoDuplicate(
             "transclusion",
             nonTlbTranscludeDirective,
             directive,
@@ -6612,7 +6615,7 @@ export class CompileRegistry {
             state._controllerDirectives ??
             (state._controllerDirectives = nullObject());
 
-          assertNoDuplicate(
+          validateNoDuplicate(
             `'${directiveName}' controller`,
             controllerDirectives[directiveName],
             directive,
@@ -6633,7 +6636,7 @@ export class CompileRegistry {
           newIsolateScopeDirective?: ng.Directive | null,
         ): void {
           try {
-            const compileDirective = assertDefined(directive.compile);
+            const compileDirective = assertInvariantDefined(directive.compile);
             const linkFn = directive._needsCompileAttributeState
               ? (compileDirective.call(
                   directive,
@@ -6867,7 +6870,7 @@ export class CompileRegistry {
             }
 
             const controllerInstance = $controller(
-              assertDefined(controller),
+              assertInvariantDefined(controller),
               locals,
               true,
               directive.controllerAs,
@@ -7136,7 +7139,7 @@ export class CompileRegistry {
           postLinkFns: LinkFnRecord[],
           previousCompileContext: PreviousCompileContext,
         ): DelayedTemplateNodeLinkResult {
-          const origAsyncDirective = assertDefined(directives.shift());
+          const origAsyncDirective = assertInvariantDefined(directives.shift());
 
           const derivedSyncDirective = inherit(origAsyncDirective, {
             templateUrl: null,
@@ -7215,7 +7218,7 @@ export class CompileRegistry {
         }
 
         /** Throws when multiple directives request an incompatible exclusive feature on the same node. */
-        function assertNoDuplicate(
+        function validateNoDuplicate(
           what: string,
           previousDirective:
             | ng.Directive
@@ -7605,7 +7608,7 @@ export class CompileRegistry {
 
           const scopeTarget = scope._target as UnknownRecord;
 
-          const destinationTarget = assertDefined(destAny._target);
+          const destinationTarget = assertInvariantDefined(destAny._target);
 
           const bindingChangeState: DirectiveBindingChangeState = {
             _destAny: destAny,
@@ -7721,9 +7724,9 @@ export class CompileRegistry {
                   if (typeof lastValue === "string") {
                     // If the attribute has been provided then we trigger an interpolation to ensure
                     // the value is there for use in the link fn
-                    destAny[scopeName] = assertDefined($interpolate(lastValue))(
-                      scope,
-                    );
+                    destAny[scopeName] = assertInvariantDefined(
+                      $interpolate(lastValue),
+                    )(scope);
                   } else if (typeof lastValue === "boolean") {
                     // If the attributes is one of the BOOLEAN_ATTR then AngularTS will have converted
                     // the value to boolean rather than a string, so we special case this situation
@@ -7856,7 +7859,7 @@ export class CompileRegistry {
                     ? callFunction(parentGet, undefined, scopeTarget)
                     : undefined;
 
-                  assertDefined(destAny._target)[scopeName] =
+                  assertInvariantDefined(destAny._target)[scopeName] =
                     parentGet?._literal ||
                     initialOneWayValue === null ||
                     typeof initialOneWayValue !== "object"
@@ -7877,7 +7880,9 @@ export class CompileRegistry {
                     evaluateOneWayBindingInputs(oneWayBindingState);
 
                   initialChanges[scopeName] = {
-                    currentValue: assertDefined(destAny._target)[scopeName],
+                    currentValue: assertInvariantDefined(destAny._target)[
+                      scopeName
+                    ],
                     firstChange: oneWayBindingState._firstChange,
                   };
 
@@ -7913,14 +7918,13 @@ export class CompileRegistry {
                     _scopeTarget: scopeTarget,
                   } as ExpressionBindingState;
 
-                  assertDefined(destAny._target)[scopeName] = function (
-                    locals: object | undefined,
-                  ) {
-                    return invokeExpressionBinding(
-                      expressionBindingState,
-                      locals,
-                    );
-                  };
+                  assertInvariantDefined(destAny._target)[scopeName] =
+                    function (locals: object | undefined) {
+                      return invokeExpressionBinding(
+                        expressionBindingState,
+                        locals,
+                      );
+                    };
 
                   break;
                 }
@@ -7943,7 +7947,7 @@ export class CompileRegistry {
 }
 
 /** Validates a directive/component name before registration. */
-function assertValidDirectiveName(name: string): void {
+function validateDirectiveName(name: string): void {
   const letter = name.charAt(0);
 
   if (letter !== letter.toLowerCase()) {

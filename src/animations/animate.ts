@@ -4,7 +4,6 @@ import {
   createErrorFactory,
   isFunction,
   isString,
-  assertDefined,
 } from "../shared/utils.ts";
 import { domInsert, removeElement } from "../shared/dom.ts";
 
@@ -20,6 +19,22 @@ export type AnimationPhase =
   | "animate";
 
 export type AnimationResult = Animation | Promise<void> | undefined;
+
+function requireInsertionParent(
+  parent: ParentNode | null | undefined,
+  after: ChildNode | null | undefined,
+): ParentNode {
+  const insertionParent = parent ?? after?.parentNode;
+
+  if (!insertionParent) {
+    throw $animateError(
+      "noparent",
+      "Animation enter and move operations require a parent or attached anchor.",
+    );
+  }
+
+  return insertionParent;
+}
 
 export interface AnimationContext {
   signal: AbortSignal;
@@ -261,7 +276,7 @@ export class AnimationRegistry {
   private _destroyed = false;
 
   register(name: string, preset: PresetRegistration): void {
-    this._assertActive();
+    this._ensureActive();
 
     if (!name || !isString(name)) {
       throw $animateError("noname", "Animation name must be a string.");
@@ -273,13 +288,13 @@ export class AnimationRegistry {
   }
 
   get(name: string): PresetRegistration | undefined {
-    this._assertActive();
+    this._ensureActive();
 
     return this._registrations.get(name);
   }
 
   has(name: string): boolean {
-    this._assertActive();
+    this._ensureActive();
 
     return this._registrations.has(name);
   }
@@ -292,7 +307,7 @@ export class AnimationRegistry {
   }
 
   /** @internal */
-  private _assertActive(): void {
+  private _ensureActive(): void {
     if (this._destroyed) {
       throw new Error("Animation registry has already been disposed.");
     }
@@ -475,13 +490,13 @@ export function createAnimateService(
     },
 
     enter: (element, parent, after, options) => {
-      domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+      domInsert(element, requireInsertionParent(parent, after), after);
 
       return run("enter", element, options);
     },
 
     move: (element, parent, after, options) => {
-      domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+      domInsert(element, requireInsertionParent(parent, after), after);
 
       return run("move", element, options);
     },

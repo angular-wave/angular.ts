@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-07-19T11:52:46.690Z",
+  "savedAt": "2026-08-23T18:35:32.415Z",
   "result": {
     "minifier": "terser",
     "propertyMangle": "underscore-prefixed",
@@ -7,68 +7,98 @@
       {
         "name": "core",
         "format": "esm",
-        "minifiedBytes": 145427,
-        "gzipBytes": 48584
+        "minifiedBytes": 147856,
+        "gzipBytes": 49878
       },
       {
         "name": "event-bus",
         "format": "esm",
-        "minifiedBytes": 148814,
-        "gzipBytes": 49759
+        "minifiedBytes": 151219,
+        "gzipBytes": 51029
       },
       {
         "name": "router",
         "format": "esm",
-        "minifiedBytes": 246426,
-        "gzipBytes": 82290
+        "minifiedBytes": 252923,
+        "gzipBytes": 84710
+      },
+      {
+        "name": "machine",
+        "format": "esm",
+        "minifiedBytes": 153746,
+        "gzipBytes": 51923
+      },
+      {
+        "name": "workflow",
+        "format": "esm",
+        "minifiedBytes": 168248,
+        "gzipBytes": 55831
       },
       {
         "name": "orchestration",
         "format": "esm",
-        "minifiedBytes": 162518,
-        "gzipBytes": 53975
+        "minifiedBytes": 174108,
+        "gzipBytes": 57649
+      },
+      {
+        "name": "sse",
+        "format": "esm",
+        "minifiedBytes": 153676,
+        "gzipBytes": 52001
+      },
+      {
+        "name": "websocket",
+        "format": "esm",
+        "minifiedBytes": 153432,
+        "gzipBytes": 51919
+      },
+      {
+        "name": "webtransport",
+        "format": "esm",
+        "minifiedBytes": 154692,
+        "gzipBytes": 52327
       },
       {
         "name": "realtime",
         "format": "esm",
-        "minifiedBytes": 155732,
-        "gzipBytes": 51870
+        "minifiedBytes": 159257,
+        "gzipBytes": 53404
       },
       {
         "name": "wasm",
         "format": "esm",
-        "minifiedBytes": 168110,
-        "gzipBytes": 55516
+        "minifiedBytes": 170448,
+        "gzipBytes": 56780
       },
       {
         "name": "service-worker",
         "format": "esm",
-        "minifiedBytes": 153892,
-        "gzipBytes": 51504
+        "minifiedBytes": 156495,
+        "gzipBytes": 52829
       },
       {
         "name": "web-component",
         "format": "esm",
-        "minifiedBytes": 151688,
-        "gzipBytes": 50660
+        "minifiedBytes": 154327,
+        "gzipBytes": 52048
       },
       {
         "name": "html-canvas",
         "format": "esm",
-        "minifiedBytes": 152240,
-        "gzipBytes": 50627
+        "minifiedBytes": 154529,
+        "gzipBytes": 51897
       },
       {
         "name": "workflow-worker",
         "format": "esm",
-        "minifiedBytes": 149379,
-        "gzipBytes": 49767
+        "minifiedBytes": 151844,
+        "gzipBytes": 51083
       },
       {
         "name": "full",
         "format": "esm",
-        "minifiedBytes": 407085,
-        "gzipBytes": 134463
+        "minifiedBytes": 425827,
+        "gzipBytes": 140584
       }
     ]
   }

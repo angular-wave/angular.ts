@@ -7,6 +7,7 @@ import { applyAnchorScrollConfiguration, destroyAnchorScrollRuntimeState, create
 import { createLocationRuntimeState, applyLocationConfiguration } from '../services/location/location.js';
 import { createLogService, createLogRuntimeConfiguration } from '../services/log/log.js';
 import { applySecurityConfiguration, createSecurityPolicy, createSecurityRuntimeConfiguration } from '../services/security/security.js';
+import { getRuntimeComposition } from './custom-ng.js';
 
 function createRouteTemplateRequest(runtimeWindow) {
     return async (templateUrl) => {
@@ -24,8 +25,7 @@ function createRouteTemplateRequest(runtimeWindow) {
  * directives in a custom AngularTS runtime.
  */
 const routerModule = (angular) => {
-    const runtime = angular;
-    const composition = runtime._composition;
+    const composition = getRuntimeComposition(angular);
     const { platform } = composition;
     const location = createLocationRuntimeState(platform.window);
     const securityConfiguration = createSecurityRuntimeConfiguration();

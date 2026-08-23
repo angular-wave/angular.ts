@@ -11,7 +11,7 @@ class FilterRegistry {
         this._destroyed = false;
     }
     attach(providerRegistry) {
-        this._assertActive();
+        this._ensureActive();
         this._providerRegistry = providerRegistry;
         this._boundFactories.clear();
         this._factories.forEach((factory, name) => {
@@ -19,7 +19,7 @@ class FilterRegistry {
         });
     }
     register(name, factory) {
-        this._assertActive();
+        this._ensureActive();
         validateIsString(name, "name");
         validate(isInjectable, factory, "factory");
         this._factories.set(name, factory);
@@ -34,8 +34,8 @@ class FilterRegistry {
         this._boundFactories.clear();
         this._providerRegistry = undefined;
     }
-    assertActive() {
-        this._assertActive();
+    ensureActive() {
+        this._ensureActive();
     }
     /** @internal */
     _bind(name, factory) {
@@ -47,7 +47,7 @@ class FilterRegistry {
         this._boundFactories.set(name, factory);
     }
     /** @internal */
-    _assertActive() {
+    _ensureActive() {
         if (this._destroyed) {
             throw new Error("Filter registry has been destroyed");
         }
@@ -56,7 +56,7 @@ class FilterRegistry {
 /** @internal */
 function createFilterService(registry, $injector) {
     return (name) => {
-        registry.assertActive();
+        registry.ensureActive();
         validateIsString(name, "name");
         return $injector.get(name + SUFFIX);
     };

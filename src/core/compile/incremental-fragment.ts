@@ -1,7 +1,7 @@
 import type { AppRootRecord } from "../app-context/app-context.ts";
 import { dealoc, removeElementData } from "../../shared/dom.ts";
 import {
-  assertDefined,
+  assertInvariantDefined,
   shouldHandleViewRetentionPause,
 } from "../../shared/utils.ts";
 
@@ -118,7 +118,7 @@ export function createPublicLinkCompiledFragmentRecord(
 ): CompiledFragmentRecord {
   const id = getInitialFragmentId({});
 
-  assertLinkedFragmentCanBeCreated(id, root, true);
+  ensureLinkedFragmentCanBeCreated(id, root, true);
 
   const record: CompactPublicLinkCompiledFragmentRecord = {
     id,
@@ -147,7 +147,7 @@ export function createPublicLinkSingleNodeCompiledFragmentRecord(
 ): CompiledFragmentRecord {
   const id = getInitialFragmentId({});
 
-  assertLinkedFragmentCanBeCreated(id, root, true);
+  ensureLinkedFragmentCanBeCreated(id, root, true);
 
   const record: CompactPublicLinkCompiledFragmentRecord = {
     id,
@@ -174,7 +174,7 @@ export function createCompiledFragmentRecord(
   const id = getInitialFragmentId(options);
   const linked = options.linked === true;
 
-  assertLinkedFragmentCanBeCreated(id, options.root, linked);
+  ensureLinkedFragmentCanBeCreated(id, options.root, linked);
 
   const record: CompiledFragmentRecord = {
     id,
@@ -211,7 +211,7 @@ export function createSingleNodeCompiledFragmentRecord(
   const id = getInitialFragmentId(options);
   const linked = options.linked === true;
 
-  assertLinkedFragmentCanBeCreated(id, options.root, linked);
+  ensureLinkedFragmentCanBeCreated(id, options.root, linked);
 
   const record: CompiledFragmentRecord = {
     id,
@@ -724,7 +724,7 @@ function getInitialFragmentId(
   return options.id ?? `fragment:${String(nextFragmentId++)}`;
 }
 
-function assertLinkedFragmentCanBeCreated(
+function ensureLinkedFragmentCanBeCreated(
   id: string,
   root: AppRootRecord,
   linked: boolean,
@@ -759,7 +759,7 @@ function registerCompiledFragmentRecord(
   record: CompiledFragmentRecord,
   retentionAware = true,
 ): CompiledFragmentRecord {
-  const root = assertDefined(record.root);
+  const root = assertInvariantDefined(record.root);
 
   if (record.parentScope === root.rootScope) {
     registerRootCompiledFragment(record);
@@ -800,7 +800,7 @@ function disposeCompiledFragmentScopeLifecycle(
 }
 
 function registerRootCompiledFragment(record: CompiledFragmentRecord): void {
-  const root = assertDefined(record.root);
+  const root = assertInvariantDefined(record.root);
 
   let state = compiledFragmentStatesByRoot.get(root);
 

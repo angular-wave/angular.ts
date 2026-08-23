@@ -3,6 +3,7 @@
 import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
 import { createResolveInvocationLocals } from "../resolve/resolve-context.ts";
+import { Resolvable } from "../resolve/resolvable.ts";
 import type { ResolvableToken } from "../resolve/interface.ts";
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
@@ -401,6 +402,12 @@ describe("StateBuilder", function () {
         user: "Ada",
         count: 2,
       });
+    });
+
+    it("requires a token when a resolve function is supplied", () => {
+      expect(() => new Resolvable(undefined, () => undefined)).toThrowError(
+        "Resolvable token argument is required",
+      );
     });
   });
 });

@@ -10,7 +10,7 @@ applications, not as a complete WCAG conformance guarantee.
 
 Use `module.config({ $aria: ... })` when you need to adjust global ARIA support.
 
-```javascript
+```js
 const app = angular.module('app', []);
 
 app.config({
@@ -24,7 +24,7 @@ app.config({
 });
 ```
 
-`ng.AriaConfig` checks the standardized `aria-current` token used by router
+[`ng.AriaConfig`](../../../typedoc/interfaces/AriaConfig.html) checks the standardized `aria-current` token used by router
 links. ARIA attributes authored in templates remain native HTML rather than
 framework-specific TypeScript contracts.
 

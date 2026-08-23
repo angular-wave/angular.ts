@@ -1,4 +1,4 @@
-import { notNullOrUndefined, isArray, isDefined, isString, isInstanceOf, isNumber } from './utils.js';
+import { isArray, notNullOrUndefined, isDefined, isString, isInstanceOf, isNumber, isFunction } from './utils.js';
 
 const BADARG = "badarg";
 const BADARGKEY = "badarg: key";
@@ -33,6 +33,10 @@ function validate(fn, arg, name, reason) {
 function validateRequired(arg, name) {
     return validate(notNullOrUndefined, arg, name);
 }
+/** Validates a public API value whose contract excludes all falsy values. */
+function validateTruthy(arg, name) {
+    return validate(Boolean, arg, name, "required");
+}
 function validateArray(arg, name) {
     return validate(isArray, arg, name);
 }
@@ -42,8 +46,13 @@ function validateIsString(arg, name) {
 function validateIsNumber(arg, name) {
     return validate(isNumber, arg, name);
 }
+/** Validates a function argument, optionally unwrapping array annotation. */
+function validateFunction(arg, name, acceptArrayAnnotation = false) {
+    const candidate = acceptArrayAnnotation && isArray(arg) ? arg[arg.length - 1] : arg;
+    return validate(isFunction, candidate, name, "notfunction");
+}
 function validateInstanceOf(arg, type, name) {
     return validate((value) => isInstanceOf(value, type), arg, name);
 }
 
-export { BADARG, BADARGKEY, BADARGVALUE, validate, validateArray, validateInstanceOf, validateIsNumber, validateIsString, validateRequired };
+export { BADARG, BADARGKEY, BADARGVALUE, validate, validateArray, validateFunction, validateInstanceOf, validateIsNumber, validateIsString, validateRequired, validateTruthy };

@@ -6,7 +6,6 @@ import {
   isInstanceOf,
   isUndefined,
   isString,
-  assertDefined,
   stringify,
 } from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
@@ -117,13 +116,11 @@ function getType(
   if (cfg.type && urlType && urlType.name !== "string")
     throw new Error(`Param '${id}' has two type configurations.`);
 
-  if (
-    cfg.type &&
-    urlType?.name === "string" &&
-    isString(cfg.type) &&
-    paramTypes[cfg.type]
-  )
-    return assertDefined(paramTypes[cfg.type]);
+  if (cfg.type && urlType?.name === "string" && isString(cfg.type)) {
+    const configuredType = paramTypes[cfg.type];
+
+    if (configuredType) return configuredType;
+  }
 
   if (urlType) return urlType;
 
@@ -138,9 +135,15 @@ function getType(
     return paramTypes[type];
   }
 
-  return isInstanceOf(cfg.type, ParamType)
-    ? cfg.type
-    : assertDefined(paramTypes[cfg.type]);
+  if (isInstanceOf(cfg.type, ParamType)) return cfg.type;
+
+  const configuredType = paramTypes[cfg.type];
+
+  if (!configuredType) {
+    throw new Error(`Param '${id}' uses unknown type '${cfg.type}'.`);
+  }
+
+  return configuredType;
 }
 
 /**

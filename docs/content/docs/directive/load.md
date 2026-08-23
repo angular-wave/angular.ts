@@ -28,9 +28,11 @@ itself.
   is available as `$event`.
 - **Example:**
 
-  ```html
-  <img src="url" ng-load="$ctrl.load($event)"></div>
-  ```
+```html
+<div>
+  <img src="url" ng-load="$ctrl.load($event)" />
+</div>
+```
 
 ---
 

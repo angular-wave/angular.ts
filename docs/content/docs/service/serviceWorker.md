@@ -8,7 +8,7 @@ description: >
 update observation, controller changes, and page-to-worker messaging.
 
 Use it when the browser owns the page-control lifecycle. Use `$worker` for
-page-owned background computation. Use `$rest` and `RestBackend` for request and
+page-owned background computation. Use `$rest` and [`RestBackend`](../../../typedoc/interfaces/RestBackend.html) for request and
 cache composition. Use `$workflow` for command execution and recovery; a service
 worker can be an activity boundary, not the workflow engine.
 
@@ -137,7 +137,7 @@ remain browser-managed.
 ## REST And Cache
 
 Do not make `$rest` depend on service workers. REST caching belongs behind
-`RestBackend` and `RestCacheStore`; a service-worker-backed REST cache should be
+[`RestBackend`](../../../typedoc/interfaces/RestBackend.html) and [`RestCacheStore`](../../../typedoc/interfaces/RestCacheStore.html); a service-worker-backed REST cache should be
 an explicit backend adapter when the app needs that boundary.
 
 ## Unsupported Browsers

@@ -26,7 +26,7 @@ function destroyWorkerRuntimeState(state) {
         connection.terminate();
     state.connections.clear();
 }
-function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstructor, onTerminate) {
+function createManagedWorkerHandle(scriptPath, config, logger, exceptionHandler, getWorkerConstructor, onTerminate) {
     if (!scriptPath)
         throw new Error("Worker script path required");
     const restartEnabled = config?.restart ?? false;
@@ -56,6 +56,14 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
     let nextRequestId = 1;
     let terminated = false;
     let worker = new (getWorkerConstructor())(scriptPath, workerOptions);
+    const invokeListener = (listener, ...args) => {
+        try {
+            listener(...args);
+        }
+        catch (listenerError) {
+            exceptionHandler(listenerError);
+        }
+    };
     const scheduleBindings = () => {
         for (const [scopeId, handler] of bindings) {
             if (handler._destroyed) {
@@ -73,7 +81,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
         error = nextError;
         scheduleBindings();
         for (const listener of errorListeners)
-            listener(nextError);
+            invokeListener(listener, nextError);
     };
     const cleanupRequest = (request) => {
         clearTimeout(request.timer);
@@ -129,7 +137,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
         if (!listeners)
             return;
         for (const listener of listeners) {
-            listener(message.snapshot, message.options);
+            invokeListener(listener, message.snapshot, message.options);
         }
     };
     const wire = (activeWorker) => {
@@ -153,7 +161,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
             if ("error" in data)
                 return;
             for (const listener of messageListeners) {
-                listener(data.value, event);
+                invokeListener(listener, data.value, event);
             }
         };
         activeWorker.onerror = (event) => {
@@ -219,7 +227,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
             postNative(message, transfer);
         },
         request(message, options = {}) {
-            assertWorkerRequestOptions(options);
+            validateWorkerRequestOptions(options);
             if (terminated) {
                 return Promise.reject(new WorkerError("terminated", "Cannot request from a terminated Worker"));
             }
@@ -410,7 +418,7 @@ function formatWorkerFailure(value, fallback) {
     }
     return fallback;
 }
-function assertWorkerRequestOptions(options) {
+function validateWorkerRequestOptions(options) {
     if (!isObject(options) || isArray(options)) {
         throw new Error("$worker request options must be an object.");
     }
@@ -431,12 +439,12 @@ function assertWorkerRequestOptions(options) {
     }
 }
 /** @internal */
-function createWorkerService(log, state, getWorkerConstructor, security) {
+function createWorkerService(log, state, getWorkerConstructor, exceptionHandler, security) {
     return (scriptPath, config = {}) => {
         if (state.destroyed) {
             throw new Error("Cannot create a Worker after runtime teardown");
         }
-        assertWorkerConfig(config);
+        validateWorkerConfig(config);
         if (security) {
             const decision = security.check({
                 operation: "request",
@@ -450,12 +458,12 @@ function createWorkerService(log, state, getWorkerConstructor, security) {
                 throw new Error(decision.reason ?? "Worker creation denied by security policy");
             }
         }
-        const handle = createManagedWorkerHandle(scriptPath, config, log, getWorkerConstructor, () => state.connections.delete(handle));
+        const handle = createManagedWorkerHandle(scriptPath, config, log, exceptionHandler, getWorkerConstructor, () => state.connections.delete(handle));
         state.connections.add(handle);
         return handle;
     };
 }
-function assertWorkerConfig(config) {
+function validateWorkerConfig(config) {
     if (typeof config !== "object" || config === null || Array.isArray(config)) {
         throw new Error("$worker config must be an object.");
     }

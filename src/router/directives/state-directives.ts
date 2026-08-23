@@ -13,7 +13,7 @@ import { removeFrom } from "../../shared/common.ts";
 import {
   assign,
   arrayFrom,
-  assertDefined,
+  assertInvariantDefined,
   directiveNormalize,
   isArray,
   isNullOrUndefined,
@@ -744,7 +744,7 @@ export function StateRefActiveDirective(
         const activeEqExpr = activeEqRead ?? "";
 
         const activeEqClass = stringify(
-          assertDefined($interpolate(activeEqExpr, false))($scope) ?? "",
+          assertInvariantDefined($interpolate(activeEqExpr, false))($scope),
         );
 
         const activeRead = getFirstNormalizedAttr($element, ["ngStateActive"]);
@@ -762,7 +762,9 @@ export function StateRefActiveDirective(
         activeDefinition =
           activeDefinition ??
           stringify(
-            assertDefined($interpolate(activeExpr ?? "", false))($scope) ?? "",
+            assertInvariantDefined($interpolate(activeExpr ?? "", false))(
+              $scope,
+            ),
           );
         setStatesFromDefinitionObject(activeDefinition);
         // Allow state-ref directives to communicate with active-state directives.

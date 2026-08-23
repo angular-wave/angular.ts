@@ -19,7 +19,7 @@ import {
   isFunction,
   getNodeName,
   extend,
-  assert as strictAssert,
+  assertInvariant as strictAssert,
 } from "../../shared/utils.ts";
 import { wait, waitUntil } from "../../shared/test-utils.ts";
 

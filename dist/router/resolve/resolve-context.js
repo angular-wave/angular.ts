@@ -1,5 +1,5 @@
 import { stringify } from '../../shared/strings.js';
-import { isInstanceOf, isArray, isString, isUndefined, assertDefined } from '../../shared/utils.js';
+import { isInstanceOf, isArray, isString, isUndefined, assertInvariantDefined } from '../../shared/utils.js';
 import { Resolvable } from './resolvable.js';
 
 /** @internal */
@@ -7,7 +7,7 @@ function createResolveInvocationLocals(context) {
     const locals = {};
     context.getTokens().forEach((token) => {
         if (isString(token)) {
-            locals[token] = assertDefined(context.getResolvable(token)).data;
+            locals[token] = assertInvariantDefined(context.getResolvable(token)).data;
         }
     });
     return locals;

@@ -140,7 +140,7 @@ API.
 
 ## Results
 
-`run()` always resolves to a `WorkflowResult`:
+`run()` always resolves to a [`WorkflowResult`](../../../typedoc/types/WorkflowResult.html):
 
 ```js
 const result = await checkout.run('submit', order);

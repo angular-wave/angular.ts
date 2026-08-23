@@ -71,7 +71,7 @@
  *   CookieOptions: ng.CookieOptions,
  *   CookieStoreOptions: ng.CookieStoreOptions,
  *   EntityClass: ng.EntityClass<unknown>,
- *   ErrorHandlingConfig: ng.ErrorHandlingConfig,
+ *   ErrorFormattingConfig: ng.ErrorFormattingConfig,
  *   Expression: ng.Expression,
  *   HttpMethod: ng.HttpMethod,
  *   HttpDefaults: ng.HttpDefaults,

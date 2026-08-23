@@ -1,4 +1,4 @@
-import { assertDefined, stringify, inherit, isArray, isString, isNullOrUndefined } from '../../shared/utils.js';
+import { assertInvariantDefined, stringify, inherit, isArray, isString, isNullOrUndefined } from '../../shared/utils.js';
 import { DefType } from '../params/param.js';
 
 const PARAM_NAME_VALIDATOR = /^\w+([-.]+\w+)*(?:\[\])?$/;
@@ -292,7 +292,7 @@ class UrlMatcher {
             if (pathSegment.includes("?"))
                 break; // we're into the search part
             checkParamErrors(id, pattern, this._params);
-            this._params.push(paramFactory.fromPath(id, paramType, assertDefined(config.state)));
+            this._params.push(paramFactory.fromPath(id, paramType, assertInvariantDefined(config.state)));
             this._segments.push(pathSegment);
             this._compiled += quoteRegExp(pathSegment, this._params[this._params.length - 1]);
             last = PLACEHOLDER_REGEXP.lastIndex;
@@ -309,7 +309,7 @@ class UrlMatcher {
                     const id = matchArray[2] || matchArray[3];
                     const paramType = getParamType(pattern, matchArray, true, paramTypes, config);
                     checkParamErrors(id, pattern, this._params);
-                    this._params.push(paramFactory.fromSearch(id, paramType, assertDefined(config.state)));
+                    this._params.push(paramFactory.fromSearch(id, paramType, assertInvariantDefined(config.state)));
                     last = SEARCH_PLACEHOLDER_REGEXP.lastIndex;
                     // check if ?&
                 }

@@ -258,7 +258,7 @@ function createServiceWorkerService(container, options) {
                 callback(updateState);
             }
             catch (error) {
-                options.err(error);
+                options.exceptionHandler(error);
             }
         });
     };
@@ -334,7 +334,7 @@ function createServiceWorkerService(container, options) {
                 callback(controller);
             }
             catch (error) {
-                options.err(error);
+                options.exceptionHandler(error);
             }
         });
     });
@@ -556,7 +556,7 @@ function createServiceWorkerService(container, options) {
                     });
                 }
                 catch (error) {
-                    options.err(error);
+                    options.exceptionHandler(error);
                 }
             });
         },
@@ -615,7 +615,9 @@ function createServiceWorkerService(container, options) {
         disposeControllerChangeListener();
     }
     if (supported && configuration.autoRegister && configuration.scriptUrl) {
-        void service.register().catch((error) => options.err(error));
+        void service
+            .register()
+            .catch((error) => options.exceptionHandler(error));
     }
     return service;
 }

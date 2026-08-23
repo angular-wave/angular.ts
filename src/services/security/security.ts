@@ -138,7 +138,7 @@ export function applySecurityConfiguration(
   configuration: SecurityRuntimeConfiguration,
   config: SecurityConfig,
 ): void {
-  assertSecurityConfig(config);
+  validateSecurityConfig(config);
 
   if (config.fallback !== undefined) {
     configuration.fallback = config.fallback;
@@ -164,7 +164,7 @@ export function applySecurityConfiguration(
   }
 }
 
-function assertSecurityConfig(
+function validateSecurityConfig(
   config: unknown,
 ): asserts config is SecurityConfig {
   if (!isRecord(config)) {
@@ -192,7 +192,7 @@ function assertSecurityConfig(
   }
 
   if (config.credentials !== undefined) {
-    assertSecurityCredentialConfig(config.credentials);
+    validateSecurityCredentialConfig(config.credentials);
   }
 
   if (
@@ -217,7 +217,7 @@ function assertSecurityConfig(
   }
 }
 
-function assertSecurityCredentialConfig(config: unknown): void {
+function validateSecurityCredentialConfig(config: unknown): void {
   if (!isRecord(config)) {
     throw new Error("$security credentials must be an object.");
   }

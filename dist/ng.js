@@ -423,8 +423,7 @@ const sceDelegateRuntimeRegistration = {
         return registry.factory(name, [
             _injector,
             _window,
-            _exceptionHandler,
-            ($injector, $window, $exceptionHandler) => configuration.createService($injector, $window, $exceptionHandler),
+            ($injector, $window) => configuration.createService($injector, $window),
         ]);
     },
 };
@@ -523,7 +522,8 @@ const websocketRuntimeRegistration = {
         });
         return registry.factory(name, [
             _log,
-            ($log) => createWebSocketService($log, configuration, runtimeWindow.WebSocket),
+            _exceptionHandler,
+            ($log, $exceptionHandler) => createWebSocketService($log, configuration, runtimeWindow.WebSocket, $exceptionHandler),
         ]);
     },
 };
@@ -540,7 +540,8 @@ const sseRuntimeRegistration = {
         });
         return registry.factory(name, [
             _log,
-            ($log) => createSseService($log, configuration, () => runtimeWindow.EventSource),
+            _exceptionHandler,
+            ($log, $exceptionHandler) => createSseService($log, configuration, () => runtimeWindow.EventSource, $exceptionHandler),
         ]);
     },
 };
@@ -557,7 +558,8 @@ const webTransportRuntimeRegistration = {
         });
         return registry.factory(name, [
             _log,
-            ($log) => createWebTransportService($log, configuration, () => runtimeWindow.WebTransport, runtimeWindow.location.href),
+            _exceptionHandler,
+            ($log, $exceptionHandler) => createWebTransportService($log, configuration, () => runtimeWindow.WebTransport, runtimeWindow.location.href, $exceptionHandler),
         ]);
     },
 };
@@ -571,8 +573,9 @@ const workerRuntimeRegistration = {
         });
         return registry.factory(name, [
             _log,
+            _exceptionHandler,
             _security,
-            ($log, $security) => createWorkerService($log, state, () => runtimeWindow.Worker, $security),
+            ($log, $exceptionHandler, $security) => createWorkerService($log, state, () => runtimeWindow.Worker, $exceptionHandler, $security),
         ]);
     },
 };
@@ -590,7 +593,8 @@ const webComponentRuntimeRegistration = {
             _injector,
             _rootScope,
             _compile,
-            ($injector, $rootScope, $compile) => createWebComponentService($injector, $rootScope, $compile, state),
+            _exceptionHandler,
+            ($injector, $rootScope, $compile, $exceptionHandler) => createWebComponentService($injector, $rootScope, $compile, state, $exceptionHandler),
         ]);
     },
 };
@@ -613,8 +617,8 @@ const serviceWorkerRuntimeRegistration = {
             _log,
             _exceptionHandler,
             _security,
-            (log, err, security) => {
-                service = createServiceWorkerService(context.platform.window.navigator.serviceWorker, { log, err, configuration, security });
+            (log, $exceptionHandler, security) => {
+                service = createServiceWorkerService(context.platform.window.navigator.serviceWorker, { log, exceptionHandler: $exceptionHandler, configuration, security });
                 if (destroyed)
                     destroyServiceWorkerService(service);
                 return service;

@@ -588,7 +588,7 @@ function equals(o1, o2) {
  * @param context the context in which the name is used, such as module or directive
  * @throws AngularTS error when `name` would shadow `hasOwnProperty`.
  */
-function assertNotHasOwnProperty(name, context) {
+function validateNotHasOwnPropertyName(name, context) {
     if (name === "hasOwnProperty") {
         throw ngError("badname", "hasOwnProperty is not a valid {0} name", context);
     }
@@ -610,7 +610,7 @@ function stringify(value) {
         const customToString = Reflect.get(value, "toString");
         return customToString.call(value);
     }
-    return assertDefined(toJson(value));
+    return toJson(value) ?? String(value);
 }
 /**
  * Returns whether an object traversal depth limit is valid.
@@ -830,58 +830,33 @@ function shallowCopy(src, dst) {
     return src;
 }
 /**
- * Throws when the argument is false.
+ * Throws when a framework-owned invariant is false.
  *
  * @throws Error when `argument` is false.
  */
-function assert(argument, errorMsg = "Assertion failed") {
+function assertInvariant(argument, errorMsg = "AngularTS invariant violated") {
     if (!argument) {
         throw new Error(errorMsg);
     }
 }
 /**
- * Returns a non-nullish value or throws when the value is absent.
+ * Returns a framework-owned non-nullish value or throws when it is absent.
  *
  * @throws Error when `value` is null or undefined.
  */
-function assertDefined(value, errorMsg = "Expected value to be defined") {
-    assert(notNullOrUndefined(value), errorMsg);
+function assertInvariantDefined(value, errorMsg = "AngularTS invariant violated: expected a defined value") {
+    assertInvariant(notNullOrUndefined(value), errorMsg);
     return value;
-}
-/**
- * Throws a typed AngularTS argument error when the argument is falsy.
- *
- * @throws AngularTS error when `arg` is falsy.
- */
-function assertArg(arg, name, reason) {
-    if (!arg) {
-        throw ngError("areq", "Argument '{0}' is {1}", name || "?", reason ?? "required");
-    }
-    return arg;
-}
-/**
- * Asserts that a value is a function, optionally unwrapping array-annotation first.
- *
- * @throws AngularTS error when `arg` is not a function.
- */
-function assertArgFn(arg, name, acceptArrayAnnotation) {
-    if (acceptArrayAnnotation && isArray(arg)) {
-        arg = arg[arg.length - 1];
-    }
-    assertArg(isFunction(arg), name, `not a function, got ${arg && typeof arg === "object"
-        ? arg.constructor.name || "Object"
-        : typeof arg}`);
-    return arg;
 }
 const errorConfig = {
     objectMaxDepth: 5,
 };
 /**
- * Gets or updates the global error-handling configuration.
+ * Gets or updates global error-message formatting.
  *
  * Omitted or undefined options leave the corresponding configuration values unchanged.
  */
-function errorHandlingConfig(config) {
+function errorFormattingConfig(config) {
     if (isObject(config)) {
         if (isDefined(config.objectMaxDepth)) {
             errorConfig.objectMaxDepth = isValidObjectMaxDepth(config.objectMaxDepth)
@@ -1229,4 +1204,4 @@ function nullObject() {
     return createObject(null);
 }
 
-export { AngularTSError, arrayFrom, arrayRemove, assert, assertArg, assertArgFn, assertDefined, assertNotHasOwnProperty, assign, baseExtend, bind, callBackAfterFirst, callBackOnce, callFunction, compileWasm, concat, createErrorFactory, createObject, deProxy, deleteProperty, directiveNormalize, encodeUriQuery, encodeUriSegment, entries, equals, errorHandlingConfig, extend, fromJson, getHashKey, getNodeName, hasAnimate, hasCustomToString, hasOwn, hashKey, includes, inherit, instantiateWasm, isArray, isArrayLike, isArrowFunction, isBlob, isBoolean, isDate, isDefined, isError, isFile, isFormData, isFunction, isInstanceOf, isNull, isNullOrUndefined, isNumber, isNumberNaN, isObject, isObjectEmpty, isPromiseLike, isProxy, isProxySymbol, isRegExp, isScope, isString, isUndefined, isValidObjectMaxDepth, isWindow, keys, lowercase, mergeClasses, nextUid, ngAttrPrefixes, notNullOrUndefined, nullObject, parseKeyValue, setHashKey, shallowCopy, shouldHandleViewRetentionPause, simpleCompare, sliceArgs, snakeCase, startsWith, stringify, toDebugString, toJson, toKeyValue, trim, tryDecodeURIComponent, uppercase, values, wait };
+export { AngularTSError, arrayFrom, arrayRemove, assertInvariant, assertInvariantDefined, assign, baseExtend, bind, callBackAfterFirst, callBackOnce, callFunction, compileWasm, concat, createErrorFactory, createObject, deProxy, deleteProperty, directiveNormalize, encodeUriQuery, encodeUriSegment, entries, equals, errorFormattingConfig, extend, fromJson, getHashKey, getNodeName, hasAnimate, hasCustomToString, hasOwn, hashKey, includes, inherit, instantiateWasm, isArray, isArrayLike, isArrowFunction, isBlob, isBoolean, isDate, isDefined, isError, isFile, isFormData, isFunction, isInstanceOf, isNull, isNullOrUndefined, isNumber, isNumberNaN, isObject, isObjectEmpty, isPromiseLike, isProxy, isProxySymbol, isRegExp, isScope, isString, isUndefined, isValidObjectMaxDepth, isWindow, keys, lowercase, mergeClasses, nextUid, ngAttrPrefixes, notNullOrUndefined, nullObject, parseKeyValue, setHashKey, shallowCopy, shouldHandleViewRetentionPause, simpleCompare, sliceArgs, snakeCase, startsWith, stringify, toDebugString, toJson, toKeyValue, trim, tryDecodeURIComponent, uppercase, validateNotHasOwnPropertyName, values, wait };

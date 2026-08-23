@@ -819,7 +819,7 @@ describe("NgModule", () => {
         "resourceUrl",
         "https://cdn.example.com/private/secret.html",
       ),
-    ).toThrow(configuredError);
+    ).toThrowError(/insecurl/);
     expect($sceDelegate.getTrusted("url", "https://example.com")).toBe(
       "https://example.com",
     );

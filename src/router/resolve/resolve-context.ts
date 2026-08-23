@@ -1,6 +1,6 @@
 import { stringify } from "../../shared/strings.ts";
 import {
-  assertDefined,
+  assertInvariantDefined,
   isArray,
   isInstanceOf,
   isString,
@@ -35,7 +35,7 @@ export function createResolveInvocationLocals(
 
   context.getTokens().forEach((token) => {
     if (isString(token)) {
-      locals[token] = assertDefined(context.getResolvable(token)).data;
+      locals[token] = assertInvariantDefined(context.getResolvable(token)).data;
     }
   });
 

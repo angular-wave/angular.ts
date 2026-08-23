@@ -31,12 +31,12 @@ facades. `$worker` exposes managed `WorkerHandle` lifecycle, correlated JSON
 requests, model synchronization channels, typed restart configuration, and
 native message/error subscriptions for browser Wasm applications.
 
-## Programmatic Views
+## Views
 
 `ComponentMetadata::view(...)` registers a Rust export as a component view.
 Wasm builds expose `ComponentViewContext` and `ComponentViewTags`; the former
 reads the controller, scope, host element, and transclusion callback, while the
-latter delegates real-DOM construction to `angular.tags`. View exports return
+latter delegates real-DOM construction to `angular.view.tags`. View exports return
 `JsValue`, allowing DOM nodes and supported reactive children to cross the
 `wasm-bindgen` boundary.
 

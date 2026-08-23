@@ -25,12 +25,24 @@ function customComposition(...registrars) {
   ].join("\n");
 }
 
+function selectedComposition(registrar, exportName) {
+  return [
+    `export * from ${JSON.stringify(runtimeEntry)};`,
+    `export { ${exportName} } from ${JSON.stringify(path.join(buildDir, `runtime/${registrar}.js`))};`,
+  ].join("\n");
+}
+
 const entries = {
   core: customComposition(),
   "event-bus": customComposition("event-bus"),
   router: customComposition("router"),
-  orchestration: customComposition("orchestration"),
-  realtime: customComposition("realtime"),
+  machine: selectedComposition("orchestration", "machineModule"),
+  workflow: selectedComposition("orchestration", "workflowModule"),
+  orchestration: selectedComposition("orchestration", "orchestrationModule"),
+  sse: selectedComposition("realtime", "sseModule"),
+  websocket: selectedComposition("realtime", "websocketModule"),
+  webtransport: selectedComposition("realtime", "webTransportModule"),
+  realtime: selectedComposition("realtime", "realtimeModule"),
   wasm: customComposition("wasm"),
   "service-worker": customComposition("service-worker"),
   "web-component": customComposition("web-component"),

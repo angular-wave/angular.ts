@@ -22,8 +22,8 @@ mutates the current scope implicitly, and the swap strategy is ignored.
 </section>
 ```
 
-String error responses use the configured DOM swap. JSON errors are available
-to `on-error` as `$res` and require explicit assignment.
+String error responses use the configured DOM swap. JSON errors are available to
+`on-error` as `$res` and require explicit assignment.
 
 #### Example
 
@@ -148,7 +148,7 @@ attributes provided below.
 
 - **Type:**
   [delay](https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout#delay)
-- **Description:** Ignores subsequent requests for N milliseconds
+- **Description:** Ignores later requests for N milliseconds
 - **Example:**
 
   ```html

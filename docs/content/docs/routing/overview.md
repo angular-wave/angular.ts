@@ -15,7 +15,7 @@ from one state to another. URLs are a way to enter a state, not the primary
 concept.
 
 Router naming, inference, and public-type placement follow the
-[shared API ergonomics contract](../../../../src/DESIGN_PHILOSOPHY.md#api-ergonomics-contract).
+[shared API ergonomics contract](https://github.com/angular-wave/angular.ts/blob/main/src/DESIGN_PHILOSOPHY.md#api-ergonomics-contract).
 Throughout the router documentation, a **router state** is one named navigation
 node. A **route tree** is the module-owned hierarchy made from router states.
 Machine and workflow states are execution modes and are not router states.
@@ -39,11 +39,11 @@ The router is built from five interlocking primitives:
 
 The router exposes these injectable services:
 
-| Token            | Type                 | Purpose                                                                              |
-| ---------------- | -------------------- | ------------------------------------------------------------------------------------ |
-| `$state`         | `StateService`  | Navigate (`go`), inspect current state (`is`, `includes`, `current`) |
-| `$transitions`   | `TransitionsService` | Register lifecycle hooks (`onBefore`, `onStart`, `onSuccess`, …)                     |
-| `$stateRegistry` | Advanced registry    | Register and deregister state declarations at runtime                                |
+| Token            | Type                                                                   | Purpose                                                              |
+| ---------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `$state`         | [`StateService`](../../../typedoc/types/StateService.html)             | Navigate (`go`), inspect current state (`is`, `includes`, `current`) |
+| `$transitions`   | [`TransitionsService`](../../../typedoc/types/TransitionsService.html) | Register lifecycle hooks (`onBefore`, `onStart`, `onSuccess`, …)     |
+| `$stateRegistry` | Advanced registry                                                      | Register and deregister state declarations at runtime                |
 
 For ordinary app authoring, `$state` is usually sufficient. `$transitions` and
 `$stateRegistry` are classified as **advanced runtime APIs** for policy wiring,
@@ -56,7 +56,7 @@ late-bound navigation policies, and runtime diagnostics.
 Call `module.router(declaration)` with a route tree or forest. Every route must
 have a unique name.
 
-```javascript
+```js
 angular
   .module('app', ['ng.router'])
   .router({
@@ -74,9 +74,13 @@ angular
     name: 'contacts.detail',
     url: '/:contactId',
     resolve: {
-      contact: ['$transition$', 'ContactService', function ($transition$, ContactService) {
-        return ContactService.get($transition$.params().contactId);
-      }],
+      contact: [
+        '$transition$',
+        'ContactService',
+        function ($transition$, ContactService) {
+          return ContactService.get($transition$.params().contactId);
+        },
+      ],
     },
     templateUrl: 'contact-detail.html',
     controller: 'ContactDetailCtrl',
@@ -107,12 +111,15 @@ Place `ng-view` where you want the active state's template to render. An unnamed
 
 Use `$state.go()` in controllers or services to perform programmatic navigation.
 
-```javascript
-angular.module('app').controller('ContactsCtrl', ["$state", function ($state) {
-  this.viewContact = function (contactId) {
-    $state.go('contacts.detail', { contactId: contactId });
-  };
-}]);
+```js
+angular.module('app').controller('ContactsCtrl', [
+  '$state',
+  function ($state) {
+    this.viewContact = function (contactId) {
+      $state.go('contacts.detail', { contactId: contactId });
+    };
+  },
+]);
 ```
 
 ## The ng-view directive
@@ -132,7 +139,7 @@ Multiple named views can coexist:
 
 A state targets named views through its `views` property:
 
-```javascript
+```js
   name: 'dashboard',
   views: {
     'header': { template: '<app-header></app-header>' },
@@ -150,7 +157,7 @@ Router-wide scroll and focus behavior belongs in typed module config. This keeps
 accessibility and scroll restoration consistent across the whole route tree
 without repeating settings on every route:
 
-```javascript
+```js
 angular.module('demo', []).config({
   $router: {
     scroll: { top: 0 },
@@ -175,7 +182,7 @@ one navigation. Detached, ignored, redirected, loading-resume, or explicitly
 disabled transitions keep the normal synchronous view commit path.
 
 Executable demo:
-[`router-view-transition-test.html`](/src/router/router-view-transition-test.html)
+[`router-view-transition-test.html`](https://github.com/angular-wave/angular.ts/blob/main/src/router/router-view-transition-test.html)
 
 ## Router directives
 

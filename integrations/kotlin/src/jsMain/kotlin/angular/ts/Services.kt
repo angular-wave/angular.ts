@@ -314,7 +314,7 @@ public class Angular internal constructor(
 
     public val tags: ProgrammaticTags
         get() = ProgrammaticTags(
-            raw.asDynamic().tags.unsafeCast<angular.ts.generated.ComponentViewTags>(),
+            raw.view.tags,
         )
 
     public val view: ProgrammaticViewApi

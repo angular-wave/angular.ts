@@ -156,6 +156,88 @@ describe("$webComponent", () => {
     expect(element.shadowRoot?.textContent).toContain("configured");
   });
 
+  it("reports detached lifecycle callback failures", async () => {
+    const tagName = nextTagName("failing-lifecycle-card");
+    const moduleName = nextModuleName();
+    const angular = new Angular();
+    const callbackError = new Error("connected failed");
+    const exceptions = [];
+
+    angular
+      .module(moduleName, [])
+      .config({
+        $exceptionHandler: {
+          handler: (error) => exceptions.push(error),
+        },
+      })
+      .appComponent(tagName, {
+        template: "<span>connected</span>",
+        connected() {
+          throw callbackError;
+        },
+      });
+
+    angular.bootstrap(app, [moduleName]);
+    const element = document.createElement(tagName);
+
+    app.appendChild(element);
+    await wait();
+    await wait();
+
+    expect(exceptions).toEqual([callbackError]);
+    expect(element.textContent).toContain("connected");
+  });
+
+  it("reports input and teardown callback failures while completing teardown", async () => {
+    const tagName = nextTagName("failing-teardown-card");
+    const moduleName = nextModuleName();
+    const angular = new Angular();
+    const cleanupError = new Error("cleanup failed");
+    const disconnectedError = new Error("disconnected failed");
+    const attributeError = new Error("attribute failed");
+    const exceptions = [];
+
+    angular
+      .module(moduleName, [])
+      .config({
+        $exceptionHandler: {
+          handler: (error) => exceptions.push(error),
+        },
+      })
+      .appComponent(tagName, {
+        inputs: { title: String },
+        connected() {
+          return () => {
+            throw cleanupError;
+          };
+        },
+        disconnected() {
+          throw disconnectedError;
+        },
+        attributeChanged() {
+          throw attributeError;
+        },
+      });
+
+    angular.bootstrap(app, [moduleName]);
+    const element = document.createElement(tagName);
+
+    app.appendChild(element);
+    await wait();
+    element.setAttribute("title", "changed");
+    const scope = getScope(element);
+    element.remove();
+    await wait();
+    await wait();
+
+    expect(exceptions).toEqual([
+      attributeError,
+      cleanupError,
+      disconnectedError,
+    ]);
+    expect(scope._handler._destroyed).toBeTrue();
+  });
+
   it("releases runtime-owned custom element state during teardown", async () => {
     const tagName = nextTagName("runtime-owned-card");
     const angular = new Angular();
@@ -180,6 +262,9 @@ describe("$webComponent", () => {
       rootScope,
       compile,
       state,
+      (error) => {
+        throw error;
+      },
     );
     const events = [];
 
@@ -246,6 +331,9 @@ describe("$webComponent", () => {
       rootScope,
       compile,
       state,
+      (error) => {
+        throw error;
+      },
     );
 
     service.defineAppComponent(tagName, { template: "ready" });

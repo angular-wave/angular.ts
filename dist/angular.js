@@ -18,7 +18,15 @@ class Angular extends AngularRuntime {
         /** JSX-free real-DOM tag factories for programmatic component views. */
         this.tags = tags;
         /** Explicit programmatic-view binding and element helpers. */
-        this.view = { attrs, each, event, props, tag, tagNS };
+        this.view = Object.freeze({
+            attrs,
+            each,
+            event,
+            props,
+            tag,
+            tagNS,
+            tags,
+        });
     }
 }
 

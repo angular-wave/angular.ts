@@ -79,6 +79,16 @@ describe("$exceptionHandler runtime", () => {
     expect(() => state.service("ignored")).toThrow(configured);
   });
 
+  it("rejects a non-callable configured handler", () => {
+    const state = createExceptionHandlerRuntimeState();
+
+    expect(() =>
+      applyExceptionHandlerConfiguration(state, {
+        handler: true as never,
+      }),
+    ).toThrowError(TypeError, "$exceptionHandler handler must be a function.");
+  });
+
   it("disposes idempotently and rejects later use", () => {
     const state = createExceptionHandlerRuntimeState();
     const service = createExceptionHandlerService(state);

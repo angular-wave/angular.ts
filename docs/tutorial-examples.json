@@ -1,0 +1,12 @@
+{
+  "task-board": {
+    "page": "tutorial/complete-application.md",
+    "artifacts": [
+      "docs/examples/task-board/task-board.ts",
+      "docs/examples/task-board/tsconfig.json",
+      "docs/static/examples/task-board/task-board-demo.html",
+      "docs/static/examples/task-board/task-board.js",
+      "src/docs-examples/task-board-tutorial.test.ts"
+    ]
+  }
+}

@@ -54,7 +54,7 @@ class AppContext {
         return this.destroyed;
     }
     setExceptionHandler(exceptionHandler) {
-        this._assertAlive("configure AppContext exception handling");
+        this._ensureAlive("configure AppContext exception handling");
         this._exceptionHandler = exceptionHandler;
     }
     /** @internal */
@@ -66,7 +66,7 @@ class AppContext {
         });
     }
     runWithRoot(root, operation) {
-        this._assertAlive("run AppContext root work");
+        this._ensureAlive("run AppContext root work");
         const previousRoot = this._currentRoot;
         this._currentRoot = root;
         try {
@@ -77,7 +77,7 @@ class AppContext {
         }
     }
     createRoot(options) {
-        this._assertAlive("create AppContext roots");
+        this._ensureAlive("create AppContext roots");
         const existingRoot = this._rootsByScope.get(options.rootScope);
         if (existingRoot) {
             return this.attachRoot(existingRoot, options);
@@ -109,7 +109,7 @@ class AppContext {
         return root;
     }
     attachRoot(rootOrScope, options) {
-        this._assertAlive("attach metadata to AppContext roots");
+        this._ensureAlive("attach metadata to AppContext roots");
         const root = this._resolveRoot(rootOrScope);
         if (!root) {
             throw new Error("Cannot attach metadata to an unknown AppContext root.");
@@ -128,7 +128,7 @@ class AppContext {
         return root;
     }
     registerModel(name, factory, options = {}) {
-        this._assertAlive("register AppContext models");
+        this._ensureAlive("register AppContext models");
         const existingFactory = this._modelFactories.get(name);
         if (existingFactory) {
             if (existingFactory !== factory) {
@@ -153,7 +153,7 @@ class AppContext {
         return this._models.get(name);
     }
     createReactive(target, options = {}) {
-        this._assertAlive("create AppContext reactive models");
+        this._ensureAlive("create AppContext reactive models");
         if (!isPlainModelRoot(target)) {
             throw new Error("Reactive app models require a plain object root.");
         }
@@ -190,7 +190,7 @@ class AppContext {
         root.destroy();
     }
     onDestroy(callback) {
-        this._assertAlive("register AppContext destroy hooks");
+        this._ensureAlive("register AppContext destroy hooks");
         this._appDestroyHooks.push(callback);
         return () => {
             this._removeHook(this._appDestroyHooks, callback);
@@ -224,21 +224,21 @@ class AppContext {
         }
     }
     onRootAttach(callback) {
-        this._assertAlive("register AppContext root attach hooks");
+        this._ensureAlive("register AppContext root attach hooks");
         this._attachHooks.push(callback);
         return () => {
             this._removeHook(this._attachHooks, callback);
         };
     }
     onRootDestroy(callback) {
-        this._assertAlive("register AppContext root destroy hooks");
+        this._ensureAlive("register AppContext root destroy hooks");
         this._destroyHooks.push(callback);
         return () => {
             this._removeHook(this._destroyHooks, callback);
         };
     }
     /** @internal */
-    _assertAlive(operation) {
+    _ensureAlive(operation) {
         if (this.destroyed) {
             throw new Error(`Cannot ${operation} after AppContext is destroyed.`);
         }
@@ -363,7 +363,7 @@ function attachModelLifecycle(context, model, options) {
     });
     handler._propertyMap.snapshot = snapshot;
     handler._propertyMap.restore = (incoming, restoreOptions = {}) => {
-        assertPlainModelSnapshot(incoming);
+        validatePlainModelSnapshot(incoming);
         const normalizedRestoreOptions = normalizeModelRestoreOptions(restoreOptions);
         const next = cloneModelData(incoming);
         const previousOrigin = currentOrigin;
@@ -468,7 +468,7 @@ function resolveModelSyncTarget(input, injector) {
         throw new Error("Model sync targets must be objects or injectable factories, not service-name strings.");
     }
     if (isModelSyncTarget(input)) {
-        assertModelSyncTarget(input, "Model sync target");
+        validateModelSyncTarget(input, "Model sync target");
         return input;
     }
     if (!injector) {
@@ -478,10 +478,10 @@ function resolveModelSyncTarget(input, injector) {
     if (!isModelSyncTarget(resolved)) {
         throw new Error("Injectable model sync target must resolve to an object.");
     }
-    assertModelSyncTarget(resolved, "Injectable model sync target");
+    validateModelSyncTarget(resolved, "Injectable model sync target");
     return resolved;
 }
-function assertModelSyncTarget(target, label) {
+function validateModelSyncTarget(target, label) {
     const operationNames = ["restore", "write", "receive", "dispose"];
     let operationCount = 0;
     for (const operationName of operationNames) {
@@ -523,7 +523,7 @@ function normalizeModelRestoreOptions(options) {
     }
     return candidate;
 }
-function assertPlainModelSnapshot(snapshot) {
+function validatePlainModelSnapshot(snapshot) {
     if (!isPlainModelRoot(snapshot)) {
         throw new Error("Model restore snapshot must be a plain object.");
     }

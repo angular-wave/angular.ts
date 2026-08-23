@@ -3,7 +3,8 @@ import { setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDo
 import { NodeType } from '../../shared/node.js';
 import { identifierForController } from '../controller/controller.js';
 import { createScope } from '../scope/scope.js';
-import { deleteProperty, nullObject, assign, getNodeName, uppercase, isFunction, trim, hasOwn, assertDefined, inherit, stringify, arrayRemove, directiveNormalize, assertArg, assertNotHasOwnProperty, isError, isString, isArray, extend, callFunction, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, shouldHandleViewRetentionPause, equals } from '../../shared/utils.js';
+import { deleteProperty, nullObject, assign, getNodeName, uppercase, isFunction, trim, hasOwn, assertInvariantDefined, inherit, stringify, arrayRemove, directiveNormalize, validateNotHasOwnPropertyName, isString, isArray, extend, callFunction, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, shouldHandleViewRetentionPause, equals } from '../../shared/utils.js';
+import { validateTruthy } from '../../shared/validate.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 import { PREFIX_REGEXP, ALIASED_ATTR } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
@@ -675,12 +676,11 @@ class CompileRegistry {
          * @returns Self for chaining.
          */
         const registerDirective = function registerDirective(name, directiveFactory) {
-            assertArg(name, "name");
+            validateTruthy(name, "name");
             if (typeof name === "string") {
-                assertNotHasOwnProperty(name, "directive");
-                assertValidDirectiveName(name);
-                assertArg(directiveFactory, "directiveFactory");
-                const normalizedDirectiveFactory = assertDefined(directiveFactory);
+                validateNotHasOwnPropertyName(name, "directive");
+                validateDirectiveName(name);
+                const normalizedDirectiveFactory = validateTruthy(directiveFactory, "directiveFactory");
                 if (!hasOwn(directiveFactoryRegistry, name)) {
                     directiveFactoryRegistry[name] = [];
                 }
@@ -744,7 +744,7 @@ class CompileRegistry {
                 }
                 return this;
             }
-            const componentOptions = assertDefined(options);
+            const componentOptions = validateTruthy(options, "options");
             const componentName = name;
             if (componentOptions.view &&
                 (componentOptions.template !== undefined ||
@@ -1052,7 +1052,7 @@ class CompileRegistry {
                             return;
                         }
                         try {
-                            callFunction(assertDefined(controllerTarget.afterRender), controllerTarget);
+                            callFunction(assertInvariantDefined(controllerTarget.afterRender), controllerTarget);
                         }
                         catch (err) {
                             $exceptionHandler(err);
@@ -1373,7 +1373,7 @@ class CompileRegistry {
                 }
                 function createPublicLinkFn(publicLinkState) {
                     const publicLinkFn = function publicLinkFn(scope, cloneConnectFn, options) {
-                        return invokePublicLink(assertDefined(publicLinkFn._state), scope, cloneConnectFn, options);
+                        return invokePublicLink(assertInvariantDefined(publicLinkFn._state), scope, cloneConnectFn, options);
                     };
                     publicLinkFn._state = publicLinkState;
                     return publicLinkFn;
@@ -1580,7 +1580,7 @@ class CompileRegistry {
                         _previousBoundTranscludeFn: previousBoundTranscludeFn,
                     };
                     const boundTranscludeFn = function boundTranscludeFn(transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
-                        return invokeBoundTransclude(assertDefined(boundTranscludeFn._state), transcludedScope, cloneFn, controllers, _futureParentElement, containingScope);
+                        return invokeBoundTransclude(assertInvariantDefined(boundTranscludeFn._state), transcludedScope, cloneFn, controllers, _futureParentElement, containingScope);
                     };
                     boundTranscludeFn._state = boundTranscludeState;
                     // We need  to attach the transclusion slots onto the `boundTranscludeFn`
@@ -1776,7 +1776,7 @@ class CompileRegistry {
                 function createLazyCompilationFn(lazyCompilationState) {
                     /** Defers compilation until the returned linker/transclude function is first invoked. */
                     const lazyCompilation = function lazyCompilation(...args) {
-                        return invokeLazyCompilation(assertDefined(lazyCompilation._state), ...args);
+                        return invokeLazyCompilation(assertInvariantDefined(lazyCompilation._state), ...args);
                     };
                     lazyCompilation._state = lazyCompilationState;
                     return lazyCompilation;
@@ -1919,7 +1919,7 @@ class CompileRegistry {
                  * current interpolation function in sync if an earlier compile step rewrites the attribute.
                  */
                 function attrInterpolatePreLinkFn(linkState, scope, node) {
-                    const attr = assertDefined(linkState._attr);
+                    const attr = assertInvariantDefined(linkState._attr);
                     // Recompute interpolation if another compile step rewrote the attribute value.
                     const name = linkState._name;
                     const newValue = linkState._isNgAttr
@@ -2094,7 +2094,7 @@ class CompileRegistry {
                 function enqueuePendingTemplateLink(delayedState, scope, node, boundTranscludeFn) {
                     const fragmentRecord = getCompiledFragmentRecord(node) ?? null;
                     delayedState._linkRequestCount++;
-                    assertDefined(delayedState._linkQueue).push(scope, node, boundTranscludeFn, fragmentRecord, null);
+                    assertInvariantDefined(delayedState._linkQueue).push(scope, node, boundTranscludeFn, fragmentRecord, null);
                     const asyncWork = fragmentRecord
                         ? {
                             id: `templateUrl:${delayedState._templateUrl}`,
@@ -2105,7 +2105,7 @@ class CompileRegistry {
                         }
                         : null;
                     if (fragmentRecord && asyncWork) {
-                        const linkQueue = assertDefined(delayedState._linkQueue);
+                        const linkQueue = assertInvariantDefined(delayedState._linkQueue);
                         addCompiledFragmentAsyncWork(fragmentRecord, asyncWork);
                         linkQueue[linkQueue.length - 1] = asyncWork;
                     }
@@ -2168,7 +2168,7 @@ class CompileRegistry {
                             _templateNodes: templateNodes,
                             _templateAttrs: createEmptyCompileAttributeState(),
                         };
-                        const oldCompileNode = assertDefined(delayedState._compileNode);
+                        const oldCompileNode = assertInvariantDefined(delayedState._compileNode);
                         replaceWith(oldCompileNode, compileNode, delayedState._previousCompileContext._index);
                         if (delayedState._previousCompileContext._parentNodeList) {
                             setTrackedNodeAt(delayedState._previousCompileContext._parentNodeList, delayedState._previousCompileContext._index, compileNode);
@@ -2182,7 +2182,7 @@ class CompileRegistry {
                         mergeTemplateAttributeState(delayedState._tAttrs, replacementState._templateAttrs, oldCompileNode, compileNode);
                     }
                     else {
-                        compileNode = assertDefined(delayedState._compileNode);
+                        compileNode = assertInvariantDefined(delayedState._compileNode);
                         compileNode.innerHTML = content;
                     }
                     delayedState._directives.unshift(delayedState._derivedSyncDirective);
@@ -2195,7 +2195,7 @@ class CompileRegistry {
                     delayedContextNodeList[0] = afterDirectiveCompileNode;
                     delayedState._compileNode = afterDirectiveCompileNode;
                     delayedState._compiledNode = compileNode;
-                    delayedState._afterTemplateChildLinkExecutor = compileTemplate(assertDefined(delayedState._compileNode).childNodes, delayedState._childTranscludeFn, undefined, undefined, undefined);
+                    delayedState._afterTemplateChildLinkExecutor = compileTemplate(assertInvariantDefined(delayedState._compileNode).childNodes, delayedState._childTranscludeFn, undefined, undefined, undefined);
                     try {
                         replayPendingTemplateLinks(delayedState);
                     }
@@ -2208,12 +2208,7 @@ class CompileRegistry {
                     delayedState._afterTemplateChildLinkExecutor = null;
                     delayedState._compiledNode = undefined;
                     releaseDelayedTemplateLinkState(delayedState);
-                    if (isError(error)) {
-                        $exceptionHandler(error);
-                    }
-                    else {
-                        $exceptionHandler(new Error(String(error)));
-                    }
+                    $exceptionHandler(error);
                 }
                 /** Handles `$transclude(...)` calls for the shared node-link executor. */
                 function invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName) {
@@ -2247,7 +2242,7 @@ class CompileRegistry {
                 }
                 function createControllersBoundTranscludeFn(transcludeState) {
                     const wrapper = function wrapper(scopeParam, cloneAttachFn, _futureParentElement, slotName) {
-                        return invokeControllersBoundTransclude(assertDefined(wrapper._state), scopeParam, cloneAttachFn, _futureParentElement, slotName);
+                        return invokeControllersBoundTransclude(assertInvariantDefined(wrapper._state), scopeParam, cloneAttachFn, _futureParentElement, slotName);
                     };
                     wrapper._state = transcludeState;
                     wrapper._boundTransclude = transcludeState._boundTranscludeFn;
@@ -2319,9 +2314,8 @@ class CompileRegistry {
                     }
                     for (const name in elementControllers) {
                         const controllerDirective = controllerDirectives[name];
-                        const controller = assertDefined(elementControllers[name]);
-                        const bindings = assertDefined(controllerDirective._bindings)
-                            ._bindToController;
+                        const controller = assertInvariantDefined(elementControllers[name]);
+                        const bindings = assertInvariantDefined(controllerDirective._bindings)._bindToController;
                         const reactiveControllerInstance = controllerScope.newIsolate(controller._instance);
                         const controllerInstance = controller(reactiveControllerInstance);
                         if (controllerInstance === reactiveControllerInstance) {
@@ -2353,17 +2347,18 @@ class CompileRegistry {
                                 !isArray(require) &&
                                 require &&
                                 typeof require === "object") {
-                                extend(assertDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
+                                extend(assertInvariantDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
                             }
                         }
                     }
                     for (const name in elementControllers) {
                         const controllerDirective = controllerDirectives[name];
-                        const controller = assertDefined(elementControllers[name]);
+                        const controller = assertInvariantDefined(elementControllers[name]);
                         const controllerInstance = controller._instance;
                         if (isFunction(controllerInstance.onChanges)) {
                             try {
-                                callFunction(controllerInstance.onChanges, controllerInstance, assertDefined(controller._bindingInfo)._initialChanges);
+                                callFunction(controllerInstance.onChanges, controllerInstance, assertInvariantDefined(controller._bindingInfo)
+                                    ._initialChanges);
                             }
                             catch (err) {
                                 $exceptionHandler(err);
@@ -2393,7 +2388,7 @@ class CompileRegistry {
                         }
                         if (isFunction(controllerInstance.onDestroy)) {
                             controllerScope.on("$destroy", () => {
-                                callFunction(assertDefined(controllerInstance.onDestroy), controllerInstance);
+                                callFunction(assertInvariantDefined(controllerInstance.onDestroy), controllerInstance);
                             });
                         }
                         controllerScope.on("$destroy", () => {
@@ -2445,7 +2440,7 @@ class CompileRegistry {
                         }
                     }
                     for (const name in elementControllers) {
-                        const controller = assertDefined(elementControllers[name]);
+                        const controller = assertInvariantDefined(elementControllers[name]);
                         const controllerInstance = controller._instance;
                         if (isFunction(controllerInstance.postLink)) {
                             callFunction(controllerInstance.postLink, controllerInstance);
@@ -2576,7 +2571,7 @@ class CompileRegistry {
                     };
                 }
                 function applyInlineTemplateDirective(directive, directiveName, compileNode, templateAttrs, directives, directiveIndex, parentNodeList, index, newIsolateScopeDirective, newScopeDirective, templateDirective, replaceDirective) {
-                    assertNoDuplicate("template", templateDirective, directive, compileNode);
+                    validateNoDuplicate("template", templateDirective, directive, compileNode);
                     const directiveValue = resolveDirectiveTemplateValue(directive, compileNode);
                     if (!directive.replace) {
                         if (compileNode.nodeType === NodeType._ELEMENT_NODE) {
@@ -2630,7 +2625,7 @@ class CompileRegistry {
                     return merged;
                 }
                 function applyTemplateUrlDirective(directives, directiveIndex, directive, templateAttrs, compileNode, hasTranscludeDirective, childTranscludeFn, preLinkFns, postLinkFns, index, controllerDirectives, newScopeDirective, newIsolateScopeDirective, templateDirective, nonTlbTranscludeDirective, replaceDirective, previousCompileContext) {
-                    assertNoDuplicate("template", templateDirective, directive, compileNode);
+                    validateNoDuplicate("template", templateDirective, directive, compileNode);
                     const nextTemplateDirective = directive;
                     const nextReplaceDirective = directive.replace
                         ? directive
@@ -2792,7 +2787,7 @@ class CompileRegistry {
                     distributeTransclusionSlots(compileNode, defaultSlotContent, slotMap, slots, filledSlots);
                     clearMovedTransclusionFragmentData(defaultSlotContent);
                     clearMovedTransclusionSlotData(slots);
-                    assertRequiredTransclusionSlotsFilled(filledSlots);
+                    validateRequiredTransclusionSlotsFilled(filledSlots);
                     compileFilledTransclusionSlots(slots, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext);
                     return {
                         _nodes: defaultSlotContent.childNodes,
@@ -2822,7 +2817,7 @@ class CompileRegistry {
                         }
                     }
                 }
-                function assertRequiredTransclusionSlotsFilled(filledSlots) {
+                function validateRequiredTransclusionSlotsFilled(filledSlots) {
                     for (const slotName in filledSlots) {
                         if (!hasOwn(filledSlots, slotName)) {
                             continue;
@@ -2848,11 +2843,11 @@ class CompileRegistry {
                     // Async templates are checked when their derived sync directive is compiled.
                     if (!directive.templateUrl) {
                         if (typeof directiveScope === "object") {
-                            assertNoDuplicate("new/isolated scope", state._newIsolateScopeDirective ?? state._newScopeDirective, directive, compileNode);
+                            validateNoDuplicate("new/isolated scope", state._newIsolateScopeDirective ?? state._newScopeDirective, directive, compileNode);
                             state._newIsolateScopeDirective = directive;
                         }
                         else {
-                            assertNoDuplicate("new/isolated scope", state._newIsolateScopeDirective, directive, compileNode);
+                            validateNoDuplicate("new/isolated scope", state._newIsolateScopeDirective, directive, compileNode);
                         }
                     }
                     state._newScopeDirective = state._newScopeDirective ?? directive;
@@ -2873,7 +2868,7 @@ class CompileRegistry {
                     if (isExcludedTransclusionDirective(directiveName)) {
                         return nonTlbTranscludeDirective;
                     }
-                    assertNoDuplicate("transclusion", nonTlbTranscludeDirective, directive, compileNode);
+                    validateNoDuplicate("transclusion", nonTlbTranscludeDirective, directive, compileNode);
                     return directive;
                 }
                 function isExcludedTransclusionDirective(directiveName) {
@@ -2917,12 +2912,12 @@ class CompileRegistry {
                     }
                     const controllerDirectives = state._controllerDirectives ??
                         (state._controllerDirectives = nullObject());
-                    assertNoDuplicate(`'${directiveName}' controller`, controllerDirectives[directiveName], directive, compileNode);
+                    validateNoDuplicate(`'${directiveName}' controller`, controllerDirectives[directiveName], directive, compileNode);
                     controllerDirectives[directiveName] = directive;
                 }
                 function collectDirectiveLinkFns(directive, directiveName, compileNode, templateAttrs, childTranscludeFn, preLinkFns, postLinkFns, newIsolateScopeDirective) {
                     try {
-                        const compileDirective = assertDefined(directive.compile);
+                        const compileDirective = assertInvariantDefined(directive.compile);
                         const linkFn = directive._needsCompileAttributeState
                             ? compileDirective.call(directive, ...[
                                 compileNode,
@@ -3041,7 +3036,7 @@ class CompileRegistry {
                         if (controller === "@") {
                             controller = readNormalizedElementAttribute(node, directive.name);
                         }
-                        const controllerInstance = $controller(assertDefined(controller), locals, true, directive.controllerAs);
+                        const controllerInstance = $controller(assertInvariantDefined(controller), locals, true, directive.controllerAs);
                         controllerInstance._scope = locals.$scope;
                         // For directives with element transclusion the element is a comment.
                         // In this case .data will not attach any data.
@@ -3205,7 +3200,7 @@ class CompileRegistry {
                 }
                 /** Compiles an async `templateUrl` directive and returns a delayed node-link descriptor. */
                 function compileTemplateUrl(directives, compileNode, tAttrs, childTranscludeFn, preLinkFns, postLinkFns, previousCompileContext) {
-                    const origAsyncDirective = assertDefined(directives.shift());
+                    const origAsyncDirective = assertInvariantDefined(directives.shift());
                     const derivedSyncDirective = inherit(origAsyncDirective, {
                         templateUrl: null,
                         transclude: null,
@@ -3264,7 +3259,7 @@ class CompileRegistry {
                     };
                 }
                 /** Throws when multiple directives request an incompatible exclusive feature on the same node. */
-                function assertNoDuplicate(what, previousDirective, directive, node) {
+                function validateNoDuplicate(what, previousDirective, directive, node) {
                     if (previousDirective) {
                         throw $compileError("multidir", "Multiple directives [{0}, {1}] asking for {3} on: {4}", previousDirective.name, directive.name, what, startingTag(node));
                     }
@@ -3490,7 +3485,7 @@ class CompileRegistry {
                     const initialChanges = {};
                     const destAny = destination;
                     const scopeTarget = scope._target;
-                    const destinationTarget = assertDefined(destAny._target);
+                    const destinationTarget = assertInvariantDefined(destAny._target);
                     const bindingChangeState = {
                         _destAny: destAny,
                         _onChangesQueue: onChangesQueueState,
@@ -3563,7 +3558,7 @@ class CompileRegistry {
                                     if (typeof lastValue === "string") {
                                         // If the attribute has been provided then we trigger an interpolation to ensure
                                         // the value is there for use in the link fn
-                                        destAny[scopeName] = assertDefined($interpolate(lastValue))(scope);
+                                        destAny[scopeName] = assertInvariantDefined($interpolate(lastValue))(scope);
                                     }
                                     else if (typeof lastValue === "boolean") {
                                         // If the attributes is one of the BOOLEAN_ATTR then AngularTS will have converted
@@ -3655,7 +3650,7 @@ class CompileRegistry {
                                     const initialOneWayValue = parentGet
                                         ? callFunction(parentGet, undefined, scopeTarget)
                                         : undefined;
-                                    assertDefined(destAny._target)[scopeName] =
+                                    assertInvariantDefined(destAny._target)[scopeName] =
                                         parentGet?._literal ||
                                             initialOneWayValue === null ||
                                             typeof initialOneWayValue !== "object"
@@ -3674,7 +3669,7 @@ class CompileRegistry {
                                     oneWayBindingState._lastInputs =
                                         evaluateOneWayBindingInputs(oneWayBindingState);
                                     initialChanges[scopeName] = {
-                                        currentValue: assertDefined(destAny._target)[scopeName],
+                                        currentValue: assertInvariantDefined(destAny._target)[scopeName],
                                         firstChange: oneWayBindingState._firstChange,
                                     };
                                     if (typeof oneWayAttrExpression === "string") {
@@ -3701,9 +3696,10 @@ class CompileRegistry {
                                         _parentGet: parentGet,
                                         _scopeTarget: scopeTarget,
                                     };
-                                    assertDefined(destAny._target)[scopeName] = function (locals) {
-                                        return invokeExpressionBinding(expressionBindingState, locals);
-                                    };
+                                    assertInvariantDefined(destAny._target)[scopeName] =
+                                        function (locals) {
+                                            return invokeExpressionBinding(expressionBindingState, locals);
+                                        };
                                     break;
                                 }
                             }
@@ -3722,7 +3718,7 @@ class CompileRegistry {
     }
 }
 /** Validates a directive/component name before registration. */
-function assertValidDirectiveName(name) {
+function validateDirectiveName(name) {
     const letter = name.charAt(0);
     if (letter !== letter.toLowerCase()) {
         throw $compileError("baddir", "Directive/Component name '{0}' is invalid. The first character must be a lowercase letter", name);

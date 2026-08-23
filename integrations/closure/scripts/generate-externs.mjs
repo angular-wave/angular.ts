@@ -369,7 +369,7 @@ function resolveClosureType(checker, type) {
       const args = typeArguments(checker, type).map((arg) => closureType(checker, arg));
 
       if (templateNames.length > 0 && args.length > 0) {
-        return `!ng.${aliasName}<${args.join(", ")}>`;
+        return `!ng.${aliasName}<${args.slice(0, templateNames.length).join(", ")}>`;
       }
 
       return `!ng.${aliasName}`;

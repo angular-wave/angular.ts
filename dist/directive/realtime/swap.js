@@ -1,7 +1,7 @@
 import { getNormalizedAttr, emptyElement, removeElement, createDocumentFragment } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { getCompiledFragmentRecord, replaceCompiledFragmentNodes } from '../../core/compile/incremental-fragment.js';
-import { stringify, isInstanceOf, arrayFrom, isFunction, isArray, assertDefined } from '../../shared/utils.js';
+import { stringify, isInstanceOf, arrayFrom, isFunction, isArray, assertInvariantDefined } from '../../shared/utils.js';
 
 /** Creates a per-directive realtime DOM swap handler. */
 function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element, logPrefix, }) {
@@ -76,7 +76,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                     placeholder.style.display = "none";
                     parent.insertBefore(placeholder, target.nextSibling);
                     placeholders.add(placeholder);
-                    trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                    trackAnimation(assertInvariantDefined(animate).leave(target), (completed) => {
                         if (!completed || destroyed) {
                             placeholder.remove();
                             placeholders.delete(placeholder);
@@ -87,7 +87,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                         const insertedNodes = arrayFrom(frag.childNodes);
                         for (const x of insertedNodes) {
                             if (x.nodeType === NodeType._ELEMENT_NODE) {
-                                assertDefined(animate).enter(x, parent, placeholder);
+                                assertInvariantDefined(animate).enter(x, parent, placeholder);
                             }
                             else {
                                 parent.insertBefore(x, placeholder);
@@ -108,7 +108,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                         const outgoingFragments = collectChildFragments(target);
                         parent.insertBefore(placeholder, target);
                         placeholders.add(placeholder);
-                        trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                        trackAnimation(assertInvariantDefined(animate).leave(target), (completed) => {
                             if (!completed || destroyed) {
                                 placeholder.remove();
                                 placeholders.delete(placeholder);
@@ -116,7 +116,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                             }
                             disposeFragments(outgoingFragments);
                             target.textContent = stringify(html);
-                            trackAnimation(assertDefined(animate).enter(target, parent, placeholder), () => {
+                            trackAnimation(assertInvariantDefined(animate).enter(target, parent, placeholder), () => {
                                 placeholder.remove();
                                 placeholders.delete(placeholder);
                             });
@@ -135,7 +135,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                     }
                     nodes.forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-                            assertDefined(animate).enter(node, parent, target);
+                            assertInvariantDefined(animate).enter(node, parent, target);
                         }
                         else {
                             parent.insertBefore(node, target);
@@ -147,7 +147,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                     const { firstChild } = target;
                     [...nodes].reverse().forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-                            assertDefined(animate).enter(node, target, firstChild);
+                            assertInvariantDefined(animate).enter(node, target, firstChild);
                         }
                         else {
                             target.insertBefore(node, firstChild);
@@ -158,7 +158,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                 case "beforeend": {
                     nodes.forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-                            assertDefined(animate).enter(node, target);
+                            assertInvariantDefined(animate).enter(node, target);
                         }
                         else {
                             target.appendChild(node);
@@ -175,7 +175,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                     const { nextSibling } = target;
                     [...nodes].reverse().forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-                            assertDefined(animate).enter(node, parent, nextSibling);
+                            assertInvariantDefined(animate).enter(node, parent, nextSibling);
                         }
                         else {
                             parent.insertBefore(node, nextSibling);
@@ -186,7 +186,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                 case "delete":
                     if (animationEnabled) {
                         const outgoingFragments = collectNodeTreeFragments(target);
-                        trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                        trackAnimation(assertInvariantDefined(animate).leave(target), (completed) => {
                             if (!completed || destroyed)
                                 return;
                             disposeFragments(outgoingFragments);
@@ -207,14 +207,14 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                             !isArray(content) &&
                             content.nodeType !== NodeType._TEXT_NODE) {
                             const outgoingFragments = collectNodeTreeFragments(content);
-                            trackAnimation(assertDefined(animate).leave(content), (completed) => {
+                            trackAnimation(assertInvariantDefined(animate).leave(content), (completed) => {
                                 if (!completed || destroyed) {
                                     disposeNodeFragments(nodes);
                                     return;
                                 }
                                 disposeFragments(outgoingFragments);
                                 content = nodes[0];
-                                assertDefined(animate).enter(nodes[0], target);
+                                assertInvariantDefined(animate).enter(nodes[0], target);
                             });
                         }
                         else {
@@ -224,7 +224,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                                 target.replaceChildren(...nodes);
                             }
                             else {
-                                assertDefined(animate).enter(nodes[0], target);
+                                assertInvariantDefined(animate).enter(nodes[0], target);
                             }
                         }
                     }

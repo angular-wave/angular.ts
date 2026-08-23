@@ -59,8 +59,8 @@ The package ships two distribution formats:
 
 Import the library in your entry file:
 
-```javascript
-
+```js
+import { angular } from '@angular-wave/angular.ts';
 ```
 
 When loaded in a browser environment, the `angular` singleton is also assigned
@@ -74,12 +74,15 @@ The published package includes generated TypeScript declarations under
 After installing, TypeScript will resolve types automatically. You can reference
 the type namespace in your project:
 
-```typescript
+```ts
 const myModule: ng.NgModule = angular.module('myApp', []);
 
-myModule.controller('MyController', ["$scope", function ($scope: ng.Scope) {
-  $scope.message = 'Hello, AngularTS';
-}]);
+myModule.controller('MyController', [
+  '$scope',
+  function ($scope: ng.Scope) {
+    $scope.message = 'Hello, AngularTS';
+  },
+]);
 ```
 
 > **Info:** The `ng` namespace provides types for scopes, injectors, services,

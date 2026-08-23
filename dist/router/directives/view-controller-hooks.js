@@ -1,4 +1,4 @@
-import { isFunction, assertDefined } from '../../shared/utils.js';
+import { isFunction, assertInvariantDefined } from '../../shared/utils.js';
 import { ResolveContext } from '../resolve/resolve-context.js';
 
 const controllerRegisteredScopes = new WeakMap();
@@ -39,7 +39,7 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
     if (isFunction(controllerInstance.onParamsChanged)) {
         const onParamsChanged = controllerInstance.onParamsChanged;
         const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
-        const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
+        const viewCreationTrans = assertInvariantDefined(resolveContext.getResolvable("$transition$")).data;
         // Fire callback on any successful transition
         const paramsUpdated = ($transition$) => {
             if (!$transition$)

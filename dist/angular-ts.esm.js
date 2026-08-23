@@ -717,7 +717,7 @@ function equals(o1, o2) {
  * @param context the context in which the name is used, such as module or directive
  * @throws AngularTS error when `name` would shadow `hasOwnProperty`.
  */
-function assertNotHasOwnProperty(name, context) {
+function validateNotHasOwnPropertyName(name, context) {
     if (name === "hasOwnProperty") {
         throw ngError$1("badname", "hasOwnProperty is not a valid {0} name", context);
     }
@@ -739,7 +739,7 @@ function stringify$1(value) {
         const customToString = Reflect.get(value, "toString");
         return customToString.call(value);
     }
-    return assertDefined(toJson(value));
+    return toJson(value) ?? String(value);
 }
 /**
  * Returns whether an object traversal depth limit is valid.
@@ -923,58 +923,33 @@ function shallowCopy(src, dst) {
     return src;
 }
 /**
- * Throws when the argument is false.
+ * Throws when a framework-owned invariant is false.
  *
  * @throws Error when `argument` is false.
  */
-function assert(argument, errorMsg = "Assertion failed") {
+function assertInvariant(argument, errorMsg = "AngularTS invariant violated") {
     if (!argument) {
         throw new Error(errorMsg);
     }
 }
 /**
- * Returns a non-nullish value or throws when the value is absent.
+ * Returns a framework-owned non-nullish value or throws when it is absent.
  *
  * @throws Error when `value` is null or undefined.
  */
-function assertDefined(value, errorMsg = "Expected value to be defined") {
-    assert(notNullOrUndefined(value), errorMsg);
+function assertInvariantDefined(value, errorMsg = "AngularTS invariant violated: expected a defined value") {
+    assertInvariant(notNullOrUndefined(value), errorMsg);
     return value;
-}
-/**
- * Throws a typed AngularTS argument error when the argument is falsy.
- *
- * @throws AngularTS error when `arg` is falsy.
- */
-function assertArg(arg, name, reason) {
-    if (!arg) {
-        throw ngError$1("areq", "Argument '{0}' is {1}", name || "?", reason ?? "required");
-    }
-    return arg;
-}
-/**
- * Asserts that a value is a function, optionally unwrapping array-annotation first.
- *
- * @throws AngularTS error when `arg` is not a function.
- */
-function assertArgFn(arg, name, acceptArrayAnnotation) {
-    if (acceptArrayAnnotation && isArray(arg)) {
-        arg = arg[arg.length - 1];
-    }
-    assertArg(isFunction(arg), name, `not a function, got ${arg && typeof arg === "object"
-        ? arg.constructor.name || "Object"
-        : typeof arg}`);
-    return arg;
 }
 const errorConfig = {
     objectMaxDepth: 5,
 };
 /**
- * Gets or updates the global error-handling configuration.
+ * Gets or updates global error-message formatting.
  *
  * Omitted or undefined options leave the corresponding configuration values unchanged.
  */
-function errorHandlingConfig(config) {
+function errorFormattingConfig(config) {
     if (isObject(config)) {
         if (isDefined(config.objectMaxDepth)) {
             errorConfig.objectMaxDepth = isValidObjectMaxDepth(config.objectMaxDepth)
@@ -1442,7 +1417,7 @@ function removeIfEmptyData(element) {
 function setCacheData(element, key, value) {
     if (elementAcceptsData(element)) {
         const expandoStore = getExpando(element, true);
-        assertDefined(expandoStore)[kebabToCamel(key)] = value;
+        assertInvariantDefined(expandoStore)[kebabToCamel(key)] = value;
     }
     else {
         if (element.parentElement) {
@@ -1804,7 +1779,11 @@ function cleanElementData(nodes) {
 }
 /** Returns the nearest injector service found while walking up the element tree. */
 function getInjector(element) {
-    return assertDefined(getInheritedData(element, _injector));
+    const injector = getInheritedData(element, _injector);
+    if (!injector) {
+        throw new Error("No AngularTS injector is attached to this element.");
+    }
+    return injector;
 }
 /**
  * Parses an HTML string into a detached `DocumentFragment`.
@@ -1915,6 +1894,53 @@ function extractElementNode(element) {
     return undefined;
 }
 
+const BADARG = "badarg";
+const reasons = new Map([
+    [notNullOrUndefined, "required"],
+    [isArray, "notarray"],
+    [isDefined, "required"],
+    [isString, "notstring"],
+]);
+function getReason(val, reason) {
+    return reason ?? reasons.get(val) ?? "fail";
+}
+/**
+ * Validate a value using a predicate function.
+ * Throws if the predicate returns false.
+ * IMPORTANT: use this function only for developer errors and not user/data errors.
+ */
+function validate(fn, arg, name, reason) {
+    if (fn(arg)) {
+        return arg;
+    }
+    let serialized;
+    try {
+        serialized = JSON.stringify(arg);
+    }
+    catch {
+        serialized = String(arg);
+    }
+    throw new TypeError(`badarg:${getReason(fn, reason)} ${name}=${serialized}`);
+}
+function validateRequired(arg, name) {
+    return validate(notNullOrUndefined, arg, name);
+}
+/** Validates a public API value whose contract excludes all falsy values. */
+function validateTruthy(arg, name) {
+    return validate(Boolean, arg, name, "required");
+}
+function validateArray(arg, name) {
+    return validate(isArray, arg, name);
+}
+function validateIsString(arg, name) {
+    return validate(isString, arg, name);
+}
+/** Validates a function argument, optionally unwrapping array annotation. */
+function validateFunction(arg, name, acceptArrayAnnotation = false) {
+    const candidate = acceptArrayAnnotation && isArray(arg) ? arg[arg.length - 1] : arg;
+    return validate(isFunction, candidate, name, "notfunction");
+}
+
 const $injectorError$3 = createErrorFactory(_injector);
 function stringifyFn(fn) {
     return Function.prototype.toString.call(fn);
@@ -1935,11 +1961,11 @@ function annotate(fn, name) {
     }
     else if (isArray(fn)) {
         const last = fn.length - 1;
-        assertArgFn(fn[last], "fn");
+        validateFunction(fn[last], "fn");
         inject = fn.slice(0, last);
     }
     else {
-        assertArgFn(fn, "fn", true);
+        validateFunction(fn, "fn", true);
     }
     return inject;
 }
@@ -2119,44 +2145,6 @@ function createPersistentProxy(target, key, storage, options = {}) {
     });
 }
 
-const BADARG = "badarg";
-const reasons = new Map([
-    [notNullOrUndefined, "required"],
-    [isArray, "notarray"],
-    [isDefined, "required"],
-    [isString, "notstring"],
-]);
-function getReason(val, reason) {
-    return reason ?? reasons.get(val) ?? "fail";
-}
-/**
- * Validate a value using a predicate function.
- * Throws if the predicate returns false.
- * IMPORTANT: use this function only for developer errors and not user/data errors.
- */
-function validate(fn, arg, name, reason) {
-    if (fn(arg)) {
-        return arg;
-    }
-    let serialized;
-    try {
-        serialized = JSON.stringify(arg);
-    }
-    catch {
-        serialized = String(arg);
-    }
-    throw new TypeError(`badarg:${getReason(fn, reason)} ${name}=${serialized}`);
-}
-function validateRequired(arg, name) {
-    return validate(notNullOrUndefined, arg, name);
-}
-function validateArray(arg, name) {
-    return validate(isArray, arg, name);
-}
-function validateIsString(arg, name) {
-    return validate(isString, arg, name);
-}
-
 function providerRegistration(register) {
     return { kind: "provider-registration", register };
 }
@@ -2180,7 +2168,9 @@ const appliedRuntimeCommands = new WeakSet();
  * @returns {InjectorService}
  */
 function createInjector(modulesToLoad, configure, resolveModule = (name) => window.angular.module(name)) {
-    assert(isArray(modulesToLoad), "modules required");
+    if (!isArray(modulesToLoad)) {
+        throw $injectorError$1("modules", "Modules to load must be an array.");
+    }
     const loadedModules = new Map();
     const providerCache = {};
     const providerInjector = (providerCache.$injector = new ProviderInjector(providerCache));
@@ -2220,7 +2210,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
      * Registers a provider.
      */
     function provider(name, providerDefinition) {
-        assertNotHasOwnProperty(name, "service");
+        validateNotHasOwnPropertyName(name, "service");
         let newProvider;
         if (isFunction(providerDefinition) || isArray(providerDefinition)) {
             newProvider = providerInjector.instantiate(providerDefinition);
@@ -2276,7 +2266,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
      * Register a constant value (available during config).
      */
     function constant(name, constantValue) {
-        assertNotHasOwnProperty(name, "constant");
+        validateNotHasOwnPropertyName(name, "constant");
         providerInjector._cache[name] = constantValue;
         protoInstanceInjector._cache[name] = constantValue;
     }
@@ -2421,7 +2411,7 @@ function createInjector(modulesToLoad, configure, resolveModule = (name) => wind
                     moduleRunBlocks.push(providerInjector.invoke(module));
                 }
                 else {
-                    assertArgFn(module, "module");
+                    validateFunction(module, "module");
                 }
             }
             catch (err) {
@@ -2453,7 +2443,7 @@ function unwrapController(injectable, argNameForErrors) {
     const candidate = isArray(injectable)
         ? injectable[injectable.length - 1]
         : injectable;
-    assertArgFn(candidate, argNameForErrors ?? "controller", true);
+    validateFunction(candidate, argNameForErrors ?? "controller", true);
     const func = candidate;
     const funcMetadata = func;
     return {
@@ -2469,17 +2459,17 @@ class ControllerRegistry {
         this._destroyed = false;
     }
     has(name) {
-        this._assertActive();
+        this._ensureActive();
         return this._controllers.has(name);
     }
     get(name) {
-        this._assertActive();
+        this._ensureActive();
         return this._controllers.get(name);
     }
     register(name, constructor) {
-        this._assertActive();
+        this._ensureActive();
         if (isString(name)) {
-            assertNotHasOwnProperty(name, "controller");
+            validateNotHasOwnPropertyName(name, "controller");
             this._controllers.set(name, normalizeControllerDef(constructor, name));
             return;
         }
@@ -2498,7 +2488,7 @@ class ControllerRegistry {
         this._controllers.clear();
     }
     /** @internal */
-    _assertActive() {
+    _ensureActive() {
         if (this._destroyed) {
             throw new Error("Controller registry has already been disposed.");
         }
@@ -2532,7 +2522,7 @@ function createControllerService(registry, $injector) {
                 throw $controllerError("ctrlreg", "The controller with the name '{0}' is not registered.", constructorName);
             }
             expression = lookedUp;
-            assertArgFn(expression, constructorName, true);
+            validateFunction(expression, constructorName, true);
         }
         const injectable = expression;
         const meta = unwrapController(injectable, constructorName);
@@ -2603,7 +2593,7 @@ class FilterRegistry {
         this._destroyed = false;
     }
     attach(providerRegistry) {
-        this._assertActive();
+        this._ensureActive();
         this._providerRegistry = providerRegistry;
         this._boundFactories.clear();
         this._factories.forEach((factory, name) => {
@@ -2611,7 +2601,7 @@ class FilterRegistry {
         });
     }
     register(name, factory) {
-        this._assertActive();
+        this._ensureActive();
         validateIsString(name, "name");
         validate(isInjectable, factory, "factory");
         this._factories.set(name, factory);
@@ -2626,8 +2616,8 @@ class FilterRegistry {
         this._boundFactories.clear();
         this._providerRegistry = undefined;
     }
-    assertActive() {
-        this._assertActive();
+    ensureActive() {
+        this._ensureActive();
     }
     /** @internal */
     _bind(name, factory) {
@@ -2639,7 +2629,7 @@ class FilterRegistry {
         this._boundFactories.set(name, factory);
     }
     /** @internal */
-    _assertActive() {
+    _ensureActive() {
         if (this._destroyed) {
             throw new Error("Filter registry has been destroyed");
         }
@@ -2648,7 +2638,7 @@ class FilterRegistry {
 /** @internal */
 function createFilterService(registry, $injector) {
     return (name) => {
-        registry.assertActive();
+        registry.ensureActive();
         validateIsString(name, "name");
         return $injector.get(name + SUFFIX);
     };
@@ -3152,7 +3142,7 @@ function getSimpleMemberExpression(node) {
     if (!propertyName || node._computed) {
         return undefined;
     }
-    const objectExpression = getSimpleMemberExpression(assertDefined(node._object));
+    const objectExpression = getSimpleMemberExpression(assertInvariantDefined(node._object));
     return objectExpression ? `${objectExpression}.${propertyName}` : undefined;
 }
 function addForeignWatchDescriptor(listener, watchProp, key) {
@@ -3316,33 +3306,33 @@ function addMemberExpressionDependency(node, listener, keySet, seenKeys) {
 function collectForeignWatchDescriptors(node, listener, keySet, seenKeys) {
     if (node._type === ASTType._MemberExpression) {
         addMemberExpressionDependency(node, listener, keySet, seenKeys);
-        collectForeignWatchDescriptors(assertDefined(node._object), listener, keySet, seenKeys);
-        collectForeignWatchDescriptors(assertDefined(node._property), listener, keySet, seenKeys);
+        collectForeignWatchDescriptors(assertInvariantDefined(node._object), listener, keySet, seenKeys);
+        collectForeignWatchDescriptors(assertInvariantDefined(node._property), listener, keySet, seenKeys);
         return;
     }
     if (node._type === ASTType._CallExpression) {
         const callee = node._callee;
         if (callee?._type === ASTType._MemberExpression) {
-            addMemberExpressionDependency(assertDefined(callee._object), listener, keySet, seenKeys);
+            addMemberExpressionDependency(assertInvariantDefined(callee._object), listener, keySet, seenKeys);
         }
         else {
-            collectForeignWatchDescriptors(assertDefined(callee), listener, keySet, seenKeys);
+            collectForeignWatchDescriptors(assertInvariantDefined(callee), listener, keySet, seenKeys);
         }
-        const callArguments = assertDefined(node._arguments);
+        const callArguments = assertInvariantDefined(node._arguments);
         for (let i = 0, l = callArguments.length; i < l; i++) {
-            collectForeignWatchDescriptors(assertDefined(callArguments[i]), listener, keySet, seenKeys);
+            collectForeignWatchDescriptors(assertInvariantDefined(callArguments[i]), listener, keySet, seenKeys);
         }
         return;
     }
     if (node._type === ASTType._LogicalExpression) {
-        collectForeignWatchDescriptors(assertDefined(node._left), listener, keySet, seenKeys);
-        collectForeignWatchDescriptors(assertDefined(node._right), listener, keySet, seenKeys);
+        collectForeignWatchDescriptors(assertInvariantDefined(node._left), listener, keySet, seenKeys);
+        collectForeignWatchDescriptors(assertInvariantDefined(node._right), listener, keySet, seenKeys);
         return;
     }
     if (node._type === ASTType._ConditionalExpression) {
-        collectForeignWatchDescriptors(assertDefined(node._test), listener, keySet, seenKeys);
-        collectForeignWatchDescriptors(assertDefined(node._alternate), listener, keySet, seenKeys);
-        collectForeignWatchDescriptors(assertDefined(node._consequent), listener, keySet, seenKeys);
+        collectForeignWatchDescriptors(assertInvariantDefined(node._test), listener, keySet, seenKeys);
+        collectForeignWatchDescriptors(assertInvariantDefined(node._alternate), listener, keySet, seenKeys);
+        collectForeignWatchDescriptors(assertInvariantDefined(node._consequent), listener, keySet, seenKeys);
         return;
     }
     const toWatch = node._toWatch;
@@ -4955,7 +4945,9 @@ class Scope {
      * @throws Error when `watchProp` is not a string expression.
      */
     watch(watchProp, listenerFn, lazy = false, directLeaf = false) {
-        assert(isString(watchProp), "Watched property required");
+        if (!isString(watchProp)) {
+            throw new TypeError("Watched property must be a string");
+        }
         watchProp = watchProp.trim();
         const get = this._parse(watchProp);
         // Constant are immediately passed to listener function
@@ -5030,7 +5022,7 @@ class Scope {
             // 6
             case ASTType._BinaryExpression: {
                 if (expr._isPure) {
-                    const [watch] = assertDefined(expr._toWatch);
+                    const [watch] = assertInvariantDefined(expr._toWatch);
                     key = resolveNodeWatchKey(watch);
                     if (!key) {
                         throw new Error("Unable to determine key");
@@ -5040,7 +5032,7 @@ class Scope {
                     break;
                 }
                 else {
-                    const toWatch = assertDefined(expr._toWatch);
+                    const toWatch = assertInvariantDefined(expr._toWatch);
                     const keyList = new Array(toWatch.length);
                     for (let i = 0, l = toWatch.length; i < l; i++) {
                         const registerKey = resolveNodeWatchKey(toWatch[i]);
@@ -5059,7 +5051,7 @@ class Scope {
             }
             // 7
             case ASTType._UnaryExpression: {
-                const [x] = assertDefined(expr._toWatch);
+                const [x] = assertInvariantDefined(expr._toWatch);
                 key = resolveNodeWatchKey(x);
                 if (!key) {
                     throw new Error("Unable to determine key");
@@ -5069,7 +5061,7 @@ class Scope {
             }
             // 8 function
             case ASTType._CallExpression: {
-                const toWatch = assertDefined(expr._toWatch);
+                const toWatch = assertInvariantDefined(expr._toWatch);
                 const filterInputWatchKeys = getFilterInputWatchKeys(expr);
                 for (let i = 0, l = toWatch.length; i < l; i++) {
                     const x = toWatch[i];
@@ -5133,14 +5125,14 @@ class Scope {
             // 12
             case ASTType._ArrayExpression: {
                 listener._watchLiteralInput = true;
-                const elements = assertDefined(expr._elements);
+                const elements = assertInvariantDefined(expr._elements);
                 for (let i = 0, l = elements.length; i < l; i++) {
                     const element = elements[i];
                     const registerKey = resolveWatchKey(element);
                     if (registerKey) {
                         pushUniqueListenerKey(keySet, seenKeys, listener, registerKey);
                         collectForeignWatchDescriptors(element, listener, keySet, seenKeys);
-                        const memberExpression = getSimpleMemberExpression(assertDefined(element)) ??
+                        const memberExpression = getSimpleMemberExpression(assertInvariantDefined(element)) ??
                             getArrayWatchExpressionElement(watchProp, i);
                         addForeignWatchDescriptor(listener, memberExpression, registerKey);
                         const parentKey = resolveWatchKey(element._object);
@@ -5150,7 +5142,7 @@ class Scope {
                         continue;
                     }
                     collectExpressionListenerKeys(element, keySet, seenKeys, listener);
-                    collectForeignWatchDescriptors(assertDefined(element), listener, keySet, seenKeys);
+                    collectForeignWatchDescriptors(assertInvariantDefined(element), listener, keySet, seenKeys);
                 }
                 if (keySet.length === 0) {
                     throw new Error("Unable to determine key");
@@ -5165,13 +5157,13 @@ class Scope {
             // 14
             case ASTType._ObjectExpression: {
                 listener._watchLiteralInput = true;
-                const properties = assertDefined(expr._properties);
+                const properties = assertInvariantDefined(expr._properties);
                 const collectedKeys = new Set();
                 for (let i = 0, l = properties.length; i < l; i++) {
                     const prop = properties[i];
-                    const value = assertDefined(prop._value);
+                    const value = assertInvariantDefined(prop._value);
                     let currentKey;
-                    if (assertDefined(prop._key)._isPure === false) {
+                    if (assertInvariantDefined(prop._key)._isPure === false) {
                         listener._watchNestedObject = true;
                         currentKey = resolveNodeWatchKey(prop._key);
                         if (!currentKey) {
@@ -5182,7 +5174,7 @@ class Scope {
                         currentKey = getNodeName(value);
                     }
                     else {
-                        const [target] = assertDefined(expr._toWatch);
+                        const [target] = assertInvariantDefined(expr._toWatch);
                         currentKey = resolveNodeWatchKey(target);
                         if (!currentKey) {
                             collectWatchKeys(target, collectedKeys);
@@ -5660,19 +5652,20 @@ class Scope {
                 ._target;
         }
         else {
-            event = {
+            const createdEvent = {
                 name,
                 targetScope: this._target,
                 currentScope: this._target,
                 stopped: false,
                 stopPropagation() {
-                    assertDefined(event).stopped = true;
+                    createdEvent.stopped = true;
                 },
                 preventDefault() {
-                    assertDefined(event).defaultPrevented = true;
+                    createdEvent.defaultPrevented = true;
                 },
                 defaultPrevented: false,
             };
+            event = createdEvent;
         }
         const currentEvent = event;
         const listenerArgs = [currentEvent, ...args];
@@ -6510,7 +6503,7 @@ const compiledFragmentStatesByRoot = new WeakMap();
 const compiledFragmentScopeDestroyDeregisters = new WeakMap();
 function createPublicLinkCompiledFragmentRecord(root, parentScope, nodes, ownsNodes = true) {
     const id = getInitialFragmentId({});
-    assertLinkedFragmentCanBeCreated(id, root);
+    ensureLinkedFragmentCanBeCreated(id, root);
     const record = {
         id,
         rootId: root.id,
@@ -6527,7 +6520,7 @@ function createPublicLinkCompiledFragmentRecord(root, parentScope, nodes, ownsNo
 }
 function createPublicLinkSingleNodeCompiledFragmentRecord(root, parentScope, node, ownsNodes = true) {
     const id = getInitialFragmentId({});
-    assertLinkedFragmentCanBeCreated(id, root);
+    ensureLinkedFragmentCanBeCreated(id, root);
     const record = {
         id,
         rootId: root.id,
@@ -6786,7 +6779,7 @@ function clearFragmentArray(record, key) {
 function getInitialFragmentId(options) {
     return options.id ?? `fragment:${String(nextFragmentId++)}`;
 }
-function assertLinkedFragmentCanBeCreated(id, root, linked) {
+function ensureLinkedFragmentCanBeCreated(id, root, linked) {
     if (!root.destroyed)
         return;
     {
@@ -6804,7 +6797,7 @@ function createPublicLinkDiagnostics(root) {
     };
 }
 function registerCompiledFragmentRecord(record, retentionAware = true) {
-    const root = assertDefined(record.root);
+    const root = assertInvariantDefined(record.root);
     if (record.parentScope === root.rootScope) {
         registerRootCompiledFragment(record);
     }
@@ -6834,7 +6827,7 @@ function disposeCompiledFragmentScopeLifecycle(record) {
     deregister();
 }
 function registerRootCompiledFragment(record) {
-    const root = assertDefined(record.root);
+    const root = assertInvariantDefined(record.root);
     let state = compiledFragmentStatesByRoot.get(root);
     if (!state) {
         const nextState = {
@@ -6983,11 +6976,6 @@ function attrs(values) {
 function props(values) {
     return { [propertyGroup]: values };
 }
-/**
- * Creates a keyed reactive collection. Existing DOM is retained while items
- * with stable keys move or change identity. Renderers receive an item reader so
- * nested reactive bindings follow same-key replacements.
- */
 function each(read, key, render) {
     const binding = {
         _read: read,
@@ -7004,7 +6992,10 @@ function each(read, key, render) {
         }
         return children;
     };
-    return markBinding(wrapper, { _kind: "keyed-child", _binding: binding });
+    return markBinding(wrapper, {
+        _kind: "keyed-child",
+        _binding: binding,
+    });
 }
 const pendingBindings = new WeakMap();
 const tagProxyCache = new Map();
@@ -7200,7 +7191,7 @@ function materializeChild(value, nodes) {
         nodes.push(anchor);
         return;
     }
-    if (value !== null && value !== undefined && value !== false) {
+    if (value !== null && value !== undefined && typeof value !== "boolean") {
         nodes.push(document.createTextNode(String(value)));
     }
 }
@@ -7251,7 +7242,6 @@ function createTag(namespaceUri, name, ...args) {
 function tag(name, ...args) {
     return createTag(undefined, name, ...args);
 }
-/** Creates one namespaced element without parsing markup. */
 function tagNS(namespaceUri, name, ...args) {
     return createTag(namespaceUri, name, ...args);
 }
@@ -7565,6 +7555,7 @@ function createProgrammaticDirectiveCompile(options) {
                 controller,
                 required: requiredControllers,
                 scope,
+                host: element,
                 element,
                 transclude,
                 onDestroy(cleanup) {
@@ -8320,12 +8311,11 @@ class CompileRegistry {
          * @returns Self for chaining.
          */
         const registerDirective = function registerDirective(name, directiveFactory) {
-            assertArg(name, "name");
+            validateTruthy(name, "name");
             if (typeof name === "string") {
-                assertNotHasOwnProperty(name, "directive");
-                assertValidDirectiveName(name);
-                assertArg(directiveFactory, "directiveFactory");
-                const normalizedDirectiveFactory = assertDefined(directiveFactory);
+                validateNotHasOwnPropertyName(name, "directive");
+                validateDirectiveName(name);
+                const normalizedDirectiveFactory = validateTruthy(directiveFactory, "directiveFactory");
                 if (!hasOwn(directiveFactoryRegistry, name)) {
                     directiveFactoryRegistry[name] = [];
                 }
@@ -8389,7 +8379,7 @@ class CompileRegistry {
                 }
                 return this;
             }
-            const componentOptions = assertDefined(options);
+            const componentOptions = validateTruthy(options, "options");
             const componentName = name;
             if (componentOptions.view &&
                 (componentOptions.template !== undefined ||
@@ -8697,7 +8687,7 @@ class CompileRegistry {
                             return;
                         }
                         try {
-                            callFunction(assertDefined(controllerTarget.afterRender), controllerTarget);
+                            callFunction(assertInvariantDefined(controllerTarget.afterRender), controllerTarget);
                         }
                         catch (err) {
                             $exceptionHandler(err);
@@ -9018,7 +9008,7 @@ class CompileRegistry {
                 }
                 function createPublicLinkFn(publicLinkState) {
                     const publicLinkFn = function publicLinkFn(scope, cloneConnectFn, options) {
-                        return invokePublicLink(assertDefined(publicLinkFn._state), scope, cloneConnectFn, options);
+                        return invokePublicLink(assertInvariantDefined(publicLinkFn._state), scope, cloneConnectFn, options);
                     };
                     publicLinkFn._state = publicLinkState;
                     return publicLinkFn;
@@ -9225,7 +9215,7 @@ class CompileRegistry {
                         _previousBoundTranscludeFn: previousBoundTranscludeFn,
                     };
                     const boundTranscludeFn = function boundTranscludeFn(transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
-                        return invokeBoundTransclude(assertDefined(boundTranscludeFn._state), transcludedScope, cloneFn, controllers, _futureParentElement, containingScope);
+                        return invokeBoundTransclude(assertInvariantDefined(boundTranscludeFn._state), transcludedScope, cloneFn, controllers, _futureParentElement, containingScope);
                     };
                     boundTranscludeFn._state = boundTranscludeState;
                     // We need  to attach the transclusion slots onto the `boundTranscludeFn`
@@ -9421,7 +9411,7 @@ class CompileRegistry {
                 function createLazyCompilationFn(lazyCompilationState) {
                     /** Defers compilation until the returned linker/transclude function is first invoked. */
                     const lazyCompilation = function lazyCompilation(...args) {
-                        return invokeLazyCompilation(assertDefined(lazyCompilation._state), ...args);
+                        return invokeLazyCompilation(assertInvariantDefined(lazyCompilation._state), ...args);
                     };
                     lazyCompilation._state = lazyCompilationState;
                     return lazyCompilation;
@@ -9564,7 +9554,7 @@ class CompileRegistry {
                  * current interpolation function in sync if an earlier compile step rewrites the attribute.
                  */
                 function attrInterpolatePreLinkFn(linkState, scope, node) {
-                    const attr = assertDefined(linkState._attr);
+                    const attr = assertInvariantDefined(linkState._attr);
                     // Recompute interpolation if another compile step rewrote the attribute value.
                     const name = linkState._name;
                     const newValue = linkState._isNgAttr
@@ -9739,7 +9729,7 @@ class CompileRegistry {
                 function enqueuePendingTemplateLink(delayedState, scope, node, boundTranscludeFn) {
                     const fragmentRecord = getCompiledFragmentRecord(node) ?? null;
                     delayedState._linkRequestCount++;
-                    assertDefined(delayedState._linkQueue).push(scope, node, boundTranscludeFn, fragmentRecord, null);
+                    assertInvariantDefined(delayedState._linkQueue).push(scope, node, boundTranscludeFn, fragmentRecord, null);
                     const asyncWork = fragmentRecord
                         ? {
                             id: `templateUrl:${delayedState._templateUrl}`,
@@ -9750,7 +9740,7 @@ class CompileRegistry {
                         }
                         : null;
                     if (fragmentRecord && asyncWork) {
-                        const linkQueue = assertDefined(delayedState._linkQueue);
+                        const linkQueue = assertInvariantDefined(delayedState._linkQueue);
                         addCompiledFragmentAsyncWork(fragmentRecord, asyncWork);
                         linkQueue[linkQueue.length - 1] = asyncWork;
                     }
@@ -9813,7 +9803,7 @@ class CompileRegistry {
                             _templateNodes: templateNodes,
                             _templateAttrs: createEmptyCompileAttributeState(),
                         };
-                        const oldCompileNode = assertDefined(delayedState._compileNode);
+                        const oldCompileNode = assertInvariantDefined(delayedState._compileNode);
                         replaceWith(oldCompileNode, compileNode, delayedState._previousCompileContext._index);
                         if (delayedState._previousCompileContext._parentNodeList) {
                             setTrackedNodeAt(delayedState._previousCompileContext._parentNodeList, delayedState._previousCompileContext._index, compileNode);
@@ -9827,7 +9817,7 @@ class CompileRegistry {
                         mergeTemplateAttributeState(delayedState._tAttrs, replacementState._templateAttrs, oldCompileNode, compileNode);
                     }
                     else {
-                        compileNode = assertDefined(delayedState._compileNode);
+                        compileNode = assertInvariantDefined(delayedState._compileNode);
                         compileNode.innerHTML = content;
                     }
                     delayedState._directives.unshift(delayedState._derivedSyncDirective);
@@ -9840,7 +9830,7 @@ class CompileRegistry {
                     delayedContextNodeList[0] = afterDirectiveCompileNode;
                     delayedState._compileNode = afterDirectiveCompileNode;
                     delayedState._compiledNode = compileNode;
-                    delayedState._afterTemplateChildLinkExecutor = compileTemplate(assertDefined(delayedState._compileNode).childNodes, delayedState._childTranscludeFn, undefined, undefined, undefined);
+                    delayedState._afterTemplateChildLinkExecutor = compileTemplate(assertInvariantDefined(delayedState._compileNode).childNodes, delayedState._childTranscludeFn, undefined, undefined, undefined);
                     try {
                         replayPendingTemplateLinks(delayedState);
                     }
@@ -9853,12 +9843,7 @@ class CompileRegistry {
                     delayedState._afterTemplateChildLinkExecutor = null;
                     delayedState._compiledNode = undefined;
                     releaseDelayedTemplateLinkState(delayedState);
-                    if (isError(error)) {
-                        $exceptionHandler(error);
-                    }
-                    else {
-                        $exceptionHandler(new Error(String(error)));
-                    }
+                    $exceptionHandler(error);
                 }
                 /** Handles `$transclude(...)` calls for the shared node-link executor. */
                 function invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName) {
@@ -9892,7 +9877,7 @@ class CompileRegistry {
                 }
                 function createControllersBoundTranscludeFn(transcludeState) {
                     const wrapper = function wrapper(scopeParam, cloneAttachFn, _futureParentElement, slotName) {
-                        return invokeControllersBoundTransclude(assertDefined(wrapper._state), scopeParam, cloneAttachFn, _futureParentElement, slotName);
+                        return invokeControllersBoundTransclude(assertInvariantDefined(wrapper._state), scopeParam, cloneAttachFn, _futureParentElement, slotName);
                     };
                     wrapper._state = transcludeState;
                     wrapper._boundTransclude = transcludeState._boundTranscludeFn;
@@ -9964,9 +9949,8 @@ class CompileRegistry {
                     }
                     for (const name in elementControllers) {
                         const controllerDirective = controllerDirectives[name];
-                        const controller = assertDefined(elementControllers[name]);
-                        const bindings = assertDefined(controllerDirective._bindings)
-                            ._bindToController;
+                        const controller = assertInvariantDefined(elementControllers[name]);
+                        const bindings = assertInvariantDefined(controllerDirective._bindings)._bindToController;
                         const reactiveControllerInstance = controllerScope.newIsolate(controller._instance);
                         const controllerInstance = controller(reactiveControllerInstance);
                         if (controllerInstance === reactiveControllerInstance) {
@@ -9998,17 +9982,18 @@ class CompileRegistry {
                                 !isArray(require) &&
                                 require &&
                                 typeof require === "object") {
-                                extend(assertDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
+                                extend(assertInvariantDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
                             }
                         }
                     }
                     for (const name in elementControllers) {
                         const controllerDirective = controllerDirectives[name];
-                        const controller = assertDefined(elementControllers[name]);
+                        const controller = assertInvariantDefined(elementControllers[name]);
                         const controllerInstance = controller._instance;
                         if (isFunction(controllerInstance.onChanges)) {
                             try {
-                                callFunction(controllerInstance.onChanges, controllerInstance, assertDefined(controller._bindingInfo)._initialChanges);
+                                callFunction(controllerInstance.onChanges, controllerInstance, assertInvariantDefined(controller._bindingInfo)
+                                    ._initialChanges);
                             }
                             catch (err) {
                                 $exceptionHandler(err);
@@ -10038,7 +10023,7 @@ class CompileRegistry {
                         }
                         if (isFunction(controllerInstance.onDestroy)) {
                             controllerScope.on("$destroy", () => {
-                                callFunction(assertDefined(controllerInstance.onDestroy), controllerInstance);
+                                callFunction(assertInvariantDefined(controllerInstance.onDestroy), controllerInstance);
                             });
                         }
                         controllerScope.on("$destroy", () => {
@@ -10090,7 +10075,7 @@ class CompileRegistry {
                         }
                     }
                     for (const name in elementControllers) {
-                        const controller = assertDefined(elementControllers[name]);
+                        const controller = assertInvariantDefined(elementControllers[name]);
                         const controllerInstance = controller._instance;
                         if (isFunction(controllerInstance.postLink)) {
                             callFunction(controllerInstance.postLink, controllerInstance);
@@ -10221,7 +10206,7 @@ class CompileRegistry {
                     };
                 }
                 function applyInlineTemplateDirective(directive, directiveName, compileNode, templateAttrs, directives, directiveIndex, parentNodeList, index, newIsolateScopeDirective, newScopeDirective, templateDirective, replaceDirective) {
-                    assertNoDuplicate("template", templateDirective, directive, compileNode);
+                    validateNoDuplicate("template", templateDirective, directive, compileNode);
                     const directiveValue = resolveDirectiveTemplateValue(directive, compileNode);
                     if (!directive.replace) {
                         if (compileNode.nodeType === NodeType._ELEMENT_NODE) {
@@ -10275,7 +10260,7 @@ class CompileRegistry {
                     return merged;
                 }
                 function applyTemplateUrlDirective(directives, directiveIndex, directive, templateAttrs, compileNode, hasTranscludeDirective, childTranscludeFn, preLinkFns, postLinkFns, index, controllerDirectives, newScopeDirective, newIsolateScopeDirective, templateDirective, nonTlbTranscludeDirective, replaceDirective, previousCompileContext) {
-                    assertNoDuplicate("template", templateDirective, directive, compileNode);
+                    validateNoDuplicate("template", templateDirective, directive, compileNode);
                     const nextTemplateDirective = directive;
                     const nextReplaceDirective = directive.replace
                         ? directive
@@ -10437,7 +10422,7 @@ class CompileRegistry {
                     distributeTransclusionSlots(compileNode, defaultSlotContent, slotMap, slots, filledSlots);
                     clearMovedTransclusionFragmentData(defaultSlotContent);
                     clearMovedTransclusionSlotData(slots);
-                    assertRequiredTransclusionSlotsFilled(filledSlots);
+                    validateRequiredTransclusionSlotsFilled(filledSlots);
                     compileFilledTransclusionSlots(slots, transcludeFn, mightHaveMultipleTransclusionError, previousCompileContext);
                     return {
                         _nodes: defaultSlotContent.childNodes,
@@ -10467,7 +10452,7 @@ class CompileRegistry {
                         }
                     }
                 }
-                function assertRequiredTransclusionSlotsFilled(filledSlots) {
+                function validateRequiredTransclusionSlotsFilled(filledSlots) {
                     for (const slotName in filledSlots) {
                         if (!hasOwn(filledSlots, slotName)) {
                             continue;
@@ -10493,11 +10478,11 @@ class CompileRegistry {
                     // Async templates are checked when their derived sync directive is compiled.
                     if (!directive.templateUrl) {
                         if (typeof directiveScope === "object") {
-                            assertNoDuplicate("new/isolated scope", state._newIsolateScopeDirective ?? state._newScopeDirective, directive, compileNode);
+                            validateNoDuplicate("new/isolated scope", state._newIsolateScopeDirective ?? state._newScopeDirective, directive, compileNode);
                             state._newIsolateScopeDirective = directive;
                         }
                         else {
-                            assertNoDuplicate("new/isolated scope", state._newIsolateScopeDirective, directive, compileNode);
+                            validateNoDuplicate("new/isolated scope", state._newIsolateScopeDirective, directive, compileNode);
                         }
                     }
                     state._newScopeDirective = state._newScopeDirective ?? directive;
@@ -10518,7 +10503,7 @@ class CompileRegistry {
                     if (isExcludedTransclusionDirective(directiveName)) {
                         return nonTlbTranscludeDirective;
                     }
-                    assertNoDuplicate("transclusion", nonTlbTranscludeDirective, directive, compileNode);
+                    validateNoDuplicate("transclusion", nonTlbTranscludeDirective, directive, compileNode);
                     return directive;
                 }
                 function isExcludedTransclusionDirective(directiveName) {
@@ -10562,12 +10547,12 @@ class CompileRegistry {
                     }
                     const controllerDirectives = state._controllerDirectives ??
                         (state._controllerDirectives = nullObject());
-                    assertNoDuplicate(`'${directiveName}' controller`, controllerDirectives[directiveName], directive, compileNode);
+                    validateNoDuplicate(`'${directiveName}' controller`, controllerDirectives[directiveName], directive, compileNode);
                     controllerDirectives[directiveName] = directive;
                 }
                 function collectDirectiveLinkFns(directive, directiveName, compileNode, templateAttrs, childTranscludeFn, preLinkFns, postLinkFns, newIsolateScopeDirective) {
                     try {
-                        const compileDirective = assertDefined(directive.compile);
+                        const compileDirective = assertInvariantDefined(directive.compile);
                         const linkFn = directive._needsCompileAttributeState
                             ? compileDirective.call(directive, ...[
                                 compileNode,
@@ -10686,7 +10671,7 @@ class CompileRegistry {
                         if (controller === "@") {
                             controller = readNormalizedElementAttribute(node, directive.name);
                         }
-                        const controllerInstance = $controller(assertDefined(controller), locals, true, directive.controllerAs);
+                        const controllerInstance = $controller(assertInvariantDefined(controller), locals, true, directive.controllerAs);
                         controllerInstance._scope = locals.$scope;
                         // For directives with element transclusion the element is a comment.
                         // In this case .data will not attach any data.
@@ -10850,7 +10835,7 @@ class CompileRegistry {
                 }
                 /** Compiles an async `templateUrl` directive and returns a delayed node-link descriptor. */
                 function compileTemplateUrl(directives, compileNode, tAttrs, childTranscludeFn, preLinkFns, postLinkFns, previousCompileContext) {
-                    const origAsyncDirective = assertDefined(directives.shift());
+                    const origAsyncDirective = assertInvariantDefined(directives.shift());
                     const derivedSyncDirective = inherit(origAsyncDirective, {
                         templateUrl: null,
                         transclude: null,
@@ -10909,7 +10894,7 @@ class CompileRegistry {
                     };
                 }
                 /** Throws when multiple directives request an incompatible exclusive feature on the same node. */
-                function assertNoDuplicate(what, previousDirective, directive, node) {
+                function validateNoDuplicate(what, previousDirective, directive, node) {
                     if (previousDirective) {
                         throw $compileError$1("multidir", "Multiple directives [{0}, {1}] asking for {3} on: {4}", previousDirective.name, directive.name, what, startingTag(node));
                     }
@@ -11135,7 +11120,7 @@ class CompileRegistry {
                     const initialChanges = {};
                     const destAny = destination;
                     const scopeTarget = scope._target;
-                    const destinationTarget = assertDefined(destAny._target);
+                    const destinationTarget = assertInvariantDefined(destAny._target);
                     const bindingChangeState = {
                         _destAny: destAny,
                         _onChangesQueue: onChangesQueueState,
@@ -11208,7 +11193,7 @@ class CompileRegistry {
                                     if (typeof lastValue === "string") {
                                         // If the attribute has been provided then we trigger an interpolation to ensure
                                         // the value is there for use in the link fn
-                                        destAny[scopeName] = assertDefined($interpolate(lastValue))(scope);
+                                        destAny[scopeName] = assertInvariantDefined($interpolate(lastValue))(scope);
                                     }
                                     else if (typeof lastValue === "boolean") {
                                         // If the attributes is one of the BOOLEAN_ATTR then AngularTS will have converted
@@ -11300,7 +11285,7 @@ class CompileRegistry {
                                     const initialOneWayValue = parentGet
                                         ? callFunction(parentGet, undefined, scopeTarget)
                                         : undefined;
-                                    assertDefined(destAny._target)[scopeName] =
+                                    assertInvariantDefined(destAny._target)[scopeName] =
                                         parentGet?._literal ||
                                             initialOneWayValue === null ||
                                             typeof initialOneWayValue !== "object"
@@ -11319,7 +11304,7 @@ class CompileRegistry {
                                     oneWayBindingState._lastInputs =
                                         evaluateOneWayBindingInputs(oneWayBindingState);
                                     initialChanges[scopeName] = {
-                                        currentValue: assertDefined(destAny._target)[scopeName],
+                                        currentValue: assertInvariantDefined(destAny._target)[scopeName],
                                         firstChange: oneWayBindingState._firstChange,
                                     };
                                     if (typeof oneWayAttrExpression === "string") {
@@ -11346,9 +11331,10 @@ class CompileRegistry {
                                         _parentGet: parentGet,
                                         _scopeTarget: scopeTarget,
                                     };
-                                    assertDefined(destAny._target)[scopeName] = function (locals) {
-                                        return invokeExpressionBinding(expressionBindingState, locals);
-                                    };
+                                    assertInvariantDefined(destAny._target)[scopeName] =
+                                        function (locals) {
+                                            return invokeExpressionBinding(expressionBindingState, locals);
+                                        };
                                     break;
                                 }
                             }
@@ -11367,7 +11353,7 @@ class CompileRegistry {
     }
 }
 /** Validates a directive/component name before registration. */
-function assertValidDirectiveName(name) {
+function validateDirectiveName(name) {
     const letter = name.charAt(0);
     if (letter !== letter.toLowerCase()) {
         throw $compileError$1("baddir", "Directive/Component name '{0}' is invalid. The first character must be a lowercase letter", name);
@@ -11562,7 +11548,7 @@ class AppContext {
         return this.destroyed;
     }
     setExceptionHandler(exceptionHandler) {
-        this._assertAlive("configure AppContext exception handling");
+        this._ensureAlive("configure AppContext exception handling");
         this._exceptionHandler = exceptionHandler;
     }
     /** @internal */
@@ -11574,7 +11560,7 @@ class AppContext {
         });
     }
     runWithRoot(root, operation) {
-        this._assertAlive("run AppContext root work");
+        this._ensureAlive("run AppContext root work");
         const previousRoot = this._currentRoot;
         this._currentRoot = root;
         try {
@@ -11585,7 +11571,7 @@ class AppContext {
         }
     }
     createRoot(options) {
-        this._assertAlive("create AppContext roots");
+        this._ensureAlive("create AppContext roots");
         const existingRoot = this._rootsByScope.get(options.rootScope);
         if (existingRoot) {
             return this.attachRoot(existingRoot, options);
@@ -11617,7 +11603,7 @@ class AppContext {
         return root;
     }
     attachRoot(rootOrScope, options) {
-        this._assertAlive("attach metadata to AppContext roots");
+        this._ensureAlive("attach metadata to AppContext roots");
         const root = this._resolveRoot(rootOrScope);
         if (!root) {
             throw new Error("Cannot attach metadata to an unknown AppContext root.");
@@ -11636,7 +11622,7 @@ class AppContext {
         return root;
     }
     registerModel(name, factory, options = {}) {
-        this._assertAlive("register AppContext models");
+        this._ensureAlive("register AppContext models");
         const existingFactory = this._modelFactories.get(name);
         if (existingFactory) {
             if (existingFactory !== factory) {
@@ -11661,7 +11647,7 @@ class AppContext {
         return this._models.get(name);
     }
     createReactive(target, options = {}) {
-        this._assertAlive("create AppContext reactive models");
+        this._ensureAlive("create AppContext reactive models");
         if (!isPlainModelRoot$1(target)) {
             throw new Error("Reactive app models require a plain object root.");
         }
@@ -11698,7 +11684,7 @@ class AppContext {
         root.destroy();
     }
     onDestroy(callback) {
-        this._assertAlive("register AppContext destroy hooks");
+        this._ensureAlive("register AppContext destroy hooks");
         this._appDestroyHooks.push(callback);
         return () => {
             this._removeHook(this._appDestroyHooks, callback);
@@ -11732,21 +11718,21 @@ class AppContext {
         }
     }
     onRootAttach(callback) {
-        this._assertAlive("register AppContext root attach hooks");
+        this._ensureAlive("register AppContext root attach hooks");
         this._attachHooks.push(callback);
         return () => {
             this._removeHook(this._attachHooks, callback);
         };
     }
     onRootDestroy(callback) {
-        this._assertAlive("register AppContext root destroy hooks");
+        this._ensureAlive("register AppContext root destroy hooks");
         this._destroyHooks.push(callback);
         return () => {
             this._removeHook(this._destroyHooks, callback);
         };
     }
     /** @internal */
-    _assertAlive(operation) {
+    _ensureAlive(operation) {
         if (this.destroyed) {
             throw new Error(`Cannot ${operation} after AppContext is destroyed.`);
         }
@@ -11871,7 +11857,7 @@ function attachModelLifecycle(context, model, options) {
     });
     handler._propertyMap.snapshot = snapshot;
     handler._propertyMap.restore = (incoming, restoreOptions = {}) => {
-        assertPlainModelSnapshot(incoming);
+        validatePlainModelSnapshot(incoming);
         const normalizedRestoreOptions = normalizeModelRestoreOptions(restoreOptions);
         const next = cloneModelData(incoming);
         const previousOrigin = currentOrigin;
@@ -11976,7 +11962,7 @@ function resolveModelSyncTarget(input, injector) {
         throw new Error("Model sync targets must be objects or injectable factories, not service-name strings.");
     }
     if (isModelSyncTarget(input)) {
-        assertModelSyncTarget(input, "Model sync target");
+        validateModelSyncTarget(input, "Model sync target");
         return input;
     }
     if (!injector) {
@@ -11986,10 +11972,10 @@ function resolveModelSyncTarget(input, injector) {
     if (!isModelSyncTarget(resolved)) {
         throw new Error("Injectable model sync target must resolve to an object.");
     }
-    assertModelSyncTarget(resolved, "Injectable model sync target");
+    validateModelSyncTarget(resolved, "Injectable model sync target");
     return resolved;
 }
-function assertModelSyncTarget(target, label) {
+function validateModelSyncTarget(target, label) {
     const operationNames = ["restore", "write", "receive", "dispose"];
     let operationCount = 0;
     for (const operationName of operationNames) {
@@ -12031,7 +12017,7 @@ function normalizeModelRestoreOptions(options) {
     }
     return candidate;
 }
-function assertPlainModelSnapshot(snapshot) {
+function validatePlainModelSnapshot(snapshot) {
     if (!isPlainModelRoot$1(snapshot)) {
         throw new Error("Model restore snapshot must be a plain object.");
     }
@@ -12148,7 +12134,7 @@ function throwNoconcat(text) {
         "required.", text);
 }
 function interr(text, err) {
-    throw $interpolateError("interr", "Can't interpolate: {0}\n{1}", text, err.toString());
+    throw $interpolateError("interr", "Can't interpolate: {0}\n{1}", text, String(err));
 }
 /** @internal */
 function createInterpolateRuntimeState() {
@@ -12160,7 +12146,7 @@ function createInterpolateRuntimeState() {
 }
 /** @internal */
 function applyInterpolateConfiguration(state, config) {
-    assertInterpolateRuntimeActive(state);
+    ensureInterpolateRuntimeActive(state);
     if (config.startSymbol !== undefined) {
         state.startSymbol = config.startSymbol;
     }
@@ -12176,14 +12162,14 @@ function destroyInterpolateRuntimeState(state) {
     state.startSymbol = "{{";
     state.endSymbol = "}}";
 }
-function assertInterpolateRuntimeActive(state) {
+function ensureInterpolateRuntimeActive(state) {
     if (state.destroyed) {
         throw new Error("Interpolation runtime has already been disposed.");
     }
 }
 /** @internal */
 function createInterpolateService(state, $parse, security) {
-    assertInterpolateRuntimeActive(state);
+    ensureInterpolateRuntimeActive(state);
     const interpolationStartSymbol = state.startSymbol;
     const interpolationEndSymbol = state.endSymbol;
     const startSymbolLength = interpolationStartSymbol.length;
@@ -12379,6 +12365,12 @@ function createInterpolateRegistration(state, security) {
  *
  * IMPORTANT: custom implementation should always rethrow the error as the framework assumes that `$exceptionHandler` always does the throwing.
  *
+ * AngularTS reports exceptions here when they escape framework-owned detached
+ * work, including DOM events, browser transport events, timers, subscriptions,
+ * and lifecycle callbacks. Synchronous public API validation throws directly,
+ * and promise-returning operations reject their returned promise so callers can
+ * handle the failure at the operation boundary.
+ *
  * ### Manual Invocation
  *
  * You can invoke the exception handler directly when catching errors in your own code:
@@ -12417,6 +12409,9 @@ function applyExceptionHandlerConfiguration(state, config) {
         throw new Error("Exception handler runtime has already been disposed.");
     }
     if (config.handler !== undefined) {
+        if (typeof config.handler !== "function") {
+            throw new TypeError("$exceptionHandler handler must be a function.");
+        }
         state.handler = config.handler;
     }
 }
@@ -12634,7 +12629,7 @@ const angularConfigKeys = new Set([
     _webTransport,
     _websocket,
 ]);
-function assertKnownAngularConfigKey(key) {
+function validateKnownAngularConfigKey(key) {
     if (!angularConfigKeys.has(key)) {
         throw new Error(`Unknown AngularTS config key '${key}'.`);
     }
@@ -12725,7 +12720,7 @@ function getModelFactoryDependencies(name, initial) {
         }
     }
 }
-function assertAppSafeModelFactoryDependencies(name, initial) {
+function validateAppSafeModelFactoryDependencies(name, initial) {
     const dependencies = getModelFactoryDependencies(name, initial);
     const rootScopedDependency = dependencies.find((dependency) => rootScopedModelFactoryDependencies.has(dependency));
     if (rootScopedDependency) {
@@ -12849,7 +12844,7 @@ class NgModule {
         const normalized = {};
         validate(isObject, config, "config");
         for (const key of Object.keys(config)) {
-            assertKnownAngularConfigKey(key);
+            validateKnownAngularConfigKey(key);
             setAngularConfig(normalized, key, config[key]);
         }
         const compileConfig = normalized.$compile;
@@ -13047,7 +13042,7 @@ class NgModule {
     }
     /**
      * @param {string} name
-     * @param {ng.Component} options
+     * @param {ng.ComponentDefinition} options
      * @returns {NgModule}
      */
     component(name, options) {
@@ -13207,7 +13202,7 @@ class NgModule {
             throw new Error(`Model '${name}' is already registered.`);
         }
         if (isInjectable(initial)) {
-            assertAppSafeModelFactoryDependencies(name, initial);
+            validateAppSafeModelFactoryDependencies(name, initial);
         }
         let modelInjector;
         const modelFactory = createModelFactory(initial, () => modelInjector);
@@ -13636,8 +13631,8 @@ class AngularRuntime extends EventTarget {
         this.getNormalizedAttrName = getNormalizedAttrName;
         /** Return whether an element has an attribute matching a normalized name. */
         this.hasNormalizedAttr = hasNormalizedAttr;
-        /** Global framework error-handling configuration. */
-        this.errorHandlingConfig = errorHandlingConfig;
+        /** Configure how values embedded in framework error messages are formatted. */
+        this.errorFormattingConfig = errorFormattingConfig;
         /** Public injection token names keyed by token value. */
         this.tokens = {};
         const runtimeOptions = normalizeRuntimeOptions(options);
@@ -13674,7 +13669,7 @@ class AngularRuntime extends EventTarget {
         return builtinNgModuleRegistrar(this);
     }
     module(name, requires, configFn) {
-        assertNotHasOwnProperty(name, "module");
+        validateNotHasOwnPropertyName(name, "module");
         if (requires && hasOwn(this._moduleRegistry, name)) {
             this._moduleRegistry[name] = null;
         }
@@ -13711,6 +13706,7 @@ class AngularRuntime extends EventTarget {
             : isInvocationDetail(detail)
                 ? detail.expr
                 : "";
+        const $exceptionHandler = this._composition.exceptionHandlerState.service;
         try {
             const result = $parse(expr)(target);
             if (isInvocationDetail(detail) && detail.reply) {
@@ -13724,10 +13720,18 @@ class AngularRuntime extends EventTarget {
                     reply.reject(reason);
                 });
             }
+            else if (isPromiseLike(result)) {
+                void Promise.resolve(result).catch((reason) => {
+                    $exceptionHandler(reason);
+                });
+            }
         }
         catch (err) {
             if (isInvocationDetail(detail) && detail.reply) {
                 detail.reply.reject(err);
+            }
+            else {
+                $exceptionHandler(err);
             }
         }
         return true;
@@ -13737,7 +13741,9 @@ class AngularRuntime extends EventTarget {
      */
     emit(input) {
         const { type, expr } = AngularRuntime._splitInvocation(input);
-        this.dispatchEvent(new CustomEvent(type, { detail: expr }));
+        if (!this.dispatchEvent(new CustomEvent(type, { detail: expr }))) {
+            this._composition.exceptionHandlerState.service(new Error(`No target found for "${type}"`));
+        }
     }
     /**
      * Await result. Accepts a single string: `"<target>.<expression>"`
@@ -13964,6 +13970,13 @@ function isInvocationDetail(value) {
 }
 
 const $animateError = createErrorFactory("$animate");
+function requireInsertionParent(parent, after) {
+    const insertionParent = parent ?? after?.parentNode;
+    if (!insertionParent) {
+        throw $animateError("noparent", "Animation enter and move operations require a parent or attached anchor.");
+    }
+    return insertionParent;
+}
 class AnimationHandle {
     constructor(result, controller = new AbortController(), cleanup) {
         this._doneCallbacks = [];
@@ -14068,7 +14081,7 @@ class AnimationRegistry {
         this._destroyed = false;
     }
     register(name, preset) {
-        this._assertActive();
+        this._ensureActive();
         if (!name || !isString(name)) {
             throw $animateError("noname", "Animation name must be a string.");
         }
@@ -14076,11 +14089,11 @@ class AnimationRegistry {
         this._registrations.set(normalizedName, preset);
     }
     get(name) {
-        this._assertActive();
+        this._ensureActive();
         return this._registrations.get(name);
     }
     has(name) {
-        this._assertActive();
+        this._ensureActive();
         return this._registrations.has(name);
     }
     destroy() {
@@ -14090,7 +14103,7 @@ class AnimationRegistry {
         this._registrations.clear();
     }
     /** @internal */
-    _assertActive() {
+    _ensureActive() {
         if (this._destroyed) {
             throw new Error("Animation registry has already been disposed.");
         }
@@ -14214,11 +14227,11 @@ function createAnimateService(registry, $injector) {
             registry.register(name, preset);
         },
         enter: (element, parent, after, options) => {
-            domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+            domInsert(element, requireInsertionParent(parent, after), after);
             return run("enter", element, options);
         },
         move: (element, parent, after, options) => {
-            domInsert(element, assertDefined(parent ?? after?.parentNode), after);
+            domInsert(element, requireInsertionParent(parent, after), after);
             return run("move", element, options);
         },
         leave: (element, options) => run("leave", element, options, {}, (ok) => {
@@ -14444,7 +14457,7 @@ function createMachine(scopeOrConfig, maybeConfig) {
         ...typedConfig,
         data: defaultMachineData(typedConfig.data),
     };
-    assertMachineConfig(config);
+    validateMachineConfig(config);
     const rawData = config.data;
     let currentState = config.initial;
     let activeBinding;
@@ -14489,7 +14502,7 @@ function createMachine(scopeOrConfig, maybeConfig) {
             };
         },
         restore(snapshot) {
-            assertMachineSnapshot(snapshot, config);
+            validateMachineSnapshot(snapshot, config);
             const binding = getActiveBinding();
             batch(binding?._handler, () => {
                 const previousDataKeys = collectMachineDataKeys(rawData);
@@ -14840,7 +14853,7 @@ function normalizeMachineArgs(scopeOrConfig, maybeConfig) {
         _config: scopeOrConfig,
     };
 }
-function assertMachineConfig(config) {
+function validateMachineConfig(config) {
     if (!isObject(config)) {
         throw new Error("$machine requires a config object.");
     }
@@ -14856,9 +14869,9 @@ function assertMachineConfig(config) {
     if (!hasOwn(config.states, config.initial)) {
         throw new Error("$machine initial state must exist in states.");
     }
-    assertMachineHooks(config.hooks);
+    validateMachineHooks(config.hooks);
 }
-function assertMachineSnapshot(snapshot, config) {
+function validateMachineSnapshot(snapshot, config) {
     if (!snapshot || !isObject(snapshot)) {
         throw new Error("$machine restore requires a snapshot object.");
     }
@@ -14873,20 +14886,20 @@ function assertMachineSnapshot(snapshot, config) {
         throw new Error("$machine restore state must exist in states.");
     }
 }
-function assertMachineHooks(hooks) {
+function validateMachineHooks(hooks) {
     if (hooks === undefined) {
         return;
     }
     if (!isPlainObject(hooks)) {
         throw new Error("$machine hooks must be an object.");
     }
-    assertMachineHookMap("enter", hooks.enter);
-    assertMachineHookMap("exit", hooks.exit);
+    validateMachineHookMap("enter", hooks.enter);
+    validateMachineHookMap("exit", hooks.exit);
     if (hooks.transition !== undefined && !isFunction(hooks.transition)) {
         throw new Error("$machine hooks.transition must be a function.");
     }
 }
-function assertMachineHookMap(name, hooks) {
+function validateMachineHookMap(name, hooks) {
     if (hooks === undefined) {
         return;
     }
@@ -15166,7 +15179,7 @@ function createWorkflowSupervisor($workflow, config) {
     return supervisor;
 }
 function createWorkflowSupervisorRegistry($workflow, config) {
-    assertWorkflowSupervisorConfig(config);
+    validateWorkflowSupervisorConfig(config);
     const registry = new Map();
     const workflowEntries = normalizeWorkflowSupervisorEntries(config.workflows);
     if (!workflowEntries.length) {
@@ -15183,7 +15196,7 @@ function createWorkflowSupervisorRegistry($workflow, config) {
     }
     return registry;
 }
-function assertWorkflowSupervisorConfig(config) {
+function validateWorkflowSupervisorConfig(config) {
     if (!isObject(config)) {
         throw new Error("$workflowSupervisor requires a config object.");
     }
@@ -15251,7 +15264,7 @@ function isWorkflowInstance(value) {
         isFunction(workflow.restore));
 }
 function normalizeWorkflowSupervisorSnapshot(snapshot) {
-    assertWorkflowSupervisorSnapshot(snapshot);
+    validateWorkflowSupervisorSnapshot(snapshot);
     const diagnostics = normalizeWorkflowSupervisorDiagnostics(snapshot.diagnostics);
     return {
         version: 1,
@@ -15273,7 +15286,7 @@ function normalizeRestoredSupervisorStatus(status, diagnostics) {
     }
     return status;
 }
-function assertWorkflowSupervisorSnapshot(snapshot) {
+function validateWorkflowSupervisorSnapshot(snapshot) {
     if (!isObject(snapshot)) {
         throw new Error("$workflowSupervisor restore requires a snapshot object.");
     }
@@ -15463,7 +15476,7 @@ function createWorkflowFactory() {
             ...config,
             data,
         };
-        assertWorkflowConfig(config);
+        validateWorkflowConfig(config);
         const diagnostics = [];
         const history = [];
         const diagnosticLimit = normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
@@ -15869,12 +15882,12 @@ function createWorkflowFactory() {
         function normalizeWorkflowSnapshot(snapshot) {
             if (isObject(snapshot) &&
                 snapshot.version === 1) {
-                assertWorkflowSnapshot(snapshot);
+                validateWorkflowSnapshot(snapshot);
                 return snapshot;
             }
             if (config.migrateSnapshot) {
                 const migrated = config.migrateSnapshot(snapshot);
-                assertWorkflowSnapshot(migrated);
+                validateWorkflowSnapshot(migrated);
                 return migrated;
             }
             throw new Error("$workflow restore requires a version 1 snapshot.");
@@ -16315,7 +16328,7 @@ function defaultWorkflowData(data) {
     }
     return data;
 }
-function assertWorkflowConfig(config) {
+function validateWorkflowConfig(config) {
     if (!isString(config.id) || !config.id) {
         throw new Error("$workflow requires a non-empty id.");
     }
@@ -16332,7 +16345,7 @@ function assertWorkflowConfig(config) {
         if (!command) {
             throw new Error("$workflow command names must be non-empty strings.");
         }
-        assertWorkflowCommandDefinition(command, value);
+        validateWorkflowCommandDefinition(command, value);
     }
     normalizeHistoryLimit(config.historyLimit);
     normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
@@ -16341,7 +16354,7 @@ function assertWorkflowConfig(config) {
         throw new Error("$workflow migrateSnapshot must be a function.");
     }
 }
-function assertWorkflowCommandDefinition(command, value) {
+function validateWorkflowCommandDefinition(command, value) {
     if (!isObject(value) || isArray(value)) {
         throw new Error(`$workflow command '${command}' must be a lifecycle definition.`);
     }
@@ -16352,14 +16365,14 @@ function assertWorkflowCommandDefinition(command, value) {
             definition.from.every((state) => isString(state) && state.length > 0))) {
         throw new Error(`$workflow command '${command}' requires a non-empty from state.`);
     }
-    assertWorkflowLifecycleTarget(command, "pending", definition.pending);
-    assertWorkflowLifecycleTarget(command, "success", definition.success);
-    assertWorkflowLifecycleTarget(command, "failure", definition.failure);
+    validateWorkflowLifecycleTarget(command, "pending", definition.pending);
+    validateWorkflowLifecycleTarget(command, "success", definition.success);
+    validateWorkflowLifecycleTarget(command, "failure", definition.failure);
     if (definition.cancelled !== undefined) {
-        assertWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
+        validateWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
     }
     if (definition.timeout !== undefined) {
-        assertWorkflowLifecycleTarget(command, "timeout", definition.timeout);
+        validateWorkflowLifecycleTarget(command, "timeout", definition.timeout);
     }
     if (definition.execute !== undefined && !isFunction(definition.execute)) {
         throw new Error(`$workflow command '${command}' execute must be a function.`);
@@ -16374,7 +16387,7 @@ function assertWorkflowCommandDefinition(command, value) {
     normalizeTimeout(definition.commandTimeout);
     normalizeRetryCount(definition.retry);
 }
-function assertWorkflowLifecycleTarget(command, lifecycle, value) {
+function validateWorkflowLifecycleTarget(command, lifecycle, value) {
     if (isString(value) && value) {
         return;
     }
@@ -16387,7 +16400,7 @@ function assertWorkflowLifecycleTarget(command, lifecycle, value) {
     }
     throw new Error(`$workflow command '${command}' ${lifecycle} must target a non-empty state.`);
 }
-function assertWorkflowSnapshot(snapshot) {
+function validateWorkflowSnapshot(snapshot) {
     const candidate = snapshot;
     if (!isString(candidate.id) || !candidate.id) {
         throw new Error("$workflow restore requires a non-empty id.");
@@ -16784,7 +16797,7 @@ class ASTInterpreter {
         const expressions = [];
         for (let i = 0, l = body.length; i < l; i++) {
             const expression = body[i];
-            expressions.push(this._recurse(assertDefined(expression._expression)));
+            expressions.push(this._recurse(assertInvariantDefined(expression._expression)));
         }
         const fnRaw = body.length === 0
             ? () => {
@@ -16829,7 +16842,7 @@ class ASTInterpreter {
             case ASTType._Literal:
                 return ASTInterpreter._value(ast._value, context);
             case ASTType._UnaryExpression: {
-                const unaryRight = this._recurse(assertDefined(ast._argument));
+                const unaryRight = this._recurse(assertInvariantDefined(ast._argument));
                 return self[`unary${String(ast._operator)}`](unaryRight, context);
             }
             case ASTType._BinaryExpression: {
@@ -16839,8 +16852,8 @@ class ASTInterpreter {
                         return binaryPath;
                     }
                 }
-                const binaryLeft = this._recurse(assertDefined(ast._left));
-                const binaryRight = this._recurse(assertDefined(ast._right));
+                const binaryLeft = this._recurse(assertInvariantDefined(ast._left));
+                const binaryRight = this._recurse(assertInvariantDefined(ast._right));
                 return self[`binary${String(ast._operator)}`](binaryLeft, binaryRight, context);
             }
             case ASTType._LogicalExpression: {
@@ -16850,14 +16863,14 @@ class ASTInterpreter {
                         return logicalPath;
                     }
                 }
-                const logicalLeft = this._recurse(assertDefined(ast._left));
-                const logicalRight = this._recurse(assertDefined(ast._right));
+                const logicalLeft = this._recurse(assertInvariantDefined(ast._left));
+                const logicalRight = this._recurse(assertInvariantDefined(ast._right));
                 return self[`binary${String(ast._operator)}`](logicalLeft, logicalRight, context);
             }
             case ASTType._ConditionalExpression:
-                return ASTInterpreter["ternary?:"](this._recurse(assertDefined(ast._test)), this._recurse(assertDefined(ast._alternate)), this._recurse(assertDefined(ast._consequent)), context);
+                return ASTInterpreter["ternary?:"](this._recurse(assertInvariantDefined(ast._test)), this._recurse(assertInvariantDefined(ast._alternate)), this._recurse(assertInvariantDefined(ast._consequent)), context);
             case ASTType._Identifier:
-                return ASTInterpreter._identifier(assertDefined(ast._name), context, create);
+                return ASTInterpreter._identifier(assertInvariantDefined(ast._name), context, create);
             case ASTType._MemberExpression:
                 return this._compileMemberExpression(ast, context, create);
             case ASTType._CallExpression:
@@ -16894,10 +16907,10 @@ class ASTInterpreter {
         if (ast._filter) {
             return this._compileFilterCall(ast, callArguments, args, context);
         }
-        const callee = assertDefined(ast._callee);
+        const callee = assertInvariantDefined(ast._callee);
         const right = this._recurse(callee, true);
         if (!context && args.length === 2 && callee._type === ASTType._Identifier) {
-            return ASTInterpreter._compileIdentifierTwoArgCall(assertDefined(callee._name), callArguments, args);
+            return ASTInterpreter._compileIdentifierTwoArgCall(assertInvariantDefined(callee._name), callArguments, args);
         }
         if (args.length <= 1) {
             return ASTInterpreter._compileSmallCall(right, args[0], args.length, context);
@@ -16965,7 +16978,7 @@ class ASTInterpreter {
                 const rhs = getExpressionReference(callee(scope, locals, assign));
                 let value;
                 if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
-                    const res = assertDefined(arg)(scope, locals, assign);
+                    const res = assertInvariantDefined(arg)(scope, locals, assign);
                     value = callFunction(rhs.value, rhs.context, isFunction(res) ? res() : res);
                 }
                 return context ? { value } : value;
@@ -17020,7 +17033,7 @@ class ASTInterpreter {
     }
     /** @internal */
     _compileFilterCall(ast, callArguments, args, context) {
-        const filter = this._$filter(assertDefined(ast._callee._name));
+        const filter = this._$filter(assertInvariantDefined(ast._callee._name));
         if (args.length === 1) {
             const [arg0] = args;
             if (!context) {
@@ -17068,16 +17081,16 @@ class ASTInterpreter {
     }
     /** @internal */
     _compileMemberExpression(ast, context, create) {
-        const left = this._recurse(assertDefined(ast._object), false, !!create);
+        const left = this._recurse(assertInvariantDefined(ast._object), false, !!create);
         if (ast._computed) {
-            return ASTInterpreter._computedMember(left, this._recurse(assertDefined(ast._property)), context, create);
+            return ASTInterpreter._computedMember(left, this._recurse(assertInvariantDefined(ast._property)), context, create);
         }
-        return ASTInterpreter._nonComputedMember(left, assertDefined(ast._property._name), context, create);
+        return ASTInterpreter._nonComputedMember(left, assertInvariantDefined(ast._property._name), context, create);
     }
     /** @internal */
     _compileAssignmentExpression(ast, context) {
-        const left = this._recurse(assertDefined(ast._left), true, 1);
-        const right = this._recurse(assertDefined(ast._right));
+        const left = this._recurse(assertInvariantDefined(ast._left), true, 1);
+        const right = this._recurse(assertInvariantDefined(ast._right));
         return (scope, locals, assign) => {
             const lhs = getExpressionReference(left(scope, locals, assign));
             const rhs = right(scope, locals, assign);
@@ -17110,7 +17123,7 @@ class ASTInterpreter {
     }
     /** @internal */
     _compileUpdateExpression(ast, context) {
-        const ref = this._recurse(assertDefined(ast._argument), true, 1);
+        const ref = this._recurse(assertInvariantDefined(ast._argument), true, 1);
         const op = ast._operator;
         const prefix = !!ast._prefix;
         return (scope, locals, assign) => {
@@ -17608,33 +17621,36 @@ class ASTInterpreter {
 }
 function getNonComputedPath(ast) {
     if (ast._type === ASTType._Identifier) {
-        return [assertDefined(ast._name)];
+        return [assertInvariantDefined(ast._name)];
     }
     if (ast._type !== ASTType._MemberExpression || ast._computed) {
         return undefined;
     }
     const member = ast;
-    const memberObject = assertDefined(member._object);
-    const memberProperty = assertDefined(member._property._name);
+    const memberObject = assertInvariantDefined(member._object);
+    const memberProperty = assertInvariantDefined(member._property._name);
     if (memberObject._type === ASTType._Identifier) {
-        return [assertDefined(memberObject._name), memberProperty];
+        return [
+            assertInvariantDefined(memberObject._name),
+            memberProperty,
+        ];
     }
     const path = [];
     let node = ast;
     while (node._type === ASTType._MemberExpression && !node._computed) {
-        path.push(assertDefined(node._property._name));
-        node = assertDefined(node._object);
+        path.push(assertInvariantDefined(node._property._name));
+        node = assertInvariantDefined(node._object);
     }
     if (node._type !== ASTType._Identifier) {
         return undefined;
     }
-    path.push(assertDefined(node._name));
+    path.push(assertInvariantDefined(node._name));
     path.reverse();
     return path;
 }
 function getObjectPropertyKey(property) {
     return property._key._type === ASTType._Identifier
-        ? assertDefined(property._key._name)
+        ? assertInvariantDefined(property._key._name)
         : String(property._key._value);
 }
 function isSmallStaticObject(properties) {
@@ -17753,11 +17769,11 @@ function getPathBinary(ast) {
     if (operator !== "===" && operator !== "!==") {
         return undefined;
     }
-    const leftPath = getNonComputedPath(assertDefined(ast._left));
+    const leftPath = getNonComputedPath(assertInvariantDefined(ast._left));
     if (!leftPath) {
         return undefined;
     }
-    const rightPath = getNonComputedPath(assertDefined(ast._right));
+    const rightPath = getNonComputedPath(assertInvariantDefined(ast._right));
     if (!rightPath) {
         return undefined;
     }
@@ -17772,11 +17788,11 @@ function getPathLogical(ast) {
     if (operator !== "&&" && operator !== "||" && operator !== "??") {
         return undefined;
     }
-    const leftPath = getNonComputedPath(assertDefined(ast._left));
+    const leftPath = getNonComputedPath(assertInvariantDefined(ast._left));
     if (!leftPath) {
         return undefined;
     }
-    const rightPath = getNonComputedPath(assertDefined(ast._right));
+    const rightPath = getNonComputedPath(assertInvariantDefined(ast._right));
     if (!rightPath) {
         return undefined;
     }
@@ -17832,7 +17848,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             const body = decoratedNode._body;
             for (let i = 0, l = body.length; i < l; i++) {
                 const expr = body[i];
-                const decorated = findConstantAndWatchExpressions(assertDefined(expr._expression), $filter, astIsPure);
+                const decorated = findConstantAndWatchExpressions(assertInvariantDefined(expr._expression), $filter, astIsPure);
                 allConstants = allConstants && decorated._constant;
             }
             decoratedNode._constant = allConstants;
@@ -17843,14 +17859,14 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._toWatch = [];
             return decoratedNode;
         case ASTType._UnaryExpression: {
-            const decorated = findConstantAndWatchExpressions(assertDefined(decoratedNode._argument), $filter, astIsPure);
+            const decorated = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._argument), $filter, astIsPure);
             decoratedNode._constant = decorated._constant;
             decoratedNode._toWatch = decorated._toWatch ?? [];
             return decoratedNode;
         }
         case ASTType._BinaryExpression:
-            decoratedLeft = findConstantAndWatchExpressions(assertDefined(decoratedNode._left), $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(assertDefined(decoratedNode._right), $filter, astIsPure);
+            decoratedLeft = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._left), $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._right), $filter, astIsPure);
             decoratedNode._constant =
                 decoratedLeft._constant && decoratedRight._constant;
             argsToWatch = [];
@@ -17859,16 +17875,16 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._toWatch = argsToWatch;
             return decoratedNode;
         case ASTType._LogicalExpression:
-            decoratedLeft = findConstantAndWatchExpressions(assertDefined(decoratedNode._left), $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(assertDefined(decoratedNode._right), $filter, astIsPure);
+            decoratedLeft = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._left), $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._right), $filter, astIsPure);
             decoratedNode._constant =
                 decoratedLeft._constant && decoratedRight._constant;
             decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
             return decoratedNode;
         case ASTType._ConditionalExpression:
-            decoratedTest = findConstantAndWatchExpressions(assertDefined(ast._test), $filter, astIsPure);
-            decoratedAlternate = findConstantAndWatchExpressions(assertDefined(ast._alternate), $filter, astIsPure);
-            decoratedConsequent = findConstantAndWatchExpressions(assertDefined(ast._consequent), $filter, astIsPure);
+            decoratedTest = findConstantAndWatchExpressions(assertInvariantDefined(ast._test), $filter, astIsPure);
+            decoratedAlternate = findConstantAndWatchExpressions(assertInvariantDefined(ast._alternate), $filter, astIsPure);
+            decoratedConsequent = findConstantAndWatchExpressions(assertInvariantDefined(ast._consequent), $filter, astIsPure);
             decoratedNode._constant =
                 decoratedTest._constant &&
                     decoratedAlternate._constant &&
@@ -17880,9 +17896,9 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             decoratedNode._toWatch = [ast];
             return decoratedNode;
         case ASTType._MemberExpression:
-            decoratedObject = findConstantAndWatchExpressions(assertDefined(ast._object), $filter, astIsPure);
+            decoratedObject = findConstantAndWatchExpressions(assertInvariantDefined(ast._object), $filter, astIsPure);
             if (ast._computed) {
-                decoratedProperty = findConstantAndWatchExpressions(assertDefined(ast._property), $filter, astIsPure);
+                decoratedProperty = findConstantAndWatchExpressions(assertInvariantDefined(ast._property), $filter, astIsPure);
             }
             decoratedNode._constant =
                 decoratedObject._constant &&
@@ -17905,8 +17921,8 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             return decoratedNode;
         }
         case ASTType._AssignmentExpression:
-            decoratedLeft = findConstantAndWatchExpressions(assertDefined(ast._left), $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(assertDefined(ast._right), $filter, astIsPure);
+            decoratedLeft = findConstantAndWatchExpressions(assertInvariantDefined(ast._left), $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(assertInvariantDefined(ast._right), $filter, astIsPure);
             decoratedNode._constant =
                 decoratedLeft._constant && decoratedRight._constant;
             decoratedNode._toWatch = [decoratedNode];
@@ -17955,7 +17971,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             return decoratedNode;
         case ASTType._UpdateExpression: {
             // side-effectful, not constant
-            findConstantAndWatchExpressions(assertDefined(ast._argument), $filter, false);
+            findConstantAndWatchExpressions(assertInvariantDefined(ast._argument), $filter, false);
             decoratedNode._constant = false;
             decoratedNode._toWatch = [decoratedNode]; // treat like assignment: watch the expression
             return decoratedNode;
@@ -20493,7 +20509,7 @@ class FormController {
     addControl(control) {
         // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
         // and not added to the scope.  Now we throw an error.
-        assertNotHasOwnProperty(String(control.controlName), "input");
+        validateNotHasOwnPropertyName(String(control.controlName), "input");
         this._validityPropagationId = nextValidityPropagationId++;
         this._controls.push(control);
         if (control.controlName) {
@@ -21278,8 +21294,8 @@ function withResolvers$1() {
     });
     return {
         promise,
-        resolve: assertDefined(resolve),
-        reject: assertDefined(reject),
+        resolve: assertInvariantDefined(resolve),
+        reject: assertInvariantDefined(reject),
     };
 }
 /** @internal */
@@ -21890,7 +21906,7 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
         const { promise, resolve, reject } = withResolvers$1();
         let cache;
         let cachedResp;
-        const reqHeaders = assertDefined(config.headers);
+        const reqHeaders = assertInvariantDefined(config.headers);
         config.headers = reqHeaders;
         let { url } = config;
         if (!isString(url)) {
@@ -22298,7 +22314,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                     placeholder.style.display = "none";
                     parent.insertBefore(placeholder, target.nextSibling);
                     placeholders.add(placeholder);
-                    trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                    trackAnimation(assertInvariantDefined(animate).leave(target), (completed) => {
                         if (!completed || destroyed) {
                             placeholder.remove();
                             placeholders.delete(placeholder);
@@ -22309,7 +22325,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                         const insertedNodes = arrayFrom(frag.childNodes);
                         for (const x of insertedNodes) {
                             if (x.nodeType === NodeType._ELEMENT_NODE) {
-                                assertDefined(animate).enter(x, parent, placeholder);
+                                assertInvariantDefined(animate).enter(x, parent, placeholder);
                             }
                             else {
                                 parent.insertBefore(x, placeholder);
@@ -22330,7 +22346,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                         const outgoingFragments = collectChildFragments(target);
                         parent.insertBefore(placeholder, target);
                         placeholders.add(placeholder);
-                        trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                        trackAnimation(assertInvariantDefined(animate).leave(target), (completed) => {
                             if (!completed || destroyed) {
                                 placeholder.remove();
                                 placeholders.delete(placeholder);
@@ -22338,7 +22354,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                             }
                             disposeFragments(outgoingFragments);
                             target.textContent = stringify$1(html);
-                            trackAnimation(assertDefined(animate).enter(target, parent, placeholder), () => {
+                            trackAnimation(assertInvariantDefined(animate).enter(target, parent, placeholder), () => {
                                 placeholder.remove();
                                 placeholders.delete(placeholder);
                             });
@@ -22357,7 +22373,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                     }
                     nodes.forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-                            assertDefined(animate).enter(node, parent, target);
+                            assertInvariantDefined(animate).enter(node, parent, target);
                         }
                         else {
                             parent.insertBefore(node, target);
@@ -22369,7 +22385,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                     const { firstChild } = target;
                     [...nodes].reverse().forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-                            assertDefined(animate).enter(node, target, firstChild);
+                            assertInvariantDefined(animate).enter(node, target, firstChild);
                         }
                         else {
                             target.insertBefore(node, firstChild);
@@ -22380,7 +22396,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                 case "beforeend": {
                     nodes.forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-                            assertDefined(animate).enter(node, target);
+                            assertInvariantDefined(animate).enter(node, target);
                         }
                         else {
                             target.appendChild(node);
@@ -22397,7 +22413,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                     const { nextSibling } = target;
                     [...nodes].reverse().forEach((node) => {
                         if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-                            assertDefined(animate).enter(node, parent, nextSibling);
+                            assertInvariantDefined(animate).enter(node, parent, nextSibling);
                         }
                         else {
                             parent.insertBefore(node, nextSibling);
@@ -22408,7 +22424,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                 case "delete":
                     if (animationEnabled) {
                         const outgoingFragments = collectNodeTreeFragments(target);
-                        trackAnimation(assertDefined(animate).leave(target), (completed) => {
+                        trackAnimation(assertInvariantDefined(animate).leave(target), (completed) => {
                             if (!completed || destroyed)
                                 return;
                             disposeFragments(outgoingFragments);
@@ -22429,14 +22445,14 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                             !isArray(content) &&
                             content.nodeType !== NodeType._TEXT_NODE) {
                             const outgoingFragments = collectNodeTreeFragments(content);
-                            trackAnimation(assertDefined(animate).leave(content), (completed) => {
+                            trackAnimation(assertInvariantDefined(animate).leave(content), (completed) => {
                                 if (!completed || destroyed) {
                                     disposeNodeFragments(nodes);
                                     return;
                                 }
                                 disposeFragments(outgoingFragments);
                                 content = nodes[0];
-                                assertDefined(animate).enter(nodes[0], target);
+                                assertInvariantDefined(animate).enter(nodes[0], target);
                             });
                         }
                         else {
@@ -22446,7 +22462,7 @@ function createRealtimeSwapHandler({ $compile, $log, getAnimate, scope, element,
                                 target.replaceChildren(...nodes);
                             }
                             else {
-                                assertDefined(animate).enter(nodes[0], target);
+                                assertInvariantDefined(animate).enter(nodes[0], target);
                             }
                         }
                     }
@@ -23186,7 +23202,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             });
                             currentScope = newScope;
                             currentElement = clone;
-                            currentFragment = assertDefined(getCompiledFragmentRecordFromNodes(clone));
+                            currentFragment = assertInvariantDefined(getCompiledFragmentRecordFromNodes(clone));
                             currentScope.emit("$includeContentLoaded", src);
                             onloadFn?.(scope);
                             return undefined;
@@ -23198,7 +23214,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                                 cleanupLastIncludeContent();
                                 scope.emit("$includeContentError", src);
                             }
-                            $exceptionHandler(isInstanceOf(err, Error) ? err : new Error(String(err)));
+                            $exceptionHandler(err);
                             return undefined;
                         });
                     }
@@ -24906,7 +24922,7 @@ class NgMessageCtrl {
         const messageMatched = unmatchedMessages.length !== totalMessages;
         const attachDefault = !!this._default && !messageMatched && truthyKeys > 0;
         if (attachDefault) {
-            assertDefined(this._default).attach();
+            assertInvariantDefined(this._default).attach();
         }
         else if (this._default) {
             this._default.detach();
@@ -25310,9 +25326,9 @@ function ngOptionsDirective($compile, $parse) {
                     if (selectNode.value !== option._selectValue) {
                         selectCtrl._removeUnknownOption();
                         selectNode.value = option._selectValue;
-                        assertDefined(option._element).selected = true;
+                        assertInvariantDefined(option._element).selected = true;
                     }
-                    assertDefined(option._element).setAttribute("selected", "selected");
+                    assertInvariantDefined(option._element).setAttribute("selected", "selected");
                 }
                 else {
                     selectCtrl._selectUnknownOrEmptyOption(value);
@@ -25359,8 +25375,8 @@ function ngOptionsDirective($compile, $parse) {
             };
         }
         if (providedEmptyOption) {
-            const linkFn = $compile(assertDefined(selectCtrl._emptyOption));
-            selectNode.prepend(assertDefined(selectCtrl._emptyOption));
+            const linkFn = $compile(assertInvariantDefined(selectCtrl._emptyOption));
+            selectNode.prepend(assertInvariantDefined(selectCtrl._emptyOption));
             linkFn(scope);
         }
         scope.watch(ngOptions._getWatchables, updateOptions);
@@ -25705,7 +25721,7 @@ class SelectController {
         const optionValue = deProxy(value);
         if (element.nodeType === NodeType._COMMENT_NODE)
             return;
-        assertNotHasOwnProperty(String(optionValue), '"option value"');
+        validateNotHasOwnPropertyName(String(optionValue), '"option value"');
         if (optionValue === "") {
             this._hasEmptyOption = true;
             this._emptyOption = element;
@@ -26823,7 +26839,7 @@ function ngRepeatDirective($injector) {
                         block = remainingBlock;
                         const blockNodes = getBlockNodes(isArray(block._clone)
                             ? block._clone
-                            : [assertDefined(block._clone)]);
+                            : [assertInvariantDefined(block._clone)]);
                         const blockStart = getBlockStart(block);
                         elementsToRemove = isInstanceOf(blockStart, Element)
                             ? blockStart
@@ -26941,15 +26957,16 @@ function ngRepeatDirective($injector) {
     };
 }
 
-/** Assigns a stable scope name so the scope can be looked up externally. */
+/** Assigns a required, stable scope name so the scope can be looked up externally. */
 function ngScopeDirective() {
     return {
         scope: false,
         link($scope, element) {
             const scopeName = getNormalizedAttr(element, "ngScope");
-            if (typeof scopeName === "string") {
-                $scope.scopeName = scopeName;
+            if (typeof scopeName !== "string" || scopeName.trim() === "") {
+                throw new TypeError("ng-scope requires a non-empty name.");
             }
+            $scope.scopeName = scopeName.trim();
         },
     };
 }
@@ -27197,7 +27214,7 @@ function ngSwitchDirective($injector) {
                     values(selectedTranscludes).forEach((selectedTransclude) => {
                         selectedTransclude.transclude((caseElementParam, selectedScopeParam) => {
                             const caseElement = caseElementParam;
-                            const selectedScope = assertDefined(selectedScopeParam);
+                            const selectedScope = assertInvariantDefined(selectedScopeParam);
                             selectedScopes.push(selectedScope);
                             const anchor = selectedTransclude.element;
                             const block = {
@@ -28225,7 +28242,7 @@ function destroyWorkerRuntimeState(state) {
         connection.terminate();
     state.connections.clear();
 }
-function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstructor, onTerminate) {
+function createManagedWorkerHandle(scriptPath, config, logger, exceptionHandler, getWorkerConstructor, onTerminate) {
     if (!scriptPath)
         throw new Error("Worker script path required");
     const restartEnabled = config?.restart ?? false;
@@ -28255,6 +28272,14 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
     let nextRequestId = 1;
     let terminated = false;
     let worker = new (getWorkerConstructor())(scriptPath, workerOptions);
+    const invokeListener = (listener, ...args) => {
+        try {
+            listener(...args);
+        }
+        catch (listenerError) {
+            exceptionHandler(listenerError);
+        }
+    };
     const scheduleBindings = () => {
         for (const [scopeId, handler] of bindings) {
             if (handler._destroyed) {
@@ -28272,7 +28297,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
         error = nextError;
         scheduleBindings();
         for (const listener of errorListeners)
-            listener(nextError);
+            invokeListener(listener, nextError);
     };
     const cleanupRequest = (request) => {
         clearTimeout(request.timer);
@@ -28328,7 +28353,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
         if (!listeners)
             return;
         for (const listener of listeners) {
-            listener(message.snapshot, message.options);
+            invokeListener(listener, message.snapshot, message.options);
         }
     };
     const wire = (activeWorker) => {
@@ -28352,7 +28377,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
             if ("error" in data)
                 return;
             for (const listener of messageListeners) {
-                listener(data.value, event);
+                invokeListener(listener, data.value, event);
             }
         };
         activeWorker.onerror = (event) => {
@@ -28418,7 +28443,7 @@ function createManagedWorkerHandle(scriptPath, config, logger, getWorkerConstruc
             postNative(message, transfer);
         },
         request(message, options = {}) {
-            assertWorkerRequestOptions(options);
+            validateWorkerRequestOptions(options);
             if (terminated) {
                 return Promise.reject(new WorkerError("terminated", "Cannot request from a terminated Worker"));
             }
@@ -28609,7 +28634,7 @@ function formatWorkerFailure(value, fallback) {
     }
     return fallback;
 }
-function assertWorkerRequestOptions(options) {
+function validateWorkerRequestOptions(options) {
     if (!isObject(options) || isArray(options)) {
         throw new Error("$worker request options must be an object.");
     }
@@ -28630,12 +28655,12 @@ function assertWorkerRequestOptions(options) {
     }
 }
 /** @internal */
-function createWorkerService(log, state, getWorkerConstructor, security) {
+function createWorkerService(log, state, getWorkerConstructor, exceptionHandler, security) {
     return (scriptPath, config = {}) => {
         if (state.destroyed) {
             throw new Error("Cannot create a Worker after runtime teardown");
         }
-        assertWorkerConfig(config);
+        validateWorkerConfig(config);
         if (security) {
             const decision = security.check({
                 operation: "request",
@@ -28649,12 +28674,12 @@ function createWorkerService(log, state, getWorkerConstructor, security) {
                 throw new Error(decision.reason ?? "Worker creation denied by security policy");
             }
         }
-        const handle = createManagedWorkerHandle(scriptPath, config, log, getWorkerConstructor, () => state.connections.delete(handle));
+        const handle = createManagedWorkerHandle(scriptPath, config, log, exceptionHandler, getWorkerConstructor, () => state.connections.delete(handle));
         state.connections.add(handle);
         return handle;
     };
 }
-function assertWorkerConfig(config) {
+function validateWorkerConfig(config) {
     if (typeof config !== "object" || config === null || Array.isArray(config)) {
         throw new Error("$worker config must be an object.");
     }
@@ -28702,7 +28727,13 @@ function assertWorkerConfig(config) {
 }
 
 const workerDirectiveScopeStates = new WeakMap();
-ngWorkerDirective.$inject = [_parse, _log, _worker, _injector];
+ngWorkerDirective.$inject = [
+    _parse,
+    _log,
+    _worker,
+    _injector,
+    _exceptionHandler,
+];
 function getScopeWorkerQueueState(scope) {
     let state = workerDirectiveScopeStates.get(scope);
     if (state)
@@ -28772,7 +28803,7 @@ function flushScopeWorkerQueue(state) {
 /**
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" on-result="callback($result)"></div>
  */
-function ngWorkerDirective($parse, $log, $worker, $injector) {
+function ngWorkerDirective($parse, $log, $worker, $injector, $exceptionHandler) {
     return {
         restrict: "A",
         link(scope, element) {
@@ -28827,7 +28858,12 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                 queueScopeWorkerOperation(scope, () => {
                     const onResult = attr("onResult");
                     if (isDefined(onResult)) {
-                        $parse(onResult)(scope, { $result: result });
+                        try {
+                            $parse(onResult)(scope, { $result: result });
+                        }
+                        catch (error) {
+                            $exceptionHandler(error);
+                        }
                     }
                 });
             };
@@ -28836,7 +28872,12 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                     $log.error(`[ng-worker:${workerLabel}]`, err);
                     const onError = attr("onError");
                     if (isDefined(onError)) {
-                        $parse(onError)(scope, { error: err });
+                        try {
+                            $parse(onError)(scope, { error: err });
+                        }
+                        catch (error) {
+                            $exceptionHandler(error);
+                        }
                     }
                 });
             };
@@ -28867,8 +28908,8 @@ function ngWorkerDirective($parse, $log, $worker, $injector) {
                             params = paramsFn?.(scope);
                         }
                         catch (err) {
-                            $log.error("ngWorker: failed to evaluate data-params", err);
-                            params = undefined;
+                            $exceptionHandler(err);
+                            return;
                         }
                         if (requestMode) {
                             try {
@@ -29168,11 +29209,11 @@ function unwrapShorthand(cfg) {
 function getType(cfg, urlType, location, id, paramTypes) {
     if (cfg.type && urlType && urlType.name !== "string")
         throw new Error(`Param '${id}' has two type configurations.`);
-    if (cfg.type &&
-        urlType?.name === "string" &&
-        isString(cfg.type) &&
-        paramTypes[cfg.type])
-        return assertDefined(paramTypes[cfg.type]);
+    if (cfg.type && urlType?.name === "string" && isString(cfg.type)) {
+        const configuredType = paramTypes[cfg.type];
+        if (configuredType)
+            return configuredType;
+    }
     if (urlType)
         return urlType;
     if (!cfg.type) {
@@ -29183,9 +29224,13 @@ function getType(cfg, urlType, location, id, paramTypes) {
                 : "query";
         return paramTypes[type];
     }
-    return isInstanceOf(cfg.type, ParamType)
-        ? cfg.type
-        : assertDefined(paramTypes[cfg.type]);
+    if (isInstanceOf(cfg.type, ParamType))
+        return cfg.type;
+    const configuredType = paramTypes[cfg.type];
+    if (!configuredType) {
+        throw new Error(`Param '${id}' uses unknown type '${cfg.type}'.`);
+    }
+    return configuredType;
 }
 /**
  * Returns false, true, or the replacement value for an optional URL parameter.
@@ -29910,7 +29955,7 @@ class UrlMatcher {
             if (pathSegment.includes("?"))
                 break; // we're into the search part
             checkParamErrors(id, pattern, this._params);
-            this._params.push(paramFactory.fromPath(id, paramType, assertDefined(config.state)));
+            this._params.push(paramFactory.fromPath(id, paramType, assertInvariantDefined(config.state)));
             this._segments.push(pathSegment);
             this._compiled += quoteRegExp(pathSegment, this._params[this._params.length - 1]);
             last = PLACEHOLDER_REGEXP.lastIndex;
@@ -29927,7 +29972,7 @@ class UrlMatcher {
                     const id = matchArray[2] || matchArray[3];
                     const paramType = getParamType(pattern, matchArray, true, paramTypes, config);
                     checkParamErrors(id, pattern, this._params);
-                    this._params.push(paramFactory.fromSearch(id, paramType, assertDefined(config.state)));
+                    this._params.push(paramFactory.fromSearch(id, paramType, assertInvariantDefined(config.state)));
                     last = SEARCH_PLACEHOLDER_REGEXP.lastIndex;
                     // check if ?&
                 }
@@ -30962,7 +31007,7 @@ function StateRefActiveDirective($state, $interpolate, $stateRegistry, $transiti
                     "ngStateActiveExact",
                 ]);
                 const activeEqExpr = activeEqRead ?? "";
-                const activeEqClass = stringify$1(assertDefined($interpolate(activeEqExpr, false))($scope) ?? "");
+                const activeEqClass = stringify$1(assertInvariantDefined($interpolate(activeEqExpr, false))($scope));
                 const activeRead = getFirstNormalizedAttr($element, ["ngStateActive"]);
                 const activeExpr = activeRead;
                 try {
@@ -30976,7 +31021,7 @@ function StateRefActiveDirective($state, $interpolate, $stateRegistry, $transiti
                 }
                 activeDefinition =
                     activeDefinition ??
-                        stringify$1(assertDefined($interpolate(activeExpr ?? "", false))($scope) ?? "");
+                        stringify$1(assertInvariantDefined($interpolate(activeExpr ?? "", false))($scope));
                 setStatesFromDefinitionObject(activeDefinition);
                 // Allow state-ref directives to communicate with active-state directives.
                 this._addStateInfo = function (newState, newParams) {
@@ -31144,7 +31189,9 @@ class Resolvable {
             this.promise = arg1.promise;
         }
         else if (isFunction(resolveFn)) {
-            assert(!isNullOrUndefined(arg1), "token argument is required");
+            if (isNullOrUndefined(arg1)) {
+                throw new TypeError("Resolvable token argument is required");
+            }
             this.token = arg1;
             this.eager = !!eager;
             this.resolveFn = resolveFn;
@@ -31208,7 +31255,7 @@ function createResolveInvocationLocals(context) {
     const locals = {};
     context.getTokens().forEach((token) => {
         if (isString(token)) {
-            locals[token] = assertDefined(context.getResolvable(token)).data;
+            locals[token] = assertInvariantDefined(context.getResolvable(token)).data;
         }
     });
     return locals;
@@ -31420,7 +31467,7 @@ function registerViewControllerCallbacks($transitions, controllerInstance, $scop
     if (isFunction(controllerInstance.onParamsChanged)) {
         const onParamsChanged = controllerInstance.onParamsChanged;
         const resolveContext = new ResolveContext(cfg._path, cfg._factory?._injector);
-        const viewCreationTrans = assertDefined(resolveContext.getResolvable("$transition$")).data;
+        const viewCreationTrans = assertInvariantDefined(resolveContext.getResolvable("$transition$")).data;
         // Fire callback on any successful transition
         const paramsUpdated = ($transition$) => {
             if (!$transition$)
@@ -31612,7 +31659,7 @@ function viewDeclTargetKey(viewDecl) {
     return viewContext ? `${viewContext}.${viewName}` : viewName;
 }
 function viewDeclDepth(viewDecl) {
-    let context = assertDefined(viewDecl._context);
+    let context = assertInvariantDefined(viewDecl._context);
     let count = 0;
     while (++count && context.parent) {
         context = context.parent;
@@ -31722,7 +31769,7 @@ class ViewService {
     /** @internal */
     _fillView(options) {
         const { host, rootNodes, scope, config, initial, activeNgView, animation } = options;
-        const $compile = assertDefined(this._compile);
+        const $compile = assertInvariantDefined(this._compile);
         const viewData = {
             _config: config,
             $ngView: activeNgView,
@@ -31735,7 +31782,7 @@ class ViewService {
         }
         const plan = config?._fillPlan;
         const resolveContext = config && plan?._needsResolveContext
-            ? new ResolveContext(config._path, assertDefined(this._injector))
+            ? new ResolveContext(config._path, assertInvariantDefined(this._injector))
             : undefined;
         if (host.childNodes.length || this._filledHosts.has(host)) {
             scope.broadcast("$destroy");
@@ -31744,8 +31791,7 @@ class ViewService {
             this._filledHosts.add(host);
         }
         host.innerHTML = config
-            ? (getViewTemplate(config, host, assertDefined(resolveContext)) ??
-                initial)
+            ? (getViewTemplate(config, host, assertInvariantDefined(resolveContext)) ?? initial)
             : initial;
         if (config && plan?._kind === "component") {
             this._markComponentView(host, config, scope);
@@ -31758,14 +31804,14 @@ class ViewService {
         targetScope.$resolve = locals;
         const controller = plan?._hasController ? config?._controller : undefined;
         if (controller) {
-            const controllerConfig = assertDefined(config);
-            const controllerInstance = assertDefined(this._controller)(controller, createRouterViewControllerInvocationLocals(locals, scope, host));
+            const controllerConfig = assertInvariantDefined(config);
+            const controllerInstance = assertInvariantDefined(this._controller)(controller, createRouterViewControllerInvocationLocals(locals, scope, host));
             setCacheData(host, "$ngControllerController", controllerInstance);
             const { children } = host;
             for (let i = 0; i < children.length; i++) {
                 setCacheData(children[i], "$ngControllerController", controllerInstance);
             }
-            registerViewControllerCallbacks(assertDefined(this._transitions), controllerInstance, scope, controllerConfig);
+            registerViewControllerCallbacks(assertInvariantDefined(this._transitions), controllerInstance, scope, controllerConfig);
         }
         link(scope);
         if (scope._handler._destroyed) {
@@ -32033,7 +32079,7 @@ class ViewService {
         const vcContext = viewDecl._ngViewContextAnchor ?? "";
         if (normalizedTarget !== ngView._fqn)
             return false;
-        const viewContext = assertDefined(viewDecl._context);
+        const viewContext = assertInvariantDefined(viewDecl._context);
         if (viewContext.name !== ngViewContext.name &&
             vcContext !== ngViewContext.name) {
             return false;
@@ -32084,8 +32130,8 @@ function withResolvers() {
     });
     return {
         promise,
-        resolve: assertDefined(resolve),
-        reject: assertDefined(reject),
+        resolve: assertInvariantDefined(resolve),
+        reject: assertInvariantDefined(reject),
     };
 }
 /**
@@ -32165,14 +32211,14 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
         priority: 400,
         transclude: "element",
         compile(tElement, $transclude) {
-            const transclude = assertDefined($transclude);
+            const transclude = assertInvariantDefined($transclude);
             const onloadExp = getNormalizedAttr(tElement, "onload") ?? "";
             const autoScrollExp = getNormalizedAttr(tElement, "autoscroll");
             const viewNameExp = getNormalizedAttr(tElement, "ngView") ??
                 getNormalizedAttr(tElement, "name") ??
                 "";
             return function (scope, $element) {
-                const inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertDefined($interpolate(viewNameExp))(scope), name = isString(rawName) && rawName ? rawName : "$default";
+                const inherited = getInheritedData($element, "$ngView") ?? rootData, rawName = assertInvariantDefined($interpolate(viewNameExp))(scope), name = isString(rawName) && rawName ? rawName : "$default";
                 const onloadFn = onloadExp ? $parse(onloadExp) : undefined;
                 const autoScrollFn = autoScrollExp ? $parse(autoScrollExp) : undefined;
                 let currentEl = null;
@@ -32359,7 +32405,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                         }
                         enteredElement = elementClone;
                         enteredNodes = cloneNodes;
-                        enteredFragment = assertDefined(getCompiledFragmentRecord(assertDefined(cloneNodes[0])));
+                        enteredFragment = assertInvariantDefined(getCompiledFragmentRecord(assertInvariantDefined(cloneNodes[0])));
                         $element.after(elementClone);
                         animEnter.resolve(undefined);
                         cleanupLastView();
@@ -32379,14 +32425,14 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                     if (newScope._handler._destroyed) {
                         return;
                     }
-                    const host = assertDefined(enteredElement);
-                    const viewData = assertDefined(getCacheData(host, "$ngView"));
+                    const host = assertInvariantDefined(enteredElement);
+                    const viewData = assertInvariantDefined(getCacheData(host, "$ngView"));
                     $view._fillView({
                         host,
                         rootNodes: enteredNodes,
                         scope: newScope,
                         config,
-                        initial: assertDefined(viewData._initial),
+                        initial: assertInvariantDefined(viewData._initial),
                         activeNgView,
                         animation: $ngViewAnim,
                     });
@@ -32420,7 +32466,7 @@ function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
                     currentEl = retained._element;
                     currentScope = retained._scope;
                     currentNodes = retained._nodes;
-                    currentFragment = assertDefined(retained._fragment);
+                    currentFragment = assertInvariantDefined(retained._fragment);
                     currentAnimation = retained._animation;
                     currentConfig = config;
                     retained._scope.emit("$viewContentAnimationEnded");
@@ -32798,7 +32844,9 @@ function buildUrl$1(stateObject, routerState, root) {
     if (!isInstanceOf(url, UrlMatcher))
         throw new Error(`Invalid url '${String(url)}' in state '${String(stateObject)}'`);
     const base = (parent?.navigable ?? root);
-    return parsed && parsed.root ? url : assertDefined(base._url)._append(url);
+    return parsed && parsed.root
+        ? url
+        : assertInvariantDefined(base._url)._append(url);
 }
 /**
  * @param {ParamFactory} paramFactory
@@ -32835,7 +32883,7 @@ function presentViewKeys(keyItems, values) {
     });
     return present.join(", ");
 }
-function assertNoRemovedViewKeys(keyItems, values, description) {
+function validateNoRemovedViewKeys(keyItems, values, description) {
     const present = [];
     keyItems.forEach((key) => {
         if (isDefined(values[key])) {
@@ -32875,7 +32923,7 @@ function viewsBuilder(state, registrar) {
     if (!state.parent) {
         return {};
     }
-    assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, state, `State '${state.name}'`);
+    validateNoRemovedViewKeys(REMOVED_VIEW_KEYS, state, `State '${state.name}'`);
     if (isDefined(state.views) && hasAnyViewKey(ALL_VIEW_KEYS, state)) {
         throw new Error(`State '${state.name}' has a 'views' object. It cannot also have view properties at the state level. Move these properties into a view declaration: ${presentViewKeys(ALL_VIEW_KEYS, state)}`);
     }
@@ -32899,7 +32947,7 @@ function viewsBuilder(state, registrar) {
         }
         config = assign({}, config);
         normalizeComponentDeclaration(registrar, name, config);
-        assertNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
+        validateNoRemovedViewKeys(REMOVED_VIEW_KEYS, config, `State view '${name}@${state.name}'`);
         if (hasAnyViewKey(COMPONENT_VIEW_KEYS, config) &&
             hasAnyViewKey(NON_COMPONENT_VIEW_KEYS, config)) {
             throw new Error(`Cannot combine: ${COMPONENT_VIEW_KEYS.join("|")} with: ${NON_COMPONENT_VIEW_KEYS.join("|")} in state view '${name}@${state.name}'`);
@@ -32990,7 +33038,7 @@ function invokeStateLifecycleHook(trans, state, hookName, pathname) {
     if (!hook)
         return undefined;
     const hookContext = stateObject._hookContext;
-    const $injector = assertDefined(hookContext._$injector);
+    const $injector = assertInvariantDefined(hookContext._$injector);
     const resolveContext = new ResolveContext(trans._treeChanges[pathname], $injector);
     const subContext = resolveContext.subContext(stateObject);
     const locals = {
@@ -33063,7 +33111,7 @@ class StateBuilder {
     /** @internal */
     _build(state) {
         const { _matcher: matcher, _routerState: routerState } = this;
-        assertNavigationPolicy(state.self);
+        validateNavigationPolicy(state.self);
         const parent = StateBuilder._parentName(state);
         if (parent && !matcher.find(parent, undefined, false)) {
             return null;
@@ -33130,7 +33178,7 @@ class StateBuilder {
         return parentName ? `${parentName}.${name}` : name;
     }
 }
-function assertNavigationPolicy(state) {
+function validateNavigationPolicy(state) {
     const navigation = state.policy?.navigation;
     if (navigation?.public !== true)
         return;
@@ -34249,8 +34297,8 @@ function createDeferredPromise() {
     });
     return {
         promise,
-        resolve: assertDefined(resolve),
-        reject: assertDefined(reject),
+        resolve: assertInvariantDefined(resolve),
+        reject: assertInvariantDefined(reject),
     };
 }
 function nodeIsReloading(node, reloadState) {
@@ -34351,13 +34399,13 @@ class Transition {
         const fromNode = fromPath.length
             ? fromPath[fromPath.length - 1]
             : undefined;
-        return assertDefined(fromNode).state;
+        return assertInvariantDefined(fromNode).state;
     }
     /** @internal */
     _to() {
         const toPath = this._treeChanges.to;
         const toNode = toPath.length ? toPath[toPath.length - 1] : undefined;
-        return assertDefined(toNode).state;
+        return assertInvariantDefined(toNode).state;
     }
     /**
      * Returns the "from state"
@@ -36364,7 +36412,7 @@ class StateRuntime {
             this._getRegistry().register(stateDefinition);
         }
         catch (err) {
-            throw stateRuntimeError("stateinvalid", err.message);
+            throw stateRuntimeError("stateinvalid", err instanceof Error ? err.message : String(err));
         }
         return this;
     }
@@ -36800,7 +36848,7 @@ class StateRuntime {
         if (!isDefined(state))
             return null;
         if (options?.inherit !== false)
-            params = this._routerState._params._inherit(params, assertDefined(this._current), state);
+            params = this._routerState._params._inherit(params, assertInvariantDefined(this._current), state);
         const nav = options?.lossy !== false ? state.navigable : state;
         if (!nav || isNullOrUndefined(nav._url)) {
             return null;
@@ -37524,7 +37572,9 @@ class Location {
         return this._url;
     }
     url(url) {
-        return arguments.length ? this.setUrl(assertDefined(url)) : this.getUrl();
+        return arguments.length
+            ? this.setUrl(validateRequired(url, "url"))
+            : this.getUrl();
     }
     /**
      * Changes the path parameter and returns `$location`.
@@ -37628,7 +37678,7 @@ class Location {
     }
     search(search, paramValue) {
         return arguments.length
-            ? this.setSearch(assertDefined(search), paramValue)
+            ? this.setSearch(validateRequired(search, "search"), paramValue)
             : this.getSearch();
     }
     /**
@@ -37865,7 +37915,7 @@ class LocationRuntimeState {
      * @param callback - Listener invoked with the new URL and history state.
      */
     _onUrlChange(callback) {
-        this._assertActive();
+        this._ensureActive();
         if (!this._urlChangeInit) {
             this._urlChangeHandler ?? (this._urlChangeHandler = this._fireStateOrUrlChange.bind(this));
             this._window.addEventListener("popstate", this._urlChangeHandler);
@@ -37876,7 +37926,7 @@ class LocationRuntimeState {
     }
     /** @internal */
     createService($rootScope, $rootElement, $exceptionHandler) {
-        this._assertActive();
+        this._ensureActive();
         const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
         const initialUrl = trimEmptyHash(this._window.location.href);
         let appBase;
@@ -38078,7 +38128,7 @@ class LocationRuntimeState {
         this._rootClickHandler = undefined;
     }
     /** @internal */
-    _assertActive() {
+    _ensureActive() {
         if (this._destroyed) {
             throw new Error("Location runtime has already been disposed.");
         }
@@ -38090,7 +38140,7 @@ function createLocationRuntimeState(browserWindow) {
 }
 /** @internal */
 function applyLocationConfiguration(state, config) {
-    state._assertActive();
+    state._ensureActive();
     if (config.html5Mode !== undefined) {
         Object.assign(state.config.html5Mode, typeof config.html5Mode === "boolean"
             ? { enabled: config.html5Mode }
@@ -38669,7 +38719,8 @@ class EventBus {
     /**
      * Publish a value to a topic asynchronously.
      *
-     * All listeners are invoked in the order they were added.
+     * Listeners are invoked in the order they were added until delivery finishes
+     * or `$exceptionHandler` terminates the publication.
      * Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are
      * skipped if their scope is destroyed before the queued delivery runs.
      *
@@ -39302,7 +39353,7 @@ function createSecurityRuntimeConfiguration() {
 }
 /** @internal */
 function applySecurityConfiguration(configuration, config) {
-    assertSecurityConfig(config);
+    validateSecurityConfig(config);
     if (config.fallback !== undefined) {
         configuration.fallback = config.fallback;
     }
@@ -39322,7 +39373,7 @@ function applySecurityConfiguration(configuration, config) {
         configuration.permissions = config.permissions;
     }
 }
-function assertSecurityConfig(config) {
+function validateSecurityConfig(config) {
     if (!isRecord(config)) {
         throw new Error("$security config must be an object.");
     }
@@ -39337,7 +39388,7 @@ function assertSecurityConfig(config) {
         throw new Error("$security allowInsecureOrigins must be an array of strings.");
     }
     if (config.credentials !== undefined) {
-        assertSecurityCredentialConfig(config.credentials);
+        validateSecurityCredentialConfig(config.credentials);
     }
     if (config.isAuthenticated !== undefined &&
         typeof config.isAuthenticated !== "boolean" &&
@@ -39351,7 +39402,7 @@ function assertSecurityConfig(config) {
         throw new Error("$security permissions must be an array of strings or function.");
     }
 }
-function assertSecurityCredentialConfig(config) {
+function validateSecurityCredentialConfig(config) {
     if (!isRecord(config)) {
         throw new Error("$security credentials must be an object.");
     }
@@ -39752,7 +39803,7 @@ function createServiceWorkerService(container, options) {
                 callback(updateState);
             }
             catch (error) {
-                options.err(error);
+                options.exceptionHandler(error);
             }
         });
     };
@@ -39828,7 +39879,7 @@ function createServiceWorkerService(container, options) {
                 callback(controller);
             }
             catch (error) {
-                options.err(error);
+                options.exceptionHandler(error);
             }
         });
     });
@@ -40050,7 +40101,7 @@ function createServiceWorkerService(container, options) {
                     });
                 }
                 catch (error) {
-                    options.err(error);
+                    options.exceptionHandler(error);
                 }
             });
         },
@@ -40109,7 +40160,9 @@ function createServiceWorkerService(container, options) {
         disposeControllerChangeListener();
     }
     if (supported && configuration.autoRegister && configuration.scriptUrl) {
-        void service.register().catch((error) => options.err(error));
+        void service
+            .register()
+            .catch((error) => options.exceptionHandler(error));
     }
     return service;
 }
@@ -40382,10 +40435,10 @@ class SceDelegateConfiguration {
             return imgSrcSanitizationTrustedUrlList;
         };
         /** Creates `$sceDelegate` from the current policy configuration. */
-        this.createService = function ($injector, $window, $exceptionHandler) {
+        this.createService = function ($injector, $window) {
             const trustedTypesPolicy = getTrustedTypesPolicy($window);
             let htmlSanitizer = function () {
-                $exceptionHandler($sceError("unsafe", "Attempting to use an unsafe value in a safe context."));
+                throw $sceError("unsafe", "Attempting to use an unsafe value in a safe context.");
             };
             if ($injector.has("$sanitize")) {
                 htmlSanitizer =
@@ -40492,8 +40545,7 @@ class SceDelegateConfiguration {
             function trustAs(type, trustedValue) {
                 const Constructor = isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
                 if (!Constructor) {
-                    $exceptionHandler($sceError("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue));
-                    return undefined;
+                    throw $sceError("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue);
                 }
                 if (trustedValue === null ||
                     isUndefined(trustedValue) ||
@@ -40503,8 +40555,7 @@ class SceDelegateConfiguration {
                 // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
                 // mutable objects, we ensure here that the value passed in is actually a string.
                 if (!isString(trustedValue)) {
-                    $exceptionHandler($sceError("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type));
-                    return undefined;
+                    throw $sceError("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type);
                 }
                 const tst = new Constructor(trustedValue, createTrustedType(trustedTypesPolicy, type, trustedValue));
                 return tst;
@@ -40588,8 +40639,7 @@ class SceDelegateConfiguration {
                     if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
                         return maybeTrusted;
                     }
-                    $exceptionHandler($sceError("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", String(maybeTrusted)));
-                    return undefined;
+                    throw $sceError("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", String(maybeTrusted));
                 }
                 // htmlSanitizer throws its own error when no sanitizer is available.
                 return htmlSanitizer(maybeTrusted);
@@ -40819,7 +40869,7 @@ class SceConfiguration {
  * @internal
  */
 class ConnectionManager {
-    constructor(createFn, config = {}, log = console) {
+    constructor(createFn, config, log, exceptionHandler) {
         this._createFn = createFn;
         this._config = {
             retryDelay: 1000,
@@ -40836,6 +40886,7 @@ class ConnectionManager {
             ...config,
         };
         this._log = log;
+        this._exceptionHandler = exceptionHandler;
         this._retryCount = 0;
         this._closed = false;
         this._heartbeatTimer = undefined;
@@ -40906,8 +40957,12 @@ class ConnectionManager {
     /** @internal */
     _handleOpen(event) {
         this._retryCount = 0;
-        this._config.onOpen?.(event);
-        this._resetHeartbeat();
+        try {
+            this._invokeCallback(this._config.onOpen, event);
+        }
+        finally {
+            this._resetHeartbeat();
+        }
     }
     /** @internal */
     _handleMessage(data, event) {
@@ -40918,27 +40973,39 @@ class ConnectionManager {
                 ? (this._config.transformMessage(data) ?? data)
                 : data;
         }
-        catch {
-            /* empty */
+        catch (error) {
+            this._exceptionHandler(error);
         }
-        this._config.onEvent?.({
-            type: event.type || "message",
-            data: transformedData,
-            rawData,
-            event,
-        });
-        this._config.onMessage?.(transformedData, event);
-        this._resetHeartbeat();
+        try {
+            this._invokeCallback(this._config.onEvent, {
+                type: event.type || "message",
+                data: transformedData,
+                rawData,
+                event,
+            });
+            this._invokeCallback(this._config.onMessage, transformedData, event);
+        }
+        finally {
+            this._resetHeartbeat();
+        }
     }
     /** @internal */
     _handleError(err) {
-        this._config.onError?.(err);
-        this._scheduleReconnect();
+        try {
+            this._invokeCallback(this._config.onError, err);
+        }
+        finally {
+            this._scheduleReconnect();
+        }
     }
     /** @internal */
     _handleClose(event) {
-        this._config.onClose?.(event);
-        this._scheduleReconnect();
+        try {
+            this._invokeCallback(this._config.onClose, event);
+        }
+        finally {
+            this._scheduleReconnect();
+        }
     }
     /** @internal */
     _scheduleReconnect() {
@@ -40946,10 +41013,19 @@ class ConnectionManager {
             return;
         if (this._retryCount < this._config.maxRetries) {
             this._retryCount++;
-            this._config.onReconnect?.(this._retryCount);
-            setTimeout(() => {
-                this.reconnect();
-            }, this._config.retryDelay);
+            try {
+                this._invokeCallback(this._config.onReconnect, this._retryCount);
+            }
+            finally {
+                setTimeout(() => {
+                    try {
+                        this.reconnect();
+                    }
+                    catch (error) {
+                        this._exceptionHandler(error);
+                    }
+                }, this._config.retryDelay);
+            }
         }
         else {
             this._log.warn("ConnectionManager: Max retries reached");
@@ -40976,6 +41052,17 @@ class ConnectionManager {
             this._connection.onclose = null;
         }
         this._connection?.close();
+    }
+    /** @internal */
+    _invokeCallback(callback, ...args) {
+        if (!callback)
+            return;
+        try {
+            callback(...args);
+        }
+        catch (error) {
+            this._exceptionHandler(error);
+        }
     }
 }
 
@@ -41018,7 +41105,7 @@ function destroySseRuntimeConfiguration(configuration) {
     configuration.connections.clear();
 }
 /** @internal */
-function createSseService(log, configuration, getEventSourceConstructor) {
+function createSseService(log, configuration, getEventSourceConstructor, exceptionHandler) {
     return (url, config = {}) => {
         if (configuration.destroyed) {
             throw new Error("Cannot create an SSE connection after runtime teardown");
@@ -41035,7 +41122,7 @@ function createSseService(log, configuration, getEventSourceConstructor) {
             onMessage: (data, event) => {
                 mergedConfig.onMessage?.(data, event);
             },
-        }, log);
+        }, log, exceptionHandler);
         let closed = false;
         const connection = {
             reconnect() {
@@ -41329,14 +41416,14 @@ function destroyWebComponentRuntimeState(state) {
     state.scopes.clear();
 }
 /** @internal */
-function createWebComponentService(injector, rootScope, compile, state) {
-    const assertActive = () => {
+function createWebComponentService(injector, rootScope, compile, state, exceptionHandler) {
+    const ensureActive = () => {
         if (state.destroyed) {
             throw new Error("Cannot use $webComponent after runtime teardown");
         }
     };
     const createElementScope = (host, initialState = {}, options = {}) => {
-        assertActive();
+        ensureActive();
         const parentScope = (options.parentScope ??
             getInheritedData(host, _scope) ??
             getInheritedData(host.parentNode ?? host, _scope) ??
@@ -41354,20 +41441,20 @@ function createWebComponentService(injector, rootScope, compile, state) {
     return {
         createElementScope,
         defineAppComponent: (name, options) => {
-            assertActive();
+            ensureActive();
             const mergedOptions = {
                 ...state.defaults,
                 ...options,
             };
-            return defineAppComponent(name, mergedOptions, injector, compile, createElementScope, state);
+            return defineAppComponent(name, mergedOptions, injector, compile, createElementScope, state, exceptionHandler);
         },
         defineElement: (name, elementClass) => {
-            assertActive();
-            return defineScopeElement(name, elementClass, resolveScopeElementOptions(elementClass), injector, compile, createElementScope, state);
+            ensureActive();
+            return defineScopeElement(name, elementClass, resolveScopeElementOptions(elementClass), injector, compile, createElementScope, state, exceptionHandler);
         },
     };
 }
-function defineAppComponent(name, options, injector, compile, createElementScope, state) {
+function defineAppComponent(name, options, injector, compile, createElementScope, state, exceptionHandler) {
     class AngularTsAppComponent extends ScopeElement {
         connected() {
             const context = getScopeElementContext(this);
@@ -41392,9 +41479,9 @@ function defineAppComponent(name, options, injector, compile, createElementScope
     Object.defineProperty(AngularTsAppComponent, "name", {
         value: customElementClassName(name),
     });
-    return defineScopeElement(name, AngularTsAppComponent, options, injector, compile, createElementScope, state);
+    return defineScopeElement(name, AngularTsAppComponent, options, injector, compile, createElementScope, state, exceptionHandler);
 }
-function defineScopeElement(name, elementClass, options, injector, compile, createElementScope, state) {
+function defineScopeElement(name, elementClass, options, injector, compile, createElementScope, state, exceptionHandler) {
     const existing = customElements.get(name);
     if (existing)
         return existing;
@@ -41402,6 +41489,7 @@ function defineScopeElement(name, elementClass, options, injector, compile, crea
     scopeElementDefinitions.set(elementClass, {
         compile,
         createElementScope,
+        exceptionHandler,
         injector,
         inputs,
         options: options,
@@ -41487,7 +41575,9 @@ function syncScopeElementAttribute(host, attribute, oldValue, newValue) {
     if (!input)
         return;
     writeInput(host, input, coerceAttributeValue(input, newValue), scopeElementScopes.get(host));
-    host.attributeChanged?.(attribute, oldValue, newValue);
+    invokeScopeElementCallback(definition, () => {
+        host.attributeChanged?.(attribute, oldValue, newValue);
+    });
 }
 function connectScopeElement(host) {
     const existingScope = scopeElementScopes.get(host);
@@ -41515,7 +41605,7 @@ function connectScopeElement(host) {
     applyAttributes(host, definition.inputs, scope);
     applyPendingValues(host, definition.inputs, scope);
     renderTemplate(renderRoot, host, scope, options.template, definition.compile);
-    const cleanup = element.connected?.();
+    const cleanup = invokeScopeElementCallback(definition, () => element.connected?.());
     if (isFunction(cleanup)) {
         scopeElementCleanupFns.set(host, cleanup);
     }
@@ -41525,20 +41615,43 @@ function disconnectScopeElement(host) {
     if (!scope)
         return;
     const cleanup = scopeElementCleanupFns.get(host);
-    cleanup?.();
-    scopeElementCleanupFns.delete(host);
-    const definition = getScopeElementDefinition(host);
+    const definition = assertInvariantDefined(getScopeElementDefinition(host));
     const context = scopeElementContexts.get(host);
     const element = host;
-    element.disconnected?.();
+    const callbackErrors = [];
+    try {
+        cleanup?.();
+    }
+    catch (error) {
+        callbackErrors.push(error);
+    }
+    scopeElementCleanupFns.delete(host);
+    try {
+        element.disconnected?.();
+    }
+    catch (error) {
+        callbackErrors.push(error);
+    }
     if (!scope._handler._destroyed) {
         scope.destroy();
     }
     scopeElementScopes.delete(host);
     scopeElementContexts.delete(host);
-    definition?.state.hosts.delete(host);
+    definition.state.hosts.delete(host);
     if (context)
         clearRenderedContent(context.root);
+    for (const error of callbackErrors) {
+        definition.exceptionHandler(error);
+    }
+}
+function invokeScopeElementCallback(definition, callback) {
+    try {
+        return callback();
+    }
+    catch (error) {
+        definition.exceptionHandler(error);
+        return undefined;
+    }
 }
 function getScopeElementDefinition(host) {
     return scopeElementDefinitions.get(host.constructor);
@@ -41759,7 +41872,7 @@ function destroyWebTransportRuntimeConfiguration(configuration) {
     configuration.connections.clear();
 }
 class ManagedWebTransportConnection {
-    constructor(url, TransportCtor, transportOptions, config, log) {
+    constructor(url, TransportCtor, transportOptions, config, log, exceptionHandler) {
         this._encoder = new TextEncoder();
         this._closing = false;
         this._closedSettled = false;
@@ -41769,6 +41882,7 @@ class ManagedWebTransportConnection {
         this._transportOptions = transportOptions;
         this._config = config;
         this._log = log;
+        this._exceptionHandler = exceptionHandler;
         this.closed = new Promise((resolve, reject) => {
             this._closedResolve = resolve;
             this._closedReject = reject;
@@ -41843,12 +41957,10 @@ class ManagedWebTransportConnection {
             this._handleNativeClose(error, transport);
             throw error;
         });
-        void transport.closed
-            .then(() => {
+        void transport.closed.then(() => {
             this._handleNativeClose(undefined, transport);
             return undefined;
-        })
-            .catch((error) => {
+        }, (error) => {
             this._handleNativeClose(error, transport);
         });
     }
@@ -41867,7 +41979,7 @@ class ManagedWebTransportConnection {
         catch (nextError) {
             if (this._closing || this._closedSettled)
                 return;
-            this._config.onError?.(nextError);
+            this._notifyError(nextError);
             this._log.error("WebTransport reconnect hook failed", nextError);
         }
     }
@@ -41876,20 +41988,32 @@ class ManagedWebTransportConnection {
         if (transport !== this.transport || this._closedSettled)
             return;
         if (this._closing) {
-            this._config.onClose?.();
-            this._settleClosed();
+            try {
+                this._invokeDetached(this._config.onClose);
+            }
+            finally {
+                this._settleClosed();
+            }
             return;
         }
         if (this._config.reconnect && this._scheduleReconnect(error)) {
             return;
         }
         if (error) {
-            this._config.onError?.(error);
-            this._settleClosed(error);
+            try {
+                this._notifyError(error);
+            }
+            finally {
+                this._settleClosed(error);
+            }
             return;
         }
-        this._config.onClose?.();
-        this._settleClosed();
+        try {
+            this._invokeDetached(this._config.onClose);
+        }
+        finally {
+            this._settleClosed();
+        }
     }
     /** @internal */
     _scheduleReconnect(error) {
@@ -41899,7 +42023,13 @@ class ManagedWebTransportConnection {
         if (this._reconnectAttempts >= maxRetries)
             return false;
         const attempt = ++this._reconnectAttempts;
-        const delay = this._resolveRetryDelay(attempt, error);
+        let delay = 0;
+        try {
+            delay = this._resolveRetryDelay(attempt, error);
+        }
+        catch (retryError) {
+            this._exceptionHandler(retryError);
+        }
         this._clearReconnectTimer();
         this._reconnectTimer = setTimeout(() => {
             this._reconnectTimer = undefined;
@@ -41942,7 +42072,20 @@ class ManagedWebTransportConnection {
         const reader = transport.datagrams.readable.getReader();
         try {
             for (;;) {
-                const result = await reader.read();
+                let result;
+                try {
+                    result = await reader.read();
+                }
+                catch (error) {
+                    if (this._closing ||
+                        this._closedSettled ||
+                        (this._config.reconnect && transport === this.transport)) {
+                        return;
+                    }
+                    this._notifyError(error);
+                    this._log.error("WebTransport datagram read failed", error);
+                    return;
+                }
                 if (result.done)
                     return;
                 const data = result.value;
@@ -41953,25 +42096,16 @@ class ManagedWebTransportConnection {
                         : data;
                 }
                 catch (error) {
-                    this._config.onError?.(error);
+                    this._notifyError(error);
                     this._log.error("WebTransport datagram transform failed", error);
                     continue;
                 }
                 const event = { data, message };
                 if (isRealtimeProtocolMessage(message)) {
-                    this._config.onProtocolMessage?.(message, event);
+                    this._invokeDetached(this._config.onProtocolMessage, message, event);
                 }
-                this._config.onDatagram?.(event);
+                this._invokeDetached(this._config.onDatagram, event);
             }
-        }
-        catch (error) {
-            if (this._closing ||
-                this._closedSettled ||
-                (this._config.reconnect && transport === this.transport)) {
-                return;
-            }
-            this._config.onError?.(error);
-            this._log.error("WebTransport datagram read failed", error);
         }
         finally {
             reader.releaseLock();
@@ -41990,10 +42124,25 @@ class ManagedWebTransportConnection {
         }
         return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     }
+    /** @internal */
+    _notifyError(error) {
+        this._invokeDetached(this._config.onError, error);
+    }
+    /** @internal */
+    _invokeDetached(callback, ...args) {
+        if (!callback)
+            return;
+        try {
+            callback(...args);
+        }
+        catch (callbackError) {
+            this._exceptionHandler(callbackError);
+        }
+    }
 }
 ManagedWebTransportConnection.$nonscope = true;
 /** @internal */
-function createWebTransportService(log, configuration, getWebTransportConstructor, baseUrl) {
+function createWebTransportService(log, configuration, getWebTransportConstructor, baseUrl, exceptionHandler) {
     return (url, config = {}) => {
         if (configuration.destroyed) {
             throw new Error("Cannot create a WebTransport connection after runtime teardown");
@@ -42016,7 +42165,7 @@ function createWebTransportService(log, configuration, getWebTransportConstructo
             retryDelay,
             maxRetries,
             onReconnect,
-        }, log);
+        }, log, exceptionHandler);
         const release = () => {
             configuration.connections.delete(connection);
         };
@@ -42078,7 +42227,7 @@ function destroyWebSocketRuntimeConfiguration(configuration) {
     configuration.connections.clear();
 }
 /** @internal */
-function createWebSocketService(log, configuration, WebSocketConstructor) {
+function createWebSocketService(log, configuration, WebSocketConstructor, exceptionHandler) {
     return (url, config = {}) => {
         if (configuration.destroyed) {
             throw new Error("Cannot create a WebSocket connection after runtime teardown");
@@ -42101,7 +42250,7 @@ function createWebSocketService(log, configuration, WebSocketConstructor) {
             onError: (event) => {
                 mergedConfig.onError?.(event);
             },
-        }, log);
+        }, log, exceptionHandler);
         let closed = false;
         const connection = {
             reconnect() {
@@ -42465,8 +42614,7 @@ const sceDelegateRuntimeRegistration = {
         return registry.factory(name, [
             _injector,
             _window,
-            _exceptionHandler,
-            ($injector, $window, $exceptionHandler) => configuration.createService($injector, $window, $exceptionHandler),
+            ($injector, $window) => configuration.createService($injector, $window),
         ]);
     },
 };
@@ -42565,7 +42713,8 @@ const websocketRuntimeRegistration = {
         });
         return registry.factory(name, [
             _log,
-            ($log) => createWebSocketService($log, configuration, runtimeWindow.WebSocket),
+            _exceptionHandler,
+            ($log, $exceptionHandler) => createWebSocketService($log, configuration, runtimeWindow.WebSocket, $exceptionHandler),
         ]);
     },
 };
@@ -42582,7 +42731,8 @@ const sseRuntimeRegistration = {
         });
         return registry.factory(name, [
             _log,
-            ($log) => createSseService($log, configuration, () => runtimeWindow.EventSource),
+            _exceptionHandler,
+            ($log, $exceptionHandler) => createSseService($log, configuration, () => runtimeWindow.EventSource, $exceptionHandler),
         ]);
     },
 };
@@ -42599,7 +42749,8 @@ const webTransportRuntimeRegistration = {
         });
         return registry.factory(name, [
             _log,
-            ($log) => createWebTransportService($log, configuration, () => runtimeWindow.WebTransport, runtimeWindow.location.href),
+            _exceptionHandler,
+            ($log, $exceptionHandler) => createWebTransportService($log, configuration, () => runtimeWindow.WebTransport, runtimeWindow.location.href, $exceptionHandler),
         ]);
     },
 };
@@ -42613,8 +42764,9 @@ const workerRuntimeRegistration = {
         });
         return registry.factory(name, [
             _log,
+            _exceptionHandler,
             _security,
-            ($log, $security) => createWorkerService($log, state, () => runtimeWindow.Worker, $security),
+            ($log, $exceptionHandler, $security) => createWorkerService($log, state, () => runtimeWindow.Worker, $exceptionHandler, $security),
         ]);
     },
 };
@@ -42632,7 +42784,8 @@ const webComponentRuntimeRegistration = {
             _injector,
             _rootScope,
             _compile,
-            ($injector, $rootScope, $compile) => createWebComponentService($injector, $rootScope, $compile, state),
+            _exceptionHandler,
+            ($injector, $rootScope, $compile, $exceptionHandler) => createWebComponentService($injector, $rootScope, $compile, state, $exceptionHandler),
         ]);
     },
 };
@@ -42655,8 +42808,8 @@ const serviceWorkerRuntimeRegistration = {
             _log,
             _exceptionHandler,
             _security,
-            (log, err, security) => {
-                service = createServiceWorkerService(context.platform.window.navigator.serviceWorker, { log, err, configuration, security });
+            (log, $exceptionHandler, security) => {
+                service = createServiceWorkerService(context.platform.window.navigator.serviceWorker, { log, exceptionHandler: $exceptionHandler, configuration, security });
                 if (destroyed)
                     destroyServiceWorkerService(service);
                 return service;
@@ -42852,7 +43005,15 @@ class Angular extends AngularRuntime {
         /** JSX-free real-DOM tag factories for programmatic component views. */
         this.tags = tags;
         /** Explicit programmatic-view binding and element helpers. */
-        this.view = { attrs, each, event, props, tag, tagNS };
+        this.view = Object.freeze({
+            attrs,
+            each,
+            event,
+            props,
+            tag,
+            tagNS,
+            tags,
+        });
     }
 }
 
@@ -42863,6 +43024,10 @@ const passThroughSecurityAdapter = {
     valueOf: (value) => value,
 };
 
+/** @internal */
+function getRuntimeComposition(angular) {
+    return angular._composition;
+}
 /**
  * Registers a composed AngularTS `ng` module from core providers and a caller
  * supplied directive list.
@@ -42870,18 +43035,17 @@ const passThroughSecurityAdapter = {
 function registerComposedNgModule(angular, options) {
     const moduleName = options.name ?? "ng";
     const providers = options.providers ?? {};
-    const directiveRegistrations = normalizeDirectiveRegistrations(options.directives);
-    const filterRegistrations = normalizeFilterRegistrations(options.filters);
-    const serviceRegistrations = normalizeServiceRegistrations(options.services);
-    const runtime = angular;
-    const compileRegistry = runtime._composition.compileRegistry;
-    const { platform } = runtime._composition;
+    const directiveRegistrations = normalizeRegistrations(options.directives);
+    const filterRegistrations = normalizeRegistrations(options.filters);
+    const serviceRegistrations = normalizeRegistrations(options.services);
+    const composition = getRuntimeComposition(angular);
+    const { compileRegistry, platform } = composition;
     const ngModule = angular.module(moduleName, options.requires);
     ngModule._registerProviders((registry) => {
         registry.value(_window, platform.window);
         registry.value(_document, platform.document);
-        runtime._composition.filterRegistry.attach(registry);
-        registry.factory(_filter, createFilterRegistration(runtime._composition.filterRegistry));
+        composition.filterRegistry.attach(registry);
+        registry.factory(_filter, createFilterRegistration(composition.filterRegistry));
         registry.factory(_parse, [
             _injector,
             ($injector) => createParseService($injector),
@@ -42889,20 +43053,20 @@ function registerComposedNgModule(angular, options) {
         registry.factory(_rootScope, [
             _exceptionHandler,
             _parse,
-            ($exceptionHandler, $parse) => createRootScopeService(runtime._composition.appContext, $exceptionHandler, $parse),
+            ($exceptionHandler, $parse) => createRootScopeService(composition.appContext, $exceptionHandler, $parse),
         ]);
-        runtime._composition.configRegistry.register(_interpolate, (value) => {
-            applyInterpolateConfiguration(runtime._composition.interpolateState, value);
+        composition.configRegistry.register(_interpolate, (value) => {
+            applyInterpolateConfiguration(composition.interpolateState, value);
         });
-        registry.factory(_interpolate, createInterpolateRegistration(runtime._composition.interpolateState, passThroughSecurityAdapter));
+        registry.factory(_interpolate, createInterpolateRegistration(composition.interpolateState, passThroughSecurityAdapter));
         registry.factory(_controller, [
             _injector,
-            ($injector) => createControllerService(runtime._composition.controllerRegistry, $injector),
+            ($injector) => createControllerService(composition.controllerRegistry, $injector),
         ]);
-        runtime._composition.configRegistry.register(_exceptionHandler, (value) => {
-            applyExceptionHandlerConfiguration(runtime._composition.exceptionHandlerState, value);
+        composition.configRegistry.register(_exceptionHandler, (value) => {
+            applyExceptionHandlerConfiguration(composition.exceptionHandlerState, value);
         });
-        registry.factory(_exceptionHandler, () => createExceptionHandlerService(runtime._composition.exceptionHandlerState));
+        registry.factory(_exceptionHandler, () => createExceptionHandlerService(composition.exceptionHandlerState));
         registry.factory(_compile, [
             _injector,
             _interpolate,
@@ -42910,42 +43074,32 @@ function registerComposedNgModule(angular, options) {
             _parse,
             _controller,
             _rootScope,
-            ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, passThroughSecurityAdapter, $exceptionHandler, $parse, $controller, requireAppRoot(runtime._composition.appContext, $rootScope)),
+            ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, passThroughSecurityAdapter, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
         ]);
         registry.value(_angular, angular);
-        registerRuntimeProviders(registry, providers, runtime._composition);
-        filterRegistrations.forEach((filters) => {
-            keys(filters).forEach((name) => {
-                runtime._composition.filterRegistry.register(name, filters[name]);
-            });
-        });
-        serviceRegistrations.forEach((services) => {
-            keys(services).forEach((name) => {
+        registerRuntimeProviders(registry, providers, composition);
+        for (const filters of filterRegistrations) {
+            for (const name of keys(filters)) {
+                composition.filterRegistry.register(name, filters[name]);
+            }
+        }
+        for (const services of serviceRegistrations) {
+            for (const name of keys(services)) {
                 registry.service(name, services[name]);
-            });
-        });
+            }
+        }
     });
-    directiveRegistrations.forEach((directives) => {
-        keys(directives).forEach((name) => {
+    for (const directives of directiveRegistrations) {
+        for (const name of keys(directives)) {
             ngModule.directive(name, directives[name]);
-        });
-    });
+        }
+    }
     return ngModule;
 }
-function normalizeDirectiveRegistrations(directives) {
-    if (!directives)
+function normalizeRegistrations(registrations) {
+    if (!registrations)
         return [];
-    return Array.isArray(directives) ? directives : [directives];
-}
-function normalizeFilterRegistrations(filters) {
-    if (!filters)
-        return [];
-    return Array.isArray(filters) ? filters : [filters];
-}
-function normalizeServiceRegistrations(services) {
-    if (!services)
-        return [];
-    return Array.isArray(services) ? services : [services];
+    return Array.isArray(registrations) ? registrations : [registrations];
 }
 
 function createBareRuntime(options = {}) {
@@ -42960,13 +43114,19 @@ function createBareRuntime(options = {}) {
 function createAngular(options = {}) {
     const { modules = [], subapp, ...moduleOptions } = options;
     const angular = createBareRuntime({ subapp });
-    const moduleNames = modules.map((registerModule) => registerModule(angular).name);
-    const requires = Array.from(new Set([...moduleNames, ...(moduleOptions.requires ?? [])]));
-    registerComposedNgModule(angular, {
-        ...moduleOptions,
-        requires,
-    });
-    return angular;
+    try {
+        const moduleNames = Array.from(new Set(modules), (registerModule) => registerModule(angular).name);
+        const requires = Array.from(new Set([...moduleNames, ...(moduleOptions.requires ?? [])]));
+        registerComposedNgModule(angular, {
+            ...moduleOptions,
+            requires,
+        });
+        return angular;
+    }
+    catch (error) {
+        angular._composition.destroy();
+        throw error;
+    }
 }
 
 /**

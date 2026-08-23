@@ -6,7 +6,34 @@ export type {
   AngularRuntimeOptions,
   RuntimeModule,
 } from "./angular-runtime.ts";
-export type { ErrorHandlingConfig, Validator } from "./shared/interface.ts";
+export type { ErrorFormattingConfig, Validator } from "./shared/interface.ts";
+export type {
+  ComponentView,
+  ComponentViewChild,
+  ComponentViewContext,
+  ComponentViewPrimitive,
+  ComponentDefinition,
+  DirectiveView,
+  DirectiveViewContext,
+  ViewChild,
+  ViewContext,
+  ViewPrimitive,
+  ViewReader,
+} from "./interface.ts";
+export type {
+  ComponentViewProperties,
+  ComponentViewPropertyValue,
+  ComponentViewTag,
+  ComponentViewTags,
+  KeyedView,
+  ViewProperties,
+  ViewPropertyValue,
+  ViewAttributeValue,
+  ViewAttributes,
+  ViewLiteralProperties,
+  ViewTag,
+  ViewTags,
+} from "./core/compile/programmatic-view.ts";
 
 export type {
   AnnotatedDirectiveFactory,
@@ -353,8 +380,17 @@ export type {
 } from "./runtime/custom-ng.ts";
 export { createAngular } from "./runtime/index.ts";
 export type { AngularComposition } from "./runtime/index.ts";
-export { orchestrationModule } from "./runtime/orchestration.ts";
-export { realtimeModule } from "./runtime/realtime.ts";
+export {
+  machineModule,
+  orchestrationModule,
+  workflowModule,
+} from "./runtime/orchestration.ts";
+export {
+  realtimeModule,
+  sseModule,
+  websocketModule,
+  webTransportModule,
+} from "./runtime/realtime.ts";
 export { routerModule } from "./runtime/router.ts";
 export { serviceWorkerModule } from "./runtime/service-worker.ts";
 export { eventBusModule } from "./runtime/event-bus.ts";

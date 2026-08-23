@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "../../..",
+    "noEmit": true,
+    "paths": {
+      "@angular-wave/angular.ts": ["@types/namespace.d.ts"]
+    },
+    "types": []
+  },
+  "include": ["task-board.ts"]
+}

@@ -139,9 +139,9 @@ base class GeneratedNgAngular extends GeneratedNgFacade {
   Object? get hasNormalizedAttr =>
       unsafe.jsToDart<Object?>(raw.getProperty('hasNormalizedAttr'.toJS));
 
-  /// Global framework error-handling configuration.
-  Object? get errorHandlingConfig =>
-      unsafe.jsToDart<Object?>(raw.getProperty('errorHandlingConfig'.toJS));
+  /// Configure how values embedded in framework error messages are formatted.
+  Object? get errorFormattingConfig =>
+      unsafe.jsToDart<Object?>(raw.getProperty('errorFormattingConfig'.toJS));
 
   /// Public injection token names keyed by token value.
   Object? get tokens =>
@@ -465,9 +465,9 @@ base class GeneratedNgAngularService extends GeneratedNgFacade {
   Object? get hasNormalizedAttr =>
       unsafe.jsToDart<Object?>(raw.getProperty('hasNormalizedAttr'.toJS));
 
-  /// Global framework error-handling configuration.
-  Object? get errorHandlingConfig =>
-      unsafe.jsToDart<Object?>(raw.getProperty('errorHandlingConfig'.toJS));
+  /// Configure how values embedded in framework error messages are formatted.
+  Object? get errorFormattingConfig =>
+      unsafe.jsToDart<Object?>(raw.getProperty('errorFormattingConfig'.toJS));
 
   /// Public injection token names keyed by token value.
   Object? get tokens =>
@@ -1461,6 +1461,66 @@ base class GeneratedNgComponent extends GeneratedNgFacade {
       unsafe.jsToDart<Object?>(raw.getProperty('require'.toJS));
 }
 
+/// Component registration accepted by `NgModule.component()`. Programmatic and template-based
+/// rendering strategies are mutually exclusive.
+///
+/// Raw JavaScript facade for `ng.ComponentDefinition`.
+base class GeneratedNgComponentDefinition extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ComponentDefinition.
+  const GeneratedNgComponentDefinition(super.raw);
+
+  /// The controller member of ng.ComponentDefinition.
+  Object? get controller =>
+      unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
+
+  /// An identifier name for a reference to the controller. If present, the controller will be
+  /// published to its scope under the specified name. If not present, this will default to '$ctrl'.
+  String? get controllerAs =>
+      _toDartString(raw.getProperty('controllerAs'.toJS));
+
+  /// An identifier name for a reference to the controller. If present, the controller will be
+  /// published to its scope under the specified name. If not present, this will default to '$ctrl'.
+  set controllerAs(String? value) {
+    raw.setProperty('controllerAs'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Define DOM attribute binding to component properties. Component properties are always bound to
+  /// the component controller and not to the scope.
+  Object? get bindings =>
+      unsafe.jsToDart<Object?>(raw.getProperty('bindings'.toJS));
+
+  /// Whether transclusion is enabled. Disabled by default.
+  Object? get transclude =>
+      unsafe.jsToDart<Object?>(raw.getProperty('transclude'.toJS));
+
+  /// Requires the controllers of other directives and binds them to this component's controller. The
+  /// object keys specify the property names under which the required controllers (object values) will
+  /// be bound. Note that the required controllers will not be available during the instantiation of
+  /// the controller, but they are guaranteed to be available just before the onInit method is
+  /// executed!
+  Object? get require =>
+      unsafe.jsToDart<Object?>(raw.getProperty('require'.toJS));
+
+  /// The view member of ng.ComponentDefinition.
+  Object? get view => unsafe.jsToDart<Object?>(raw.getProperty('view'.toJS));
+
+  /// The template member of ng.ComponentDefinition.
+  Object? get template =>
+      unsafe.jsToDart<Object?>(raw.getProperty('template'.toJS));
+
+  /// The templateUrl member of ng.ComponentDefinition.
+  Object? get templateUrl =>
+      unsafe.jsToDart<Object?>(raw.getProperty('templateUrl'.toJS));
+
+  /// The replace member of ng.ComponentDefinition.
+  bool? get replace => _toDartBool(raw.getProperty('replace'.toJS));
+
+  /// The replace member of ng.ComponentDefinition.
+  set replace(bool? value) {
+    raw.setProperty('replace'.toJS, unsafe.dartToJs(value));
+  }
+}
+
 /// Programmatic real-DOM factory used instead of a component template.
 ///
 /// Raw JavaScript facade for `ng.ComponentView`.
@@ -1482,7 +1542,7 @@ base class GeneratedNgComponentView extends GeneratedNgFacade {
 
 /// DOM content accepted from programmatic component and directive views. Functions are reactive
 /// child readers, arrays are flattened recursively, and existing nodes are moved rather than
-/// cloned. `null`, `undefined`, and `false` render no DOM content. Document fragments contribute
+/// cloned. `null`, `undefined`, and booleans render no DOM content. Document fragments contribute
 /// their children.
 ///
 /// Raw JavaScript facade for `ng.ComponentViewChild`.
@@ -1508,23 +1568,27 @@ base class GeneratedNgComponentViewContext extends GeneratedNgFacade {
   Object? get controller =>
       unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
 
-  /// Scope that owns the generated DOM and reactive child readers.
+  /// Scope that owns the generated DOM and reactive readers.
   Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
 
-  /// Native component host element.
+  /// Native host element matched by the component or directive.
+  HTMLElement get host =>
+      unsafe.jsToDart<HTMLElement>(raw.getProperty('host'.toJS));
+
+  /// The element member of ng.ComponentViewContext.
   HTMLElement get element =>
       unsafe.jsToDart<HTMLElement>(raw.getProperty('element'.toJS));
 
-  /// Component transclusion function, when transclusion is enabled.
+  /// Transclusion function, when transclusion is enabled.
   Object? get transclude =>
       unsafe.jsToDart<Object?>(raw.getProperty('transclude'.toJS));
 
-  /// Registers cleanup owned by the compiled view and returns a cancellation function.
+  /// Registers cleanup and returns a cancellation function.
   Object? get onDestroy =>
       unsafe.jsToDart<Object?>(raw.getProperty('onDestroy'.toJS));
 }
 
-/// Primitive text value accepted as a programmatic view child.
+/// Primitive value accepted as a view child. Booleans render no DOM content.
 ///
 /// Raw JavaScript facade for `ng.ComponentViewPrimitive`.
 base class GeneratedNgComponentViewPrimitive extends GeneratedNgFacade {
@@ -1538,6 +1602,9 @@ base class GeneratedNgComponentViewPrimitive extends GeneratedNgFacade {
 base class GeneratedNgComponentViewProperties extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.ComponentViewProperties.
   const GeneratedNgComponentViewProperties(super.raw);
+
+  /// [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/role)
+  Object? get role => unsafe.jsToDart<Object?>(raw.getProperty('role'.toJS));
 
   /// The onabort member of ng.ComponentViewProperties.
   Object? get onabort =>
@@ -1958,6 +2025,10 @@ base class GeneratedNgComponentViewProperties extends GeneratedNgFacade {
   Object? get onwheel =>
       unsafe.jsToDart<Object?>(raw.getProperty('onwheel'.toJS));
 
+  /// The class member of ng.ComponentViewProperties.
+  Object? get classMember =>
+      unsafe.jsToDart<Object?>(raw.getProperty('class'.toJS));
+
   /// The is member of ng.ComponentViewProperties.
   String? get isMember => _toDartString(raw.getProperty('is'.toJS));
 
@@ -1967,8 +2038,7 @@ base class GeneratedNgComponentViewProperties extends GeneratedNgFacade {
   }
 }
 
-/// Property, attribute, event listener, or reactive property reader accepted by a programmatic view
-/// tag factory.
+/// Compatibility alias for ViewPropertyValue.
 ///
 /// Raw JavaScript facade for `ng.ComponentViewPropertyValue`.
 base class GeneratedNgComponentViewPropertyValue extends GeneratedNgFacade {
@@ -2435,8 +2505,8 @@ base class GeneratedNgDirective extends GeneratedNgFacade {
   Object? get compile =>
       unsafe.jsToDart<Object?>(raw.getProperty('compile'.toJS));
 
-  /// Programmatic real-DOM view factory. It is mutually exclusive with template, templateUrl, and
-  /// replace and composes with compile/link.
+  /// Real-DOM view factory. It is mutually exclusive with template, templateUrl, and replace and
+  /// composes with compile/link.
   Object? get view => unsafe.jsToDart<Object?>(raw.getProperty('view'.toJS));
 
   /// Controller constructor or injectable string name
@@ -2711,26 +2781,29 @@ base class GeneratedNgDirectiveViewContext extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.DirectiveViewContext.
   const GeneratedNgDirectiveViewContext(super.raw);
 
-  /// Directive controller, when the directive declares one.
-  Object? get controller =>
-      unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
-
   /// Controllers resolved through the directive's `require` declaration.
   Object? get requiredMember =>
       unsafe.jsToDart<Object?>(raw.getProperty('required'.toJS));
 
-  /// Scope that owns the generated DOM and reactive child readers.
+  /// Controller associated with the view.
+  Object? get controller =>
+      unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
+
+  /// Scope that owns the generated DOM and reactive readers.
   Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
 
-  /// Native element matched by the directive.
+  /// Native host element matched by the component or directive.
+  Element get host => unsafe.jsToDart<Element>(raw.getProperty('host'.toJS));
+
+  /// The element member of ng.DirectiveViewContext.
   Element get element =>
       unsafe.jsToDart<Element>(raw.getProperty('element'.toJS));
 
-  /// Directive transclusion function, when transclusion is enabled.
+  /// Transclusion function, when transclusion is enabled.
   Object? get transclude =>
       unsafe.jsToDart<Object?>(raw.getProperty('transclude'.toJS));
 
-  /// Registers cleanup owned by the compiled view and returns a cancellation function.
+  /// Registers cleanup and returns a cancellation function.
   Object? get onDestroy =>
       unsafe.jsToDart<Object?>(raw.getProperty('onDestroy'.toJS));
 }
@@ -2777,12 +2850,12 @@ base class GeneratedNgEntryFilterItem extends GeneratedNgFacade {
   Object? get value => unsafe.jsToDart<Object?>(raw.getProperty('value'.toJS));
 }
 
-/// Error configuration object. May only contain the options that need to be updated.
+/// Controls how values embedded in framework error messages are formatted.
 ///
-/// Raw JavaScript facade for `ng.ErrorHandlingConfig`.
-base class GeneratedNgErrorHandlingConfig extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ErrorHandlingConfig.
-  const GeneratedNgErrorHandlingConfig(super.raw);
+/// Raw JavaScript facade for `ng.ErrorFormattingConfig`.
+base class GeneratedNgErrorFormattingConfig extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ErrorFormattingConfig.
+  const GeneratedNgErrorFormattingConfig(super.raw);
 
   /// The max depth for stringifying objects. Setting to a non-positive or non-numeric value removes
   /// the max depth limit. Default: 5.
@@ -2928,9 +3001,10 @@ base class GeneratedNgEventBusService extends GeneratedNgFacade {
     return _toDartInt(raw.callMethodVarArgs('getCount'.toJS, args))!;
   }
 
-  /// Publish a value to a topic asynchronously. All listeners are invoked in the order they were
-  /// added. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their
-  /// scope is destroyed before the queued delivery runs.
+  /// Publish a value to a topic asynchronously. Listeners are invoked in the order they were added
+  /// until delivery finishes or `$exceptionHandler` terminates the publication. Delivery is scheduled
+  /// with `queueMicrotask`. Scope-owned listeners are skipped if their scope is destroyed before the
+  /// queued delivery runs.
   ///
   /// Parameters:
   /// - [topic]: The topic to publish.
@@ -7161,6 +7235,21 @@ base class GeneratedNgRouterModule extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.RouterModule.
   const GeneratedNgRouterModule(super.raw);
 
+  /// The $controller service is used by Angular to create new controllers. Named controllers are
+  /// stored in the owning runtime's controller registry.
+  ///
+  /// Parameters:
+  /// - [name]: Controller name
+  /// - [ctlFn]: Controller constructor fn (optionally decorated with DI annotations in the array notation)
+  GeneratedNgRouterModule controller(String name, Object? ctlFn) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(name));
+    args.add(unsafe.dartToJs(ctlFn));
+
+    raw.callMethodVarArgs('controller'.toJS, args);
+    return this;
+  }
+
   /// The name member of ng.RouterModule.
   String get name => _toDartString(raw.getProperty('name'.toJS))!;
 
@@ -7330,21 +7419,6 @@ base class GeneratedNgRouterModule extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(animationFactory));
 
     raw.callMethodVarArgs('animation'.toJS, args);
-    return this;
-  }
-
-  /// The $controller service is used by Angular to create new controllers. Named controllers are
-  /// stored in the owning runtime's controller registry.
-  ///
-  /// Parameters:
-  /// - [name]: Controller name
-  /// - [ctlFn]: Controller constructor fn (optionally decorated with DI annotations in the array notation)
-  GeneratedNgRouterModule controller(String name, Object? ctlFn) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(name));
-    args.add(unsafe.dartToJs(ctlFn));
-
-    raw.callMethodVarArgs('controller'.toJS, args);
     return this;
   }
 

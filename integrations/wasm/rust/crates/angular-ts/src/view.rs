@@ -1,4 +1,4 @@
-//! Programmatic real-DOM view helpers for Rust/Wasm components.
+//! Real-DOM view helpers for Rust/Wasm components.
 
 #![cfg(target_arch = "wasm32")]
 
@@ -13,6 +13,9 @@ pub type ComponentViewPrimitive = JsValue;
 
 /// JavaScript callback registered as a programmatic component view.
 pub type ComponentView = Function;
+
+/// Component registration definition accepted by AngularTS.
+pub type ComponentDefinition = Object;
 
 /// Property bag passed to a programmatic tag factory.
 pub type ComponentViewProperties = Object;
@@ -46,6 +49,11 @@ impl ComponentViewContext {
     }
 
     /// Returns the component host element.
+    pub fn host(&self) -> Result<JsValue, JsValue> {
+        self.property("host")
+    }
+
+    /// Returns the compatibility alias for the component host element.
     pub fn element(&self) -> Result<JsValue, JsValue> {
         self.property("element")
     }
@@ -65,7 +73,7 @@ impl ComponentViewContext {
     }
 }
 
-/// Wrapper around `angular.tags` and namespaced tag collections.
+/// Wrapper around `angular.view.tags` and namespaced tag collections.
 #[derive(Clone)]
 pub struct ComponentViewTags {
     raw: JsValue,
@@ -75,7 +83,8 @@ impl ComponentViewTags {
     /// Resolves the global AngularTS tag collection.
     pub fn global() -> Result<Self, JsValue> {
         let angular = Reflect::get(&js_sys::global(), &JsValue::from_str("angular"))?;
-        let raw = Reflect::get(&angular, &JsValue::from_str("tags"))?;
+        let view = Reflect::get(&angular, &JsValue::from_str("view"))?;
+        let raw = Reflect::get(&view, &JsValue::from_str("tags"))?;
 
         Ok(Self { raw })
     }
@@ -88,7 +97,7 @@ impl ComponentViewTags {
         Ok(Self { raw })
     }
 
-    /// Creates one real DOM element through `angular.tags[name]`.
+    /// Creates one real DOM element through `angular.view.tags[name]`.
     pub fn tag(
         &self,
         name: &str,

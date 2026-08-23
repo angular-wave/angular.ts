@@ -1,6 +1,7 @@
 import { _wasm } from '../injection-tokens.js';
 import { ngWasmDirective } from '../directive/wasm/wasm.js';
 import { createWasmRuntimeState, destroyWasmRuntimeState, createWasmService } from '../services/wasm/wasm.js';
+import { getRuntimeComposition } from './custom-ng.js';
 
 /**
  * Registers the `$wasm` service, `ng-wasm` directive, and runtime-owned scope
@@ -10,9 +11,9 @@ import { createWasmRuntimeState, destroyWasmRuntimeState, createWasmService } fr
  * custom runtime needs WebAssembly loading or AngularTS scope bridging.
  */
 const wasmModule = (angular) => {
-    const runtime = angular;
-    const state = createWasmRuntimeState(runtime._composition.appContext);
-    runtime._composition.platform.addDisposer(() => {
+    const composition = getRuntimeComposition(angular);
+    const state = createWasmRuntimeState(composition.appContext);
+    composition.platform.addDisposer(() => {
         destroyWasmRuntimeState(state);
     });
     return angular

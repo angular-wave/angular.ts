@@ -15,9 +15,9 @@ Binds the value of `<input>`, `<textarea>`, `<select>`, and custom controls to a
 - **Required:** yes
 
 An assignable AngularTS expression. When the user changes the input, the expression is assigned the new value. When the scope value changes, the input is updated.
-### Model controller (`NgModelController`)
+### Model controller ([`NgModelController`](../../../typedoc/classes/NgModelController.html))
 
-When `ng-model` is applied, AngularTS creates an `NgModelController` accessible as `formName.fieldName` on the scope. It exposes:
+When `ng-model` is applied, AngularTS creates an [`NgModelController`](../../../typedoc/classes/NgModelController.html) accessible as `formName.fieldName` on the scope. It exposes:
 #### `viewValue`
 
 - **Type:** `any`
@@ -65,7 +65,7 @@ Map of failing validator names to `true`. E.g., `{ required: true, minlength: tr
 * **Parsers** (`parsers`): Convert `viewValue` → `modelValue`. Applied on user input. Return `undefined` to mark invalid.
 * **Formatters** (`formatters`): Convert `modelValue` → `viewValue`. Applied when scope value changes.
 
-```javascript
+```js
   return {
     require: 'ngModel',
     link: function(scope, el, attrs, ngModel) {

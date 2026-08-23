@@ -34,7 +34,7 @@ import {
   toJson,
   trim,
   uppercase,
-  assertDefined,
+  assertInvariantDefined,
 } from "../../shared/utils.ts";
 import type {
   RequestPolicyContext,
@@ -62,8 +62,8 @@ function withResolvers<T>() {
 
   return {
     promise,
-    resolve: assertDefined(resolve),
-    reject: assertDefined(reject),
+    resolve: assertInvariantDefined(resolve),
+    reject: assertInvariantDefined(reject),
   };
 }
 
@@ -1275,7 +1275,7 @@ export function createHttpService(
 
     let cachedResp: unknown;
 
-    const reqHeaders = assertDefined(config.headers);
+    const reqHeaders = assertInvariantDefined(config.headers);
 
     config.headers = reqHeaders;
 

@@ -1080,7 +1080,7 @@ describe("EventBus", function () {
       expect(called).toBeTrue();
     });
 
-    it("should delegate to exception handler if an error is thrown", async function () {
+    it("should delegate a subscriber failure to the exception handler", async function () {
       let thrown = false;
 
       const thrownError = new Error();
@@ -1103,7 +1103,7 @@ describe("EventBus", function () {
       expect(receivedErr).toBe(thrownError);
     });
 
-    it("should keep delivering active listeners after a listener throws", async function () {
+    it("should continue only when an injected test sink absorbs a subscriber failure", async function () {
       const thrownError = new Error("boom");
       const calls = [];
       let receivedErr;

@@ -17,7 +17,7 @@ import {
   isFunction,
   isInstanceOf,
   stringify,
-  assertDefined,
+  assertInvariantDefined,
 } from "../../shared/utils.ts";
 import type { SwapMode } from "./protocol.ts";
 
@@ -164,34 +164,37 @@ export function createRealtimeSwapHandler({
           parent.insertBefore(placeholder, target.nextSibling);
           placeholders.add(placeholder);
 
-          trackAnimation(assertDefined(animate).leave(target), (completed) => {
-            if (!completed || destroyed) {
+          trackAnimation(
+            assertInvariantDefined(animate).leave(target),
+            (completed) => {
+              if (!completed || destroyed) {
+                placeholder.remove();
+                placeholders.delete(placeholder);
+                disposeNodeFragments(nodes);
+
+                return;
+              }
+
+              disposeFragments(outgoingFragments);
+              const insertedNodes = arrayFrom(frag.childNodes);
+
+              for (const x of insertedNodes) {
+                if (x.nodeType === NodeType._ELEMENT_NODE) {
+                  assertInvariantDefined(animate).enter(
+                    x as Element,
+                    parent as Element,
+                    placeholder,
+                  );
+                } else {
+                  parent.insertBefore(x, placeholder);
+                }
+              }
+
+              content = insertedNodes;
               placeholder.remove();
               placeholders.delete(placeholder);
-              disposeNodeFragments(nodes);
-
-              return;
-            }
-
-            disposeFragments(outgoingFragments);
-            const insertedNodes = arrayFrom(frag.childNodes);
-
-            for (const x of insertedNodes) {
-              if (x.nodeType === NodeType._ELEMENT_NODE) {
-                assertDefined(animate).enter(
-                  x as Element,
-                  parent as Element,
-                  placeholder,
-                );
-              } else {
-                parent.insertBefore(x, placeholder);
-              }
-            }
-
-            content = insertedNodes;
-            placeholder.remove();
-            placeholders.delete(placeholder);
-          });
+            },
+          );
           break;
         }
 
@@ -208,7 +211,7 @@ export function createRealtimeSwapHandler({
             placeholders.add(placeholder);
 
             trackAnimation(
-              assertDefined(animate).leave(target),
+              assertInvariantDefined(animate).leave(target),
               (completed) => {
                 if (!completed || destroyed) {
                   placeholder.remove();
@@ -220,7 +223,11 @@ export function createRealtimeSwapHandler({
                 disposeFragments(outgoingFragments);
                 target.textContent = stringify(html);
                 trackAnimation(
-                  assertDefined(animate).enter(target, parent, placeholder),
+                  assertInvariantDefined(animate).enter(
+                    target,
+                    parent,
+                    placeholder,
+                  ),
                   () => {
                     placeholder.remove();
                     placeholders.delete(placeholder);
@@ -245,7 +252,7 @@ export function createRealtimeSwapHandler({
 
           nodes.forEach((node) => {
             if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-              assertDefined(animate).enter(
+              assertInvariantDefined(animate).enter(
                 node as Element,
                 parent as Element,
                 target,
@@ -262,7 +269,7 @@ export function createRealtimeSwapHandler({
 
           [...nodes].reverse().forEach((node) => {
             if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-              assertDefined(animate).enter(
+              assertInvariantDefined(animate).enter(
                 node as Element,
                 target,
                 firstChild as Element,
@@ -277,7 +284,7 @@ export function createRealtimeSwapHandler({
         case "beforeend": {
           nodes.forEach((node) => {
             if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-              assertDefined(animate).enter(node as Element, target);
+              assertInvariantDefined(animate).enter(node as Element, target);
             } else {
               target.appendChild(node);
             }
@@ -297,7 +304,7 @@ export function createRealtimeSwapHandler({
 
           [...nodes].reverse().forEach((node) => {
             if (animationEnabled && node.nodeType === NodeType._ELEMENT_NODE) {
-              assertDefined(animate).enter(
+              assertInvariantDefined(animate).enter(
                 node as Element,
                 parent as Element,
                 nextSibling as Element,
@@ -314,7 +321,7 @@ export function createRealtimeSwapHandler({
             const outgoingFragments = collectNodeTreeFragments(target);
 
             trackAnimation(
-              assertDefined(animate).leave(target),
+              assertInvariantDefined(animate).leave(target),
               (completed) => {
                 if (!completed || destroyed) return;
 
@@ -342,7 +349,7 @@ export function createRealtimeSwapHandler({
               const outgoingFragments = collectNodeTreeFragments(content);
 
               trackAnimation(
-                assertDefined(animate).leave(content as Element),
+                assertInvariantDefined(animate).leave(content as Element),
                 (completed) => {
                   if (!completed || destroyed) {
                     disposeNodeFragments(nodes);
@@ -352,7 +359,10 @@ export function createRealtimeSwapHandler({
 
                   disposeFragments(outgoingFragments);
                   content = nodes[0] as ChildNode;
-                  assertDefined(animate).enter(nodes[0] as Element, target);
+                  assertInvariantDefined(animate).enter(
+                    nodes[0] as Element,
+                    target,
+                  );
                 },
               );
             } else {
@@ -362,7 +372,10 @@ export function createRealtimeSwapHandler({
                 emptyElement(target);
                 target.replaceChildren(...nodes);
               } else {
-                assertDefined(animate).enter(nodes[0] as Element, target);
+                assertInvariantDefined(animate).enter(
+                  nodes[0] as Element,
+                  target,
+                );
               }
             }
           } else {

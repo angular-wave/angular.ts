@@ -1,9 +1,15 @@
 ---
-title: "ng-repeat"
+title: 'ng-repeat'
 weight: 90
-description: "Complete reference for ng-repeat: iterating arrays and objects, track by, special scope variables, filters, multi-element repeat, and performance guidance."
+description:
+  'Complete reference for ng-repeat: iterating arrays and objects, special scope
+  variables, filters, animation, and performance guidance.'
 ---
-`ng-repeat` instantiates a template for each item in a collection, creating a child scope for every element. It is the primary directive for rendering lists and grids in AngularTS.
+
+`ng-repeat` instantiates a template for each item in a collection, creating a
+child scope for every element. It is the primary directive for rendering lists
+and grids in AngularTS.
+
 ## Basic syntax
 
 ```html
@@ -11,9 +17,11 @@ description: "Complete reference for ng-repeat: iterating arrays and objects, tr
 
 <!-- Iterate an object (key-value pairs) -->
 <tr ng-repeat="(key, value) in user">
-  <td>{{ key }}</td><td>{{ value }}</td>
+  <td>{{ key }}</td>
+  <td>{{ value }}</td>
 </tr>
 ```
+
 #### `ng-repeat`
 
 - **Type:** `expression`
@@ -21,38 +29,44 @@ description: "Complete reference for ng-repeat: iterating arrays and objects, tr
 
 One of these forms:
 
-* `item in collection` — iterate array or array-like
-* `(key, value) in object` — iterate object properties
-* `item in collection track by expression` — with explicit tracking
-* `item in collection | filter:fn` — with inline filter
+- `item in collection` — iterate array or array-like
+- `(key, value) in object` — iterate object properties
+- `item in collection | filter:fn` — with inline filter
+
 ## Special scope variables
 
 Every `ng-repeat` child scope exposes these read-only properties:
+
 #### `$index`
 
 - **Type:** `number`
 
 Zero-based position of the item in the collection.
+
 #### `$first`
 
 - **Type:** `boolean`
 
 `true` for the first item (`$index === 0`).
+
 #### `$last`
 
 - **Type:** `boolean`
 
 `true` for the last item.
+
 #### `$middle`
 
 - **Type:** `boolean`
 
 `true` for items that are neither first nor last.
+
 #### `$even`
 
 - **Type:** `boolean`
 
 `true` when `$index` is even.
+
 #### `$odd`
 
 - **Type:** `boolean`
@@ -60,22 +74,14 @@ Zero-based position of the item in the collection.
 `true` when `$index` is odd.
 
 ```html
-    ng-class="{ first: $first, last: $last, odd: $odd }">
+<li
+  ng-repeat="item in items"
+  ng-class="{ first: $first, last: $last, odd: $odd }"
+>
   {{ $index + 1 }}. {{ item.name }}
 </li>
 ```
-## track by
 
-By default, `ng-repeat` tracks items by object identity. When the collection changes, it destroys and recreates DOM nodes for items that aren't the same object reference. `track by` lets you specify a stable key, dramatically improving performance when data is re-fetched from a server.
-
-```html
-<li ng-repeat="user in users track by user.id">{{ user.name }}</li>
-
-<!-- Track by $index — useful for arrays of primitives -->
-<li ng-repeat="tag in tags track by $index">{{ tag }}</li>
-```
-
-> **Warning:** Do not use `track by $index` when items can be reordered or deleted — it causes incorrect DOM reuse. Use a stable unique ID instead.
 ## Filtering and sorting
 
 Apply filters inline in the `ng-repeat` expression:
@@ -84,7 +90,9 @@ Apply filters inline in the `ng-repeat` expression:
 <li ng-repeat="item in items | filter:searchText">{{ item.name }}</li>
 
 <!-- Filter by object (matches any field) -->
-<li ng-repeat="item in items | filter:{ category: 'books' }">{{ item.name }}</li>
+<li ng-repeat="item in items | filter:{ category: 'books' }">
+  {{ item.name }}
+</li>
 
 <!-- Sort ascending -->
 <li ng-repeat="item in items | orderBy:'name'">{{ item.name }}</li>
@@ -100,18 +108,34 @@ Apply filters inline in the `ng-repeat` expression:
   {{ item.name }}
 </li>
 ```
-## Multi-element repeat
 
-Use `ng-repeat-start` and `ng-repeat-end` to repeat a block of sibling elements (not just a single element):
+## Repeat sibling groups
+
+`ng-repeat` repeats one host element. Wrap sibling content when one item needs
+multiple elements:
 
 ```html
-<dd ng-repeat-end>{{ def.description }}</dd>
+<div ng-repeat="def in definitions">
+  <dt>{{ def.term }}</dt>
+  <dd>{{ def.description }}</dd>
+</div>
 ```
 
-This produces alternating `<dt>` / `<dd>` pairs, one for each item in `definitions`.
 ## Animating ng-repeat
 
-`ng-repeat` integrates with `$animate`. Added items receive `.ng-enter`, removed items `.ng-leave`, and moved items `.ng-move` CSS classes:
+Add `animate` to the repeated element. Insertions receive `ng-enter`, removals
+receive `ng-leave`, and reordered nodes receive `ng-move`:
+
+```html
+<button ng-click="items.push({ name: 'New item' })">Add</button>
+<button ng-click="items.pop()" ng-disabled="!items.length">Remove</button>
+<ul>
+  <li ng-repeat="item in items" animate>{{ item.name }}</li>
+</ul>
+```
+
+`ng-repeat` integrates with `$animate`. Added items receive `.ng-enter`, removed
+items `.ng-leave`, and moved items `.ng-move` CSS classes:
 
 ```css
   transition: opacity 0.3s;
@@ -128,9 +152,13 @@ This produces alternating `<dt>` / `<dd>` pairs, one for each item in `definitio
   opacity: 0;
 }
 ```
+
 ## Performance guidance
 
-* Always use `track by` with a unique ID for large lists.
-* Avoid complex expressions in `ng-repeat` — compute derived values in the controller.
-* Use `limitTo` to paginate rather than rendering thousands of items.
-* One-time bind static content: `{{ ::item.name }}` avoids watches on items that never change.
+- Preserve item object identity when updating large collections to maximize DOM
+  reuse.
+- Avoid complex expressions in `ng-repeat` — compute derived values in the
+  controller.
+- Use `limitTo` to paginate rather than rendering thousands of items.
+- One-time bind static content: `{{ ::item.name }}` avoids watches on items that
+  never change.

@@ -1,6 +1,5 @@
 import type { RuntimeModule } from "../angular-runtime.ts";
 import { _document, _htmlCanvas, _window } from "../injection-tokens.ts";
-import type { RuntimeComposition } from "../core/composition/runtime-composition.ts";
 import {
   ngHtmlCanvasDirective,
   ngHtmlCanvasInvalidateDirective,
@@ -13,18 +12,17 @@ import {
   destroyHtmlCanvasRuntimeState,
   type HtmlCanvasConfig,
 } from "../services/html-canvas/html-canvas.ts";
+import { getRuntimeComposition } from "./custom-ng.ts";
 
 /** Register experimental HTML-in-Canvas support in a custom runtime. */
 export const htmlCanvasModule: RuntimeModule = (angular) => {
-  const runtime = angular as ng.Angular & {
-    _composition: RuntimeComposition;
-  };
+  const composition = getRuntimeComposition(angular);
   const state = createHtmlCanvasRuntimeState();
 
-  runtime._composition.configRegistry.register(_htmlCanvas, (value) => {
+  composition.configRegistry.register(_htmlCanvas, (value) => {
     applyHtmlCanvasConfiguration(state, value as HtmlCanvasConfig);
   });
-  runtime._composition.platform.addDisposer(() => {
+  composition.platform.addDisposer(() => {
     destroyHtmlCanvasRuntimeState(state);
   });
 

@@ -426,6 +426,34 @@ describe("createRealtimeSwapHandler", () => {
     expect(app.querySelector("#after")).not.toBeNull();
   });
 
+  it("delegates element insertion for positional swaps to animation", () => {
+    const host = document.getElementById("host") as HTMLElement;
+    const animate = {
+      enter: jasmine.createSpy("enter"),
+    };
+
+    host.setAttribute("data-animate", "true");
+
+    const swap = createRealtimeSwapHandler({
+      $compile,
+      $log: { warn: warnSpy } as any,
+      getAnimate: () => animate as any,
+      scope: $rootScope,
+      element: host,
+      logPrefix: "test",
+    });
+
+    for (const mode of ["beforebegin", "afterbegin", "afterend"] as const) {
+      expect(
+        swap(`<i data-mode="${mode}">${mode}</i>`, mode, {
+          targetSelector: "#target",
+        }),
+      ).toBeTrue();
+    }
+
+    expect(animate.enter).toHaveBeenCalledTimes(3);
+  });
+
   it("inserts text nodes during animated outerHTML replacement", () => {
     const host = document.getElementById("host") as HTMLElement;
     const target = document.getElementById("target") as HTMLElement;

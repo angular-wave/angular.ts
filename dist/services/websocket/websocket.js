@@ -41,7 +41,7 @@ function destroyWebSocketRuntimeConfiguration(configuration) {
     configuration.connections.clear();
 }
 /** @internal */
-function createWebSocketService(log, configuration, WebSocketConstructor) {
+function createWebSocketService(log, configuration, WebSocketConstructor, exceptionHandler) {
     return (url, config = {}) => {
         if (configuration.destroyed) {
             throw new Error("Cannot create a WebSocket connection after runtime teardown");
@@ -64,7 +64,7 @@ function createWebSocketService(log, configuration, WebSocketConstructor) {
             onError: (event) => {
                 mergedConfig.onError?.(event);
             },
-        }, log);
+        }, log, exceptionHandler);
         let closed = false;
         const connection = {
             reconnect() {

@@ -77,7 +77,7 @@ void main() {
       easing: 'ease-out',
       fill: 'both',
     );
-    const errorHandling = ng.ErrorHandlingConfig(objectMaxDepth: 3);
+    const errorFormatting = ng.ErrorFormattingConfig(objectMaxDepth: 3);
     const worker = ng.WorkerConfig(
       restart: true,
       restartDelay: 250,
@@ -383,7 +383,7 @@ void main() {
     expect(relativeTime.toMap()['numeric'], 'auto');
     expect(animation.duration, 250);
     expect(animation.fill, 'both');
-    expect(errorHandling.toMap()['objectMaxDepth'], 3);
+    expect(errorFormatting.toMap()['objectMaxDepth'], 3);
     expect(worker.restart, isTrue);
     expect(worker.restartDelay, 250);
     expect(worker.maxRestarts, 4);

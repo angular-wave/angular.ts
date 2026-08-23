@@ -4,7 +4,7 @@ import {
   isNullOrUndefined,
   isString,
   stringify,
-  assertDefined,
+  assertInvariantDefined,
 } from "../../shared/utils.ts";
 import { DefType, type Param } from "../params/param.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
@@ -462,7 +462,11 @@ export class UrlMatcher {
       if (pathSegment.includes("?")) break; // we're into the search part
       checkParamErrors(id, pattern, this._params);
       this._params.push(
-        paramFactory.fromPath(id, paramType, assertDefined(config.state)),
+        paramFactory.fromPath(
+          id,
+          paramType,
+          assertInvariantDefined(config.state),
+        ),
       );
       this._segments.push(pathSegment);
       this._compiled += quoteRegExp(
@@ -496,7 +500,11 @@ export class UrlMatcher {
 
           checkParamErrors(id, pattern, this._params);
           this._params.push(
-            paramFactory.fromSearch(id, paramType, assertDefined(config.state)),
+            paramFactory.fromSearch(
+              id,
+              paramType,
+              assertInvariantDefined(config.state),
+            ),
           );
           last = SEARCH_PLACEHOLDER_REGEXP.lastIndex;
           // check if ?&

@@ -1,6 +1,6 @@
 import { _scope, _injector } from '../injection-tokens.js';
 import { ALIASED_ATTR } from './constants.js';
-import { directiveNormalize, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, uppercase, assertDefined, isDefined, isString, assign, isObject } from './utils.js';
+import { directiveNormalize, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, uppercase, isDefined, assertInvariantDefined, isString, assign, isObject } from './utils.js';
 import { NodeType } from './node.js';
 
 /**
@@ -259,7 +259,7 @@ function getOrSetCacheData(element, key, value) {
 function setCacheData(element, key, value) {
     if (elementAcceptsData(element)) {
         const expandoStore = getExpando(element, true);
-        assertDefined(expandoStore)[kebabToCamel(key)] = value;
+        assertInvariantDefined(expandoStore)[kebabToCamel(key)] = value;
     }
     else {
         if (element.parentElement) {
@@ -623,7 +623,11 @@ function cleanElementData(nodes) {
 }
 /** Returns the nearest injector service found while walking up the element tree. */
 function getInjector(element) {
-    return assertDefined(getInheritedData(element, _injector));
+    const injector = getInheritedData(element, _injector);
+    if (!injector) {
+        throw new Error("No AngularTS injector is attached to this element.");
+    }
+    return injector;
 }
 /**
  * Parses an HTML string into a detached `DocumentFragment`.

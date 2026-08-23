@@ -39,6 +39,24 @@ describe("ngScopeDirective", () => {
     expect(scope.scopeName).toBe("myName");
   });
 
+  it("should trim the required scope name", () => {
+    const scope = $rootScope.new();
+
+    $compile('<div ng-scope="  myName  "></div>')(scope);
+
+    expect(scope.scopeName).toBe("myName");
+  });
+
+  it("should reject an empty scope name", () => {
+    expect(() => $compile("<div ng-scope></div>")($rootScope)).toThrowError(
+      TypeError,
+      "ng-scope requires a non-empty name.",
+    );
+    expect(() =>
+      $compile('<div ng-scope="   "></div>')($rootScope),
+    ).toThrowError(TypeError, "ng-scope requires a non-empty name.");
+  });
+
   it("should not create an isolate scope", () => {
     const scope = $rootScope.new();
 

@@ -72,6 +72,37 @@ export interface RuntimeNgModuleOptions {
   directives?: DirectiveRegistrations;
 }
 
+/** @internal */
+export function getRuntimeComposition(
+  angular: ng.Angular | { _composition: RuntimeComposition },
+): RuntimeComposition {
+  return (
+    angular as ng.Angular & {
+      _composition: RuntimeComposition;
+    }
+  )._composition;
+}
+
+/** @internal */
+export function memoizeRuntimeModule(
+  registerModule: import("../angular-runtime.ts").RuntimeModule,
+): import("../angular-runtime.ts").RuntimeModule {
+  const registrations = new WeakMap<object, ng.NgModule>();
+
+  return (angular) => {
+    const key = angular as object;
+    const existing = registrations.get(key);
+
+    if (existing) return existing;
+
+    const module = registerModule(angular);
+
+    registrations.set(key, module);
+
+    return module;
+  };
+}
+
 /**
  * Registers a composed AngularTS `ng` module from core providers and a caller
  * supplied directive list.
@@ -84,29 +115,21 @@ export function registerComposedNgModule(
 
   const providers = options.providers ?? {};
 
-  const directiveRegistrations = normalizeDirectiveRegistrations(
-    options.directives,
-  );
-
-  const filterRegistrations = normalizeFilterRegistrations(options.filters);
-
-  const serviceRegistrations = normalizeServiceRegistrations(options.services);
-
-  const runtime = angular as ng.Angular & {
-    _composition: RuntimeComposition;
-  };
-  const compileRegistry = runtime._composition.compileRegistry;
-  const { platform } = runtime._composition;
+  const directiveRegistrations = normalizeRegistrations(options.directives);
+  const filterRegistrations = normalizeRegistrations(options.filters);
+  const serviceRegistrations = normalizeRegistrations(options.services);
+  const composition = getRuntimeComposition(angular);
+  const { compileRegistry, platform } = composition;
 
   const ngModule = angular.module(moduleName, options.requires);
 
   ngModule._registerProviders((registry) => {
     registry.value(_window, platform.window);
     registry.value(_document, platform.document);
-    runtime._composition.filterRegistry.attach(registry);
+    composition.filterRegistry.attach(registry);
     registry.factory(
       _filter,
-      createFilterRegistration(runtime._composition.filterRegistry),
+      createFilterRegistration(composition.filterRegistry),
     );
     registry.factory(_parse, [
       _injector,
@@ -120,40 +143,37 @@ export function registerComposedNgModule(
         $parse: ng.ParseService,
       ) =>
         createRootScopeService(
-          runtime._composition.appContext,
+          composition.appContext,
           $exceptionHandler,
           $parse,
         ),
     ]);
-    runtime._composition.configRegistry.register(_interpolate, (value) => {
+    composition.configRegistry.register(_interpolate, (value) => {
       applyInterpolateConfiguration(
-        runtime._composition.interpolateState,
+        composition.interpolateState,
         value as InterpolateConfig,
       );
     });
     registry.factory(
       _interpolate,
       createInterpolateRegistration(
-        runtime._composition.interpolateState,
+        composition.interpolateState,
         passThroughSecurityAdapter,
       ),
     );
     registry.factory(_controller, [
       _injector,
       ($injector: ng.InjectorService) =>
-        createControllerService(
-          runtime._composition.controllerRegistry,
-          $injector,
-        ),
+        createControllerService(composition.controllerRegistry, $injector),
     ]);
-    runtime._composition.configRegistry.register(_exceptionHandler, (value) => {
+    composition.configRegistry.register(_exceptionHandler, (value) => {
       applyExceptionHandlerConfiguration(
-        runtime._composition.exceptionHandlerState,
+        composition.exceptionHandlerState,
         value as ExceptionHandlerConfig,
       );
     });
     registry.factory(_exceptionHandler, () =>
-      createExceptionHandlerService(runtime._composition.exceptionHandlerState),
+      createExceptionHandlerService(composition.exceptionHandlerState),
     );
 
     registry.factory(_compile, [
@@ -178,56 +198,38 @@ export function registerComposedNgModule(
           $exceptionHandler,
           $parse,
           $controller,
-          requireAppRoot(runtime._composition.appContext, $rootScope),
+          requireAppRoot(composition.appContext, $rootScope),
         ),
     ]);
 
     registry.value(_angular, angular);
 
-    registerRuntimeProviders(registry, providers, runtime._composition);
+    registerRuntimeProviders(registry, providers, composition);
 
-    filterRegistrations.forEach((filters) => {
-      keys(filters).forEach((name) => {
-        runtime._composition.filterRegistry.register(name, filters[name]);
-      });
-    });
+    for (const filters of filterRegistrations) {
+      for (const name of keys(filters)) {
+        composition.filterRegistry.register(name, filters[name]);
+      }
+    }
 
-    serviceRegistrations.forEach((services) => {
-      keys(services).forEach((name) => {
+    for (const services of serviceRegistrations) {
+      for (const name of keys(services)) {
         registry.service(name, services[name]);
-      });
-    });
+      }
+    }
   });
 
-  directiveRegistrations.forEach((directives) => {
-    keys(directives).forEach((name) => {
+  for (const directives of directiveRegistrations) {
+    for (const name of keys(directives)) {
       ngModule.directive(name, directives[name]);
-    });
-  });
+    }
+  }
 
   return ngModule;
 }
 
-function normalizeDirectiveRegistrations(
-  directives: DirectiveRegistrations | undefined,
-): DirectiveRegistration[] {
-  if (!directives) return [];
+function normalizeRegistrations<T>(registrations: T | T[] | undefined): T[] {
+  if (!registrations) return [];
 
-  return Array.isArray(directives) ? directives : [directives];
-}
-
-function normalizeFilterRegistrations(
-  filters: FilterRegistrations | undefined,
-): FilterRegistration[] {
-  if (!filters) return [];
-
-  return Array.isArray(filters) ? filters : [filters];
-}
-
-function normalizeServiceRegistrations(
-  services: ServiceRegistrations | undefined,
-): ServiceRegistration[] {
-  if (!services) return [];
-
-  return Array.isArray(services) ? services : [services];
+  return Array.isArray(registrations) ? registrations : [registrations];
 }

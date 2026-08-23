@@ -99,6 +99,7 @@ export function createSseService(
   log: LogService,
   configuration: SseRuntimeConfiguration,
   getEventSourceConstructor: () => typeof EventSource,
+  exceptionHandler: ng.ExceptionHandlerService,
 ): SseService {
   return (url: string, config: SseConfig = {}): SseConnection => {
     if (configuration.destroyed) {
@@ -122,6 +123,7 @@ export function createSseService(
         },
       },
       log,
+      exceptionHandler,
     );
     let closed = false;
     const connection: SseConnection = {

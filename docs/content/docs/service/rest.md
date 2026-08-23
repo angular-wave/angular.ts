@@ -4,12 +4,12 @@ description: >
   Typed REST resource client
 ---
 
-The `$rest` service creates typed resource clients on top of a REST backend. Use this
-page for the usage model and examples. Exact class members, method signatures,
-return types, and configuration interfaces live in TypeDoc:
+The `$rest` service creates typed resource clients on top of a REST backend. Use
+this page for the usage model and examples. Exact class members, method
+signatures, return types, and configuration interfaces live in TypeDoc:
 
 - [`RestService`](../../../typedoc/classes/RestService.html)
-- [`EntityClass`](../../../typedoc/interfaces/EntityClass.html)
+- [`EntityClass`](../../../typedoc/types/EntityClass.html)
 - [`RestBackend`](../../../typedoc/interfaces/RestBackend.html)
 - [`RestCacheStore`](../../../typedoc/interfaces/RestCacheStore.html)
 - [`CachedRestBackend`](../../../typedoc/classes/CachedRestBackend.html)
@@ -23,7 +23,8 @@ Inject `$rest` and call it with a base URL:
 const posts = $rest<Post, number>('/api/posts');
 ```
 
-The returned `RestService` supports common CRUD workflows:
+The returned [`RestService`](../../../typedoc/classes/RestService.html) supports
+common CRUD workflows:
 
 ```ts
 const all = await posts.list();
@@ -74,58 +75,30 @@ const posts = $rest<Post, number>('/api/posts', Post, {
 ```
 
 Pass `backend` when a resource should use a custom backend. The backend receives
-a normalized `RestRequest` with expanded URLs, params, request data, collection
-URL, and resource id. This is the extension point for tests, local persistence,
-IndexedDB, the browser Cache API, or composed network/cache behavior.
+a normalized [`RestRequest`](../../../typedoc/interfaces/RestRequest.html) with
+expanded URLs, params, request data, collection URL, and resource id. This is
+the extension point for tests, local persistence, IndexedDB, the browser Cache
+API, or composed network/cache behavior.
 
-For cached reads, wrap the HTTP backend with `CachedRestBackend`:
+For cached reads, wrap the HTTP backend with
+[`CachedRestBackend`](../../../typedoc/classes/CachedRestBackend.html):
 
 ```ts
-import {
-  CachedRestBackend,
-  HttpRestBackend,
-} from '@angular-wave/angular.ts/services/rest';
-import type {
-  RestCacheStore,
-  RestResponse,
-} from '@angular-wave/angular.ts/services/rest';
-
-class MapRestCacheStore implements RestCacheStore {
-  private cache = new Map<string, RestResponse<unknown>>();
-
-  async get<T>(key: string): Promise<RestResponse<T> | undefined> {
-    return this.cache.get(key) as RestResponse<T> | undefined;
-  }
-
-  async set<T>(key: string, response: RestResponse<T>): Promise<void> {
-    this.cache.set(key, response as RestResponse<unknown>);
-  }
-
-  async delete(key: string): Promise<void> {
-    this.cache.delete(key);
-  }
-
-  async deletePrefix(prefix: string): Promise<void> {
-    for (const key of this.cache.keys()) {
-      if (key.startsWith(prefix)) {
-        this.cache.delete(key);
-      }
-    }
-  }
-}
-
 const posts = $rest<Post, number>('/api/posts', Post, {
   backend: new CachedRestBackend({
     network: new HttpRestBackend($http),
-    cache: new MapRestCacheStore(),
+    cache: appCache,
     strategy: 'network-first',
   }),
 });
 ```
 
-`createRestCacheKey()` is used internally by `CachedRestBackend`; it is not part
-of the top-level AngularTS namespace. Cache stores receive the final key string
-through the `RestCacheStore` methods and should treat it as opaque.
+`createRestCacheKey()` is used internally by
+[`CachedRestBackend`](../../../typedoc/classes/CachedRestBackend.html); it is
+not part of the top-level AngularTS namespace. Cache stores receive the final
+key string through the
+[`RestCacheStore`](../../../typedoc/interfaces/RestCacheStore.html) methods and
+should treat it as opaque.
 
 ## Request Bodies
 
@@ -152,8 +125,8 @@ const angularRepos = await repos.list({
 });
 ```
 
-The `org` value expands into the path. Remaining params are forwarded to
-`$http` as query parameters.
+The `org` value expands into the path. Remaining params are forwarded to `$http`
+as query parameters.
 
 ## Shared Defaults
 
@@ -175,8 +148,8 @@ angular.module('app', []).config({
 
 The CRUD demo at `/src/services/rest/rest-crud-demo.html` talks to the Go demo
 backend through `/api/tasks`. It uses `ng-repeat` for rows, `$rest` for CRUD
-operations, and a cache strategy toggle for `network-first`,
-`cache-first`, and `stale-while-revalidate`.
+operations, and a cache strategy toggle for `network-first`, `cache-first`, and
+`stale-while-revalidate`.
 
 ## Related
 

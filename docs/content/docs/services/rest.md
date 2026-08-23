@@ -1,16 +1,20 @@
 ---
-title: "Typed REST Resources"
-linkTitle: "REST"
+title: 'Typed REST Resources'
+linkTitle: 'REST'
 weight: 410
-description: "Define typed REST endpoints once and use $rest for list, get, create, update, and delete flows backed by pluggable backends."
+description:
+  'Define typed REST endpoints once and use $rest for list, get, create, update,
+  and delete flows backed by pluggable backends.'
 ---
 
-`$rest` wraps a REST backend with a small typed resource client. By default it uses `$http`; pass a custom backend when a resource should read from another data source or compose network and cache behavior.
+`$rest` wraps a REST backend with a small typed resource client. By default it
+uses `$http`; pass a custom backend when a resource should read from another
+data source or compose network and cache behavior.
 
 Exact method signatures live in TypeDoc:
 
 - [`RestService`](../../../typedoc/classes/RestService.html)
-- [`EntityClass`](../../../typedoc/interfaces/EntityClass.html)
+- [`EntityClass`](../../../typedoc/types/EntityClass.html)
 - [`RestBackend`](../../../typedoc/interfaces/RestBackend.html)
 - [`RestCacheStore`](../../../typedoc/interfaces/RestCacheStore.html)
 - [`CachedRestBackend`](../../../typedoc/classes/CachedRestBackend.html)
@@ -18,11 +22,11 @@ Exact method signatures live in TypeDoc:
 
 ## Configure shared defaults
 
-Configure defaults before the application starts when every resource should share
-the same request behavior.
+Configure defaults before the application starts when every resource should
+share the same request behavior.
 
-```typescript
-angular.module("demo", []).config({
+```ts
+angular.module('demo', []).config({
   $rest: {
     defaults: {
       timeout: 5000,
@@ -34,20 +38,21 @@ angular.module("demo", []).config({
 
 ## Create a resource at runtime
 
-Inject `$rest` anywhere you need a resource client. This keeps controllers and services focused on the workflow instead of repeating request setup.
+Inject `$rest` anywhere you need a resource client. This keeps controllers and
+services focused on the workflow instead of repeating request setup.
 
-```typescript
+```ts
 class UserRepository {
-  static $inject = ["$rest"];
+  static $inject = ['$rest'];
 
   private users: ng.RestService<User, number>;
 
   constructor($rest: ng.RestFactory) {
-    this.users = $rest<User, number>("/api/users", User);
+    this.users = $rest<User, number>('/api/users', User);
   }
 
   listAdmins() {
-    return this.users.list({ role: "admin" });
+    return this.users.list({ role: 'admin' });
   }
 
   getUser(id: number) {
@@ -58,28 +63,31 @@ class UserRepository {
 
 ## Use URI templates
 
-`$rest` expands RFC 6570 templates before sending a request. Template variables are taken from the params object you pass to `list()` or `get()`.
+`$rest` expands RFC 6570 templates before sending a request. Template variables
+are taken from the params object you pass to `list()` or `get()`.
 
-```typescript
+```ts
 const issues = $rest<Issue>(
-  "/api/repos/{owner}/{repo}/issues{?labels*}",
+  '/api/repos/{owner}/{repo}/issues{?labels*}',
   Issue,
 );
 
 const openBugs = await issues.list({
-  owner: "angular-wave",
-  repo: "angular.ts",
-  labels: ["bug", "ui"],
+  owner: 'angular-wave',
+  repo: 'angular.ts',
+  labels: ['bug', 'ui'],
 });
 ```
 
-Params that are not consumed by the template are forwarded to `$http` as query params.
+Params that are not consumed by the template are forwarded to `$http` as query
+params.
 
 ## Map server data to classes
 
-Pass an entity class when the raw response needs normalization, computed properties, or methods.
+Pass an entity class when the raw response needs normalization, computed
+properties, or methods.
 
-```typescript
+```ts
 class Article {
   id: number;
   title: string;
@@ -96,7 +104,7 @@ class Article {
   }
 }
 
-const articles = $rest<Article, number>("/api/articles", Article);
+const articles = $rest<Article, number>('/api/articles', Article);
 const article = await articles.get(42);
 
 if (article?.isPublished) {
@@ -108,17 +116,19 @@ If you omit the entity class, `$rest` returns the parsed response data as-is.
 
 ## Handle writes
 
-`create()` sends `POST`, `update()` sends `PUT`, and `delete()` sends `DELETE`. The methods intentionally stay close to HTTP semantics so errors and interceptors still flow through `$http`.
+`create()` sends `POST`, `update()` sends `PUT`, and `delete()` sends `DELETE`.
+The methods intentionally stay close to HTTP semantics so errors and
+interceptors still flow through `$http`.
 
-```typescript
+```ts
 class ArticleController {
-  static $inject = ["$rest"];
+  static $inject = ['$rest'];
 
   private articles: ng.RestService<Article, number>;
   items: Article[] = [];
 
   constructor($rest: ng.RestFactory) {
-    this.articles = $rest<Article, number>("/api/articles", Article);
+    this.articles = $rest<Article, number>('/api/articles', Article);
   }
 
   async publish(draft: Partial<Article>) {
@@ -144,8 +154,8 @@ class ArticleController {
 
 `get()`, `create()`, and `update()` return `null` for an empty response.
 `delete()` resolves with no value after the backend succeeds. Backend failures
-reject for every operation, allowing one application error boundary or policy
-to handle them consistently.
+reject for every operation, allowing one application error boundary or policy to
+handle them consistently.
 
 `$rest` does not perform framework-property cleanup itself. With the default
 HTTP backend, `$http` deproxies scope payloads before JSON serialization, so
@@ -156,58 +166,22 @@ application-owned properties remain part of the payload.
 
 ## Use a cached backend
 
-`CachedRestBackend` wraps a network backend and an async cache store. The default HTTP backend remains available through `HttpRestBackend`, while cache storage can be memory, IndexedDB, the Cache API, or any object that implements `RestCacheStore`.
+[`CachedRestBackend`](../../../typedoc/classes/CachedRestBackend.html) wraps a
+network backend and an async cache store. The default HTTP backend remains
+available through
+[`HttpRestBackend`](../../../typedoc/classes/HttpRestBackend.html), while cache
+storage can be memory, IndexedDB, the Cache API, or any object that implements
+[`RestCacheStore`](../../../typedoc/interfaces/RestCacheStore.html).
 
-```typescript
-import {
-  CachedRestBackend,
-  HttpRestBackend,
-} from "@angular-wave/angular.ts/services/rest";
-import type {
-  RestCacheStore,
-  RestResponse,
-} from "@angular-wave/angular.ts/services/rest";
-
-class MapRestCacheStore implements RestCacheStore {
-  private cache = new Map<string, RestResponse<unknown>>();
-
-  async get<T>(key: string): Promise<RestResponse<T> | undefined> {
-    return this.cache.get(key) as RestResponse<T> | undefined;
-  }
-
-  async set<T>(key: string, response: RestResponse<T>): Promise<void> {
-    this.cache.set(key, response as RestResponse<unknown>);
-  }
-
-  async delete(key: string): Promise<void> {
-    this.cache.delete(key);
-  }
-
-  async deletePrefix(prefix: string): Promise<void> {
-    for (const key of this.cache.keys()) {
-      if (key.startsWith(prefix)) {
-        this.cache.delete(key);
-      }
-    }
-  }
-}
-
-const cache = new MapRestCacheStore();
+```ts
 const backend = new CachedRestBackend({
   network: new HttpRestBackend($http),
-  cache,
-  policy(context) {
-    if (!navigator.onLine) return "cache-first";
-
-    return context.url.startsWith("/api/catalog")
-      ? "stale-while-revalidate"
-      : "network-first";
-  },
+  cache: appCache,
+  policy: ({ url }) =>
+    url.startsWith('/api/catalog') ? 'stale-while-revalidate' : 'network-first',
 });
 
-const articles = $rest<Article, number>("/api/articles", Article, {
-  backend,
-});
+const articles = $rest<Article, number>('/api/articles', Article, { backend });
 ```
 
 Supported policy results are `cache-first`, `network-first`, and
@@ -215,20 +189,24 @@ Supported policy results are `cache-first`, `network-first`, and
 use one static result. Writes always go to the network backend first; successful
 writes invalidate cached collection and entity keys for the resource.
 
-Cache keys are generated by `CachedRestBackend`. A `RestCacheStore` receives the
-final key string in `get()`, `set()`, `delete()`, and `deletePrefix()` and should
-treat that key as opaque. `createRestCacheKey()` is an internal REST module
-helper, not a top-level namespace API.
+Cache keys are generated by
+[`CachedRestBackend`](../../../typedoc/classes/CachedRestBackend.html). A
+[`RestCacheStore`](../../../typedoc/interfaces/RestCacheStore.html) receives the
+final key string in `get()`, `set()`, `delete()`, and `deletePrefix()` and
+should treat that key as opaque. `createRestCacheKey()` is an internal REST
+module helper, not a top-level namespace API.
 
 ## Write a custom backend
 
-A custom backend implements `RestBackend`. It receives normalized requests and
-returns raw response data for `RestService` to map.
+A custom backend implements
+[`RestBackend`](../../../typedoc/interfaces/RestBackend.html). It receives
+normalized requests and returns raw response data for
+[`RestService`](../../../typedoc/classes/RestService.html) to map.
 
-```typescript
+```ts
 class IndexedDbRestBackend implements ng.RestBackend {
   async request<T>(request: ng.RestRequest): Promise<ng.RestResponse<T>> {
-    if (request.method === "GET") {
+    if (request.method === 'GET') {
       return { data: (await readFromDb(request.url)) as T };
     }
 
@@ -236,13 +214,15 @@ class IndexedDbRestBackend implements ng.RestBackend {
   }
 }
 
-const articles = $rest<Article, number>("/api/articles", Article, {
+const articles = $rest<Article, number>('/api/articles', Article, {
   backend: new IndexedDbRestBackend(),
 });
 ```
 
-Use `HttpRestBackend` when the backend should delegate to `$http`, and wrap it
-with `CachedRestBackend` when reads should use one of the cache strategies.
+Use [`HttpRestBackend`](../../../typedoc/classes/HttpRestBackend.html) when the
+backend should delegate to `$http`, and wrap it with
+[`CachedRestBackend`](../../../typedoc/classes/CachedRestBackend.html) when
+reads should use one of the cache strategies.
 
 ## CRUD demo
 

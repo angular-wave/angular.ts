@@ -1,5 +1,5 @@
 import { dealoc, removeElementData } from '../../shared/dom.js';
-import { assertDefined, shouldHandleViewRetentionPause } from '../../shared/utils.js';
+import { assertInvariantDefined, shouldHandleViewRetentionPause } from '../../shared/utils.js';
 
 let nextFragmentId = 1;
 const compiledFragmentsByNode = new WeakMap();
@@ -9,7 +9,7 @@ const compiledFragmentStatesByRoot = new WeakMap();
 const compiledFragmentScopeDestroyDeregisters = new WeakMap();
 function createPublicLinkCompiledFragmentRecord(root, parentScope, nodes, ownsNodes = true) {
     const id = getInitialFragmentId({});
-    assertLinkedFragmentCanBeCreated(id, root, true);
+    ensureLinkedFragmentCanBeCreated(id, root, true);
     const record = {
         id,
         rootId: root.id,
@@ -26,7 +26,7 @@ function createPublicLinkCompiledFragmentRecord(root, parentScope, nodes, ownsNo
 }
 function createPublicLinkSingleNodeCompiledFragmentRecord(root, parentScope, node, ownsNodes = true) {
     const id = getInitialFragmentId({});
-    assertLinkedFragmentCanBeCreated(id, root, true);
+    ensureLinkedFragmentCanBeCreated(id, root, true);
     const record = {
         id,
         rootId: root.id,
@@ -44,7 +44,7 @@ function createPublicLinkSingleNodeCompiledFragmentRecord(root, parentScope, nod
 function createCompiledFragmentRecord(options) {
     const id = getInitialFragmentId(options);
     const linked = options.linked === true;
-    assertLinkedFragmentCanBeCreated(id, options.root, linked);
+    ensureLinkedFragmentCanBeCreated(id, options.root, linked);
     const record = {
         id,
         rootId: options.root.id,
@@ -73,7 +73,7 @@ function createCompiledFragmentRecord(options) {
 function createSingleNodeCompiledFragmentRecord(options) {
     const id = getInitialFragmentId(options);
     const linked = options.linked === true;
-    assertLinkedFragmentCanBeCreated(id, options.root, linked);
+    ensureLinkedFragmentCanBeCreated(id, options.root, linked);
     const record = {
         id,
         rootId: options.root.id,
@@ -387,7 +387,7 @@ function clearFragmentArray(record, key) {
 function getInitialFragmentId(options) {
     return options.id ?? `fragment:${String(nextFragmentId++)}`;
 }
-function assertLinkedFragmentCanBeCreated(id, root, linked) {
+function ensureLinkedFragmentCanBeCreated(id, root, linked) {
     if (!root.destroyed)
         return;
     if (linked) {
@@ -406,7 +406,7 @@ function createPublicLinkDiagnostics(root) {
     };
 }
 function registerCompiledFragmentRecord(record, retentionAware = true) {
-    const root = assertDefined(record.root);
+    const root = assertInvariantDefined(record.root);
     if (record.parentScope === root.rootScope) {
         registerRootCompiledFragment(record);
     }
@@ -436,7 +436,7 @@ function disposeCompiledFragmentScopeLifecycle(record) {
     deregister();
 }
 function registerRootCompiledFragment(record) {
-    const root = assertDefined(record.root);
+    const root = assertInvariantDefined(record.root);
     let state = compiledFragmentStatesByRoot.get(root);
     if (!state) {
         const nextState = {

@@ -570,7 +570,7 @@ function createMachine<
     data: defaultMachineData(typedConfig.data),
   } as unknown as ResolvedMachineConfiguration<TData, TEvents, TState>;
 
-  assertMachineConfig(config);
+  validateMachineConfig(config);
   const rawData = config.data;
   let currentState: TState = config.initial;
   let activeBinding: MachineBinding<TData, TEvents, TState> | undefined;
@@ -647,7 +647,7 @@ function createMachine<
       };
     },
     restore(snapshot: unknown): void {
-      assertMachineSnapshot(snapshot, config);
+      validateMachineSnapshot(snapshot, config);
 
       const binding = getActiveBinding();
 
@@ -1279,7 +1279,7 @@ function normalizeMachineArgs<
   };
 }
 
-function assertMachineConfig<
+function validateMachineConfig<
   TData extends object,
   TEvents extends object,
   TState extends MachineState,
@@ -1304,10 +1304,10 @@ function assertMachineConfig<
     throw new Error("$machine initial state must exist in states.");
   }
 
-  assertMachineHooks(config.hooks);
+  validateMachineHooks(config.hooks);
 }
 
-function assertMachineSnapshot<
+function validateMachineSnapshot<
   TData extends object,
   TEvents extends object,
   TState extends MachineState,
@@ -1336,7 +1336,7 @@ function assertMachineSnapshot<
   }
 }
 
-function assertMachineHooks<
+function validateMachineHooks<
   TData extends object,
   TEvents extends object,
   TState extends MachineState,
@@ -1349,15 +1349,15 @@ function assertMachineHooks<
     throw new Error("$machine hooks must be an object.");
   }
 
-  assertMachineHookMap("enter", hooks.enter);
-  assertMachineHookMap("exit", hooks.exit);
+  validateMachineHookMap("enter", hooks.enter);
+  validateMachineHookMap("exit", hooks.exit);
 
   if (hooks.transition !== undefined && !isFunction(hooks.transition)) {
     throw new Error("$machine hooks.transition must be a function.");
   }
 }
 
-function assertMachineHookMap(name: "enter" | "exit", hooks: unknown): void {
+function validateMachineHookMap(name: "enter" | "exit", hooks: unknown): void {
   if (hooks === undefined) {
     return;
   }

@@ -31,7 +31,7 @@ Exact service and connection signatures live in TypeDoc:
 
 `$sse` creates a managed `EventSource` connection. It handles query parameters, JSON message parsing, heartbeat detection, automatic reconnection, and clean shutdown.
 
-```typescript
+```ts
 class NewsFeedController {
   static $inject = ["$sse", "$scope"];
 
@@ -65,7 +65,7 @@ class NewsFeedController {
 
 `$websocket` returns a managed WebSocket connection with reconnects, heartbeat handling, message transforms, and send support.
 
-```typescript
+```ts
 class ChatController {
   static $inject = ["$websocket", "$scope"];
 
@@ -104,7 +104,7 @@ class ChatController {
 endpoint can serve HTTP/3 and the client benefits from unreliable datagrams,
 reliable streams, or both in the same session.
 
-```typescript
+```ts
 class TelemetryController {
   static $inject = ["$webTransport", "$scope"];
 
@@ -140,7 +140,7 @@ The service expects the browser `WebTransport` API to exist and requires an
 metadata at `/webtransport/cert-hash` for local browser tests.
 
 Reconnect is opt-in at the service layer. When enabled, the
-`WebTransportConnection` object stays stable while its native `transport`
+[`WebTransportConnection`](../../../typedoc/interfaces/WebTransportConnection.html) object stays stable while its native `transport`
 instance is replaced. Use `onReconnect` as the renegotiation hook for
 subscriptions, authentication messages, or other session state that the server
 does not remember across HTTP/3 sessions.
@@ -226,7 +226,7 @@ path remain element-owned and are terminated with that scope.
 
 A worker module receives values through `self.onmessage` and returns results through `self.postMessage`.
 
-```javascript
+```js
 self.onmessage = function ({ data: { limit } }) {
   const sieve = new Uint8Array(limit + 1).fill(1);
   sieve[0] = sieve[1] = 0;
@@ -248,7 +248,7 @@ self.onmessage = function ({ data: { limit } }) {
 
 ## WebAssembly
 
-`ng-wasm` loads a `.wasm` file and exposes its `WasmResource` on the scope under
+`ng-wasm` loads a `.wasm` file and exposes its [`WasmResource`](../../../typedoc/interfaces/WasmResource.html) on the scope under
 a configurable name. Await `resource.ready` before reading
 `resource.exports`.
 
@@ -260,7 +260,7 @@ a configurable name. Await `resource.ready` before reading
 ></div>
 ```
 
-```typescript
+```ts
 const resource = $scope.imageProcessor;
 await resource.ready;
 const result = resource.exports.grayscale(pixelBuffer, width, height);

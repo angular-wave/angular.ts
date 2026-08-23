@@ -154,12 +154,11 @@ describe("programmatic views", () => {
       expect(nodes.map((node) => node.textContent)).toEqual([
         "text",
         "1",
-        "true",
         "2",
         "fragment",
         "",
       ]);
-      expect(nodes[5]).toBe(strong);
+      expect(nodes[4]).toBe(strong);
     });
 
     it("materializes reactive functions as stable comment anchors", () => {

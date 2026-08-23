@@ -191,7 +191,10 @@ describe("$serviceWorker", () => {
     const log = createLog();
     const err = createExceptionHandler();
 
-    const service = createServiceWorkerService(container, { log, err });
+    const service = createServiceWorkerService(container, {
+      log,
+      exceptionHandler: err,
+    });
 
     expect(service.supported).toBeTrue();
     expect(service.status).toBe("idle");
@@ -217,7 +220,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const scope = createReactiveScope();
     const statuses: string[] = [];
@@ -247,7 +250,7 @@ describe("$serviceWorker", () => {
     const container = createContainer(null);
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const scope = createReactiveScope();
     const controllers: Array<ServiceWorker | null> = [];
@@ -283,7 +286,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const scope = createReactiveScope();
     const phases: Array<ServiceWorkerState | undefined> = [];
@@ -311,7 +314,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const scope = createReactiveScope();
     const statuses: string[] = [];
@@ -345,7 +348,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     const result = await service.register("/sw.js", {
@@ -383,7 +386,11 @@ describe("$serviceWorker", () => {
     });
     const service = createServiceWorkerService(
       { controller: null, register } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler(), configuration },
+      {
+        log: createLog(),
+        exceptionHandler: createExceptionHandler(),
+        configuration,
+      },
     );
 
     await expectAsync(service.register()).toBeResolvedTo(registration);
@@ -404,7 +411,11 @@ describe("$serviceWorker", () => {
     });
     const service = createServiceWorkerService(
       { controller: null, register } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler(), configuration },
+      {
+        log: createLog(),
+        exceptionHandler: createExceptionHandler(),
+        configuration,
+      },
     );
 
     await expectAsync(
@@ -421,7 +432,7 @@ describe("$serviceWorker", () => {
     const container = createContainer();
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await expectServiceWorkerError(service.register(), "register-failed");
@@ -439,7 +450,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await expectAsync(service.ready()).toBeResolvedTo(registration);
@@ -469,7 +480,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await service.register("/sw.js");
@@ -500,7 +511,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await service.register("/sw.js");
@@ -518,7 +529,7 @@ describe("$serviceWorker", () => {
     } as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await expectServiceWorkerError(service.update(), "no-registration");
@@ -530,7 +541,7 @@ describe("$serviceWorker", () => {
     const container = createContainer();
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const received: ServiceWorkerMessageEvent<{ ok: true }>[] = [];
 
@@ -561,7 +572,7 @@ describe("$serviceWorker", () => {
     const container = createContainer(initialController);
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const controllers: (ServiceWorker | null)[] = [];
 
@@ -591,7 +602,7 @@ describe("$serviceWorker", () => {
       .and.resolveTo(registration);
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     service.onMessage(() => undefined);
@@ -624,7 +635,7 @@ describe("$serviceWorker", () => {
     const controller = createWorker("activated");
     const service = createServiceWorkerService(createContainer(controller), {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const transfer = [new ArrayBuffer(1)];
 
@@ -641,7 +652,7 @@ describe("$serviceWorker", () => {
   it("rejects post without an active controller", async () => {
     const service = createServiceWorkerService(createContainer(null), {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await expectServiceWorkerError(
@@ -666,7 +677,7 @@ describe("$serviceWorker", () => {
     const port2 = {};
     const service = createServiceWorkerService(createContainer(controller), {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
       createMessageChannel: () =>
         ({ port1, port2 }) as unknown as MessageChannel,
     });
@@ -702,7 +713,7 @@ describe("$serviceWorker", () => {
     );
     const service = createServiceWorkerService(createContainer(controller), {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await expectAsync(service.request("ping")).toBeResolvedTo({ ok: true });
@@ -721,7 +732,7 @@ describe("$serviceWorker", () => {
     }> = [];
     const service = createServiceWorkerService(createContainer(controller), {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
       createMessageChannel: () => {
         const channel = {
           port1: {
@@ -749,7 +760,7 @@ describe("$serviceWorker", () => {
 
     const unavailable = createServiceWorkerService(createContainer(null), {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
       createMessageChannel: () => {
         const channel = {
           port1: {
@@ -783,7 +794,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const updates: ng.ServiceWorkerUpdateState[] = [];
 
@@ -814,7 +825,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const phases: Array<ServiceWorkerState | undefined> = [];
 
@@ -854,7 +865,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const phases: Array<ServiceWorkerState | undefined> = [];
 
@@ -889,7 +900,7 @@ describe("$serviceWorker", () => {
     } as unknown as ServiceWorkerContainer;
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await service.register("/sw.js");
@@ -904,7 +915,10 @@ describe("$serviceWorker", () => {
     const log = createLog();
     const err = createExceptionHandler();
 
-    const service = createServiceWorkerService(undefined, { log, err });
+    const service = createServiceWorkerService(undefined, {
+      log,
+      exceptionHandler: err,
+    });
 
     expect(service.supported).toBeFalse();
     expect(service.controller).toBeNull();
@@ -917,7 +931,7 @@ describe("$serviceWorker", () => {
   it("rejects unsupported async operations with stable errors", async () => {
     const service = createServiceWorkerService(undefined, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await expectUnsupported(service.register("/sw.js"));
@@ -930,7 +944,7 @@ describe("$serviceWorker", () => {
   it("returns no-op disposers for event subscriptions in the skeleton", () => {
     const service = createServiceWorkerService(undefined, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     expect(service.onMessage(() => undefined)()).toBeUndefined();
@@ -966,7 +980,7 @@ describe("$serviceWorker", () => {
           .createSpy("register")
           .and.rejectWith(new Error("register failed")),
       } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler() },
+      { log: createLog(), exceptionHandler: createExceptionHandler() },
     );
 
     await expectServiceWorkerError(
@@ -980,7 +994,7 @@ describe("$serviceWorker", () => {
         controller: null,
         ready: Promise.reject(new Error("ready failed")),
       } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler() },
+      { log: createLog(), exceptionHandler: createExceptionHandler() },
     );
 
     await expectServiceWorkerError(readyService.ready(), "ready-failed");
@@ -995,7 +1009,7 @@ describe("$serviceWorker", () => {
           .createSpy("register")
           .and.resolveTo(updateRegistration),
       } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler() },
+      { log: createLog(), exceptionHandler: createExceptionHandler() },
     );
 
     await updateService.register("/sw.js");
@@ -1016,7 +1030,7 @@ describe("$serviceWorker", () => {
           .createSpy("register")
           .and.resolveTo(unregisterRegistration),
       } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler() },
+      { log: createLog(), exceptionHandler: createExceptionHandler() },
     );
 
     await unregisterService.register("/sw.js");
@@ -1042,7 +1056,11 @@ describe("$serviceWorker", () => {
         controller: null,
         register: jasmine.createSpy("register").and.resolveTo(registration),
       } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler(), configuration },
+      {
+        log: createLog(),
+        exceptionHandler: createExceptionHandler(),
+        configuration,
+      },
     );
 
     await service.register("/sw.js");
@@ -1062,7 +1080,11 @@ describe("$serviceWorker", () => {
     });
     const service = createServiceWorkerService(
       { controller: null, register } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler(), configuration },
+      {
+        log: createLog(),
+        exceptionHandler: createExceptionHandler(),
+        configuration,
+      },
     );
 
     await wait();
@@ -1089,7 +1111,7 @@ describe("$serviceWorker", () => {
       } as unknown as ServiceWorkerContainer,
       {
         log: createLog(),
-        err: err as unknown as ng.ExceptionHandlerService,
+        exceptionHandler: err as unknown as ng.ExceptionHandlerService,
         configuration,
       },
     );
@@ -1108,7 +1130,11 @@ describe("$serviceWorker", () => {
     };
     const service = createServiceWorkerService(
       { controller: null, register } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler(), security },
+      {
+        log: createLog(),
+        exceptionHandler: createExceptionHandler(),
+        security,
+      },
     );
 
     await expectAsync(service.register("/blocked-sw.js")).toBeRejectedWithError(
@@ -1133,7 +1159,11 @@ describe("$serviceWorker", () => {
     };
     const service = createServiceWorkerService(
       { controller: null, register } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler(), security },
+      {
+        log: createLog(),
+        exceptionHandler: createExceptionHandler(),
+        security,
+      },
     );
 
     await expectAsync(service.register("/blocked-sw.js")).toBeRejectedWithError(
@@ -1153,7 +1183,7 @@ describe("$serviceWorker", () => {
         controller: null,
         register: jasmine.createSpy("register").and.resolveTo(registration),
       } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler() },
+      { log: createLog(), exceptionHandler: createExceptionHandler() },
     );
 
     await expectServiceWorkerError(
@@ -1197,7 +1227,7 @@ describe("$serviceWorker", () => {
         controller: null,
         register: jasmine.createSpy("register").and.resolveTo(registration),
       } as unknown as ServiceWorkerContainer,
-      { log: createLog(), err: createExceptionHandler() },
+      { log: createLog(), exceptionHandler: createExceptionHandler() },
     );
     const phases: ServiceWorkerState[] = [];
 
@@ -1223,7 +1253,7 @@ describe("$serviceWorker", () => {
       .and.resolveTo(registration);
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: err as unknown as ng.ExceptionHandlerService,
+      exceptionHandler: err as unknown as ng.ExceptionHandlerService,
     });
 
     service.onMessage(() => {
@@ -1260,7 +1290,7 @@ describe("$serviceWorker", () => {
       .and.returnValue(registerPromise);
     const service = createServiceWorkerService(container, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
     const operation = service.register("/sw.js");
 
@@ -1284,7 +1314,7 @@ describe("$serviceWorker", () => {
       .and.resolveTo(trackedRegistration);
     const trackedService = createServiceWorkerService(trackedContainer, {
       log: createLog(),
-      err: createExceptionHandler(),
+      exceptionHandler: createExceptionHandler(),
     });
 
     await trackedService.register("/tracked.js");

@@ -427,16 +427,9 @@ describe("$interpolate", () => {
   describe("interpolating in a trusted context", () => {
     let sce;
 
-    const errors = [];
-
     beforeEach(() => {
       angular
         .module("customInterpolationApp", ["ng"])
-        .decorator("$exceptionHandler", () => {
-          return (exception) => {
-            errors.push(exception.message);
-          };
-        })
         .config({ $sce: { enabled: true } });
 
       $injector = createInjector(["customInterpolationApp"]);
@@ -445,13 +438,13 @@ describe("$interpolate", () => {
       sce = $injector.get("$sce");
     });
 
-    it("should NOT interpolate non-trusted expressions", async () => {
+    it("should NOT interpolate non-trusted expressions", () => {
       const scope = $rootScope.new();
 
       scope.foo = "foo";
-      await wait();
-      $interpolate("{{foo}}", true, SCE_CONTEXTS._HTML)(scope);
-      expect(errors[0]).toMatch("unsafe value");
+      expect(() =>
+        $interpolate("{{foo}}", true, SCE_CONTEXTS._HTML)(scope),
+      ).toThrowError(/unsafe value/);
     });
 
     it("should interpolate trusted expressions in a regular context", () => {

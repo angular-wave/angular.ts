@@ -35,8 +35,9 @@ Advanced direct-import surface:
   `MachineStatesOf` derive types for adapters built around reusable definitions.
 
 Normal applications use `app.machine(name, config)` or inject `$machine`.
-Custom runtimes opt in through
-`orchestrationModule` from the `runtime/orchestration` package entry.
+Custom runtimes include `machineModule` from the `runtime/orchestration`
+package entry. Use the aggregate `orchestrationModule` only when the same
+runtime also needs workflows.
 
 Public methods and values exposed to callers include readonly `state`, `data`,
 `send()`, `can()`, `matches()`, `snapshot()`, and `restore()`.

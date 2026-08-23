@@ -77,12 +77,12 @@ function throwNoconcat(text: string): never {
   );
 }
 
-function interr(text: string, err: Error): never {
+function interr(text: string, err: unknown): never {
   throw $interpolateError(
     "interr",
     "Can't interpolate: {0}\n{1}",
     text,
-    err.toString(),
+    String(err),
   );
 }
 
@@ -107,7 +107,7 @@ export function applyInterpolateConfiguration(
   state: InterpolateRuntimeState,
   config: InterpolateConfig,
 ): void {
-  assertInterpolateRuntimeActive(state);
+  ensureInterpolateRuntimeActive(state);
 
   if (config.startSymbol !== undefined) {
     state.startSymbol = config.startSymbol;
@@ -129,7 +129,7 @@ export function destroyInterpolateRuntimeState(
   state.endSymbol = "}}";
 }
 
-function assertInterpolateRuntimeActive(state: InterpolateRuntimeState): void {
+function ensureInterpolateRuntimeActive(state: InterpolateRuntimeState): void {
   if (state.destroyed) {
     throw new Error("Interpolation runtime has already been disposed.");
   }
@@ -141,7 +141,7 @@ export function createInterpolateService(
   $parse: ParseService,
   security: InterpolationSecurity,
 ): InterpolateService {
-  assertInterpolateRuntimeActive(state);
+  ensureInterpolateRuntimeActive(state);
 
   const interpolationStartSymbol = state.startSymbol;
 
@@ -292,7 +292,7 @@ export function createInterpolateService(
 
             return compute(context);
           } catch (err) {
-            return interr(text, err as Error);
+            return interr(text, err);
           }
         }) as InterpolationFunction;
 
@@ -362,7 +362,7 @@ export function createInterpolateService(
 
           return compute(values);
         } catch (err) {
-          return interr(text, err as Error);
+          return interr(text, err);
         }
       }) as InterpolationFunction;
 
@@ -381,7 +381,7 @@ export function createInterpolateService(
 
         return allOrNothing && !isDefined(value) ? value : stringify(value);
       } catch (err) {
-        return interr(text, err as Error);
+        return interr(text, err);
       }
     }
 

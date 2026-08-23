@@ -256,7 +256,7 @@ function createWorkflowSupervisor($workflow, config) {
     return supervisor;
 }
 function createWorkflowSupervisorRegistry($workflow, config) {
-    assertWorkflowSupervisorConfig(config);
+    validateWorkflowSupervisorConfig(config);
     const registry = new Map();
     const workflowEntries = normalizeWorkflowSupervisorEntries(config.workflows);
     if (!workflowEntries.length) {
@@ -273,7 +273,7 @@ function createWorkflowSupervisorRegistry($workflow, config) {
     }
     return registry;
 }
-function assertWorkflowSupervisorConfig(config) {
+function validateWorkflowSupervisorConfig(config) {
     if (!isObject(config)) {
         throw new Error("$workflowSupervisor requires a config object.");
     }
@@ -341,7 +341,7 @@ function isWorkflowInstance(value) {
         isFunction(workflow.restore));
 }
 function normalizeWorkflowSupervisorSnapshot(snapshot) {
-    assertWorkflowSupervisorSnapshot(snapshot);
+    validateWorkflowSupervisorSnapshot(snapshot);
     const diagnostics = normalizeWorkflowSupervisorDiagnostics(snapshot.diagnostics);
     return {
         version: 1,
@@ -363,7 +363,7 @@ function normalizeRestoredSupervisorStatus(status, diagnostics) {
     }
     return status;
 }
-function assertWorkflowSupervisorSnapshot(snapshot) {
+function validateWorkflowSupervisorSnapshot(snapshot) {
     if (!isObject(snapshot)) {
         throw new Error("$workflowSupervisor restore requires a snapshot object.");
     }
@@ -553,7 +553,7 @@ function createWorkflowFactory() {
             ...config,
             data,
         };
-        assertWorkflowConfig(config);
+        validateWorkflowConfig(config);
         const diagnostics = [];
         const history = [];
         const diagnosticLimit = normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
@@ -959,12 +959,12 @@ function createWorkflowFactory() {
         function normalizeWorkflowSnapshot(snapshot) {
             if (isObject(snapshot) &&
                 snapshot.version === 1) {
-                assertWorkflowSnapshot(snapshot);
+                validateWorkflowSnapshot(snapshot);
                 return snapshot;
             }
             if (config.migrateSnapshot) {
                 const migrated = config.migrateSnapshot(snapshot);
-                assertWorkflowSnapshot(migrated);
+                validateWorkflowSnapshot(migrated);
                 return migrated;
             }
             throw new Error("$workflow restore requires a version 1 snapshot.");
@@ -1405,7 +1405,7 @@ function defaultWorkflowData(data) {
     }
     return data;
 }
-function assertWorkflowConfig(config) {
+function validateWorkflowConfig(config) {
     if (!isString(config.id) || !config.id) {
         throw new Error("$workflow requires a non-empty id.");
     }
@@ -1422,7 +1422,7 @@ function assertWorkflowConfig(config) {
         if (!command) {
             throw new Error("$workflow command names must be non-empty strings.");
         }
-        assertWorkflowCommandDefinition(command, value);
+        validateWorkflowCommandDefinition(command, value);
     }
     normalizeHistoryLimit(config.historyLimit);
     normalizeEntryLimit(config.diagnosticLimit, "$workflow diagnosticLimit", 1000);
@@ -1431,7 +1431,7 @@ function assertWorkflowConfig(config) {
         throw new Error("$workflow migrateSnapshot must be a function.");
     }
 }
-function assertWorkflowCommandDefinition(command, value) {
+function validateWorkflowCommandDefinition(command, value) {
     if (!isObject(value) || isArray(value)) {
         throw new Error(`$workflow command '${command}' must be a lifecycle definition.`);
     }
@@ -1442,14 +1442,14 @@ function assertWorkflowCommandDefinition(command, value) {
             definition.from.every((state) => isString(state) && state.length > 0))) {
         throw new Error(`$workflow command '${command}' requires a non-empty from state.`);
     }
-    assertWorkflowLifecycleTarget(command, "pending", definition.pending);
-    assertWorkflowLifecycleTarget(command, "success", definition.success);
-    assertWorkflowLifecycleTarget(command, "failure", definition.failure);
+    validateWorkflowLifecycleTarget(command, "pending", definition.pending);
+    validateWorkflowLifecycleTarget(command, "success", definition.success);
+    validateWorkflowLifecycleTarget(command, "failure", definition.failure);
     if (definition.cancelled !== undefined) {
-        assertWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
+        validateWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
     }
     if (definition.timeout !== undefined) {
-        assertWorkflowLifecycleTarget(command, "timeout", definition.timeout);
+        validateWorkflowLifecycleTarget(command, "timeout", definition.timeout);
     }
     if (definition.execute !== undefined && !isFunction(definition.execute)) {
         throw new Error(`$workflow command '${command}' execute must be a function.`);
@@ -1464,7 +1464,7 @@ function assertWorkflowCommandDefinition(command, value) {
     normalizeTimeout(definition.commandTimeout);
     normalizeRetryCount(definition.retry);
 }
-function assertWorkflowLifecycleTarget(command, lifecycle, value) {
+function validateWorkflowLifecycleTarget(command, lifecycle, value) {
     if (isString(value) && value) {
         return;
     }
@@ -1477,7 +1477,7 @@ function assertWorkflowLifecycleTarget(command, lifecycle, value) {
     }
     throw new Error(`$workflow command '${command}' ${lifecycle} must target a non-empty state.`);
 }
-function assertWorkflowSnapshot(snapshot) {
+function validateWorkflowSnapshot(snapshot) {
     const candidate = snapshot;
     if (!isString(candidate.id) || !candidate.id) {
         throw new Error("$workflow restore requires a non-empty id.");

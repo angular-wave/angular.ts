@@ -198,6 +198,7 @@ function createManagedWorkerHandle<TSend, TReceive>(
   scriptPath: string | URL,
   config: WorkerConfig<TReceive> | undefined,
   logger: ng.LogService,
+  exceptionHandler: ng.ExceptionHandlerService,
   getWorkerConstructor: () => WorkerConstructor,
   onTerminate?: () => void,
 ): WorkerHandle<TSend, TReceive> {
@@ -236,6 +237,17 @@ function createManagedWorkerHandle<TSend, TReceive>(
   let terminated = false;
   let worker = new (getWorkerConstructor())(scriptPath, workerOptions);
 
+  const invokeListener = <TArgs extends unknown[]>(
+    listener: (...args: TArgs) => void,
+    ...args: TArgs
+  ): void => {
+    try {
+      listener(...args);
+    } catch (listenerError) {
+      exceptionHandler(listenerError);
+    }
+  };
+
   const scheduleBindings = (): void => {
     for (const [scopeId, handler] of bindings) {
       if (handler._destroyed) {
@@ -256,7 +268,7 @@ function createManagedWorkerHandle<TSend, TReceive>(
     error = nextError;
     scheduleBindings();
 
-    for (const listener of errorListeners) listener(nextError);
+    for (const listener of errorListeners) invokeListener(listener, nextError);
   };
 
   const cleanupRequest = (request: PendingWorkerRequest<TReceive>): void => {
@@ -353,7 +365,7 @@ function createManagedWorkerHandle<TSend, TReceive>(
     if (!listeners) return;
 
     for (const listener of listeners) {
-      listener(message.snapshot, message.options);
+      invokeListener(listener, message.snapshot, message.options);
     }
   };
 
@@ -389,7 +401,7 @@ function createManagedWorkerHandle<TSend, TReceive>(
       if ("error" in data) return;
 
       for (const listener of messageListeners) {
-        listener(data.value, event);
+        invokeListener(listener, data.value, event);
       }
     };
 
@@ -477,7 +489,7 @@ function createManagedWorkerHandle<TSend, TReceive>(
       postNative(message, transfer);
     },
     request(message: TSend, options: WorkerRequestOptions = {}) {
-      assertWorkerRequestOptions(options);
+      validateWorkerRequestOptions(options);
 
       if (terminated) {
         return Promise.reject(
@@ -739,7 +751,7 @@ function formatWorkerFailure(value: unknown, fallback: string): string {
   return fallback;
 }
 
-function assertWorkerRequestOptions(
+function validateWorkerRequestOptions(
   options: unknown,
 ): asserts options is WorkerRequestOptions {
   if (!isObject(options) || isArray(options)) {
@@ -777,6 +789,7 @@ export function createWorkerService(
   log: ng.LogService,
   state: WorkerRuntimeState,
   getWorkerConstructor: () => WorkerConstructor,
+  exceptionHandler: ng.ExceptionHandlerService,
   security?: SecurityPolicy,
 ): WorkerService {
   return <TSend = unknown, TReceive = unknown>(
@@ -787,7 +800,7 @@ export function createWorkerService(
       throw new Error("Cannot create a Worker after runtime teardown");
     }
 
-    assertWorkerConfig(config);
+    validateWorkerConfig(config);
 
     if (security) {
       const decision = security.check({
@@ -810,6 +823,7 @@ export function createWorkerService(
       scriptPath,
       config,
       log,
+      exceptionHandler,
       getWorkerConstructor,
       () => state.connections.delete(handle),
     );
@@ -819,7 +833,7 @@ export function createWorkerService(
   };
 }
 
-function assertWorkerConfig(config: unknown): asserts config is WorkerConfig {
+function validateWorkerConfig(config: unknown): asserts config is WorkerConfig {
   if (typeof config !== "object" || config === null || Array.isArray(config)) {
     throw new Error("$worker config must be an object.");
   }

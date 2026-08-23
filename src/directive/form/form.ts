@@ -7,7 +7,7 @@ import {
 } from "../../injection-tokens.ts";
 import {
   arrayRemove,
-  assertNotHasOwnProperty,
+  validateNotHasOwnPropertyName,
   callFunction,
   deProxy,
   deleteProperty,
@@ -321,7 +321,7 @@ export class FormController {
   addControl(control: FormControlController): void {
     // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
     // and not added to the scope.  Now we throw an error.
-    assertNotHasOwnProperty(String(control.controlName), "input");
+    validateNotHasOwnPropertyName(String(control.controlName), "input");
     this._validityPropagationId = nextValidityPropagationId++;
     this._controls.push(control);
 

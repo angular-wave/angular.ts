@@ -2,10 +2,12 @@
 import {
   validate,
   validateArray,
+  validateFunction,
   validateInstanceOf,
   validateIsNumber,
   validateIsString,
   validateRequired,
+  validateTruthy,
 } from "./validate.ts";
 import { isDefined, isString } from "./utils.ts";
 
@@ -21,6 +23,10 @@ describe("validation helpers", () => {
     expect(validateIsString("x", "value")).toBe("x");
     expect(validateIsNumber(2, "value")).toBe(2);
     expect(validateInstanceOf(user, User, "user")).toBe(user);
+    expect(validateTruthy("value", "value")).toBe("value");
+    expect(validateFunction(() => undefined, "callback")).toEqual(
+      jasmine.any(Function),
+    );
   });
 
   it("throws descriptive TypeErrors for invalid values", () => {
@@ -43,6 +49,22 @@ describe("validation helpers", () => {
     expect(() => validate(isDefined, undefined, "value")).toThrowError(
       TypeError,
       "badarg:required value=undefined",
+    );
+    expect(() => validateTruthy("", "name")).toThrowError(
+      TypeError,
+      'badarg:required name=""',
+    );
+    expect(() => validateFunction({}, "callback")).toThrowError(
+      TypeError,
+      "badarg:notfunction callback={}",
+    );
+  });
+
+  it("unwraps array-annotated functions when requested", () => {
+    const callback = () => undefined;
+
+    expect(validateFunction(["dependency", callback], "callback", true)).toBe(
+      callback,
     );
   });
 

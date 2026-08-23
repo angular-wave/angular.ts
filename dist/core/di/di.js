@@ -1,5 +1,6 @@
 import { _injector } from '../../injection-tokens.js';
-import { isFunction, isArray, assertArgFn, createErrorFactory } from '../../shared/utils.js';
+import { isFunction, isArray, createErrorFactory } from '../../shared/utils.js';
+import { validateFunction } from '../../shared/validate.js';
 
 const $injectorError = createErrorFactory(_injector);
 function stringifyFn(fn) {
@@ -21,11 +22,11 @@ function annotate(fn, name) {
     }
     else if (isArray(fn)) {
         const last = fn.length - 1;
-        assertArgFn(fn[last], "fn");
+        validateFunction(fn[last], "fn");
         inject = fn.slice(0, last);
     }
     else {
-        assertArgFn(fn, "fn", true);
+        validateFunction(fn, "fn", true);
     }
     return inject;
 }

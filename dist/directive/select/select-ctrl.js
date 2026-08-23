@@ -1,7 +1,7 @@
 import { _element, _scope } from '../../injection-tokens.js';
 import { NodeType } from '../../shared/node.js';
 import { removeElement, getNormalizedAttr, setNormalizedAttr } from '../../shared/dom.js';
-import { isUndefined, hashKey, deProxy, assertNotHasOwnProperty, isNullOrUndefined, stringify, isDefined, isArray, deleteProperty, directiveNormalize } from '../../shared/utils.js';
+import { isUndefined, hashKey, deProxy, validateNotHasOwnPropertyName, isNullOrUndefined, stringify, isDefined, isArray, deleteProperty, directiveNormalize } from '../../shared/utils.js';
 
 function readOptionElementAttr(optionElement, normalizedName, observedValue) {
     if (isDefined(observedValue)) {
@@ -186,7 +186,7 @@ class SelectController {
         const optionValue = deProxy(value);
         if (element.nodeType === NodeType._COMMENT_NODE)
             return;
-        assertNotHasOwnProperty(String(optionValue), '"option value"');
+        validateNotHasOwnPropertyName(String(optionValue), '"option value"');
         if (optionValue === "") {
             this._hasEmptyOption = true;
             this._emptyOption = element;

@@ -4,11 +4,43 @@ linkTitle: Docs
 menu: { main: { weight: 20 } }
 ---
 
-Welcome to AngularTS documentation.
+AngularTS is a browser framework for building interactive web pages and
+applications with HTML, JavaScript, and TypeScript. These docs assume no prior
+framework knowledge.
 
-This section is a work in progress. Its content will be updated regularly but
-feel free to rely on [AngularJS](https://docs.angularjs.org/guide) documentation
-in the meantime.
+## Start here
+
+1. [Web basics]({{< relref "/docs/get-started/web-basics" >}}) explains HTML,
+   JavaScript, the DOM, and the browser tools used in every guide.
+2. [Install AngularTS]({{< relref "/docs/get-started/installation" >}}) adds the
+   framework with one script tag or an npm package.
+3. [Build your first
+   application]({{< relref "/docs/get-started/first-application" >}}) creates a
+   task list one small step at a time.
+4. [Keep the application on the
+   server]({{< relref "/docs/guides/server-first" >}}) explains when to enhance
+   HTML and when a module should own a browser model.
+5. [Choose a view style]({{< relref "/docs/views/choose" >}}) compares HTML
+   templates with typed programmatic views.
+
+If you already know the basics, use the [task
+guides]({{< relref "/docs/guides" >}}) to add a feature or the
+[reference]({{< relref "/docs/reference" >}}) to look up an API.
+
+Use the [cookbook]({{< relref "/docs/cookbook" >}}) when you have a concrete
+problem and need a tested implementation pattern.
+
+## What AngularTS provides
+
+- Reactive state that updates only the affected DOM bindings.
+- HTML templates and type-safe views in the same component model.
+- Modules, dependency injection, directives, forms, HTTP, routing, and
+  animations in one runtime package.
+- Buildless script-tag use and typed npm use.
+- Language integrations for JVM, JavaScript-targeting, and native ecosystems.
+
+New terms are defined in the
+[glossary]({{< relref "/docs/concepts/glossary" >}}).
 
 ---
 

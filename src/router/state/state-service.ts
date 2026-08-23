@@ -7,7 +7,7 @@ import {
   isInstanceOf,
   createErrorFactory,
   isString,
-  assertDefined,
+  assertInvariantDefined,
 } from "../../shared/utils.ts";
 import { isInjectable } from "../../core/di/injectable.ts";
 import { PathNode } from "../path/path-node.ts";
@@ -431,7 +431,10 @@ export class StateRuntime {
     try {
       this._getRegistry().register(stateDefinition);
     } catch (err) {
-      throw stateRuntimeError("stateinvalid", (err as Error).message);
+      throw stateRuntimeError(
+        "stateinvalid",
+        err instanceof Error ? err.message : String(err),
+      );
     }
 
     return this;
@@ -1135,7 +1138,7 @@ export class StateRuntime {
     if (options?.inherit !== false)
       params = this._routerState._params._inherit(
         params,
-        assertDefined(this._current),
+        assertInvariantDefined(this._current),
         state,
       );
     const nav = options?.lossy !== false ? state.navigable : state;

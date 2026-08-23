@@ -49,6 +49,6 @@ name when the template always targets one route.
 
 Expression that evaluates to the params object for the state.
 
-```javascript
+```js
 $scope.currentParams = { userId: 42 };
 ```

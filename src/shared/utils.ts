@@ -1,8 +1,8 @@
 import { PREFIX_REGEXP, SPECIAL_CHARS_REGEXP } from "./constants.ts";
-import type { ErrorHandlingConfig } from "./interface.ts";
+import type { ErrorFormattingConfig } from "./interface.ts";
 import { NodeType } from "./node.ts";
 
-export type { ErrorHandlingConfig } from "./interface.ts";
+export type { ErrorFormattingConfig } from "./interface.ts";
 
 export const isProxySymbol = Symbol.for("@angular-wave/angular.ts/isProxy");
 
@@ -764,7 +764,10 @@ export function equals(o1: unknown, o2: unknown): boolean {
  * @param context the context in which the name is used, such as module or directive
  * @throws AngularTS error when `name` would shadow `hasOwnProperty`.
  */
-export function assertNotHasOwnProperty(name: string, context: string): void {
+export function validateNotHasOwnPropertyName(
+  name: string,
+  context: string,
+): void {
   if (name === "hasOwnProperty") {
     throw ngError("badname", "hasOwnProperty is not a valid {0} name", context);
   }
@@ -794,7 +797,7 @@ export function stringify(value: unknown): string {
     return customToString.call(value);
   }
 
-  return assertDefined(toJson(value));
+  return toJson(value) ?? String(value);
 }
 
 /**
@@ -1077,13 +1080,13 @@ export function shallowCopy<T>(src: T, dst?: unknown): T {
 }
 
 /**
- * Throws when the argument is false.
+ * Throws when a framework-owned invariant is false.
  *
  * @throws Error when `argument` is false.
  */
-export function assert(
+export function assertInvariant(
   argument: unknown,
-  errorMsg = "Assertion failed",
+  errorMsg = "AngularTS invariant violated",
 ): asserts argument {
   if (!argument) {
     throw new Error(errorMsg);
@@ -1091,62 +1094,17 @@ export function assert(
 }
 
 /**
- * Returns a non-nullish value or throws when the value is absent.
+ * Returns a framework-owned non-nullish value or throws when it is absent.
  *
  * @throws Error when `value` is null or undefined.
  */
-export function assertDefined<T>(
+export function assertInvariantDefined<T>(
   value: T | null | undefined,
-  errorMsg = "Expected value to be defined",
+  errorMsg = "AngularTS invariant violated: expected a defined value",
 ): NonNullable<T> {
-  assert(notNullOrUndefined(value), errorMsg);
+  assertInvariant(notNullOrUndefined(value), errorMsg);
 
   return value;
-}
-
-/**
- * Throws a typed AngularTS argument error when the argument is falsy.
- *
- * @throws AngularTS error when `arg` is falsy.
- */
-export function assertArg<T>(arg: T, name: string, reason?: string): T {
-  if (!arg) {
-    throw ngError(
-      "areq",
-      "Argument '{0}' is {1}",
-      name || "?",
-      reason ?? "required",
-    );
-  }
-
-  return arg;
-}
-
-/**
- * Asserts that a value is a function, optionally unwrapping array-annotation first.
- *
- * @throws AngularTS error when `arg` is not a function.
- */
-export function assertArgFn(
-  arg: unknown,
-  name: string,
-  acceptArrayAnnotation?: boolean,
-) {
-  if (acceptArrayAnnotation && isArray(arg)) {
-    arg = arg[arg.length - 1];
-  }
-
-  assertArg(
-    isFunction(arg),
-    name,
-    `not a function, got ${
-      arg && typeof arg === "object"
-        ? arg.constructor.name || "Object"
-        : typeof arg
-    }`,
-  );
-
-  return arg;
 }
 
 const errorConfig = {
@@ -1154,13 +1112,13 @@ const errorConfig = {
 };
 
 /**
- * Gets or updates the global error-handling configuration.
+ * Gets or updates global error-message formatting.
  *
  * Omitted or undefined options leave the corresponding configuration values unchanged.
  */
-export function errorHandlingConfig(
-  config?: ErrorHandlingConfig,
-): ErrorHandlingConfig {
+export function errorFormattingConfig(
+  config?: ErrorFormattingConfig,
+): ErrorFormattingConfig {
   if (isObject(config)) {
     if (isDefined(config.objectMaxDepth)) {
       errorConfig.objectMaxDepth = isValidObjectMaxDepth(config.objectMaxDepth)

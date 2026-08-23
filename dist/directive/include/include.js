@@ -1,5 +1,5 @@
 import { _templateRequest, _anchorScroll, _injector, _exceptionHandler, _parse, _compile } from '../../injection-tokens.js';
-import { assertDefined, isInstanceOf, isDefined } from '../../shared/utils.js';
+import { assertInvariantDefined, isDefined } from '../../shared/utils.js';
 import { getNormalizedAttr, removeElement } from '../../shared/dom.js';
 import { getCompiledFragmentRecordFromNodes } from '../../core/compile/incremental-fragment.js';
 import { getAnimateForNode, createLazyAnimate } from '../../animations/lazy-animate.js';
@@ -131,7 +131,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             });
                             currentScope = newScope;
                             currentElement = clone;
-                            currentFragment = assertDefined(getCompiledFragmentRecordFromNodes(clone));
+                            currentFragment = assertInvariantDefined(getCompiledFragmentRecordFromNodes(clone));
                             currentScope.emit("$includeContentLoaded", src);
                             onloadFn?.(scope);
                             return undefined;
@@ -143,7 +143,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                                 cleanupLastIncludeContent();
                                 scope.emit("$includeContentError", src);
                             }
-                            $exceptionHandler(isInstanceOf(err, Error) ? err : new Error(String(err)));
+                            $exceptionHandler(err);
                             return undefined;
                         });
                     }

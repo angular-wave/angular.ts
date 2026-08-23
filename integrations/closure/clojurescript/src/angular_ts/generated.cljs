@@ -31,6 +31,7 @@
     "js/ng.ClassValue"
     "js/ng.CompileService"
     "js/ng.Component"
+    "js/ng.ComponentDefinition"
     "js/ng.ComponentView"
     "js/ng.ComponentViewChild"
     "js/ng.ComponentViewContext"
@@ -63,7 +64,7 @@
     "js/ng.ElementService"
     "js/ng.EntityClass"
     "js/ng.EntryFilterItem"
-    "js/ng.ErrorHandlingConfig"
+    "js/ng.ErrorFormattingConfig"
     "js/ng.EventBusConfig"
     "js/ng.EventBusService"
     "js/ng.EventDeliveryPolicy"
@@ -262,10 +263,11 @@
      "js/ng.ClassValue" "Public shape accepted by `ng-class` for class binding expressions."
      "js/ng.CompileService" "Entry point for the `$compile` service."
      "js/ng.Component" "Public AngularTS Component contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ComponentDefinition" "Public AngularTS ComponentDefinition contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ComponentView" "Public AngularTS ComponentView contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.ComponentViewChild" "DOM content accepted from programmatic component and directive views. Functions are reactive child readers, arrays are flattened recursively, and existing nodes are moved rather than cloned. `null`, `undefined`, and `false` render no DOM content. Document fragments contribute their children."
+     "js/ng.ComponentViewChild" "DOM content accepted from programmatic component and directive views. Functions are reactive child readers, arrays are flattened recursively, and existing nodes are moved rather than cloned. `null`, `undefined`, and booleans render no DOM content. Document fragments contribute their children."
      "js/ng.ComponentViewContext" "Public AngularTS ComponentViewContext contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.ComponentViewPrimitive" "Primitive text value accepted as a programmatic view child."
+     "js/ng.ComponentViewPrimitive" "Primitive value accepted as a view child. Booleans render no DOM content."
      "js/ng.ComponentViewProperties" "Public AngularTS ComponentViewProperties contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ComponentViewPropertyValue" "Public AngularTS ComponentViewPropertyValue contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ComponentViewTag" "Public AngularTS ComponentViewTag contract exposed through the global ng namespace for Closure-annotated applications."
@@ -294,7 +296,7 @@
      "js/ng.ElementService" "**`Element`** is the most general base class from which all element objects (i.e., objects that represent elements) in a Document inherit. [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element)"
      "js/ng.EntityClass" "Constructor used by REST resources to map raw response data into entity instances."
      "js/ng.EntryFilterItem" "Public AngularTS EntryFilterItem contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.ErrorHandlingConfig" "Error configuration object. May only contain the options that need to be updated."
+     "js/ng.ErrorFormattingConfig" "Controls how values embedded in framework error messages are formatted."
      "js/ng.EventBusConfig" "Public AngularTS EventBusConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.EventBusService" "Topic-based publish/subscribe service for decoupled application events."
      "js/ng.EventDeliveryPolicy" "Public AngularTS EventDeliveryPolicy contract exposed through the global ng namespace for Closure-annotated applications."
@@ -470,7 +472,7 @@
   #{"angular-call"
     "angular-dispatch-event"
     "angular-emit"
-    "angular-error-handling-config"
+    "angular-error-formatting-config"
     "angular-get-controller"
     "angular-get-injector"
     "angular-get-scope"
@@ -481,7 +483,7 @@
     "angular-service-call"
     "angular-service-dispatch-event"
     "angular-service-emit"
-    "angular-service-error-handling-config"
+    "angular-service-error-formatting-config"
     "angular-service-get-controller"
     "angular-service-get-injector"
     "angular-service-get-scope"
@@ -761,10 +763,15 @@
     "cached-rest-backend-options-strategy"
     "component-bindings"
     "component-controller-as"
+    "component-definition-bindings"
+    "component-definition-controller-as"
+    "component-definition-replace"
+    "component-definition-require"
     "component-replace"
     "component-require"
     "component-view-context-controller"
     "component-view-context-element"
+    "component-view-context-host"
     "component-view-context-scope"
     "component-view-context-transclude"
     "component-view-properties-is"
@@ -791,11 +798,12 @@
     "directive-template-namespace"
     "directive-terminal"
     "directive-view-context-element"
+    "directive-view-context-host"
     "directive-view-context-scope"
     "directive-view-context-transclude"
     "element-scope-options-isolate"
     "element-scope-options-parent-scope"
-    "error-handling-config-object-max-depth"
+    "error-formatting-config-object-max-depth"
     "event-delivery-policy-context-args"
     "event-delivery-policy-context-listener-index"
     "event-delivery-policy-context-meta"
@@ -1173,10 +1181,10 @@
   [^js/ng.Angular target ^string input]
   (.emit target input))
 
-(defn angular-error-handling-config
-  "Global framework error-handling configuration.\n\nParams:\n- config: {(!ng.ErrorHandlingConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.ErrorHandlingConfig}"
-  ^js/ng.ErrorHandlingConfig [^js/ng.Angular target ^js/ng.ErrorHandlingConfig config]
-  (.errorHandlingConfig target config))
+(defn angular-error-formatting-config
+  "Configure how values embedded in framework error messages are formatted.\n\nParams:\n- config: {(!ng.ErrorFormattingConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.ErrorFormattingConfig}"
+  ^js/ng.ErrorFormattingConfig [^js/ng.Angular target ^js/ng.ErrorFormattingConfig config]
+  (.errorFormattingConfig target config))
 
 (defn angular-get-controller
   "Retrieve the controller instance cached on a compiled DOM element.\n\nParams:\n- element: {!Element} The DOM element to get data from.\n- name: {(string|undefined)} Controller name.\n\nReturns: {(!ng.Scope|undefined)}"
@@ -1228,10 +1236,10 @@
   [^js/ng.AngularService target ^string input]
   (.emit target input))
 
-(defn angular-service-error-handling-config
-  "Global framework error-handling configuration.\n\nParams:\n- config: {(!ng.ErrorHandlingConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.ErrorHandlingConfig}"
-  ^js/ng.ErrorHandlingConfig [^js/ng.AngularService target ^js/ng.ErrorHandlingConfig config]
-  (.errorHandlingConfig target config))
+(defn angular-service-error-formatting-config
+  "Configure how values embedded in framework error messages are formatted.\n\nParams:\n- config: {(!ng.ErrorFormattingConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.ErrorFormattingConfig}"
+  ^js/ng.ErrorFormattingConfig [^js/ng.AngularService target ^js/ng.ErrorFormattingConfig config]
+  (.errorFormattingConfig target config))
 
 (defn angular-service-get-controller
   "Retrieve the controller instance cached on a compiled DOM element.\n\nParams:\n- element: {!Element} The DOM element to get data from.\n- name: {(string|undefined)} Controller name.\n\nReturns: {(!ng.Scope|undefined)}"
@@ -1264,12 +1272,12 @@
   (.registerNgModule target))
 
 (defn angular-service-tags
-  "JSX-free real-DOM tag factories for programmatic component views.\n\nParams:\n- namespaceUri: {string} Value supplied for the namespaceUri parameter.\n\nReturns: {!Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}"
+  "JSX-free real-DOM tag factories for programmatic component views.\n\nParams:\n- namespaceUri: {string} Value supplied for the namespaceUri parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.AngularService target ^string namespaceUri]
   (.tags target namespaceUri))
 
 (defn angular-tags
-  "JSX-free real-DOM tag factories for programmatic component views.\n\nParams:\n- namespaceUri: {string} Value supplied for the namespaceUri parameter.\n\nReturns: {!Object<string, function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): !Element>}"
+  "JSX-free real-DOM tag factories for programmatic component views.\n\nParams:\n- namespaceUri: {string} Value supplied for the namespaceUri parameter.\n\nReturns: {!Object}"
   ^js/Object [^js/ng.Angular target ^string namespaceUri]
   (.tags target namespaceUri))
 
@@ -1379,7 +1387,7 @@
   (.isDisposed target))
 
 (defn event-bus-service-publish
-  "Publish a value to a topic asynchronously. All listeners are invoked in the order they were added. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their scope is destroyed before the queued delivery runs.\n\nParams:\n- topic: {string} The topic to publish.\n- var_args: {...?} Arguments to pass to listeners.\n\nReturns: {boolean}"
+  "Publish a value to a topic asynchronously. Listeners are invoked in the order they were added until delivery finishes or `$exceptionHandler` terminates the publication. Delivery is scheduled with `queueMicrotask`. Scope-owned listeners are skipped if their scope is destroyed before the queued delivery runs.\n\nParams:\n- topic: {string} The topic to publish.\n- var_args: {...?} Arguments to pass to listeners.\n\nReturns: {boolean}"
   (^boolean [^js/ng.EventBusService target ^string topic]
    (.publish target topic))
   (^boolean [^js/ng.EventBusService target ^string topic value]
@@ -1752,8 +1760,8 @@
   (.appComponent target name options))
 
 (defn ng-module-component
-  "Public NgModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- options: {!ng.Component} Value supplied for the options parameter.\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.Component options]
+  "Public NgModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- options: {!Object} Value supplied for the options parameter.\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/Object options]
   (.component target name options))
 
 (defn ng-module-config
@@ -1909,8 +1917,8 @@
   (.appComponent target name options))
 
 (defn router-module-component
-  "Public RouterModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- options: {!ng.Component} Value supplied for the options parameter.\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.RouterModule target ^string name ^js/ng.Component options]
+  "Public RouterModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- options: {!Object} Value supplied for the options parameter.\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.RouterModule target ^string name ^js/Object options]
   (.component target name options))
 
 (defn router-module-config
@@ -2709,6 +2717,26 @@
   ^string [^js/ng.Component target]
   (.-controllerAs target))
 
+(defn component-definition-bindings
+  "Define DOM attribute binding to component properties. Component properties are always bound to the component controller and not to the scope.\n\nType: {(!Object<string, string>|undefined)}"
+  ^js/Object [^js/ng.ComponentDefinition target]
+  (.-bindings target))
+
+(defn component-definition-controller-as
+  "An identifier name for a reference to the controller. If present, the controller will be published to its scope under the specified name. If not present, this will default to '$ctrl'.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.ComponentDefinition target]
+  (.-controllerAs target))
+
+(defn component-definition-replace
+  "Public ComponentDefinition.replace member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.ComponentDefinition target]
+  (.-replace target))
+
+(defn component-definition-require
+  "Requires the controllers of other directives and binds them to this component's controller. The object keys specify the property names under which the required controllers (object values) will be bound. Note that the required controllers will not be available during the instantiation of the controller, but they are guaranteed to be available just before the onInit method is executed!\n\nType: {(!Object<string, string>|undefined)}"
+  ^js/Object [^js/ng.ComponentDefinition target]
+  (.-require target))
+
 (defn component-replace
   "Replaces the generated component host element with the component template.\n\nType: {(boolean|undefined)}"
   ^boolean [^js/ng.Component target]
@@ -2725,17 +2753,22 @@
   (.-controller target))
 
 (defn component-view-context-element
-  "Native component host element.\n\nType: {!HTMLElement}"
+  "Public ComponentViewContext.element member exposed by the AngularTS namespace contract.\n\nType: {!HTMLElement}"
   ^js/HTMLElement [^js/ng.ComponentViewContext target]
   (.-element target))
 
+(defn component-view-context-host
+  "Native host element matched by the component or directive.\n\nType: {!HTMLElement}"
+  ^js/HTMLElement [^js/ng.ComponentViewContext target]
+  (.-host target))
+
 (defn component-view-context-scope
-  "Scope that owns the generated DOM and reactive child readers.\n\nType: {!ng.Scope}"
+  "Scope that owns the generated DOM and reactive readers.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.ComponentViewContext target]
   (.-scope target))
 
 (defn component-view-context-transclude
-  "Component transclusion function, when transclusion is enabled.\n\nType: {(!ng.TranscludeFn|undefined)}"
+  "Transclusion function, when transclusion is enabled.\n\nType: {(!ng.TranscludeFn|undefined)}"
   ^js/ng.TranscludeFn [^js/ng.ComponentViewContext target]
   (.-transclude target))
 
@@ -2855,17 +2888,22 @@
   (.-terminal target))
 
 (defn directive-view-context-element
-  "Native element matched by the directive.\n\nType: {!Element}"
+  "Public DirectiveViewContext.element member exposed by the AngularTS namespace contract.\n\nType: {!Element}"
   ^js/Element [^js/ng.DirectiveViewContext target]
   (.-element target))
 
+(defn directive-view-context-host
+  "Native host element matched by the component or directive.\n\nType: {!Element}"
+  ^js/Element [^js/ng.DirectiveViewContext target]
+  (.-host target))
+
 (defn directive-view-context-scope
-  "Scope that owns the generated DOM and reactive child readers.\n\nType: {!ng.Scope}"
+  "Scope that owns the generated DOM and reactive readers.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.DirectiveViewContext target]
   (.-scope target))
 
 (defn directive-view-context-transclude
-  "Directive transclusion function, when transclusion is enabled.\n\nType: {(!ng.TranscludeFn|undefined)}"
+  "Transclusion function, when transclusion is enabled.\n\nType: {(!ng.TranscludeFn|undefined)}"
   ^js/ng.TranscludeFn [^js/ng.DirectiveViewContext target]
   (.-transclude target))
 
@@ -2879,9 +2917,9 @@
   ^js/ng.Scope [^js/ng.ElementScopeOptions target]
   (.-parentScope target))
 
-(defn error-handling-config-object-max-depth
+(defn error-formatting-config-object-max-depth
   "The max depth for stringifying objects. Setting to a non-positive or non-numeric value removes the max depth limit. Default: 5.\n\nType: {(number|undefined)}"
-  ^number [^js/ng.ErrorHandlingConfig target]
+  ^number [^js/ng.ErrorFormattingConfig target]
   (.-objectMaxDepth target))
 
 (defn event-delivery-policy-context-args

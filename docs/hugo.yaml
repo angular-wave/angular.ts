@@ -197,6 +197,6 @@ module:
 
 menu:
   main:
-    - name: 'API'
+    - name: 'TypeScript API'
       url: '/typedoc/index.html'
       weight: 50

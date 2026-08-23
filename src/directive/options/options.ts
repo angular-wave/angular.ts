@@ -16,7 +16,7 @@ import {
   isDefined,
   isNull,
   createErrorFactory,
-  assertDefined,
+  assertInvariantDefined,
 } from "../../shared/utils.ts";
 import type { SelectController } from "../select/select-ctrl.ts";
 
@@ -267,10 +267,13 @@ export function ngOptionsDirective(
             selectCtrl._removeUnknownOption();
 
             selectNode.value = option._selectValue;
-            assertDefined(option._element).selected = true;
+            assertInvariantDefined(option._element).selected = true;
           }
 
-          assertDefined(option._element).setAttribute("selected", "selected");
+          assertInvariantDefined(option._element).setAttribute(
+            "selected",
+            "selected",
+          );
         } else {
           selectCtrl._selectUnknownOrEmptyOption(value);
         }
@@ -328,9 +331,9 @@ export function ngOptionsDirective(
     }
 
     if (providedEmptyOption) {
-      const linkFn = $compile(assertDefined(selectCtrl._emptyOption));
+      const linkFn = $compile(assertInvariantDefined(selectCtrl._emptyOption));
 
-      selectNode.prepend(assertDefined(selectCtrl._emptyOption));
+      selectNode.prepend(assertInvariantDefined(selectCtrl._emptyOption));
       linkFn(scope);
     }
 

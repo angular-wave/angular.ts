@@ -20,7 +20,7 @@ Exact state and router contracts live in TypeDoc:
 - [`HrefOptions`](../../../typedoc/interfaces/HrefOptions.html)
 
 Route resolves are authored through the `resolve` property on
-`StateDeclaration`. The object and array helper containers are internal typing
+[`StateDeclaration`](../../../typedoc/interfaces/StateDeclaration.html). The object and array helper containers are internal typing
 details and are intentionally not part of the public `ng` namespace.
 
 ## Register States
@@ -28,7 +28,7 @@ details and are intentionally not part of the public `ng` namespace.
 Register most states as one module-owned route tree or forest through
 `module.router()`.
 
-```javascript
+```js
 angular
   .module('demo', [])
   .router({
@@ -47,7 +47,7 @@ angular
 
 Register states at runtime when a feature is loaded after bootstrap.
 
-```javascript
+```js
 angular.module('demo').run(["$stateRegistry", ($stateRegistry) => {
   $stateRegistry.register({
     name: 'settings',
@@ -64,7 +64,7 @@ missing, the state is queued until the parent is registered.
 
 Use dot notation or an explicit `parent` property to create a hierarchy.
 
-```javascript
+```js
 angular
   .module('demo', [])
   .router({
@@ -94,7 +94,7 @@ A parent state must provide a `ng-view` outlet where child views can render.
 Abstract states cannot be activated directly. Use them to share a URL prefix,
 resolves, metadata, or layout with child states.
 
-```javascript
+```js
 angular
   .module('demo', [])
   .router({
@@ -120,7 +120,7 @@ Navigating to `admin.dashboard` enters both `admin` and `admin.dashboard`.
 
 URL parameters are parsed from path and query segments.
 
-```javascript
+```js
 angular.module('demo', []).router({
   name: 'product',
   url: '/products/:category?page&sort',
@@ -130,7 +130,7 @@ angular.module('demo', []).router({
 
 Non-URL parameters belong in the `params` block.
 
-```javascript
+```js
 angular.module('demo', []).router({
   name: 'search',
   url: '/search?q',
@@ -150,7 +150,7 @@ params, squashing, inheritance, and raw URL values.
 Resolves fetch or compute data before a state renders. The router waits for
 required resolves before entering the state.
 
-```javascript
+```js
 angular.module('demo', []).router({
   name: 'contacts.detail',
   url: '/:contactId',
@@ -183,7 +183,7 @@ angular.module('demo', []).router({
 Use array-style resolves when you need explicit tokens, dependency metadata, or
 resolve policies.
 
-```javascript
+```js
 resolve: [
   {
     token: 'contact',
@@ -201,7 +201,7 @@ Use `$state.go()` for normal application navigation. It supports absolute
 states, parent-relative states, sibling-relative states, params, and transition
 options.
 
-```javascript
+```js
 $state.go('contacts.detail', { contactId: 42 });
 
 $state.go('^');
@@ -213,15 +213,15 @@ $state.go('.detail', { contactId: 42 });
 $state.go('home', {}, { location: 'replace', reload: true });
 ```
 
-`$state.go()` returns a `TransitionPromise`. When navigation starts immediately,
-the active `Transition` is available as `.transition`; lazy route loading may
+`$state.go()` returns a [`TransitionPromise`](../../../typedoc/interfaces/TransitionPromise.html). When navigation starts immediately,
+the active [`Transition`](../../../typedoc/classes/Transition.html) is available as `.transition`; lazy route loading may
 defer creation of that transition until after the promise has been returned.
 
 ## Inspect And Link
 
 Generate links without navigating:
 
-```javascript
+```js
 const url = $state.href('contacts.detail', { contactId: 42 });
 const absUrl = $state.href(
   'contacts.detail',
@@ -232,7 +232,7 @@ const absUrl = $state.href(
 
 Check active states:
 
-```javascript
+```js
 $state.matches('contacts.detail', undefined, { exact: true });
 $state.matches('contacts.detail', { contactId: 42 }, { exact: true });
 
@@ -248,48 +248,21 @@ Prefer `policy.navigation` for auth/authorization and auth-like policy checks.
 `policy.transition.canExit` handles transition decisions, while
 `policy.transition.dirty` centralizes unsaved-change prompts for state leaves.
 
-```javascript
-angular
-  .module('editorDemo', [])
-  .router({
-    name: 'edit',
-    url: '/edit',
-    template: '<editor></editor>',
-    policy: {
-      transition: {
-        dirty: {
-          when: () => true,
-          prompt: 'Discard unsaved changes?',
-          redirectTo: 'discard',
-        },
+```js
+angular.module('editor', []).router({
+  name: 'edit',
+  url: '/edit',
+  component: 'editorPage',
+  policy: {
+    transition: {
+      dirty: {
+        when: ({from}) => from.data.dirty,
+        prompt: 'Discard unsaved changes?',
+        redirectTo: 'discard',
       },
     },
-  })
-  .router({
-    name: 'confirm',
-    url: '/confirm',
-    template: "<button data-action='accept'>Accept</button>",
-  })
-  .router({
-    name: 'saved',
-    url: '/saved',
-    template: "<button data-action='save'>Back</button>",
-  })
-  .router({
-    name: 'discard',
-    url: '/discard',
-    template: '<p>Discarded</p>',
-  })
-  .router({
-    name: 'list',
-    url: '/list',
-    template: "<button data-route='edit'>Edit</button>",
-    policy: {
-      transition: {
-        canExit: (context) => !context.to.params.confirmed,
-      },
-    },
-  });
+  },
+});
 ```
 
 In this example, leaving `edit` prompts for unsaved changes and can redirect to
@@ -302,64 +275,19 @@ Use `retry` to control how the router re-runs transiently failing work before
 the transition continues, and use `fallbackTo` to route to a recovery state when
 the final attempt fails.
 
-```javascript
-angular
-  .module('demo', [])
-  .router({
-    name: 'base',
-    url: '/base',
-    template: '<p>Base state</p>',
-  })
-  .router({
-    name: 'loading',
-    url: '/loading',
-    template: '<p>Preparing next state...</p>',
-  })
-  .router({
-    name: 'fallback',
-    url: '/fallback',
-    template: '<p>Fallback view reached after retries.</p>',
-  })
-  .router({
-    name: 'transient',
-    url: '/transient',
-    template: '<p>Should eventually load.</p>',
-    policy: {
-      transition: {
-        loading: 'loading',
-        retry: (ctx) => ctx.attempt < 2,
-        fallbackTo: 'fallback',
-      },
+```js
+angular.module('demo', []).router({
+  name: 'report',
+  component: 'reportPage',
+  policy: {
+    transition: {
+      loading: 'loading',
+      retry: ({attempt}) => attempt < 2,
+      fallbackTo: 'fallback',
     },
-    resolve: {
-      payload: () => {
-        const attempt = (window.routingRetryAttemptCount || 0) + 1;
-
-        window.routingRetryAttemptCount = attempt;
-
-        if (attempt < 3) {
-          return Promise.reject(new Error('temporary failure'));
-        }
-
-        return 'ready';
-      },
-    },
-  })
-  .router({
-    name: 'stable',
-    url: '/stable',
-    template:
-      '<p>Permanent view loaded with resolve payload {{$resolve.payload}}.</p>',
-    policy: {
-      transition: {
-        retry: 1,
-        fallbackTo: { state: 'fallback' },
-      },
-    },
-    resolve: {
-      payload: () => Promise.reject(new Error('permanent failure')),
-    },
-  });
+  },
+  resolve: {report: () => reportApi.load()},
+});
 ```
 
 `transient` retries its resolve up to two times (`attempt` is 0-based in the
@@ -372,7 +300,7 @@ behavior.
 
 Use `$router` config when most routes should share the same transition policy:
 
-```javascript
+```js
 angular.module('demo', []).config({
   $router: {
     loading: 'loading',
@@ -392,7 +320,7 @@ Route-level loading/error decisions can be expressed in `policy.transition` too.
 `error` is the preferred short name for the boundary used on recoverable
 transition failure, while `errorBoundary` remains supported for compatibility.
 
-```javascript
+```js
 angular
   .module('editorDemo', [])
   .router({
@@ -426,44 +354,17 @@ decides what loading/error flow the app shows on the router side.
 Use `policy.retention` for route branches that should deactivate while inactive
 instead of losing DOM, scope, and component state on every navigation.
 
-```javascript
+```js
 angular.module('retentionDemo', []).router({
   name: 'workspace',
   abstract: true,
-  template: '<section><ng-view></ng-view></section>',
+  component: 'workspacePage',
   policy: {
-    retention: {
-      mode: 'keep-alive',
-      max: 2,
-      pause: 'schedulers',
-      evict: 'lru',
-    },
+    retention: {mode: 'keep-alive', max: 2, evict: 'lru'},
   },
   children: [
-    {
-      name: 'tabA',
-      template:
-        '<button ng-click="count = count + 1">Tab A: {{count}}</button>',
-      controller: ['$scope', function ($scope) {
-        $scope.count = 0;
-      }],
-    },
-    {
-      name: 'tabB',
-      template:
-        '<button ng-click="count = count + 1">Tab B: {{count}}</button>',
-      controller: ['$scope', function ($scope) {
-        $scope.count = 0;
-      }],
-    },
-    {
-      name: 'tabC',
-      template:
-        '<button ng-click="count = count + 1">Tab C: {{count}}</button>',
-      controller: ['$scope', function ($scope) {
-        $scope.count = 0;
-      }],
-    },
+    {name: 'editor', component: 'editorTab'},
+    {name: 'preview', component: 'previewTab'},
   ],
 });
 ```
@@ -477,7 +378,7 @@ entry and destroys its retained scope.
 Use `$router.retention` when the entire application or module should share a
 default retention policy:
 
-```javascript
+```js
 angular.module('workspaceApp', []).config({
   $router: {
     retention: {
@@ -503,7 +404,7 @@ app-context owned; retention applies to route/root-owned work.
 
 Reload the current state or an ancestor subtree through `go()`:
 
-```javascript
+```js
 $state.go($state.current, $state.params, { reload: true, inherit: false });
 $state.go($state.current, $state.params, {
   reload: 'contacts',

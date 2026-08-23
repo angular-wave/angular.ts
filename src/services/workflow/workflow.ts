@@ -938,7 +938,7 @@ function createWorkflowSupervisorRegistry<
   $workflow: WorkflowService,
   config: WorkflowSupervisorConfig<TWorkflows>,
 ): Map<string, Workflow> {
-  assertWorkflowSupervisorConfig(config);
+  validateWorkflowSupervisorConfig(config);
 
   const registry = new Map<string, Workflow>();
   const workflowEntries = normalizeWorkflowSupervisorEntries(
@@ -966,7 +966,7 @@ function createWorkflowSupervisorRegistry<
   return registry;
 }
 
-function assertWorkflowSupervisorConfig(config: unknown): void {
+function validateWorkflowSupervisorConfig(config: unknown): void {
   if (!isObject(config)) {
     throw new Error("$workflowSupervisor requires a config object.");
   }
@@ -1079,7 +1079,7 @@ function isWorkflowInstance(value: unknown): value is Workflow {
 function normalizeWorkflowSupervisorSnapshot(
   snapshot: unknown,
 ): WorkflowSupervisorSnapshot {
-  assertWorkflowSupervisorSnapshot(snapshot);
+  validateWorkflowSupervisorSnapshot(snapshot);
 
   const diagnostics = normalizeWorkflowSupervisorDiagnostics(
     snapshot.diagnostics,
@@ -1112,7 +1112,7 @@ function normalizeRestoredSupervisorStatus(
   return status;
 }
 
-function assertWorkflowSupervisorSnapshot(
+function validateWorkflowSupervisorSnapshot(
   snapshot: unknown,
 ): asserts snapshot is WorkflowSupervisorSnapshot {
   if (!isObject(snapshot)) {
@@ -1417,7 +1417,7 @@ function createWorkflowFactory() {
       ...config,
       data,
     } as unknown as WorkflowConfiguration<TData, TCommands, TState>;
-    assertWorkflowConfig(config);
+    validateWorkflowConfig(config);
 
     const diagnostics: WorkflowDiagnostic[] = [];
     const history: WorkflowHistoryEntry[] = [];
@@ -2034,7 +2034,7 @@ function createWorkflowFactory() {
         isObject(snapshot) &&
         (snapshot as { version?: unknown }).version === 1
       ) {
-        assertWorkflowSnapshot(snapshot);
+        validateWorkflowSnapshot(snapshot);
 
         return snapshot as WorkflowSnapshot<
           WorkflowContractOf<TData, TCommands, TState>
@@ -2044,7 +2044,7 @@ function createWorkflowFactory() {
       if (config.migrateSnapshot) {
         const migrated = config.migrateSnapshot(snapshot);
 
-        assertWorkflowSnapshot(migrated);
+        validateWorkflowSnapshot(migrated);
 
         return migrated;
       }
@@ -2743,7 +2743,7 @@ function defaultWorkflowData<TData extends object>(
   return data;
 }
 
-function assertWorkflowConfig<
+function validateWorkflowConfig<
   TData extends object,
   TCommands extends object,
   TState extends string,
@@ -2769,7 +2769,7 @@ function assertWorkflowConfig<
       throw new Error("$workflow command names must be non-empty strings.");
     }
 
-    assertWorkflowCommandDefinition(command, value);
+    validateWorkflowCommandDefinition(command, value);
   }
 
   normalizeHistoryLimit(config.historyLimit);
@@ -2786,7 +2786,7 @@ function assertWorkflowConfig<
   }
 }
 
-function assertWorkflowCommandDefinition(
+function validateWorkflowCommandDefinition(
   command: string,
   value: unknown,
 ): asserts value is WorkflowCommandDefinition {
@@ -2811,16 +2811,16 @@ function assertWorkflowCommandDefinition(
     );
   }
 
-  assertWorkflowLifecycleTarget(command, "pending", definition.pending);
-  assertWorkflowLifecycleTarget(command, "success", definition.success);
-  assertWorkflowLifecycleTarget(command, "failure", definition.failure);
+  validateWorkflowLifecycleTarget(command, "pending", definition.pending);
+  validateWorkflowLifecycleTarget(command, "success", definition.success);
+  validateWorkflowLifecycleTarget(command, "failure", definition.failure);
 
   if (definition.cancelled !== undefined) {
-    assertWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
+    validateWorkflowLifecycleTarget(command, "cancelled", definition.cancelled);
   }
 
   if (definition.timeout !== undefined) {
-    assertWorkflowLifecycleTarget(command, "timeout", definition.timeout);
+    validateWorkflowLifecycleTarget(command, "timeout", definition.timeout);
   }
 
   if (definition.execute !== undefined && !isFunction(definition.execute)) {
@@ -2846,7 +2846,7 @@ function assertWorkflowCommandDefinition(
   normalizeRetryCount(definition.retry);
 }
 
-function assertWorkflowLifecycleTarget(
+function validateWorkflowLifecycleTarget(
   command: string,
   lifecycle: string,
   value: unknown,
@@ -2871,7 +2871,7 @@ function assertWorkflowLifecycleTarget(
   );
 }
 
-function assertWorkflowSnapshot(snapshot: unknown): void {
+function validateWorkflowSnapshot(snapshot: unknown): void {
   const candidate = snapshot as Partial<WorkflowSnapshot>;
 
   if (!isString(candidate.id) || !candidate.id) {

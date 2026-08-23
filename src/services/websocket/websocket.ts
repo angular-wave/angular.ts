@@ -101,6 +101,7 @@ export function createWebSocketService(
   log: LogService,
   configuration: WebSocketRuntimeConfiguration,
   WebSocketConstructor: typeof WebSocket,
+  exceptionHandler: ng.ExceptionHandlerService,
 ): WebSocketService {
   return (url: string, config: WebSocketConfig = {}) => {
     if (configuration.destroyed) {
@@ -132,6 +133,7 @@ export function createWebSocketService(
         },
       },
       log,
+      exceptionHandler,
     );
     let closed = false;
     const connection: WebSocketConnection = {

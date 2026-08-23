@@ -29,7 +29,7 @@ Exact policy signatures live in TypeDoc:
 
 Use `app.config({ $security: ... })` to set your app policy:
 
-```javascript
+```js
 angular.module('app', []).config({
   $security: {
     fallback: 'deny',
@@ -91,7 +91,7 @@ States can declare inherited navigation policy. The router merges policy from
 the target state path and passes the effective policy to `$security` before
 resolves, controllers, or views run.
 
-```javascript
+```js
 angular
   .module('admin', [])
   .router({

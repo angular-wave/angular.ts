@@ -2,7 +2,7 @@ import { _injector } from "../../injection-tokens.ts";
 import {
   callBackOnce,
   arrayFrom,
-  assertDefined,
+  assertInvariantDefined,
   callFunction,
   createErrorFactory,
   deleteProperty,
@@ -1148,7 +1148,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
               const blockNodes = getBlockNodes(
                 isArray(block._clone)
                   ? block._clone
-                  : [assertDefined(block._clone)],
+                  : [assertInvariantDefined(block._clone)],
               );
 
               const blockStart = getBlockStart(block);
