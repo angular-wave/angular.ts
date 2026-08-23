@@ -10,8 +10,8 @@ framework knowledge.
 
 ## Start here
 
-1. [Web basics]({{< relref "/docs/get-started/web-basics" >}}) explains HTML,
-   JavaScript, the DOM, and the browser tools used in every guide.
+1. [Introduction]({{< relref "/docs/get-started/introduction" >}}) explains the
+   framework's HTML-first model and what it adds to AngularJS.
 2. [Install AngularTS]({{< relref "/docs/get-started/installation" >}}) adds the
    framework with one script tag or an npm package.
 3. [Build your first
@@ -47,7 +47,7 @@ New terms are defined in the
 ### What is AngularTS?
 
 AngularTS is buildless, type-safe and reactive JS framework for building
-stuctured web applications at any scale. It continues the legacy of
+structured web applications at any scale. It continues the legacy of
 [AngularJS](https://angularjs.org/) by providing the best developer experience
 via immediate productivity without the burden of JS ecosystem tooling. Getting
 started with AngularTS does not even require JavaScript. All you need is a

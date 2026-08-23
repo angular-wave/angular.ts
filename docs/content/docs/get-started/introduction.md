@@ -2,10 +2,11 @@
 title: 'AngularTS: modern evolution of AngularJS'
 linkTitle: 'Introduction'
 weight: 10
+aliases:
+  - /docs/get-started/web-basics/
 description:
-  "AngularTS preserves AngularJS's HTML-first model and dependency injection
-  while adding reactive change detection, TypeScript support, and native browser
-  APIs."
+  'Understand where AngularTS fits, what remains compatible with AngularJS, and
+  what changed in the new runtime.'
 ---
 
 AngularTS is a modernized continuation of [AngularJS](https://angularjs.org/) —

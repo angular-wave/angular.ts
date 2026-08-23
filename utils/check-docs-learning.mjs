@@ -12,7 +12,6 @@ const learningRoots = [
   "docs/cookbook",
 ];
 const requiredPages = [
-  "docs/get-started/web-basics.md",
   "docs/get-started/first-application.md",
   "docs/get-started/how-angular-works.md",
   "docs/get-started/learning-paths.md",
@@ -42,7 +41,6 @@ const requiredPages = [
   "docs/cookbook/best-practices.md",
 ];
 const tutorialPages = new Set([
-  "docs/get-started/web-basics.md",
   "docs/get-started/first-application.md",
   "docs/get-started/how-angular-works.md",
   "docs/get-started/learning-paths.md",
