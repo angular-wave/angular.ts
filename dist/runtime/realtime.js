@@ -1,4 +1,4 @@
-import { _sse, _webTransport, _websocket } from '../injection-tokens.js';
+import { _websocket, _sse, _webTransport } from '../injection-tokens.js';
 import { createLogService, createLogRuntimeConfiguration } from '../services/log/log.js';
 import { applySseConfiguration, destroySseRuntimeConfiguration, createSseService, createSseRuntimeConfiguration } from '../services/sse/sse.js';
 import { applyWebSocketConfiguration, destroyWebSocketRuntimeConfiguration, createWebSocketService, createWebSocketRuntimeConfiguration } from '../services/websocket/websocket.js';

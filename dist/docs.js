@@ -13,8 +13,8 @@ export { ServiceWorkerError } from './services/service-worker/service-worker.js'
 export { executeCacheStrategy, isCacheStrategy } from './services/cache/cache.js';
 export { ScopeElement } from './services/web-component/web-component.js';
 export { createAngular } from './runtime/index.js';
-export { orchestrationModule } from './runtime/orchestration.js';
-export { realtimeModule } from './runtime/realtime.js';
+export { machineModule, orchestrationModule, workflowModule } from './runtime/orchestration.js';
+export { realtimeModule, sseModule, webTransportModule, websocketModule } from './runtime/realtime.js';
 export { routerModule } from './runtime/router.js';
 export { serviceWorkerModule } from './runtime/service-worker.js';
 export { eventBusModule } from './runtime/event-bus.js';

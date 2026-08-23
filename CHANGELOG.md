@@ -2,7 +2,16 @@
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-08-24
+
+- Added type-safe programmatic views for components and directives.
+- Hardened scope reactivity, native collection change detection, and event propagation.
+- Added independently tree-shakable machine, workflow, SSE, WebSocket, and WebTransport runtime modules.
+- Improved custom runtime composition cleanup and duplicate-module handling.
 - Simplified validation and exception ownership; renamed error formatting configuration.
+- Expanded Java, ClojureScript, Kotlin, Scala, Dart, Gleam, Closure, and WASM integration parity.
+- Added Maven Central publishing for the Java and ClojureScript distributions.
+- Reworked the beginner guides, practical cookbook, integration guides, and API navigation.
 
 ## [0.32.0] - 2026-08-15
 
