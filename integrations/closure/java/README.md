@@ -59,7 +59,7 @@ The published artifact uses GitHub-owned Maven Central coordinates:
 ```xml
 <groupId>io.github.angular-wave</groupId>
 <artifactId>angular-ts-java</artifactId>
-<version>0.32.0</version>
+<version>0.33.1</version>
 ```
 
 The generated Java package prefix remains `org.angular.ts`, matching the
@@ -262,7 +262,7 @@ artifact on the compiler's annotation-processor path:
 <dependency>
   <groupId>io.github.angular-wave</groupId>
   <artifactId>angular-ts-java</artifactId>
-  <version>0.32.0</version>
+  <version>0.33.1</version>
 </dependency>
 
 <plugin>
@@ -273,7 +273,7 @@ artifact on the compiler's annotation-processor path:
       <path>
         <groupId>io.github.angular-wave</groupId>
         <artifactId>angular-ts-java</artifactId>
-        <version>0.32.0</version>
+        <version>0.33.1</version>
       </path>
     </annotationProcessorPaths>
     <annotationProcessors>
@@ -296,8 +296,8 @@ processing:
 
 ```kotlin
 dependencies {
-    implementation("io.github.angular-wave:angular-ts-java:0.32.0")
-    annotationProcessor("io.github.angular-wave:angular-ts-java:0.32.0")
+    implementation("io.github.angular-wave:angular-ts-java:0.33.1")
+    annotationProcessor("io.github.angular-wave:angular-ts-java:0.33.1")
 }
 ```
 

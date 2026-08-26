@@ -6,7 +6,7 @@
 
   <groupId>org.angular.ts</groupId>
   <artifactId>angular-ts-j2cl-todo-demo</artifactId>
-  <version>0.32.0-SNAPSHOT</version>
+  <version>0.33.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>AngularTS J2CL Todo Demo</name>
@@ -18,7 +18,7 @@
     <angular.ts.java.dir>${project.basedir}/..</angular.ts.java.dir>
     <angular.ts.handwritten.sources>${angular.ts.java.dir}/src/main/java</angular.ts.handwritten.sources>
     <angular.ts.generated.sources>${angular.ts.java.dir}/target/generated-sources/jsinterop</angular.ts.generated.sources>
-    <angular.ts.java.version>0.32.0</angular.ts.java.version>
+    <angular.ts.java.version>0.33.1</angular.ts.java.version>
     <j2cl.maven.plugin.version>0.22.0</j2cl.maven.plugin.version>
     <jsinterop.annotations.version>2.0.2</jsinterop.annotations.version>
     <jsinterop.base.version>1.1.1</jsinterop.base.version>
