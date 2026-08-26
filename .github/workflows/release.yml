@@ -14,8 +14,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release-preflight:
+    name: Validate release secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Maven Central credentials
+        shell: bash
+        env:
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          missing=()
+          for name in \
+            MAVEN_CENTRAL_TOKEN \
+            MAVEN_CENTRAL_USERNAME \
+            MAVEN_GPG_PRIVATE_KEY \
+            MAVEN_GPG_PASSPHRASE
+          do
+            if [[ -z "${!name}" ]]; then
+              missing+=("$name")
+            fi
+          done
+
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing release secret: %s\n' "${missing[@]}" >&2
+            exit 1
+          fi
+
   verify:
     name: Verify release commit
+    needs: release-preflight
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read

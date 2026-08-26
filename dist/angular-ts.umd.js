@@ -1,4 +1,4 @@
-/* Version: 0.33.1 */
+/* Version: 0.33.2 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -13624,7 +13624,7 @@
             this._bootsrappedModules = [];
             this._injectorCreated = false;
             /** AngularTS version string replaced at build time. */
-            this.version = "0.33.1";
+            this.version = "0.33.2";
             /** Retrieve the controller instance cached on a compiled DOM element. */
             this.getController = getController;
             /** Retrieve the injector cached on a bootstrapped DOM element. */

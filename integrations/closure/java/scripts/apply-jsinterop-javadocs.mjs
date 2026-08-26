@@ -64,7 +64,9 @@ export function applyJavadocs(source, documentation) {
           documentation.get(`${externName}.${memberName}`)
         : undefined;
 
-      if (memberJavadoc) output.push(memberJavadoc);
+      if (memberJavadoc) {
+        output.push(javadocForDeclaration(memberJavadoc, line));
+      }
       output.push(...annotations);
       annotations = [];
     } else if (annotations.length > 0) {
@@ -110,6 +112,36 @@ function formatJavadoc(comment) {
   const body = [...escaped.split("\n"), ...tags];
 
   return ["/**", ...body.map((line) => ` * ${line}`), " */"].join("\n");
+}
+
+function javadocForDeclaration(javadoc, declaration) {
+  const methodName = readDeclarationName(declaration);
+  const isMethod = methodName && declaration.includes(`${methodName}(`);
+  const returnsValue =
+    isMethod &&
+    !new RegExp(`\\bvoid\\s+${escapeRegExp(methodName)}\\s*\\(`).test(
+      declaration,
+    );
+
+  return javadoc
+    .split("\n")
+    .filter((line) => {
+      if (line.startsWith(" * @return")) return returnsValue;
+
+      const parameter = line.match(/^ \* @param ([A-Za-z_$][\w$]*)\b/);
+      return (
+        !parameter ||
+        (isMethod &&
+          new RegExp(`\\b${escapeRegExp(parameter[1])}\\s*(?:,|\\))`).test(
+            declaration,
+          ))
+      );
+    })
+    .join("\n");
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function escapeJavadoc(value) {

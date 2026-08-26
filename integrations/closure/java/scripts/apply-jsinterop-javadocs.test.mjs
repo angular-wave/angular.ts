@@ -18,7 +18,10 @@ ng.Widget = function() {};
  */
 ng.Widget.prototype.run = function(mode) {};
 
-/** Current widget status. */
+/**
+ * Current widget status.
+ * @return {string} Current status value.
+ */
 ng.Widget.prototype.status;
 
 /** Invoked while compiling a directive. */
@@ -32,6 +35,7 @@ import jsinterop.annotations.JsType;
 @JsType(isNative = true,name = "ng.Widget",namespace = "global")
 public interface Widget{
 void run(String mode);
+String status;
 @JsProperty
 String getStatus();
 @JsProperty(name = "status")
@@ -54,7 +58,15 @@ void setWidgetStatus(String value);
   );
   assert.match(
     documented,
-    /Current widget status\.\n \*\/\n@JsProperty\nString getStatus\(\);/,
+    /Current widget status\.\n \* @return Current status value\.\n \*\/\n@JsProperty\nString getStatus\(\);/,
+  );
+  assert.match(
+    documented,
+    /Current widget status\.\n \*\/\nString status;/,
+  );
+  assert.doesNotMatch(
+    documented,
+    /@return Current status value\.\n \*\/\nString status;/,
   );
   assert.match(
     documented,

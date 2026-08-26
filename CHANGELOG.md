@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [0.33.1] - 2026-08-26
+## [0.33.2] - 2026-08-27
 
 - Added type-safe programmatic views for components and directives.
 - Hardened scope reactivity, native collection change detection, and event propagation.
@@ -11,6 +11,7 @@
 - Simplified validation and exception ownership; renamed error formatting configuration.
 - Expanded Java, ClojureScript, Kotlin, Scala, Dart, Gleam, Closure, and WASM integration parity.
 - Added Maven Central publishing for the Java and ClojureScript distributions.
+- Fixed Maven release Javadocs and added an early credential preflight.
 - Reworked the beginner guides, practical cookbook, integration guides, and API navigation.
 
 ## [0.32.0] - 2026-08-15
