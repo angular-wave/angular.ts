@@ -1,21 +1,28 @@
 name: Release
 
-run-name: Release ${{ github.ref_name }}
+run-name: Release ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag requiring npm/GitHub publication recovery
+        required: true
+        type: string
 
 permissions: {}
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
   release-preflight:
     name: Validate release secrets
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Require Maven Central credentials
@@ -45,6 +52,7 @@ jobs:
 
   verify:
     name: Verify release commit
+    if: github.event_name == 'push'
     needs: release-preflight
     uses: ./.github/workflows/ci.yml
     permissions:
@@ -52,6 +60,7 @@ jobs:
 
   publish-java:
     name: Publish Java package to Maven Central
+    if: github.event_name == 'push'
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -115,6 +124,7 @@ jobs:
 
   publish-clojurescript:
     name: Publish ClojureScript package to Maven Central
+    if: github.event_name == 'push'
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -182,6 +192,13 @@ jobs:
       - verify
       - publish-java
       - publish-clojurescript
+    if: >-
+      always() &&
+      ((github.event_name == 'push' &&
+        needs.verify.result == 'success' &&
+        needs.publish-java.result == 'success' &&
+        needs.publish-clojurescript.result == 'success') ||
+       github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -192,12 +209,18 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
           registry-url: https://registry.npmjs.org/
           package-manager-cache: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
 
       - uses: dart-lang/setup-dart@v1
         with:
@@ -209,12 +232,14 @@ jobs:
       - name: Validate release tag
         id: release
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           node --input-type=module <<'NODE'
           import { appendFileSync, readFileSync } from "node:fs";
 
           const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
-          const tag = process.env.GITHUB_REF_NAME;
+          const tag = process.env.RELEASE_TAG;
           const version = packageJson.version;
           const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 
@@ -260,6 +285,16 @@ jobs:
             );
           }
           NODE
+
+      - name: Verify Maven artifacts before recovery
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          PACKAGE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          java_pom="https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-java/$PACKAGE_VERSION/angular-ts-java-$PACKAGE_VERSION.pom"
+          cljs_pom="https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-cljs/$PACKAGE_VERSION/angular-ts-cljs-$PACKAGE_VERSION.pom"
+          curl --fail --silent --show-error "$java_pom" --output /dev/null
+          curl --fail --silent --show-error "$cljs_pom" --output /dev/null
 
       - name: Extract curated release notes
         env:
