@@ -309,6 +309,7 @@ jobs:
       - name: Build release artifacts
         run: |
           make release-build
+          make -f integrations/closure/Makefile clojurescript-format-check
           make docs-requirement
           make version-check
 
