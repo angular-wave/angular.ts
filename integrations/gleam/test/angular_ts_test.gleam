@@ -10,9 +10,19 @@ import angular_ts/storage
 import angular_ts/token
 import angular_ts/unsafe
 import angular_ts/worker
+import gleam/dynamic.{type Dynamic}
 import gleam/option
 import gleeunit
 import gleeunit/should
+
+@external(javascript, "./programmatic_view_test_ffi.mjs", "install_programmatic_runtime")
+fn install_programmatic_runtime() -> Nil
+
+fn marker_kind(value: Dynamic) -> String {
+  value
+  |> unsafe.get_property("kind")
+  |> unsafe.from_dynamic
+}
 
 pub fn main() {
   gleeunit.main()
@@ -39,14 +49,63 @@ pub fn binding_symbol_test() {
 }
 
 pub fn programmatic_view_context_test() {
+  let host = unsafe.empty_object()
   let context =
     unsafe.empty_object()
     |> unsafe.set_property("controller", unsafe.coerce("ready"))
+    |> unsafe.set_property("host", host)
+    |> unsafe.set_property("onDestroy", unsafe.coerce(fn(cleanup) { cleanup }))
     |> programmatic_view.from_dynamic
 
   context
   |> programmatic_view.controller
   |> should.equal("ready")
+
+  context
+  |> programmatic_view.host
+  |> should.equal(host)
+
+  context
+  |> programmatic_view.on_destroy(fn() { Nil })
+  |> unsafe.call_function0
+
+  Nil
+}
+
+pub fn programmatic_view_helpers_test() {
+  install_programmatic_runtime()
+
+  programmatic_view.event(fn(_) { Nil })
+  |> marker_kind
+  |> should.equal("event")
+
+  programmatic_view.event_with_options(fn(_) { Nil }, unsafe.empty_object())
+  |> marker_kind
+  |> should.equal("event")
+
+  [programmatic_view.property("title", "ready")]
+  |> programmatic_view.attrs
+  |> marker_kind
+  |> should.equal("attrs")
+
+  [programmatic_view.property("value", 1)]
+  |> programmatic_view.props
+  |> marker_kind
+  |> should.equal("props")
+
+  programmatic_view.each(fn() { ["ready"] }, fn(item) { item }, fn(read) {
+    programmatic_view.child(read())
+  })
+  |> marker_kind
+  |> should.equal("each")
+
+  programmatic_view.tag("button", [], [])
+  |> marker_kind
+  |> should.equal("view-tag")
+
+  programmatic_view.tag_ns("http://www.w3.org/2000/svg", "circle", [], [])
+  |> marker_kind
+  |> should.equal("view-tag-ns")
 }
 
 pub fn generated_http_token_test() {

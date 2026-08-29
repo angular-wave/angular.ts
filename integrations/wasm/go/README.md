@@ -62,8 +62,8 @@ parity tracking, and browser tests for Go-owned state flowing through
 ## Programmatic Views
 
 `ProgrammaticView("exportName")` registers a JavaScript-visible Go export as a
-component view. Browser Wasm builds expose `ComponentViewContext` and
-`ComponentViewTags`; use `Tags()` and `Tag(...)` to delegate real-DOM creation
+component view. Browser Wasm builds expose `ProgrammaticViewContext` and
+`ProgrammaticViewTags`; use `Tags()` and `Tag(...)` to delegate real-DOM creation
 to `angular.tags`. Go view callbacks return `syscall/js.Value` DOM nodes or
 other supported AngularTS view children.
 

@@ -306,7 +306,7 @@ angular.module('demo', []).config({
     loading: 'loading',
     retry: 2,
     fallbackTo: 'fallback',
-    error: 'error',
+    errorBoundary: 'error',
     viewTransitions: true,
   },
 });
@@ -317,8 +317,7 @@ that route subtree. Set `loading: false` or `retry: false` on a route when that
 route should opt out of the default behavior.
 
 Route-level loading/error decisions can be expressed in `policy.transition` too.
-`error` is the preferred short name for the boundary used on recoverable
-transition failure, while `errorBoundary` remains supported for compatibility.
+Use `error` to select the boundary for a recoverable transition failure.
 
 ```js
 angular
@@ -330,7 +329,7 @@ angular
     policy: {
       transition: {
         loading: true,
-        error: 'error',
+        errorBoundary: 'error',
       },
     },
   })

@@ -16,33 +16,31 @@ pub type Component(a, b, c)
 /// rendering strategies are mutually exclusive.
 pub type ComponentDefinition(a, b, c)
 
-/// Programmatic real-DOM factory used instead of a component template.
-pub type ComponentView
+/// Programmatic real-DOM factory used instead of a template.
+pub type ProgrammaticView(a, b, c, d)
 
-/// DOM content accepted from programmatic component and directive views. Functions are reactive
-/// child readers, arrays are flattened recursively, and existing nodes are moved rather than
-/// cloned. `null`, `undefined`, and booleans render no DOM content. Document fragments contribute
-/// their children.
-pub type ComponentViewChild
+/// DOM content accepted from a programmatic view. Readers are reactive, arrays are flattened
+/// recursively, and existing nodes are moved rather than cloned.
+pub type ProgrammaticViewChild
 
-/// Runtime context passed to a component's programmatic view.
-pub type ComponentViewContext
+/// Runtime context passed to a programmatic component or directive view.
+pub type ProgrammaticViewContext(a, b, c, d)
 
-/// Primitive value accepted as a view child. Booleans render no DOM content.
-pub type ComponentViewPrimitive
+/// Primitive accepted as a programmatic view child. Booleans render no content.
+pub type ProgrammaticViewPrimitive
 
 /// Typed DOM properties plus arbitrary attribute and custom-element values.
-pub type ComponentViewProperties
+pub type ProgrammaticViewProperties
 
-/// Compatibility alias for ViewPropertyValue.
-pub type ComponentViewPropertyValue
+/// Static value or reactive reader accepted by a programmatic view property.
+pub type ProgrammaticViewPropertyValue
 
 /// Factory that creates one real DOM element without parsing HTML.
-pub type ComponentViewTag(a)
+pub type ProgrammaticViewTag(a)
 
 /// Typed HTML tag factories. Calling the object with a namespace URI returns factories for
 /// namespaced elements such as SVG and MathML.
-pub type ComponentViewTags
+pub type ProgrammaticViewTags
 
 /// AngularTS component lifecycle interface. Directive controllers have a well-defined lifecycle.
 /// Each controller can implement "lifecycle hooks". These are methods that will be called by
@@ -81,12 +79,6 @@ pub type DirectiveLinkFn(a)
 
 /// Defines optional pre/post link functions in directive compile phase.
 pub type DirectivePrePost
-
-/// Programmatic real-DOM factory used instead of a directive template.
-pub type DirectiveView(a, b)
-
-/// Runtime context passed to a directive's programmatic view.
-pub type DirectiveViewContext(a, b)
 
 /// Modules are collections of application configuration information for components: controllers,
 /// directives, filters, etc. They provide recipes for the injector to do the actual instantiation.

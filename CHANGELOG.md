@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-08-29
+
+- Added type-safe Programmatic Views for components and directives.
+- Standardized view contexts on `host`.
+- Added `StateObject.qualifiedName` and router `errorBoundary`.
+- Added streamlined Scala.js controllers and Maven publication.
+- Added publishable Dart and Gleam packages with Programmatic View APIs and registry validation.
+- Made the Java Maven artifact directly consumable by J2CL.
+- Removed legacy compatibility APIs and documentation.
+
 ## [0.33.2] - 2026-08-27
 
 - Added type-safe programmatic views for components and directives.

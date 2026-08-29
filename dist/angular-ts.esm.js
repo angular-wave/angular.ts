@@ -1,4 +1,4 @@
-/* Version: 0.33.2 */
+/* Version: 0.34.0 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -7195,14 +7195,14 @@ function materializeChild(value, nodes) {
         nodes.push(document.createTextNode(String(value)));
     }
 }
-function materializeComponentView(value) {
+function materializeProgrammaticView(value) {
     const nodes = [];
     materializeChild(value, nodes);
     return nodes;
 }
 function appendChildren(element, children) {
     for (let index = 0; index < children.length; index++) {
-        const nodes = materializeComponentView(children[index]);
+        const nodes = materializeProgrammaticView(children[index]);
         for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
             element.appendChild(nodes[nodeIndex]);
         }
@@ -7307,7 +7307,7 @@ function disposeLinkedChildren(children) {
     children.length = 0;
 }
 function linkChildValue(value, parent, anchor, runtime) {
-    return linkMaterializedChildren(materializeComponentView(value), parent, anchor, runtime);
+    return linkMaterializedChildren(materializeProgrammaticView(value), parent, anchor, runtime);
 }
 function linkMaterializedChildren(rawNodes, parent, anchor, runtime) {
     const children = [];
@@ -7381,7 +7381,7 @@ function activateKeyedChildBinding(anchor, binding, runtime) {
                 _holder: holder,
                 _nodes: previous
                     ? []
-                    : materializeComponentView(binding._render(() => holder.value)),
+                    : materializeProgrammaticView(binding._render(() => holder.value)),
             });
         }
         const nextStates = new Map();
@@ -7556,7 +7556,6 @@ function createProgrammaticDirectiveCompile(options) {
                 required: requiredControllers,
                 scope,
                 host: element,
-                element,
                 transclude,
                 onDestroy(cleanup) {
                     if (!isFunction(cleanup)) {
@@ -7589,7 +7588,7 @@ function createProgrammaticDirectiveCompile(options) {
             const value = Reflect.apply(options.view, controller ?? null, [
                 context,
             ]);
-            const rawNodes = materializeComponentView(value);
+            const rawNodes = materializeProgrammaticView(value);
             const bindingDisposers = new Set();
             cleanups.push(() => {
                 for (const dispose of Array.from(bindingDisposers))
@@ -11631,8 +11630,8 @@ class AppContext {
             return this._models.get(name);
         }
         const initial = factory();
-        if (!isPlainModelRoot$1(initial)) {
-            throw new Error(`Model '${name}' must be initialized with a plain object root.`);
+        if (!isModelRoot(initial)) {
+            throw new Error(`Model '${name}' must be initialized with an object root.`);
         }
         const model = this.createReactive(initial, {
             injector: options.injector,
@@ -11648,8 +11647,8 @@ class AppContext {
     }
     createReactive(target, options = {}) {
         this._ensureAlive("create AppContext reactive models");
-        if (!isPlainModelRoot$1(target)) {
-            throw new Error("Reactive app models require a plain object root.");
+        if (!isModelRoot(target)) {
+            throw new Error("Reactive app models require an object root.");
         }
         const model = createScope(target, undefined, this.modelScheduler._listenerScheduler);
         if (this._scopeRuntime) {
@@ -11784,6 +11783,11 @@ class AppContext {
             hooks.splice(index, 1);
         }
     }
+}
+function isModelRoot(value) {
+    return (isObject(value) &&
+        !isArray(value) &&
+        Object.prototype.toString.call(value) === "[object Object]");
 }
 function isPlainModelRoot$1(value) {
     if (!isObject(value) || isArray(value)) {
@@ -13618,7 +13622,7 @@ class AngularRuntime extends EventTarget {
         this._bootsrappedModules = [];
         this._injectorCreated = false;
         /** AngularTS version string replaced at build time. */
-        this.version = "0.33.2";
+        this.version = "0.34.0";
         /** Retrieve the controller instance cached on a compiled DOM element. */
         this.getController = getController;
         /** Retrieve the injector cached on a bootstrapped DOM element. */
@@ -30424,7 +30428,6 @@ class RouterRuntimeState {
         this._loading = undefined;
         this._retry = undefined;
         this._fallbackTo = undefined;
-        this._error = undefined;
         this._errorBoundary = undefined;
         this._retention = undefined;
         this._lastStartedTransitionId = -1;
@@ -30491,9 +30494,6 @@ class RouterRuntimeState {
         }
         if (config.fallbackTo !== undefined) {
             this._fallbackTo = config.fallbackTo;
-        }
-        if (config.error !== undefined) {
-            this._error = config.error;
         }
         if (config.errorBoundary !== undefined) {
             this._errorBoundary = config.errorBoundary;
@@ -32642,17 +32642,10 @@ class StateObject {
         return (this === ref ||
             this.self === ref ||
             getStateDeclarationSource(this.self) === ref ||
-            this._pathName() === ref);
+            this.qualifiedName === ref);
     }
-    /**
-     * @deprecated this does not properly handle dot notation
-     * @returns {string} Returns a dot-separated name of the state.
-     */
-    fqn() {
-        return this._pathName();
-    }
-    /** @internal */
-    _pathName() {
+    /** Fully qualified state name including all named ancestors. */
+    get qualifiedName() {
         return (this.path ?? [])
             .map((state) => state.name)
             .filter(Boolean)
@@ -32716,7 +32709,7 @@ class StateObject {
             : undefined;
     }
     toString() {
-        return this._pathName();
+        return this.qualifiedName;
     }
 }
 
@@ -35906,7 +35899,7 @@ function isFallbackTarget(target) {
 }
 function getTransitionErrorBoundaryPolicy(transition) {
     const path = transition._treeChanges.to;
-    const routerPolicy = transition._routerState._error ?? transition._routerState._errorBoundary;
+    const routerPolicy = transition._routerState._errorBoundary;
     let effective = routerPolicy !== undefined
         ? {
             state: transition.to(),
@@ -35915,8 +35908,7 @@ function getTransitionErrorBoundaryPolicy(transition) {
         : undefined;
     for (let i = 0; i < path.length; i++) {
         const state = path[i].state.self;
-        const policy = state.policy?.transition?.error ??
-            state.policy?.transition?.errorBoundary;
+        const policy = state.policy?.transition?.errorBoundary;
         if (policy !== undefined) {
             effective = {
                 state,
@@ -36211,8 +36203,6 @@ class StateRuntime {
     }
     /**
      * The latest successful state parameters
-     *
-     * @deprecated This is a passthrough through to [[Router.params]]
      */
     get params() {
         return this._routerState._params;
@@ -36516,12 +36506,11 @@ class StateRuntime {
     /** @internal */
     _getTransitionErrorBoundaryPolicyFromStateName(stateName) {
         const routePolicy = this._getStatePolicyFromStateName(stateName, (state) => {
-            return (state.policy?.transition?.error ??
-                state.policy?.transition?.errorBoundary);
+            return state.policy?.transition?.errorBoundary;
         });
         if (routePolicy)
             return routePolicy;
-        const routerPolicy = this._routerState._error ?? this._routerState._errorBoundary;
+        const routerPolicy = this._routerState._errorBoundary;
         return routerPolicy !== undefined
             ? {
                 state: this._stateRegistry._root.self,

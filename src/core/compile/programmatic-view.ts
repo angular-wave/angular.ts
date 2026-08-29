@@ -1,10 +1,9 @@
 import { _compile, _exceptionHandler } from "../../injection-tokens.ts";
 import type {
-  ComponentView,
-  ComponentViewChild,
-  DirectiveView,
-  DirectiveViewContext,
-  ViewReader,
+  ProgrammaticView,
+  ProgrammaticViewChild,
+  ProgrammaticViewContext,
+  ProgrammaticViewReader,
 } from "../../interface.ts";
 import { addElementDisposer, getCacheData } from "../../shared/dom.ts";
 import { isArray, isFunction } from "../../shared/utils.ts";
@@ -20,7 +19,7 @@ export const PROGRAMMATIC_VIEW_MARKER = "ng-programmatic-view";
 export const PROGRAMMATIC_VIEW_TEMPLATE = `<!--${PROGRAMMATIC_VIEW_MARKER}-->`;
 
 /** Static DOM attribute value accepted by {@link Angular.view | view.attrs()}. */
-export type ViewAttributeValue =
+export type ProgrammaticViewAttributeValue =
   | string
   | number
   | boolean
@@ -28,52 +27,46 @@ export type ViewAttributeValue =
   | null
   | undefined;
 
-/** Static value or reactive reader accepted by a view property. */
-export type ViewPropertyValue<T = unknown> = T | ViewReader<T>;
-
-/** Compatibility alias for {@link ViewPropertyValue}. */
-export type ComponentViewPropertyValue<T = unknown> = ViewPropertyValue<T>;
+/** Static value or reactive reader accepted by a programmatic view property. */
+export type ProgrammaticViewPropertyValue<T = unknown> =
+  | T
+  | ProgrammaticViewReader<T>;
 
 /** Explicit attribute map accepted by {@link Angular.view | view.attrs()}. */
-export type ViewAttributes = Readonly<
-  Record<string, ViewPropertyValue<ViewAttributeValue>>
+export type ProgrammaticViewAttributes = Readonly<
+  Record<string, ProgrammaticViewPropertyValue<ProgrammaticViewAttributeValue>>
 >;
 
 /** Explicit literal property map accepted by {@link Angular.view | view.props()}. */
-export type ViewLiteralProperties = Readonly<Record<string, unknown>>;
+export type ProgrammaticViewLiteralProperties = Readonly<
+  Record<string, unknown>
+>;
 
-/**
- * Property map passed as the first argument to a programmatic view tag.
- * `on*` functions become listeners, other functions become reactive readers,
- * native setters receive property values, and remaining names use attributes.
- * Spread `attrs(...)` into this map to force attribute behavior. `props(...)`
- * assigns its enclosed values literally, including function values.
- */
 /** @inline */
-type ComponentViewEventProperties = Partial<{
+type ProgrammaticViewEventProperties = Partial<{
   [Name in keyof GlobalEventHandlersEventMap as `on${Name}`]:
     | ((event: GlobalEventHandlersEventMap[Name]) => unknown)
     | EventListenerObject;
 }>;
 
 /** Typed DOM properties plus arbitrary attribute and custom-element values. */
-export type ComponentViewProperties<TElement extends Element = Element> =
+export type ProgrammaticViewProperties<TElement extends Element = Element> =
   Partial<{
     [Name in keyof TElement as TElement[Name] extends (
       ...args: never[]
     ) => unknown
       ? never
-      : Name]: ViewPropertyValue<TElement[Name]>;
+      : Name]: ProgrammaticViewPropertyValue<TElement[Name]>;
   }> &
-    ComponentViewEventProperties &
+    ProgrammaticViewEventProperties &
     Partial<
       Record<
         `aria-${string}` | `data-${string}`,
-        ViewPropertyValue<ViewAttributeValue>
+        ProgrammaticViewPropertyValue<ProgrammaticViewAttributeValue>
       >
     > & {
-      class?: ViewPropertyValue<string | null | undefined>;
-      role?: ViewPropertyValue<string | null | undefined>;
+      class?: ProgrammaticViewPropertyValue<string | null | undefined>;
+      role?: ProgrammaticViewPropertyValue<string | null | undefined>;
       is?: string;
     };
 
@@ -100,18 +93,18 @@ type ViewBindingFunction<T> = (() => T) & {
 /** @inline */
 type PropertyGroup =
   | {
-      readonly [attributeGroup]: ViewAttributes;
-      readonly [propertyGroup]?: ViewLiteralProperties;
+      readonly [attributeGroup]: ProgrammaticViewAttributes;
+      readonly [propertyGroup]?: ProgrammaticViewLiteralProperties;
     }
   | {
-      readonly [attributeGroup]?: ViewAttributes;
-      readonly [propertyGroup]: ViewLiteralProperties;
+      readonly [attributeGroup]?: ProgrammaticViewAttributes;
+      readonly [propertyGroup]: ProgrammaticViewLiteralProperties;
     };
 
 interface KeyedBinding<T> {
   readonly _read: () => Iterable<T> | null | undefined;
   readonly _key: (item: T) => PropertyKey;
-  readonly _render: (item: () => T) => ComponentViewChild;
+  readonly _render: (item: () => T) => ProgrammaticViewChild;
 }
 
 function markBinding<T extends object>(
@@ -148,12 +141,14 @@ export function event<TEvent extends Event = Event>(
 }
 
 /** Forces the enclosed values to use DOM attribute semantics. */
-export function attrs(values: ViewAttributes): PropertyGroup {
+export function attrs(values: ProgrammaticViewAttributes): PropertyGroup {
   return { [attributeGroup]: values };
 }
 
 /** Assigns the enclosed values as literal DOM properties. */
-export function props(values: ViewLiteralProperties): PropertyGroup {
+export function props(
+  values: ProgrammaticViewLiteralProperties,
+): PropertyGroup {
   return { [propertyGroup]: values };
 }
 
@@ -162,29 +157,30 @@ export function props(values: ViewLiteralProperties): PropertyGroup {
  * with stable keys move or change identity. Renderers receive an item reader so
  * nested reactive bindings follow same-key replacements.
  */
-declare const keyedView: unique symbol;
+declare const keyedProgrammaticView: unique symbol;
 
 /** Opaque keyed collection binding returned by {@link Angular.view | view.each()}. */
-export type KeyedView = ViewReader<ComponentViewChild> & {
-  readonly [keyedView]: true;
-};
+export type ProgrammaticKeyedView =
+  ProgrammaticViewReader<ProgrammaticViewChild> & {
+    readonly [keyedProgrammaticView]: true;
+  };
 
 export function each<T>(
   read: () => Iterable<T> | null | undefined,
   key: (item: T) => PropertyKey,
-  render: (item: ViewReader<T>) => ComponentViewChild,
-): KeyedView {
+  render: (item: ProgrammaticViewReader<T>) => ProgrammaticViewChild,
+): ProgrammaticKeyedView {
   const binding: KeyedBinding<unknown> = {
     _read: read as unknown as KeyedBinding<unknown>["_read"],
     _key: key as unknown as KeyedBinding<unknown>["_key"],
     _render: render as unknown as KeyedBinding<unknown>["_render"],
   };
-  const wrapper = (): ComponentViewChild => {
+  const wrapper = (): ProgrammaticViewChild => {
     const items = read();
 
     if (items === null || items === undefined) return [];
 
-    const children: ComponentViewChild[] = [];
+    const children: ProgrammaticViewChild[] = [];
 
     for (const item of items) {
       children.push(render(() => item));
@@ -196,51 +192,40 @@ export function each<T>(
   return markBinding(wrapper, {
     _kind: "keyed-child",
     _binding: binding,
-  }) as KeyedView;
+  }) as ProgrammaticKeyedView;
 }
 
 /** Factory that creates one real DOM element without parsing HTML. */
-export type ComponentViewTag<TElement extends Element = HTMLElement> = (
+export type ProgrammaticViewTag<TElement extends Element = HTMLElement> = (
   first?:
-    | ComponentViewProperties<TElement>
+    | ProgrammaticViewProperties<TElement>
     | PropertyGroup
-    | ComponentViewChild,
-  ...children: readonly ComponentViewChild[]
+    | ProgrammaticViewChild,
+  ...children: readonly ProgrammaticViewChild[]
 ) => TElement;
-
-/** Element factory used by component and directive views. */
-export type ViewTag<TElement extends Element = HTMLElement> =
-  ComponentViewTag<TElement>;
 
 /**
  * Typed HTML tag factories. Calling the object with a namespace URI returns
  * factories for namespaced elements such as SVG and MathML.
  */
-export type ComponentViewTags = Readonly<{
-  [Name in keyof HTMLElementTagNameMap]: ComponentViewTag<
+export type ProgrammaticViewTags = Readonly<{
+  [Name in keyof HTMLElementTagNameMap]: ProgrammaticViewTag<
     HTMLElementTagNameMap[Name]
   >;
 }> &
   ((namespaceUri: "http://www.w3.org/2000/svg") => Readonly<{
-    [Name in keyof SVGElementTagNameMap]: ComponentViewTag<
+    [Name in keyof SVGElementTagNameMap]: ProgrammaticViewTag<
       SVGElementTagNameMap[Name]
     >;
   }>) &
   ((namespaceUri: "http://www.w3.org/1998/Math/MathML") => Readonly<{
-    [Name in keyof MathMLElementTagNameMap]: ComponentViewTag<
+    [Name in keyof MathMLElementTagNameMap]: ProgrammaticViewTag<
       MathMLElementTagNameMap[Name]
     >;
   }>) &
   ((
     namespaceUri: string,
-  ) => Readonly<Record<string, ComponentViewTag<Element>>>);
-
-/** Tag collection used by component and directive views. */
-export type ViewTags = ComponentViewTags;
-
-/** Property map accepted by a view tag. */
-export type ViewProperties<TElement extends Element = Element> =
-  ComponentViewProperties<TElement>;
+  ) => Readonly<Record<string, ProgrammaticViewTag<Element>>>);
 
 interface PropertyBinding {
   readonly _kind: "property";
@@ -265,7 +250,7 @@ interface EventBinding {
 
 interface ChildBinding {
   readonly _kind: "child";
-  readonly _read: () => ComponentViewChild;
+  readonly _read: () => ProgrammaticViewChild;
 }
 
 interface KeyedChildBinding {
@@ -306,7 +291,7 @@ interface ProgrammaticBindingRuntime {
 
 export interface ProgrammaticDirectiveCompileOptions {
   readonly name: string;
-  readonly view: ComponentView | DirectiveView;
+  readonly view: ProgrammaticView;
   readonly hasRequire?: boolean;
   readonly injector: ng.InjectorService;
   readonly sanitizeProperty: ProgrammaticBindingRuntime["_sanitizeProperty"];
@@ -316,7 +301,7 @@ const pendingBindings = new WeakMap<Node, PendingBinding[]>();
 
 const tagProxyCache = new Map<
   string,
-  Readonly<Record<string, ComponentViewTag<Element>>>
+  Readonly<Record<string, ProgrammaticViewTag<Element>>>
 >();
 
 function addPendingBinding(node: Node, binding: PendingBinding): void {
@@ -330,7 +315,7 @@ function addPendingBinding(node: Node, binding: PendingBinding): void {
   bindings.push(binding);
 }
 
-function isProperties(value: unknown): value is ComponentViewProperties {
+function isProperties(value: unknown): value is ProgrammaticViewProperties {
   if (!value || typeof value !== "object" || value instanceof Node) {
     return false;
   }
@@ -519,10 +504,10 @@ function applyProperty(
   }
 }
 
-function materializeChild(value: ComponentViewChild, nodes: Node[]): void {
+function materializeChild(value: ProgrammaticViewChild, nodes: Node[]): void {
   if (isArray(value)) {
     for (let index = 0; index < value.length; index++) {
-      materializeChild(value[index] as ComponentViewChild, nodes);
+      materializeChild(value[index] as ProgrammaticViewChild, nodes);
     }
     return;
   }
@@ -561,7 +546,7 @@ function materializeChild(value: ComponentViewChild, nodes: Node[]): void {
 
     addPendingBinding(anchor, {
       _kind: "child",
-      _read: value as () => ComponentViewChild,
+      _read: value as () => ProgrammaticViewChild,
     });
     nodes.push(anchor);
     return;
@@ -576,7 +561,9 @@ function materializeChild(value: ComponentViewChild, nodes: Node[]): void {
   }
 }
 
-export function materializeComponentView(value: ComponentViewChild): Node[] {
+export function materializeProgrammaticView(
+  value: ProgrammaticViewChild,
+): Node[] {
   const nodes: Node[] = [];
 
   materializeChild(value, nodes);
@@ -586,10 +573,10 @@ export function materializeComponentView(value: ComponentViewChild): Node[] {
 
 function appendChildren(
   element: Element,
-  children: readonly ComponentViewChild[],
+  children: readonly ProgrammaticViewChild[],
 ): void {
   for (let index = 0; index < children.length; index++) {
-    const nodes = materializeComponentView(children[index]);
+    const nodes = materializeProgrammaticView(children[index]);
 
     for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
       element.appendChild(nodes[nodeIndex]);
@@ -601,9 +588,9 @@ function createTag(
   namespaceUri: string | undefined,
   name: string,
   ...args: readonly (
-    | ComponentViewProperties
+    | ProgrammaticViewProperties
     | PropertyGroup
-    | ComponentViewChild
+    | ProgrammaticViewChild
   )[]
 ): Element {
   const properties = isProperties(args[0]) ? args[0] : undefined;
@@ -645,7 +632,7 @@ function createTag(
     }
   }
 
-  appendChildren(element, children as readonly ComponentViewChild[]);
+  appendChildren(element, children as readonly ProgrammaticViewChild[]);
 
   return element;
 }
@@ -654,25 +641,25 @@ function createTag(
 export function tag<Name extends keyof HTMLElementTagNameMap>(
   name: Name,
   ...args: readonly (
-    | ComponentViewProperties
+    | ProgrammaticViewProperties
     | PropertyGroup
-    | ComponentViewChild
+    | ProgrammaticViewChild
   )[]
 ): HTMLElementTagNameMap[Name];
 export function tag(
   name: string,
   ...args: readonly (
-    | ComponentViewProperties
+    | ProgrammaticViewProperties
     | PropertyGroup
-    | ComponentViewChild
+    | ProgrammaticViewChild
   )[]
 ): HTMLElement;
 export function tag(
   name: string,
   ...args: readonly (
-    | ComponentViewProperties
+    | ProgrammaticViewProperties
     | PropertyGroup
-    | ComponentViewChild
+    | ProgrammaticViewChild
   )[]
 ): HTMLElement {
   return createTag(undefined, name, ...args) as HTMLElement;
@@ -683,39 +670,39 @@ export function tagNS<Name extends keyof SVGElementTagNameMap>(
   namespaceUri: "http://www.w3.org/2000/svg",
   name: Name,
   ...args: readonly (
-    | ComponentViewProperties
+    | ProgrammaticViewProperties
     | PropertyGroup
-    | ComponentViewChild
+    | ProgrammaticViewChild
   )[]
 ): SVGElementTagNameMap[Name];
 export function tagNS<Name extends keyof MathMLElementTagNameMap>(
   namespaceUri: "http://www.w3.org/1998/Math/MathML",
   name: Name,
   ...args: readonly (
-    | ComponentViewProperties
+    | ProgrammaticViewProperties
     | PropertyGroup
-    | ComponentViewChild
+    | ProgrammaticViewChild
   )[]
 ): MathMLElementTagNameMap[Name];
 export function tagNS(
   namespaceUri: string,
   name: string,
-  ...args: readonly (ComponentViewProperties | ComponentViewChild)[]
+  ...args: readonly (ProgrammaticViewProperties | ProgrammaticViewChild)[]
 ): Element {
   return createTag(namespaceUri, name, ...args);
 }
 
 function getTagProxy(
   namespaceUri?: string,
-): Readonly<Record<string, ComponentViewTag<Element>>> {
+): Readonly<Record<string, ProgrammaticViewTag<Element>>> {
   const cacheKey = namespaceUri ?? "";
   const cached = tagProxyCache.get(cacheKey);
 
   if (cached) return cached;
 
-  const tagFunctions = new Map<string, ComponentViewTag<Element>>();
+  const tagFunctions = new Map<string, ProgrammaticViewTag<Element>>();
   const proxy = new Proxy(
-    Object.create(null) as Record<string, ComponentViewTag<Element>>,
+    Object.create(null) as Record<string, ProgrammaticViewTag<Element>>,
     {
       get(_target, property): unknown {
         if (typeof property !== "string") return undefined;
@@ -741,7 +728,7 @@ function getTagProxy(
 const htmlTags = getTagProxy();
 
 export const tags = new Proxy(
-  ((namespaceUri: string) => getTagProxy(namespaceUri)) as ComponentViewTags,
+  ((namespaceUri: string) => getTagProxy(namespaceUri)) as ProgrammaticViewTags,
   {
     get(_target, property): unknown {
       if (property === "then") return undefined;
@@ -797,13 +784,13 @@ function disposeLinkedChildren(children: LinkedChildState[]): void {
 }
 
 function linkChildValue(
-  value: ComponentViewChild,
+  value: ProgrammaticViewChild,
   parent: Node,
   anchor: Node,
   runtime: ProgrammaticBindingRuntime,
 ): LinkedChildState[] {
   return linkMaterializedChildren(
-    materializeComponentView(value),
+    materializeProgrammaticView(value),
     parent,
     anchor,
     runtime,
@@ -843,7 +830,7 @@ function linkMaterializedChildren(
 
 function activateChildBinding(
   anchor: Node,
-  read: () => ComponentViewChild,
+  read: () => ProgrammaticViewChild,
   runtime: ProgrammaticBindingRuntime,
 ): () => void {
   const linkedChildren: LinkedChildState[] = [];
@@ -873,7 +860,12 @@ function activateChildBinding(
     disposeLinkedChildren(linkedChildren);
 
     linkedChildren.push(
-      ...linkChildValue(value as ComponentViewChild, parent, anchor, runtime),
+      ...linkChildValue(
+        value as ProgrammaticViewChild,
+        parent,
+        anchor,
+        runtime,
+      ),
     );
   });
 
@@ -934,7 +926,7 @@ function activateKeyedChildBinding(
           _holder: holder,
           _nodes: previous
             ? []
-            : materializeComponentView(binding._render(() => holder.value)),
+            : materializeProgrammaticView(binding._render(() => holder.value)),
         });
       }
 
@@ -1203,12 +1195,11 @@ export function createProgrammaticDirectiveCompile(
       cleanups.push(addElementDisposer(element, disposeView));
       cleanups.push(scope.on("$destroy", disposeView));
 
-      const context: DirectiveViewContext = {
+      const context: ProgrammaticViewContext = {
         controller,
-        required: requiredControllers as DirectiveViewContext["required"],
+        required: requiredControllers as ProgrammaticViewContext["required"],
         scope,
         host: element,
-        element,
         transclude,
         onDestroy(cleanup) {
           if (!isFunction(cleanup)) {
@@ -1246,7 +1237,9 @@ export function createProgrammaticDirectiveCompile(
       const value = Reflect.apply(options.view, controller ?? null, [
         context,
       ]) as unknown;
-      const rawNodes = materializeComponentView(value as ComponentViewChild);
+      const rawNodes = materializeProgrammaticView(
+        value as ProgrammaticViewChild,
+      );
       const bindingDisposers = new Set<() => void>();
 
       cleanups.push(() => {

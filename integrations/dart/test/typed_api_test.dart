@@ -32,17 +32,86 @@ final class ViewController {
 void main() {
   test('programmatic view context exposes typed runtime values', () {
     const controller = ViewController('ready');
-    final element = document.createElement('section');
+    final host = document.createElement('section');
     final raw = JSObject()
       ..setProperty('controller'.toJS, controller.toJSBox)
+      ..setProperty('required'.toJS, controller.toJSBox)
       ..setProperty('scope'.toJS, JSObject())
-      ..setProperty('element'.toJS, element)
-      ..setProperty('transclude'.toJS, (() => null).toJS);
+      ..setProperty('host'.toJS, host)
+      ..setProperty('transclude'.toJS, (() => null).toJS)
+      ..setProperty(
+        'onDestroy'.toJS,
+        ((JSFunction cleanup) => cleanup).toJS,
+      );
     final context = ng.ProgrammaticViewContext<ViewController, Object?>(raw);
 
     expect(context.controller, same(controller));
-    expect(context.element, same(element));
+    expect(context.required, same(controller));
+    expect(context.host, same(host));
     expect(context.transclude, isA<JSFunction>());
+    expect(context.onDestroy(() {}), isA<JSFunction>());
+  });
+
+  test('programmatic view helpers delegate to the runtime API', () {
+    final htmlButton = document.createElement('button');
+    final svgCircle = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'circle',
+    );
+    final namespacedTags = JSObject()
+      ..setProperty(
+        'circle'.toJS,
+        ((JSAny? _) => svgCircle).toJS,
+      );
+    final rawTags = ((JSAny? _) => namespacedTags).toJS
+      ..setProperty(
+        'button'.toJS,
+        ((JSAny? _, [JSAny? __]) => htmlButton).toJS,
+      );
+    final tags = ng.ProgrammaticTags(rawTags);
+
+    expect(tags.tag('button'), same(htmlButton));
+    expect(
+      tags.namespace('http://www.w3.org/2000/svg').tag('circle'),
+      same(svgCircle),
+    );
+
+    final viewRaw = JSObject()
+      ..setProperty(
+        'event'.toJS,
+        ((JSFunction listener, JSAny? _) => listener).toJS,
+      )
+      ..setProperty('attrs'.toJS, ((JSObject values) => values).toJS)
+      ..setProperty('props'.toJS, ((JSObject values) => values).toJS)
+      ..setProperty(
+        'each'.toJS,
+        ((JSFunction read, JSFunction _, JSFunction __) => read).toJS,
+      )
+      ..setProperty(
+        'tag'.toJS,
+        ((JSAny? _, JSAny? __) => document.createElement('article')).toJS,
+      )
+      ..setProperty(
+        'tagNS'.toJS,
+        ((JSAny? _, JSAny? __, JSAny? ___) => document.createElementNS(
+              'http://www.w3.org/2000/svg',
+              'path',
+            )).toJS,
+      );
+    final view = ng.ProgrammaticViewApi(viewRaw);
+
+    expect(view.event((_) {}), isA<JSFunction>());
+    expect(view.attrs({'title': 'ready'}), isA<JSObject>());
+    expect(view.props({'value': 1}), isA<JSObject>());
+    expect(
+      view.each<String>(() => ['ready'], (item) => item, (read) => read()),
+      isA<JSFunction>(),
+    );
+    expect(view.tag('article').tagName, 'ARTICLE');
+    expect(
+      view.tagNS('http://www.w3.org/2000/svg', 'path').localName,
+      'path',
+    );
   });
 
   test('typed DI helpers preserve token parameter types', () {

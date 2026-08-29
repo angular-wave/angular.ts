@@ -65,29 +65,22 @@ export {
 } from "./core/compile/programmatic-view.ts";
 export { defineWorkflow } from "./services/workflow/workflow.ts";
 export type {
-  ComponentViewProperties,
-  ComponentViewPropertyValue,
-  ComponentViewTag,
-  ComponentViewTags,
-  KeyedView,
-  ViewProperties,
-  ViewPropertyValue,
-  ViewAttributeValue,
-  ViewAttributes,
-  ViewLiteralProperties,
-  ViewTag,
-  ViewTags,
+  ProgrammaticViewProperties,
+  ProgrammaticViewPropertyValue,
+  ProgrammaticViewTag,
+  ProgrammaticViewTags,
+  ProgrammaticKeyedView,
+  ProgrammaticViewAttributeValue,
+  ProgrammaticViewAttributes,
+  ProgrammaticViewLiteralProperties,
 } from "./core/compile/programmatic-view.ts";
 export type {
-  ComponentView,
-  ComponentViewChild,
-  ComponentViewContext,
-  ComponentViewPrimitive,
+  ProgrammaticView,
+  ProgrammaticViewChild,
+  ProgrammaticViewContext,
+  ProgrammaticViewPrimitive,
   ComponentDefinition,
-  ViewChild,
-  ViewContext,
-  ViewPrimitive,
-  ViewReader,
+  ProgrammaticViewReader,
 } from "./interface.ts";
 
 export type {

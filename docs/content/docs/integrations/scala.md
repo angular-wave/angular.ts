@@ -2,42 +2,105 @@
 title: 'Scala.js'
 weight: 60
 description:
-  'Set up Scala.js facades and builders, register an AngularTS module, produce a
-  linked browser application, and validate namespace parity.'
+  'Create an sbt Scala.js application with typed AngularTS models, controllers,
+  a linked browser bundle, and the matching runtime.'
 ---
 
-The Scala.js integration exposes typed facades and idiomatic builders over the
-AngularTS JavaScript runtime. Scala.js links application code; the page still
-loads AngularTS as the runtime owner.
+The Scala artifact provides typed facades and idiomatic builders. Scala.js links
+the application; `@angular-wave/angular.ts` remains the browser runtime. Keep
+the Maven and npm versions equal.
 
-## Set up an application
+## Before you start
 
-Use `integrations/scala/build.sbt` for the supported Scala.js configuration and
-`examples/basic_app` for the browser layout. Create a module with the Scala
-facade, register components and services, bootstrap a DOM root, and load the
-AngularTS runtime before the linked Scala.js script.
+Install JDK 21, sbt, and Node.js. Start with `project/plugins.sbt`, `build.sbt`,
+`src/main/scala`, and an HTML entry page.
 
+## Enable Scala.js
+
+Add the Scala.js plugin:
+
+<!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/scala/test/basic_app.test.ts -->
+```text
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.17.0")
+```
+
+Enable the plugin and add the facade with `%%%`. sbt expands the standard
+Scala.js and Scala binary suffixes automatically.
+
+<!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/scala/test/basic_app.test.ts -->
+```text
+scalaVersion := "3.3.3"
+enablePlugins(ScalaJSPlugin)
+
+libraryDependencies +=
+  "io.github.angular-wave" %%% "angular-ts-scala" % "0.34.0"
+
+scalaJSUseMainModuleInitializer := true
+```
+
+## Register and bootstrap the application
+
+Model tokens can be registered directly as controllers; no identity factory is
+needed.
+
+<!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/scala/test/basic_app.test.ts -->
+```text
+package todo
+
+import angular.ts.*
+import org.scalajs.dom.document
+import scala.scalajs.js
+
+final class TodoModel(var newTodo: String = "") extends js.Object
+
+object App:
+  @main def main(): Unit =
+    val app = AngularTS.module("todo")
+    val model = AngularTS.token[Model[TodoModel]]("todoModel")
+
+    app
+      .model(model, () => new TodoModel())
+      .controller("TodoCtrl", model)
+
+    AngularTS.bootstrap(document.body, Seq(app.name))
+```
+
+Use classes extending `js.Object` for values that cross into AngularTS. Keep
+ordinary Scala domain types behind that boundary.
+
+## Load the browser runtime
+
+Load AngularTS before the linked Scala.js output:
+
+<!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/scala/test/basic_app.test.ts -->
+```html
+<main ng-controller="TodoCtrl as ctrl">
+  <input ng-model="ctrl.newTodo" />
+</main>
+<script src="angular-ts.umd.js"></script>
+<script src="main.js"></script>
+```
+
+Run `sbt fastLinkJS` while developing and `sbt fullLinkJS` for production. Point
+the page at the generated `main.js` and serve it over HTTP.
+
+## Production practices
+
+- Prefer typed tokens, builders, and injection helpers over `js.Dynamic`.
+- Keep AngularTS models as the shared reactive boundary rather than mirroring
+  state into DOM-root scopes.
+- Replace Scala collections with `js.Array` only where the browser-facing model
+  requires JavaScript collection semantics.
+- Use `fullLinkJS` and test the linked output against the release runtime.
+- Run namespace parity and Scaladoc checks whenever facade types change.
+
+## Tested project
+
+The maintained todo is in `integrations/scala/examples/basic_app`. Run:
+
+<!-- tested-by: integrations/scala/test/basic_app.test.ts -->
 ```bash
-make -C integrations/scala compile
-make -C integrations/scala check
 make -C integrations/scala runtime-test
 ```
 
-Use `make -C integrations/scala publish-local` for a separate local sbt
-consumer.
-
-## Best practices
-
-- Extend `js.Object` for values crossing the JavaScript boundary.
-- Prefer typed builders and injection helpers over `js.Dynamic`.
-- Confine unavoidable dynamic access to the integration's unsafe package.
-- Keep shared app state in AngularTS models rather than DOM-root scope wrappers.
-- Run namespace parity and Scaladoc checks with every facade change.
-- Test the linked production-facing browser artifact, not only JVM-side logic.
-
-## Executable evidence
-
-The maintained example or acceptance test is
-\`integrations/scala/examples/basic_app\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+See [Executable integration examples](../examples/) for the aggregate gate.

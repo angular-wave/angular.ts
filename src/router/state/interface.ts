@@ -728,11 +728,6 @@ export interface StateTransitionPolicyDeclaration {
     | { state?: string; params?: RawParams }
     | RedirectToResult
     | StateErrorBoundaryPolicy;
-  error?:
-    | string
-    | { state?: string; params?: RawParams }
-    | RedirectToResult
-    | StateErrorBoundaryPolicy;
 }
 
 export type StateTransitionFallbackTarget =

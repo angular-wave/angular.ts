@@ -9,9 +9,8 @@ The integration is strict by default:
 - Runtime config uses typed Gleam builders before crossing into JavaScript.
 - Dynamic interop is isolated under `angular_ts/unsafe`.
 
-This package is in early implementation. Its source contract is the public
-TypeScript namespace in `@types/namespace.d.ts`, not another language
-integration.
+The package version follows the AngularTS runtime version. Its source contract
+is the public TypeScript namespace in `@types/namespace.d.ts`.
 
 Generated opaque namespace types carry the canonical TypeScript descriptions as
 Gleam documentation comments. Generated token helpers document the injectable
@@ -29,9 +28,12 @@ through `Dynamic`.
 
 The `angular_ts/programmatic_view` module provides typed callback contexts and
 tag construction. `component.with_view` and `directive.with_view` wrap the raw
-runtime context, while `controller`, `required`, `scope`, `element`, and
-`transclude` expose its members. Build DOM with `tags`, `tag`, `property`,
-`child`, and `reactive`; use `namespace` for SVG or MathML.
+runtime context, while `controller`, `required`, `scope`, `host`, `transclude`,
+and `on_destroy` expose its members. Build DOM with `tag`, `property`, `child`,
+and `reactive`; use `event`, `attrs`, `props`, and `each` for explicit bindings,
+and `tag_ns` for SVG and MathML.
+
+Install the published package with `gleam add angular_ts`.
 
 ## Local Checks
 

@@ -271,7 +271,8 @@ describe("StateBuilder", function () {
       expect(state.is(state.self)).toBeTrue();
       expect(state.is("app.detail")).toBeTrue();
       expect(state.is("detail")).toBeFalse();
-      expect(state.fqn()).toBe("app.detail");
+      expect(state.name).toBe("detail");
+      expect(state.qualifiedName).toBe("app.detail");
       expect(String(state)).toBe("app.detail");
       expect(state.root()).toBe(root);
     });

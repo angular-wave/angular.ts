@@ -12,10 +12,6 @@ pub type View(controller, required) =
 pub type Property =
   #(String, Dynamic)
 
-pub opaque type Tags {
-  Tags(namespace_uri: String)
-}
-
 pub fn from_dynamic(handle: Dynamic) -> Context(controller, required) {
   Context(handle)
 }
@@ -38,20 +34,19 @@ pub fn scope(context: Context(controller, required)) -> scope.Scope(state) {
   |> scope.unsafe
 }
 
-pub fn element(context: Context(controller, required)) -> Dynamic {
-  unsafe.get_property(context.handle, "element")
+pub fn host(context: Context(controller, required)) -> Dynamic {
+  unsafe.get_property(context.handle, "host")
 }
 
 pub fn transclude(context: Context(controller, required)) -> Dynamic {
   unsafe.get_property(context.handle, "transclude")
 }
 
-pub fn tags() -> Tags {
-  Tags("")
-}
-
-pub fn namespace(_tags: Tags, namespace_uri: String) -> Tags {
-  Tags(namespace_uri)
+pub fn on_destroy(
+  context: Context(controller, required),
+  cleanup: fn() -> Nil,
+) -> Dynamic {
+  unsafe.call_method1(context.handle, "onDestroy", unsafe.coerce(cleanup))
 }
 
 pub fn property(name: String, value: value) -> Property {
@@ -66,17 +61,81 @@ pub fn reactive(read: fn() -> value) -> Dynamic {
   unsafe.coerce(read)
 }
 
+pub fn event(listener: fn(Dynamic) -> Nil) -> Dynamic {
+  programmatic_event(listener)
+}
+
+pub fn event_with_options(
+  listener: fn(Dynamic) -> Nil,
+  options: options,
+) -> Dynamic {
+  programmatic_event_with_options(listener, unsafe.coerce(options))
+}
+
+pub fn attrs(properties: List(Property)) -> Dynamic {
+  programmatic_attrs(properties)
+}
+
+pub fn props(properties: List(Property)) -> Dynamic {
+  programmatic_props(properties)
+}
+
+pub fn each(
+  read: fn() -> List(item),
+  key: fn(item) -> key,
+  render: fn(fn() -> item) -> Dynamic,
+) -> Dynamic {
+  programmatic_each(read, key, render)
+}
+
 pub fn tag(
-  tags: Tags,
   name: String,
   properties: List(Property),
   children: List(Dynamic),
 ) -> Dynamic {
-  programmatic_tag(tags.namespace_uri, name, properties, children)
+  programmatic_view_tag(name, properties, children)
 }
 
-@external(javascript, "./ffi.mjs", "programmatic_tag")
-fn programmatic_tag(
+pub fn tag_ns(
+  namespace_uri: String,
+  name: String,
+  properties: List(Property),
+  children: List(Dynamic),
+) -> Dynamic {
+  programmatic_view_tag_ns(namespace_uri, name, properties, children)
+}
+
+@external(javascript, "./ffi.mjs", "programmatic_event")
+fn programmatic_event(listener: fn(Dynamic) -> Nil) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "programmatic_event_with_options")
+fn programmatic_event_with_options(
+  listener: fn(Dynamic) -> Nil,
+  options: Dynamic,
+) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "programmatic_attrs")
+fn programmatic_attrs(properties: List(Property)) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "programmatic_props")
+fn programmatic_props(properties: List(Property)) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "programmatic_each")
+fn programmatic_each(
+  read: fn() -> List(item),
+  key: fn(item) -> key,
+  render: fn(fn() -> item) -> Dynamic,
+) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "programmatic_view_tag")
+fn programmatic_view_tag(
+  name: String,
+  properties: List(Property),
+  children: List(Dynamic),
+) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "programmatic_view_tag_ns")
+fn programmatic_view_tag_ns(
   namespace_uri: String,
   name: String,
   properties: List(Property),

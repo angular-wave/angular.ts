@@ -7,7 +7,7 @@ import {
   PROGRAMMATIC_VIEW_TEMPLATE,
   attrs,
   createProgrammaticDirectiveCompile,
-  materializeComponentView,
+  materializeProgrammaticView,
   sanitizeProgrammaticSrcset,
   tags,
 } from "./programmatic-view.ts";
@@ -141,7 +141,7 @@ describe("programmatic views", () => {
       const strong = document.createElement("strong");
       fragment.append("fragment", strong);
 
-      const nodes = materializeComponentView([
+      const nodes = materializeProgrammaticView([
         "text",
         1,
         true,
@@ -162,7 +162,7 @@ describe("programmatic views", () => {
     });
 
     it("materializes reactive functions as stable comment anchors", () => {
-      const [anchor] = materializeComponentView(() => "later");
+      const [anchor] = materializeProgrammaticView(() => "later");
 
       expect(anchor).toBeInstanceOf(Comment);
       expect(anchor.textContent).toBe("ng-view-binding");
@@ -241,7 +241,7 @@ describe("programmatic views", () => {
 
       expect(context.controller).toBe(getController(element, "viewPanel"));
       expect(context.required).toBe(getController(element, "owner"));
-      expect(context.element).toBe(element);
+      expect(context.host).toBe(element);
       expect(context.scope).toBeDefined();
       expect(context.transclude).toEqual(jasmine.any(Function));
       expect(element.textContent).toBe("view:owner");

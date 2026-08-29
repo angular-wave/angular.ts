@@ -1,7 +1,6 @@
 # Scala.js Release Readiness Gate
 
-This gate documents what the Scala.js integration can claim today and what must
-remain out of a release announcement until publish-specific roadmap items close.
+This gate documents what the Scala.js integration can claim in a release.
 
 ## Current Parity Scope
 
@@ -49,8 +48,6 @@ The Scala.js package currently covers:
 
 ## Known Gaps
 
-- Remote repository credentials and push-to-registry automation are not wired.
-  Local package verification is available through `make publish-local`.
 - Future AngularTS public API additions must update Scala facades, tests, and
   namespace parity before the Scala package can claim compatibility with that
   AngularTS version.
@@ -67,3 +64,4 @@ A Scala.js package can be considered release-ready only when:
 - [x] Remaining service facade gaps are either implemented or explicitly listed
       as unsupported for the release.
 - [x] The release notes name the compatible AngularTS npm package version.
+- [x] Tag releases publish signed artifacts through the Central Portal.

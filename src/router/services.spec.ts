@@ -54,7 +54,7 @@ describe("router services", () => {
         focus: { selector: "[data-route-focus]", preventScroll: true },
         viewTransitions: false,
         loading: "loadingState",
-        error: "errorState",
+        errorBoundary: "errorState",
       },
     });
 
@@ -71,7 +71,7 @@ describe("router services", () => {
     });
     expect(router._viewTransitions).toBeFalse();
     expect(router._loading).toBe("loadingState");
-    expect(router._error).toBe("errorState");
+    expect(router._errorBoundary).toBe("errorState");
   });
 
   describe("custom $router.paramTypes", () => {

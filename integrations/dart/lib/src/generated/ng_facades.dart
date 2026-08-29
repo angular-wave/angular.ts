@@ -1521,593 +1521,6 @@ base class GeneratedNgComponentDefinition extends GeneratedNgFacade {
   }
 }
 
-/// Programmatic real-DOM factory used instead of a component template.
-///
-/// Raw JavaScript facade for `ng.ComponentView`.
-base class GeneratedNgComponentView extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ComponentView.
-  const GeneratedNgComponentView(super.raw);
-
-  /// Calls the ng.ComponentView function.
-  ///
-  /// Parameters:
-  /// - [context]: Value supplied for the context parameter.
-  Object? call(Object? context) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(context));
-
-    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
-  }
-}
-
-/// DOM content accepted from programmatic component and directive views. Functions are reactive
-/// child readers, arrays are flattened recursively, and existing nodes are moved rather than
-/// cloned. `null`, `undefined`, and booleans render no DOM content. Document fragments contribute
-/// their children.
-///
-/// Raw JavaScript facade for `ng.ComponentViewChild`.
-base class GeneratedNgComponentViewChild extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ComponentViewChild.
-  const GeneratedNgComponentViewChild(super.raw);
-
-  /// Calls the ng.ComponentViewChild function.
-  Object? call() {
-    return unsafe
-        .jsToDart<Object?>(_callFunction(raw as JSFunction, const <JSAny?>[]));
-  }
-}
-
-/// Runtime context passed to a component's programmatic view.
-///
-/// Raw JavaScript facade for `ng.ComponentViewContext`.
-base class GeneratedNgComponentViewContext extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ComponentViewContext.
-  const GeneratedNgComponentViewContext(super.raw);
-
-  /// Component controller after bindings and `onInit` have run.
-  Object? get controller =>
-      unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
-
-  /// Scope that owns the generated DOM and reactive readers.
-  Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
-
-  /// Native host element matched by the component or directive.
-  HTMLElement get host =>
-      unsafe.jsToDart<HTMLElement>(raw.getProperty('host'.toJS));
-
-  /// The element member of ng.ComponentViewContext.
-  HTMLElement get element =>
-      unsafe.jsToDart<HTMLElement>(raw.getProperty('element'.toJS));
-
-  /// Transclusion function, when transclusion is enabled.
-  Object? get transclude =>
-      unsafe.jsToDart<Object?>(raw.getProperty('transclude'.toJS));
-
-  /// Registers cleanup and returns a cancellation function.
-  Object? get onDestroy =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onDestroy'.toJS));
-}
-
-/// Primitive value accepted as a view child. Booleans render no DOM content.
-///
-/// Raw JavaScript facade for `ng.ComponentViewPrimitive`.
-base class GeneratedNgComponentViewPrimitive extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ComponentViewPrimitive.
-  const GeneratedNgComponentViewPrimitive(super.raw);
-}
-
-/// Typed DOM properties plus arbitrary attribute and custom-element values.
-///
-/// Raw JavaScript facade for `ng.ComponentViewProperties`.
-base class GeneratedNgComponentViewProperties extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ComponentViewProperties.
-  const GeneratedNgComponentViewProperties(super.raw);
-
-  /// [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/role)
-  Object? get role => unsafe.jsToDart<Object?>(raw.getProperty('role'.toJS));
-
-  /// The onabort member of ng.ComponentViewProperties.
-  Object? get onabort =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onabort'.toJS));
-
-  /// The onanimationcancel member of ng.ComponentViewProperties.
-  Object? get onanimationcancel =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onanimationcancel'.toJS));
-
-  /// The onanimationend member of ng.ComponentViewProperties.
-  Object? get onanimationend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onanimationend'.toJS));
-
-  /// The onanimationiteration member of ng.ComponentViewProperties.
-  Object? get onanimationiteration =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onanimationiteration'.toJS));
-
-  /// The onanimationstart member of ng.ComponentViewProperties.
-  Object? get onanimationstart =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onanimationstart'.toJS));
-
-  /// The onauxclick member of ng.ComponentViewProperties.
-  Object? get onauxclick =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onauxclick'.toJS));
-
-  /// The onbeforeinput member of ng.ComponentViewProperties.
-  Object? get onbeforeinput =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onbeforeinput'.toJS));
-
-  /// The onbeforematch member of ng.ComponentViewProperties.
-  Object? get onbeforematch =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onbeforematch'.toJS));
-
-  /// The onbeforetoggle member of ng.ComponentViewProperties.
-  Object? get onbeforetoggle =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onbeforetoggle'.toJS));
-
-  /// The onblur member of ng.ComponentViewProperties.
-  Object? get onblur =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onblur'.toJS));
-
-  /// The oncancel member of ng.ComponentViewProperties.
-  Object? get oncancel =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncancel'.toJS));
-
-  /// The oncanplay member of ng.ComponentViewProperties.
-  Object? get oncanplay =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncanplay'.toJS));
-
-  /// The oncanplaythrough member of ng.ComponentViewProperties.
-  Object? get oncanplaythrough =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncanplaythrough'.toJS));
-
-  /// The onchange member of ng.ComponentViewProperties.
-  Object? get onchange =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onchange'.toJS));
-
-  /// The onclick member of ng.ComponentViewProperties.
-  Object? get onclick =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onclick'.toJS));
-
-  /// The onclose member of ng.ComponentViewProperties.
-  Object? get onclose =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onclose'.toJS));
-
-  /// The oncompositionend member of ng.ComponentViewProperties.
-  Object? get oncompositionend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncompositionend'.toJS));
-
-  /// The oncompositionstart member of ng.ComponentViewProperties.
-  Object? get oncompositionstart =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncompositionstart'.toJS));
-
-  /// The oncompositionupdate member of ng.ComponentViewProperties.
-  Object? get oncompositionupdate =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncompositionupdate'.toJS));
-
-  /// The oncontextlost member of ng.ComponentViewProperties.
-  Object? get oncontextlost =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncontextlost'.toJS));
-
-  /// The oncontextmenu member of ng.ComponentViewProperties.
-  Object? get oncontextmenu =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncontextmenu'.toJS));
-
-  /// The oncontextrestored member of ng.ComponentViewProperties.
-  Object? get oncontextrestored =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncontextrestored'.toJS));
-
-  /// The oncopy member of ng.ComponentViewProperties.
-  Object? get oncopy =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncopy'.toJS));
-
-  /// The oncuechange member of ng.ComponentViewProperties.
-  Object? get oncuechange =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oncuechange'.toJS));
-
-  /// The oncut member of ng.ComponentViewProperties.
-  Object? get oncut => unsafe.jsToDart<Object?>(raw.getProperty('oncut'.toJS));
-
-  /// The ondblclick member of ng.ComponentViewProperties.
-  Object? get ondblclick =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondblclick'.toJS));
-
-  /// The ondrag member of ng.ComponentViewProperties.
-  Object? get ondrag =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondrag'.toJS));
-
-  /// The ondragend member of ng.ComponentViewProperties.
-  Object? get ondragend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondragend'.toJS));
-
-  /// The ondragenter member of ng.ComponentViewProperties.
-  Object? get ondragenter =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondragenter'.toJS));
-
-  /// The ondragleave member of ng.ComponentViewProperties.
-  Object? get ondragleave =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondragleave'.toJS));
-
-  /// The ondragover member of ng.ComponentViewProperties.
-  Object? get ondragover =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondragover'.toJS));
-
-  /// The ondragstart member of ng.ComponentViewProperties.
-  Object? get ondragstart =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondragstart'.toJS));
-
-  /// The ondrop member of ng.ComponentViewProperties.
-  Object? get ondrop =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondrop'.toJS));
-
-  /// The ondurationchange member of ng.ComponentViewProperties.
-  Object? get ondurationchange =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ondurationchange'.toJS));
-
-  /// The onemptied member of ng.ComponentViewProperties.
-  Object? get onemptied =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onemptied'.toJS));
-
-  /// The onended member of ng.ComponentViewProperties.
-  Object? get onended =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onended'.toJS));
-
-  /// The onerror member of ng.ComponentViewProperties.
-  Object? get onerror =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onerror'.toJS));
-
-  /// The onfocus member of ng.ComponentViewProperties.
-  Object? get onfocus =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onfocus'.toJS));
-
-  /// The onfocusin member of ng.ComponentViewProperties.
-  Object? get onfocusin =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onfocusin'.toJS));
-
-  /// The onfocusout member of ng.ComponentViewProperties.
-  Object? get onfocusout =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onfocusout'.toJS));
-
-  /// The onformdata member of ng.ComponentViewProperties.
-  Object? get onformdata =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onformdata'.toJS));
-
-  /// The ongotpointercapture member of ng.ComponentViewProperties.
-  Object? get ongotpointercapture =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ongotpointercapture'.toJS));
-
-  /// The oninput member of ng.ComponentViewProperties.
-  Object? get oninput =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oninput'.toJS));
-
-  /// The oninvalid member of ng.ComponentViewProperties.
-  Object? get oninvalid =>
-      unsafe.jsToDart<Object?>(raw.getProperty('oninvalid'.toJS));
-
-  /// The onkeydown member of ng.ComponentViewProperties.
-  Object? get onkeydown =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onkeydown'.toJS));
-
-  /// The onkeypress member of ng.ComponentViewProperties.
-  Object? get onkeypress =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onkeypress'.toJS));
-
-  /// The onkeyup member of ng.ComponentViewProperties.
-  Object? get onkeyup =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onkeyup'.toJS));
-
-  /// The onload member of ng.ComponentViewProperties.
-  Object? get onload =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onload'.toJS));
-
-  /// The onloadeddata member of ng.ComponentViewProperties.
-  Object? get onloadeddata =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onloadeddata'.toJS));
-
-  /// The onloadedmetadata member of ng.ComponentViewProperties.
-  Object? get onloadedmetadata =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onloadedmetadata'.toJS));
-
-  /// The onloadstart member of ng.ComponentViewProperties.
-  Object? get onloadstart =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onloadstart'.toJS));
-
-  /// The onlostpointercapture member of ng.ComponentViewProperties.
-  Object? get onlostpointercapture =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onlostpointercapture'.toJS));
-
-  /// The onmousedown member of ng.ComponentViewProperties.
-  Object? get onmousedown =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onmousedown'.toJS));
-
-  /// The onmouseenter member of ng.ComponentViewProperties.
-  Object? get onmouseenter =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onmouseenter'.toJS));
-
-  /// The onmouseleave member of ng.ComponentViewProperties.
-  Object? get onmouseleave =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onmouseleave'.toJS));
-
-  /// The onmousemove member of ng.ComponentViewProperties.
-  Object? get onmousemove =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onmousemove'.toJS));
-
-  /// The onmouseout member of ng.ComponentViewProperties.
-  Object? get onmouseout =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onmouseout'.toJS));
-
-  /// The onmouseover member of ng.ComponentViewProperties.
-  Object? get onmouseover =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onmouseover'.toJS));
-
-  /// The onmouseup member of ng.ComponentViewProperties.
-  Object? get onmouseup =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onmouseup'.toJS));
-
-  /// The onpaste member of ng.ComponentViewProperties.
-  Object? get onpaste =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpaste'.toJS));
-
-  /// The onpause member of ng.ComponentViewProperties.
-  Object? get onpause =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpause'.toJS));
-
-  /// The onplay member of ng.ComponentViewProperties.
-  Object? get onplay =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onplay'.toJS));
-
-  /// The onplaying member of ng.ComponentViewProperties.
-  Object? get onplaying =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onplaying'.toJS));
-
-  /// The onpointercancel member of ng.ComponentViewProperties.
-  Object? get onpointercancel =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointercancel'.toJS));
-
-  /// The onpointerdown member of ng.ComponentViewProperties.
-  Object? get onpointerdown =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointerdown'.toJS));
-
-  /// The onpointerenter member of ng.ComponentViewProperties.
-  Object? get onpointerenter =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointerenter'.toJS));
-
-  /// The onpointerleave member of ng.ComponentViewProperties.
-  Object? get onpointerleave =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointerleave'.toJS));
-
-  /// The onpointermove member of ng.ComponentViewProperties.
-  Object? get onpointermove =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointermove'.toJS));
-
-  /// The onpointerout member of ng.ComponentViewProperties.
-  Object? get onpointerout =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointerout'.toJS));
-
-  /// The onpointerover member of ng.ComponentViewProperties.
-  Object? get onpointerover =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointerover'.toJS));
-
-  /// The onpointerrawupdate member of ng.ComponentViewProperties.
-  Object? get onpointerrawupdate =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointerrawupdate'.toJS));
-
-  /// The onpointerup member of ng.ComponentViewProperties.
-  Object? get onpointerup =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onpointerup'.toJS));
-
-  /// The onprogress member of ng.ComponentViewProperties.
-  Object? get onprogress =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onprogress'.toJS));
-
-  /// The onratechange member of ng.ComponentViewProperties.
-  Object? get onratechange =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onratechange'.toJS));
-
-  /// The onreset member of ng.ComponentViewProperties.
-  Object? get onreset =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onreset'.toJS));
-
-  /// The onresize member of ng.ComponentViewProperties.
-  Object? get onresize =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onresize'.toJS));
-
-  /// The onscroll member of ng.ComponentViewProperties.
-  Object? get onscroll =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onscroll'.toJS));
-
-  /// The onscrollend member of ng.ComponentViewProperties.
-  Object? get onscrollend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onscrollend'.toJS));
-
-  /// The onsecuritypolicyviolation member of ng.ComponentViewProperties.
-  Object? get onsecuritypolicyviolation => unsafe
-      .jsToDart<Object?>(raw.getProperty('onsecuritypolicyviolation'.toJS));
-
-  /// The onseeked member of ng.ComponentViewProperties.
-  Object? get onseeked =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onseeked'.toJS));
-
-  /// The onseeking member of ng.ComponentViewProperties.
-  Object? get onseeking =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onseeking'.toJS));
-
-  /// The onselect member of ng.ComponentViewProperties.
-  Object? get onselect =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onselect'.toJS));
-
-  /// The onselectionchange member of ng.ComponentViewProperties.
-  Object? get onselectionchange =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onselectionchange'.toJS));
-
-  /// The onselectstart member of ng.ComponentViewProperties.
-  Object? get onselectstart =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onselectstart'.toJS));
-
-  /// The onslotchange member of ng.ComponentViewProperties.
-  Object? get onslotchange =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onslotchange'.toJS));
-
-  /// The onstalled member of ng.ComponentViewProperties.
-  Object? get onstalled =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onstalled'.toJS));
-
-  /// The onsubmit member of ng.ComponentViewProperties.
-  Object? get onsubmit =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onsubmit'.toJS));
-
-  /// The onsuspend member of ng.ComponentViewProperties.
-  Object? get onsuspend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onsuspend'.toJS));
-
-  /// The ontimeupdate member of ng.ComponentViewProperties.
-  Object? get ontimeupdate =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontimeupdate'.toJS));
-
-  /// The ontoggle member of ng.ComponentViewProperties.
-  Object? get ontoggle =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontoggle'.toJS));
-
-  /// The ontouchcancel member of ng.ComponentViewProperties.
-  Object? get ontouchcancel =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontouchcancel'.toJS));
-
-  /// The ontouchend member of ng.ComponentViewProperties.
-  Object? get ontouchend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontouchend'.toJS));
-
-  /// The ontouchmove member of ng.ComponentViewProperties.
-  Object? get ontouchmove =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontouchmove'.toJS));
-
-  /// The ontouchstart member of ng.ComponentViewProperties.
-  Object? get ontouchstart =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontouchstart'.toJS));
-
-  /// The ontransitioncancel member of ng.ComponentViewProperties.
-  Object? get ontransitioncancel =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontransitioncancel'.toJS));
-
-  /// The ontransitionend member of ng.ComponentViewProperties.
-  Object? get ontransitionend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontransitionend'.toJS));
-
-  /// The ontransitionrun member of ng.ComponentViewProperties.
-  Object? get ontransitionrun =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontransitionrun'.toJS));
-
-  /// The ontransitionstart member of ng.ComponentViewProperties.
-  Object? get ontransitionstart =>
-      unsafe.jsToDart<Object?>(raw.getProperty('ontransitionstart'.toJS));
-
-  /// The onvolumechange member of ng.ComponentViewProperties.
-  Object? get onvolumechange =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onvolumechange'.toJS));
-
-  /// The onwaiting member of ng.ComponentViewProperties.
-  Object? get onwaiting =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onwaiting'.toJS));
-
-  /// The onwebkitanimationend member of ng.ComponentViewProperties.
-  Object? get onwebkitanimationend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onwebkitanimationend'.toJS));
-
-  /// The onwebkitanimationiteration member of ng.ComponentViewProperties.
-  Object? get onwebkitanimationiteration => unsafe
-      .jsToDart<Object?>(raw.getProperty('onwebkitanimationiteration'.toJS));
-
-  /// The onwebkitanimationstart member of ng.ComponentViewProperties.
-  Object? get onwebkitanimationstart =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onwebkitanimationstart'.toJS));
-
-  /// The onwebkittransitionend member of ng.ComponentViewProperties.
-  Object? get onwebkittransitionend =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onwebkittransitionend'.toJS));
-
-  /// The onwheel member of ng.ComponentViewProperties.
-  Object? get onwheel =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onwheel'.toJS));
-
-  /// The class member of ng.ComponentViewProperties.
-  Object? get classMember =>
-      unsafe.jsToDart<Object?>(raw.getProperty('class'.toJS));
-
-  /// The is member of ng.ComponentViewProperties.
-  String? get isMember => _toDartString(raw.getProperty('is'.toJS));
-
-  /// The is member of ng.ComponentViewProperties.
-  set isMember(String? value) {
-    raw.setProperty('is'.toJS, unsafe.dartToJs(value));
-  }
-}
-
-/// Compatibility alias for ViewPropertyValue.
-///
-/// Raw JavaScript facade for `ng.ComponentViewPropertyValue`.
-base class GeneratedNgComponentViewPropertyValue extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ComponentViewPropertyValue.
-  const GeneratedNgComponentViewPropertyValue(super.raw);
-}
-
-/// Factory that creates one real DOM element without parsing HTML.
-///
-/// Raw JavaScript facade for `ng.ComponentViewTag`.
-base class GeneratedNgComponentViewTag extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ComponentViewTag.
-  const GeneratedNgComponentViewTag(super.raw);
-
-  /// Calls the ng.ComponentViewTag function.
-  ///
-  /// Parameters:
-  /// - [first]: Value supplied for the first parameter.
-  /// - [children1]: Value supplied for the children parameter.
-  /// - [children2]: Value supplied for the children parameter.
-  /// - [children3]: Value supplied for the children parameter.
-  /// - [children4]: Value supplied for the children parameter.
-  Object? call(
-      [Object? first = _undefinedArgument,
-      Object? children1 = _undefinedArgument,
-      Object? children2 = _undefinedArgument,
-      Object? children3 = _undefinedArgument,
-      Object? children4 = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    if (!identical(first, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(first));
-    }
-    if (!identical(children1, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(children1));
-    }
-    if (!identical(children2, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(children2));
-    }
-    if (!identical(children3, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(children3));
-    }
-    if (!identical(children4, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(children4));
-    }
-
-    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
-  }
-}
-
-/// Typed HTML tag factories. Calling the object with a namespace URI returns factories for
-/// namespaced elements such as SVG and MathML.
-///
-/// Raw JavaScript facade for `ng.ComponentViewTags`.
-base class GeneratedNgComponentViewTags extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.ComponentViewTags.
-  const GeneratedNgComponentViewTags(super.raw);
-
-  /// Calls the ng.ComponentViewTags function.
-  ///
-  /// Parameters:
-  /// - [namespaceUri]: Value supplied for the namespaceUri parameter.
-  Object? call(String namespaceUri) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(namespaceUri));
-
-    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
-  }
-}
-
 /// Public AngularTS ConnectionConfig contract exposed through the ng namespace.
 ///
 /// Raw JavaScript facade for `ng.ConnectionConfig`.
@@ -2753,59 +2166,6 @@ base class GeneratedNgDirectivePrePost extends GeneratedNgFacade {
 base class GeneratedNgDirectiveRestrict extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.DirectiveRestrict.
   const GeneratedNgDirectiveRestrict(super.raw);
-}
-
-/// Programmatic real-DOM factory used instead of a directive template.
-///
-/// Raw JavaScript facade for `ng.DirectiveView`.
-base class GeneratedNgDirectiveView extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.DirectiveView.
-  const GeneratedNgDirectiveView(super.raw);
-
-  /// Calls the ng.DirectiveView function.
-  ///
-  /// Parameters:
-  /// - [context]: Value supplied for the context parameter.
-  Object? call(Object? context) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(context));
-
-    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
-  }
-}
-
-/// Runtime context passed to a directive's programmatic view.
-///
-/// Raw JavaScript facade for `ng.DirectiveViewContext`.
-base class GeneratedNgDirectiveViewContext extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.DirectiveViewContext.
-  const GeneratedNgDirectiveViewContext(super.raw);
-
-  /// Controllers resolved through the directive's `require` declaration.
-  Object? get requiredMember =>
-      unsafe.jsToDart<Object?>(raw.getProperty('required'.toJS));
-
-  /// Controller associated with the view.
-  Object? get controller =>
-      unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
-
-  /// Scope that owns the generated DOM and reactive readers.
-  Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
-
-  /// Native host element matched by the component or directive.
-  Element get host => unsafe.jsToDart<Element>(raw.getProperty('host'.toJS));
-
-  /// The element member of ng.DirectiveViewContext.
-  Element get element =>
-      unsafe.jsToDart<Element>(raw.getProperty('element'.toJS));
-
-  /// Transclusion function, when transclusion is enabled.
-  Object? get transclude =>
-      unsafe.jsToDart<Object?>(raw.getProperty('transclude'.toJS));
-
-  /// Registers cleanup and returns a cancellation function.
-  Object? get onDestroy =>
-      unsafe.jsToDart<Object?>(raw.getProperty('onDestroy'.toJS));
 }
 
 /// Public AngularTS ElementScopeOptions contract exposed through the ng namespace.
@@ -6336,6 +5696,590 @@ base class GeneratedNgPolicyDecision extends GeneratedNgFacade {
   Object? get meta => unsafe.jsToDart<Object?>(raw.getProperty('meta'.toJS));
 }
 
+/// Programmatic real-DOM factory used instead of a template.
+///
+/// Raw JavaScript facade for `ng.ProgrammaticView`.
+base class GeneratedNgProgrammaticView extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ProgrammaticView.
+  const GeneratedNgProgrammaticView(super.raw);
+
+  /// Calls the ng.ProgrammaticView function.
+  ///
+  /// Parameters:
+  /// - [context]: Value supplied for the context parameter.
+  Object? call(Object? context) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(context));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// DOM content accepted from a programmatic view. Readers are reactive, arrays are flattened
+/// recursively, and existing nodes are moved rather than cloned.
+///
+/// Raw JavaScript facade for `ng.ProgrammaticViewChild`.
+base class GeneratedNgProgrammaticViewChild extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ProgrammaticViewChild.
+  const GeneratedNgProgrammaticViewChild(super.raw);
+
+  /// Calls the ng.ProgrammaticViewChild function.
+  Object? call() {
+    return unsafe
+        .jsToDart<Object?>(_callFunction(raw as JSFunction, const <JSAny?>[]));
+  }
+}
+
+/// Runtime context passed to a programmatic component or directive view.
+///
+/// Raw JavaScript facade for `ng.ProgrammaticViewContext`.
+base class GeneratedNgProgrammaticViewContext extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ProgrammaticViewContext.
+  const GeneratedNgProgrammaticViewContext(super.raw);
+
+  /// Controller associated with the view.
+  Object? get controller =>
+      unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
+
+  /// Controllers resolved through a directive's require declaration.
+  Object? get requiredMember =>
+      unsafe.jsToDart<Object?>(raw.getProperty('required'.toJS));
+
+  /// Scope that owns the generated DOM and reactive readers.
+  Object? get scope => unsafe.jsToDart<Object?>(raw.getProperty('scope'.toJS));
+
+  /// Native host element matched by the component or directive.
+  Object? get host => unsafe.jsToDart<Object?>(raw.getProperty('host'.toJS));
+
+  /// Transclusion function, when transclusion is enabled.
+  Object? get transclude =>
+      unsafe.jsToDart<Object?>(raw.getProperty('transclude'.toJS));
+
+  /// Registers cleanup and returns a cancellation function.
+  Object? get onDestroy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onDestroy'.toJS));
+}
+
+/// Primitive accepted as a programmatic view child. Booleans render no content.
+///
+/// Raw JavaScript facade for `ng.ProgrammaticViewPrimitive`.
+base class GeneratedNgProgrammaticViewPrimitive extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ProgrammaticViewPrimitive.
+  const GeneratedNgProgrammaticViewPrimitive(super.raw);
+}
+
+/// Typed DOM properties plus arbitrary attribute and custom-element values.
+///
+/// Raw JavaScript facade for `ng.ProgrammaticViewProperties`.
+base class GeneratedNgProgrammaticViewProperties extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ProgrammaticViewProperties.
+  const GeneratedNgProgrammaticViewProperties(super.raw);
+
+  /// [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/role)
+  Object? get role => unsafe.jsToDart<Object?>(raw.getProperty('role'.toJS));
+
+  /// The onabort member of ng.ProgrammaticViewProperties.
+  Object? get onabort =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onabort'.toJS));
+
+  /// The onanimationcancel member of ng.ProgrammaticViewProperties.
+  Object? get onanimationcancel =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onanimationcancel'.toJS));
+
+  /// The onanimationend member of ng.ProgrammaticViewProperties.
+  Object? get onanimationend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onanimationend'.toJS));
+
+  /// The onanimationiteration member of ng.ProgrammaticViewProperties.
+  Object? get onanimationiteration =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onanimationiteration'.toJS));
+
+  /// The onanimationstart member of ng.ProgrammaticViewProperties.
+  Object? get onanimationstart =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onanimationstart'.toJS));
+
+  /// The onauxclick member of ng.ProgrammaticViewProperties.
+  Object? get onauxclick =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onauxclick'.toJS));
+
+  /// The onbeforeinput member of ng.ProgrammaticViewProperties.
+  Object? get onbeforeinput =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onbeforeinput'.toJS));
+
+  /// The onbeforematch member of ng.ProgrammaticViewProperties.
+  Object? get onbeforematch =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onbeforematch'.toJS));
+
+  /// The onbeforetoggle member of ng.ProgrammaticViewProperties.
+  Object? get onbeforetoggle =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onbeforetoggle'.toJS));
+
+  /// The onblur member of ng.ProgrammaticViewProperties.
+  Object? get onblur =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onblur'.toJS));
+
+  /// The oncancel member of ng.ProgrammaticViewProperties.
+  Object? get oncancel =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncancel'.toJS));
+
+  /// The oncanplay member of ng.ProgrammaticViewProperties.
+  Object? get oncanplay =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncanplay'.toJS));
+
+  /// The oncanplaythrough member of ng.ProgrammaticViewProperties.
+  Object? get oncanplaythrough =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncanplaythrough'.toJS));
+
+  /// The onchange member of ng.ProgrammaticViewProperties.
+  Object? get onchange =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onchange'.toJS));
+
+  /// The onclick member of ng.ProgrammaticViewProperties.
+  Object? get onclick =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onclick'.toJS));
+
+  /// The onclose member of ng.ProgrammaticViewProperties.
+  Object? get onclose =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onclose'.toJS));
+
+  /// The oncompositionend member of ng.ProgrammaticViewProperties.
+  Object? get oncompositionend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncompositionend'.toJS));
+
+  /// The oncompositionstart member of ng.ProgrammaticViewProperties.
+  Object? get oncompositionstart =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncompositionstart'.toJS));
+
+  /// The oncompositionupdate member of ng.ProgrammaticViewProperties.
+  Object? get oncompositionupdate =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncompositionupdate'.toJS));
+
+  /// The oncontextlost member of ng.ProgrammaticViewProperties.
+  Object? get oncontextlost =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncontextlost'.toJS));
+
+  /// The oncontextmenu member of ng.ProgrammaticViewProperties.
+  Object? get oncontextmenu =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncontextmenu'.toJS));
+
+  /// The oncontextrestored member of ng.ProgrammaticViewProperties.
+  Object? get oncontextrestored =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncontextrestored'.toJS));
+
+  /// The oncopy member of ng.ProgrammaticViewProperties.
+  Object? get oncopy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncopy'.toJS));
+
+  /// The oncuechange member of ng.ProgrammaticViewProperties.
+  Object? get oncuechange =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oncuechange'.toJS));
+
+  /// The oncut member of ng.ProgrammaticViewProperties.
+  Object? get oncut => unsafe.jsToDart<Object?>(raw.getProperty('oncut'.toJS));
+
+  /// The ondblclick member of ng.ProgrammaticViewProperties.
+  Object? get ondblclick =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondblclick'.toJS));
+
+  /// The ondrag member of ng.ProgrammaticViewProperties.
+  Object? get ondrag =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondrag'.toJS));
+
+  /// The ondragend member of ng.ProgrammaticViewProperties.
+  Object? get ondragend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondragend'.toJS));
+
+  /// The ondragenter member of ng.ProgrammaticViewProperties.
+  Object? get ondragenter =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondragenter'.toJS));
+
+  /// The ondragleave member of ng.ProgrammaticViewProperties.
+  Object? get ondragleave =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondragleave'.toJS));
+
+  /// The ondragover member of ng.ProgrammaticViewProperties.
+  Object? get ondragover =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondragover'.toJS));
+
+  /// The ondragstart member of ng.ProgrammaticViewProperties.
+  Object? get ondragstart =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondragstart'.toJS));
+
+  /// The ondrop member of ng.ProgrammaticViewProperties.
+  Object? get ondrop =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondrop'.toJS));
+
+  /// The ondurationchange member of ng.ProgrammaticViewProperties.
+  Object? get ondurationchange =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ondurationchange'.toJS));
+
+  /// The onemptied member of ng.ProgrammaticViewProperties.
+  Object? get onemptied =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onemptied'.toJS));
+
+  /// The onended member of ng.ProgrammaticViewProperties.
+  Object? get onended =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onended'.toJS));
+
+  /// The onerror member of ng.ProgrammaticViewProperties.
+  Object? get onerror =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onerror'.toJS));
+
+  /// The onfocus member of ng.ProgrammaticViewProperties.
+  Object? get onfocus =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onfocus'.toJS));
+
+  /// The onfocusin member of ng.ProgrammaticViewProperties.
+  Object? get onfocusin =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onfocusin'.toJS));
+
+  /// The onfocusout member of ng.ProgrammaticViewProperties.
+  Object? get onfocusout =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onfocusout'.toJS));
+
+  /// The onformdata member of ng.ProgrammaticViewProperties.
+  Object? get onformdata =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onformdata'.toJS));
+
+  /// The ongotpointercapture member of ng.ProgrammaticViewProperties.
+  Object? get ongotpointercapture =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ongotpointercapture'.toJS));
+
+  /// The oninput member of ng.ProgrammaticViewProperties.
+  Object? get oninput =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oninput'.toJS));
+
+  /// The oninvalid member of ng.ProgrammaticViewProperties.
+  Object? get oninvalid =>
+      unsafe.jsToDart<Object?>(raw.getProperty('oninvalid'.toJS));
+
+  /// The onkeydown member of ng.ProgrammaticViewProperties.
+  Object? get onkeydown =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onkeydown'.toJS));
+
+  /// The onkeypress member of ng.ProgrammaticViewProperties.
+  Object? get onkeypress =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onkeypress'.toJS));
+
+  /// The onkeyup member of ng.ProgrammaticViewProperties.
+  Object? get onkeyup =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onkeyup'.toJS));
+
+  /// The onload member of ng.ProgrammaticViewProperties.
+  Object? get onload =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onload'.toJS));
+
+  /// The onloadeddata member of ng.ProgrammaticViewProperties.
+  Object? get onloadeddata =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onloadeddata'.toJS));
+
+  /// The onloadedmetadata member of ng.ProgrammaticViewProperties.
+  Object? get onloadedmetadata =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onloadedmetadata'.toJS));
+
+  /// The onloadstart member of ng.ProgrammaticViewProperties.
+  Object? get onloadstart =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onloadstart'.toJS));
+
+  /// The onlostpointercapture member of ng.ProgrammaticViewProperties.
+  Object? get onlostpointercapture =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onlostpointercapture'.toJS));
+
+  /// The onmousedown member of ng.ProgrammaticViewProperties.
+  Object? get onmousedown =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onmousedown'.toJS));
+
+  /// The onmouseenter member of ng.ProgrammaticViewProperties.
+  Object? get onmouseenter =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onmouseenter'.toJS));
+
+  /// The onmouseleave member of ng.ProgrammaticViewProperties.
+  Object? get onmouseleave =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onmouseleave'.toJS));
+
+  /// The onmousemove member of ng.ProgrammaticViewProperties.
+  Object? get onmousemove =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onmousemove'.toJS));
+
+  /// The onmouseout member of ng.ProgrammaticViewProperties.
+  Object? get onmouseout =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onmouseout'.toJS));
+
+  /// The onmouseover member of ng.ProgrammaticViewProperties.
+  Object? get onmouseover =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onmouseover'.toJS));
+
+  /// The onmouseup member of ng.ProgrammaticViewProperties.
+  Object? get onmouseup =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onmouseup'.toJS));
+
+  /// The onpaste member of ng.ProgrammaticViewProperties.
+  Object? get onpaste =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpaste'.toJS));
+
+  /// The onpause member of ng.ProgrammaticViewProperties.
+  Object? get onpause =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpause'.toJS));
+
+  /// The onplay member of ng.ProgrammaticViewProperties.
+  Object? get onplay =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onplay'.toJS));
+
+  /// The onplaying member of ng.ProgrammaticViewProperties.
+  Object? get onplaying =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onplaying'.toJS));
+
+  /// The onpointercancel member of ng.ProgrammaticViewProperties.
+  Object? get onpointercancel =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointercancel'.toJS));
+
+  /// The onpointerdown member of ng.ProgrammaticViewProperties.
+  Object? get onpointerdown =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointerdown'.toJS));
+
+  /// The onpointerenter member of ng.ProgrammaticViewProperties.
+  Object? get onpointerenter =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointerenter'.toJS));
+
+  /// The onpointerleave member of ng.ProgrammaticViewProperties.
+  Object? get onpointerleave =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointerleave'.toJS));
+
+  /// The onpointermove member of ng.ProgrammaticViewProperties.
+  Object? get onpointermove =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointermove'.toJS));
+
+  /// The onpointerout member of ng.ProgrammaticViewProperties.
+  Object? get onpointerout =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointerout'.toJS));
+
+  /// The onpointerover member of ng.ProgrammaticViewProperties.
+  Object? get onpointerover =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointerover'.toJS));
+
+  /// The onpointerrawupdate member of ng.ProgrammaticViewProperties.
+  Object? get onpointerrawupdate =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointerrawupdate'.toJS));
+
+  /// The onpointerup member of ng.ProgrammaticViewProperties.
+  Object? get onpointerup =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onpointerup'.toJS));
+
+  /// The onprogress member of ng.ProgrammaticViewProperties.
+  Object? get onprogress =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onprogress'.toJS));
+
+  /// The onratechange member of ng.ProgrammaticViewProperties.
+  Object? get onratechange =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onratechange'.toJS));
+
+  /// The onreset member of ng.ProgrammaticViewProperties.
+  Object? get onreset =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onreset'.toJS));
+
+  /// The onresize member of ng.ProgrammaticViewProperties.
+  Object? get onresize =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onresize'.toJS));
+
+  /// The onscroll member of ng.ProgrammaticViewProperties.
+  Object? get onscroll =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onscroll'.toJS));
+
+  /// The onscrollend member of ng.ProgrammaticViewProperties.
+  Object? get onscrollend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onscrollend'.toJS));
+
+  /// The onsecuritypolicyviolation member of ng.ProgrammaticViewProperties.
+  Object? get onsecuritypolicyviolation => unsafe
+      .jsToDart<Object?>(raw.getProperty('onsecuritypolicyviolation'.toJS));
+
+  /// The onseeked member of ng.ProgrammaticViewProperties.
+  Object? get onseeked =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onseeked'.toJS));
+
+  /// The onseeking member of ng.ProgrammaticViewProperties.
+  Object? get onseeking =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onseeking'.toJS));
+
+  /// The onselect member of ng.ProgrammaticViewProperties.
+  Object? get onselect =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onselect'.toJS));
+
+  /// The onselectionchange member of ng.ProgrammaticViewProperties.
+  Object? get onselectionchange =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onselectionchange'.toJS));
+
+  /// The onselectstart member of ng.ProgrammaticViewProperties.
+  Object? get onselectstart =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onselectstart'.toJS));
+
+  /// The onslotchange member of ng.ProgrammaticViewProperties.
+  Object? get onslotchange =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onslotchange'.toJS));
+
+  /// The onstalled member of ng.ProgrammaticViewProperties.
+  Object? get onstalled =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onstalled'.toJS));
+
+  /// The onsubmit member of ng.ProgrammaticViewProperties.
+  Object? get onsubmit =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onsubmit'.toJS));
+
+  /// The onsuspend member of ng.ProgrammaticViewProperties.
+  Object? get onsuspend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onsuspend'.toJS));
+
+  /// The ontimeupdate member of ng.ProgrammaticViewProperties.
+  Object? get ontimeupdate =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontimeupdate'.toJS));
+
+  /// The ontoggle member of ng.ProgrammaticViewProperties.
+  Object? get ontoggle =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontoggle'.toJS));
+
+  /// The ontouchcancel member of ng.ProgrammaticViewProperties.
+  Object? get ontouchcancel =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontouchcancel'.toJS));
+
+  /// The ontouchend member of ng.ProgrammaticViewProperties.
+  Object? get ontouchend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontouchend'.toJS));
+
+  /// The ontouchmove member of ng.ProgrammaticViewProperties.
+  Object? get ontouchmove =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontouchmove'.toJS));
+
+  /// The ontouchstart member of ng.ProgrammaticViewProperties.
+  Object? get ontouchstart =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontouchstart'.toJS));
+
+  /// The ontransitioncancel member of ng.ProgrammaticViewProperties.
+  Object? get ontransitioncancel =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontransitioncancel'.toJS));
+
+  /// The ontransitionend member of ng.ProgrammaticViewProperties.
+  Object? get ontransitionend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontransitionend'.toJS));
+
+  /// The ontransitionrun member of ng.ProgrammaticViewProperties.
+  Object? get ontransitionrun =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontransitionrun'.toJS));
+
+  /// The ontransitionstart member of ng.ProgrammaticViewProperties.
+  Object? get ontransitionstart =>
+      unsafe.jsToDart<Object?>(raw.getProperty('ontransitionstart'.toJS));
+
+  /// The onvolumechange member of ng.ProgrammaticViewProperties.
+  Object? get onvolumechange =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onvolumechange'.toJS));
+
+  /// The onwaiting member of ng.ProgrammaticViewProperties.
+  Object? get onwaiting =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onwaiting'.toJS));
+
+  /// The onwebkitanimationend member of ng.ProgrammaticViewProperties.
+  Object? get onwebkitanimationend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onwebkitanimationend'.toJS));
+
+  /// The onwebkitanimationiteration member of ng.ProgrammaticViewProperties.
+  Object? get onwebkitanimationiteration => unsafe
+      .jsToDart<Object?>(raw.getProperty('onwebkitanimationiteration'.toJS));
+
+  /// The onwebkitanimationstart member of ng.ProgrammaticViewProperties.
+  Object? get onwebkitanimationstart =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onwebkitanimationstart'.toJS));
+
+  /// The onwebkittransitionend member of ng.ProgrammaticViewProperties.
+  Object? get onwebkittransitionend =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onwebkittransitionend'.toJS));
+
+  /// The onwheel member of ng.ProgrammaticViewProperties.
+  Object? get onwheel =>
+      unsafe.jsToDart<Object?>(raw.getProperty('onwheel'.toJS));
+
+  /// The class member of ng.ProgrammaticViewProperties.
+  Object? get classMember =>
+      unsafe.jsToDart<Object?>(raw.getProperty('class'.toJS));
+
+  /// The is member of ng.ProgrammaticViewProperties.
+  String? get isMember => _toDartString(raw.getProperty('is'.toJS));
+
+  /// The is member of ng.ProgrammaticViewProperties.
+  set isMember(String? value) {
+    raw.setProperty('is'.toJS, unsafe.dartToJs(value));
+  }
+}
+
+/// Static value or reactive reader accepted by a programmatic view property.
+///
+/// Raw JavaScript facade for `ng.ProgrammaticViewPropertyValue`.
+base class GeneratedNgProgrammaticViewPropertyValue extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ProgrammaticViewPropertyValue.
+  const GeneratedNgProgrammaticViewPropertyValue(super.raw);
+}
+
+/// Factory that creates one real DOM element without parsing HTML.
+///
+/// Raw JavaScript facade for `ng.ProgrammaticViewTag`.
+base class GeneratedNgProgrammaticViewTag extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ProgrammaticViewTag.
+  const GeneratedNgProgrammaticViewTag(super.raw);
+
+  /// Calls the ng.ProgrammaticViewTag function.
+  ///
+  /// Parameters:
+  /// - [first]: Value supplied for the first parameter.
+  /// - [children1]: Value supplied for the children parameter.
+  /// - [children2]: Value supplied for the children parameter.
+  /// - [children3]: Value supplied for the children parameter.
+  /// - [children4]: Value supplied for the children parameter.
+  Object? call(
+      [Object? first = _undefinedArgument,
+      Object? children1 = _undefinedArgument,
+      Object? children2 = _undefinedArgument,
+      Object? children3 = _undefinedArgument,
+      Object? children4 = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    if (!identical(first, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(first));
+    }
+    if (!identical(children1, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(children1));
+    }
+    if (!identical(children2, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(children2));
+    }
+    if (!identical(children3, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(children3));
+    }
+    if (!identical(children4, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(children4));
+    }
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// Typed HTML tag factories. Calling the object with a namespace URI returns factories for
+/// namespaced elements such as SVG and MathML.
+///
+/// Raw JavaScript facade for `ng.ProgrammaticViewTags`.
+base class GeneratedNgProgrammaticViewTags extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ProgrammaticViewTags.
+  const GeneratedNgProgrammaticViewTags(super.raw);
+
+  /// Calls the ng.ProgrammaticViewTags function.
+  ///
+  /// Parameters:
+  /// - [namespaceUri]: Value supplied for the namespaceUri parameter.
+  Object? call(String namespaceUri) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(namespaceUri));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
 /// A user-defined service recipe accepted by ng.NgModule.provider. Object recipes define an
 /// injectable `get` factory directly. Injectable functions and classes are instantiated first and
 /// must produce an object with an injectable `get` factory.
@@ -7215,9 +7159,6 @@ base class GeneratedNgRouterConfig extends GeneratedNgFacade {
   /// The fallbackTo member of ng.RouterConfig.
   Object? get fallbackTo =>
       unsafe.jsToDart<Object?>(raw.getProperty('fallbackTo'.toJS));
-
-  /// The error member of ng.RouterConfig.
-  Object? get error => unsafe.jsToDart<Object?>(raw.getProperty('error'.toJS));
 
   /// The errorBoundary member of ng.RouterConfig.
   Object? get errorBoundary =>

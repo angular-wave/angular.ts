@@ -134,20 +134,12 @@ export class StateObject {
       this === ref ||
       this.self === ref ||
       getStateDeclarationSource(this.self) === ref ||
-      this._pathName() === ref
+      this.qualifiedName === ref
     );
   }
 
-  /**
-   * @deprecated this does not properly handle dot notation
-   * @returns {string} Returns a dot-separated name of the state.
-   */
-  fqn(): string {
-    return this._pathName();
-  }
-
-  /** @internal */
-  private _pathName(): string {
+  /** Fully qualified state name including all named ancestors. */
+  get qualifiedName(): string {
     return (this.path ?? [])
       .map((state) => state.name)
       .filter(Boolean)
@@ -226,7 +218,7 @@ export class StateObject {
   }
 
   toString(): string {
-    return this._pathName();
+    return this.qualifiedName;
   }
 }
 

@@ -1,4 +1,4 @@
-.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
+.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -270,6 +270,19 @@ publish-release:
 		git tag -a "$$tag" -m "Version $$version" && \
 		git show --no-patch "$$tag" && \
 		git push origin "$$tag"
+
+PUBLISHED_MAVEN_VERSION ?= $(shell node -p 'require("./package.json").version')
+PUBLISHED_MAVEN_ARTIFACTS ?= java,clojurescript,scala
+
+published-maven-check-test:
+	@node --test tool/check-published-maven-artifacts.test.mjs
+
+published-maven-check: published-maven-check-test
+	@node tool/check-published-maven-artifacts.mjs \
+		--version "$(PUBLISHED_MAVEN_VERSION)" \
+		--artifacts "$(PUBLISHED_MAVEN_ARTIFACTS)"
+
+check: published-maven-check-test
 
 PLAYWRIGHT_TEST := npx playwright test
 

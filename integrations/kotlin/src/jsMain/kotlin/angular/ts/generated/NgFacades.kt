@@ -280,45 +280,43 @@ public external interface ComponentDefinition<TControllerInstance, TScopeInstanc
 }
 
 /**
- * Programmatic real-DOM factory used instead of a component template.
+ * Programmatic real-DOM factory used instead of a template.
  */
-public external interface ComponentView {
+public external interface ProgrammaticView<TController, TRequired, TScope, TElement> {
     /**
-     * Calls the ng.ComponentView function.
+     * Calls the ng.ProgrammaticView function.
      * @param context Value supplied for the context parameter.
      */
     public operator fun invoke(context: dynamic = definedExternally): dynamic
 }
 
 /**
- * DOM content accepted from programmatic component and directive views. Functions are
- * reactive child readers, arrays are flattened recursively, and existing nodes are moved
- * rather than cloned. `null`, `undefined`, and booleans render no DOM content. Document
- * fragments contribute their children.
+ * DOM content accepted from a programmatic view. Readers are reactive, arrays are
+ * flattened recursively, and existing nodes are moved rather than cloned.
  */
-public external interface ComponentViewChild
+public external interface ProgrammaticViewChild
 
 /**
- * Runtime context passed to a component's programmatic view.
+ * Runtime context passed to a programmatic component or directive view.
  */
-public external interface ComponentViewContext {
+public external interface ProgrammaticViewContext<TController, TRequired, TScope, TElement> {
     /**
-     * Component controller after bindings and `onInit` have run.
+     * Controller associated with the view.
      */
     public var controller: dynamic
     /**
-     * The element member of ng.ComponentViewContext.
-     */
-    public var element: org.w3c.dom.HTMLElement
-    /**
      * Native host element matched by the component or directive.
      */
-    public var host: org.w3c.dom.HTMLElement
+    public var host: dynamic
     /**
      * Registers cleanup and returns a cancellation function.
      * @param cleanup Value supplied for the cleanup parameter.
      */
     public fun onDestroy(cleanup: () -> Unit = definedExternally): () -> Unit
+    /**
+     * Controllers resolved through a directive's require declaration.
+     */
+    public var required: dynamic
     /**
      * Scope that owns the generated DOM and reactive readers.
      */
@@ -334,20 +332,20 @@ public external interface ComponentViewContext {
 }
 
 /**
- * Primitive value accepted as a view child. Booleans render no DOM content.
+ * Primitive accepted as a programmatic view child. Booleans render no content.
  */
-public external interface ComponentViewPrimitive
+public external interface ProgrammaticViewPrimitive
 
 /**
  * Typed DOM properties plus arbitrary attribute and custom-element values.
  */
-public external interface ComponentViewProperties {
+public external interface ProgrammaticViewProperties {
     /**
-     * The class member of ng.ComponentViewProperties.
+     * The class member of ng.ProgrammaticViewProperties.
      */
     public var `class`: dynamic
     /**
-     * The is member of ng.ComponentViewProperties.
+     * The is member of ng.ProgrammaticViewProperties.
      */
     public var `is`: String
     /**
@@ -357,16 +355,16 @@ public external interface ComponentViewProperties {
 }
 
 /**
- * Compatibility alias for ViewPropertyValue.
+ * Static value or reactive reader accepted by a programmatic view property.
  */
-public external interface ComponentViewPropertyValue
+public external interface ProgrammaticViewPropertyValue
 
 /**
  * Factory that creates one real DOM element without parsing HTML.
  */
-public external interface ComponentViewTag<TElement> {
+public external interface ProgrammaticViewTag<TElement> {
     /**
-     * Calls the ng.ComponentViewTag function.
+     * Calls the ng.ProgrammaticViewTag function.
      * @param first Value supplied for the first parameter.
      * @param children Value supplied for the children parameter.
      */
@@ -377,9 +375,9 @@ public external interface ComponentViewTag<TElement> {
  * Typed HTML tag factories. Calling the object with a namespace URI returns factories for
  * namespaced elements such as SVG and MathML.
  */
-public external interface ComponentViewTags {
+public external interface ProgrammaticViewTags {
     /**
-     * Calls the ng.ComponentViewTags function.
+     * Calls the ng.ProgrammaticViewTags function.
      * @param namespaceUri Value supplied for the namespaceUri parameter.
      */
     public operator fun invoke(namespaceUri: String = definedExternally): dynamic
@@ -596,56 +594,6 @@ public external interface DirectivePrePost {
      * @param args Value supplied for the args parameter.
      */
     public fun pre(vararg args: dynamic): Unit
-}
-
-/**
- * Programmatic real-DOM factory used instead of a directive template.
- */
-public external interface DirectiveView<TController, TRequired> {
-    /**
-     * Calls the ng.DirectiveView function.
-     * @param context Value supplied for the context parameter.
-     */
-    public operator fun invoke(context: dynamic = definedExternally): dynamic
-}
-
-/**
- * Runtime context passed to a directive's programmatic view.
- */
-public external interface DirectiveViewContext<TController, TRequired> {
-    /**
-     * Controller associated with the view.
-     */
-    public var controller: dynamic
-    /**
-     * The element member of ng.DirectiveViewContext.
-     */
-    public var element: org.w3c.dom.Element
-    /**
-     * Native host element matched by the component or directive.
-     */
-    public var host: org.w3c.dom.Element
-    /**
-     * Registers cleanup and returns a cancellation function.
-     * @param cleanup Value supplied for the cleanup parameter.
-     */
-    public fun onDestroy(cleanup: () -> Unit = definedExternally): () -> Unit
-    /**
-     * Controllers resolved through the directive's `require` declaration.
-     */
-    public var required: dynamic
-    /**
-     * Scope that owns the generated DOM and reactive readers.
-     */
-    public var scope: dynamic
-    /**
-     * Transclusion function, when transclusion is enabled.
-     * @param scope Value supplied for the scope parameter.
-     * @param cloneAttachFn Value supplied for the cloneAttachFn parameter.
-     * @param futureParentElement Value supplied for the futureParentElement parameter.
-     * @param slotName Value supplied for the slotName parameter.
-     */
-    public fun transclude(scope: dynamic = definedExternally, cloneAttachFn: (dynamic, dynamic) -> dynamic = definedExternally, futureParentElement: dynamic = definedExternally, slotName: dynamic = definedExternally): dynamic
 }
 
 /**
@@ -5740,10 +5688,6 @@ public external interface RouterConfig {
      * The defaultSquash member of ng.RouterConfig.
      */
     public var defaultSquash: dynamic
-    /**
-     * The error member of ng.RouterConfig.
-     */
-    public var error: dynamic
     /**
      * The errorBoundary member of ng.RouterConfig.
      */

@@ -405,90 +405,55 @@ export type Controller = object & {
   afterRender?: () => void;
 };
 
-/** Reactive value reader used by a view binding. */
-export type ViewReader<T> = () => T;
+/** Reactive value reader used by a programmatic view binding. */
+export type ProgrammaticViewReader<T> = () => T;
 
-/** Primitive value accepted as a view child. Booleans render no DOM content. */
-export type ViewPrimitive = string | number | boolean | bigint;
-
-/** Compatibility alias for {@link ViewPrimitive}. */
-export type ComponentViewPrimitive = ViewPrimitive;
+/** Primitive accepted as a programmatic view child. Booleans render no content. */
+export type ProgrammaticViewPrimitive = string | number | boolean | bigint;
 
 /**
- * DOM content accepted from programmatic component and directive views.
- * Functions are reactive child readers, arrays are flattened recursively, and
- * existing nodes are moved rather than cloned. `null`, `undefined`, and
- * booleans render no DOM content. Document fragments contribute their children.
+ * DOM content accepted from a programmatic view. Readers are reactive, arrays
+ * are flattened recursively, and existing nodes are moved rather than cloned.
  */
-export type ViewChild =
-  | ViewPrimitive
+export type ProgrammaticViewChild =
+  | ProgrammaticViewPrimitive
   | Node
   | null
   | undefined
-  | (() => ViewChild)
-  | readonly ViewChild[];
+  | (() => ProgrammaticViewChild)
+  | readonly ProgrammaticViewChild[];
 
-/** Compatibility alias for {@link ViewChild}. */
-export type ComponentViewChild = ViewChild;
-
-/** Runtime context shared by component and directive views. */
-export interface ViewContext<
-  TController,
+/** Runtime context passed to a programmatic component or directive view. */
+export interface ProgrammaticViewContext<
+  TController = unknown,
+  TRequired = undefined,
   TScope extends ng.Scope = ng.Scope,
   TElement extends Element = Element,
 > {
   /** Controller associated with the view. */
   readonly controller: TController;
+  /** Controllers resolved through a directive's require declaration. */
+  readonly required: TRequired;
   /** Scope that owns the generated DOM and reactive readers. */
   readonly scope: TScope;
   /** Native host element matched by the component or directive. */
   readonly host: TElement;
-  /** @deprecated Use {@link host}. */
-  readonly element: TElement;
   /** Transclusion function, when transclusion is enabled. */
   readonly transclude: ng.TranscludeFn | undefined;
   /** Registers cleanup and returns a cancellation function. */
   readonly onDestroy: (cleanup: () => void) => () => void;
 }
 
-/** Runtime context passed to a component's programmatic view. */
-export interface ComponentViewContext<
-  TController extends Controller = Controller,
-  TScope extends ng.Scope = ng.Scope,
-  TElement extends HTMLElement = HTMLElement,
-> extends ViewContext<TController, TScope, TElement> {
-  /** Component controller after bindings and `onInit` have run. */
-  readonly controller: TController;
-}
-
-/** Programmatic real-DOM factory used instead of a component template. */
-export type ComponentView<
-  TController extends Controller = Controller,
-  TScope extends ng.Scope = ng.Scope,
-  TElement extends HTMLElement = HTMLElement,
-> = (context: ComponentViewContext<TController, TScope, TElement>) => ViewChild;
-
-/** Runtime context passed to a directive's programmatic view. */
-export interface DirectiveViewContext<
+/** Programmatic real-DOM factory used instead of a template. */
+export type ProgrammaticView<
   TController = unknown,
-  TRequired = DirectiveController | undefined,
-  TScope extends ng.Scope = ng.Scope,
-  TElement extends Element = Element,
-> extends ViewContext<TController, TScope, TElement> {
-  /** Controllers resolved through the directive's `require` declaration. */
-  readonly required: TRequired;
-}
-
-/** Programmatic real-DOM factory used instead of a directive template. */
-export type DirectiveView<
-  TController = unknown,
-  TRequired = DirectiveController | undefined,
+  TRequired = undefined,
   TScope extends ng.Scope = ng.Scope,
   TElement extends Element = Element,
 > = {
   bivarianceHack(
-    context: DirectiveViewContext<TController, TRequired, TScope, TElement>,
-  ): ViewChild;
+    context: ProgrammaticViewContext<TController, TRequired, TScope, TElement>,
+  ): ProgrammaticViewChild;
 }["bivarianceHack"];
 
 /**
@@ -525,7 +490,7 @@ export interface Component<
    * bindings and `onInit`, and is mutually exclusive with template, templateUrl,
    * and replace.
    */
-  view?: ComponentView<TController, TScope, TElement> | undefined;
+  view?: ProgrammaticView<TController, undefined, TScope, TElement> | undefined;
   /**
    * Define DOM attribute binding to component properties. Component properties are always bound to the component
    * controller and not to the scope.
@@ -562,7 +527,7 @@ export type ComponentDefinition<
 > &
   (
     | {
-        view: ComponentView<TController, TScope, TElement>;
+        view: ProgrammaticView<TController, undefined, TScope, TElement>;
         template?: never;
         templateUrl?: never;
         replace?: never;
@@ -659,7 +624,7 @@ export interface Directive<
    * Real-DOM view factory. It is mutually exclusive with
    * template, templateUrl, and replace and composes with compile/link.
    */
-  view?: DirectiveView<TCtrl, TRequired, TScope, TElement>;
+  view?: ProgrammaticView<TCtrl, TRequired, TScope, TElement>;
   /** Controller constructor or injectable string name */
   controller?: string | Injectable<ControllerConstructor>;
   /** Alias name for the controller in templates */

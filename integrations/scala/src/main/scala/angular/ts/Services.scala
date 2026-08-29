@@ -1659,7 +1659,6 @@ final case class StateTransitionPolicyDeclaration(
     fallbackTo: js.UndefOr[StateTransitionFallbackPolicy] = js.undefined,
     loading: js.UndefOr[StateTransitionLoadingConfig] = js.undefined,
     errorBoundary: js.UndefOr[StateTransitionErrorBoundaryConfig] = js.undefined,
-    error: js.UndefOr[StateTransitionErrorBoundaryConfig] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
@@ -1669,7 +1668,6 @@ final case class StateTransitionPolicyDeclaration(
       "fallbackTo" -> fallbackTo.asInstanceOf[js.UndefOr[js.Any]],
       "loading" -> loading.asInstanceOf[js.UndefOr[js.Any]],
       "errorBoundary" -> errorBoundary.asInstanceOf[js.UndefOr[js.Any]],
-      "error" -> error.asInstanceOf[js.UndefOr[js.Any]],
     )
 
 enum StateRetentionMode(val value: String):

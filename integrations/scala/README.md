@@ -24,8 +24,19 @@ generated namespace parity.
 
 - Node.js matching the repository root toolchain.
 - Root npm dependencies installed with `npm ci`.
-- JDK 11 or newer.
+- JDK 17 or newer; releases use JDK 21.
 - `sbt` for Scala.js compilation.
+
+Applications depend on the published Scala.js facade with `%%%`:
+
+```scala
+libraryDependencies +=
+  "io.github.angular-wave" %%% "angular-ts-scala" % "0.34.0"
+```
+
+The page must also load the matching `@angular-wave/angular.ts` JavaScript
+runtime. The facade supplies Scala types and builders; it does not bundle a
+second runtime.
 
 ## Local Checks
 
@@ -151,14 +162,15 @@ Implemented:
 
 ## Executable Examples
 
-The current browser smoke example lives at:
+The browser todo example lives at:
 
 ```text
 integrations/scala/examples/basic_app/index.html
 ```
 
-It loads the built AngularTS UMD runtime from `dist/angular-ts.umd.min.js`,
-loads the Scala.js fast-link output, and verifies:
+It loads the built AngularTS UMD runtime and Scala.js fast-link output. The
+acceptance test adds, completes, and archives a todo while verifying that the
+typed Scala model remains visible through AngularTS inspection APIs.
 
 - Scala-authored AngularTS component rendering;
 - typed bound component attributes;
@@ -177,13 +189,9 @@ with `sbt basicApp/fastLinkJS`, and runs Playwright against the example page.
 
 ## Release Readiness Notes
 
-The Scala.js package is an active official integration with public namespace
-parity closed for the current AngularTS `ng` namespace. It is not release ready
-until the remaining publish gates are closed:
-
-- final package coordinates;
-- release notes naming the compatible AngularTS npm package version;
-- release automation.
+The Scala.js package is an official integration with public namespace parity
+closed for the current AngularTS `ng` namespace. Tag releases publish it only
+after Java 17 and Java 21 integration checks pass.
 
 Package lifecycle rule:
 
@@ -213,8 +221,8 @@ make publish-local
 
 Do not publish a Scala.js package from a dirty generated surface. Run
 `make release-check` and commit regenerated namespace parity artifacts with the
-facade changes that required them. Remote repository credentials are not wired
-by default; add them only for an explicit release operation.
+facade changes that required them. Tag publication uses `publishSigned` and
+sbt's native `sonaRelease` Central Portal flow.
 
 ## Version Compatibility
 

@@ -7,79 +7,79 @@ import (
 	"syscall/js"
 )
 
-// ComponentView is a JavaScript-visible component view callback.
-type ComponentView = js.Func
+// ProgrammaticView is a JavaScript-visible component view callback.
+type ProgrammaticView = js.Func
 
-// ComponentViewChild is a DOM value returned by a programmatic view.
-type ComponentViewChild = js.Value
+// ProgrammaticViewChild is a DOM value returned by a programmatic view.
+type ProgrammaticViewChild = js.Value
 
-// ComponentViewPrimitive is a primitive value accepted as a view child.
-type ComponentViewPrimitive = js.Value
+// ProgrammaticViewPrimitive is a primitive value accepted as a view child.
+type ProgrammaticViewPrimitive = js.Value
 
-// ComponentViewPropertyValue is a property value accepted by a tag factory.
-type ComponentViewPropertyValue = any
+// ProgrammaticViewPropertyValue is a property value accepted by a tag factory.
+type ProgrammaticViewPropertyValue = any
 
-// ComponentViewTag is one JavaScript tag factory.
-type ComponentViewTag = js.Value
+// ProgrammaticViewTag is one JavaScript tag factory.
+type ProgrammaticViewTag = js.Value
 
-// ComponentViewContext wraps the context supplied to a component view callback.
-type ComponentViewContext struct {
+// ProgrammaticViewContext wraps the context supplied to a component view callback.
+type ProgrammaticViewContext struct {
 	value js.Value
 }
 
 // NewComponentViewContext wraps a JavaScript view context.
-func NewComponentViewContext(value js.Value) ComponentViewContext {
-	return ComponentViewContext{value: value}
+func NewComponentViewContext(value js.Value) ProgrammaticViewContext {
+	return ProgrammaticViewContext{value: value}
 }
 
 // Controller returns the component controller.
-func (c ComponentViewContext) Controller() js.Value { return c.value.Get("controller") }
+func (c ProgrammaticViewContext) Controller() js.Value { return c.value.Get("controller") }
 
 // Scope returns the scope that owns the generated DOM.
-func (c ComponentViewContext) Scope() js.Value { return c.value.Get("scope") }
+func (c ProgrammaticViewContext) Scope() js.Value { return c.value.Get("scope") }
 
-// Element returns the component host element.
-func (c ComponentViewContext) Element() js.Value { return c.value.Get("element") }
+// Host returns the component host element.
+func (c ProgrammaticViewContext) Host() js.Value { return c.value.Get("host") }
 
 // Transclude returns the component transclusion callback.
-func (c ComponentViewContext) Transclude() js.Value { return c.value.Get("transclude") }
+func (c ProgrammaticViewContext) Transclude() js.Value { return c.value.Get("transclude") }
 
 // Value returns the unwrapped JavaScript context.
-func (c ComponentViewContext) Value() js.Value { return c.value }
+func (c ProgrammaticViewContext) Value() js.Value { return c.value }
 
-// ComponentViewProperties is a property bag passed to a tag factory.
-type ComponentViewProperties map[string]ComponentViewPropertyValue
+// ProgrammaticViewProperties is a property bag passed to a tag factory.
+type ProgrammaticViewProperties map[string]ProgrammaticViewPropertyValue
 
-// ComponentViewTags wraps angular.tags or one namespaced tag collection.
-type ComponentViewTags struct {
+// ProgrammaticViewTags wraps angular.tags or one namespaced tag collection.
+type ProgrammaticViewTags struct {
 	value js.Value
 }
 
 // Tags resolves the global AngularTS tag collection.
-func Tags() (ComponentViewTags, error) {
+func Tags() (ProgrammaticViewTags, error) {
 	angular := js.Global().Get("angular")
 	if angular.Type() == js.TypeUndefined || angular.Type() == js.TypeNull {
-		return ComponentViewTags{}, fmt.Errorf("angular.ts wasm: global angular runtime is unavailable")
+		return ProgrammaticViewTags{}, fmt.Errorf("angular.ts wasm: global angular runtime is unavailable")
 	}
 	value := angular.Get("tags")
 	if value.Type() != js.TypeFunction {
-		return ComponentViewTags{}, fmt.Errorf("angular.ts wasm: angular.tags is unavailable")
+		return ProgrammaticViewTags{}, fmt.Errorf("angular.ts wasm: angular.tags is unavailable")
 	}
 
-	return ComponentViewTags{value: value}, nil
+	return ProgrammaticViewTags{value: value}, nil
 }
 
 // Namespace resolves a namespaced tag collection, such as SVG or MathML.
-func (t ComponentViewTags) Namespace(namespaceURI string) ComponentViewTags {
-	return ComponentViewTags{value: t.value.Invoke(namespaceURI)}
+func (t ProgrammaticViewTags) Namespace(namespaceURI string) ProgrammaticViewTags {
+	return ProgrammaticViewTags{value: t.value.Invoke(namespaceURI)}
 }
 
 // Tag creates one real DOM element through angular.tags[name].
-func (t ComponentViewTags) Tag(
+func (t ProgrammaticViewTags) Tag(
 	name string,
-	properties ComponentViewProperties,
-	children ...ComponentViewChild,
-) ComponentViewChild {
+	properties ProgrammaticViewProperties,
+	children ...ProgrammaticViewChild,
+) ProgrammaticViewChild {
 	propertyObject := js.Global().Get("Object").New()
 	for key, value := range properties {
 		propertyObject.Set(key, value)
@@ -94,4 +94,4 @@ func (t ComponentViewTags) Tag(
 }
 
 // Value returns the unwrapped JavaScript tag collection.
-func (t ComponentViewTags) Value() js.Value { return t.value }
+func (t ProgrammaticViewTags) Value() js.Value { return t.value }

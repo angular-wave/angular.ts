@@ -12,10 +12,14 @@ normal AngularTS browser runtime.
 
 ## Set up an application
 
-Use `integrations/gleam/gleam.toml` as the package source and
-`examples/basic_app` as the application template. Add the package as a local
-dependency, compile the Gleam application to JavaScript, and load AngularTS
-before the generated script.
+Add the published package, compile the Gleam application to JavaScript, and
+load AngularTS before the generated script.
+
+```bash
+gleam add angular_ts
+```
+
+Use `examples/basic_app` when developing against a local checkout.
 
 ```bash
 make -C integrations/gleam check
@@ -26,6 +30,8 @@ make -C integrations/gleam example-build
 
 - Keep JavaScript foreign-function declarations inside the integration layer.
 - Prefer opaque generated types over untyped dynamic values.
+- Use `programmatic_view.host` and the typed view helpers instead of reading
+  context properties directly.
 - Treat generated namespace and injection-token modules as read-only outputs.
 - Regenerate after public TypeScript declarations change and review parity.
 - Keep runtime and generated binding versions synchronized.

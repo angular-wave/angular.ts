@@ -33,7 +33,6 @@ class RouterRuntimeState {
         this._loading = undefined;
         this._retry = undefined;
         this._fallbackTo = undefined;
-        this._error = undefined;
         this._errorBoundary = undefined;
         this._retention = undefined;
         this._lastStartedTransitionId = -1;
@@ -100,9 +99,6 @@ class RouterRuntimeState {
         }
         if (config.fallbackTo !== undefined) {
             this._fallbackTo = config.fallbackTo;
-        }
-        if (config.error !== undefined) {
-            this._error = config.error;
         }
         if (config.errorBoundary !== undefined) {
             this._errorBoundary = config.errorBoundary;

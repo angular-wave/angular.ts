@@ -63,7 +63,6 @@ export interface RouterConfig {
   loading?: StateTransitionPolicyDeclaration["loading"];
   retry?: StateTransitionPolicyDeclaration["retry"];
   fallbackTo?: StateTransitionPolicyDeclaration["fallbackTo"];
-  error?: StateTransitionPolicyDeclaration["error"];
   errorBoundary?: StateTransitionPolicyDeclaration["errorBoundary"];
   retention?: StateRetentionPolicyDeclaration;
 }
@@ -109,8 +108,6 @@ export class RouterRuntimeState {
   /** @internal */
   _fallbackTo: StateTransitionPolicyDeclaration["fallbackTo"] | undefined;
   /** @internal */
-  _error: StateTransitionPolicyDeclaration["error"] | undefined;
-  /** @internal */
   _errorBoundary: StateTransitionPolicyDeclaration["errorBoundary"] | undefined;
   /** @internal */
   _retention: StateRetentionPolicyDeclaration | undefined;
@@ -153,7 +150,6 @@ export class RouterRuntimeState {
     this._loading = undefined;
     this._retry = undefined;
     this._fallbackTo = undefined;
-    this._error = undefined;
     this._errorBoundary = undefined;
     this._retention = undefined;
     this._lastStartedTransitionId = -1;
@@ -236,10 +232,6 @@ export class RouterRuntimeState {
 
     if (config.fallbackTo !== undefined) {
       this._fallbackTo = config.fallbackTo;
-    }
-
-    if (config.error !== undefined) {
-      this._error = config.error;
     }
 
     if (config.errorBoundary !== undefined) {

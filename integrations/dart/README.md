@@ -10,8 +10,8 @@ The integration is strict by default:
 - Runtime config uses typed Dart objects before crossing into JavaScript.
 - Dynamic interop is isolated under explicit unsafe APIs.
 
-This package is currently in early implementation and is published separately
-from the npm runtime.
+The package version follows the AngularTS runtime version and is published
+separately from the npm runtime.
 
 ## Generated And Handwritten APIs
 
@@ -39,7 +39,7 @@ checks reject stale type overrides.
 ## Programmatic Views
 
 `Component.view` and `Directive.view` receive a typed
-`ProgrammaticViewContext`. Its `controller`, `required`, `scope`, `element`, and
+`ProgrammaticViewContext`. Its `controller`, `required`, `scope`, `host`, and
 `transclude` members map directly to the AngularTS runtime context.
 `AngularTsRuntime.global().tags` creates real DOM without parsing HTML:
 
@@ -53,6 +53,8 @@ final button = tags.tag(
 ```
 
 Use `tags.namespace(uri)` for SVG or MathML factories.
+
+Install the published package with `dart pub add angular_ts`.
 
 ## WASM Scope And App Models
 

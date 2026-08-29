@@ -12,9 +12,14 @@ AngularTS owns modules, injection, reactivity, compilation, and DOM lifecycle.
 
 ## Set up an application
 
-Add the `angular_ts` package from `integrations/dart` to a Dart web project.
-Follow `example/basic_app/pubspec.yaml` for a local path setup. Compile the Dart
-entry point to JavaScript and load AngularTS before that output.
+Add the published package, compile the Dart entry point to JavaScript, and load
+AngularTS before that output.
+
+```bash
+dart pub add angular_ts
+```
+
+Use `example/basic_app/pubspec.yaml` when developing against a local checkout.
 
 ```bash
 make -C integrations/dart check
@@ -27,6 +32,7 @@ make -C integrations/dart runtime-test
 - Start with handwritten runtime helpers and typed generated bases.
 - Use reactive child helpers only where the DOM must follow changing state.
 - Use namespaced tag factories for SVG and MathML.
+- Use `ProgrammaticViewContext.host` for the component or directive host.
 - Keep JavaScript interop at the facade boundary rather than throughout
   features.
 - Never edit generated namespace bases; run generation and parity checks.

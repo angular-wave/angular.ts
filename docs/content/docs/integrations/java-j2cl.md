@@ -2,46 +2,123 @@
 title: 'Java and J2CL'
 weight: 40
 description:
-  'Configure the Maven JsInterop bindings and annotation processor, compile a
-  J2CL application, and load the AngularTS browser runtime separately.'
+  'Create a Java browser application with the Maven bindings, annotation
+  processor, J2CL compiler, and AngularTS runtime.'
 ---
 
-The Java artifact contains generated JsInterop bindings and the annotation
-processor that creates Closure entry and template extern files. J2CL compiles
-the application to JavaScript; it does not replace the AngularTS runtime.
+J2CL compiles Java to JavaScript. The `angular-ts-java` artifact supplies typed
+JsInterop bindings and an annotation processor; `@angular-wave/angular.ts`
+supplies the browser runtime. Keep both on the same version.
 
-## Set up an application
+The Maven artifact includes the Java sources and AngularTS externs required by
+J2CL. Your application only generates and passes its own template extern.
 
-Add the same Maven artifact as both a dependency and annotation processor:
+## Before you start
 
+Install JDK 21, Maven, and Node.js. Create a Maven project with `src/main/java`
+for Java sources and a directory for the page that loads the compiled output.
+
+## Add the Java bindings
+
+Add the version and regular dependency to `pom.xml`:
+
+<!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/closure/java/j2cl.test.ts -->
 ```text
-io.github.angular-wave:angular-ts-java:<matching AngularTS version>
+<properties>
+  <angular.ts.version>0.34.0</angular.ts.version>
+</properties>
+
+<dependencies>
+  <dependency>
+    <groupId>io.github.angular-wave</groupId>
+    <artifactId>angular-ts-java</artifactId>
+    <version>${angular.ts.version}</version>
+  </dependency>
+</dependencies>
 ```
 
-Annotate the startup method with `@AngularEntryPoint`. Annotate template-facing
-global Java types with `@AngularTemplateApi`. Configure the selected J2CL plugin
-to compile the generated entry point and include the generated template extern.
-Load the AngularTS UMD runtime before the J2CL output.
+Use the same artifact as the annotation processor:
 
-Use the complete Maven consumer configuration in
-`integrations/closure/java/demo/pom.xml`. Validate it with:
+<!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/closure/java/j2cl.test.ts -->
+```text
+<annotationProcessorPaths>
+  <path>
+    <groupId>io.github.angular-wave</groupId>
+    <artifactId>angular-ts-java</artifactId>
+    <version>${angular.ts.version}</version>
+  </path>
+</annotationProcessorPaths>
+<annotationProcessors>
+  <annotationProcessor>
+    org.angular.ts.processor.AngularClosureProcessor
+  </annotationProcessor>
+</annotationProcessors>
+```
 
+The dependency supplies its runtime extern automatically. The processor
+generates the application Closure entry point and template extern. Configure
+the J2CL Maven plugin with `goog:angular.ts.generated.entrypoint` and
+`META-INF/externs/angular-ts-template.externs.js`. The complete tested plugin
+configuration is in `integrations/closure/java/demo/pom.xml`.
+
+## Register the application
+
+Mark the startup method with `@AngularEntryPoint`. Mark only Java types that
+templates access with `@AngularTemplateApi`.
+
+<!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/closure/java/j2cl.test.ts -->
+```text
+@AngularEntryPoint
+public static void start() {
+  Angular.module("todo", new String[0])
+      .controller("TodoCtrl", (TodoFactory) TodoController::new);
+}
+
+@JsFunction
+interface TodoFactory {
+  TodoController create();
+}
+```
+
+The maintained todo demonstrates public fields, template methods, directives,
+and array replacement in `integrations/closure/java/demo/src/main/java`.
+
+## Load and start the application
+
+Load AngularTS first, then the J2CL bundle, then bootstrap the registered module:
+
+<!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/closure/java/j2cl.test.ts -->
+```html
+<main id="app" ng-controller="TodoCtrl as ctrl"></main>
+<script src="angular-ts.umd.js"></script>
+<script src="todo.js"></script>
+<script>
+  angular.bootstrap(document.getElementById('app'), ['todo']);
+</script>
+```
+
+Build with `mvn package`. Serve the page over HTTP; do not open it through a
+`file:` URL.
+
+## Production practices
+
+- Use the published artifact as a dependency; never copy generated bindings
+  into the application.
+- Keep Closure ADVANCED optimization enabled and keep template extern
+  generation in the build.
+- Expose the smallest possible template API. Unannotated Java implementation
+  details remain optimizable.
+- Replace Java arrays when their length changes so AngularTS observes the new
+  collection identity.
+- Test the optimized J2CL output against the release AngularTS bundle.
+
+## Tested project
+
+Run the repository consumer and browser test with:
+
+<!-- tested-by: integrations/closure/java/j2cl.test.ts -->
 ```bash
 make -f integrations/closure/Makefile java-check
 ```
 
-## Best practices
-
-- Consume published generated bindings; do not regenerate them in applications.
-- Keep domain behavior in Java controllers and services, not scope adapters.
-- Export only template-facing members and exclude implementation details.
-- Compile with Closure ADVANCED optimization and fail on every Java warning.
-- Keep the Java artifact version equal to the browser runtime version.
-- Use the generated source artifact as required by other JsInterop libraries.
-
-## Executable evidence
-
-The maintained example or acceptance test is
-\`integrations/closure/java/demo/index.html\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+See [Executable integration examples](../examples/) for the aggregate gate.

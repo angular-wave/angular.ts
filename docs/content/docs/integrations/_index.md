@@ -15,8 +15,9 @@ model]({{< relref "/docs/integrations/choosing" >}}). Each integration should
 expose the same public namespace concepts while using its language's normal
 module, type, and build conventions.
 
-The Java and ClojureScript artifacts are published to Maven for Maven-compatible
-consumers. The npm package remains the browser runtime used by applications.
+Java, ClojureScript, and Scala.js artifacts are published to Maven Central.
+Dart is published to pub.dev and Gleam to Hex. These packages provide language
+bindings; the matching npm package remains the browser runtime.
 
 ## Browser-language integrations
 

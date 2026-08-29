@@ -47,9 +47,9 @@ pub use services::{HttpServiceExt, TemplateRequestServiceExt};
 pub use token::{token, Token};
 #[cfg(target_arch = "wasm32")]
 pub use view::{
-    ComponentDefinition, ComponentView, ComponentViewChild, ComponentViewContext,
-    ComponentViewPrimitive, ComponentViewProperties, ComponentViewPropertyValue, ComponentViewTag,
-    ComponentViewTags,
+    ComponentDefinition, ProgrammaticView, ProgrammaticViewChild, ProgrammaticViewContext,
+    ProgrammaticViewPrimitive, ProgrammaticViewProperties, ProgrammaticViewPropertyValue, ProgrammaticViewTag,
+    ProgrammaticViewTags,
 };
 #[cfg(target_arch = "wasm32")]
 pub use wasm::{WasmScope, Watch};

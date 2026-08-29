@@ -1,4 +1,4 @@
-.PHONY: all deps format format-check test generate-namespace generate-injection-tokens generate generate-check parity check example-build demo clean
+.PHONY: all deps format format-check test generate-namespace generate-injection-tokens generate generate-check parity check example-build version-check package-check release-check publish demo clean
 
 GLEAM ?= gleam
 NODE ?= node
@@ -37,6 +37,19 @@ check: format-check test parity
 
 example-build:
 	cd examples/basic_app && $(GLEAM) build
+
+version-check:
+	@test "$$(sed -n 's/^version = "\([^"]*\)"/\1/p' gleam.toml)" = "$$(node -p 'require("../../package.json").version')" || \
+		(echo "Gleam package version must match package.json" >&2; exit 1)
+
+package-check: version-check check
+	$(GLEAM) docs build
+	$(GLEAM) export hex-tarball
+
+release-check: package-check example-build
+
+publish: release-check
+	$(GLEAM) publish --yes
 
 demo: example-build
 	@echo "Open http://localhost:4000/integrations/gleam/examples/basic_app/web/ after running make serve from the repository root."

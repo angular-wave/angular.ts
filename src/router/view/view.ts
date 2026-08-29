@@ -171,7 +171,7 @@ const COMPONENT_CONTEXT_ATTR = "data-ng-view-component-context";
 
 let nextViewId = 0;
 
-interface ComponentViewContext {
+interface ProgrammaticViewContext {
   componentName: string;
   config: ViewConfig;
   scope: ng.Scope;
@@ -329,7 +329,7 @@ export class ViewService {
   /** @internal */
   _transitions: ng.TransitionsService;
   /** @internal */
-  _componentContexts: Map<string, ComponentViewContext>;
+  _componentContexts: Map<string, ProgrammaticViewContext>;
   /** @internal */
   _nextComponentContextId: number;
   /** @internal */

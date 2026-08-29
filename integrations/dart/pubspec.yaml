@@ -1,7 +1,13 @@
 name: angular_ts
 description: Official Dart Web facade for authoring AngularTS applications.
-version: 0.0.1-dev
-publish_to: none
+version: 0.34.0
+repository: https://github.com/angular-wave/angular.ts/tree/main/integrations/dart
+issue_tracker: https://github.com/angular-wave/angular.ts/issues
+topics:
+  - angular-ts
+  - javascript-interop
+  - reactive
+  - web
 
 environment:
   sdk: ^3.6.0

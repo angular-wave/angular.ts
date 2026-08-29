@@ -1054,12 +1054,24 @@ for (const alias of aliases) {
     standaloneCallbacks,
   );
   const signature = checker.getTypeAtLocation(alias.name).getCallSignatures()[0];
-  const refined = documentCallbackMethod(
+  let refined = documentCallbackMethod(
     checker,
     alias.name.text,
     signature,
     methodRefined,
   );
+
+  if (alias.name.text === "Component") {
+    refined = refined
+      .replace(
+        /\/\*\* TypeScript callback contract for this property\. \*\/\n@jsinterop\.annotations\.JsFunction\ninterface ViewCallback<[\s\S]*?\n}\n/,
+        "",
+      )
+      .replaceAll(
+        "ViewCallback<TControllerInstance,TScopeInstance,TElement>",
+        "ProgrammaticView<TControllerInstance,Object,TScopeInstance,TElement>",
+      );
+  }
 
   if (refined !== source) {
     writeFileSync(path, refined);

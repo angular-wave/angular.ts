@@ -359,8 +359,7 @@ const typedRouteParamTypesConfig: RouterConfig = {
   loading: "loading",
   retry: 2,
   fallbackTo: "fallback",
-  errorBoundary: "error",
-  error: { state: "error", params: {} },
+  errorBoundary: { state: "error", params: {} },
 };
 
 void typedRouteParamTypesConfig;
@@ -678,12 +677,12 @@ const transitionErrorBoundaryPolicyWithPolicy: StateDeclaration = {
   },
 };
 
-const transitionErrorAliasPolicy: StateDeclaration = {
-  name: "with-error-alias",
+const transitionErrorTargetPolicy: StateDeclaration = {
+  name: "with-error-target",
   url: "/with-error-alias",
   policy: {
     transition: {
-      error: "error",
+      errorBoundary: "error",
     },
   },
 };
@@ -724,14 +723,14 @@ const invalidErrorBoundaryPolicy: StateDeclaration = {
   },
 };
 
-const invalidErrorAliasPolicy: StateDeclaration = {
-  name: "invalid.error-alias",
+const invalidErrorBoundaryTargetPolicy: StateDeclaration = {
+  name: "invalid.error-boundary-target",
   url: "/invalid-error-alias",
   policy: {
     transition: {
-      error: [
+      errorBoundary: [
         "context",
-        // @ts-expect-error error supports only route targets or boundary policy
+        // @ts-expect-error errorBoundary supports only route targets or boundary policy
         (context: StateTransitionErrorPolicyContext) => {
           context.state;
 

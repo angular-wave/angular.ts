@@ -26,8 +26,6 @@ class StateRuntime {
     }
     /**
      * The latest successful state parameters
-     *
-     * @deprecated This is a passthrough through to [[Router.params]]
      */
     get params() {
         return this._routerState._params;
@@ -331,12 +329,11 @@ class StateRuntime {
     /** @internal */
     _getTransitionErrorBoundaryPolicyFromStateName(stateName) {
         const routePolicy = this._getStatePolicyFromStateName(stateName, (state) => {
-            return (state.policy?.transition?.error ??
-                state.policy?.transition?.errorBoundary);
+            return state.policy?.transition?.errorBoundary;
         });
         if (routePolicy)
             return routePolicy;
-        const routerPolicy = this._routerState._error ?? this._routerState._errorBoundary;
+        const routerPolicy = this._routerState._errorBoundary;
         return routerPolicy !== undefined
             ? {
                 state: this._stateRegistry._root.self,

@@ -233,8 +233,8 @@ describe("programmatic view API", () => {
     await settle();
 
     context.scope.destroy();
-    dealoc(context.element);
-    context.element.remove();
+    dealoc(context.host);
+    context.host.remove();
   });
 
   it("rejects duplicate keyed items without replacing existing DOM", async () => {
@@ -475,7 +475,7 @@ describe("programmatic view API", () => {
 
     context.scope.destroy();
     context.scope.destroy();
-    dealoc(context.element.querySelector("span"));
+    dealoc(context.host.querySelector("span"));
     cancelActive();
     cancelActive();
     context.onDestroy(late)();
@@ -526,8 +526,8 @@ describe("programmatic view API", () => {
       }));
     });
 
-    dealoc(context.element);
-    context.element.remove();
+    dealoc(context.host);
+    context.host.remove();
 
     expect(cleanup).toHaveBeenCalledTimes(1);
   });

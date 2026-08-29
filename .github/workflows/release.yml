@@ -25,20 +25,22 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Require Maven Central credentials
+      - name: Require release credentials
         shell: bash
         env:
           MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          HEXPM_API_KEY: ${{ secrets.HEXPM_API_KEY }}
         run: |
           missing=()
           for name in \
             MAVEN_CENTRAL_TOKEN \
             MAVEN_CENTRAL_USERNAME \
             MAVEN_GPG_PRIVATE_KEY \
-            MAVEN_GPG_PASSPHRASE
+            MAVEN_GPG_PASSPHRASE \
+            HEXPM_API_KEY
           do
             if [[ -z "${!name}" ]]; then
               missing+=("$name")
@@ -50,6 +52,25 @@ jobs:
             exit 1
           fi
 
+      - name: Require pub.dev package ownership
+        shell: bash
+        run: |
+          status="$(curl \
+            --silent \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            https://pub.dev/api/packages/angular_ts)"
+
+          if [[ "$status" == "404" ]]; then
+            echo "Publish the first angular_ts version manually, then enable pub.dev GitHub Actions publishing for angular-wave/angular.ts and tag pattern v{{version}}." >&2
+            exit 1
+          fi
+
+          if [[ "$status" != "200" ]]; then
+            echo "pub.dev lookup failed with HTTP $status" >&2
+            exit 1
+          fi
+
   verify:
     name: Verify release commit
     if: github.event_name == 'push'
@@ -57,6 +78,105 @@ jobs:
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
+
+  publish-dart:
+    name: Publish Dart package to pub.dev
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "3.6"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Dart release package
+        run: make -C integrations/dart release-check
+
+      - name: Check for an existing pub.dev release
+        id: registry
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          url="https://pub.dev/api/packages/angular_ts/versions/$version"
+          status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$url")"
+
+          case "$status" in
+            200) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "pub.dev lookup failed with HTTP $status" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Publish Dart package to pub.dev
+        if: steps.registry.outputs.exists != 'true'
+        working-directory: integrations/dart
+        run: dart pub publish --force
+
+  publish-gleam:
+    name: Publish Gleam package to Hex
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: erlef/setup-beam@v1
+        with:
+          gleam-version: "1.17.0"
+          otp-version: "29"
+
+      - name: Validate Gleam release package
+        run: make -C integrations/gleam release-check
+
+      - name: Check for an existing Hex release
+        id: registry
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          url="https://hex.pm/api/packages/angular_ts/releases/$version"
+          status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$url")"
+
+          case "$status" in
+            200) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "Hex lookup failed with HTTP $status" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Publish Gleam package to Hex
+        if: steps.registry.outputs.exists != 'true'
+        env:
+          HEXPM_API_KEY: ${{ secrets.HEXPM_API_KEY }}
+        working-directory: integrations/gleam
+        run: gleam publish --yes
 
   publish-java:
     name: Publish Java package to Maven Central
@@ -186,18 +306,231 @@ jobs:
           -Dgpg.signer=bc
           clean deploy
 
+  publish-scala:
+    name: Publish Scala.js package to Maven Central
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: sbt/setup-sbt@v1
+
+      - name: Validate Scala.js release metadata and package
+        run: make -C integrations/scala release-readiness package-check
+
+      - name: Reject an existing Maven Central version
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          artifact="angular-ts-scala_sjs1_3"
+          pom_url="https://repo1.maven.org/maven2/io/github/angular-wave/$artifact/$version/$artifact-$version.pom"
+          status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$pom_url")"
+
+          case "$status" in
+            404) ;;
+            200)
+              echo "io.github.angular-wave:$artifact:$version is already published" >&2
+              exit 1
+              ;;
+            *)
+              echo "Maven Central lookup failed with HTTP $status" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Import Maven signing key
+        env:
+          MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        run: printf '%s\n' "$MAVEN_GPG_PRIVATE_KEY" | gpg --batch --import
+
+      - name: Publish Scala.js package to Maven Central
+        env:
+          PGP_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          SONATYPE_PASSWORD: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          SONATYPE_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+        run: make -C integrations/scala publish-central
+
+  validate-maven:
+    name: Validate published Maven artifacts
+    if: github.event_name == 'push'
+    needs:
+      - publish-java
+      - publish-clojurescript
+      - publish-scala
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Validate Maven Central copies
+        run: >-
+          node tool/check-published-maven-artifacts.mjs
+          --version "$(node -p 'require("./package.json").version')"
+          --artifacts java,clojurescript,scala
+          --wait-seconds 900
+
+  validate-language-packages:
+    name: Validate published Dart and Gleam packages
+    if: github.event_name == 'push'
+    needs:
+      - publish-dart
+      - publish-gleam
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "3.6"
+
+      - uses: erlef/setup-beam@v1
+        with:
+          gleam-version: "1.17.0"
+          otp-version: "29"
+
+      - name: Wait for registry copies
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          urls=(
+            "https://pub.dev/api/packages/angular_ts/versions/$version"
+            "https://hex.pm/api/packages/angular_ts/releases/$version"
+          )
+
+          for url in "${urls[@]}"; do
+            for attempt in {1..60}; do
+              if curl --fail --silent --show-error "$url" --output /dev/null; then
+                break
+              fi
+
+              if (( attempt == 60 )); then
+                echo "Published package did not become available: $url" >&2
+                exit 1
+              fi
+
+              sleep 10
+            done
+          done
+
+      - name: Compile a pub.dev consumer
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          consumer="$RUNNER_TEMP/dart-release-consumer"
+          mkdir -p "$consumer/lib"
+          cat > "$consumer/pubspec.yaml" <<EOF
+          name: angular_ts_release_consumer
+          environment:
+            sdk: ^3.6.0
+          dependencies:
+            angular_ts: $version
+          EOF
+          cat > "$consumer/lib/main.dart" <<'DART'
+          import 'package:angular_ts/angular_ts.dart';
+
+          ProgrammaticView<Object?, Object?>? componentView;
+          ProgrammaticViewContext<Object?, Object?>? context;
+          ProgrammaticTags? tags;
+          ProgrammaticViewApi? view;
+
+          void main() {
+            [componentView, context, tags, view];
+          }
+          DART
+          dart pub get --directory "$consumer"
+          dart analyze "$consumer/lib/main.dart"
+
+      - name: Compile a Hex consumer
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          consumer="$RUNNER_TEMP/gleam-release-consumer"
+          gleam new \
+            --name angular_ts_release_consumer \
+            --template javascript \
+            --skip-git \
+            --skip-github \
+            "$consumer"
+          cd "$consumer"
+          gleam add "angular_ts@$version"
+          cat > src/angular_ts_release_consumer.gleam <<'GLEAM'
+          import angular_ts/programmatic_view
+          import gleam/dynamic.{type Dynamic}
+
+          pub fn render(
+            context: programmatic_view.Context(Dynamic, Dynamic),
+          ) -> Dynamic {
+            let _ = programmatic_view.host(context)
+            let _ = programmatic_view.event(fn(_) { Nil })
+            let _ = programmatic_view.attrs([
+              programmatic_view.property("title", "ready"),
+            ])
+            programmatic_view.tag("p", [], [
+              programmatic_view.reactive(fn() { "ready" }),
+            ])
+          }
+          GLEAM
+          gleam build --target javascript
+
   publish:
     name: Publish npm package and GitHub Release
     needs:
       - verify
       - publish-java
       - publish-clojurescript
+      - publish-scala
+      - validate-maven
+      - publish-dart
+      - publish-gleam
+      - validate-language-packages
     if: >-
       always() &&
       ((github.event_name == 'push' &&
         needs.verify.result == 'success' &&
         needs.publish-java.result == 'success' &&
-        needs.publish-clojurescript.result == 'success') ||
+        needs.publish-clojurescript.result == 'success' &&
+        needs.publish-scala.result == 'success' &&
+        needs.validate-maven.result == 'success' &&
+        needs.publish-dart.result == 'success' &&
+        needs.publish-gleam.result == 'success' &&
+        needs.validate-language-packages.result == 'success') ||
        github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -286,15 +619,22 @@ jobs:
           }
           NODE
 
-      - name: Verify Maven artifacts before recovery
+      - name: Verify published artifacts before recovery
         if: github.event_name == 'workflow_dispatch'
         env:
           PACKAGE_VERSION: ${{ steps.release.outputs.version }}
         run: |
-          java_pom="https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-java/$PACKAGE_VERSION/angular-ts-java-$PACKAGE_VERSION.pom"
-          cljs_pom="https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-cljs/$PACKAGE_VERSION/angular-ts-cljs-$PACKAGE_VERSION.pom"
-          curl --fail --silent --show-error "$java_pom" --output /dev/null
-          curl --fail --silent --show-error "$cljs_pom" --output /dev/null
+          urls=(
+            "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-java/$PACKAGE_VERSION/angular-ts-java-$PACKAGE_VERSION.pom"
+            "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-cljs/$PACKAGE_VERSION/angular-ts-cljs-$PACKAGE_VERSION.pom"
+            "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-scala_sjs1_3/$PACKAGE_VERSION/angular-ts-scala_sjs1_3-$PACKAGE_VERSION.pom"
+            "https://pub.dev/api/packages/angular_ts/versions/$PACKAGE_VERSION"
+            "https://hex.pm/api/packages/angular_ts/releases/$PACKAGE_VERSION"
+          )
+
+          for url in "${urls[@]}"; do
+            curl --fail --silent --show-error "$url" --output /dev/null
+          done
 
       - name: Extract curated release notes
         env:

@@ -1,0 +1,23 @@
+{:source-paths ["src" "demo/src" "test/src"]
+ :dependencies [[clj-kondo/clj-kondo "2026.05.25"]
+                [dev.weavejester/cljfmt "0.16.5"]]
+ :builds
+ {:test
+  {:target :node-test
+   :output-to "target/cljs-test.js"
+   :ns-regexp "-test$"
+   :autorun true
+   :compiler-options {:warnings-as-errors true}}
+  :todo
+  {:target :browser
+   :output-dir "demo/dist"
+   :asset-path "/integrations/closure/clojurescript/demo/dist"
+   :modules {:compiled {:entries [angular-ts.demo.todo
+                                  angular-ts.facade-compile]}}
+   :compiler-options {:optimizations :advanced
+                      :language-in :ecmascript-2020
+                      :language-out :ecmascript-2020
+                      :externs ["../externs/angular.js"]
+                      :infer-externs true
+                      :warnings-as-errors true
+                      :warnings {:infer-warning true}}}}}

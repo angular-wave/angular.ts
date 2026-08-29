@@ -1,4 +1,4 @@
-.PHONY: all root-types compile test scaladoc-check generate generate-check parity example-build runtime-build runtime-test check release-readiness package-local release-check publish-local clean
+.PHONY: all root-types compile test scaladoc-check generate generate-check parity example-build runtime-build runtime-test check release-readiness package-local package-check release-check publish-local publish-central clean
 
 SBT ?= sbt
 SBT_FLAGS ?= --batch --no-server
@@ -42,12 +42,22 @@ release-readiness:
 	$(NODE) tool/check_release_readiness.mjs
 
 package-local:
-	$(SBT) $(SBT_FLAGS) package
+	$(SBT) $(SBT_FLAGS) "angularTsScala/package"
 
-release-check: check release-readiness package-local
+package-check:
+	$(SBT) $(SBT_FLAGS) \
+		"angularTsScala/makePom" \
+		"angularTsScala/Compile/packageBin" \
+		"angularTsScala/Compile/packageSrc" \
+		"angularTsScala/Compile/packageDoc"
 
-publish-local:
-	$(SBT) $(SBT_FLAGS) publishLocal
+release-check: check release-readiness package-check
+
+publish-local: release-readiness
+	$(SBT) $(SBT_FLAGS) "angularTsScala/publishLocal"
+
+publish-central: release-readiness
+	$(SBT) $(SBT_FLAGS) "angularTsScala/publishSigned" sonaRelease
 
 clean:
 	$(SBT) $(SBT_FLAGS) clean

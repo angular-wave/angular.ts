@@ -12,7 +12,7 @@ trait ProgrammaticViewContext[+Controller, +Required] extends js.Object:
 
   val scope: Scope = js.native
 
-  val element: HTMLElement = js.native
+  val host: HTMLElement = js.native
 
   val transclude: js.Function = js.native
 

@@ -41,7 +41,7 @@ or an `any`-style open value, and for unions or dependent indexed types that
 Java cannot represent without claiming a narrower contract. It is not used as
 the default for a representable TypeScript type.
 
-Programmatic views generate named `ComponentView` and `DirectiveView`
+Programmatic views generate named `ProgrammaticView` and `ProgrammaticView`
 callbacks. Their context contracts expose ordinary Java accessors such as
 `getController()`, `getScope()`, and `getElement()`. `Angular.tags(...)`
 provides the namespaced tag collection; property-based HTML tag access remains
@@ -59,7 +59,7 @@ The published artifact uses GitHub-owned Maven Central coordinates:
 ```xml
 <groupId>io.github.angular-wave</groupId>
 <artifactId>angular-ts-java</artifactId>
-<version>0.33.2</version>
+<version>0.34.0</version>
 ```
 
 The generated Java package prefix remains `org.angular.ts`, matching the
@@ -214,9 +214,9 @@ http://localhost:4000/integrations/closure/java/demo/index.html
 
 ## Publish
 
-The `release` profile adds source, javadoc, signing, and Maven Central
-publishing plugins. The J2CL demo is an integration check only and is not
-published.
+Normal builds attach the source JAR. The `release` profile adds Javadoc,
+signing, and Maven Central publishing plugins. The J2CL demo is an integration
+check only and is not published.
 
 Tagged releases publish this artifact through `.github/workflows/release.yml`.
 The workflow reads the Central Portal token and signing key from
@@ -262,7 +262,7 @@ artifact on the compiler's annotation-processor path:
 <dependency>
   <groupId>io.github.angular-wave</groupId>
   <artifactId>angular-ts-java</artifactId>
-  <version>0.33.2</version>
+  <version>0.34.0</version>
 </dependency>
 
 <plugin>
@@ -273,7 +273,7 @@ artifact on the compiler's annotation-processor path:
       <path>
         <groupId>io.github.angular-wave</groupId>
         <artifactId>angular-ts-java</artifactId>
-        <version>0.33.2</version>
+        <version>0.34.0</version>
       </path>
     </annotationProcessorPaths>
     <annotationProcessors>
@@ -283,7 +283,9 @@ artifact on the compiler's annotation-processor path:
 </plugin>
 ```
 
-For the Vertispan J2CL Maven plugin, use `PREFER_MAVEN`, add
+The primary artifact contains transpilable binding sources and
+`META-INF/externs/angular-ts.externs.js`; Vertispan consumes both directly from
+the dependency. Use `PREFER_MAVEN`, add
 `target/generated-sources/annotations` as a source root, select
 `goog:angular.ts.generated.entrypoint` as the Closure entry point, and pass
 `target/classes/META-INF/externs/angular-ts-template.externs.js` as an extern.
@@ -296,8 +298,8 @@ processing:
 
 ```kotlin
 dependencies {
-    implementation("io.github.angular-wave:angular-ts-java:0.33.2")
-    annotationProcessor("io.github.angular-wave:angular-ts-java:0.33.2")
+    implementation("io.github.angular-wave:angular-ts-java:0.34.0")
+    annotationProcessor("io.github.angular-wave:angular-ts-java:0.34.0")
 }
 ```
 

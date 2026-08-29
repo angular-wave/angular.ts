@@ -1,17 +1,17 @@
 import type {
   ComponentDefinition,
-  DirectiveViewContext,
-  ViewChild,
-  ViewReader,
+  ProgrammaticViewContext,
+  ProgrammaticViewChild,
+  ProgrammaticViewReader,
 } from "../../interface.ts";
 import {
   attrs,
   each,
-  materializeComponentView,
+  materializeProgrammaticView,
   props,
   tagNS,
   tags,
-  type KeyedView,
+  type ProgrammaticKeyedView,
 } from "./programmatic-view.ts";
 
 describe("view API", () => {
@@ -39,19 +39,19 @@ describe("view API", () => {
   });
 
   it("omits both boolean child values", () => {
-    const nodes = materializeComponentView([true, "visible", false]);
+    const nodes = materializeProgrammaticView([true, "visible", false]);
 
     expect(nodes.length).toBe(1);
     expect(nodes[0].textContent).toBe("visible");
   });
 
   it("types keyed bindings as view children", () => {
-    const binding: KeyedView = each(
+    const binding: ProgrammaticKeyedView = each(
       () => [{ id: 1 }],
       (item) => item.id,
-      (item: ViewReader<{ id: number }>) => String(item().id),
+      (item: ProgrammaticViewReader<{ id: number }>) => String(item().id),
     );
-    const child: ViewChild = binding;
+    const child: ProgrammaticViewChild = binding;
 
     expect(child).toBe(binding);
   });
@@ -67,18 +67,17 @@ describe("view API", () => {
     expect(circle instanceof SVGCircleElement).toBeTrue();
   });
 
-  it("exposes host with a compatible element alias", () => {
+  it("exposes the host element", () => {
     const host = document.createElement("div");
     const context = {
       controller: undefined,
       required: undefined,
       scope: {} as ng.Scope,
       host,
-      element: host,
       transclude: undefined,
       onDestroy: () => () => undefined,
-    } satisfies DirectiveViewContext;
+    } satisfies ProgrammaticViewContext;
 
-    expect(context.host).toBe(context.element);
+    expect(context.host).toBe(context.host);
   });
 });

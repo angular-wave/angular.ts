@@ -1,9 +1,9 @@
-# AngularTS Scala.js Facades 0.30.0
+# AngularTS Scala.js Facades 0.34.0
 
 Compatible runtime:
 
-- AngularTS npm package: 0.30.0
-- Maven coordinates: io.github.angular-ts::angular-ts-scalajs
+- AngularTS npm package: 0.34.0
+- Maven coordinate: io.github.angular-wave:angular-ts-scala_sjs1_3
 
 ## Scope
 
@@ -28,4 +28,5 @@ make release-check
 make publish-local
 ```
 
-Remote repository credentials are intentionally not configured in this package.
+Tag releases publish signed binary, source, Scaladoc, and POM artifacts through
+the Maven Central Portal after the complete repository CI gate passes.

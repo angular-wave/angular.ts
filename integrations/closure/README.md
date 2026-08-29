@@ -38,7 +38,7 @@ Supported direction:
 - AngularTS is loaded as a prebuilt external global.
 
 Programmatic component and directive views are part of the generated extern
-surface. Closure sees documented `ng.ComponentView`, context, child, property,
+surface. Closure sees documented `ng.ProgrammaticView`, context, child, property,
 tag, and tag-collection contracts, including `angular.tags`.
 
 ## WASM Scope And App Models

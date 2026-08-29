@@ -1,5 +1,5 @@
 ThisBuild / scalaVersion := "3.3.3"
-ThisBuild / organization := "io.github.angular-ts"
+ThisBuild / organization := "io.github.angular-wave"
 lazy val angularTsRuntimeVersion = settingKey[String](
   "AngularTS npm package version this Scala.js facade build targets.",
 )
@@ -7,6 +7,31 @@ lazy val angularTsRuntimeVersion = settingKey[String](
 ThisBuild / version := angularTsRuntimeVersion.value
 ThisBuild / description := "Scala.js facades for AngularTS"
 ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
+ThisBuild / homepage := Some(url("https://github.com/angular-wave/angular.ts"))
+ThisBuild / scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/angular-wave/angular.ts"),
+    "scm:git:git@github.com:angular-wave/angular.ts.git",
+  ),
+)
+ThisBuild / developers := List(
+  Developer(
+    "angular-wave",
+    "Angular Wave maintainers",
+    "anatolyostrovsky@gmail.com",
+    url("https://github.com/angular-wave"),
+  ),
+)
+ThisBuild / versionScheme := Some("early-semver")
+ThisBuild / pomIncludeRepository := { _ => false }
+ThisBuild / publishMavenStyle := true
+ThisBuild / publishTo := {
+  val centralSnapshots =
+    "https://central.sonatype.com/repository/maven-snapshots/"
+
+  if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+  else localStaging.value
+}
 
 ThisBuild / angularTsRuntimeVersion := {
   val packageJson = IO.read(baseDirectory.value / ".." / ".." / "package.json")
@@ -46,9 +71,8 @@ lazy val angularTsScala =
     .enablePlugins(ScalaJSPlugin)
     .settings(commonSettings)
     .settings(
-      name := "angular-ts-scalajs",
+      name := "angular-ts-scala",
       scalaJSUseMainModuleInitializer := false,
-      publishMavenStyle := true,
       Compile / scalaSource := baseDirectory.value / "src" / "main" / "scala",
       Test / scalaSource := baseDirectory.value / "src" / "test" / "scala",
     )

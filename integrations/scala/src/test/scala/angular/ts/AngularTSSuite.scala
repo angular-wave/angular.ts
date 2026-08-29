@@ -1305,6 +1305,30 @@ class AngularTSSuite extends munit.FunSuite:
       true,
     )
 
+  test("ng module model factory crosses the runtime boundary as a JavaScript function"):
+    final class PlayerModel(val score: Int) extends js.Object
+
+    var capturedName = ""
+    var capturedInitial: js.Any = js.undefined
+    val rawModuleObject = js.Dynamic.literal(name = "demo")
+    val registerModel: js.Function2[String, js.Any, RuntimeNgModule] =
+      (name: String, initial: js.Any) =>
+        capturedName = name
+        capturedInitial = initial
+        rawModuleObject.asInstanceOf[RuntimeNgModule]
+    rawModuleObject.updateDynamic("model")(registerModel)
+
+    val module = NgModule(rawModuleObject.asInstanceOf[RuntimeNgModule])
+    val token = AngularTS.token[Model[PlayerModel]]("player")
+
+    assertEquals(module.model(token, () => new PlayerModel(7)), module)
+    assertEquals(capturedName, "player")
+    assert(capturedInitial.isInstanceOf[js.Function])
+    assertEquals(
+      capturedInitial.asInstanceOf[js.Function0[PlayerModel]]().score,
+      7,
+    )
+
   test("app model tokens and lifecycle builders emit sync options"):
     final class PlayerModel(var x: Double, var y: Double) extends js.Object
 

@@ -8,31 +8,22 @@ export type {
 } from "./angular-runtime.ts";
 export type { ErrorFormattingConfig, Validator } from "./shared/interface.ts";
 export type {
-  ComponentView,
-  ComponentViewChild,
-  ComponentViewContext,
-  ComponentViewPrimitive,
+  ProgrammaticView,
+  ProgrammaticViewChild,
+  ProgrammaticViewContext,
+  ProgrammaticViewPrimitive,
   ComponentDefinition,
-  DirectiveView,
-  DirectiveViewContext,
-  ViewChild,
-  ViewContext,
-  ViewPrimitive,
-  ViewReader,
+  ProgrammaticViewReader,
 } from "./interface.ts";
 export type {
-  ComponentViewProperties,
-  ComponentViewPropertyValue,
-  ComponentViewTag,
-  ComponentViewTags,
-  KeyedView,
-  ViewProperties,
-  ViewPropertyValue,
-  ViewAttributeValue,
-  ViewAttributes,
-  ViewLiteralProperties,
-  ViewTag,
-  ViewTags,
+  ProgrammaticViewProperties,
+  ProgrammaticViewPropertyValue,
+  ProgrammaticViewTag,
+  ProgrammaticViewTags,
+  ProgrammaticKeyedView,
+  ProgrammaticViewAttributeValue,
+  ProgrammaticViewAttributes,
+  ProgrammaticViewLiteralProperties,
 } from "./core/compile/programmatic-view.ts";
 
 export type {
@@ -592,11 +583,11 @@ export type CompileService = import("./core/compile/compile.ts").CompileFn;
 export type EventBusService =
   import("./services/event-bus/event-bus.ts").EventBus;
 
-/** Ambient `ng.ExceptionHandlerService` compatibility alias. */
+/** Public `$exceptionHandler` injectable contract. */
 export type ExceptionHandlerService =
   import("./services/exception/exception.ts").ExceptionHandler;
 
-/** Ambient `ng.HttpParamSerializerService` compatibility alias. */
+/** Public `$httpParamSerializer` injectable contract. */
 export type HttpParamSerializerService =
   import("./services/http/http.ts").HttpParamSerializer;
 
@@ -606,13 +597,13 @@ export type InjectorService<TCustomServices extends object = object> =
 
 export type { InjectionTokenMap } from "./interface.ts";
 
-/** Ambient `ng.LocationService` compatibility alias for `$location`. */
+/** Public `$location` injectable contract. */
 export type LocationService =
   import("./services/location/location.ts").Location;
 
 export type { StateRegistryService } from "./router/state/state-registry.ts";
 export type { TemplateCacheService } from "./services/template-cache/template-cache.ts";
 
-/** Ambient `ng.TransitionsService` compatibility alias for router hooks. */
+/** Public `$transitions` injectable contract for router hooks. */
 export type TransitionsService =
   import("./router/transition/interface.ts").TransitionService;

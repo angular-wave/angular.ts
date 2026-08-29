@@ -137,8 +137,8 @@ class AppContext {
             return this._models.get(name);
         }
         const initial = factory();
-        if (!isPlainModelRoot(initial)) {
-            throw new Error(`Model '${name}' must be initialized with a plain object root.`);
+        if (!isModelRoot(initial)) {
+            throw new Error(`Model '${name}' must be initialized with an object root.`);
         }
         const model = this.createReactive(initial, {
             injector: options.injector,
@@ -154,8 +154,8 @@ class AppContext {
     }
     createReactive(target, options = {}) {
         this._ensureAlive("create AppContext reactive models");
-        if (!isPlainModelRoot(target)) {
-            throw new Error("Reactive app models require a plain object root.");
+        if (!isModelRoot(target)) {
+            throw new Error("Reactive app models require an object root.");
         }
         const model = createScope(target, undefined, this.modelScheduler._listenerScheduler);
         if (this._scopeRuntime) {
@@ -290,6 +290,11 @@ class AppContext {
             hooks.splice(index, 1);
         }
     }
+}
+function isModelRoot(value) {
+    return (isObject(value) &&
+        !isArray(value) &&
+        Object.prototype.toString.call(value) === "[object Object]");
 }
 function isPlainModelRoot(value) {
     if (!isObject(value) || isArray(value)) {

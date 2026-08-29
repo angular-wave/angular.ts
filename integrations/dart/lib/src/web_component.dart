@@ -153,19 +153,6 @@ typedef AppComponentAttributeChanged<TScope> = void Function(
 /// Signature for app component scope factory.
 typedef AppComponentScopeFactory<TScope> = TScope Function();
 
-/// Backwards-compatible connected hook alias.
-typedef WebComponentConnected<TScope> = AppComponentConnected<TScope>;
-
-/// Backwards-compatible disconnected hook alias.
-typedef WebComponentDisconnected<TScope> = AppComponentDisconnected<TScope>;
-
-/// Backwards-compatible attribute changed hook alias.
-typedef WebComponentAttributeChanged<TScope>
-    = AppComponentAttributeChanged<TScope>;
-
-/// Backwards-compatible scope factory alias.
-typedef WebComponentScopeFactory<TScope> = AppComponentScopeFactory<TScope>;
-
 /// Constructor for a native custom element backed by an AngularTS child scope.
 typedef ScopeElementConstructor<TScope> = CustomElementConstructor;
 
@@ -354,6 +341,3 @@ final class AppComponent<TScope> implements unsafe.JsConvertible {
     }).toJS;
   }
 }
-
-/// Backwards-compatible alias for the former options-backed name.
-typedef WebComponent<TScope> = AppComponent<TScope>;

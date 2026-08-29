@@ -67,7 +67,6 @@ const sectionNavigation = [
   ["values", "Values", 160],
   ["integrations", "Integrations", 170],
   ["migration", "Migration", 180],
-  ["provider", "Legacy provider migration", 190],
 ];
 
 for (const [section, expectedTitle, expectedWeight] of sectionNavigation) {

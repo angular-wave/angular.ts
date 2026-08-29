@@ -122,26 +122,24 @@ import type {
   AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
   Component as TComponent,
   ComponentDefinition as TComponentDefinition,
-  ComponentView as TComponentView,
-  ComponentViewChild as TComponentViewChild,
-  ComponentViewContext as TComponentViewContext,
-  ComponentViewPrimitive as TComponentViewPrimitive,
+  ProgrammaticView as TProgrammaticView,
+  ProgrammaticViewChild as TProgrammaticViewChild,
+  ProgrammaticViewContext as TProgrammaticViewContext,
+  ProgrammaticViewPrimitive as TProgrammaticViewPrimitive,
   Controller as TController,
   ControllerConstructor as TControllerConstructor,
   Injectable as TInjectable,
   DirectiveCompileFn as TDirectiveCompileFn,
   DirectiveController as TDirectiveController,
   DirectivePrePost as TDirectivePrePost,
-  DirectiveView as TDirectiveView,
-  DirectiveViewContext as TDirectiveViewContext,
   ProviderDefinition as TProviderDefinition,
   Expression as TExpression,
 } from "./interface.ts";
 import type {
-  ComponentViewProperties as TComponentViewProperties,
-  ComponentViewPropertyValue as TComponentViewPropertyValue,
-  ComponentViewTag as TComponentViewTag,
-  ComponentViewTags as TComponentViewTags,
+  ProgrammaticViewProperties as TProgrammaticViewProperties,
+  ProgrammaticViewPropertyValue as TProgrammaticViewPropertyValue,
+  ProgrammaticViewTag as TProgrammaticViewTag,
+  ProgrammaticViewTags as TProgrammaticViewTags,
 } from "./core/compile/programmatic-view.ts";
 import type {
   SseConnection as TSseConnection,
@@ -323,22 +321,32 @@ declare global {
       TElement extends HTMLElement = HTMLElement,
     > = TComponentDefinition<TControllerInstance, TScopeInstance, TElement>;
 
-    export type ComponentView = TComponentView;
+    export type ProgrammaticView<
+      TController = unknown,
+      TRequired = undefined,
+      TScope extends Scope = Scope,
+      TElement extends Element = Element,
+    > = TProgrammaticView<TController, TRequired, TScope, TElement>;
 
-    export type ComponentViewChild = TComponentViewChild;
+    export type ProgrammaticViewChild = TProgrammaticViewChild;
 
-    export type ComponentViewContext = TComponentViewContext;
+    export type ProgrammaticViewContext<
+      TController = unknown,
+      TRequired = undefined,
+      TScope extends Scope = Scope,
+      TElement extends Element = Element,
+    > = TProgrammaticViewContext<TController, TRequired, TScope, TElement>;
 
-    export type ComponentViewPrimitive = TComponentViewPrimitive;
+    export type ProgrammaticViewPrimitive = TProgrammaticViewPrimitive;
 
-    export type ComponentViewProperties = TComponentViewProperties;
+    export type ProgrammaticViewProperties = TProgrammaticViewProperties;
 
-    export type ComponentViewPropertyValue = TComponentViewPropertyValue;
+    export type ProgrammaticViewPropertyValue = TProgrammaticViewPropertyValue;
 
-    export type ComponentViewTag<TElement extends Element = HTMLElement> =
-      TComponentViewTag<TElement>;
+    export type ProgrammaticViewTag<TElement extends Element = HTMLElement> =
+      TProgrammaticViewTag<TElement>;
 
-    export type ComponentViewTags = TComponentViewTags;
+    export type ProgrammaticViewTags = TProgrammaticViewTags;
 
     export type Controller = TController;
 
@@ -361,16 +369,6 @@ declare global {
     export type DirectiveLinkFn<T = unknown> = TDirectiveLinkFn<T>;
 
     export type DirectivePrePost = TDirectivePrePost;
-
-    export type DirectiveView<
-      TController = unknown,
-      TRequired = TDirectiveController,
-    > = TDirectiveView<TController, TRequired>;
-
-    export type DirectiveViewContext<
-      TController = unknown,
-      TRequired = TDirectiveController,
-    > = TDirectiveViewContext<TController, TRequired>;
 
     export type NgModule = TNgModule;
 

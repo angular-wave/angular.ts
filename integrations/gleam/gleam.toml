@@ -1,9 +1,12 @@
 name = "angular_ts"
-version = "0.0.1"
+version = "0.34.0"
 target = "javascript"
 description = "Official Gleam facade for authoring AngularTS applications."
 licences = ["MIT"]
-repository = { type = "github", user = "angular-wave", repo = "angular.ts" }
+repository = { type = "github", user = "angular-wave", repo = "angular.ts", path = "integrations/gleam" }
+links = [
+  { title = "AngularTS documentation", href = "https://angular-wave.github.io/angular.ts/" },
+]
 
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"

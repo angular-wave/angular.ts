@@ -505,6 +505,13 @@ describe("AppContext", () => {
     expect(context.models.get("user")).toBe(model);
   });
 
+  it("should reject model factories without an object root", () => {
+    expect(() => {
+      context.registerModel("invalid", () => null as never);
+    }).toThrowError("Model 'invalid' must be initialized with an object root.");
+    expect(context.getModel("invalid")).toBeUndefined();
+  });
+
   it("should create reactive models on the AppContext model scheduler", () => {
     const root = context.createRoot({ rootScope: createRootScope() });
     const user = context.createReactive({ name: "John" });
@@ -623,20 +630,35 @@ describe("AppContext", () => {
     }).toThrowError("Model 'user' is already registered with this AppContext.");
   });
 
-  it("should reject non-plain model roots", () => {
+  it("should accept class model roots and reject unsafe object roots", () => {
     class UserModel {
       name = "John";
+
+      rename(name: string): void {
+        this.name = name;
+      }
     }
 
-    expect(() => {
-      context.createReactive([] as unknown as Record<string, unknown>);
-    }).toThrowError("Reactive app models require a plain object root.");
+    for (const invalid of [
+      [],
+      new Date(),
+      new Map(),
+      document.createElement("div"),
+    ]) {
+      expect(() => {
+        context.createReactive(invalid as unknown as Record<string, unknown>);
+      }).toThrowError("Reactive app models require an object root.");
+    }
 
-    expect(() => {
-      context.registerModel("classModel", () => new UserModel() as never);
-    }).toThrowError(
-      "Model 'classModel' must be initialized with a plain object root.",
+    const model = context.registerModel(
+      "classModel",
+      () => new UserModel() as UserModel & Record<string, unknown>,
     );
+
+    model.rename("Jane");
+
+    expect(model.name).toBe("Jane");
+    expect(model instanceof UserModel).toBeTrue();
   });
 
   it("should keep app-owned models after root destruction", () => {

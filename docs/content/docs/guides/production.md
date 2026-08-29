@@ -26,7 +26,7 @@ states, offline behavior, and service-worker upgrade from the previous release.
 
 Retain the previous artifact. Determine whether storage migrations, server
 contracts, or service-worker caches make rollback incompatible. Prefer
-backward-compatible data changes.
+additive data changes.
 
 Attach a release identifier to errors and operations. After deployment, verify
 asset integrity, critical routes, request latency, error rate, and one synthetic

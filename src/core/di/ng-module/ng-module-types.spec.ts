@@ -774,8 +774,7 @@ module.config({
     loading: "loading",
     retry: 2,
     fallbackTo: "fallback",
-    errorBoundary: "error",
-    error: {
+    errorBoundary: {
       state: "error",
       params: {},
     },

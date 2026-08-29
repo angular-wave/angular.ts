@@ -91,10 +91,10 @@ const serviceWorkerMessageEvent = contents.get(
 const webSocketConfig = contents.get("org/angular/ts/ng/WebSocketConfig.java");
 const component = contents.get("org/angular/ts/ng/Component.java");
 const componentViewContext = contents.get(
-  "org/angular/ts/ng/ComponentViewContext.java",
+  "org/angular/ts/ng/ProgrammaticViewContext.java",
 );
 const directiveViewContext = contents.get(
-  "org/angular/ts/ng/DirectiveViewContext.java",
+  "org/angular/ts/ng/ProgrammaticViewContext.java",
 );
 
 assert(
@@ -196,20 +196,25 @@ assert(
   "Generated WebSocketConfig.protocols does not preserve its TypeScript array type.",
 );
 assert(
-  component?.includes("ComponentView getView()") &&
-    component?.includes("setView(ComponentView view)"),
-  "Generated Component.view does not preserve the named ComponentView callback.",
+  component?.includes(
+    "ProgrammaticView<TControllerInstance,Object,TScopeInstance,TElement> getView()",
+  ) &&
+    component?.includes(
+      "setView(ProgrammaticView<TControllerInstance,Object,TScopeInstance,TElement> view)",
+    ) &&
+    !component?.includes("ViewCallback"),
+  "Generated Component.view does not preserve the named ProgrammaticView callback.",
 );
 assert(
   componentViewContext?.includes("Controller getController()") &&
     componentViewContext?.includes("Scope getScope()") &&
     componentViewContext?.includes("TranscludeCallback getTransclude()"),
-  "Generated ComponentViewContext does not preserve idiomatic Java accessors.",
+  "Generated ProgrammaticViewContext does not preserve idiomatic Java accessors.",
 );
 assert(
   directiveViewContext?.includes("TRequired getRequired()") &&
     directiveViewContext?.includes("TController getController()"),
-  "Generated DirectiveViewContext does not preserve typed controller accessors.",
+  "Generated ProgrammaticViewContext does not preserve typed controller accessors.",
 );
 
 const httpService = contents.get("org/angular/ts/ng/HttpService.java");

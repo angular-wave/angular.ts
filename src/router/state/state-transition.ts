@@ -241,8 +241,7 @@ function getTransitionErrorBoundaryPolicy(
 ): EffectiveTransitionErrorBoundaryPolicy | undefined {
   const path = transition._treeChanges.to;
 
-  const routerPolicy =
-    transition._routerState._error ?? transition._routerState._errorBoundary;
+  const routerPolicy = transition._routerState._errorBoundary;
 
   let effective: EffectiveTransitionErrorBoundaryPolicy | undefined =
     routerPolicy !== undefined
@@ -254,9 +253,7 @@ function getTransitionErrorBoundaryPolicy(
 
   for (let i = 0; i < path.length; i++) {
     const state = path[i].state.self;
-    const policy =
-      state.policy?.transition?.error ??
-      state.policy?.transition?.errorBoundary;
+    const policy = state.policy?.transition?.errorBoundary;
 
     if (policy !== undefined) {
       effective = {

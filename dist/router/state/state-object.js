@@ -61,17 +61,10 @@ class StateObject {
         return (this === ref ||
             this.self === ref ||
             getStateDeclarationSource(this.self) === ref ||
-            this._pathName() === ref);
+            this.qualifiedName === ref);
     }
-    /**
-     * @deprecated this does not properly handle dot notation
-     * @returns {string} Returns a dot-separated name of the state.
-     */
-    fqn() {
-        return this._pathName();
-    }
-    /** @internal */
-    _pathName() {
+    /** Fully qualified state name including all named ancestors. */
+    get qualifiedName() {
         return (this.path ?? [])
             .map((state) => state.name)
             .filter(Boolean)
@@ -135,7 +128,7 @@ class StateObject {
             : undefined;
     }
     toString() {
-        return this._pathName();
+        return this.qualifiedName;
     }
 }
 

@@ -1,15 +1,68 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <script src="/dist/angular-ts.umd.min.js"></script>
+    <title>AngularTS Scala.js Todo Demo</title>
+    <link rel="stylesheet" href="/src/directive/http/demo.css" />
+    <style>
+      .todo-row {
+        align-items: center;
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+      }
+
+      .todo-row.is-done strong {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+    </style>
+    <script src="/dist/angular-ts.umd.js"></script>
   </head>
   <body>
-    <scala-greeting></scala-greeting>
-    <scala-label label="Bound attribute from Scala.js"></scala-label>
-    <p data-testid="scala-directive" scala-mark>Directive host</p>
-    <scala-panel></scala-panel>
-    <scala-native-card></scala-native-card>
+    <main class="demo-shell" ng-controller="TodoCtrl as $ctrl">
+      <section class="demo-hero">
+        <h1>Scala.js Todo App</h1>
+      </section>
+
+      <section class="demo-content">
+        <form ng-submit="$ctrl.add()" data-event-prevent>
+          <input
+            aria-label="New Scala.js todo"
+            name="todo"
+            type="text"
+            ng-model="$ctrl.newTodo"
+            ng-required="true"
+            placeholder="What needs doing?"
+          />
+          <button type="submit">Add</button>
+        </form>
+
+        <p id="scala-count" class="demo-note">
+          {{ $ctrl.tasks.length }} todos
+        </p>
+
+        <div class="demo-actions">
+          <button type="button" ng-click="$ctrl.archive()">
+            Archive completed
+          </button>
+        </div>
+
+        <div class="demo-stack">
+          <article
+            class="event-card todo-row"
+            ng-class="{ 'is-done': todo.done }"
+            ng-repeat="todo in $ctrl.tasks"
+          >
+            <strong>{{ todo.task }}</strong>
+            <label>
+              Done
+              <input type="checkbox" ng-model="todo.done" />
+            </label>
+          </article>
+        </div>
+      </section>
+    </main>
     <script src="./target/scala-3.3.3/angular-ts-scala-basic-app-fastopt/main.js"></script>
   </body>
 </html>

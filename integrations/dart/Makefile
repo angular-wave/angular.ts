@@ -1,4 +1,4 @@
-.PHONY: all deps analyze test parity generated-base-check manual-overrides-check generate generate-check format format-check check runtime-build runtime-test example-deps example-build demo clean
+.PHONY: all deps analyze test parity generated-base-check manual-overrides-check generate generate-check format format-check check runtime-build runtime-test example-deps example-build version-check package-check release-check publish demo clean
 
 DART ?= dart
 PLAYWRIGHT ?= ../../node_modules/.bin/playwright
@@ -54,6 +54,18 @@ example-deps:
 
 example-build: example-deps
 	cd $(EXAMPLE_DIR) && $(DART) compile js lib/main.dart -o web/main.dart.js
+
+version-check:
+	@test "$$(sed -n 's/^version: //p' pubspec.yaml)" = "$$(node -p 'require("../../package.json").version')" || \
+		(echo "Dart package version must match package.json" >&2; exit 1)
+
+package-check: version-check generate-check format-check analyze
+	$(DART) pub publish --dry-run
+
+release-check: check package-check
+
+publish: release-check
+	$(DART) pub publish --force
 
 demo: runtime-build example-build
 	@echo "Open http://localhost:4000/integrations/dart/example/basic_app/ after running make serve from the repository root."

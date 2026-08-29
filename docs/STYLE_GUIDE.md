@@ -48,7 +48,7 @@ Do not turn a reference page into a tutorial. Link to the relevant guide.
 
 Every inline reference to a public type must link to its generated TypeDoc page.
 For example, write
-[`ComponentViewContext`](static/typedoc/interfaces/ComponentViewContext.html)
+[`ProgrammaticViewContext`](static/typedoc/interfaces/ProgrammaticViewContext.html)
 instead of an unlinked code-formatted type name. The `docs-type-links-check`
 target enforces this rule in site content.
 

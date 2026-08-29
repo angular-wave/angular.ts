@@ -32,7 +32,7 @@ pub fn main() {
       ng.inject1(todo_store, controller),
     ),
   )
-  |> module.web_component(
+  |> module.app_component(
     "gleam-status",
     web_component.new("<strong>{{ status }}</strong>")
       |> web_component.input("status", web_component.input_string()),

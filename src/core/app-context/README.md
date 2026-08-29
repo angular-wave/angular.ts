@@ -75,8 +75,8 @@ teardown events.
 
 ## Reactivity Contract
 
-- App-owned models are plain-object roots and are proxied through scope listener
-  scheduling.
+- App-owned models are object roots, including class instances, and are proxied
+  through scope listener scheduling.
 - Model updates are scheduled via `modelScheduler` and flushed through the model
   owner.
 - App models are shared across all roots managed by the same `AppContext`.
@@ -86,8 +86,8 @@ teardown events.
 
 The current app policy is explicit and conservative:
 
-- Models must be plain object roots to avoid unsafe proxying of arrays and
-  primitives.
+- Models must be object roots. Arrays, collection objects, DOM nodes, and
+  primitives are rejected to avoid unsafe proxying.
 - `$rootScope` is preserved for UI scope ownership and event propagation.
 - DOM work that depends on a bootstrap root is root-owned, not app-owned.
 - App-owned scheduler errors route to the context exception handler.

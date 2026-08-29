@@ -325,9 +325,9 @@ export class AppContext {
 
     const initial = factory();
 
-    if (!isPlainModelRoot(initial)) {
+    if (!isModelRoot(initial)) {
       throw new Error(
-        `Model '${name}' must be initialized with a plain object root.`,
+        `Model '${name}' must be initialized with an object root.`,
       );
     }
 
@@ -353,8 +353,8 @@ export class AppContext {
   ): Model<T> {
     this._ensureAlive("create AppContext reactive models");
 
-    if (!isPlainModelRoot(target)) {
-      throw new Error("Reactive app models require a plain object root.");
+    if (!isModelRoot(target)) {
+      throw new Error("Reactive app models require an object root.");
     }
 
     const model = createScope(
@@ -541,6 +541,14 @@ export class AppContext {
       hooks.splice(index, 1);
     }
   }
+}
+
+function isModelRoot(value: unknown): value is ModelState {
+  return (
+    isObject(value) &&
+    !isArray(value) &&
+    Object.prototype.toString.call(value) === "[object Object]"
+  );
 }
 
 function isPlainModelRoot(value: unknown): value is ModelState {

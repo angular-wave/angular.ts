@@ -121,8 +121,6 @@ export class StateRuntime {
 
   /**
    * The latest successful state parameters
-   *
-   * @deprecated This is a passthrough through to [[Router.params]]
    */
   get params(): RawParams {
     return this._routerState._params;
@@ -615,17 +613,13 @@ export class StateRuntime {
     const routePolicy = this._getStatePolicyFromStateName(
       stateName,
       (state) => {
-        return (
-          state.policy?.transition?.error ??
-          state.policy?.transition?.errorBoundary
-        );
+        return state.policy?.transition?.errorBoundary;
       },
     );
 
     if (routePolicy) return routePolicy;
 
-    const routerPolicy =
-      this._routerState._error ?? this._routerState._errorBoundary;
+    const routerPolicy = this._routerState._errorBoundary;
 
     return routerPolicy !== undefined
       ? {

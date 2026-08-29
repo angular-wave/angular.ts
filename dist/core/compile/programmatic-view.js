@@ -257,14 +257,14 @@ function materializeChild(value, nodes) {
         nodes.push(document.createTextNode(String(value)));
     }
 }
-function materializeComponentView(value) {
+function materializeProgrammaticView(value) {
     const nodes = [];
     materializeChild(value, nodes);
     return nodes;
 }
 function appendChildren(element, children) {
     for (let index = 0; index < children.length; index++) {
-        const nodes = materializeComponentView(children[index]);
+        const nodes = materializeProgrammaticView(children[index]);
         for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
             element.appendChild(nodes[nodeIndex]);
         }
@@ -369,7 +369,7 @@ function disposeLinkedChildren(children) {
     children.length = 0;
 }
 function linkChildValue(value, parent, anchor, runtime) {
-    return linkMaterializedChildren(materializeComponentView(value), parent, anchor, runtime);
+    return linkMaterializedChildren(materializeProgrammaticView(value), parent, anchor, runtime);
 }
 function linkMaterializedChildren(rawNodes, parent, anchor, runtime) {
     const children = [];
@@ -443,7 +443,7 @@ function activateKeyedChildBinding(anchor, binding, runtime) {
                 _holder: holder,
                 _nodes: previous
                     ? []
-                    : materializeComponentView(binding._render(() => holder.value)),
+                    : materializeProgrammaticView(binding._render(() => holder.value)),
             });
         }
         const nextStates = new Map();
@@ -618,7 +618,6 @@ function createProgrammaticDirectiveCompile(options) {
                 required: requiredControllers,
                 scope,
                 host: element,
-                element,
                 transclude,
                 onDestroy(cleanup) {
                     if (!isFunction(cleanup)) {
@@ -651,7 +650,7 @@ function createProgrammaticDirectiveCompile(options) {
             const value = Reflect.apply(options.view, controller ?? null, [
                 context,
             ]);
-            const rawNodes = materializeComponentView(value);
+            const rawNodes = materializeProgrammaticView(value);
             const bindingDisposers = new Set();
             cleanups.push(() => {
                 for (const dispose of Array.from(bindingDisposers))
@@ -714,4 +713,4 @@ function sanitizeProgrammaticSrcset(value, valueOf, trustMediaUrl) {
         .join(", ");
 }
 
-export { PROGRAMMATIC_VIEW_MARKER, PROGRAMMATIC_VIEW_TEMPLATE, attrs, createProgrammaticComponentCompile, createProgrammaticDirectiveCompile, each, event, materializeComponentView, props, sanitizeProgrammaticSrcset, tag, tagNS, tags };
+export { PROGRAMMATIC_VIEW_MARKER, PROGRAMMATIC_VIEW_TEMPLATE, attrs, createProgrammaticComponentCompile, createProgrammaticDirectiveCompile, each, event, materializeProgrammaticView, props, sanitizeProgrammaticSrcset, tag, tagNS, tags };

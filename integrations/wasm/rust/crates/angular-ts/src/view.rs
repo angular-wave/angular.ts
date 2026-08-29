@@ -6,33 +6,33 @@ use js_sys::{Array, Function, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 
 /// DOM value returned by a programmatic component view.
-pub type ComponentViewChild = JsValue;
+pub type ProgrammaticViewChild = JsValue;
 
 /// Primitive text value accepted as a programmatic view child.
-pub type ComponentViewPrimitive = JsValue;
+pub type ProgrammaticViewPrimitive = JsValue;
 
 /// JavaScript callback registered as a programmatic component view.
-pub type ComponentView = Function;
+pub type ProgrammaticView = Function;
 
 /// Component registration definition accepted by AngularTS.
 pub type ComponentDefinition = Object;
 
 /// Property bag passed to a programmatic tag factory.
-pub type ComponentViewProperties = Object;
+pub type ProgrammaticViewProperties = Object;
 
 /// Property value accepted by a programmatic tag factory.
-pub type ComponentViewPropertyValue = JsValue;
+pub type ProgrammaticViewPropertyValue = JsValue;
 
 /// JavaScript function that creates one real DOM element.
-pub type ComponentViewTag = Function;
+pub type ProgrammaticViewTag = Function;
 
 /// Typed wrapper around the context supplied to a component view export.
 #[derive(Clone)]
-pub struct ComponentViewContext {
+pub struct ProgrammaticViewContext {
     raw: JsValue,
 }
 
-impl ComponentViewContext {
+impl ProgrammaticViewContext {
     /// Wraps the JavaScript context supplied by AngularTS.
     pub fn new(raw: JsValue) -> Self {
         Self { raw }
@@ -53,11 +53,6 @@ impl ComponentViewContext {
         self.property("host")
     }
 
-    /// Returns the compatibility alias for the component host element.
-    pub fn element(&self) -> Result<JsValue, JsValue> {
-        self.property("element")
-    }
-
     /// Returns the component transclusion callback.
     pub fn transclude(&self) -> Result<Function, JsValue> {
         self.property("transclude")?.dyn_into::<Function>()
@@ -75,11 +70,11 @@ impl ComponentViewContext {
 
 /// Wrapper around `angular.view.tags` and namespaced tag collections.
 #[derive(Clone)]
-pub struct ComponentViewTags {
+pub struct ProgrammaticViewTags {
     raw: JsValue,
 }
 
-impl ComponentViewTags {
+impl ProgrammaticViewTags {
     /// Resolves the global AngularTS tag collection.
     pub fn global() -> Result<Self, JsValue> {
         let angular = Reflect::get(&js_sys::global(), &JsValue::from_str("angular"))?;
@@ -101,11 +96,11 @@ impl ComponentViewTags {
     pub fn tag(
         &self,
         name: &str,
-        properties: &ComponentViewProperties,
-        children: &[ComponentViewChild],
-    ) -> Result<ComponentViewChild, JsValue> {
+        properties: &ProgrammaticViewProperties,
+        children: &[ProgrammaticViewChild],
+    ) -> Result<ProgrammaticViewChild, JsValue> {
         let factory =
-            Reflect::get(&self.raw, &JsValue::from_str(name))?.dyn_into::<ComponentViewTag>()?;
+            Reflect::get(&self.raw, &JsValue::from_str(name))?.dyn_into::<ProgrammaticViewTag>()?;
         let arguments = Array::new();
         arguments.push(properties);
         for child in children {

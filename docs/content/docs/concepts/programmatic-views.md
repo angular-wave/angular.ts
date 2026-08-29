@@ -63,9 +63,7 @@ The component is used like any template-backed component:
 ## Return view children
 
 A component or directive view can return any
-[`ViewChild`](../../../typedoc/types/ViewChild.html). The former
-[`ComponentViewChild`](../../../typedoc/types/ComponentViewChild.html) name is
-retained as a compatibility alias.
+[`ProgrammaticViewChild`](../../../typedoc/types/ProgrammaticViewChild.html).
 
 - A DOM `Node`.
 - A string, number, boolean, or bigint.
@@ -247,7 +245,7 @@ tags.ul(
 - The key selector receives the concrete item and must return a unique, stable
   key.
 - The renderer receives a reactive
-  [`ViewReader`](../../../typedoc/types/ViewReader.html) rather than an item
+  [`ProgrammaticViewReader`](../../../typedoc/types/ProgrammaticViewReader.html) rather than an item
   snapshot.
 
 Calling `todo()` reads the current value associated with that key. When a new
@@ -287,7 +285,7 @@ const otherCircle = tagNS('http://www.w3.org/2000/svg', 'circle', {
 ## Access the view context
 
 Component views receive a
-[`ComponentViewContext`](../../../typedoc/interfaces/ComponentViewContext.html)
+[`ProgrammaticViewContext`](../../../typedoc/interfaces/ProgrammaticViewContext.html)
 with these members:
 
 | Member       | Purpose                                                           |
@@ -295,12 +293,11 @@ with these members:
 | `controller` | The initialized component controller.                             |
 | `scope`      | The scope that owns reactive bindings and generated DOM.          |
 | `host`       | The component host element.                                       |
-| `element`    | Deprecated alias for `host`.                                      |
-| `transclude` | The transclusion function when transclusion is enabled.           |
+| | `transclude` | The transclusion function when transclusion is enabled.           |
 | `onDestroy`  | Registers view-owned cleanup and returns a cancellation function. |
 
 Directive views receive a
-[`DirectiveViewContext`](../../../typedoc/interfaces/DirectiveViewContext.html).
+[`ProgrammaticViewContext`](../../../typedoc/interfaces/ProgrammaticViewContext.html).
 It adds `required`, containing controllers resolved from the directive's
 `require` declaration. Its `controller` is `undefined` when none is declared.
 
@@ -353,8 +350,9 @@ runtime model:
 
 - `ProgrammaticTags` wraps `angular.tags`.
 - `ProgrammaticViewApi` wraps `angular.view` helpers.
-- `ProgrammaticViewContext` exposes `controller`, `required`, `scope`,
-  `element`, `transclude`, and `onDestroy`.
+- [`ProgrammaticViewContext`](../../../typedoc/interfaces/ProgrammaticViewContext.html)
+  exposes `controller`, `required`, `scope`, `host`, `transclude`, and
+  `onDestroy`.
 - Integration `each()` renderers receive an item reader, matching TypeScript.
 
 Plain callback functions are reactive in normal child and property positions.

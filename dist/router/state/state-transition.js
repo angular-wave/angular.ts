@@ -109,7 +109,7 @@ function isFallbackTarget(target) {
 }
 function getTransitionErrorBoundaryPolicy(transition) {
     const path = transition._treeChanges.to;
-    const routerPolicy = transition._routerState._error ?? transition._routerState._errorBoundary;
+    const routerPolicy = transition._routerState._errorBoundary;
     let effective = routerPolicy !== undefined
         ? {
             state: transition.to(),
@@ -118,8 +118,7 @@ function getTransitionErrorBoundaryPolicy(transition) {
         : undefined;
     for (let i = 0; i < path.length; i++) {
         const state = path[i].state.self;
-        const policy = state.policy?.transition?.error ??
-            state.policy?.transition?.errorBoundary;
+        const policy = state.policy?.transition?.errorBoundary;
         if (policy !== undefined) {
             effective = {
                 state,

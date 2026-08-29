@@ -24,7 +24,7 @@ class AngularTsTest {
         val rawContext = js("({})")
         rawContext.controller = "ready"
         rawContext.scope = js("({})")
-        rawContext.element = host
+        rawContext.host = host
         rawContext.transclude = { _: Any? -> Unit }
         val context = ProgrammaticViewContext<String, Unit>(rawContext)
         val rawTags: dynamic = { _: String -> js("({})") }
@@ -35,7 +35,7 @@ class AngularTsTest {
         }
 
         assertEquals("ready", context.controller)
-        assertEquals(host, context.element)
+        assertEquals(host, context.host)
         assertEquals("view", ProgrammaticTags(rawTags).tag("section", children = arrayOf("view")).textContent)
     }
 

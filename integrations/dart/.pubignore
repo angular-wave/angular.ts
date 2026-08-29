@@ -1,0 +1,8 @@
+.dart_tool/
+build/
+example/basic_app/web/main.dart.js*
+Makefile
+PLAN.md
+playwright.config.ts
+test/
+tool/

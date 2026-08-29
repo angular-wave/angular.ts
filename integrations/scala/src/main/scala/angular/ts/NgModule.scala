@@ -73,10 +73,8 @@ final class NgModule private[ts] (private[ts] val raw: RuntimeNgModule):
       token: Token[Model[A]],
       factory: () => A,
   ): NgModule =
-    raw.model(
-      token.name,
-      (() => factory().asInstanceOf[js.Any]).asInstanceOf[js.Function],
-    )
+    val modelFactory: js.Function0[js.Any] = () => factory().asInstanceOf[js.Any]
+    raw.model(token.name, modelFactory)
     this
 
   def model[A <: js.Object](

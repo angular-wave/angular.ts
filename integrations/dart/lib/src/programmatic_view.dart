@@ -35,7 +35,7 @@ final class ProgrammaticViewContext<TController, TRequired> {
       Scope<Object?>.unsafe(unsafe.getProperty(raw, 'scope'));
 
   /// Host element associated with the component or directive.
-  HTMLElement get element => unsafe.getProperty(raw, 'element') as HTMLElement;
+  HTMLElement get host => unsafe.getProperty(raw, 'host') as HTMLElement;
 
   /// Runtime transclusion callback.
   JSFunction get transclude =>

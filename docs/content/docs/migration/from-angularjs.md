@@ -35,7 +35,6 @@ for DOM-wrapper assumptions and code that manually starts digest work.
 
 ## Next step
 
-Use the [public API
-migration]({{< relref "/docs/concepts/public-api-migration" >}}) and [provider
-migration]({{< relref "/docs/concepts/provider-migration" >}}) inventories for
-exact replacements.
+Continue with [application structure]({{< relref "/docs/guides/application-structure" >}})
+and the [server-first guide]({{< relref "/docs/guides/server-first" >}}). Use
+the current service and module references for exact APIs.

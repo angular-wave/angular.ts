@@ -34,10 +34,37 @@ export function get_property(target, key) {
   return target[key];
 }
 
-export function programmatic_tag(namespaceUri, name, properties, children) {
-  const tags = namespaceUri === "" ? getAngular().tags : getAngular().tags(namespaceUri);
+export function programmatic_event(listener) {
+  return getAngular().view.event(listener);
+}
 
-  return tags[name](Object.fromEntries(properties), ...children);
+export function programmatic_event_with_options(listener, options) {
+  return getAngular().view.event(listener, options);
+}
+
+export function programmatic_attrs(properties) {
+  return getAngular().view.attrs(Object.fromEntries(properties));
+}
+
+export function programmatic_props(properties) {
+  return getAngular().view.props(Object.fromEntries(properties));
+}
+
+export function programmatic_each(read, key, render) {
+  return getAngular().view.each(read, key, render);
+}
+
+export function programmatic_view_tag(name, properties, children) {
+  return getAngular().view.tag(name, Object.fromEntries(properties), ...children);
+}
+
+export function programmatic_view_tag_ns(namespaceUri, name, properties, children) {
+  return getAngular().view.tagNS(
+    namespaceUri,
+    name,
+    Object.fromEntries(properties),
+    ...children,
+  );
 }
 
 export function call_method1(target, method, arg1) {

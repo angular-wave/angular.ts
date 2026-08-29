@@ -243,7 +243,7 @@ ng.Component.prototype.templateUrl;
 
 /**
  * Programmatic real-DOM view factory. It runs during linking after controller bindings and `onInit`, and is mutually exclusive with template, templateUrl, and replace.
- * @type {(function(!ng.ComponentViewContext): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
+ * @type {(function(!ng.ProgrammaticViewContext<TControllerInstance, undefined, TScopeInstance, TElement>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
  */
 ng.Component.prototype.view;
 
@@ -310,7 +310,7 @@ ng.ComponentDefinition.prototype.require;
 
 /**
  * Public ComponentDefinition.view member exposed by the AngularTS namespace contract.
- * @type {(function(!ng.ComponentViewContext): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
+ * @type {(function(!ng.ProgrammaticViewContext<TControllerInstance, undefined, TScopeInstance, TElement>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
  */
 ng.ComponentDefinition.prototype.view;
 
@@ -333,107 +333,108 @@ ng.ComponentDefinition.prototype.templateUrl;
 ng.ComponentDefinition.prototype.replace;
 
 /**
- * Public AngularTS ComponentView contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function(!ng.ComponentViewContext): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
+ * Public AngularTS ProgrammaticView contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!ng.ProgrammaticViewContext<?, ?, ?, ?>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
  */
-ng.ComponentView;
+ng.ProgrammaticView;
 
 /**
- * DOM content accepted from programmatic component and directive views. Functions are reactive child readers, arrays are flattened recursively, and existing nodes are moved rather than cloned. `null`, `undefined`, and booleans render no DOM content. Document fragments contribute their children.
+ * DOM content accepted from a programmatic view. Readers are reactive, arrays are flattened recursively, and existing nodes are moved rather than cloned.
  * @typedef {(!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
  */
-ng.ComponentViewChild;
+ng.ProgrammaticViewChild;
 
 /**
- * Public AngularTS ComponentViewContext contract exposed through the global ng namespace for Closure-annotated applications.
+ * Public AngularTS ProgrammaticViewContext contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TController, TRequired, TScope, TElement
  * @record
  */
-ng.ComponentViewContext = function() {};
+ng.ProgrammaticViewContext = function() {};
 
 /**
- * Component controller after bindings and `onInit` have run.
- * @type {!Object}
+ * Controller associated with the view.
+ * @type {TController}
  */
-ng.ComponentViewContext.prototype.controller;
+ng.ProgrammaticViewContext.prototype.controller;
+
+/**
+ * Controllers resolved through a directive's require declaration.
+ * @type {TRequired}
+ */
+ng.ProgrammaticViewContext.prototype.required;
 
 /**
  * Scope that owns the generated DOM and reactive readers.
- * @type {!ng.Scope}
+ * @type {TScope}
  */
-ng.ComponentViewContext.prototype.scope;
+ng.ProgrammaticViewContext.prototype.scope;
 
 /**
  * Native host element matched by the component or directive.
- * @type {!HTMLElement}
+ * @type {TElement}
  */
-ng.ComponentViewContext.prototype.host;
-
-/**
- * Public ComponentViewContext.element member exposed by the AngularTS namespace contract.
- * @type {!HTMLElement}
- */
-ng.ComponentViewContext.prototype.element;
+ng.ProgrammaticViewContext.prototype.host;
 
 /**
  * Transclusion function, when transclusion is enabled.
  * @type {(!ng.TranscludeFn|undefined)}
  */
-ng.ComponentViewContext.prototype.transclude;
+ng.ProgrammaticViewContext.prototype.transclude;
 
 /**
  * Registers cleanup and returns a cancellation function.
  * @param {function(): void} cleanup Value supplied for the cleanup parameter.
  * @return {function(): void}
  */
-ng.ComponentViewContext.prototype.onDestroy = function(cleanup) {};
+ng.ProgrammaticViewContext.prototype.onDestroy = function(cleanup) {};
 
 /**
- * Primitive value accepted as a view child. Booleans render no DOM content.
+ * Primitive accepted as a programmatic view child. Booleans render no content.
  * @typedef {(bigint|boolean|number|string)}
  */
-ng.ComponentViewPrimitive;
+ng.ProgrammaticViewPrimitive;
 
 /**
- * Public AngularTS ComponentViewProperties contract exposed through the global ng namespace for Closure-annotated applications.
+ * Public AngularTS ProgrammaticViewProperties contract exposed through the global ng namespace for Closure-annotated applications.
  * @record
  */
-ng.ComponentViewProperties = function() {};
+ng.ProgrammaticViewProperties = function() {};
 
 /**
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/role)
  * @type {(!Object|null|string|undefined)}
  */
-ng.ComponentViewProperties.prototype.role;
+ng.ProgrammaticViewProperties.prototype.role;
 
 /**
- * Public ComponentViewProperties.class member exposed by the AngularTS namespace contract.
+ * Public ProgrammaticViewProperties.class member exposed by the AngularTS namespace contract.
  * @type {(function(): (null|string|undefined)|null|string|undefined)}
  */
-ng.ComponentViewProperties.prototype.class;
+ng.ProgrammaticViewProperties.prototype.class;
 
 /**
- * Public ComponentViewProperties.is member exposed by the AngularTS namespace contract.
+ * Public ProgrammaticViewProperties.is member exposed by the AngularTS namespace contract.
  * @type {(string|undefined)}
  */
-ng.ComponentViewProperties.prototype.is;
+ng.ProgrammaticViewProperties.prototype.is;
 
 /**
- * Public AngularTS ComponentViewPropertyValue contract exposed through the global ng namespace for Closure-annotated applications.
+ * Public AngularTS ProgrammaticViewPropertyValue contract exposed through the global ng namespace for Closure-annotated applications.
  * @record
  */
-ng.ComponentViewPropertyValue = function() {};
+ng.ProgrammaticViewPropertyValue = function() {};
 
 /**
- * Public AngularTS ComponentViewTag contract exposed through the global ng namespace for Closure-annotated applications.
+ * Public AngularTS ProgrammaticViewTag contract exposed through the global ng namespace for Closure-annotated applications.
  * @typedef {function((!Array<?>|!Node|!Object|bigint|boolean|function(): ?|null|number|string|undefined), ...?): ?}
  */
-ng.ComponentViewTag;
+ng.ProgrammaticViewTag;
 
 /**
  * Typed HTML tag factories. Calling the object with a namespace URI returns factories for namespaced elements such as SVG and MathML.
  * @typedef {function(string): !Object}
  */
-ng.ComponentViewTags;
+ng.ProgrammaticViewTags;
 
 /**
  * AngularTS component lifecycle interface. Directive controllers have a well-defined lifecycle. Each controller can implement "lifecycle hooks". These are methods that will be called by Angular at certain points in the life cycle of the directive. https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks https://docs.angularjs.org/guide/component
@@ -516,7 +517,7 @@ ng.Directive.prototype.compile;
 
 /**
  * Real-DOM view factory. It is mutually exclusive with template, templateUrl, and replace and composes with compile/link.
- * @type {(function(!ng.DirectiveViewContext<TController, (!Array<!Object>|!Object|!Object<string, !Object>|undefined)>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
+ * @type {(function(!ng.ProgrammaticViewContext<TController, (!Array<!Object>|!Object|!Object<string, !Object>|undefined), !ng.Scope, !Element>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)|undefined)}
  */
 ng.Directive.prototype.view;
 
@@ -657,62 +658,6 @@ ng.DirectivePrePost.prototype.pre;
  * @type {(!ng.DirectiveLinkFn|undefined)}
  */
 ng.DirectivePrePost.prototype.post;
-
-/**
- * Public AngularTS DirectiveView contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function(!ng.DirectiveViewContext<?, ?>): (!Array<?>|!Node|bigint|boolean|function(): ?|null|number|string|undefined)}
- */
-ng.DirectiveView;
-
-/**
- * Public AngularTS DirectiveViewContext contract exposed through the global ng namespace for Closure-annotated applications.
- * @template TController, TRequired
- * @record
- */
-ng.DirectiveViewContext = function() {};
-
-/**
- * Controllers resolved through the directive's `require` declaration.
- * @type {TRequired}
- */
-ng.DirectiveViewContext.prototype.required;
-
-/**
- * Controller associated with the view.
- * @type {TController}
- */
-ng.DirectiveViewContext.prototype.controller;
-
-/**
- * Scope that owns the generated DOM and reactive readers.
- * @type {!ng.Scope}
- */
-ng.DirectiveViewContext.prototype.scope;
-
-/**
- * Native host element matched by the component or directive.
- * @type {!Element}
- */
-ng.DirectiveViewContext.prototype.host;
-
-/**
- * Public DirectiveViewContext.element member exposed by the AngularTS namespace contract.
- * @type {!Element}
- */
-ng.DirectiveViewContext.prototype.element;
-
-/**
- * Transclusion function, when transclusion is enabled.
- * @type {(!ng.TranscludeFn|undefined)}
- */
-ng.DirectiveViewContext.prototype.transclude;
-
-/**
- * Registers cleanup and returns a cancellation function.
- * @param {function(): void} cleanup Value supplied for the cleanup parameter.
- * @return {function(): void}
- */
-ng.DirectiveViewContext.prototype.onDestroy = function(cleanup) {};
 
 /**
  * AngularTS module registration surface for controllers, directives, services, factories, providers, filters, run blocks, and config blocks.
@@ -6695,12 +6640,6 @@ ng.RouterConfig.prototype.retry;
  * @type {(!Object|string|undefined)}
  */
 ng.RouterConfig.prototype.fallbackTo;
-
-/**
- * Public RouterConfig.error member exposed by the AngularTS namespace contract.
- * @type {(!Array<function(!Object): (!Object|string|undefined)>|!Object|function(!Object): (!Object|string|undefined)|string|undefined)}
- */
-ng.RouterConfig.prototype.error;
 
 /**
  * Public RouterConfig.errorBoundary member exposed by the AngularTS namespace contract.

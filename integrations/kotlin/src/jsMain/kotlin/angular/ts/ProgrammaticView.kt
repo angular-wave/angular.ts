@@ -1,14 +1,14 @@
 package angular.ts
 
 import angular.ts.generated.Angular as RawAngular
-import angular.ts.generated.ComponentViewTags as RawComponentViewTags
-import angular.ts.generated.DirectiveViewContext as RawDirectiveViewContext
+import angular.ts.generated.ProgrammaticViewContext as RawProgrammaticViewContext
+import angular.ts.generated.ProgrammaticViewTags as RawProgrammaticViewTags
 import angular.ts.generated.Scope as RawScope
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
 
 public class ProgrammaticViewContext<TController, TRequired> internal constructor(
-    internal val raw: RawDirectiveViewContext<TController, TRequired>,
+    internal val raw: RawProgrammaticViewContext<TController, TRequired, RawScope, HTMLElement>,
 ) {
     public val controller: TController?
         get() = raw.controller.unsafeCast<TController?>()
@@ -21,9 +21,6 @@ public class ProgrammaticViewContext<TController, TRequired> internal constructo
 
     public val host: HTMLElement
         get() = raw.asDynamic().host.unsafeCast<HTMLElement>()
-
-    public val element: HTMLElement
-        get() = raw.element.unsafeCast<HTMLElement>()
 
     public val transclude: dynamic
         get() = raw.asDynamic().transclude
@@ -39,16 +36,18 @@ internal fun <TController, TRequired> ProgrammaticView<TController, TRequired>.t
     { context: dynamic ->
         this(
             ProgrammaticViewContext(
-                context.unsafeCast<RawDirectiveViewContext<TController, TRequired>>(),
+                context.unsafeCast<
+                    RawProgrammaticViewContext<TController, TRequired, RawScope, HTMLElement>,
+                >(),
             ),
         )
     }
 
 public class ProgrammaticTags internal constructor(
-    internal val raw: RawComponentViewTags,
+    internal val raw: RawProgrammaticViewTags,
 ) {
     public fun namespace(namespaceUri: String): ProgrammaticTags =
-        ProgrammaticTags(raw(namespaceUri).unsafeCast<RawComponentViewTags>())
+        ProgrammaticTags(raw(namespaceUri).unsafeCast<RawProgrammaticViewTags>())
 
     public fun tag(
         name: String,

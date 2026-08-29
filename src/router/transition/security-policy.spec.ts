@@ -2303,7 +2303,7 @@ describe("transition error boundary policy", () => {
     window.angular = new Angular();
     moduleId += 1;
 
-    const moduleName = `errorBoundaryPolicyModule${moduleId}`;
+    const moduleName = `errorPolicyModule${moduleId}`;
 
     const app = window.angular.module(moduleName, []);
 
@@ -2335,7 +2335,7 @@ describe("transition error boundary policy", () => {
               policy: useAlias
                 ? {
                     transition: {
-                      error: policy,
+                      errorBoundary: policy,
                     },
                   }
                 : {
@@ -2433,7 +2433,7 @@ describe("transition error boundary policy", () => {
     window.angular = new Angular();
     moduleId += 1;
 
-    const moduleName = `errorBoundaryLazyModule${moduleId}`;
+    const moduleName = `errorLazyModule${moduleId}`;
 
     const app = window.angular.module(moduleName, []);
 
