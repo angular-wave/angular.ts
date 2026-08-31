@@ -104,6 +104,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate TypeScript declarations
+        run: make types
+
       - name: Validate Dart release package
         run: make -C integrations/dart release-check
 
@@ -150,6 +153,12 @@ jobs:
         with:
           gleam-version: "1.17.0"
           otp-version: "29"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate TypeScript declarations
+        run: make types
 
       - name: Validate Gleam release package
         run: make -C integrations/gleam release-check

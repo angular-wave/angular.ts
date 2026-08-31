@@ -1,11 +1,6 @@
 #!/usr/bin/env node
 
-import {
-  chmodSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -20,6 +15,7 @@ const SIGNING_FINGERPRINT = "305D365B22401CC5A42B22D07BEBA053B3890C4A";
 export const artifactSpecs = {
   java: {
     artifact: "angular-ts-java",
+    checksums: ["sha256", "sha512"],
     binary: [
       "org/angular/ts/Angular.class",
       "org/angular/ts/ng/Angular.class",
@@ -40,6 +36,7 @@ export const artifactSpecs = {
   },
   clojurescript: {
     artifact: "angular-ts-cljs",
+    checksums: ["sha256", "sha512"],
     binary: [
       "angular_ts/core.cljs",
       "angular_ts/generated.cljs",
@@ -50,11 +47,9 @@ export const artifactSpecs = {
   },
   scala: {
     artifact: "angular-ts-scala_sjs1_3",
+    checksums: ["sha1"],
     binary: ["angular/ts/AngularTS$.sjsir"],
-    sources: [
-      "angular/ts/AngularTS.scala",
-      "angular/ts/ModelController.scala",
-    ],
+    sources: ["angular/ts/AngularTS.scala", "angular/ts/ModelController.scala"],
     javadoc: ["index.html"],
   },
 };
@@ -159,16 +154,25 @@ function run(command, args, options = {}) {
   return result.stdout;
 }
 
-async function validateFile(baseUrl, name, directory, deadline, gpgHome) {
-  const [bytes, sha256, sha512, signature] = await Promise.all([
+async function validateFile(
+  baseUrl,
+  name,
+  algorithms,
+  directory,
+  deadline,
+  gpgHome,
+) {
+  const [bytes, signature, ...checksums] = await Promise.all([
     fetchPublished(`${baseUrl}/${name}`, deadline),
-    fetchPublished(`${baseUrl}/${name}.sha256`, deadline),
-    fetchPublished(`${baseUrl}/${name}.sha512`, deadline),
     fetchPublished(`${baseUrl}/${name}.asc`, deadline),
+    ...algorithms.map((algorithm) =>
+      fetchPublished(`${baseUrl}/${name}.${algorithm}`, deadline),
+    ),
   ]);
 
-  validateChecksum(bytes, sha256.toString("utf8"), "sha256", name);
-  validateChecksum(bytes, sha512.toString("utf8"), "sha512", name);
+  for (const [index, algorithm] of algorithms.entries()) {
+    validateChecksum(bytes, checksums[index].toString("utf8"), algorithm, name);
+  }
 
   const artifactPath = join(directory, name);
   const signaturePath = `${artifactPath}.asc`;
@@ -205,6 +209,7 @@ async function validateArtifact(name, version, deadline, directory, gpgHome) {
   const pom = await validateFile(
     baseUrl,
     `${baseName}.pom`,
+    spec.checksums,
     directory,
     deadline,
     gpgHome,
@@ -215,6 +220,7 @@ async function validateArtifact(name, version, deadline, directory, gpgHome) {
     const artifact = await validateFile(
       baseUrl,
       item.file,
+      spec.checksums,
       directory,
       deadline,
       gpgHome,

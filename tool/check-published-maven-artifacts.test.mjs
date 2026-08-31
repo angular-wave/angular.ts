@@ -25,6 +25,8 @@ test("parses selected Maven artifacts and publication wait", () => {
     },
   );
   assert.equal(artifactSpecs.scala.artifact, "angular-ts-scala_sjs1_3");
+  assert.deepEqual(artifactSpecs.java.checksums, ["sha256", "sha512"]);
+  assert.deepEqual(artifactSpecs.scala.checksums, ["sha1"]);
   assert.throws(
     () => parseArguments(["--version", "next", "--artifacts", "java"]),
     /semantic version/u,
