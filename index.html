@@ -33,7 +33,6 @@
             view: (res) => {
              const { scope } = res;
              res.scope.$ctrl.count = 0;
-             debugger
              return angular.view.tags.button(
                 { onclick: () => res.scope.$ctrl.count++ },
                 () => `Count: ${res.scope.$ctrl.count}`,
@@ -50,7 +49,6 @@
     <main id="$ctrl" ng-controller="DemoCtrl as $ctrl">
       <h3>{{ $ctrl.greeter.greeting  }}</h3>
       <button ng-click="$ctrl.greeter.greet()">Greet</button>
-      {{ $ctrl.greeter }}
       <counter-button></counter-button>
       {{ $ctrl.count }}
     </main>
