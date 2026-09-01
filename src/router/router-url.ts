@@ -54,26 +54,28 @@ export class RouterUrlRuntime {
   }
 
   /** @internal */
-  _url(newUrl?: string, state?: unknown): string {
-    if (isDefined(newUrl)) {
-      this._location.setUrl(decodeURIComponent(newUrl));
-    }
-
-    if (state) this._location.setState(state);
-
+  _getUrl(): string {
     return this._location.getUrl();
   }
 
   /** @internal */
-  _update(read?: boolean): void {
-    if (read) {
-      this._lastUrl = this._url();
+  _setUrl(newUrl: string, state?: unknown): string {
+    this._location.setUrl(decodeURIComponent(newUrl));
 
-      return;
-    }
+    if (state) this._location.setState(state);
 
-    if (this._url() === this._lastUrl) return;
-    this._url(this._lastUrl, true);
+    return this._getUrl();
+  }
+
+  /** @internal */
+  _readUrl(): void {
+    this._lastUrl = this._getUrl();
+  }
+
+  /** @internal */
+  _writeUrl(): void {
+    if (this._getUrl() === this._lastUrl) return;
+    this._setUrl(this._lastUrl, true);
   }
 
   /** @internal */
@@ -85,7 +87,7 @@ export class RouterUrlRuntime {
     const url = urlMatcher._format(params);
 
     if (!isNull(url)) {
-      this._url(url, !!options.replace);
+      this._setUrl(url, !!options.replace);
     }
   }
 

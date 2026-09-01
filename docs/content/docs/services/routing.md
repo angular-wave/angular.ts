@@ -36,6 +36,8 @@ $location
   .setPath('/settings/profile')
   .setSearch({ tab: 'security' })
   .setHash('billing-section');
+
+$location.setSearchParam('page', 2);
 ```
 
 Changes to `$location` are applied asynchronously. `$locationChangeStart` and
@@ -110,8 +112,8 @@ These helpers are useful for active navigation styling and conditional UI.
 bootstrap, which is useful for lazy-loaded feature modules.
 
 ```ts
-const detail = $stateRegistry.get('contacts.detail');
-const allStates = $stateRegistry.get();
+const detail = $stateRegistry.getState('contacts.detail');
+const allStates = $stateRegistry.getStates();
 
 $stateRegistry.register({
   name: 'profile',

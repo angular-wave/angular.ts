@@ -46,25 +46,4 @@ number (applies to all events) or an object mapping event names to delays.
 When `true`, the model is updated even when validators fail. Default is `false`
 (model is set to `undefined` on invalid input).
 
-#### `getterSetter`
-
-- **Type:** `boolean`
-
-When `true`, the `ng-model` expression is treated as a getter/setter function
-rather than a plain property. The function is called with no arguments to get
-and with the new value to set.
-
-```js
-$scope.getUser = function (newVal) {
-  if (arguments.length) {
-    _user = newVal;
-  }
-  return _user;
-};
-```
-
-```html
-<input ng-model="getUser" ng-model-options="{ getterSetter: true }" />
-```
-
 #### `time

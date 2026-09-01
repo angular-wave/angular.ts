@@ -67,7 +67,7 @@ class StateRegistryRuntime {
      *
      * #### Example:
      * ```js
-     * let allStates = registry.get();
+     * let allStates = registry.getStates();
      *
      * // Later, invoke deregisterFn() to remove the listener
      * let deregisterFn = registry.onStatesChanged((event, states) => {
@@ -245,7 +245,7 @@ class StateRegistryRuntime {
      * @returns {StateDeclaration[]} a list of removed state declarations
      */
     deregister(stateOrName) {
-        const stateDeclaration = this.get(stateOrName);
+        const stateDeclaration = this.getState(stateOrName);
         if (!stateDeclaration) {
             throw new Error(`Can't deregister state; not found: ${stateOrNameToString(stateOrName)}`);
         }
@@ -269,21 +269,17 @@ class StateRegistryRuntime {
     /**
      * @return {StateDeclaration[]}
      */
-    getAll() {
+    getStates() {
         return this._getAllBuilt().map((state) => state.self);
     }
-    get(stateOrName, base) {
-        if (arguments.length === 0) {
-            const stateNames = keys(this._states);
-            const states = [];
-            stateNames.forEach((name) => {
-                states.push(this._states[name].self);
-            });
-            return states;
-        }
-        const found = stateOrName === undefined
-            ? undefined
-            : this._matcher.find(stateOrName, base);
+    /**
+     *
+     * @param {StateOrName} [stateOrName]
+     * @param {StateOrName} [base]
+     * @returns {StateDeclaration | StateDeclaration[] | null}
+     */
+    getState(stateOrName, base) {
+        const found = this._matcher.find(stateOrName, base);
         return found?.self ?? null;
     }
 }

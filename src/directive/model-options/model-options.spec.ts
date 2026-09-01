@@ -20,7 +20,6 @@ describe("ngModelOptions", () => {
       expect(defaultModelOptions.getOption("updateOn")).toEqual("");
       expect(defaultModelOptions.getOption("updateOnDefault")).toEqual(true);
       expect(defaultModelOptions.getOption("debounce")).toBe(0);
-      expect(defaultModelOptions.getOption("getterSetter")).toBe(false);
       expect(defaultModelOptions.getOption("allowInvalid")).toBe(false);
     });
   });
@@ -71,9 +70,6 @@ describe("ngModelOptions", () => {
           );
           expect(inputOptions.getOption("debounce")).toEqual(
             defaultModelOptions.getOption("debounce"),
-          );
-          expect(inputOptions.getOption("getterSetter")).toEqual(
-            defaultModelOptions.getOption("getterSetter"),
           );
           expect(inputOptions.getOption("allowInvalid")).toEqual(
             defaultModelOptions.getOption("allowInvalid"),
@@ -677,112 +673,15 @@ describe("ngModelOptions", () => {
         });
       });
 
-      describe("getterSetter", () => {
-        it("should not try to invoke a model if getterSetter is false", () => {
-          inputElm = $compile(
-            '<input type="text" ng-model="name" ' +
-              'ng-model-options="{ getterSetter: false }" />',
-          )($rootScope);
-
-          const spy = ($rootScope.name = jasmine.createSpy("setterSpy"));
-
-          changeGivenInputTo(inputElm, "a");
-          expect(spy).not.toHaveBeenCalled();
-          expect(inputElm.value).toBe("a");
-        });
-
-        it("should not try to invoke a model if getterSetter is not set", () => {
-          inputElm = $compile('<input type="text" ng-model="name" />')(
-            $rootScope,
-          );
-
-          const spy = ($rootScope.name = jasmine.createSpy("setterSpy"));
-
-          changeGivenInputTo(inputElm, "a");
-          expect(spy).not.toHaveBeenCalled();
-          expect(inputElm.value).toBe("a");
-        });
-
-        it("should try to invoke a function model if getterSetter is true", async () => {
-          inputElm = $compile(
-            '<input type="text" ng-model="name" ' +
-              'ng-model-options="{ getterSetter: true }" />',
-          )($rootScope);
-
-          const spy = ($rootScope.name = jasmine
-            .createSpy("setterSpy")
-            .and.callFake(() => "b"));
-
-          await wait();
-          expect(inputElm.value).toBe("b");
-
-          changeGivenInputTo(inputElm, "a");
-          await wait();
-          expect(spy).toHaveBeenCalledWith("a");
-          expect($rootScope.name).toBe(spy);
-        });
-
-        it("should assign to non-function models if getterSetter is true", () => {
-          inputElm = $compile(
-            '<input type="text" ng-model="name" ' +
-              'ng-model-options="{ getterSetter: true }" />',
-          )($rootScope);
-
-          $rootScope.name = "c";
-          changeGivenInputTo(inputElm, "d");
-          expect(inputElm.value).toBe("d");
-          expect($rootScope.name).toBe("d");
-        });
-
-        it("should fail on non-assignable model binding if getterSetter is false", () => {
+      describe("model expression", () => {
+        it("rejects a non-assignable model expression", () => {
           expect(() => {
-            inputElm = $compile(
+            $compile(
               '<input type="text" ng-model="accessor(user, \'name\')" />',
             )($rootScope);
           }).toThrowError(/nonassign/);
         });
-
-        it("should not fail on non-assignable model binding if getterSetter is true", () => {
-          expect(() => {
-            inputElm = $compile(
-              '<input type="text" ng-model="accessor(user, \'name\')" ' +
-                'ng-model-options="{ getterSetter: true }" />',
-            )($rootScope);
-          }).not.toThrow();
-        });
-
-        it("should invoke a model in the correct context if getterSetter is true", async () => {
-          inputElm = $compile(
-            '<input type="text" ng-model="someService.getterSetter" ' +
-              'ng-model-options="{ getterSetter: true }" />',
-          )($rootScope);
-
-          $rootScope.someService = {
-            value: "a",
-            getterSetter(newValue) {
-              this.value = newValue || this.value;
-
-              return this.value;
-            },
-          };
-          spyOn($rootScope.someService, "getterSetter").and.callThrough();
-          await wait();
-
-          expect(inputElm.value).toBe("a");
-          expect($rootScope.someService.getterSetter).toHaveBeenCalledWith();
-          expect($rootScope.someService.value).toBe("a");
-
-          changeGivenInputTo(inputElm, "b");
-          expect($rootScope.someService.getterSetter).toHaveBeenCalledWith("b");
-          expect($rootScope.someService.value).toBe("b");
-
-          $rootScope.someService.value = "c";
-          await wait();
-          expect(inputElm.value).toBe("c");
-          expect($rootScope.someService.getterSetter).toHaveBeenCalledWith();
-        });
       });
-
       describe("allowInvalid", () => {
         it("should assign invalid values to the scope if allowInvalid is true", () => {
           inputElm = $compile(

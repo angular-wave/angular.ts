@@ -151,10 +151,11 @@ describe("sanitizeUri", () => {
       let returnVal;
 
       expect(
-        sceDelegateConfig.imgSrcSanitizationTrustedUrlList() instanceof RegExp,
+        sceDelegateConfig.getImgSrcSanitizationTrustedUrlList() instanceof
+          RegExp,
       ).toBe(true);
       returnVal =
-        sceDelegateConfig.imgSrcSanitizationTrustedUrlList(/javascript:/);
+        sceDelegateConfig.setImgSrcSanitizationTrustedUrlList(/javascript:/);
       expect(returnVal).toBe(sceDelegateConfig);
 
       testUrl = "javascript:doEvilStuff()";
@@ -254,10 +255,11 @@ describe("sanitizeUri", () => {
       let returnVal;
 
       expect(
-        sceDelegateConfig.aHrefSanitizationTrustedUrlList() instanceof RegExp,
+        sceDelegateConfig.getAHrefSanitizationTrustedUrlList() instanceof
+          RegExp,
       ).toBe(true);
       returnVal =
-        sceDelegateConfig.aHrefSanitizationTrustedUrlList(/javascript:/);
+        sceDelegateConfig.setAHrefSanitizationTrustedUrlList(/javascript:/);
       expect(returnVal).toBe(sceDelegateConfig);
 
       testUrl = "javascript:doEvilStuff()";

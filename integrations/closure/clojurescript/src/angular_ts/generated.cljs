@@ -636,11 +636,10 @@
     "service-worker-service-update"
     "sse-connection-close"
     "sse-connection-reconnect"
-    "state-registry-service-get"
-    "state-registry-service-get-all"
+    "state-registry-service-get-states"
     "state-registry-service-register"
     "state-registry-service-root"
-    "state-service-get"
+    "state-service-get-states"
     "storage-backend-get"
     "storage-backend-remove"
     "storage-backend-set"
@@ -1666,7 +1665,7 @@
   (.commitViewValue target))
 
 (defn ng-model-controller-override-model-options
-  "Override the current model options settings programmatically. The previous `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See `ngModelOptions` for information about what options can be specified and how model option inheritance works. <div class=\"alert alert-warning\"> **Note:** this function only affects the options set on the `ngModelController`, and not the options on the `ngModelOptions` directive from which they might have been obtained initially. </div> <div class=\"alert alert-danger\"> **Note:** it is not possible to override the `getterSetter` option. </div>\n\nParams:\n- options: {!Object} a hash of settings to override the previous options\n\nReturns: {void}"
+  "Override the current model options settings programmatically. The previous `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See `ngModelOptions` for information about what options can be specified and how model option inheritance works. <div class=\"alert alert-warning\"> **Note:** this function only affects the options set on the `ngModelController`, and not the options on the `ngModelOptions` directive from which they might have been obtained initially. </div>\n\nParams:\n- options: {!Object} a hash of settings to override the previous options\n\nReturns: {void}"
   [^js/ng.NgModelController target ^js/Object options]
   (.overrideModelOptions target options))
 
@@ -2091,15 +2090,10 @@
   [^js/ng.SseConnection target]
   (.reconnect target))
 
-(defn state-registry-service-get
-  "Public StateRegistryService.get member exposed by the AngularTS namespace contract.\n\nReturns: {!Array<!ng.StateDeclaration>}"
+(defn state-registry-service-get-states
+  "Public StateRegistryService.getStates member exposed by the AngularTS namespace contract.\n\nReturns: {!Array<!ng.StateDeclaration>}"
   ^js/Array [^js/ng.StateRegistryService target]
-  (.get target))
-
-(defn state-registry-service-get-all
-  "Public StateRegistryService.getAll member exposed by the AngularTS namespace contract.\n\nReturns: {!Array<!ng.StateDeclaration>}"
-  ^js/Array [^js/ng.StateRegistryService target]
-  (.getAll target))
+  (.getStates target))
 
 (defn state-registry-service-register
   "Public StateRegistryService.register member exposed by the AngularTS namespace contract.\n\nParams:\n- stateDefinition: {!ng.StateDeclaration} Value supplied for the stateDefinition parameter.\n\nReturns: {!ng.StateDeclaration}"
@@ -2111,10 +2105,10 @@
   ^js/ng.StateDeclaration [^js/ng.StateRegistryService target]
   (.root target))
 
-(defn state-service-get
-  "Get all states or a matching public state declaration.\n\nReturns: {!Array<!ng.StateDeclaration>}"
+(defn state-service-get-states
+  "Return every public state declaration.\n\nReturns: {!Array<!ng.StateDeclaration>}"
   ^js/Array [^js/ng.StateService target]
-  (.get target))
+  (.getStates target))
 
 (defn storage-backend-get
   "Read a stored serialized value.\n\nParams:\n- key: {string} Value supplied for the key parameter.\n\nReturns: {(string|undefined)}"

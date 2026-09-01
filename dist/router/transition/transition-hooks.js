@@ -776,7 +776,7 @@ function updateUrlHook(transition) {
         };
         routerState._urlRuntime._push(navigable._url, stateService._routerState._params, urlOptions);
     }
-    routerState._urlRuntime._update(true);
+    routerState._urlRuntime._readUrl();
 }
 function registerUpdateUrl(transitionService) {
     return transitionService.onSuccess({}, updateUrlHook, {

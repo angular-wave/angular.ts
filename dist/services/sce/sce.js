@@ -1,5 +1,5 @@
 import { urlResolve, urlIsSameOrigin, urlIsSameOriginAsBaseUrl } from '../../shared/url-utils/url-utils.js';
-import { entries, isDefined, isString, isRegExp, hasOwn, isUndefined, isInstanceOf, isObject, isFunction, createErrorFactory } from '../../shared/utils.js';
+import { entries, isString, isRegExp, isDefined, hasOwn, isUndefined, isInstanceOf, isObject, isFunction, createErrorFactory } from '../../shared/utils.js';
 import { snakeToCamel } from '../../shared/dom.js';
 import { SCE_CONTEXTS } from './context.js';
 
@@ -170,10 +170,10 @@ class SceDelegateConfiguration {
          *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
          *     allowed in this array.
          *
-         * @returns The currently set trusted resource URL array.
+         * @returns This configuration for chaining.
          *
          *
-         * Sets/Gets the list trusted of resource URLs.
+         * Replaces the list of trusted resource URLs.
          *
          * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
          * allowing only same origin resource requests.
@@ -183,12 +183,9 @@ class SceDelegateConfiguration {
          * its origin with other apps! It is a good idea to limit it to only your application's directory.
          * </div>
          */
-        this.trustedResourceUrlList = function (value) {
-            if (arguments.length) {
-                const list = value ?? [];
-                trustedResourceUrlList = list.map(adjustMatcher);
-            }
-            return trustedResourceUrlList;
+        this.setTrustedResourceUrlList = function (value) {
+            trustedResourceUrlList = (value ?? []).map(adjustMatcher);
+            return this;
         };
         /**
          *
@@ -204,20 +201,17 @@ class SceDelegateConfiguration {
          *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
          *     the final say.
          *
-         * @returns The currently set `bannedResourceUrlList` array.
+         * @returns This configuration for chaining.
          *
          *
-         * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
+         * Replaces the list of banned resource URLs.
          *
          * The **default value** when no trusted resource URL list has been explicitly set is the empty
          * array (i.e. there is no `bannedResourceUrlList`.)
          */
-        this.bannedResourceUrlList = function (value) {
-            if (arguments.length) {
-                const list = value ?? [];
-                bannedResourceUrlList = list.map(adjustMatcher);
-            }
-            return bannedResourceUrlList;
+        this.setBannedResourceUrlList = function (value) {
+            bannedResourceUrlList = (value ?? []).map(adjustMatcher);
+            return this;
         };
         /**
          * Retrieves or overrides the default regular expression that is used for
@@ -234,15 +228,12 @@ class SceDelegateConfiguration {
          * written into the DOM.
          *
          * @param regexp - New regexp to trust urls with.
-         * @returns Current RegExp if called without value or self for chaining
-         * otherwise.
+         * @returns This configuration for chaining.
          */
-        this.aHrefSanitizationTrustedUrlList = function (regexp) {
-            if (isDefined(regexp)) {
-                aHrefSanitizationTrustedUrlList = regexp;
-                return this;
-            }
-            return aHrefSanitizationTrustedUrlList;
+        this.getAHrefSanitizationTrustedUrlList = () => aHrefSanitizationTrustedUrlList;
+        this.setAHrefSanitizationTrustedUrlList = function (regexp) {
+            aHrefSanitizationTrustedUrlList = regexp;
+            return this;
         };
         /**
          * Retrieves or overrides the default regular expression that is used for
@@ -260,15 +251,12 @@ class SceDelegateConfiguration {
          * the DOM.
          *
          * @param regexp - New regexp to trust urls with.
-         * @returns Current RegExp if called without value or self for chaining
-         * otherwise.
+         * @returns This configuration for chaining.
          */
-        this.imgSrcSanitizationTrustedUrlList = function (regexp) {
-            if (isDefined(regexp)) {
-                imgSrcSanitizationTrustedUrlList = regexp;
-                return this;
-            }
-            return imgSrcSanitizationTrustedUrlList;
+        this.getImgSrcSanitizationTrustedUrlList = () => imgSrcSanitizationTrustedUrlList;
+        this.setImgSrcSanitizationTrustedUrlList = function (regexp) {
+            imgSrcSanitizationTrustedUrlList = regexp;
+            return this;
         };
         /** Creates `$sceDelegate` from the current policy configuration. */
         this.createService = function ($injector, $window) {
@@ -489,17 +477,12 @@ class SceConfiguration {
     constructor() {
         let enabled = true;
         /**
-         * @param value If provided, then enables/disables SCE application-wide.
-         * @returns True if SCE is enabled, false otherwise.
-         *
-         *
-         * Enables/disables SCE and returns the current value.
+         * @param value Enables or disables SCE application-wide.
+         * @returns This configuration for chaining.
          */
-        this.enabled = function (value) {
-            if (arguments.length) {
-                enabled = !!value;
-            }
-            return enabled;
+        this.setEnabled = function (value) {
+            enabled = value;
+            return this;
         };
         /**
          * Creates the runtime `$sce` service.

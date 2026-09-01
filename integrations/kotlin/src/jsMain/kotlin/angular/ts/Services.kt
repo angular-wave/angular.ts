@@ -678,11 +678,13 @@ public class LocationService internal constructor(
         return this
     }
 
-    public fun setSearch(
-        search: Any?,
-        value: Any? = undefined,
-    ): LocationService {
-        raw.setSearch(search, value)
+    public fun setSearch(search: Any?): LocationService {
+        raw.setSearch(search)
+        return this
+    }
+
+    public fun setSearchParam(name: Any, value: Any?): LocationService {
+        raw.setSearchParam(name, value)
         return this
     }
 

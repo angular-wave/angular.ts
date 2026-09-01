@@ -2840,9 +2840,14 @@ public external interface LocationService {
     /**
      * Sets the search part of the current URL as an object.
      * @param search New search params as a string or object.
-     * @param paramValue If `search` is a string or number, overrides only a single search property.
      */
-    public fun setSearch(search: dynamic = definedExternally, paramValue: dynamic = definedExternally): dynamic
+    public fun setSearch(search: dynamic = definedExternally): dynamic
+    /**
+     * Set or remove one search parameter.
+     * @param name Value supplied for the name parameter.
+     * @param value Value supplied for the value parameter.
+     */
+    public fun setSearchParam(name: dynamic = definedExternally, value: dynamic = definedExternally): dynamic
     /**
      * Set the history state object and return `$location`. The state object is later passed to
      * `pushState` or `replaceState`. See {@link
@@ -3390,15 +3395,15 @@ public external interface StateRegistryService {
      */
     public fun deregister(stateOrName: dynamic = definedExternally): Array<dynamic>
     /**
-     * The get member of ng.StateRegistryService.
+     * The getState member of ng.StateRegistryService.
      * @param stateOrName Value supplied for the stateOrName parameter.
      * @param base Value supplied for the base parameter.
      */
-    public fun get(stateOrName: dynamic = definedExternally, base: dynamic = definedExternally): dynamic
+    public fun getState(stateOrName: dynamic = definedExternally, base: dynamic = definedExternally): dynamic
     /**
-     * The getAll member of ng.StateRegistryService.
+     * The getStates member of ng.StateRegistryService.
      */
-    public fun getAll(): Array<dynamic>
+    public fun getStates(): Array<dynamic>
     /**
      * The onStatesChanged member of ng.StateRegistryService.
      * @param listener Value supplied for the listener parameter.
@@ -4761,8 +4766,7 @@ public external interface NgModelController {
      * specified and how model option inheritance works. <div class="alert alert-warning">
      * **Note:** this function only affects the options set on the `ngModelController`, and not
      * the options on the `ngModelOptions` directive from which they might have been obtained
-     * initially. </div> <div class="alert alert-danger"> **Note:** it is not possible to
-     * override the `getterSetter` option. </div>
+     * initially. </div>
      * @param options a hash of settings to override the previous options
      */
     public fun overrideModelOptions(options: dynamic = definedExternally): Unit
@@ -5753,11 +5757,15 @@ public external interface StateService<TRouteMap> {
      */
     public var current: dynamic
     /**
-     * Get all states or a matching public state declaration.
+     * Return one matching public state declaration.
      * @param stateOrName Value supplied for the stateOrName parameter.
      * @param base Value supplied for the base parameter.
      */
-    public fun get(stateOrName: dynamic = definedExternally, base: dynamic = definedExternally): dynamic
+    public fun getState(stateOrName: dynamic = definedExternally, base: dynamic = definedExternally): dynamic
+    /**
+     * Return every public state declaration.
+     */
+    public fun getStates(): Array<dynamic>
     /**
      * Overload for typed route names and params. Untyped overload used when no route map is
      * supplied.

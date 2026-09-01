@@ -215,18 +215,13 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 
 #### Provider configuration
 
-When adding configuration (options) to [providers][docs.provider], we follow a special pattern.
+Configure providers through typed objects passed to `NgModule.config()`. Do not
+create methods that become getters or setters based on argument count. When a
+runtime value must be inspected or changed programmatically, expose separate
+methods with explicit names such as `getPolicy()` and `setPolicy(policy)`.
 
-- for each option, add a `method` that ...
-  - works as a getter and returns the current value when called without argument
-  - works as a setter and returns itself for chaining when called with argument
-  - for boolean options, uses the naming scheme `<option>Enabled([enabled])`
-- non-primitive options (e.g. objects) should be copied or the properties assigned explicitly to a
-  new object so that the configuration cannot be changed during runtime.
-
-For a boolean config example, see [`$compileProvider#debugInfoEnabled`][code.debugInfoEnabled]
-
-For an object config example, see [`$location.html5Mode`][code.html5Mode]
+Copy non-primitive configuration values, or assign their properties to a new
+object, so later changes to the caller's object cannot alter runtime policy.
 
 #### Throwing errors
 

@@ -4,6 +4,9 @@
 
 - Replaced overloaded `angular.module()` with explicit `angular.createModule()` and `angular.getModule()` APIs.
 
+- Removed argument-dependent getter/setter APIs in SCE, compiler configuration,
+  model options, DOM data, location search parameters, and router state lookup.
+
 - Fixed listener scheduling when a watcher deregisters while its notification task is flushing.
 
 - Removed overloaded `$location` getter/setter aliases; use explicit `getUrl`,

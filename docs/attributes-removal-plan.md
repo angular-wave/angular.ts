@@ -285,10 +285,9 @@ but access should be through lookup APIs, not object property decoration.
       Converted `src/directive/model/model.ts` controller initialization for
       `ngModel` and initial `name` through `$attributes`-backed reads. Preserved
       `attr.$observe("name", ...)` for dynamic form-control rename behavior.
-      Follow-up cleanup moved getter/setter parse expressions and nonassignable
-      error reporting to the stored normalized model expression instead of
-      rereading `attr.ngModel`. Added normalized alias coverage for
-      `data-ng-model` and `data-name`.
+      Follow-up cleanup moved nonassignable error reporting to the stored
+      normalized model expression instead of rereading `attr.ngModel`. Added
+      normalized alias coverage for `data-ng-model` and `data-name`.
 
 - [x] Convert `select` initial mode/model reads.
 

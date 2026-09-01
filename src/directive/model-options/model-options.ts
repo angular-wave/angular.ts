@@ -24,7 +24,6 @@ export type ModelOptionValue =
  * @property [updateOn] A string specifying which events the input should be bound to. Multiple events can be set using a space-delimited list. The special event `default` matches the default events belonging to the control.
  * @property [debounce] An integer specifying the debounce time in milliseconds. A value of `0` triggers an immediate update. If an object is supplied, custom debounce values can be set for each event.
  * @property [allowInvalid] Indicates whether the model can be set with values that did not validate correctly. Defaults to `false`, which sets the model to `undefined` on validation failure.
- * @property [getterSetter] Determines whether to treat functions bound to `ngModel` as getters/setters. Defaults to `false`.
  * @property [updateOnDefault]
  */
 export type ModelOptionsConfig = NgModelOptions & {
@@ -127,7 +126,6 @@ export const defaultModelOptions = new ModelOptions({
   updateOn: "",
   updateOnDefault: true,
   debounce: 0,
-  getterSetter: false,
   allowInvalid: false,
 });
 

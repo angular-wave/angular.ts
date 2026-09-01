@@ -368,31 +368,6 @@ other events):
 />
 ```
 
-### Getter/setter
-
-When `getterSetter: true`, the `ng-model` expression is expected to be a
-function that both gets and sets the value:
-
-```html
-<input
-  type="text"
-  ng-model="user.getName"
-  ng-model-options="{ getterSetter: true }"
-/>
-```
-
-```js
-let _name = 'Alice';
-$scope.user = {
-  getName: function (newValue) {
-    if (arguments.length) {
-      _name = newValue.trim();
-    }
-    return _name;
-  },
-};
-```
-
 ### Available options
 
 #### `updateOn`
@@ -416,13 +391,6 @@ event names to delays: `{ 'blur': 0, 'default': 500 }`.
 
 When `true`, the model is updated even when the value is invalid (normally the
 model is set to `undefined` when validation fails).
-
-#### `getterSetter`
-
-- **Type:** `boolean`
-
-When `true`, the `ng-model` expression is treated as a function that acts as
-both getter and setter.
 
 #### `timezone`
 

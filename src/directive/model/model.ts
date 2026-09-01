@@ -23,7 +23,6 @@ import {
   directiveNormalize,
   entries,
   hasAnimate,
-  isFunction,
   isNull,
   isNumber,
   isNumberNaN,
@@ -129,8 +128,6 @@ export interface NgModelOptions {
   debounce?: number | Record<string, number>;
   /** Whether to allow invalid values */
   allowInvalid?: boolean;
-  /** Enables getter/setter style ngModel */
-  getterSetter?: boolean;
 }
 
 /**
@@ -573,29 +570,8 @@ export class NgModelController {
   }
 
   /** @internal */
-  _initGetterSetters() {
-    if (this.options.getOption("getterSetter")) {
-      const invokeModelGetter = this._parse(`${this._modelExpression}()`);
-
-      const invokeModelSetter = this._parse(`${this._modelExpression}(_$p)`);
-
-      this._ngModelGet = ($scope: ng.Scope | undefined) => {
-        let modelValue = this._parsedNgModel($scope);
-
-        if (isFunction(modelValue)) {
-          modelValue = callFunction(invokeModelGetter, undefined, $scope);
-        }
-
-        return modelValue;
-      };
-      this._ngModelSet = ($scope: ng.Scope, newValue: unknown) => {
-        if (isFunction(this._parsedNgModel($scope))) {
-          callFunction(invokeModelSetter, undefined, $scope, { _$p: newValue });
-        } else {
-          callFunction(this._parsedNgModelAssign, undefined, $scope, newValue);
-        }
-      };
-    } else if (!this._parsedNgModel._assign) {
+  _validateModelExpression() {
+    if (!this._parsedNgModel._assign) {
       throw ngModelError(
         "nonassign",
         "Expression '{0}' is non-assignable. Element: {1}",
@@ -1307,10 +1283,6 @@ export class NgModelController {
    * obtained initially.
    * </div>
    *
-   * <div class="alert alert-danger">
-   * **Note:** it is not possible to override the `getterSetter` option.
-   * </div>
-   *
    * @param  options a hash of settings to override the previous options
    *
    */
@@ -1600,7 +1572,7 @@ export function ngModelDirective(): ng.Directive {
           if (optionsCtrl) {
             modelCtrl.options = optionsCtrl.options;
           }
-          modelCtrl._initGetterSetters();
+          modelCtrl._validateModelExpression();
 
           // notify others, especially parent forms
           formCtrl.addControl(modelCtrl);

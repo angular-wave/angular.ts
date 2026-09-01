@@ -771,7 +771,7 @@ describe("NgModule", () => {
 
     expect($anchorScroll).toBeDefined();
     expect(window.scrollTo).not.toHaveBeenCalled();
-    expect(compileRegistry.strictComponentBindingsEnabled()).toBeTrue();
+    expect(compileRegistry.isStrictComponentBindingsEnabled()).toBeTrue();
     expect($aria.config("ariaDisabled")).toBeFalse();
     expect($aria.config("bindKeydown")).toBeFalse();
     expect($aria.config("ariaHidden")).toBeTrue();
@@ -2678,8 +2678,8 @@ describe("NgModule", () => {
     const registry = injector.get("$stateRegistry");
     const state = injector.get("$state");
 
-    expect(registry.get("home").name).toBe("home");
-    expect(registry.get("home.detail").url).toBe("/:id");
+    expect(registry.getState("home").name).toBe("home");
+    expect(registry.getState("home.detail").url).toBe("/:id");
     expect(state.target(home).exists()).toBeTrue();
     expect(state.target(detail).exists()).toBeTrue();
   });
@@ -2708,13 +2708,13 @@ describe("NgModule", () => {
     const injector = createRuntimeInjector(angular, ["routerTreeApp"]);
     const registry = injector.get("$stateRegistry");
 
-    expect(registry.get("admin").abstract).toBeTrue();
-    expect(registry.get("admin.users").url).toBe("/users");
-    expect(registry.get("admin.profile").url).toBe("^/profile");
-    expect(registry.get("admin.users")._state()._url._format({})).toBe(
+    expect(registry.getState("admin").abstract).toBeTrue();
+    expect(registry.getState("admin.users").url).toBe("/users");
+    expect(registry.getState("admin.profile").url).toBe("^/profile");
+    expect(registry.getState("admin.users")._state()._url._format({})).toBe(
       "/admin/users",
     );
-    expect(registry.get("admin.profile")._state()._url._format({})).toBe(
+    expect(registry.getState("admin.profile")._state()._url._format({})).toBe(
       "/profile",
     );
   });
@@ -2755,18 +2755,18 @@ describe("NgModule", () => {
     const injector = createRuntimeInjector(angular, ["routerComposeApp"]);
     const registry = injector.get("$stateRegistry");
 
-    expect(registry.get("login").url).toBe("/login");
-    expect(registry.get("admin.reports").url).toBe("/reports");
-    expect(registry.get("admin.users").url).toBe("/users");
-    expect(registry.get("admin.audit").url).toBe("/audit");
-    expect(registry.get("login")._state()._url._format({})).toBe("/login");
-    expect(registry.get("admin.reports")._state()._url._format({})).toBe(
+    expect(registry.getState("login").url).toBe("/login");
+    expect(registry.getState("admin.reports").url).toBe("/reports");
+    expect(registry.getState("admin.users").url).toBe("/users");
+    expect(registry.getState("admin.audit").url).toBe("/audit");
+    expect(registry.getState("login")._state()._url._format({})).toBe("/login");
+    expect(registry.getState("admin.reports")._state()._url._format({})).toBe(
       "/admin/reports",
     );
-    expect(registry.get("admin.users")._state()._url._format({})).toBe(
+    expect(registry.getState("admin.users")._state()._url._format({})).toBe(
       "/admin/users",
     );
-    expect(registry.get("admin.audit")._state()._url._format({})).toBe(
+    expect(registry.getState("admin.audit")._state()._url._format({})).toBe(
       "/admin/audit",
     );
   });

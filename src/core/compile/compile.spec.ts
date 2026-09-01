@@ -5485,7 +5485,7 @@ describe("$compile", () => {
 
   describe("configuration", () => {
     it("should allow strictComponentBindingsEnabled to be configured", () => {
-      expect(module._compileRegistry.strictComponentBindingsEnabled()).toBe(
+      expect(module._compileRegistry.isStrictComponentBindingsEnabled()).toBe(
         false,
       );
 
@@ -5494,7 +5494,7 @@ describe("$compile", () => {
       });
       createInjector(["ng", "test1"]);
 
-      expect(module._compileRegistry.strictComponentBindingsEnabled()).toBe(
+      expect(module._compileRegistry.isStrictComponentBindingsEnabled()).toBe(
         true,
       );
     });

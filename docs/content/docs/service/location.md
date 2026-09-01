@@ -33,6 +33,14 @@ $location
 
 Setter methods return `$location`, so updates can be chained.
 
+Use `setSearchParam()` when only one query parameter should change. Passing
+`null` or `undefined` removes that parameter.
+
+```ts
+$location.setSearchParam("page", 2);
+$location.setSearchParam("filter", null);
+```
+
 ## Navigation Events
 
 `$locationChangeStart` is broadcast on `$rootScope` before the URL changes. Call

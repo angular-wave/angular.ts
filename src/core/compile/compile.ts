@@ -1160,8 +1160,6 @@ export type RegisterComponentFn = (
   options?: Component,
 ) => unknown;
 
-export type StrictComponentBindingsAccessor = (enabled?: boolean) => unknown;
-
 export interface DirectiveBindingInfo {
   /** @internal */
   _initialChanges: Record<string, SimpleChange>;
@@ -1833,7 +1831,8 @@ const valueFn =
 export class CompileRegistry {
   directive: RegisterDirectiveFn;
   component: RegisterComponentFn;
-  strictComponentBindingsEnabled: StrictComponentBindingsAccessor;
+  isStrictComponentBindingsEnabled: () => boolean;
+  setStrictComponentBindingsEnabled: (enabled: boolean) => this;
   addPropertySecurityContext: (
     elementName: string,
     propertyName: string,
@@ -2373,7 +2372,7 @@ export class CompileRegistry {
 
     this.configure = (config) => {
       if (config.strictComponentBindingsEnabled !== undefined) {
-        this.strictComponentBindingsEnabled(
+        this.setStrictComponentBindingsEnabled(
           config.strictComponentBindingsEnabled,
         );
       }
@@ -2422,9 +2421,8 @@ export class CompileRegistry {
     };
 
     /**
-     * @param enabled - Update the strictComponentBindingsEnabled state if provided,
-     * otherwise return the current strictComponentBindingsEnabled state.
-     * @returns Current value if used as getter or itself (chaining) if used as setter.
+     * @param enabled - New strict component binding validation state.
+     * @returns This registry for chaining.
      *
      * Call this method to enable / disable the strict component bindings check. If enabled, the
      * compiler will enforce that all scope / controller bindings of a
@@ -2437,17 +2435,13 @@ export class CompileRegistry {
      */
     let strictComponentBindingsEnabled = false;
 
-    this.strictComponentBindingsEnabled =
-      /** @param enabled */
-      function (enabled?: boolean) {
-        if (enabled !== undefined) {
-          strictComponentBindingsEnabled = enabled;
+    this.isStrictComponentBindingsEnabled = () =>
+      strictComponentBindingsEnabled;
+    this.setStrictComponentBindingsEnabled = function (enabled: boolean) {
+      strictComponentBindingsEnabled = enabled;
 
-          return this;
-        }
-
-        return strictComponentBindingsEnabled;
-      };
+      return this;
+    };
 
     /**
      * The security context of DOM Properties.

@@ -27,8 +27,8 @@ and parent form propagation.
 - `ngModelDirective()`: builds the `ngModel` attribute directive and wires the
   controller into compile/link lifecycle.
 - `ngModelError`: error factory for `ngModel`-specific runtime errors.
-- `NgModelOptions`: public option shape for update events, debounce,
-  `allowInvalid`, and getter/setter mode.
+- `NgModelOptions`: public option shape for update events, debounce, and
+  `allowInvalid`.
 - `ModelValidators`, `AsyncModelValidators`, `ModelParser`, `ModelFormatter`,
   and `ModelViewChangeListener`: public pipeline and callback shapes.
 
@@ -66,8 +66,7 @@ The main model-to-view flow is:
 
 Important invariants:
 
-- Non-assignable `ng-model` expressions are rejected unless getter/setter mode
-  is active.
+- Non-assignable `ng-model` expressions are rejected.
 - Stale asynchronous validator results must not update current validity state.
 - A destroyed controller must not mutate detached elements or parent forms.
 - Validity propagation to parent forms is skipped when the combined state and
@@ -78,7 +77,7 @@ Important invariants:
 The directive compile step adds initial `ng-pristine`, `ng-untouched`, and
 `ng-valid` classes and returns pre/post link hooks.
 
-Pre-link attaches model options, initializes getter/setter behavior, registers
+Pre-link attaches model options, validates the model expression, registers
 the control with its parent form, observes name changes, and watches the model
 expression for external updates. Post-link installs configured `updateOn`
 events, adds the blur listener that marks the control touched, and registers
@@ -120,13 +119,12 @@ removes itself from the parent form, drops the parent form back to
 
 ## Integration Points
 
-- `$parse`: compiles the `ng-model` expression, optional getter/setter calls,
-  and `ngChange`.
+- `$parse`: compiles the `ng-model` expression and `ngChange`.
 - `$interpolate`: resolves interpolated control names.
 - DOM attribute helpers: read normalized attributes such as `data-ng-model` and
   `data-name` directly from the element.
-- `ngModelOptions`: supplies inherited update, debounce, validation, and
-  getter/setter settings.
+- `ngModelOptions`: supplies inherited update, debounce, and validation
+  settings.
 - Parent form controllers: receive control registration, renames, dirty state,
   validity changes, and removal.
 - Animation service: toggles control state classes when animations are enabled.
@@ -138,8 +136,6 @@ removes itself from the parent form, drops the parent form back to
 - Parser failures set the active parser validity key and skip normal validators
   until parsing succeeds again.
 - `allowInvalid` writes parsed model values even while validators are failing.
-- Getter/setter mode calls the model expression as a function when the parsed
-  value is callable.
 - `rollbackViewValue()` cancels pending debounce work and restores the last
   committed view value.
 - Name interpolation renames the control in its parent form without replacing

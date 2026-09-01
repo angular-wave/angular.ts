@@ -244,6 +244,7 @@ void main() {
       ..setProperty('getHash'.toJS, (() => 'top'.toJS).toJS)
       ..setProperty('hash'.toJS, (([JSAny? hash]) => hash ?? 'top'.toJS).toJS)
       ..setProperty('setSearch'.toJS, ((JSAny? _, [JSAny? __]) => null).toJS)
+      ..setProperty('setSearchParam'.toJS, ((JSAny? _, JSAny? __) => null).toJS)
       ..setProperty('getSearch'.toJS, JSObject.new.toJS)
       ..setProperty('search'.toJS,
           (([JSAny? search, JSAny? _]) => search ?? JSObject()).toJS)
@@ -528,6 +529,7 @@ void main() {
     expect(locationService.setHash('top'), locationService);
     expect(locationService.getHash(), 'top');
     expect(locationService.setSearch({'q': 'term'}), locationService);
+    expect(locationService.setSearchParam('page', 2), locationService);
     expect(locationService.getSearch(), isNotNull);
     expect(locationService.setState({'id': 1}), locationService);
     expect(locationService.getState(), isNotNull);

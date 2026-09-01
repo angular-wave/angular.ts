@@ -185,7 +185,7 @@ export function ViewDirective(
 ): ng.Directive {
   const $view: ViewService = $state._viewService;
 
-  const rootContext = $view._rootViewContext() as ViewContext;
+  const rootContext = $view._getRootViewContext() as ViewContext;
 
   const rootData: ActiveNgViewRootData = {
     _config: { _viewDecl: { _context: rootContext } },

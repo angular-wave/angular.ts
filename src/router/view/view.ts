@@ -725,14 +725,9 @@ export class ViewService {
     return selected;
   }
 
-  /**
-   * Gets or sets the root view context used for relative `ng-view` targeting.
-   */
-  /** @internal */
-  _rootViewContext(
-    context?: StateObject | null,
-  ): StateObject | null | undefined {
-    return (this._rootContext = context ?? this._rootContext);
+  /** @internal Returns the root context for relative `ng-view` targeting. */
+  _getRootViewContext(): StateObject | null | undefined {
+    return this._rootContext;
   }
 
   /**

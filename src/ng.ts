@@ -854,7 +854,7 @@ const sceRuntimeRegistration: RuntimeRegistrationRecipe = {
       const config = value as SceConfig;
 
       if (config.enabled !== undefined) {
-        configuration.enabled(config.enabled);
+        configuration.setEnabled(config.enabled);
       }
     });
 
@@ -876,18 +876,18 @@ const sceDelegateRuntimeRegistration: RuntimeRegistrationRecipe = {
       const config = value as SceDelegateConfig;
 
       if (config.trustedResourceUrlList !== undefined) {
-        configuration.trustedResourceUrlList(config.trustedResourceUrlList);
+        configuration.setTrustedResourceUrlList(config.trustedResourceUrlList);
       }
       if (config.bannedResourceUrlList !== undefined) {
-        configuration.bannedResourceUrlList(config.bannedResourceUrlList);
+        configuration.setBannedResourceUrlList(config.bannedResourceUrlList);
       }
       if (config.aHrefSanitizationTrustedUrlList !== undefined) {
-        configuration.aHrefSanitizationTrustedUrlList(
+        configuration.setAHrefSanitizationTrustedUrlList(
           config.aHrefSanitizationTrustedUrlList,
         );
       }
       if (config.imgSrcSanitizationTrustedUrlList !== undefined) {
-        configuration.imgSrcSanitizationTrustedUrlList(
+        configuration.setImgSrcSanitizationTrustedUrlList(
           config.imgSrcSanitizationTrustedUrlList,
         );
       }

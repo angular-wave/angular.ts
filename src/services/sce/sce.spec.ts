@@ -8,12 +8,12 @@ describe("SCE", () => {
   let $sce, $rootScope;
 
   const sceDelegateConfig = {
-    trustedResourceUrlList(value) {
+    setTrustedResourceUrlList(value) {
       window.angular._composition.configRegistry.configure("$sceDelegate", {
         trustedResourceUrlList: value,
       });
     },
-    bannedResourceUrlList(value) {
+    setBannedResourceUrlList(value) {
       window.angular._composition.configRegistry.configure("$sceDelegate", {
         bannedResourceUrlList: value,
       });
@@ -324,20 +324,27 @@ describe("SCE", () => {
     });
 
     it("should reject everything when trusted resource URL list is empty", () => {
-      sceDelegateConfig.trustedResourceUrlList([]);
-      sceDelegateConfig.bannedResourceUrlList([]);
+      sceDelegateConfig.setTrustedResourceUrlList([]);
+      sceDelegateConfig.setBannedResourceUrlList([]);
+      expectSceError(() => $sce.getTrustedResourceUrl("#"), "insecurl");
+    });
+
+    it("should treat null resource URL lists as empty", () => {
+      sceDelegateConfig.setTrustedResourceUrlList(null);
+      sceDelegateConfig.setBannedResourceUrlList(null);
+
       expectSceError(() => $sce.getTrustedResourceUrl("#"), "insecurl");
     });
 
     it("should match against normalized urls", () => {
-      sceDelegateConfig.trustedResourceUrlList([/^foo$/]);
-      sceDelegateConfig.bannedResourceUrlList([]);
+      sceDelegateConfig.setTrustedResourceUrlList([/^foo$/]);
+      sceDelegateConfig.setBannedResourceUrlList([]);
       expectSceError(() => $sce.getTrustedResourceUrl("foo"), "insecurl");
     });
 
     it("should not accept unknown matcher type", () => {
       expect(() => {
-        sceDelegateConfig.trustedResourceUrlList([{}]);
+        sceDelegateConfig.setTrustedResourceUrlList([{}]);
       }).toThrowError(/imatcher/);
     });
 
@@ -376,10 +383,10 @@ describe("SCE", () => {
       });
 
       it("should support custom regex", () => {
-        sceDelegateConfig.trustedResourceUrlList([
+        sceDelegateConfig.setTrustedResourceUrlList([
           /^http:\/\/example\.com\/.*/,
         ]);
-        sceDelegateConfig.bannedResourceUrlList([]);
+        sceDelegateConfig.setBannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -397,10 +404,10 @@ describe("SCE", () => {
       });
 
       it("should match entire regex", () => {
-        sceDelegateConfig.trustedResourceUrlList([
+        sceDelegateConfig.setTrustedResourceUrlList([
           /https?:\/\/example\.com\/foo/,
         ]);
-        sceDelegateConfig.bannedResourceUrlList([]);
+        sceDelegateConfig.setBannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -442,8 +449,8 @@ describe("SCE", () => {
       });
 
       it("should support strings as matchers", () => {
-        sceDelegateConfig.trustedResourceUrlList(["http://example.com/foo"]);
-        sceDelegateConfig.bannedResourceUrlList([]);
+        sceDelegateConfig.setTrustedResourceUrlList(["http://example.com/foo"]);
+        sceDelegateConfig.setBannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -465,8 +472,10 @@ describe("SCE", () => {
       });
 
       it("should support the * wildcard", () => {
-        sceDelegateConfig.trustedResourceUrlList(["http://example.com/foo*"]);
-        sceDelegateConfig.bannedResourceUrlList([]);
+        sceDelegateConfig.setTrustedResourceUrlList([
+          "http://example.com/foo*",
+        ]);
+        sceDelegateConfig.setBannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -507,8 +516,10 @@ describe("SCE", () => {
       });
 
       it("should support the ** wildcard", () => {
-        sceDelegateConfig.trustedResourceUrlList(["http://example.com/foo**"]);
-        sceDelegateConfig.bannedResourceUrlList([]);
+        sceDelegateConfig.setTrustedResourceUrlList([
+          "http://example.com/foo**",
+        ]);
+        sceDelegateConfig.setBannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("http://example.com/foo")).toEqual(
           "http://example.com/foo",
         );
@@ -524,7 +535,7 @@ describe("SCE", () => {
 
       it("should not accept *** in the string", () => {
         expect(() => {
-          sceDelegateConfig.trustedResourceUrlList(["http://***"]);
+          sceDelegateConfig.setTrustedResourceUrlList(["http://***"]);
         }).toThrowError(/iwcard/);
       });
     });
@@ -547,14 +558,14 @@ describe("SCE", () => {
       });
 
       it('should support the special string "self" in trusted resource URL list', () => {
-        sceDelegateConfig.trustedResourceUrlList(["self"]);
-        sceDelegateConfig.bannedResourceUrlList([]);
+        sceDelegateConfig.setTrustedResourceUrlList(["self"]);
+        sceDelegateConfig.setBannedResourceUrlList([]);
         expect($sce.getTrustedResourceUrl("foo")).toEqual("foo");
       });
 
       it('should support the special string "self" in baneed resource URL list', () => {
-        sceDelegateConfig.trustedResourceUrlList([/.*/]);
-        sceDelegateConfig.bannedResourceUrlList(["self"]);
+        sceDelegateConfig.setTrustedResourceUrlList([/.*/]);
+        sceDelegateConfig.setBannedResourceUrlList(["self"]);
         expectSceError(() => $sce.getTrustedResourceUrl("foo"), "insecurl");
       });
 
@@ -612,19 +623,19 @@ describe("SCE", () => {
       });
 
       it("should have the banned resource URL list override the trusted resource URL list", () => {
-        sceDelegateConfig.trustedResourceUrlList(["self"]);
-        sceDelegateConfig.bannedResourceUrlList(["self"]);
+        sceDelegateConfig.setTrustedResourceUrlList(["self"]);
+        sceDelegateConfig.setBannedResourceUrlList(["self"]);
         expectSceError(() => $sce.getTrustedResourceUrl("foo"), "insecurl");
       });
 
       it("should support multiple items in both lists", () => {
-        sceDelegateConfig.trustedResourceUrlList([
+        sceDelegateConfig.setTrustedResourceUrlList([
           /^http:\/\/example.com\/1$/,
           /^http:\/\/example.com\/2$/,
           /^http:\/\/example.com\/3$/,
           "self",
         ]);
-        sceDelegateConfig.bannedResourceUrlList([
+        sceDelegateConfig.setBannedResourceUrlList([
           /^http:\/\/example.com\/3$/,
           /.*\/open_redirect/,
         ]);

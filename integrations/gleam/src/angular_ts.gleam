@@ -153,7 +153,10 @@ pub fn get_module(name: String) -> NgModule {
   runtime.get_module(name)
 }
 
-pub fn create_module_with_requires(name: String, requires: List(String)) -> NgModule {
+pub fn create_module_with_requires(
+  name: String,
+  requires: List(String),
+) -> NgModule {
   runtime.create_module_with_requires(name, requires)
 }
 

@@ -828,7 +828,7 @@ class CompileRegistry {
         this.component = registerComponent;
         this.configure = (config) => {
             if (config.strictComponentBindingsEnabled !== undefined) {
-                this.strictComponentBindingsEnabled(config.strictComponentBindingsEnabled);
+                this.setStrictComponentBindingsEnabled(config.strictComponentBindingsEnabled);
             }
             if (config.propertySecurityContexts !== undefined) {
                 for (const context of config.propertySecurityContexts) {
@@ -860,9 +860,8 @@ class CompileRegistry {
             strictComponentBindingsEnabled = false;
         };
         /**
-         * @param enabled - Update the strictComponentBindingsEnabled state if provided,
-         * otherwise return the current strictComponentBindingsEnabled state.
-         * @returns Current value if used as getter or itself (chaining) if used as setter.
+         * @param enabled - New strict component binding validation state.
+         * @returns This registry for chaining.
          *
          * Call this method to enable / disable the strict component bindings check. If enabled, the
          * compiler will enforce that all scope / controller bindings of a
@@ -874,15 +873,11 @@ class CompileRegistry {
          * The default value is false.
          */
         let strictComponentBindingsEnabled = false;
-        this.strictComponentBindingsEnabled =
-            /** @param enabled */
-            function (enabled) {
-                if (enabled !== undefined) {
-                    strictComponentBindingsEnabled = enabled;
-                    return this;
-                }
-                return strictComponentBindingsEnabled;
-            };
+        this.isStrictComponentBindingsEnabled = () => strictComponentBindingsEnabled;
+        this.setStrictComponentBindingsEnabled = function (enabled) {
+            strictComponentBindingsEnabled = enabled;
+            return this;
+        };
         /**
          * The security context of DOM Properties.
          */

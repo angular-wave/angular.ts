@@ -391,7 +391,7 @@ const sceRuntimeRegistration = {
         context.runtime.configRegistry.register(name, (value) => {
             const config = value;
             if (config.enabled !== undefined) {
-                configuration.enabled(config.enabled);
+                configuration.setEnabled(config.enabled);
             }
         });
         return registry.factory(name, [
@@ -408,16 +408,16 @@ const sceDelegateRuntimeRegistration = {
         context.runtime.configRegistry.register(name, (value) => {
             const config = value;
             if (config.trustedResourceUrlList !== undefined) {
-                configuration.trustedResourceUrlList(config.trustedResourceUrlList);
+                configuration.setTrustedResourceUrlList(config.trustedResourceUrlList);
             }
             if (config.bannedResourceUrlList !== undefined) {
-                configuration.bannedResourceUrlList(config.bannedResourceUrlList);
+                configuration.setBannedResourceUrlList(config.bannedResourceUrlList);
             }
             if (config.aHrefSanitizationTrustedUrlList !== undefined) {
-                configuration.aHrefSanitizationTrustedUrlList(config.aHrefSanitizationTrustedUrlList);
+                configuration.setAHrefSanitizationTrustedUrlList(config.aHrefSanitizationTrustedUrlList);
             }
             if (config.imgSrcSanitizationTrustedUrlList !== undefined) {
-                configuration.imgSrcSanitizationTrustedUrlList(config.imgSrcSanitizationTrustedUrlList);
+                configuration.setImgSrcSanitizationTrustedUrlList(config.imgSrcSanitizationTrustedUrlList);
             }
         });
         return registry.factory(name, [

@@ -115,7 +115,7 @@ ViewDirective.$inject = [_state, _anchorScroll, _interpolate, _parse];
  */
 function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
     const $view = $state._viewService;
-    const rootContext = $view._rootViewContext();
+    const rootContext = $view._getRootViewContext();
     const rootData = {
         _config: { _viewDecl: { _context: rootContext } },
         $ngView: {},

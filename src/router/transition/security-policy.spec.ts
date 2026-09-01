@@ -2220,7 +2220,7 @@ describe("transition fallback policy", () => {
 
   it("skips lazy recovery when fallback resolves to an existing failed target", async () => {
     $state = bootstrapLazyFallbackState();
-    const fallback = $state.get("fallback");
+    const fallback = $state.getState("fallback");
 
     fallback.policy = {
       transition: {
@@ -2531,7 +2531,8 @@ describe("transition error boundary policy", () => {
 
   it("redirects to a direct target state error boundary", async () => {
     $state = bootstrapErrorBoundaryStates("error");
-    $state.get("fail").policy.transition.errorBoundary = $state.target("error");
+    $state.getState("fail").policy.transition.errorBoundary =
+      $state.target("error");
 
     await goAndAssert("fail", "error");
   });
@@ -2751,7 +2752,7 @@ describe("transition error boundary policy", () => {
 
   it("uses a direct target error boundary when lazy loading fails", async () => {
     $state = bootstrapLazyErrorBoundaryState("error");
-    $state.get("workspace").policy.transition.errorBoundary =
+    $state.getState("workspace").policy.transition.errorBoundary =
       $state.target("error");
 
     await goAndAssert("workspace.lazy", "error");
@@ -2825,7 +2826,7 @@ describe("transition error boundary policy", () => {
 
   it("uses failed target names for callable lazy boundary params", async () => {
     $state = bootstrapLazyErrorBoundaryState();
-    const errorState = $state.get("error");
+    const errorState = $state.getState("error");
 
     errorState.policy = {
       transition: {

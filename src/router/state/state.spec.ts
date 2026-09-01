@@ -152,7 +152,10 @@ describe("$state", () => {
         });
       }).not.toThrowError();
 
-      expect(stateRuntime.get("named").url).toBe("/named");
+      expect(stateRuntime.getState("named").url).toBe("/named");
+      expect(stateRuntime.getStates().map((state) => state.name)).toContain(
+        "named",
+      );
     });
 
     it("normalizes non-Error registration failures", () => {
@@ -706,8 +709,7 @@ describe("$state", () => {
         }).toThrowError("No such reload state '42'");
       });
 
-      it("validates string state declarations and explicit undefined lookups", () => {
-        expect($state.get(undefined)).toBeUndefined();
+      it("validates string state declarations", () => {
         expect(() => stateRuntime.state("missingDefinition")).toThrowError(
           /'definition' required/,
         );
@@ -1320,7 +1322,7 @@ describe("$state", () => {
           function onExit(cc, $state$, $transition$) {
             expect($transition$.to().name).toBe("A");
             expect($transition$.from().name).toBe("design");
-            expect($state$).toBe(registry.get("design"));
+            expect($state$).toBe(registry.getState("design"));
             expect(cc).toBe("cc resolve");
           },
         ],

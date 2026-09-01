@@ -862,7 +862,7 @@ export function StateRefActiveDirective(
           activeClass: string,
         ): () => void {
           const state = stateName
-            ? $state.get(stateName, stateContext($element))
+            ? $state.getState(stateName, stateContext($element))
             : undefined;
 
           const foundState = state;

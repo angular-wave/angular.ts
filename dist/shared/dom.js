@@ -1,6 +1,6 @@
 import { _scope, _injector } from '../injection-tokens.js';
 import { ALIASED_ATTR } from './constants.js';
-import { directiveNormalize, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, uppercase, isDefined, assertInvariantDefined, isString, assign, isObject } from './utils.js';
+import { directiveNormalize, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, uppercase, isDefined, assertInvariantDefined, isString, assign } from './utils.js';
 import { NodeType } from './node.js';
 
 /**
@@ -103,15 +103,6 @@ function removeElementData(element, name) {
         removeIfEmptyData(element);
     }
 }
-/**
- * Stores data associated with an element inside the expando property of the DOM element.
- *
- * @param element - The element whose expando store should be read or created.
- * @param createIfNecessary - When `true`, creates the expando store if it does not exist.
- * @returns The existing or newly created expando store, or `undefined` when none exists and creation is disabled.
- *
- * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
- */
 function getExpando(element, createIfNecessary = false) {
     let expandoStore = expandoCache.get(element);
     if (createIfNecessary && !expandoStore) {
@@ -211,41 +202,22 @@ function removeIfEmptyData(element) {
     expandoCache.delete(element);
     cacheSize--;
 }
-/**
- * Gets or sets cache data for a given element.
- *
- * @param element - The DOM element to get or set data on.
- * @param key - The key to get/set or an object for mass-setting.
- * @param [value] - The value to set. If not provided, the function acts as a getter.
- * @returns The stored value for keyed reads, the full expando data object for mass reads, or `undefined`.
- */
-function getOrSetCacheData(element, key, value) {
+/** Returns all expando-backed data associated with an element. */
+function getAllCacheData(element) {
     if (!elementAcceptsData(element))
         return undefined;
-    const isSimpleSetter = isDefined(value);
-    const isSimpleGetter = !isSimpleSetter && key && !isObject(key);
-    const massGetter = !key;
-    const expandoStore = getExpando(element, !isSimpleGetter);
-    if (!expandoStore)
-        return undefined;
-    if (isSimpleSetter && isString(key)) {
-        expandoStore[kebabToCamel(key)] = value;
-    }
-    else if (massGetter) {
-        return expandoStore;
-    }
-    else if (isSimpleGetter && isString(key)) {
-        return expandoStore[kebabToCamel(key)];
-    }
-    else if (key && typeof key === "object") {
-        // key is now narrowed to object
-        for (const prop in key) {
-            if (hasOwn(key, prop)) {
-                expandoStore[kebabToCamel(prop)] = key[prop];
-            }
+    return getExpando(element, false);
+}
+/** Adds every property in `data` to an element's expando-backed data. */
+function setAllCacheData(element, data) {
+    if (!elementAcceptsData(element))
+        return;
+    const expandoStore = getExpando(element, true);
+    for (const key in data) {
+        if (hasOwn(data, key)) {
+            expandoStore[kebabToCamel(key)] = data[key];
         }
     }
-    return undefined;
 }
 /**
  * Sets cache data for a given element.
@@ -761,4 +733,4 @@ function extractElementNode(element) {
     return undefined;
 }
 
-export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, addElementDisposer, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getOrSetCacheData, getScope, getTranscludedHostElement, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setCacheData, setIsolateScope, setNormalizedAttr, setScope, setTranscludedHostElement, snakeToCamel, startingTag };
+export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, addElementDisposer, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getAllCacheData, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getScope, getTranscludedHostElement, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setAllCacheData, setCacheData, setIsolateScope, setNormalizedAttr, setScope, setTranscludedHostElement, snakeToCamel, startingTag };

@@ -3432,10 +3432,17 @@ ng.LocationService.prototype.getHash = function() {};
 /**
  * Sets the search part of the current URL as an object.
  * @param {(!Object<string, ?>|number|string)} search New search params as a string or object.
- * @param {(!Array<string>|boolean|null|number|string|undefined)} paramValue If `search` is a string or number, overrides only a single search property.
  * @return {!ng.LocationService}
  */
-ng.LocationService.prototype.setSearch = function(search, paramValue) {};
+ng.LocationService.prototype.setSearch = function(search) {};
+
+/**
+ * Set or remove one search parameter.
+ * @param {(number|string)} name Value supplied for the name parameter.
+ * @param {(!Array<string>|boolean|null|number|string|undefined)} value Value supplied for the value parameter.
+ * @return {!ng.LocationService}
+ */
+ng.LocationService.prototype.setSearchParam = function(name, value) {};
 
 /**
  * Returns the search part of the current URL as an object.
@@ -4101,16 +4108,18 @@ ng.StateRegistryService.prototype.register = function(stateDefinition) {};
 ng.StateRegistryService.prototype.deregister = function(stateOrName) {};
 
 /**
- * Public StateRegistryService.getAll member exposed by the AngularTS namespace contract.
+ * Public StateRegistryService.getStates member exposed by the AngularTS namespace contract.
  * @return {!Array<!ng.StateDeclaration>}
  */
-ng.StateRegistryService.prototype.getAll = function() {};
+ng.StateRegistryService.prototype.getStates = function() {};
 
 /**
- * Public StateRegistryService.get member exposed by the AngularTS namespace contract.
- * @return {!Array<!ng.StateDeclaration>}
+ * Public StateRegistryService.getState member exposed by the AngularTS namespace contract.
+ * @param {(!Object|!ng.StateDeclaration|string)} stateOrName Value supplied for the stateOrName parameter.
+ * @param {(!Object|!ng.StateDeclaration|string|undefined)} base Value supplied for the base parameter.
+ * @return {(!ng.StateDeclaration|null)}
  */
-ng.StateRegistryService.prototype.get = function() {};
+ng.StateRegistryService.prototype.getState = function(stateOrName, base) {};
 
 /**
  * Injectable service-worker lifecycle and messaging facade.
@@ -5833,7 +5842,7 @@ ng.NgModelController.prototype.commitViewValue = function() {};
 ng.NgModelController.prototype.setViewValue = function(value, trigger) {};
 
 /**
- * Override the current model options settings programmatically. The previous `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See `ngModelOptions` for information about what options can be specified and how model option inheritance works. <div class="alert alert-warning"> **Note:** this function only affects the options set on the `ngModelController`, and not the options on the `ngModelOptions` directive from which they might have been obtained initially. </div> <div class="alert alert-danger"> **Note:** it is not possible to override the `getterSetter` option. </div>
+ * Override the current model options settings programmatically. The previous `ModelOptions` value will not be modified. Instead, a new `ModelOptions` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See `ngModelOptions` for information about what options can be specified and how model option inheritance works. <div class="alert alert-warning"> **Note:** this function only affects the options set on the `ngModelController`, and not the options on the `ngModelOptions` directive from which they might have been obtained initially. </div>
  * @param {!Object} options a hash of settings to override the previous options
  * @return {void}
  */
@@ -6745,10 +6754,18 @@ ng.StateService.prototype.href = function(stateOrName, var_args) {};
 ng.StateService.prototype.target = function(identifier, params, options) {};
 
 /**
- * Get all states or a matching public state declaration.
+ * Return every public state declaration.
  * @return {!Array<!ng.StateDeclaration>}
  */
-ng.StateService.prototype.get = function() {};
+ng.StateService.prototype.getStates = function() {};
+
+/**
+ * Return one matching public state declaration.
+ * @param {(!Object|!ng.StateDeclaration|string)} stateOrName Value supplied for the stateOrName parameter.
+ * @param {(!Object|!ng.StateDeclaration|string|undefined)} base Value supplied for the base parameter.
+ * @return {(!ng.StateDeclaration|undefined)}
+ */
+ng.StateService.prototype.getState = function(stateOrName, base) {};
 
 /**
  * Check whether the current state matches a state, ancestor, or glob.

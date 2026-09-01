@@ -1327,7 +1327,7 @@ function updateUrlHook(this: TransitionService, transition: Transition): void {
     );
   }
 
-  routerState._urlRuntime._update(true);
+  routerState._urlRuntime._readUrl();
 }
 
 function registerUpdateUrl(transitionService: TransitionService): DeregisterFn {

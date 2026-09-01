@@ -35,13 +35,13 @@ public class StateService internal constructor(
     public val params: Any?
         get() = raw.params
 
-    public fun get(): Any? =
-        raw.get()
+    public fun getStates(): Any? =
+        raw.getStates()
 
-    public fun get(
+    public fun getState(
         state: Any?,
         base: Any? = undefined,
-    ): Any? = raw.get(state, base)
+    ): Any? = raw.getState(state, base)
 
     public fun go(
         state: Any?,
@@ -71,16 +71,13 @@ public class StateRegistryService internal constructor(
     public fun deregister(state: Any?): Array<dynamic> =
         raw.deregister(state)
 
-    public fun get(): Any? =
-        raw.get()
+    public fun getStates(): Any? =
+        raw.getStates()
 
-    public fun get(
+    public fun getState(
         state: Any?,
         base: Any? = undefined,
-    ): Any? = raw.get(state, base)
-
-    public fun getAll(): Array<dynamic> =
-        raw.getAll()
+    ): Any? = raw.getState(state, base)
 
     public fun root(): Any? =
         raw.root()

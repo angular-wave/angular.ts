@@ -160,7 +160,7 @@ const invalidStaticNgStateProfileLink: StaticNgStateLiteral<
   params: { page: 1 },
 };
 
-const typedStateByName = stateService.get("admin.users");
+const typedStateByName = stateService.getState("admin.users");
 
 declare const $transition$: Transition<
   AppRouteMap,
@@ -191,7 +191,7 @@ declare const untypedTransition: Transition;
 const untypedTransitionParams = untypedTransition.params();
 void untypedTransitionParams["runtimeParam"];
 
-type AssertStateGetReturn = ReturnType<StateService<AppRouteMap>["get"]>;
+type AssertStateGetReturn = ReturnType<StateService<AppRouteMap>["getState"]>;
 type AssertStateGetHasPrivateMarker = Extract<
   AssertStateGetReturn,
   {
@@ -804,15 +804,15 @@ declare const registry: StateRegistryRuntime;
 internalDeclaration._state();
 builtState._state();
 
-const allDeclarations: StateDeclaration[] = registry.getAll();
+const allDeclarations: StateDeclaration[] = registry.getStates();
 const deregisteredDeclarations: StateDeclaration[] =
   registry.deregister("home");
 
 // @ts-expect-error public state declarations do not expose built-state internals
 declaration._state;
 
-// @ts-expect-error registry getAll returns declarations, not built states
-const builtFromGetAll: BuiltStateDeclaration[] = registry.getAll();
+// @ts-expect-error registry getStates returns declarations, not built states
+const builtFromGetStates: BuiltStateDeclaration[] = registry.getStates();
 
 // @ts-expect-error registry deregister returns declarations, not built states
 const builtFromDeregister: BuiltStateDeclaration[] =
@@ -820,7 +820,7 @@ const builtFromDeregister: BuiltStateDeclaration[] =
 
 void allDeclarations;
 void deregisteredDeclarations;
-void builtFromGetAll;
+void builtFromGetStates;
 void builtFromDeregister;
 void retainedDeclaration;
 void retainedRouterTree;

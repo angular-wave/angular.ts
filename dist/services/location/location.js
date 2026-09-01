@@ -1,5 +1,5 @@
 import { trimEmptyHash, urlResolve } from '../../shared/url-utils/url-utils.js';
-import { isUndefined, isString, isNumber, deleteProperty, parseKeyValue, isObject, entries, isNull, isDefined, equals, startsWith, encodeUriSegment, toKeyValue, createErrorFactory } from '../../shared/utils.js';
+import { isUndefined, isString, isNumber, parseKeyValue, isObject, entries, isNull, deleteProperty, isDefined, equals, startsWith, encodeUriSegment, toKeyValue, createErrorFactory } from '../../shared/utils.js';
 import { getBaseHref } from '../../shared/dom.js';
 import { validateRequired } from '../../shared/validate.js';
 
@@ -117,43 +117,36 @@ class Location {
      * Sets the search part of the current URL as an object.
      *
      * @param search - New search params as a string or object.
-     * @param paramValue - If `search` is a string or number, overrides only a single search property.
      * @returns The `Location` instance.
      */
-    setSearch(search, paramValue) {
+    setSearch(search) {
         validateRequired(search, "search");
-        switch (arguments.length) {
-            case 1:
-                if (isString(search) || isNumber(search)) {
-                    search = search.toString();
-                    this._search = parseKeyValue(search);
-                }
-                else if (isObject(search)) {
-                    const clonedSearch = structuredClone(search);
-                    // remove object undefined or null properties
-                    entries(clonedSearch).forEach(([key, value]) => {
-                        if (isNull(value))
-                            deleteProperty(clonedSearch, key);
-                    });
-                    this._search = clonedSearch;
-                }
-                else {
-                    throw $locationError("isrcharg", "The first argument of `$location.setSearch()` must be a string or an object.");
-                }
-                break;
-            default: {
-                if (!isString(search) && !isNumber(search)) {
-                    throw $locationError("isrcharg", "The first argument of `$location.setSearch()` must be a string or number when setting a single parameter.");
-                }
-                const searchKey = isString(search) ? search : String(search);
-                if (isUndefined(paramValue) || paramValue === null) {
-                    deleteProperty(this._search, searchKey);
-                }
-                else {
-                    this._search[searchKey] = paramValue;
-                }
-                break;
-            }
+        if (isString(search) || isNumber(search)) {
+            this._search = parseKeyValue(search.toString());
+        }
+        else if (isObject(search)) {
+            const clonedSearch = structuredClone(search);
+            entries(clonedSearch).forEach(([key, value]) => {
+                if (isNull(value))
+                    deleteProperty(clonedSearch, key);
+            });
+            this._search = clonedSearch;
+        }
+        else {
+            throw $locationError("isrcharg", "The argument to `$location.setSearch()` must be a string or an object.");
+        }
+        this._compose();
+        return this;
+    }
+    /** Set or remove one search parameter. */
+    setSearchParam(name, value) {
+        validateRequired(name, "name");
+        const key = String(name);
+        if (isUndefined(value) || value === null) {
+            deleteProperty(this._search, key);
+        }
+        else {
+            this._search[key] = value;
         }
         this._compose();
         return this;

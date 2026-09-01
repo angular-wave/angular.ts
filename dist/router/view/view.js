@@ -351,12 +351,9 @@ class ViewService {
         });
         return selected;
     }
-    /**
-     * Gets or sets the root view context used for relative `ng-view` targeting.
-     */
-    /** @internal */
-    _rootViewContext(context) {
-        return (this._rootContext = context ?? this._rootContext);
+    /** @internal Returns the root context for relative `ng-view` targeting. */
+    _getRootViewContext() {
+        return this._rootContext;
     }
     /**
      * Removes a view config from the active registry.

@@ -69,7 +69,6 @@ const defaultModelOptions = new ModelOptions({
     updateOn: "",
     updateOnDefault: true,
     debounce: 0,
-    getterSetter: false,
     allowInvalid: false,
 });
 /** Registers the `ngModelOptions` directive controller. */

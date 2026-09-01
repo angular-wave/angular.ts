@@ -3766,16 +3766,25 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
   ///
   /// Parameters:
   /// - [search]: New search params as a string or object.
-  /// - [paramValue]: If `search` is a string or number, overrides only a single search property.
-  GeneratedNgLocationService setSearch(Object? search,
-      [Object? paramValue = _undefinedArgument]) {
+  GeneratedNgLocationService setSearch(Object? search) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(search));
-    if (!identical(paramValue, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(paramValue));
-    }
 
     raw.callMethodVarArgs('setSearch'.toJS, args);
+    return this;
+  }
+
+  /// Set or remove one search parameter.
+  ///
+  /// Parameters:
+  /// - [name]: Value supplied for the name parameter.
+  /// - [value]: Value supplied for the value parameter.
+  GeneratedNgLocationService setSearchParam(Object? name, Object? value) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(name));
+    args.add(unsafe.dartToJs(value));
+
+    raw.callMethodVarArgs('setSearchParam'.toJS, args);
     return this;
   }
 
@@ -5027,8 +5036,7 @@ base class GeneratedNgNgModelController extends GeneratedNgFacade {
   /// for information about what options can be specified and how model option inheritance works. &lt;div
   /// class="alert alert-warning"&gt; **Note:** this function only affects the options set on the
   /// `ngModelController`, and not the options on the `ngModelOptions` directive from which they might
-  /// have been obtained initially. &lt;/div&gt; &lt;div class="alert alert-danger"&gt; **Note:** it is not
-  /// possible to override the `getterSetter` option. &lt;/div&gt;
+  /// have been obtained initially. &lt;/div&gt;
   ///
   /// Parameters:
   /// - [options]: a hash of settings to override the previous options
@@ -9705,29 +9713,26 @@ base class GeneratedNgStateRegistryService extends GeneratedNgFacade {
         .jsToDart<Object?>(raw.callMethodVarArgs('deregister'.toJS, args));
   }
 
-  /// The getAll member of ng.StateRegistryService.
-  Object? getAll() {
+  /// The getStates member of ng.StateRegistryService.
+  Object? getStates() {
     return unsafe.jsToDart<Object?>(
-        raw.callMethodVarArgs('getAll'.toJS, const <JSAny?>[]));
+        raw.callMethodVarArgs('getStates'.toJS, const <JSAny?>[]));
   }
 
-  /// The get member of ng.StateRegistryService.
+  /// The getState member of ng.StateRegistryService.
   ///
   /// Parameters:
   /// - [stateOrName]: Value supplied for the stateOrName parameter.
   /// - [base]: Value supplied for the base parameter.
-  Object? getMember(
-      [Object? stateOrName = _undefinedArgument,
-      Object? base = _undefinedArgument]) {
+  Object? getState(Object? stateOrName, [Object? base = _undefinedArgument]) {
     final args = <JSAny?>[];
-    if (!identical(stateOrName, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(stateOrName));
-    }
+    args.add(unsafe.dartToJs(stateOrName));
     if (!identical(base, _undefinedArgument)) {
       args.add(unsafe.dartToJs(base));
     }
 
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('get'.toJS, args));
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('getState'.toJS, args));
   }
 }
 
@@ -9831,23 +9836,26 @@ base class GeneratedNgStateService extends GeneratedNgFacade {
     return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('target'.toJS, args));
   }
 
-  /// Get all states or a matching public state declaration.
+  /// Return every public state declaration.
+  Object? getStates() {
+    return unsafe.jsToDart<Object?>(
+        raw.callMethodVarArgs('getStates'.toJS, const <JSAny?>[]));
+  }
+
+  /// Return one matching public state declaration.
   ///
   /// Parameters:
   /// - [stateOrName]: Value supplied for the stateOrName parameter.
   /// - [base]: Value supplied for the base parameter.
-  Object? getMember(
-      [Object? stateOrName = _undefinedArgument,
-      Object? base = _undefinedArgument]) {
+  Object? getState(Object? stateOrName, [Object? base = _undefinedArgument]) {
     final args = <JSAny?>[];
-    if (!identical(stateOrName, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(stateOrName));
-    }
+    args.add(unsafe.dartToJs(stateOrName));
     if (!identical(base, _undefinedArgument)) {
       args.add(unsafe.dartToJs(base));
     }
 
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('get'.toJS, args));
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('getState'.toJS, args));
   }
 
   /// Check whether the current state matches a state, ancestor, or glob.

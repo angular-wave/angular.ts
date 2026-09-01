@@ -324,14 +324,14 @@ describe("StateBuilder", function () {
         template: "child",
       });
 
-      expect($stateRegistry.get("queued.child")).toBeNull();
+      expect($stateRegistry.getState("queued.child")).toBeNull();
       expect($stateRegistry._isQueued("queued.child")).toBeTrue();
       expect($stateRegistry._queue).toContain(child);
 
       $stateRegistry.register({ name: "queued", template: "parent" });
 
-      expect($stateRegistry.get("queued")).toBeDefined();
-      expect($stateRegistry.get("queued.child")).toBeDefined();
+      expect($stateRegistry.getState("queued")).toBeDefined();
+      expect($stateRegistry.getState("queued.child")).toBeDefined();
       expect($stateRegistry._isQueued("queued.child")).toBeFalse();
       expect(events.some((event) => event.names.includes("queued.child"))).toBe(
         true,
@@ -353,8 +353,8 @@ describe("StateBuilder", function () {
         "removeMe.child",
         "removeMe",
       ]);
-      expect($stateRegistry.get("removeMe")).toBeNull();
-      expect($stateRegistry.get("removeMe.child")).toBeNull();
+      expect($stateRegistry.getState("removeMe")).toBeNull();
+      expect($stateRegistry.getState("removeMe.child")).toBeNull();
       expect(events).toEqual([
         {
           event: "deregistered",
@@ -376,7 +376,7 @@ describe("StateBuilder", function () {
       $stateRegistry.register({ name: "listMe", template: "list" });
 
       expect(
-        $stateRegistry.get().some((state) => state.name === "listMe"),
+        $stateRegistry.getStates().some((state) => state.name === "listMe"),
       ).toBe(true);
     });
 
@@ -384,7 +384,7 @@ describe("StateBuilder", function () {
       $stateRegistry.register({ name: "listAll", template: "list" });
 
       expect(
-        $stateRegistry.getAll().some((state) => state.name === "listAll"),
+        $stateRegistry.getStates().some((state) => state.name === "listAll"),
       ).toBe(true);
     });
   });

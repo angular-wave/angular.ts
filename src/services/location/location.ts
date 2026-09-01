@@ -251,52 +251,44 @@ export class Location {
    * Sets the search part of the current URL as an object.
    *
    * @param search - New search params as a string or object.
-   * @param paramValue - If `search` is a string or number, overrides only a single search property.
    * @returns The `Location` instance.
    */
-  setSearch(
-    search: string | number | Record<string, unknown>,
-    paramValue?: string | number | string[] | boolean | null,
-  ) {
+  setSearch(search: string | number | Record<string, unknown>) {
     validateRequired(search, "search");
-    switch (arguments.length) {
-      case 1:
-        if (isString(search) || isNumber(search)) {
-          search = search.toString();
-          this._search = parseKeyValue(search);
-        } else if (isObject(search)) {
-          const clonedSearch = structuredClone(search);
+    if (isString(search) || isNumber(search)) {
+      this._search = parseKeyValue(search.toString());
+    } else if (isObject(search)) {
+      const clonedSearch = structuredClone(search);
 
-          // remove object undefined or null properties
-          entries(clonedSearch).forEach(([key, value]) => {
-            if (isNull(value)) deleteProperty(clonedSearch, key);
-          });
+      entries(clonedSearch).forEach(([key, value]) => {
+        if (isNull(value)) deleteProperty(clonedSearch, key);
+      });
 
-          this._search = clonedSearch;
-        } else {
-          throw $locationError(
-            "isrcharg",
-            "The first argument of `$location.setSearch()` must be a string or an object.",
-          );
-        }
-        break;
-      default: {
-        if (!isString(search) && !isNumber(search)) {
-          throw $locationError(
-            "isrcharg",
-            "The first argument of `$location.setSearch()` must be a string or number when setting a single parameter.",
-          );
-        }
+      this._search = clonedSearch;
+    } else {
+      throw $locationError(
+        "isrcharg",
+        "The argument to `$location.setSearch()` must be a string or an object.",
+      );
+    }
 
-        const searchKey = isString(search) ? search : String(search);
+    this._compose();
 
-        if (isUndefined(paramValue) || paramValue === null) {
-          deleteProperty(this._search, searchKey);
-        } else {
-          this._search[searchKey] = paramValue;
-        }
-        break;
-      }
+    return this;
+  }
+
+  /** Set or remove one search parameter. */
+  setSearchParam(
+    name: string | number,
+    value: string | number | string[] | boolean | null | undefined,
+  ) {
+    validateRequired(name, "name");
+    const key = String(name);
+
+    if (isUndefined(value) || value === null) {
+      deleteProperty(this._search, key);
+    } else {
+      this._search[key] = value;
     }
 
     this._compose();

@@ -589,7 +589,7 @@ describe("$location", () => {
       const locationUrl = createLocationHtml5Url();
 
       locationUrl.setSearch({ id: "old", preserved: true });
-      locationUrl.setSearch("id", "new");
+      locationUrl.setSearchParam("id", "new");
 
       expect(locationUrl.getSearch()).toEqual({ id: "new", preserved: true });
     });
@@ -598,7 +598,7 @@ describe("$location", () => {
       const locationUrl = createLocationHtml5Url();
 
       locationUrl.setSearch({ id: "old", preserved: true });
-      locationUrl.setSearch("id", null);
+      locationUrl.setSearchParam("id", null);
 
       expect(locationUrl.getSearch()).toEqual({ preserved: true });
     });
@@ -629,11 +629,11 @@ describe("$location", () => {
       locationUrl.setSearch("a&b");
       expect(locationUrl.getSearch()).toEqual({ a: true, b: true });
 
-      locationUrl.setSearch("a", null);
+      locationUrl.setSearchParam("a", null);
 
       expect(locationUrl.getSearch()).toEqual({ b: true });
 
-      locationUrl.setSearch("b", undefined);
+      locationUrl.setSearchParam("b", undefined);
       expect(locationUrl.getSearch()).toEqual({});
     });
 
@@ -655,6 +655,9 @@ describe("$location", () => {
       expect(() => {
         locationUrl.setSearch(undefined);
       }).toThrowError(/badarg/);
+      expect(() => {
+        locationUrl.setSearch(true as unknown as string);
+      }).toThrowError(/isrcharg/);
     });
 
     it("hash() should change hash fragment", () => {
@@ -697,7 +700,7 @@ describe("$location", () => {
       );
     });
 
-    it("url getter/setter should change the path, search and hash", () => {
+    it("setUrl should change the path, search and hash", () => {
       const locationUrl = createLocationHtml5Url();
 
       locationUrl.setUrl("/some/path?a=b&c=d#hhh");
@@ -710,7 +713,7 @@ describe("$location", () => {
       expect(locationUrl.getHash()).toBe("hhh");
     });
 
-    it("url getter/setter should change only hash when no search and path specified", () => {
+    it("setUrl should change only hash when no search and path specified", () => {
       const locationUrl = createLocationHtml5Url();
 
       expect(locationUrl.getUrl()).toBe("/path/b?search=a&b=c&d#hash");
@@ -888,7 +891,7 @@ describe("$location", () => {
           .setPath("/foo")
           .setHash("abcd")
           .setState({ a: 2 })
-          .setSearch("bar", "baz");
+          .setSearchParam("bar", "baz");
 
         expect(locationUrl.getPath()).toEqual("/foo");
         expect(locationUrl.getState()).toEqual({ a: 2 });
@@ -1175,7 +1178,7 @@ describe("$location", () => {
         );
 
         locationUrl.parse("http://host.com/");
-        locationUrl.setSearch("q", "1/2 3");
+        locationUrl.setSearchParam("q", "1/2 3");
         expect(locationUrl.getSearch()).toEqual({ q: "1/2 3" });
       });
 
@@ -1187,7 +1190,7 @@ describe("$location", () => {
         );
 
         locationUrl.parse("http://host.com");
-        locationUrl.setSearch("q", ["1/2 3", "4/5 6"]);
+        locationUrl.setSearchParam("q", ["1/2 3", "4/5 6"]);
         expect(locationUrl.getSearch()).toEqual({ q: ["1/2 3", "4/5 6"] });
       });
 
@@ -1219,7 +1222,7 @@ describe("$location", () => {
         expect(locationUrl.absUrl).toEqual("http://host.com?q=4%2F5%206");
       });
 
-      it("url getter/setter should decode non-component special characters in hashbang mode", () => {
+      it("setUrl should decode non-component special characters in hashbang mode", () => {
         const locationUrl = new Location(
           "http://host.com",
           "http://host.com",
@@ -1231,7 +1234,7 @@ describe("$location", () => {
         expect(locationUrl.getPath()).toEqual("/foo%3Abar");
       });
 
-      it("url getter/setter should decode non-component special characters in html5 mode", () => {
+      it("setUrl should decode non-component special characters in html5 mode", () => {
         const locationUrl = new Location(
           "http://host.com",
           "http://host.com",

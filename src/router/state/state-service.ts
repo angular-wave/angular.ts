@@ -553,7 +553,7 @@ export class StateRuntime {
 
       for (let i = tokens.length; i > 0; i--) {
         const candidateName = tokens.slice(0, i).join(".");
-        const state = this._stateRegistry.get(candidateName);
+        const state = this._stateRegistry.getState(candidateName);
 
         if (!state) continue;
 
@@ -1150,18 +1150,18 @@ export class StateRuntime {
    * @param {StateOrName} stateOrName
    * @param {undefined} [base]
    */
-  get(): StateDeclaration[];
-  get(
+  getStates(): StateDeclaration[] {
+    return this._stateRegistry.getStates();
+  }
+
+  getState(
     stateOrName: StateOrName,
     base?: StateOrName,
-  ): StateDeclaration | undefined;
-  get(stateOrName?: StateOrName, base?: StateOrName) {
-    const reg = this._stateRegistry;
-
-    if (arguments.length === 0) return reg.get();
-    if (stateOrName === undefined) return undefined;
-
-    return reg.get(stateOrName, base ?? this._current);
+  ): StateDeclaration | undefined {
+    return (
+      this._stateRegistry.getState(stateOrName, base ?? this._current) ??
+      undefined
+    );
   }
 }
 
@@ -1250,10 +1250,12 @@ export type StateService<TRouteMap extends RouteMap = Record<string, never>> = {
     options?: TransitionOptions,
   ): TargetState;
 
-  /** Get all states or a matching public state declaration. */
-  get(): StateDeclaration[];
-  get(
-    stateOrName?: StateOrName,
+  /** Return every public state declaration. */
+  getStates(): StateDeclaration[];
+
+  /** Return one matching public state declaration. */
+  getState(
+    stateOrName: StateOrName,
     base?: StateOrName,
   ): StateDeclaration | undefined;
 

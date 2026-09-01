@@ -35,9 +35,11 @@ export interface StateRegistryService {
   root(): StateDeclaration;
   register(stateDefinition: StateDeclaration): StateDeclaration;
   deregister(stateOrName: StateOrName): StateDeclaration[];
-  getAll(): StateDeclaration[];
-  get(): StateDeclaration[];
-  get(stateOrName: StateOrName, base?: StateOrName): StateDeclaration | null;
+  getStates(): StateDeclaration[];
+  getState(
+    stateOrName: StateOrName,
+    base?: StateOrName,
+  ): StateDeclaration | null;
 }
 
 /**
@@ -140,7 +142,7 @@ export class StateRegistryRuntime implements StateRegistryService {
    *
    * #### Example:
    * ```js
-   * let allStates = registry.get();
+   * let allStates = registry.getStates();
    *
    * // Later, invoke deregisterFn() to remove the listener
    * let deregisterFn = registry.onStatesChanged((event, states) => {
@@ -367,7 +369,7 @@ export class StateRegistryRuntime implements StateRegistryService {
    * @returns {StateDeclaration[]} a list of removed state declarations
    */
   deregister(stateOrName: StateOrName): StateDeclaration[] {
-    const stateDeclaration = this.get(
+    const stateDeclaration = this.getState(
       stateOrName,
     ) as InternalStateDeclaration | null;
 
@@ -405,7 +407,7 @@ export class StateRegistryRuntime implements StateRegistryService {
   /**
    * @return {StateDeclaration[]}
    */
-  getAll(): StateDeclaration[] {
+  getStates(): StateDeclaration[] {
     return this._getAllBuilt().map((state) => state.self);
   }
 
@@ -415,28 +417,11 @@ export class StateRegistryRuntime implements StateRegistryService {
    * @param {StateOrName} [base]
    * @returns {StateDeclaration | StateDeclaration[] | null}
    */
-  get(): StateDeclaration[];
-  get(stateOrName: StateOrName, base?: StateOrName): StateDeclaration | null;
-  get(
-    stateOrName?: StateOrName,
+  getState(
+    stateOrName: StateOrName,
     base?: StateOrName,
-  ): StateDeclaration | StateDeclaration[] | null {
-    if (arguments.length === 0) {
-      const stateNames = keys(this._states);
-
-      const states: StateDeclaration[] = [];
-
-      stateNames.forEach((name) => {
-        states.push(this._states[name].self);
-      });
-
-      return states;
-    }
-
-    const found =
-      stateOrName === undefined
-        ? undefined
-        : this._matcher.find(stateOrName, base);
+  ): StateDeclaration | null {
+    const found = this._matcher.find(stateOrName, base);
 
     return found?.self ?? null;
   }

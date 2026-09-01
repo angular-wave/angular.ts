@@ -12,7 +12,10 @@ pub fn create_module(name: String) -> NgModule {
   create_module_with_requires(name, [])
 }
 
-pub fn create_module_with_requires(name: String, requires: List(String)) -> NgModule {
+pub fn create_module_with_requires(
+  name: String,
+  requires: List(String),
+) -> NgModule {
   module.from_handle(name, angular_create_module(name, requires))
 }
 

@@ -1,6 +1,6 @@
 import { _scope, _exceptionHandler, _element, _parse, _injector, _interpolate } from '../../injection-tokens.js';
 import { VALID_CLASS, INVALID_CLASS, EMPTY_CLASS, NOT_EMPTY_CLASS, PRISTINE_CLASS, DIRTY_CLASS, UNTOUCHED_CLASS, TOUCHED_CLASS } from '../../shared/constants.js';
-import { isUndefined, hasAnimate, isString, isObjectEmpty, deProxy, isFunction, callFunction, isNull, isNumberNaN, values, isNumber, createErrorFactory, snakeCase, keys, entries, isPromiseLike, directiveNormalize } from '../../shared/utils.js';
+import { isUndefined, hasAnimate, isString, isObjectEmpty, deProxy, isNull, isNumberNaN, callFunction, values, isNumber, createErrorFactory, snakeCase, keys, entries, isPromiseLike, directiveNormalize } from '../../shared/utils.js';
 import { startingTag, getNormalizedAttr } from '../../shared/dom.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { nullFormCtrl, cachedToggleClass, PENDING_CLASS } from '../form/form.js';
@@ -267,27 +267,8 @@ class NgModelController {
         return version;
     }
     /** @internal */
-    _initGetterSetters() {
-        if (this.options.getOption("getterSetter")) {
-            const invokeModelGetter = this._parse(`${this._modelExpression}()`);
-            const invokeModelSetter = this._parse(`${this._modelExpression}(_$p)`);
-            this._ngModelGet = ($scope) => {
-                let modelValue = this._parsedNgModel($scope);
-                if (isFunction(modelValue)) {
-                    modelValue = callFunction(invokeModelGetter, undefined, $scope);
-                }
-                return modelValue;
-            };
-            this._ngModelSet = ($scope, newValue) => {
-                if (isFunction(this._parsedNgModel($scope))) {
-                    callFunction(invokeModelSetter, undefined, $scope, { _$p: newValue });
-                }
-                else {
-                    callFunction(this._parsedNgModelAssign, undefined, $scope, newValue);
-                }
-            };
-        }
-        else if (!this._parsedNgModel._assign) {
+    _validateModelExpression() {
+        if (!this._parsedNgModel._assign) {
             throw ngModelError("nonassign", "Expression '{0}' is non-assignable. Element: {1}", this._modelExpression, startingTag(this._element));
         }
     }
@@ -887,10 +868,6 @@ class NgModelController {
      * obtained initially.
      * </div>
      *
-     * <div class="alert alert-danger">
-     * **Note:** it is not possible to override the `getterSetter` option.
-     * </div>
-     *
      * @param  options a hash of settings to override the previous options
      *
      */
@@ -1144,7 +1121,7 @@ function ngModelDirective() {
                     if (optionsCtrl) {
                         modelCtrl.options = optionsCtrl.options;
                     }
-                    modelCtrl._initGetterSetters();
+                    modelCtrl._validateModelExpression();
                     // notify others, especially parent forms
                     formCtrl.addControl(modelCtrl);
                     const handleNameChange = (newValue) => {

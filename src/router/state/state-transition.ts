@@ -410,7 +410,7 @@ export function getTransitionRetryPolicyFromStateName(
 
   for (let i = tokens.length; i > 0; i--) {
     const candidateName = tokens.slice(0, i).join(".");
-    const state = stateProvider._stateRegistry.get(candidateName);
+    const state = stateProvider._stateRegistry.getState(candidateName);
 
     if (!state) continue;
 
@@ -693,7 +693,7 @@ async function handleTransitionRejection(
 
     if (error.type === RejectType._IGNORED) {
       if (isLatest) {
-        routerState._urlRuntime._update();
+        routerState._urlRuntime._writeUrl();
       }
 
       // Consider ignored `Transition.run()` as a successful `transitionTo`.
@@ -714,7 +714,7 @@ async function handleTransitionRejection(
 
     if (error.type === RejectType._ABORTED) {
       if (isLatest) {
-        routerState._urlRuntime._update();
+        routerState._urlRuntime._writeUrl();
       }
 
       return Promise.reject(error);

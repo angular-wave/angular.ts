@@ -1,6 +1,6 @@
 import { getBaseHref } from '../shared/dom.js';
 import { stripLastPathElement } from '../shared/strings.js';
-import { isDefined, isNull } from '../shared/utils.js';
+import { isNull, isDefined } from '../shared/utils.js';
 
 /**
  * Owns URL reads, writes, and href formatting for the router runtime.
@@ -33,29 +33,31 @@ class RouterUrlRuntime {
             (this._baseHref = getBaseHref() || window.location.pathname));
     }
     /** @internal */
-    _url(newUrl, state) {
-        if (isDefined(newUrl)) {
-            this._location.setUrl(decodeURIComponent(newUrl));
-        }
-        if (state)
-            this._location.setState(state);
+    _getUrl() {
         return this._location.getUrl();
     }
     /** @internal */
-    _update(read) {
-        if (read) {
-            this._lastUrl = this._url();
+    _setUrl(newUrl, state) {
+        this._location.setUrl(decodeURIComponent(newUrl));
+        if (state)
+            this._location.setState(state);
+        return this._getUrl();
+    }
+    /** @internal */
+    _readUrl() {
+        this._lastUrl = this._getUrl();
+    }
+    /** @internal */
+    _writeUrl() {
+        if (this._getUrl() === this._lastUrl)
             return;
-        }
-        if (this._url() === this._lastUrl)
-            return;
-        this._url(this._lastUrl, true);
+        this._setUrl(this._lastUrl, true);
     }
     /** @internal */
     _push(urlMatcher, params, options) {
         const url = urlMatcher._format(params);
         if (!isNull(url)) {
-            this._url(url, !!options.replace);
+            this._setUrl(url, !!options.replace);
         }
     }
     /** @internal */

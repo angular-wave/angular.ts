@@ -296,7 +296,7 @@ class StateRuntime {
             const tokens = stateNameString.split(".");
             for (let i = tokens.length; i > 0; i--) {
                 const candidateName = tokens.slice(0, i).join(".");
-                const state = this._stateRegistry.get(candidateName);
+                const state = this._stateRegistry.getState(candidateName);
                 if (!state)
                     continue;
                 const policy = readPolicy(state);
@@ -669,13 +669,16 @@ class StateRuntime {
             absolute: options?.absolute,
         });
     }
-    get(stateOrName, base) {
-        const reg = this._stateRegistry;
-        if (arguments.length === 0)
-            return reg.get();
-        if (stateOrName === undefined)
-            return undefined;
-        return reg.get(stateOrName, base ?? this._current);
+    /**
+     * @param {StateOrName} stateOrName
+     * @param {undefined} [base]
+     */
+    getStates() {
+        return this._stateRegistry.getStates();
+    }
+    getState(stateOrName, base) {
+        return (this._stateRegistry.getState(stateOrName, base ?? this._current) ??
+            undefined);
     }
 }
 function normalizeStateDeclaration(nameOrDefinition, definition) {

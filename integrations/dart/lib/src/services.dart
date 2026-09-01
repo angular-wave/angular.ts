@@ -130,13 +130,16 @@ final class LocationService extends GeneratedNgLocationService {
 
   /// Sets URL search parameters.
   @override
-  LocationService setSearch(Object? search, [Object? paramValue]) {
+  LocationService setSearch(Object? search) {
+    unsafe.callMethod1(raw, 'setSearch', unsafe.dartToJs(search));
+    return this;
+  }
+
+  /// Sets or removes one URL search parameter.
+  @override
+  LocationService setSearchParam(Object? name, Object? value) {
     unsafe.callMethod2(
-      raw,
-      'setSearch',
-      unsafe.dartToJs(search),
-      unsafe.dartToJs(paramValue),
-    );
+        raw, 'setSearchParam', unsafe.dartToJs(name), unsafe.dartToJs(value));
     return this;
   }
 

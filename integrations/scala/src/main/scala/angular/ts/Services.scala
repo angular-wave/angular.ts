@@ -1540,9 +1540,7 @@ object StateResolveArray:
 trait ViewService extends js.Object:
   val _ngViews: js.Array[ActiveNgView] = js.native
   val _viewConfigs: js.Array[ViewConfig] = js.native
-  def _rootViewContext(): js.UndefOr[js.Object | Null] = js.native
-  def _rootViewContext(context: js.Object | Null): js.UndefOr[js.Object | Null] =
-    js.native
+  def _getRootViewContext(): js.UndefOr[js.Object | Null] = js.native
   def _deactivateViewConfig(viewConfig: ViewConfig): Unit = js.native
   def _activateViewConfig(viewConfig: ViewConfig): Unit = js.native
   def _sync(): Unit = js.native
@@ -1869,9 +1867,8 @@ trait StateRegistryService extends js.Object:
   def root(): js.Object = js.native
   def register(state: js.Object): js.Object = js.native
   def deregister(stateOrName: String): js.Array[js.Object] = js.native
-  def getAll(): js.Array[js.Object] = js.native
-  def get(): js.Array[js.Object] = js.native
-  def get(stateOrName: String): js.Object | Null = js.native
+  def getStates(): js.Array[js.Object] = js.native
+  def getState(stateOrName: String): js.Object | Null = js.native
 
 object StateRegistryService:
   extension (service: StateRegistryService)
@@ -3036,7 +3033,8 @@ trait LocationService extends js.Object:
   def getSearch(): js.Dictionary[js.Any] = js.native
   def setSearch(value: String | Double): LocationService = js.native
   def setSearch(value: js.Dictionary[js.Any]): LocationService = js.native
-  def setSearch(name: String | Double, value: js.Any): LocationService = js.native
+  def setSearchParam(name: String | Double, value: js.Any): LocationService =
+    js.native
   def getHash(): String = js.native
   def setHash(value: String | Double | Null): LocationService = js.native
   def replace(): LocationService = js.native

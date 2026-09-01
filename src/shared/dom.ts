@@ -10,7 +10,6 @@ import {
   isDefined,
   isInstanceOf,
   isNullOrUndefined,
-  isObject,
   isString,
   snakeCase,
   uppercase,
@@ -179,6 +178,14 @@ export function removeElementData(element: ExpandoOwner, name?: string): void {
  */
 function getExpando(
   element: ExpandoOwner,
+  createIfNecessary: true,
+): ExpandoStore;
+function getExpando(
+  element: ExpandoOwner,
+  createIfNecessary?: false,
+): ExpandoStore | undefined;
+function getExpando(
+  element: ExpandoOwner,
   createIfNecessary = false,
 ): ExpandoStore | undefined {
   let expandoStore = expandoCache.get(element);
@@ -322,47 +329,29 @@ function removeIfEmptyData(element: ExpandoOwner): void {
   cacheSize--;
 }
 
-/**
- * Gets or sets cache data for a given element.
- *
- * @param element - The DOM element to get or set data on.
- * @param key - The key to get/set or an object for mass-setting.
- * @param [value] - The value to set. If not provided, the function acts as a getter.
- * @returns The stored value for keyed reads, the full expando data object for mass reads, or `undefined`.
- */
-export function getOrSetCacheData(
+/** Returns all expando-backed data associated with an element. */
+export function getAllCacheData(
   element: Element,
-  key?: string | Record<string, unknown>,
-  value?: unknown,
-): unknown {
+): Record<string, unknown> | undefined {
   if (!elementAcceptsData(element)) return undefined;
 
-  const isSimpleSetter = isDefined(value);
+  return getExpando(element, false);
+}
 
-  const isSimpleGetter = !isSimpleSetter && key && !isObject(key);
+/** Adds every property in `data` to an element's expando-backed data. */
+export function setAllCacheData(
+  element: Element,
+  data: Record<string, unknown>,
+): void {
+  if (!elementAcceptsData(element)) return;
 
-  const massGetter = !key;
+  const expandoStore = getExpando(element, true);
 
-  const expandoStore = getExpando(element, !isSimpleGetter);
-
-  if (!expandoStore) return undefined;
-
-  if (isSimpleSetter && isString(key)) {
-    expandoStore[kebabToCamel(key)] = value;
-  } else if (massGetter) {
-    return expandoStore;
-  } else if (isSimpleGetter && isString(key)) {
-    return expandoStore[kebabToCamel(key)];
-  } else if (key && typeof key === "object") {
-    // key is now narrowed to object
-    for (const prop in key) {
-      if (hasOwn(key, prop)) {
-        expandoStore[kebabToCamel(prop)] = key[prop];
-      }
+  for (const key in data) {
+    if (hasOwn(data, key)) {
+      expandoStore[kebabToCamel(key)] = data[key];
     }
   }
-
-  return undefined;
 }
 
 /**

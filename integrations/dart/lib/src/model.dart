@@ -30,7 +30,6 @@ final class NgModelOptions {
     this.updateOn,
     this.debounce,
     this.allowInvalid,
-    this.getterSetter,
     this.timezone,
     this.timeSecondsFormat,
     this.timeStripZeroSeconds,
@@ -44,9 +43,6 @@ final class NgModelOptions {
 
   /// The allow invalid.
   final bool? allowInvalid;
-
-  /// The getter setter.
-  final bool? getterSetter;
 
   /// The timezone.
   final String? timezone;
@@ -62,7 +58,6 @@ final class NgModelOptions {
         if (updateOn != null) 'updateOn': updateOn,
         if (debounce != null) 'debounce': debounce,
         if (allowInvalid != null) 'allowInvalid': allowInvalid,
-        if (getterSetter != null) 'getterSetter': getterSetter,
         if (timezone != null) 'timezone': timezone,
         if (timeSecondsFormat != null) 'timeSecondsFormat': timeSecondsFormat,
         if (timeStripZeroSeconds != null)

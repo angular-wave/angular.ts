@@ -1305,15 +1305,6 @@
             removeIfEmptyData(element);
         }
     }
-    /**
-     * Stores data associated with an element inside the expando property of the DOM element.
-     *
-     * @param element - The element whose expando store should be read or created.
-     * @param createIfNecessary - When `true`, creates the expando store if it does not exist.
-     * @returns The existing or newly created expando store, or `undefined` when none exists and creation is disabled.
-     *
-     * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
-     */
     function getExpando(element, createIfNecessary = false) {
         let expandoStore = expandoCache.get(element);
         if (createIfNecessary && !expandoStore) {
@@ -8474,7 +8465,7 @@
             this.component = registerComponent;
             this.configure = (config) => {
                 if (config.strictComponentBindingsEnabled !== undefined) {
-                    this.strictComponentBindingsEnabled(config.strictComponentBindingsEnabled);
+                    this.setStrictComponentBindingsEnabled(config.strictComponentBindingsEnabled);
                 }
                 if (config.propertySecurityContexts !== undefined) {
                     for (const context of config.propertySecurityContexts) {
@@ -8506,9 +8497,8 @@
                 strictComponentBindingsEnabled = false;
             };
             /**
-             * @param enabled - Update the strictComponentBindingsEnabled state if provided,
-             * otherwise return the current strictComponentBindingsEnabled state.
-             * @returns Current value if used as getter or itself (chaining) if used as setter.
+             * @param enabled - New strict component binding validation state.
+             * @returns This registry for chaining.
              *
              * Call this method to enable / disable the strict component bindings check. If enabled, the
              * compiler will enforce that all scope / controller bindings of a
@@ -8520,15 +8510,11 @@
              * The default value is false.
              */
             let strictComponentBindingsEnabled = false;
-            this.strictComponentBindingsEnabled =
-                /** @param enabled */
-                function (enabled) {
-                    if (enabled !== undefined) {
-                        strictComponentBindingsEnabled = enabled;
-                        return this;
-                    }
-                    return strictComponentBindingsEnabled;
-                };
+            this.isStrictComponentBindingsEnabled = () => strictComponentBindingsEnabled;
+            this.setStrictComponentBindingsEnabled = function (enabled) {
+                strictComponentBindingsEnabled = enabled;
+                return this;
+            };
             /**
              * The security context of DOM Properties.
              */
@@ -23639,7 +23625,6 @@
         updateOn: "",
         updateOnDefault: true,
         debounce: 0,
-        getterSetter: false,
         allowInvalid: false,
     });
     /** Registers the `ngModelOptions` directive controller. */
@@ -23922,27 +23907,8 @@
             return version;
         }
         /** @internal */
-        _initGetterSetters() {
-            if (this.options.getOption("getterSetter")) {
-                const invokeModelGetter = this._parse(`${this._modelExpression}()`);
-                const invokeModelSetter = this._parse(`${this._modelExpression}(_$p)`);
-                this._ngModelGet = ($scope) => {
-                    let modelValue = this._parsedNgModel($scope);
-                    if (isFunction(modelValue)) {
-                        modelValue = callFunction(invokeModelGetter, undefined, $scope);
-                    }
-                    return modelValue;
-                };
-                this._ngModelSet = ($scope, newValue) => {
-                    if (isFunction(this._parsedNgModel($scope))) {
-                        callFunction(invokeModelSetter, undefined, $scope, { _$p: newValue });
-                    }
-                    else {
-                        callFunction(this._parsedNgModelAssign, undefined, $scope, newValue);
-                    }
-                };
-            }
-            else if (!this._parsedNgModel._assign) {
+        _validateModelExpression() {
+            if (!this._parsedNgModel._assign) {
                 throw ngModelError("nonassign", "Expression '{0}' is non-assignable. Element: {1}", this._modelExpression, startingTag(this._element));
             }
         }
@@ -24542,10 +24508,6 @@
          * obtained initially.
          * </div>
          *
-         * <div class="alert alert-danger">
-         * **Note:** it is not possible to override the `getterSetter` option.
-         * </div>
-         *
          * @param  options a hash of settings to override the previous options
          *
          */
@@ -24799,7 +24761,7 @@
                         if (optionsCtrl) {
                             modelCtrl.options = optionsCtrl.options;
                         }
-                        modelCtrl._initGetterSetters();
+                        modelCtrl._validateModelExpression();
                         // notify others, especially parent forms
                         formCtrl.addControl(modelCtrl);
                         const handleNameChange = (newValue) => {
@@ -30315,29 +30277,31 @@
                 (this._baseHref = getBaseHref() || window.location.pathname));
         }
         /** @internal */
-        _url(newUrl, state) {
-            if (isDefined(newUrl)) {
-                this._location.setUrl(decodeURIComponent(newUrl));
-            }
-            if (state)
-                this._location.setState(state);
+        _getUrl() {
             return this._location.getUrl();
         }
         /** @internal */
-        _update(read) {
-            if (read) {
-                this._lastUrl = this._url();
+        _setUrl(newUrl, state) {
+            this._location.setUrl(decodeURIComponent(newUrl));
+            if (state)
+                this._location.setState(state);
+            return this._getUrl();
+        }
+        /** @internal */
+        _readUrl() {
+            this._lastUrl = this._getUrl();
+        }
+        /** @internal */
+        _writeUrl() {
+            if (this._getUrl() === this._lastUrl)
                 return;
-            }
-            if (this._url() === this._lastUrl)
-                return;
-            this._url(this._lastUrl, true);
+            this._setUrl(this._lastUrl, true);
         }
         /** @internal */
         _push(urlMatcher, params, options) {
             const url = urlMatcher._format(params);
             if (!isNull(url)) {
-                this._url(url, !!options.replace);
+                this._setUrl(url, !!options.replace);
             }
         }
         /** @internal */
@@ -31100,7 +31064,7 @@
                     }
                     function addState(stateName, stateParams, activeClass) {
                         const state = stateName
-                            ? $state.get(stateName, stateContext($element))
+                            ? $state.getState(stateName, stateContext($element))
                             : undefined;
                         const foundState = state;
                         const stateInfo = {
@@ -31995,12 +31959,9 @@
             });
             return selected;
         }
-        /**
-         * Gets or sets the root view context used for relative `ng-view` targeting.
-         */
-        /** @internal */
-        _rootViewContext(context) {
-            return (this._rootContext = context ?? this._rootContext);
+        /** @internal Returns the root context for relative `ng-view` targeting. */
+        _getRootViewContext() {
+            return this._rootContext;
         }
         /**
          * Removes a view config from the active registry.
@@ -32215,7 +32176,7 @@
      */
     function ViewDirective($state, $anchorScroll, $interpolate, $parse) {
         const $view = $state._viewService;
-        const rootContext = $view._rootViewContext();
+        const rootContext = $view._getRootViewContext();
         const rootData = {
             _config: { _viewDecl: { _context: rootContext } },
             $ngView: {},
@@ -33271,7 +33232,7 @@
          *
          * #### Example:
          * ```js
-         * let allStates = registry.get();
+         * let allStates = registry.getStates();
          *
          * // Later, invoke deregisterFn() to remove the listener
          * let deregisterFn = registry.onStatesChanged((event, states) => {
@@ -33449,7 +33410,7 @@
          * @returns {StateDeclaration[]} a list of removed state declarations
          */
         deregister(stateOrName) {
-            const stateDeclaration = this.get(stateOrName);
+            const stateDeclaration = this.getState(stateOrName);
             if (!stateDeclaration) {
                 throw new Error(`Can't deregister state; not found: ${stateOrNameToString(stateOrName)}`);
             }
@@ -33473,21 +33434,17 @@
         /**
          * @return {StateDeclaration[]}
          */
-        getAll() {
+        getStates() {
             return this._getAllBuilt().map((state) => state.self);
         }
-        get(stateOrName, base) {
-            if (arguments.length === 0) {
-                const stateNames = keys(this._states);
-                const states = [];
-                stateNames.forEach((name) => {
-                    states.push(this._states[name].self);
-                });
-                return states;
-            }
-            const found = stateOrName === undefined
-                ? undefined
-                : this._matcher.find(stateOrName, base);
+        /**
+         *
+         * @param {StateOrName} [stateOrName]
+         * @param {StateOrName} [base]
+         * @returns {StateDeclaration | StateDeclaration[] | null}
+         */
+        getState(stateOrName, base) {
+            const found = this._matcher.find(stateOrName, base);
             return found?.self ?? null;
         }
     }
@@ -35630,7 +35587,7 @@
             };
             routerState._urlRuntime._push(navigable._url, stateService._routerState._params, urlOptions);
         }
-        routerState._urlRuntime._update(true);
+        routerState._urlRuntime._readUrl();
     }
     function registerUpdateUrl(transitionService) {
         return transitionService.onSuccess({}, updateUrlHook, {
@@ -36027,7 +35984,7 @@
         const tokens = stateNameString.split(".");
         for (let i = tokens.length; i > 0; i--) {
             const candidateName = tokens.slice(0, i).join(".");
-            const state = stateProvider._stateRegistry.get(candidateName);
+            const state = stateProvider._stateRegistry.getState(candidateName);
             if (!state)
                 continue;
             const policy = state.policy?.transition?.retry;
@@ -36183,7 +36140,7 @@
             const isLatest = routerState._lastStartedTransitionId <= trans.id;
             if (error.type === RejectType._IGNORED) {
                 if (isLatest) {
-                    routerState._urlRuntime._update();
+                    routerState._urlRuntime._writeUrl();
                 }
                 // Consider ignored `Transition.run()` as a successful `transitionTo`.
                 return Promise.resolve(routerState._current);
@@ -36197,7 +36154,7 @@
             }
             if (error.type === RejectType._ABORTED) {
                 if (isLatest) {
-                    routerState._urlRuntime._update();
+                    routerState._urlRuntime._writeUrl();
                 }
                 return Promise.reject(error);
             }
@@ -36488,7 +36445,7 @@
                 const tokens = stateNameString.split(".");
                 for (let i = tokens.length; i > 0; i--) {
                     const candidateName = tokens.slice(0, i).join(".");
-                    const state = this._stateRegistry.get(candidateName);
+                    const state = this._stateRegistry.getState(candidateName);
                     if (!state)
                         continue;
                     const policy = readPolicy(state);
@@ -36861,13 +36818,16 @@
                 absolute: options?.absolute,
             });
         }
-        get(stateOrName, base) {
-            const reg = this._stateRegistry;
-            if (arguments.length === 0)
-                return reg.get();
-            if (stateOrName === undefined)
-                return undefined;
-            return reg.get(stateOrName, base ?? this._current);
+        /**
+         * @param {StateOrName} stateOrName
+         * @param {undefined} [base]
+         */
+        getStates() {
+            return this._stateRegistry.getStates();
+        }
+        getState(stateOrName, base) {
+            return (this._stateRegistry.getState(stateOrName, base ?? this._current) ??
+                undefined);
         }
     }
     function normalizeStateDeclaration(nameOrDefinition, definition) {
@@ -37620,43 +37580,36 @@
          * Sets the search part of the current URL as an object.
          *
          * @param search - New search params as a string or object.
-         * @param paramValue - If `search` is a string or number, overrides only a single search property.
          * @returns The `Location` instance.
          */
-        setSearch(search, paramValue) {
+        setSearch(search) {
             validateRequired(search, "search");
-            switch (arguments.length) {
-                case 1:
-                    if (isString(search) || isNumber(search)) {
-                        search = search.toString();
-                        this._search = parseKeyValue(search);
-                    }
-                    else if (isObject(search)) {
-                        const clonedSearch = structuredClone(search);
-                        // remove object undefined or null properties
-                        entries(clonedSearch).forEach(([key, value]) => {
-                            if (isNull(value))
-                                deleteProperty(clonedSearch, key);
-                        });
-                        this._search = clonedSearch;
-                    }
-                    else {
-                        throw $locationError("isrcharg", "The first argument of `$location.setSearch()` must be a string or an object.");
-                    }
-                    break;
-                default: {
-                    if (!isString(search) && !isNumber(search)) {
-                        throw $locationError("isrcharg", "The first argument of `$location.setSearch()` must be a string or number when setting a single parameter.");
-                    }
-                    const searchKey = isString(search) ? search : String(search);
-                    if (isUndefined(paramValue) || paramValue === null) {
-                        deleteProperty(this._search, searchKey);
-                    }
-                    else {
-                        this._search[searchKey] = paramValue;
-                    }
-                    break;
-                }
+            if (isString(search) || isNumber(search)) {
+                this._search = parseKeyValue(search.toString());
+            }
+            else if (isObject(search)) {
+                const clonedSearch = structuredClone(search);
+                entries(clonedSearch).forEach(([key, value]) => {
+                    if (isNull(value))
+                        deleteProperty(clonedSearch, key);
+                });
+                this._search = clonedSearch;
+            }
+            else {
+                throw $locationError("isrcharg", "The argument to `$location.setSearch()` must be a string or an object.");
+            }
+            this._compose();
+            return this;
+        }
+        /** Set or remove one search parameter. */
+        setSearchParam(name, value) {
+            validateRequired(name, "name");
+            const key = String(name);
+            if (isUndefined(value) || value === null) {
+                deleteProperty(this._search, key);
+            }
+            else {
+                this._search[key] = value;
             }
             this._compose();
             return this;
@@ -40319,10 +40272,10 @@
              *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
              *     allowed in this array.
              *
-             * @returns The currently set trusted resource URL array.
+             * @returns This configuration for chaining.
              *
              *
-             * Sets/Gets the list trusted of resource URLs.
+             * Replaces the list of trusted resource URLs.
              *
              * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
              * allowing only same origin resource requests.
@@ -40332,12 +40285,9 @@
              * its origin with other apps! It is a good idea to limit it to only your application's directory.
              * </div>
              */
-            this.trustedResourceUrlList = function (value) {
-                if (arguments.length) {
-                    const list = value ?? [];
-                    trustedResourceUrlList = list.map(adjustMatcher);
-                }
-                return trustedResourceUrlList;
+            this.setTrustedResourceUrlList = function (value) {
+                trustedResourceUrlList = (value ?? []).map(adjustMatcher);
+                return this;
             };
             /**
              *
@@ -40353,20 +40303,17 @@
              *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
              *     the final say.
              *
-             * @returns The currently set `bannedResourceUrlList` array.
+             * @returns This configuration for chaining.
              *
              *
-             * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
+             * Replaces the list of banned resource URLs.
              *
              * The **default value** when no trusted resource URL list has been explicitly set is the empty
              * array (i.e. there is no `bannedResourceUrlList`.)
              */
-            this.bannedResourceUrlList = function (value) {
-                if (arguments.length) {
-                    const list = value ?? [];
-                    bannedResourceUrlList = list.map(adjustMatcher);
-                }
-                return bannedResourceUrlList;
+            this.setBannedResourceUrlList = function (value) {
+                bannedResourceUrlList = (value ?? []).map(adjustMatcher);
+                return this;
             };
             /**
              * Retrieves or overrides the default regular expression that is used for
@@ -40383,15 +40330,12 @@
              * written into the DOM.
              *
              * @param regexp - New regexp to trust urls with.
-             * @returns Current RegExp if called without value or self for chaining
-             * otherwise.
+             * @returns This configuration for chaining.
              */
-            this.aHrefSanitizationTrustedUrlList = function (regexp) {
-                if (isDefined(regexp)) {
-                    aHrefSanitizationTrustedUrlList = regexp;
-                    return this;
-                }
-                return aHrefSanitizationTrustedUrlList;
+            this.getAHrefSanitizationTrustedUrlList = () => aHrefSanitizationTrustedUrlList;
+            this.setAHrefSanitizationTrustedUrlList = function (regexp) {
+                aHrefSanitizationTrustedUrlList = regexp;
+                return this;
             };
             /**
              * Retrieves or overrides the default regular expression that is used for
@@ -40409,15 +40353,12 @@
              * the DOM.
              *
              * @param regexp - New regexp to trust urls with.
-             * @returns Current RegExp if called without value or self for chaining
-             * otherwise.
+             * @returns This configuration for chaining.
              */
-            this.imgSrcSanitizationTrustedUrlList = function (regexp) {
-                if (isDefined(regexp)) {
-                    imgSrcSanitizationTrustedUrlList = regexp;
-                    return this;
-                }
-                return imgSrcSanitizationTrustedUrlList;
+            this.getImgSrcSanitizationTrustedUrlList = () => imgSrcSanitizationTrustedUrlList;
+            this.setImgSrcSanitizationTrustedUrlList = function (regexp) {
+                imgSrcSanitizationTrustedUrlList = regexp;
+                return this;
             };
             /** Creates `$sceDelegate` from the current policy configuration. */
             this.createService = function ($injector, $window) {
@@ -40638,17 +40579,12 @@
         constructor() {
             let enabled = true;
             /**
-             * @param value If provided, then enables/disables SCE application-wide.
-             * @returns True if SCE is enabled, false otherwise.
-             *
-             *
-             * Enables/disables SCE and returns the current value.
+             * @param value Enables or disables SCE application-wide.
+             * @returns This configuration for chaining.
              */
-            this.enabled = function (value) {
-                if (arguments.length) {
-                    enabled = !!value;
-                }
-                return enabled;
+            this.setEnabled = function (value) {
+                enabled = value;
+                return this;
             };
             /**
              * Creates the runtime `$sce` service.
@@ -42567,7 +42503,7 @@
             context.runtime.configRegistry.register(name, (value) => {
                 const config = value;
                 if (config.enabled !== undefined) {
-                    configuration.enabled(config.enabled);
+                    configuration.setEnabled(config.enabled);
                 }
             });
             return registry.factory(name, [
@@ -42584,16 +42520,16 @@
             context.runtime.configRegistry.register(name, (value) => {
                 const config = value;
                 if (config.trustedResourceUrlList !== undefined) {
-                    configuration.trustedResourceUrlList(config.trustedResourceUrlList);
+                    configuration.setTrustedResourceUrlList(config.trustedResourceUrlList);
                 }
                 if (config.bannedResourceUrlList !== undefined) {
-                    configuration.bannedResourceUrlList(config.bannedResourceUrlList);
+                    configuration.setBannedResourceUrlList(config.bannedResourceUrlList);
                 }
                 if (config.aHrefSanitizationTrustedUrlList !== undefined) {
-                    configuration.aHrefSanitizationTrustedUrlList(config.aHrefSanitizationTrustedUrlList);
+                    configuration.setAHrefSanitizationTrustedUrlList(config.aHrefSanitizationTrustedUrlList);
                 }
                 if (config.imgSrcSanitizationTrustedUrlList !== undefined) {
-                    configuration.imgSrcSanitizationTrustedUrlList(config.imgSrcSanitizationTrustedUrlList);
+                    configuration.setImgSrcSanitizationTrustedUrlList(config.imgSrcSanitizationTrustedUrlList);
                 }
             });
             return registry.factory(name, [

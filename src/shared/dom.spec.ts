@@ -10,16 +10,17 @@ import {
   emptyElement,
   extractElementNode,
   getBlockNodes,
+  getAllCacheData,
   getCacheData,
   getDirectiveHostElement,
   getNormalizedAttr,
   getNormalizedAttrName,
-  getOrSetCacheData,
   getTranscludedHostElement,
   hasNormalizedAttr,
   removeElement,
   removeElementData,
   setCacheData,
+  setAllCacheData,
   setNormalizedAttr,
   setTranscludedHostElement,
   startingTag,
@@ -47,13 +48,13 @@ describe("dom", () => {
       expect(getCacheData(element, "foo-bar")).toBeUndefined();
       expect(Cache.size).toBe(0);
 
-      getOrSetCacheData(element, {
+      setAllCacheData(element, {
         "one-two": 2,
         three: 3,
       });
 
-      expect(getOrSetCacheData(element, "one-two")).toBe(2);
-      expect(getOrSetCacheData(element)).toEqual({
+      expect(getCacheData(element, "one-two")).toBe(2);
+      expect(getAllCacheData(element)).toEqual({
         oneTwo: 2,
         three: 3,
       });
@@ -77,6 +78,15 @@ describe("dom", () => {
       setCacheData(text, "owner", "parent");
 
       expect(getCacheData(parent, "owner")).toBe("parent");
+    });
+
+    it("does not attach bulk cache data to non-cacheable nodes", () => {
+      const text = document.createTextNode("text") as unknown as Element;
+
+      setAllCacheData(text, { owner: "text" });
+
+      expect(getAllCacheData(text)).toBeUndefined();
+      expect(Cache.size).toBe(0);
     });
 
     it("cleans descendant data and dispatches destroy for animated nodes", () => {

@@ -970,7 +970,7 @@ describe("ngView", () => {
         _viewDecl: {
           _ngViewName: "$default",
           _ngViewContextAnchor: "",
-          _context: $view._rootViewContext(),
+          _context: $view._getRootViewContext(),
           templateUrl: "/async-route.html",
         },
         _factory: {
@@ -1031,7 +1031,7 @@ describe("ngView", () => {
         _viewDecl: {
           _ngViewName: "$default",
           _ngViewContextAnchor: "",
-          _context: $view._rootViewContext(),
+          _context: $view._getRootViewContext(),
           templateUrl: `/async-route-${id}.html`,
         },
         _factory: {

@@ -132,16 +132,14 @@ export interface SceDelegateConfig {
 }
 
 export interface UriSanitizationConfig {
-  /**
-   * Retrieves or overrides the regular expression used to trust safe URLs for
-   * a[href] sanitization.
-   */
-  aHrefSanitizationTrustedUrlList(regexp?: RegExp): RegExp | this;
-  /**
-   * Retrieves or overrides the regular expression used to trust safe URLs for
-   * media source sanitization.
-   */
-  imgSrcSanitizationTrustedUrlList(regexp?: RegExp): RegExp | this;
+  /** Return the expression used to trust safe link URLs. */
+  getAHrefSanitizationTrustedUrlList(): RegExp;
+  /** Replace the expression used to trust safe link URLs. */
+  setAHrefSanitizationTrustedUrlList(regexp: RegExp): this;
+  /** Return the expression used to trust safe media URLs. */
+  getImgSrcSanitizationTrustedUrlList(): RegExp;
+  /** Replace the expression used to trust safe media URLs. */
+  setImgSrcSanitizationTrustedUrlList(regexp: RegExp): this;
 }
 
 // Copied from:
@@ -326,14 +324,12 @@ function unwrapTrustedValueForContext(
  */
 /** @internal */
 export class SceDelegateConfiguration implements UriSanitizationConfig {
-  trustedResourceUrlList: (
-    value?: SceResourceUrlMatcher[] | null,
-  ) => (RegExp | "self")[];
-  bannedResourceUrlList: (
-    value?: SceResourceUrlMatcher[] | null,
-  ) => (RegExp | "self")[];
-  aHrefSanitizationTrustedUrlList: (regexp?: RegExp) => RegExp | this;
-  imgSrcSanitizationTrustedUrlList: (regexp?: RegExp) => RegExp | this;
+  setTrustedResourceUrlList: (value: SceResourceUrlMatcher[] | null) => this;
+  setBannedResourceUrlList: (value: SceResourceUrlMatcher[] | null) => this;
+  getAHrefSanitizationTrustedUrlList: () => RegExp;
+  setAHrefSanitizationTrustedUrlList: (regexp: RegExp) => this;
+  getImgSrcSanitizationTrustedUrlList: () => RegExp;
+  setImgSrcSanitizationTrustedUrlList: (regexp: RegExp) => this;
   createService: (
     $injector: ng.InjectorService,
     $window: Window,
@@ -359,10 +355,10 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
      *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
      *     allowed in this array.
      *
-     * @returns The currently set trusted resource URL array.
+     * @returns This configuration for chaining.
      *
      *
-     * Sets/Gets the list trusted of resource URLs.
+     * Replaces the list of trusted resource URLs.
      *
      * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
      * allowing only same origin resource requests.
@@ -372,16 +368,12 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
      * its origin with other apps! It is a good idea to limit it to only your application's directory.
      * </div>
      */
-    this.trustedResourceUrlList = function (
-      value?: SceResourceUrlMatcher[] | null,
+    this.setTrustedResourceUrlList = function (
+      value: SceResourceUrlMatcher[] | null,
     ) {
-      if (arguments.length) {
-        const list = value ?? [];
+      trustedResourceUrlList = (value ?? []).map(adjustMatcher);
 
-        trustedResourceUrlList = list.map(adjustMatcher);
-      }
-
-      return trustedResourceUrlList;
+      return this;
     };
 
     /**
@@ -398,24 +390,20 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
      *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
      *     the final say.
      *
-     * @returns The currently set `bannedResourceUrlList` array.
+     * @returns This configuration for chaining.
      *
      *
-     * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
+     * Replaces the list of banned resource URLs.
      *
      * The **default value** when no trusted resource URL list has been explicitly set is the empty
      * array (i.e. there is no `bannedResourceUrlList`.)
      */
-    this.bannedResourceUrlList = function (
-      value?: SceResourceUrlMatcher[] | null,
+    this.setBannedResourceUrlList = function (
+      value: SceResourceUrlMatcher[] | null,
     ) {
-      if (arguments.length) {
-        const list = value ?? [];
+      bannedResourceUrlList = (value ?? []).map(adjustMatcher);
 
-        bannedResourceUrlList = list.map(adjustMatcher);
-      }
-
-      return bannedResourceUrlList;
+      return this;
     };
 
     /**
@@ -433,17 +421,14 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
      * written into the DOM.
      *
      * @param regexp - New regexp to trust urls with.
-     * @returns Current RegExp if called without value or self for chaining
-     * otherwise.
+     * @returns This configuration for chaining.
      */
-    this.aHrefSanitizationTrustedUrlList = function (regexp?: RegExp) {
-      if (isDefined(regexp)) {
-        aHrefSanitizationTrustedUrlList = regexp;
+    this.getAHrefSanitizationTrustedUrlList = () =>
+      aHrefSanitizationTrustedUrlList;
+    this.setAHrefSanitizationTrustedUrlList = function (regexp: RegExp) {
+      aHrefSanitizationTrustedUrlList = regexp;
 
-        return this;
-      }
-
-      return aHrefSanitizationTrustedUrlList;
+      return this;
     };
 
     /**
@@ -462,17 +447,14 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
      * the DOM.
      *
      * @param regexp - New regexp to trust urls with.
-     * @returns Current RegExp if called without value or self for chaining
-     * otherwise.
+     * @returns This configuration for chaining.
      */
-    this.imgSrcSanitizationTrustedUrlList = function (regexp?: RegExp) {
-      if (isDefined(regexp)) {
-        imgSrcSanitizationTrustedUrlList = regexp;
+    this.getImgSrcSanitizationTrustedUrlList = () =>
+      imgSrcSanitizationTrustedUrlList;
+    this.setImgSrcSanitizationTrustedUrlList = function (regexp: RegExp) {
+      imgSrcSanitizationTrustedUrlList = regexp;
 
-        return this;
-      }
-
-      return imgSrcSanitizationTrustedUrlList;
+      return this;
     };
 
     /** Creates `$sceDelegate` from the current policy configuration. */
@@ -773,7 +755,7 @@ export class SceDelegateConfiguration implements UriSanitizationConfig {
 
 /** @internal */
 export class SceConfiguration {
-  enabled: (value?: boolean) => boolean;
+  setEnabled: (value: boolean) => this;
   createService: (
     $parse: ng.ParseService,
     $sceDelegate: ng.SceDelegateService,
@@ -783,18 +765,13 @@ export class SceConfiguration {
     let enabled = true;
 
     /**
-     * @param value If provided, then enables/disables SCE application-wide.
-     * @returns True if SCE is enabled, false otherwise.
-     *
-     *
-     * Enables/disables SCE and returns the current value.
+     * @param value Enables or disables SCE application-wide.
+     * @returns This configuration for chaining.
      */
-    this.enabled = function (value?: boolean) {
-      if (arguments.length) {
-        enabled = !!value;
-      }
+    this.setEnabled = function (value: boolean) {
+      enabled = value;
 
-      return enabled;
+      return this;
     };
 
     /**

@@ -2141,7 +2141,7 @@ class AngularTSSuite extends munit.FunSuite:
     val retained = js.Dynamic.literal(_key = "home").asInstanceOf[RetainedViewEntry]
     var activeConfig: js.UndefOr[ViewConfig] = js.undefined
     var registeredView: js.UndefOr[ActiveNgView] = js.undefined
-    var rootContext: js.UndefOr[js.Object | Null] = js.undefined
+    val rootContext = js.Dynamic.literal(name = "root").asInstanceOf[js.Object]
     var synced = false
     var destroyedRetainedViews = false
     var deregistered = false
@@ -2149,9 +2149,7 @@ class AngularTSSuite extends munit.FunSuite:
       .literal(
         _ngViews = js.Array[ActiveNgView](),
         _viewConfigs = js.Array[ViewConfig](),
-        _rootViewContext = (context: js.UndefOr[js.Object | Null]) =>
-          if !js.isUndefined(context) then rootContext = context
-          rootContext,
+        _getRootViewContext = () => rootContext,
         _activateViewConfig = (config: ViewConfig) =>
           activeConfig = config
           (),
@@ -2169,14 +2167,13 @@ class AngularTSSuite extends munit.FunSuite:
       .asInstanceOf[ViewService]
 
     runtimeService._activateViewConfig(viewConfig)
-    runtimeService._rootViewContext(js.Dynamic.literal(name = "root").asInstanceOf[js.Object])
     val deregister = runtimeService._registerNgView(ngView)
     runtimeService._sync()
     deregister()
     assertEquals(activeConfig.get, viewConfig)
     assertEquals(registeredView.get, ngView)
     assertEquals(
-      runtimeService._rootViewContext().get.asInstanceOf[js.Dynamic].selectDynamic("name").asInstanceOf[String],
+      runtimeService._getRootViewContext().get.asInstanceOf[js.Dynamic].selectDynamic("name").asInstanceOf[String],
       "root",
     )
     assertEquals(runtimeService._restoreRetainedView(viewConfig).get, retained)
