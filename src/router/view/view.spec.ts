@@ -15,7 +15,7 @@ describe("view", () => {
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    window.angular.module("defaultModule", []).factory("foo", () => {
+    window.angular.createModule("defaultModule", []).factory("foo", () => {
       return "Foo";
     });
     $injector = window.angular.bootstrap(document.getElementById("app"), [

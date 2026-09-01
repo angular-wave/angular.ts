@@ -8,7 +8,7 @@
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         window.angular
-          .module("routerMotionDemo", [])
+          .createModule("routerMotionDemo", [])
           .router({
             name: "overview",
             url: "/src/animations/router-view-transition-demo.html",

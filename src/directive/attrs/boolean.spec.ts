@@ -10,7 +10,7 @@ describe("boolean attr directives", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular
-      .module("booleanAttrs", ["ng"])
+      .createModule("booleanAttrs", ["ng"])
       .value("$rootElement", document.body);
     createInjector(["booleanAttrs"]).invoke([
       "$compile",

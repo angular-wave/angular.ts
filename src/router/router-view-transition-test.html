@@ -185,7 +185,7 @@
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         window.angular
-          .module("routerViewTransition", [])
+          .createModule("routerViewTransition", [])
           .router({
             name: "home",
             url: "/src/router/router-view-transition-test.html",

@@ -1,4 +1,4 @@
-angular.module("sharedUi", [])
+angular.createModule("sharedUi", [])
   .directive("auditLog", function() {
     return {
       restrict: "A",

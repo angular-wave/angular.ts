@@ -445,7 +445,7 @@ describe("$machine", () => {
   it("runs named state-tree machines registered through module.machine", () => {
     window.angular = new Angular();
     window.angular
-      .module("namedStateMachineApp", ["ng"])
+      .createModule("namedStateMachineApp", ["ng"])
       .machine("sessionMachine", {
         initial: "setup",
         data: {
@@ -1393,7 +1393,7 @@ describe("$machine", () => {
   it("lets an injectable workflow-owned gate use the state-tree machine API", () => {
     window.angular = new Angular();
     window.angular
-      .module("workflowMachineGateApp", ["ng"])
+      .createModule("workflowMachineGateApp", ["ng"])
       .factory("sessionWorkflowMachine", [
         "$machine",
         ($machine: ng.MachineService) =>

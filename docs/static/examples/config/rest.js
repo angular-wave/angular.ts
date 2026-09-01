@@ -1,5 +1,5 @@
 window.angular
-  .module("restConfigDemo", [])
+  .createModule("restConfigDemo", [])
   .config({
     $rest: {
       defaults: {

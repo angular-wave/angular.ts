@@ -365,7 +365,7 @@ The `$aria` service and module config let you configure which ARIA attributes
 are automatically managed:
 
 ```js
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $aria: {
     ariaDisabled: true,
     ariaChecked: true,

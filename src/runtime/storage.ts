@@ -9,5 +9,5 @@ import { createPersistentProxy } from "../services/storage/storage.ts";
  */
 export const storageModule: RuntimeModule = (angular) =>
   angular
-    .module("ng.storage", [])
+    .createModule("ng.storage", [])
     .factory(_storage, () => createPersistentProxy);

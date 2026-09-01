@@ -18,7 +18,7 @@ describe("EventBus composition", () => {
   it("should be injectable", () => {
     const angular = new Angular();
 
-    angular.module("test", ["ng"]);
+    angular.createModule("test", ["ng"]);
     const $injector = createInjector(["test"]);
 
     expect($injector.has("$eventBus")).toBeTrue();
@@ -30,7 +30,7 @@ describe("EventBus composition", () => {
     const policy = jasmine.createSpy("deliveryPolicy").and.returnValue("drop");
 
     window.angular = angular;
-    angular.module("configuredEventBusPolicy", ["ng"]).config({
+    angular.createModule("configuredEventBusPolicy", ["ng"]).config({
       $eventBus: {
         deliveryPolicy: policy,
       },
@@ -57,8 +57,8 @@ describe("EventBus composition", () => {
   it("shares one application EventBus across injectors and runtime teardown", () => {
     const angular = new Angular();
 
-    angular.module("firstEventBusInjector", ["ng"]);
-    angular.module("secondEventBusInjector", ["ng"]);
+    angular.createModule("firstEventBusInjector", ["ng"]);
+    angular.createModule("secondEventBusInjector", ["ng"]);
 
     const first = createInjector(["firstEventBusInjector"]).get("$eventBus");
     const second = createInjector(["secondEventBusInjector"]).get("$eventBus");
@@ -94,7 +94,7 @@ describe("EventBus composition", () => {
       modules: [eventBusModule],
     });
 
-    angular.module("configuredCustomEventBus", []).config({
+    angular.createModule("configuredCustomEventBus", []).config({
       $eventBus: { deliveryPolicy },
     });
 

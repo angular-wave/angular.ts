@@ -481,7 +481,7 @@ describe("HTML-in-Canvas", () => {
       modules: [htmlCanvasModule],
     });
 
-    angular.module("configuredHtmlCanvas", []).config({
+    angular.createModule("configuredHtmlCanvas", []).config({
       $htmlCanvas: {
         enabled: false,
         defaultMode: "webgpu",

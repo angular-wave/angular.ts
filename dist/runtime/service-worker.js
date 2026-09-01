@@ -21,7 +21,7 @@ const serviceWorkerModule = (angular) => {
         if (service)
             destroyServiceWorkerService(service);
     });
-    return angular.module("ng.serviceWorker", []).factory(_serviceWorker, [
+    return angular.createModule("ng.serviceWorker", []).factory(_serviceWorker, [
         _exceptionHandler,
         ($exceptionHandler) => {
             service = createServiceWorkerService(platform.window.navigator.serviceWorker, {

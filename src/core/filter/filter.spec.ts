@@ -12,7 +12,7 @@ describe("filter", () => {
   it("can be registered and obtained through $filter", () => {
     const myFilter = () => undefined;
 
-    window.angular.module("myModule", []).filter("my", () => myFilter);
+    window.angular.createModule("myModule", []).filter("my", () => myFilter);
 
     const $filter = createInjector(["ng", "myModule"]).get(
       "$filter",
@@ -26,7 +26,7 @@ describe("filter", () => {
     const myOtherFilter = () => undefined;
 
     window.angular
-      .module("myModule", [])
+      .createModule("myModule", [])
       .filter("my", () => myFilter)
       .filter("myOther", () => myOtherFilter);
 
@@ -41,7 +41,7 @@ describe("filter", () => {
   it("makes registered filters injectable by their filter name", () => {
     const myFilter = () => undefined;
 
-    window.angular.module("myModule", []).filter("my", () => myFilter);
+    window.angular.createModule("myModule", []).filter("my", () => myFilter);
 
     const injector = createInjector(["ng", "myModule"]);
 
@@ -51,7 +51,7 @@ describe("filter", () => {
 
   it("resolves filter factory dependencies", () => {
     window.angular
-      .module("dependentFilter", [])
+      .createModule("dependentFilter", [])
       .constant("suffix", "!")
       .filter("my", [
         "suffix",

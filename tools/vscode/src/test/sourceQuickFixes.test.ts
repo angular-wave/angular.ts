@@ -32,7 +32,7 @@ test("does not suggest DI token edits when the array has enough tokens", () => {
 });
 
 test("suggests inserting missing component binding into existing bindings", () => {
-  const source = `angular.module("demo").component("userCard", { bindings: { user: "<" }, template: "" });`;
+  const source = `angular.getModule("demo").component("userCard", { bindings: { user: "<" }, template: "" });`;
   const suggestion = suggestComponentBindingInsertion(
     source,
     source.indexOf(".component"),
@@ -44,7 +44,7 @@ test("suggests inserting missing component binding into existing bindings", () =
 });
 
 test("suggests adding bindings property when component has none", () => {
-  const source = `angular.module("demo").component("userCard", { template: "" });`;
+  const source = `angular.getModule("demo").component("userCard", { template: "" });`;
   const suggestion = suggestComponentBindingInsertion(
     source,
     source.indexOf(".component"),

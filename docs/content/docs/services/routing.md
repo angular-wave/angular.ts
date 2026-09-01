@@ -46,7 +46,7 @@ Changes to `$location` are applied asynchronously. `$locationChangeStart` and
 Configure `$location` before the application runs.
 
 ```ts
-angular.module('demo', []).config({
+angular.createModule('demo', []).config({
   $location: {
     html5Mode: {
       enabled: true,
@@ -125,7 +125,7 @@ $stateRegistry.register({
 Listen on `$rootScope` for URL-level events when you need a broad guard.
 
 ```ts
-angular.module('demo').run([
+angular.getModule('demo').run([
   '$rootScope',
   '$state',
   'authService',

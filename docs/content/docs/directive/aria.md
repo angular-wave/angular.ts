@@ -11,7 +11,7 @@ applications, not as a complete WCAG conformance guarantee.
 Use `module.config({ $aria: ... })` when you need to adjust global ARIA support.
 
 ```js
-const app = angular.module('app', []);
+const app = angular.createModule('app', []);
 
 app.config({
   $aria: {

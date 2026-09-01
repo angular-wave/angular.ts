@@ -9,8 +9,8 @@ import scala.scalajs.js.annotation.*
 private[ts] object RuntimeAngular extends js.Object:
   val tags: js.Dynamic = js.native
   val view: js.Dynamic = js.native
-  def module(name: String): RuntimeNgModule = js.native
-  def module(name: String, requires: js.Array[String]): RuntimeNgModule =
+  def getModule(name: String): RuntimeNgModule = js.native
+  def createModule(name: String, requires: js.Array[String]): RuntimeNgModule =
     js.native
   def bootstrap(element: dom.Element, modules: js.Array[String]): RuntimeInjector =
     js.native

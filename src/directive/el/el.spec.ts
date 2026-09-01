@@ -15,7 +15,7 @@ describe("ngEl", () => {
     const angular = new Angular();
 
     angular
-      .module("default", [])
+      .createModule("default", [])
       .controller(
         "ElementController",
         function ElementController(this: { boardEl: Element | null }) {

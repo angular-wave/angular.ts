@@ -80,7 +80,7 @@ pass the same path when removing it.
 Set defaults once when every cookie should share the same attributes.
 
 ```ts
-angular.module('demo', []).config({
+angular.createModule('demo', []).config({
   $cookie: {
     defaults: {
       path: '/',
@@ -141,7 +141,7 @@ class PreferencesStorage {
 Listen for storage changes from other tabs through `$window`.
 
 ```ts
-angular.module('demo').run([
+angular.getModule('demo').run([
   '$window',
   '$rootScope',
   ($window, $rootScope) => {

@@ -4,7 +4,7 @@ import { wasmModule } from "../../src/runtime/wasm.ts";
 const installedWasmModule = wasmModule(angular);
 
 angular
-  .module("wasmWorkerConcept", [installedWasmModule.name])
+  .createModule("wasmWorkerConcept", [installedWasmModule.name])
   .model("wasmWorkerModel", () => ({
     status: "loading",
     result: 0,

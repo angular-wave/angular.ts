@@ -183,7 +183,7 @@
       CrudDemo.$inject = ["$rest", "$http", "$scope"];
 
       window.angular
-        .module("restCrudDemo", [])
+        .createModule("restCrudDemo", [])
         .controller("CrudDemo", CrudDemo);
     </script>
   </head>

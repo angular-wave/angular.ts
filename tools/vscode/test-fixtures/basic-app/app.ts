@@ -1,4 +1,4 @@
-angular.module("demo", [])
+angular.createModule("demo", [])
   .component("userCard", {
     templateUrl: "user-card.html",
     bindings: {

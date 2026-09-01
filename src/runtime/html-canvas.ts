@@ -27,7 +27,7 @@ export const htmlCanvasModule: RuntimeModule = (angular) => {
   });
 
   return angular
-    .module("ng.htmlCanvas", [])
+    .createModule("ng.htmlCanvas", [])
     .factory(_htmlCanvas, [
       _window,
       _document,

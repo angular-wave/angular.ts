@@ -103,8 +103,12 @@ export function wrap_factory_property(factory, key, value) {
   };
 }
 
-export function angular_module(name, requires) {
-  return getAngular().module(name, requires);
+export function angular_create_module(name, requires) {
+  return getAngular().createModule(name, requires);
+}
+
+export function angular_get_module(name) {
+  return getAngular().getModule(name);
 }
 
 export function angular_bootstrap(root, modules) {

@@ -173,7 +173,7 @@ transition anchor:
 Register JavaScript animation hooks with the module's `animation()` method:
 
 ```js
-angular.module('app').animation('.flip-card', function () {
+angular.getModule('app').animation('.flip-card', function () {
   return {
     enter: function (element, done) {
       // Use Web Animations API or any library

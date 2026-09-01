@@ -14,7 +14,7 @@ mocking a browser dependency in non-browser environment tests:
 
 ```js
 // value injectables are overriden
-angular.module('demo', []).value('$window', {});
+angular.createModule('demo', []).value('$window', {});
 ```
 
 When combined with `ng-inject` directive, the wrapper also makes `window` object

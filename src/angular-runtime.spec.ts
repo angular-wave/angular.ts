@@ -149,7 +149,7 @@ describe("AngularRuntime composition ownership", () => {
 
     runtimes.push(runtime);
 
-    runtime.module("lazyCompositionProbe", ["ng"]).decorator(_animate, [
+    runtime.createModule("lazyCompositionProbe", ["ng"]).decorator(_animate, [
       "$delegate",
       ($delegate: ng.AnimateService) => {
         constructions++;
@@ -178,7 +178,7 @@ describe("AngularRuntime composition ownership", () => {
     runtimes.push(runtime);
 
     runtime
-      .module("invocationFailureBoundary", ["ng"])
+      .createModule("invocationFailureBoundary", ["ng"])
       .config({
         $exceptionHandler: {
           handler(exception): never {
@@ -223,7 +223,7 @@ describe("AngularRuntime composition ownership", () => {
     runtimes.push(runtime);
 
     runtime
-      .module("invocationPromiseBoundary", ["ng"])
+      .createModule("invocationPromiseBoundary", ["ng"])
       .config({
         $exceptionHandler: {
           handler(exception): never {
@@ -253,7 +253,7 @@ describe("AngularRuntime composition ownership", () => {
     runtimes.push(firstRuntime, secondRuntime);
 
     firstRuntime
-      .module("firstRuntime", ["ng"])
+      .createModule("firstRuntime", ["ng"])
       .filter(
         "runtimeOwner",
         () => (value: unknown) => `first:${String(value)}`,
@@ -262,7 +262,7 @@ describe("AngularRuntime composition ownership", () => {
         firstErrors.push(exception);
       });
     secondRuntime
-      .module("secondRuntime", ["ng"])
+      .createModule("secondRuntime", ["ng"])
       .filter(
         "runtimeOwner",
         () => (value: unknown) => `second:${String(value)}`,

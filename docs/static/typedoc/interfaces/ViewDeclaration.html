@@ -164,7 +164,7 @@
             >}</span
           >
         </div>
-        <section class="tsd-panel tsd-hierarchy" data-refl="6439">
+        <section class="tsd-panel tsd-hierarchy" data-refl="6430">
           <h4>Hierarchy</h4>
           <ul class="tsd-hierarchy">
             <li class="tsd-hierarchy-item">
@@ -316,7 +316,7 @@
                       <use href="../assets/icons.svg#icon-anchor"></use></svg
                   ></a>
                 </h4>
-                <pre><code class="js"><span class="hl-7">app</span><span class="hl-2">.</span><span class="hl-8">router</span><span class="hl-2">(</span><span class="hl-9">&#39;foo&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  </span><span class="hl-7">resolve:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">foo:</span><span class="hl-2"> [</span><span class="hl-9">&#39;FooService&#39;</span><span class="hl-2">, </span><span class="hl-6">function</span><span class="hl-2">(</span><span class="hl-7">FooService</span><span class="hl-2">) { </span><span class="hl-11">return</span><span class="hl-2"> </span><span class="hl-7">FooService</span><span class="hl-2">.</span><span class="hl-8">get</span><span class="hl-2">(); }],</span><br/><span class="hl-2">    </span><span class="hl-7">bar:</span><span class="hl-2"> [</span><span class="hl-9">&#39;BarService&#39;</span><span class="hl-2">, </span><span class="hl-6">function</span><span class="hl-2">(</span><span class="hl-7">BarService</span><span class="hl-2">) { </span><span class="hl-11">return</span><span class="hl-2"> </span><span class="hl-7">BarService</span><span class="hl-2">.</span><span class="hl-8">get</span><span class="hl-2">(); }]</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">  </span><span class="hl-7">component:</span><span class="hl-2"> </span><span class="hl-9">&#39;Baz&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-10">// The component&#39;s `baz` binding gets data from the `bar` resolve</span><br/><span class="hl-2">  </span><span class="hl-10">// The component&#39;s `foo` binding gets data from the `foo` resolve (default behavior)</span><br/><span class="hl-2">  </span><span class="hl-7">bindings:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">baz:</span><span class="hl-2"> </span><span class="hl-9">&#39;bar&#39;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">});</span><br/><br/><span class="hl-7">app</span><span class="hl-2">.</span><span class="hl-8">component</span><span class="hl-2">(</span><span class="hl-9">&#39;Baz&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  </span><span class="hl-7">templateUrl:</span><span class="hl-2"> </span><span class="hl-9">&#39;baz.html&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">controller:</span><span class="hl-2"> </span><span class="hl-9">&#39;BazController&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">bindings:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">foo:</span><span class="hl-2"> </span><span class="hl-9">&#39;&lt;&#39;</span><span class="hl-2">, </span><span class="hl-10">// foo binding</span><br/><span class="hl-2">    </span><span class="hl-7">baz:</span><span class="hl-2"> </span><span class="hl-9">&#39;&lt;&#39;</span><span class="hl-2">  </span><span class="hl-10">// baz binding</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">});</span>
+                <pre><code class="js"><span class="hl-7">app</span><span class="hl-2">.</span><span class="hl-8">router</span><span class="hl-2">(</span><span class="hl-9">&#39;foo&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  </span><span class="hl-7">resolve:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">foo:</span><span class="hl-2"> [</span><span class="hl-9">&#39;FooService&#39;</span><span class="hl-2">, </span><span class="hl-6">function</span><span class="hl-2">(</span><span class="hl-7">FooService</span><span class="hl-2">) { </span><span class="hl-11">return</span><span class="hl-2"> </span><span class="hl-7">FooService</span><span class="hl-2">.</span><span class="hl-8">get</span><span class="hl-2">(); }],</span><br/><span class="hl-2">    </span><span class="hl-7">bar:</span><span class="hl-2"> [</span><span class="hl-9">&#39;BarService&#39;</span><span class="hl-2">, </span><span class="hl-6">function</span><span class="hl-2">(</span><span class="hl-7">BarService</span><span class="hl-2">) { </span><span class="hl-11">return</span><span class="hl-2"> </span><span class="hl-7">BarService</span><span class="hl-2">.</span><span class="hl-8">get</span><span class="hl-2">(); }]</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">  </span><span class="hl-7">component:</span><span class="hl-2"> </span><span class="hl-9">&#39;Baz&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-15">// The component&#39;s `baz` binding gets data from the `bar` resolve</span><br/><span class="hl-2">  </span><span class="hl-15">// The component&#39;s `foo` binding gets data from the `foo` resolve (default behavior)</span><br/><span class="hl-2">  </span><span class="hl-7">bindings:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">baz:</span><span class="hl-2"> </span><span class="hl-9">&#39;bar&#39;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">});</span><br/><br/><span class="hl-7">app</span><span class="hl-2">.</span><span class="hl-8">component</span><span class="hl-2">(</span><span class="hl-9">&#39;Baz&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  </span><span class="hl-7">templateUrl:</span><span class="hl-2"> </span><span class="hl-9">&#39;baz.html&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">controller:</span><span class="hl-2"> </span><span class="hl-9">&#39;BazController&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-7">bindings:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">foo:</span><span class="hl-2"> </span><span class="hl-9">&#39;&lt;&#39;</span><span class="hl-2">, </span><span class="hl-15">// foo binding</span><br/><span class="hl-2">    </span><span class="hl-7">baz:</span><span class="hl-2"> </span><span class="hl-9">&#39;&lt;&#39;</span><span class="hl-2">  </span><span class="hl-15">// baz binding</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">});</span>
 </code><button type="button">Copy</button></pre>
               </div>
               <aside class="tsd-sources">
@@ -368,7 +368,7 @@
                       <use href="../assets/icons.svg#icon-anchor"></use></svg
                   ></a>
                 </h4>
-                <pre><code class="js"><span class="hl-2">.</span><span class="hl-8">state</span><span class="hl-2">(</span><span class="hl-9">&#39;profile&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  </span><span class="hl-10">// Use the &lt;my-profile&gt;&lt;/my-profile&gt; component for this state.</span><br/><span class="hl-2">  </span><span class="hl-7">component:</span><span class="hl-2"> </span><span class="hl-9">&#39;MyProfile&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">}</span>
+                <pre><code class="js"><span class="hl-2">.</span><span class="hl-8">state</span><span class="hl-2">(</span><span class="hl-9">&#39;profile&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  </span><span class="hl-15">// Use the &lt;my-profile&gt;&lt;/my-profile&gt; component for this state.</span><br/><span class="hl-2">  </span><span class="hl-7">component:</span><span class="hl-2"> </span><span class="hl-9">&#39;MyProfile&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">}</span>
 </code><button type="button">Copy</button></pre>
 
                 <p>
@@ -467,7 +467,7 @@
                       <use href="../assets/icons.svg#icon-anchor"></use></svg
                   ></a>
                 </h4>
-                <pre><code class="js"><span class="hl-14">template</span><span class="hl-2">: </span><span class="hl-9">&quot;&lt;h1&gt;inline template definition&lt;/h1&gt;&lt;div ng-view&gt;&lt;/div&gt;&quot;</span>
+                <pre><code class="js"><span class="hl-13">template</span><span class="hl-2">: </span><span class="hl-9">&quot;&lt;h1&gt;inline template definition&lt;/h1&gt;&lt;div ng-view&gt;&lt;/div&gt;&quot;</span>
 </code><button type="button">Copy</button></pre>
 
                 <h4 id="example-3" class="tsd-anchor-link">
@@ -479,7 +479,7 @@
                       <use href="../assets/icons.svg#icon-anchor"></use></svg
                   ></a>
                 </h4>
-                <pre><code class="js"><span class="hl-14">template</span><span class="hl-2">: </span><span class="hl-6">function</span><span class="hl-2">(</span><span class="hl-7">params</span><span class="hl-2">) {</span><br/><span class="hl-2">  </span><span class="hl-11">return</span><span class="hl-2"> </span><span class="hl-9">&quot;&lt;h1&gt;generated template&lt;/h1&gt;&quot;</span><span class="hl-2">;</span><br/><span class="hl-2">}</span>
+                <pre><code class="js"><span class="hl-13">template</span><span class="hl-2">: </span><span class="hl-6">function</span><span class="hl-2">(</span><span class="hl-7">params</span><span class="hl-2">) {</span><br/><span class="hl-2">  </span><span class="hl-11">return</span><span class="hl-2"> </span><span class="hl-9">&quot;&lt;h1&gt;generated template&lt;/h1&gt;&quot;</span><span class="hl-2">;</span><br/><span class="hl-2">}</span>
 </code><button type="button">Copy</button></pre>
               </div>
               <aside class="tsd-sources">
@@ -529,7 +529,7 @@
                       <use href="../assets/icons.svg#icon-anchor"></use></svg
                   ></a>
                 </h4>
-                <pre><code class="js"><span class="hl-14">templateUrl</span><span class="hl-2">: </span><span class="hl-9">&quot;/templates/home.html&quot;</span>
+                <pre><code class="js"><span class="hl-13">templateUrl</span><span class="hl-2">: </span><span class="hl-9">&quot;/templates/home.html&quot;</span>
 </code><button type="button">Copy</button></pre>
 
                 <h4 id="example-5" class="tsd-anchor-link">
@@ -541,7 +541,7 @@
                       <use href="../assets/icons.svg#icon-anchor"></use></svg
                   ></a>
                 </h4>
-                <pre><code class="js"><span class="hl-14">templateUrl</span><span class="hl-2">: </span><span class="hl-6">function</span><span class="hl-2">(</span><span class="hl-7">params</span><span class="hl-2">) {</span><br/><span class="hl-2">  </span><span class="hl-11">return</span><span class="hl-2"> </span><span class="hl-7">myTemplates</span><span class="hl-2">[</span><span class="hl-7">params</span><span class="hl-2">.</span><span class="hl-7">pageId</span><span class="hl-2">];</span><br/><span class="hl-2">}</span>
+                <pre><code class="js"><span class="hl-13">templateUrl</span><span class="hl-2">: </span><span class="hl-6">function</span><span class="hl-2">(</span><span class="hl-7">params</span><span class="hl-2">) {</span><br/><span class="hl-2">  </span><span class="hl-11">return</span><span class="hl-2"> </span><span class="hl-7">myTemplates</span><span class="hl-2">[</span><span class="hl-7">params</span><span class="hl-2">.</span><span class="hl-7">pageId</span><span class="hl-2">];</span><br/><span class="hl-2">}</span>
 </code><button type="button">Copy</button></pre>
               </div>
               <aside class="tsd-sources">

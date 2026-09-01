@@ -10,7 +10,7 @@ import { parseAngularTsRegistrations } from "../analyzer/registrationParser";
 
 test("diagnoses dependency injection array arity mismatches", () => {
   const diagnostics = collectAngularTsSourceDiagnostics(
-    `angular.module("demo").controller("DemoController", ["UserApi", "$scope", function(UserApi) {}]);`,
+    `angular.getModule("demo").controller("DemoController", ["UserApi", "$scope", function(UserApi) {}]);`,
   );
 
   assert.deepEqual(
@@ -22,7 +22,7 @@ test("diagnoses dependency injection array arity mismatches", () => {
 
 test("accepts matching dependency injection arrays", () => {
   const diagnostics = collectAngularTsSourceDiagnostics(
-    `angular.module("demo").controller("DemoController", ["UserApi", "$scope", function(UserApi, $scope) {}]);`,
+    `angular.getModule("demo").controller("DemoController", ["UserApi", "$scope", function(UserApi, $scope) {}]);`,
   );
 
   assert.deepEqual(diagnostics, []);
@@ -30,7 +30,7 @@ test("accepts matching dependency injection arrays", () => {
 
 test("diagnoses unknown dependency injection tokens when an index is provided", () => {
   const diagnostics = collectAngularTsSourceDiagnostics(
-    `angular.module("demo").controller("DemoController", ["MissingApi", "$scope", function(MissingApi, $scope) {}]);`,
+    `angular.getModule("demo").controller("DemoController", ["MissingApi", "$scope", function(MissingApi, $scope) {}]);`,
     builtInInjectables,
   );
 
@@ -50,7 +50,7 @@ test("accepts custom dependency injection tokens from indexed registrations", ()
     description: "Fixture service",
   };
   const diagnostics = collectAngularTsSourceDiagnostics(
-    `angular.module("demo").controller("DemoController", ["UserApi", "$scope", function(UserApi, $scope) {}]);`,
+    `angular.getModule("demo").controller("DemoController", ["UserApi", "$scope", function(UserApi, $scope) {}]);`,
     [...builtInInjectables, userApi],
   );
 
@@ -80,7 +80,7 @@ test("diagnoses unknown controllers in source metadata", () => {
   };
 
   const diagnostics = collectAngularTsSourceDiagnostics(
-    `angular.module("demo").component("x", { controller: "MissingController as vm" });`,
+    `angular.getModule("demo").component("x", { controller: "MissingController as vm" });`,
     [controller],
   );
 
@@ -97,8 +97,8 @@ test("diagnoses missing templateUrl files", () => {
   fs.writeFileSync(path.join(tmp, "exists.html"), "<p></p>");
 
   const diagnostics = collectAngularTsSourceDiagnostics(
-    `angular.module("demo").component("x", { templateUrl: "missing.html" });
-     angular.module("demo").component("y", { templateUrl: "exists.html" });`,
+    `angular.getModule("demo").component("x", { templateUrl: "missing.html" });
+     angular.getModule("demo").component("y", { templateUrl: "exists.html" });`,
     [],
     sourcePath,
   );
@@ -121,7 +121,7 @@ test("diagnoses literal ng-state routes inside inline templates", () => {
   };
 
   const diagnostics = collectAngularTsSourceDiagnostics(
-    `angular.module("demo").component("x", {
+    `angular.getModule("demo").component("x", {
        template: \`<a ng-state="'admin.profile'"></a><a ng-state="'admin.missing'"></a>\`
      });`,
     [route],
@@ -152,7 +152,7 @@ test("diagnoses literal ng-state routes inside templateUrl files", () => {
   };
 
   const diagnostics = collectAngularTsSourceDiagnostics(
-    `angular.module("demo").component("x", { templateUrl: "component.html" });`,
+    `angular.getModule("demo").component("x", { templateUrl: "component.html" });`,
     [route],
     sourcePath,
   );
@@ -187,7 +187,7 @@ test("diagnoses dynamic ng-state route unions inside inline templates", () => {
     `class DemoController {
        route: "admin.profile" | "admin.missing" = "admin.profile";
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        template: \`<a ng-state="$ctrl.route"></a>\`
      });`,
@@ -223,7 +223,7 @@ test("accepts dynamic ng-state route unions when every literal is registered", (
     `class DemoController {
        route: "admin.profile" | "admin.roles" = "admin.profile";
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        template: \`<a ng-state="$ctrl.route"></a>\`
      });`,
@@ -246,7 +246,7 @@ test("ignores dynamic ng-state expressions typed as broad string", () => {
     `class DemoController {
        route: string = "admin.missing";
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        template: \`<a ng-state="$ctrl.route"></a>\`
      });`,
@@ -272,7 +272,7 @@ test("diagnoses dynamic ng-state route unions inside templateUrl files", () => {
     `class DemoController {
        route: "admin.profile" | "admin.missing" = "admin.profile";
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        templateUrl: "component.html"
      });`,
@@ -302,7 +302,7 @@ test("diagnoses ng-state-params values that do not match route param types", () 
     `class DemoController {
        user: { id: number; name: string } = { id: 1, name: "Ada" };
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        template: \`<a ng-state="'user.detail'" ng-state-params="{ userId: $ctrl.user.name }"></a>\`
      });`,
@@ -331,7 +331,7 @@ test("accepts ng-state-params values that match route param types", () => {
     `class DemoController {
        user: { id: number; name: string } = { id: 1, name: "Ada" };
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        template: \`<a ng-state="'user.detail'" ng-state-params="{ userId: $ctrl.user.id }"></a>\`
      });`,
@@ -361,7 +361,7 @@ test("diagnoses ng-state-params value types inside templateUrl files", () => {
     `class DemoController {
        user: { id: number; name: string } = { id: 1, name: "Ada" };
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        templateUrl: "component.html"
      });`,
@@ -403,7 +403,7 @@ test("diagnoses dynamic ng-state-params keys shared by route unions", () => {
     `class DemoController {
        route: "admin.profile" | "admin.settings" = "admin.profile";
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        template: \`<a ng-state="$ctrl.route" ng-state-params="{ extra: true }"></a>\`
      });`,
@@ -442,7 +442,7 @@ test("does not require dynamic ng-state params needed by only some union targets
     `class DemoController {
        route: "admin.profile" | "admin.roles" = "admin.profile";
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        template: \`<a ng-state="$ctrl.route"></a>\`
      });`,
@@ -477,7 +477,7 @@ test("diagnoses dynamic ng-state-params values when route unions agree on param 
        route: "admin.profile" | "admin.settings" = "admin.profile";
        user: { id: number; name: string } = { id: 1, name: "Ada" };
      }
-     angular.module("demo").component("x", {
+     angular.getModule("demo").component("x", {
        controller: DemoController,
        template: \`<a ng-state="$ctrl.route" ng-state-params="{ userId: $ctrl.user.name }"></a>\`
      });`,
@@ -495,7 +495,7 @@ test("diagnoses dynamic ng-state-params values when route unions agree on param 
 test("diagnoses route resolves that do not match routed component bindings", () => {
   const sourcePath = "/workspace/app.ts";
   const source = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .component("userProfile", {
         bindings: {
           user: "<",
@@ -526,7 +526,7 @@ test("diagnoses route resolves that do not match routed component bindings", () 
 test("diagnoses duplicate and orphaned source-backed routes", () => {
   const sourcePath = "/workspace/app.ts";
   const source = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .state("admin", { url: "/admin" })
       .state("admin.profile", { url: "/profile" })
       .state("admin.profile", { url: "/profile-copy" })
@@ -547,7 +547,7 @@ test("diagnoses duplicate and orphaned source-backed routes", () => {
 test("accepts source-backed child routes under lazy boundaries", () => {
   const sourcePath = "/workspace/app.ts";
   const source = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .lazyState("reports.**", () => import("./reports.routes"))
       .state("reports.detail", { url: "/reports/:id" })
       .state("reports.detail.activity", { url: "/activity" });
@@ -562,7 +562,7 @@ test("accepts source-backed child routes under lazy boundaries", () => {
 test("accepts route resolves that satisfy routed component bindings", () => {
   const sourcePath = "/workspace/app.ts";
   const source = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .component("userProfile", {
         bindings: {
           user: "<",
@@ -600,7 +600,7 @@ test("diagnoses route resolve values that do not match typed component bindings"
       return "wrong";
     }
 
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .component("userProfile", {
         controller: UserProfileController,
         bindings: {
@@ -641,7 +641,7 @@ test("accepts route resolve values that match typed component bindings", () => {
       return { name: "Ada" };
     }
 
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .component("userProfile", {
         controller: UserProfileController,
         bindings: {

@@ -18,7 +18,7 @@ class CounterController {
   count = 0;
 }
 
-const app = angular.module('counter', []);
+const app = angular.createModule('counter', []);
 
 app.component<CounterController>('counter', {
   controller: CounterController,

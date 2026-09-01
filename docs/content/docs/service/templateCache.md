@@ -12,7 +12,7 @@ Configure the cache before bootstrap with
 `module.config({ $templateCache: ... })`.
 
 ```js
-angular.module("demo", []).config({
+angular.createModule("demo", []).config({
   $templateCache: {
     cache: new Map([["templateId.html", "This is the content of the template"]]),
   },
@@ -45,7 +45,7 @@ Adding via the `$templateCache` service:
 #### Example
 
 ```js
-const myApp = angular.module('myApp', []).run(["$templateCache", ($templateCache) => {
+const myApp = angular.createModule('myApp', []).run(["$templateCache", ($templateCache) => {
   $templateCache.set('templateId.html', 'This is the content of the template');
 }]);
 ```

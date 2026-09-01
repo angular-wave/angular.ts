@@ -39,7 +39,7 @@ function registerComposedNgModule(angular, options) {
     const serviceRegistrations = normalizeRegistrations(options.services);
     const composition = getRuntimeComposition(angular);
     const { compileRegistry, platform } = composition;
-    const ngModule = angular.module(moduleName, options.requires);
+    const ngModule = angular.createModule(moduleName, options.requires);
     ngModule._registerProviders((registry) => {
         registry.value(_window, platform.window);
         registry.value(_document, platform.document);

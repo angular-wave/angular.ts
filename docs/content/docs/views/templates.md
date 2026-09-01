@@ -16,7 +16,7 @@ Render the task count as a small template component.
 Read [components]({{< relref "/docs/concepts/components" >}}).
 
 ```js
-angular.module('todoApp').component('todoSummary', {
+angular.getModule('todoApp').component('todoSummary', {
   bindings: { remaining: '<' },
   template: `
     <p>

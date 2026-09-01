@@ -26,7 +26,7 @@ details. Applications do not inject an exception-handler provider.
 ## Configuration
 
 ```ts
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $exceptionHandler: {
     handler(error): never {
       reportError(error);

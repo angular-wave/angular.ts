@@ -313,7 +313,7 @@ src/jsMain/kotlin/angular/ts/Runtime.kt
 Public API target:
 
 ```kotlin
-val app = ng.module("demo")
+val app = ng.createModule("demo")
 val todoStore = ng.token<TodoStore>("todoStore")
 
 app.service(todoStore, ng.inject0 { TodoStore() })
@@ -325,7 +325,7 @@ ng.bootstrap(document.body ?: error("missing body"), listOf(app.name))
 
 Tasks:
 
-- [x] Implement `ng.module(name, requires)`.
+- [x] Implement `ng.createModule(name, requires)`.
 - [x] Implement `ng.bootstrap(root, modules, config)`.
 - [x] Implement `ng.token<T>(name)`.
 - [x] Implement `NgModule.value`, `factory`, `service`, `controller`,

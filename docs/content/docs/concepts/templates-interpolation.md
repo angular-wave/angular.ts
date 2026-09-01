@@ -172,7 +172,7 @@ The default delimiters are `{{` and `}}`. Configure them with
 `module.config({ $interpolate: ... })`:
 
 ```ts
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $interpolate: {
     startSymbol: '{[',
     endSymbol: ']}',

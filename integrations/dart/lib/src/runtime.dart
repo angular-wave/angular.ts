@@ -23,14 +23,21 @@ final class AngularTsRuntime {
 
   final JSObject _runtime;
 
-  /// The module.
-  NgModule module(String name, [List<String> requires = const []]) {
+  /// Creates or replaces a module.
+  NgModule createModule(String name, [List<String> requires = const []]) {
     final value = unsafe.callMethod(
       _runtime,
-      'module',
+      'createModule',
       name.toJS,
       unsafe.strings(requires),
     );
+
+    return NgModule(name, value as JSObject);
+  }
+
+  /// Retrieves an existing module.
+  NgModule getModule(String name) {
+    final value = unsafe.callMethod(_runtime, 'getModule', name.toJS);
 
     return NgModule(name, value as JSObject);
   }
@@ -124,9 +131,14 @@ final class AngularTsRuntime {
       ProgrammaticViewApi(_runtime.getProperty('view'.toJS) as JSObject);
 }
 
-/// The module.
-NgModule module(String name, [List<String> requires = const []]) {
-  return AngularTsRuntime.global().module(name, requires);
+/// Creates or replaces a module.
+NgModule createModule(String name, [List<String> requires = const []]) {
+  return AngularTsRuntime.global().createModule(name, requires);
+}
+
+/// Retrieves an existing module.
+NgModule getModule(String name) {
+  return AngularTsRuntime.global().getModule(name);
 }
 
 /// The bootstrap.

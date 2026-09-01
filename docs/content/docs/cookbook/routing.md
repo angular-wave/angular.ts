@@ -22,7 +22,7 @@ Register states on the module:
 
 ```js
 angular
-  .module('account', [])
+  .createModule('account', [])
   .router({
     name: 'account',
     url: '/account',

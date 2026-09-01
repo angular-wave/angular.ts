@@ -20,7 +20,7 @@ const angular = createAngular({
     ngAttributeAliasDirectives,
   ],
 });
-const app = angular.module('htmlCanvasDemo', []);
+const app = angular.createModule('htmlCanvasDemo', []);
 
 app.controller('HtmlCanvasDemoCtrl', [
   '$htmlCanvas',

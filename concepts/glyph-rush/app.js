@@ -1,5 +1,5 @@
 window.angular
-  .module('glyphRushConcept', [])
+  .createModule('glyphRushConcept', [])
   .model('rushModel', () => ({
     running: false,
     paused: false,

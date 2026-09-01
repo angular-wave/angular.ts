@@ -57,7 +57,7 @@ names.
   model)
 
 (defonce app
-  (-> (ng/module "todo" [])
+  (-> (ng/create-module "todo" [])
       (ng/model "todoModel" [] create-model)
       (ng/controller "TodoCtrl" ["todoModel"] create-controller)))
 ```

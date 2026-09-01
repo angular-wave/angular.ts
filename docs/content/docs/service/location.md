@@ -59,7 +59,7 @@ $rootScope.on("$locationChangeSuccess", (_event, newUrl) => {
 Use `module.config({ $location: ... })` for application-wide URL policy.
 
 ```js
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $location: {
     html5Mode: {
       enabled: true,
@@ -74,7 +74,7 @@ angular.module("app", []).config({
 `html5Mode` may also be a boolean when only the `enabled` flag should change:
 
 ```js
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $location: {
     html5Mode: false,
   },

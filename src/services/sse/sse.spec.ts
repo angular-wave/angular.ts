@@ -371,7 +371,7 @@ describe("$sse", () => {
     };
 
     try {
-      configuredAngular.module("configuredSseDefaults", []).config({
+      configuredAngular.createModule("configuredSseDefaults", []).config({
         $sse: {
           defaults: {
             heartbeatTimeout: 0,

@@ -20,7 +20,7 @@ describe("ng-bind", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           throw new Error(exception.message);
@@ -275,7 +275,7 @@ describe("ng-bind", () => {
       beforeEach(() => {
         dealoc(document.getElementById("app"));
         window.angular
-          .module("myModule", ["ng"])
+          .createModule("myModule", ["ng"])
           .config({ $sce: { enabled: false } })
           .decorator("$exceptionHandler", function () {
             return (exception) => {
@@ -327,7 +327,7 @@ describe("ng-bind", () => {
       beforeEach(() => {
         dealoc(document.getElementById("app"));
         window.angular
-          .module("myModule", ["ng"])
+          .createModule("myModule", ["ng"])
           .config({ $sce: { enabled: true } })
           .decorator("$exceptionHandler", function () {
             return (exception) => {
@@ -388,7 +388,7 @@ describe("ng-bind", () => {
         dealoc(document.getElementById("app"));
 
         window.angular
-          .module("myModule", ["ng"])
+          .createModule("myModule", ["ng"])
           .decorator("$sce", [
             "$delegate",
             ($delegate) => {

@@ -1,4 +1,4 @@
-const module = angular.module("rustDemo", []);
+const module = angular.createModule("rustDemo", []);
 const registeredRegistrationNames = new Set();
 
 for (const runtimeRegistration of runtimeRegistrations.values()) {

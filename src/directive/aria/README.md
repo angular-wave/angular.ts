@@ -12,7 +12,7 @@ role, and tabindex attributes.
 - `ng-aria-disable`: local opt-out for framework-authored ARIA behavior.
 
 ```ts
-const app = angular.module("app", ["ng"]);
+const app = angular.createModule("app", ["ng"]);
 
 app.config({
   $aria: {

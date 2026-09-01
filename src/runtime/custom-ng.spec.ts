@@ -1,5 +1,6 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
+import "./storage.spec.ts";
 import { createAngular } from "./index.ts";
 import {
   machineModule,
@@ -74,7 +75,7 @@ describe("custom runtime", () => {
       providers: { $log: ngBrowserProviders.$log },
     });
 
-    angular.module("beaconApp", []).config({
+    angular.createModule("beaconApp", []).config({
       $log: { beacon: { url: "/logs" } },
     });
 
@@ -88,7 +89,7 @@ describe("custom runtime", () => {
     const handled = [];
     const angular = createAngular();
 
-    angular.module("exceptionApp", []).config({
+    angular.createModule("exceptionApp", []).config({
       $exceptionHandler: {
         handler(error) {
           handled.push(error);
@@ -248,7 +249,7 @@ describe("custom runtime", () => {
     });
 
     try {
-      angular.module("realtimeApp", []).config({
+      angular.createModule("realtimeApp", []).config({
         $sse: {
           defaults: { retryDelay: 250, maxRetries: 2 },
         },
@@ -320,7 +321,7 @@ describe("custom runtime", () => {
     });
 
     angular
-      .module("routerApp", [])
+      .createModule("routerApp", [])
       .config({
         $anchorScroll: { autoScrolling: false },
         $aria: { diagnostics: true },
@@ -448,7 +449,7 @@ describe("custom runtime", () => {
     });
 
     try {
-      angular.module("app", []).serviceWorker("/service-worker.js", {
+      angular.createModule("app", []).serviceWorker("/service-worker.js", {
         scope: "/app/",
         autoRegister: true,
       });
@@ -556,7 +557,7 @@ describe("custom runtime", () => {
   it("applies interpolation config to the custom runtime compiler", async () => {
     const angular = createAngular();
 
-    angular.module("app", []).config({
+    angular.createModule("app", []).config({
       $interpolate: { startSymbol: "[[", endSymbol: "]]" },
     });
 
@@ -580,7 +581,7 @@ describe("custom runtime", () => {
     const angular = createAngular();
 
     angular
-      .module("app", [])
+      .createModule("app", [])
       .controller("TodoController", TodoController)
       .directive("todoCard", () => ({
         controller: "TodoController",
@@ -605,7 +606,7 @@ describe("custom runtime", () => {
   it("fetches directive templateUrl without a template request provider", async () => {
     const angular = createAngular();
 
-    angular.module("app", []).directive("fetchedTemplate", () => ({
+    angular.createModule("app", []).directive("fetchedTemplate", () => ({
       templateUrl: "/public/test.html",
     }));
 
@@ -703,7 +704,7 @@ describe("custom runtime", () => {
     });
 
     angular
-      .module("app", [])
+      .createModule("app", [])
       .rest("posts", "/api/posts", PostEntity, { cache: true })
       .worker("backgroundWorker", "/workers/bg.js", { reconnect: true })
       .wasm("mathLib", {
@@ -878,7 +879,7 @@ describe("custom runtime", () => {
     });
 
     angular
-      .module("app", [])
+      .createModule("app", [])
       .rest("posts", "/api/posts", PostEntity, makeRestOptions)
       .sse("notifications", "/events", makeSseConfig)
       .websocket("chat", "wss://chat.example.com", makeWebsocketConfig)
@@ -1005,7 +1006,7 @@ describe("custom runtime", () => {
     });
 
     angular
-      .module("app", [])
+      .createModule("app", [])
       .value("appSettings", appSettings)
       .machine("sessionMachine", makeMachineConfig)
       .workflow("docsWorkflow", makeWorkflowConfig);
@@ -1115,7 +1116,7 @@ describe("custom runtime", () => {
   it("clears parsed component binding definitions during runtime teardown", () => {
     const angular = createAngular();
 
-    angular.module("bindingCacheApp", []).component("cachedBinding", {
+    angular.createModule("bindingCacheApp", []).component("cachedBinding", {
       bindings: { value: "<sourceValue" },
       template: "{{ $ctrl.value }}",
     });
@@ -1134,7 +1135,7 @@ describe("custom runtime", () => {
     const runtimeModule = jasmine
       .createSpy("runtimeModule")
       .and.callFake((angular) =>
-        angular.module("ng.once", []).value("once", true),
+        angular.createModule("ng.once", []).value("once", true),
       );
     const angular = createAngular({ modules: [runtimeModule, runtimeModule] });
 

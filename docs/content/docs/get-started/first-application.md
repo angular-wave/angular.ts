@@ -44,7 +44,7 @@ Place this script before the closing `body` tag, where the comment appears:
 
 ```html
 <script>
-  angular.module('todoApp', []).controller('TodoController', [
+  angular.createModule('todoApp', []).controller('TodoController', [
     '$scope',
     ($scope) => {
       $scope.draft = '';

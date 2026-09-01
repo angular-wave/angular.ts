@@ -14,7 +14,7 @@ test("finds controller references in ng-controller values", () => {
 });
 
 test("finds controller references in component metadata", () => {
-  const text = `angular.module("demo").component("userCard", { controller: "DemoController as vm" });`;
+  const text = `angular.getModule("demo").component("userCard", { controller: "DemoController as vm" });`;
   const offset = text.indexOf("DemoController") + 2;
   const reference = findAngularTsReferenceAt(text, offset, "typescript");
 
@@ -23,10 +23,10 @@ test("finds controller references in component metadata", () => {
 });
 
 test("finds component references in route and state metadata", () => {
-  const routeText = `angular.module("demo").config(function($routeProvider) {
+  const routeText = `angular.getModule("demo").config(function($routeProvider) {
     $routeProvider.when("/users", { component: "userCard" });
   });`;
-  const stateText = `angular.module("demo").config(function($stateProvider) {
+  const stateText = `angular.getModule("demo").config(function($stateProvider) {
     $stateProvider.state("users", { component: "user-card" });
   });`;
 
@@ -49,7 +49,7 @@ test("finds component references in route and state metadata", () => {
 });
 
 test("finds service references in dependency injection arrays", () => {
-  const text = `angular.module("demo").controller("DemoController", ["UserApi", "$scope", function(UserApi, $scope) {}]);`;
+  const text = `angular.getModule("demo").controller("DemoController", ["UserApi", "$scope", function(UserApi, $scope) {}]);`;
   const offset = text.indexOf("UserApi") + 2;
   const reference = findAngularTsReferenceAt(text, offset, "javascript");
 

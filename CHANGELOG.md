@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Replaced overloaded `angular.module()` with explicit `angular.createModule()` and `angular.getModule()` APIs.
+
+- Fixed listener scheduling when a watcher deregisters while its notification task is flushing.
+
 - Removed overloaded `$location` getter/setter aliases; use explicit `getUrl`,
   `setUrl`, `getPath`, `setPath`, `getSearch`, `setSearch`, `getHash`, `setHash`,
   `getState`, and `setState` methods.

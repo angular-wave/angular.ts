@@ -1,5 +1,5 @@
 window.angular
-  .module('threeConcept', [])
+  .createModule('threeConcept', [])
   .model('sceneModel', () => ({
     speed: 0.02,
     color: '#2f80ed',

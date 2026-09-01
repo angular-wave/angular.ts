@@ -145,12 +145,16 @@ pub fn inject2(
   injectable_module.inject2(token_a, token_b, factory)
 }
 
-pub fn module(name: String) -> NgModule {
-  runtime.module(name)
+pub fn create_module(name: String) -> NgModule {
+  runtime.create_module(name)
 }
 
-pub fn module_with_requires(name: String, requires: List(String)) -> NgModule {
-  runtime.module_with_requires(name, requires)
+pub fn get_module(name: String) -> NgModule {
+  runtime.get_module(name)
+}
+
+pub fn create_module_with_requires(name: String, requires: List(String)) -> NgModule {
+  runtime.create_module_with_requires(name, requires)
 }
 
 pub fn bootstrap(root: Element, modules: List(String)) -> Injector {

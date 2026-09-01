@@ -34,7 +34,7 @@ smallest element that needs it.
 ```
 
 ```js
-const app = angular.module('catalog', []);
+const app = angular.createModule('catalog', []);
 
 app.controller('SearchController', function SearchController() {
   this.query = '';

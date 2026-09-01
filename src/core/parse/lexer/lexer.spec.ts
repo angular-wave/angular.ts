@@ -14,7 +14,7 @@ describe("lexer", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception, cause) => {
           logs.push(exception);

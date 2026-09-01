@@ -24,7 +24,7 @@ export const wasmModule: RuntimeModule = (angular) => {
   });
 
   return angular
-    .module("ng.wasm", [])
+    .createModule("ng.wasm", [])
     .directive("ngWasm", ngWasmDirective)
     .factory(_wasm, () => createWasmService(state));
 };

@@ -17,7 +17,7 @@ const wasmModule = (angular) => {
         destroyWasmRuntimeState(state);
     });
     return angular
-        .module("ng.wasm", [])
+        .createModule("ng.wasm", [])
         .directive("ngWasm", ngWasmDirective)
         .factory(_wasm, () => createWasmService(state));
 };

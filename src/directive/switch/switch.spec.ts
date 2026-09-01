@@ -14,7 +14,7 @@ describe("ngSwitch", () => {
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    window.angular.module("test", []);
+    window.angular.createModule("test", []);
     const injector = window.angular.bootstrap(
       document.getElementById("app", ["test"]),
     );

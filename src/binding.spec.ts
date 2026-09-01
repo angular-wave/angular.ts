@@ -20,7 +20,7 @@ describe("binding", () => {
   beforeEach(function () {
     errors = [];
     window.angular = new Angular();
-    myModule = window.angular.module("myModule", ["ng"]);
+    myModule = window.angular.createModule("myModule", ["ng"]);
     myModule.decorator("$exceptionHandler", function () {
       return (exception) => {
         errors.push(exception.message);

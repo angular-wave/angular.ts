@@ -1,5 +1,5 @@
 window.angular
-  .module('templateRequestConfigDemo', [])
+  .createModule('templateRequestConfigDemo', [])
   .config({
     $templateRequest: {
       httpOptions: {

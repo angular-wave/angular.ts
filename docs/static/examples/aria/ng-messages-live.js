@@ -1,5 +1,5 @@
 window.angular
-  .module("ariaMessagesDemo", [])
+  .createModule("ariaMessagesDemo", [])
   .controller(
     "AriaMessagesCtrl",
     class {

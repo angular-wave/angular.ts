@@ -36,7 +36,7 @@ use.
 ## Example
 
 ```ts
-const app = angular.module("app", []);
+const app = angular.createModule("app", []);
 
 app.filter("uppercaseFirst", () => (value: string) => {
   return value.length === 0 ? value : value[0].toUpperCase() + value.slice(1);

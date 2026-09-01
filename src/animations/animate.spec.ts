@@ -363,7 +363,7 @@ describe("$animate", () => {
     const angular = new Angular();
     let factoryCalls = 0;
 
-    angular.module("cached-animations", []).animation("cached", () => {
+    angular.createModule("cached-animations", []).animation("cached", () => {
       factoryCalls += 1;
 
       return { enter: [{ opacity: 0 }, { opacity: 1 }] };
@@ -619,7 +619,7 @@ describe("$animate", () => {
 
     const angular = new Angular();
 
-    angular.module("animations", []).animation("registered", () => ({
+    angular.createModule("animations", []).animation("registered", () => ({
       enter(element) {
         element.setAttribute("data-registered", "true");
       },

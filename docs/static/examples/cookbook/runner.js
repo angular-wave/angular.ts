@@ -8,7 +8,7 @@ class UploadController {
 }
 
 angular
-  .module('cookbookExamples', [])
+  .createModule('cookbookExamples', [])
   .model('cart', () => ({
     items: [],
     currency: 'EUR',

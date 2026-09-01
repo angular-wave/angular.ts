@@ -24,11 +24,13 @@ describe("$webTransport", () => {
 
     angular = new Angular();
 
-    const module = angular.module("webTransportExceptionBoundary", []).config({
-      $exceptionHandler: {
-        handler: (error) => exceptions.push(error),
-      },
-    });
+    const module = angular
+      .createModule("webTransportExceptionBoundary", [])
+      .config({
+        $exceptionHandler: {
+          handler: (error) => exceptions.push(error),
+        },
+      });
 
     angular.bootstrap(el, [module.name]).invoke([
       "$webTransport",
@@ -832,17 +834,19 @@ describe("$webTransport", () => {
         value: MockWebTransport,
       });
 
-      configuredAngular.module("configuredWebTransportDefaults", []).config({
-        $webTransport: {
-          defaults: {
-            allowPooling: true,
-            congestionControl: "low-latency",
-            maxRetries: 1,
-            reconnect: true,
-            retryDelay: 5,
+      configuredAngular
+        .createModule("configuredWebTransportDefaults", [])
+        .config({
+          $webTransport: {
+            defaults: {
+              allowPooling: true,
+              congestionControl: "low-latency",
+              maxRetries: 1,
+              reconnect: true,
+              retryDelay: 5,
+            },
           },
-        },
-      });
+        });
 
       configuredAngular
         .bootstrap(configuredEl, ["configuredWebTransportDefaults"])

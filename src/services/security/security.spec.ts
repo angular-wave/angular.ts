@@ -123,7 +123,7 @@ describe("$security", () => {
   });
 
   it("applies typed module configuration to the runtime service", async () => {
-    const app = window.angular.module("configuredSecurity", []);
+    const app = window.angular.createModule("configuredSecurity", []);
 
     app.config({
       $security: {

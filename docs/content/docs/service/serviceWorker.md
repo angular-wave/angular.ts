@@ -26,7 +26,7 @@ Configure automatic registration on the module when the application has one
 stable worker script:
 
 ```ts
-angular.module('app', []).serviceWorker('/sw.js', {
+angular.createModule('app', []).serviceWorker('/sw.js', {
   scope: '/',
   updateViaCache: 'none',
   autoRegister: true,
@@ -36,7 +36,7 @@ angular.module('app', []).serviceWorker('/sw.js', {
 Or configure the script without automatic registration and start it explicitly:
 
 ```ts
-angular.module('app', []).serviceWorker('/sw.js', {
+angular.createModule('app', []).serviceWorker('/sw.js', {
   scope: '/',
   updateViaCache: 'none',
 });

@@ -15,13 +15,15 @@ import { memoizeRuntimeModule } from "./custom-ng.ts";
 
 /** Registers reactive state-machine declarations and the `$machine` service. */
 export const machineModule: RuntimeModule = memoizeRuntimeModule((angular) =>
-  angular.module("ng.machine", []).factory(_machine, createMachineService),
+  angular
+    .createModule("ng.machine", [])
+    .factory(_machine, createMachineService),
 );
 
 /** Registers workflow declarations, execution, and supervision. */
 export const workflowModule: RuntimeModule = memoizeRuntimeModule((angular) =>
   angular
-    .module("ng.workflow", [])
+    .createModule("ng.workflow", [])
     .factory(_workflow, createWorkflowService)
     .factory(_workflowSupervisor, [
       _workflow,
@@ -40,7 +42,7 @@ export const workflowModule: RuntimeModule = memoizeRuntimeModule((angular) =>
  */
 export const orchestrationModule: RuntimeModule = memoizeRuntimeModule(
   (angular) =>
-    angular.module("ng.orchestration", [
+    angular.createModule("ng.orchestration", [
       machineModule(angular).name,
       workflowModule(angular).name,
     ]),

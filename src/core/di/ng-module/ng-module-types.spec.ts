@@ -173,7 +173,7 @@ type TypedAdminRoutes = {
 };
 
 const typedAngular = new Angular({ registerBuiltins: false });
-const typedAdminModule = typedAngular.module<TypedAdminRoutes>(
+const typedAdminModule = typedAngular.createModule<TypedAdminRoutes>(
   "typedAdmin",
   [],
 );

@@ -20,7 +20,7 @@ the payload small and define its shape at the integration boundary.
 <!-- tested-by: src/services/event-bus/event-bus.spec.ts -->
 
 ```js
-const app = angular.module('catalog', []);
+const app = angular.createModule('catalog', []);
 
 app.controller('SelectionController', [
   '$eventBus',

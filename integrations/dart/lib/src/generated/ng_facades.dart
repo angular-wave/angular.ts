@@ -153,24 +153,14 @@ base class GeneratedNgAngular extends GeneratedNgFacade {
         raw.callMethodVarArgs('registerNgModule'.toJS, const <JSAny?>[]));
   }
 
-  /// The `angular.module` is a global place for creating, registering and retrieving AngularTS
-  /// modules. All modules (AngularTS core or 3rd party) that should be available to an application
-  /// must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule,
-  /// whereas passing more than one argument creates a new ng.NgModule # Module A module is a
-  /// collection of services, directives, controllers, filters, workers, WebAssembly modules, and
-  /// configuration information. `angular.module` is used to configure the auto.$injector `$injector`.
-  /// ```js // Create a new module let myModule = angular.module('myModule', []); // register a new
-  /// service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object
-  /// config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an
-  /// injector and load your modules like this: ```js let injector = angular.injector(['ng',
-  /// 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or
-  /// `bootstrap()` to simplify this process.
+  /// Creates or replaces an AngularTS module. A module collects services, directives, controllers,
+  /// filters, workers, WebAssembly modules, and configuration for an application.
   ///
   /// Parameters:
-  /// - [name]: The name of the module to create or retrieve.
-  /// - [requires]: If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.
+  /// - [name]: The name of the module to create.
+  /// - [requires]: The modules required by the new module.
   /// - [configFn]: Optional configuration function for the module that gets passed to `NgModule.config()`.
-  Object? module(String name,
+  Object? createModule(String name,
       [Object? requires = _undefinedArgument,
       Object? configFn = _undefinedArgument]) {
     final args = <JSAny?>[];
@@ -182,7 +172,20 @@ base class GeneratedNgAngular extends GeneratedNgFacade {
       args.add(unsafe.dartToJs(configFn));
     }
 
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('module'.toJS, args));
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('createModule'.toJS, args));
+  }
+
+  /// Retrieves an existing module.
+  ///
+  /// Parameters:
+  /// - [name]: The name of the module to retrieve.
+  Object? getModule(String name) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(name));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('getModule'.toJS, args));
   }
 
   /// Dispatches an invocation event to either an injectable service or a named scope. The event
@@ -229,13 +232,13 @@ base class GeneratedNgAngular extends GeneratedNgFacade {
   /// misplaces the app root element and injector, causing animations to stop working and making the
   /// injector inaccessible from outside the app. ```html &lt;!doctype html&gt; &lt;html&gt; &lt;body&gt; &lt;div
   /// ng-controller="WelcomeController"&gt; {{greeting}} &lt;/div&gt; &lt;script src="angular.js"&gt;&lt;/script&gt;
-  /// &lt;script&gt; let app = angular.module('demo', []) .controller('WelcomeController', ['$scope',
+  /// &lt;script&gt; let app = angular.createModule('demo', []) .controller('WelcomeController', ['$scope',
   /// function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']);
   /// &lt;/script&gt; &lt;/body&gt; &lt;/html&gt; ```
   ///
   /// Parameters:
   /// - [element]: DOM element which is the root of AngularTS application.
-  /// - [modules]: an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.module()`.
+  /// - [modules]: an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.createModule()` and `angular.getModule()`.
   Object? bootstrap(Object? element, [Object? modules = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(element));
@@ -479,24 +482,14 @@ base class GeneratedNgAngularService extends GeneratedNgFacade {
         raw.callMethodVarArgs('registerNgModule'.toJS, const <JSAny?>[]));
   }
 
-  /// The `angular.module` is a global place for creating, registering and retrieving AngularTS
-  /// modules. All modules (AngularTS core or 3rd party) that should be available to an application
-  /// must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule,
-  /// whereas passing more than one argument creates a new ng.NgModule # Module A module is a
-  /// collection of services, directives, controllers, filters, workers, WebAssembly modules, and
-  /// configuration information. `angular.module` is used to configure the auto.$injector `$injector`.
-  /// ```js // Create a new module let myModule = angular.module('myModule', []); // register a new
-  /// service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object
-  /// config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an
-  /// injector and load your modules like this: ```js let injector = angular.injector(['ng',
-  /// 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or
-  /// `bootstrap()` to simplify this process.
+  /// Creates or replaces an AngularTS module. A module collects services, directives, controllers,
+  /// filters, workers, WebAssembly modules, and configuration for an application.
   ///
   /// Parameters:
-  /// - [name]: The name of the module to create or retrieve.
-  /// - [requires]: If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.
+  /// - [name]: The name of the module to create.
+  /// - [requires]: The modules required by the new module.
   /// - [configFn]: Optional configuration function for the module that gets passed to `NgModule.config()`.
-  Object? module(String name,
+  Object? createModule(String name,
       [Object? requires = _undefinedArgument,
       Object? configFn = _undefinedArgument]) {
     final args = <JSAny?>[];
@@ -508,7 +501,20 @@ base class GeneratedNgAngularService extends GeneratedNgFacade {
       args.add(unsafe.dartToJs(configFn));
     }
 
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('module'.toJS, args));
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('createModule'.toJS, args));
+  }
+
+  /// Retrieves an existing module.
+  ///
+  /// Parameters:
+  /// - [name]: The name of the module to retrieve.
+  Object? getModule(String name) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(name));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('getModule'.toJS, args));
   }
 
   /// Dispatches an invocation event to either an injectable service or a named scope. The event
@@ -555,13 +561,13 @@ base class GeneratedNgAngularService extends GeneratedNgFacade {
   /// misplaces the app root element and injector, causing animations to stop working and making the
   /// injector inaccessible from outside the app. ```html &lt;!doctype html&gt; &lt;html&gt; &lt;body&gt; &lt;div
   /// ng-controller="WelcomeController"&gt; {{greeting}} &lt;/div&gt; &lt;script src="angular.js"&gt;&lt;/script&gt;
-  /// &lt;script&gt; let app = angular.module('demo', []) .controller('WelcomeController', ['$scope',
+  /// &lt;script&gt; let app = angular.createModule('demo', []) .controller('WelcomeController', ['$scope',
   /// function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']);
   /// &lt;/script&gt; &lt;/body&gt; &lt;/html&gt; ```
   ///
   /// Parameters:
   /// - [element]: DOM element which is the root of AngularTS application.
-  /// - [modules]: an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.module()`.
+  /// - [modules]: an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.createModule()` and `angular.getModule()`.
   Object? bootstrap(Object? element, [Object? modules = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(element));

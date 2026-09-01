@@ -145,8 +145,11 @@ public class NgModule internal constructor(
     }
 }
 
-public fun ng.module(
+public fun ng.createModule(
     name: String,
     requires: List<String> = emptyList(),
 ): NgModule =
-    NgModule(angularRuntime.module(name, requires.toTypedArray()).unsafeCast<RawNgModule>())
+    NgModule(angularRuntime.createModule(name, requires.toTypedArray()).unsafeCast<RawNgModule>())
+
+public fun ng.getModule(name: String): NgModule =
+    NgModule(angularRuntime.getModule(name).unsafeCast<RawNgModule>())

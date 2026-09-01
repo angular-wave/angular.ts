@@ -7,7 +7,7 @@ describe("ngScopeDirective", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular.module("test", []);
+    window.angular.createModule("test", []);
     dealoc(document.getElementById("app"));
     const injector = window.angular.bootstrap(document.getElementById("app")!, [
       "test",

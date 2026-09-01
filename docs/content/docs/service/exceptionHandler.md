@@ -45,7 +45,7 @@ Use `module.config({ $exceptionHandler: ... })` for application-wide error
 reporting policy.
 
 ```js
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $exceptionHandler: {
     handler(error) {
       myReporter.capture(error);

@@ -53,7 +53,7 @@
 
       document.addEventListener("DOMContentLoaded", () => {
         angular
-          .module("app", [])
+          .createModule("app", [])
           .store(
             "sessionStore",
             class {

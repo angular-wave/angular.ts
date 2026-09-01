@@ -200,7 +200,7 @@ Acceptance criteria:
 
 - [x] Parse TypeScript and JavaScript files in the active workspace.
 - [x] Detect module registration chains:
-      `angular.module(...).directive(...)`,
+      `angular.getModule(...).directive(...)`,
       `.component(...)`,
       `.filter(...)`,
       `.controller(...)`,

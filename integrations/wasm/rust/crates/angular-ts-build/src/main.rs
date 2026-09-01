@@ -118,7 +118,7 @@ if (typeof app.__ng_register !== "function") {{
   throw new Error("Rust AngularTS package does not export __ng_register.");
 }}
 
-app.__ng_register(angular.module("{module_name}"));
+app.__ng_register(angular.createModule("{module_name}"));
 angular.bootstrap(document.body, ["{module_name}"]);
 "#
     )
@@ -594,7 +594,7 @@ const registerRegistration = (registration) => {{
   }}
 }};
 
-const module = angular.module({module_name}, {requires});
+const module = angular.createModule({module_name}, {requires});
 const registeredRegistrationNames = new Set();
 
 for (const runtimeRegistration of runtimeRegistrations.values()) {{
@@ -1315,7 +1315,7 @@ mod tests {
             .find("let nextWasmScopeId = 0;")
             .expect("bootstrap should define Wasm scope ids");
         let end = source
-            .find("const module = angular.module")
+            .find("const module = angular.createModule")
             .expect("bootstrap should register an AngularTS module");
 
         source[start..end].trim_end()
@@ -1323,7 +1323,7 @@ mod tests {
 
     fn registrations_snapshot(source: &str) -> &str {
         let start = source
-            .find("const module = angular.module")
+            .find("const module = angular.createModule")
             .expect("bootstrap should register an AngularTS module");
 
         source[start..].trim_end()

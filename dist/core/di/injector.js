@@ -14,7 +14,7 @@ const appliedRuntimeCommands = new WeakSet();
  * @param {Array<String|Function>} modulesToLoad
  * @returns {InjectorService}
  */
-function createInjector(modulesToLoad, configure, resolveModule = (name) => window.angular.module(name)) {
+function createInjector(modulesToLoad, configure, resolveModule = (name) => window.angular.getModule(name)) {
     if (!isArray(modulesToLoad)) {
         throw $injectorError("modules", "Modules to load must be an array.");
     }

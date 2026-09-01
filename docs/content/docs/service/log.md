@@ -17,7 +17,7 @@ environments.
 ##### **Example\***
 
 ```js
-angular.module('demo').controller('MyController', ["$log", ($log) => {
+angular.getModule('demo').controller('MyController', ["$log", ($log) => {
   $log.log('log');
   $log.info('info');
   $log.warn('warn!');
@@ -41,7 +41,7 @@ To reveal the location of the calls to `$log` in the JavaScript console, you can
 Use `module.config({ $log: ... })` for application-wide logging policy.
 
 ```js
-angular.module('demo', []).config({
+angular.createModule('demo', []).config({
   $log: {
     debug: true,
   },
@@ -58,7 +58,7 @@ Beacon delivery is disabled unless an endpoint is configured and defaults to the
 `error` level when `levels` is omitted.
 
 ```js
-angular.module('demo', []).config({
+angular.createModule('demo', []).config({
   $log: {
     beacon: {
       url: '/api/client-logs',
@@ -74,7 +74,7 @@ metadata can register and select a serializer:
 
 ```js
 angular
-  .module('demo')
+  .getModule('demo')
   .factory(
     'clientLogSerializer',
     () => (entry) =>
@@ -113,7 +113,7 @@ shaping remain the responsibility of the configured serializer.
 You can also replace the logger implementation:
 
 ```js
-angular.module('demo', []).config({
+angular.createModule('demo', []).config({
   $log: {
     logger: () => ({
       log: console.log,
@@ -138,7 +138,7 @@ console and a backend endpoint.
 
 ```js
 angular
-  .module('demo')
+  .getModule('demo')
   .decorator('$log', ["$delegate", "$http", "$exceptionHandler", ($delegate, $http, $exceptionHandler) => {
     const originalError = $delegate.error;
     $delegate.error = () => {
@@ -162,7 +162,7 @@ both console and a backend endpoint.
 ##### **Example\***
 
 ```js
-angular.module('demo').run(["$http", ($http) => {
+angular.getModule('demo').run(["$http", ($http) => {
   /**
    * Decorate console.error to log error messages to the server.
    */

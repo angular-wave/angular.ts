@@ -83,7 +83,7 @@ export class TaskRepository {
 }
 
 export const tasks = angular
-  .module('tasks', [])
+  .createModule('tasks', [])
   .service('taskRepository', TaskRepository);
 ```
 

@@ -26,7 +26,7 @@ a cookie session:
 const session = { currentUser: null };
 
 angular
-  .module('app', [])
+  .createModule('app', [])
   .value('session', session)
   .config({
     $security: {

@@ -91,7 +91,7 @@ const transitionStateHookInjectableType =
   `(!Array<(string|function(...?): ${transitionHookResultType})>|${transitionStateHookFnType}|function(...?): ${transitionHookResultType})`;
 
 const parameterTypeOverrides = new Map([
-  ["Angular.module.configFn", "!ng.Injectable"],
+  ["Angular.createModule.configFn", "!ng.Injectable"],
   ["Angular.bootstrap.modules", moduleListType],
   ["Angular.injector.modules", moduleListType],
   ["NgModule.constant.object", constantValueType],
@@ -729,7 +729,7 @@ function generateExterns() {
   );
   const typeBlocks = aliases.map((alias) => typeExtern(checker, alias));
 
-  return `/**\n * @externs\n * Public externs for AngularTS [VI]{version}[/VI] applications compiled with Google Closure.\n *\n * Version-pinned to @angular-wave/angular.ts [VI]{version}[/VI]; regenerate\n * this file when updating the public ng namespace.\n *\n * This file is generated from src/namespace.ts by\n * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases\n * reuse Closure Compiler's built-in browser externs instead of duplicating DOM\n * API surfaces under the public ng namespace.\n */\n\n/** @const */\nvar angular = {};\n\n/** @const Closure mirror of AngularTS's public TypeScript ng namespace. */\nvar ng = {};\n\n/**\n * Retrieve or create an AngularTS module.\n * @param {string} name Module name to create or retrieve.\n * @param {!Array<string>=} requires Dependency module names when creating a module.\n * @return {!ng.NgModule}\n */\nangular.module = function(name, requires) {};\n\n${typeBlocks.join("\n\n")}\n`;
+  return `/**\n * @externs\n * Public externs for AngularTS [VI]{version}[/VI] applications compiled with Google Closure.\n *\n * Version-pinned to @angular-wave/angular.ts [VI]{version}[/VI]; regenerate\n * this file when updating the public ng namespace.\n *\n * This file is generated from src/namespace.ts by\n * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases\n * reuse Closure Compiler's built-in browser externs instead of duplicating DOM\n * API surfaces under the public ng namespace.\n */\n\n/** @const */\nvar angular = {};\n\n/** @const Closure mirror of AngularTS's public TypeScript ng namespace. */\nvar ng = {};\n\n/**\n * Create or replace an AngularTS module.\n * @param {string} name Module name to create.\n * @param {!Array<string>=} requires Dependency module names.\n * @return {!ng.NgModule}\n */\nangular.createModule = function(name, requires) {};\n\n/**\n * Retrieve an AngularTS module.\n * @param {string} name Module name to retrieve.\n * @return {!ng.NgModule}\n */\nangular.getModule = function(name) {};\n\n${typeBlocks.join("\n\n")}\n`;
 }
 
 const output = generateExterns();

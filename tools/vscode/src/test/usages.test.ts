@@ -91,7 +91,7 @@ test("collects component and binding usages in TypeScript inline templates", () 
     bindings: [{ name: "user", mode: "<", optional: false }],
   };
   const usages = collectAngularTsUsages(
-    `angular.module("demo").component("shell", { template: \`<user-card user="$ctrl.user"></user-card>\` });`,
+    `angular.getModule("demo").component("shell", { template: \`<user-card user="$ctrl.user"></user-card>\` });`,
     "typescript",
     component,
   );
@@ -188,7 +188,7 @@ test("collects controller usages in HTML and source metadata", () => {
 
   assert.deepEqual(
     collectAngularTsUsages(
-      `angular.module("demo").component("x", { controller: "DemoController as vm" });`,
+      `angular.getModule("demo").component("x", { controller: "DemoController as vm" });`,
       "typescript",
       controller,
     ).map((usage) => usage.kind),
@@ -205,7 +205,7 @@ test("collects service usages in DI arrays and $inject assignments", () => {
     description: "Fixture service",
   };
   const usages = collectAngularTsUsages(
-    `angular.module("demo").controller("DemoController", ["UserApi", function(UserApi) {}]);
+    `angular.getModule("demo").controller("DemoController", ["UserApi", function(UserApi) {}]);
      DemoController.$inject = ["UserApi"];`,
     "typescript",
     service,

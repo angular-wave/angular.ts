@@ -55,7 +55,7 @@
 
 <script>
   window.angular
-    .module('pointerCaptureDemo', [])
+    .createModule('pointerCaptureDemo', [])
     .controller('PointerCaptureDemo', function () {
       this.dragging = false;
       this.status = 'Drag the marker across the board';

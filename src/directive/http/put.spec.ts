@@ -12,7 +12,7 @@ describe("ngPut", () => {
     el.innerHTML = "";
     const angular = new Angular();
 
-    angular.module("default", []);
+    angular.createModule("default", []);
     angular.bootstrap(el, ["default"]).invoke([
       "$compile",
       "$rootScope",

@@ -19,11 +19,11 @@ Exact runtime contracts live in TypeDoc:
 
 ## Create Modules
 
-Use `angular.module()` to create or retrieve modules. Passing a dependency array
-creates a module; passing only the name retrieves one.
+Use `angular.createModule()` to create or replace a module. Use
+`angular.getModule()` to retrieve a module that is already registered.
 
 ```ts
-const app = angular.module('myApp', ['ng']);
+const app = angular.createModule('myApp', ['ng']);
 
 app.service('UserService', UserService);
 
@@ -33,10 +33,10 @@ app.config({
   },
 });
 
-const existing = angular.module('myApp');
+const existing = angular.getModule('myApp');
 ```
 
-Calling `angular.module("name")` without first creating that module throws the
+Calling `angular.getModule("name")` without first creating that module throws the
 same `nomod` error as AngularJS.
 
 ## Bootstrap Manually
@@ -142,7 +142,7 @@ const angular = createAngular({
   modules: [websocketModule],
 });
 
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $websocket: {
     defaults: { retryDelay: 500, maxRetries: 5 },
   },
@@ -162,7 +162,7 @@ const angular = createAngular({
   modules: [routerModule],
 });
 
-angular.module('app', []).router({
+angular.createModule('app', []).router({
   name: 'dashboard',
   url: '/dashboard',
   template: '<dashboard-view></dashboard-view>',
@@ -184,7 +184,7 @@ const angular = createAngular({
   modules: [serviceWorkerModule],
 });
 
-angular.module('app', []).serviceWorker('/service-worker.js', {
+angular.createModule('app', []).serviceWorker('/service-worker.js', {
   scope: '/app/',
   autoRegister: true,
 });

@@ -1,7 +1,7 @@
 window.reportedErrors = [];
 
 window.angular
-  .module('exceptionConfigDemo', [])
+  .createModule('exceptionConfigDemo', [])
   .config({
     $exceptionHandler: {
       handler(error) {

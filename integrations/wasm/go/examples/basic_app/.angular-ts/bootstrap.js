@@ -107,7 +107,7 @@ const register = (module, registration) => {
   }
 };
 
-const module = angular.module(moduleName, requires);
+const module = angular.createModule(moduleName, requires);
 
 (manifest.registrations || []).forEach((registration) => {
   register(module, registration);

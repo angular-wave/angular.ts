@@ -443,7 +443,7 @@ const registerRegistration = (registration) => {
   }
 };
 
-const module = angular.module("rustScopeBridge", []);
+const module = angular.createModule("rustScopeBridge", []);
 const registeredRegistrationNames = new Set();
 
 for (const runtimeRegistration of runtimeRegistrations.values()) {

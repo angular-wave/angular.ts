@@ -30,7 +30,7 @@ describe("ngIf", () => {
       dealoc(document.getElementById("app"));
       angular = window.angular = new Angular();
       compileRegistry = angular._composition.compileRegistry;
-      window.angular.module("test", []);
+      window.angular.createModule("test", []);
       injector = window.angular.bootstrap(document.getElementById("app"), [
         "test",
       ]);
@@ -278,7 +278,7 @@ describe("ngIf", () => {
     it("should play nice with ngInclude on the same element", (done) => {
       element.innerHTML = `<div><div ng-if="value=='first'" ng-include="'/mock/hello'"></div></div>`;
 
-      window.angular.module("myModule", []).run([
+      window.angular.createModule("myModule", []).run([
         "$rootScope",
         ($rootScope) => {
           $rootScope.value = "first";
@@ -425,7 +425,9 @@ describe("ngIf", () => {
       })),
     };
 
-    localAngular.module("if-animate-mock-app", []).value("$animate", animate);
+    localAngular
+      .createModule("if-animate-mock-app", [])
+      .value("$animate", animate);
     const localInjector = localAngular.bootstrap(root, ["if-animate-mock-app"]);
     const localCompile = localInjector.get("$compile");
     const localRootScope = localInjector.get("$rootScope");
@@ -495,7 +497,7 @@ describe("ngIf", () => {
     };
     const angular = new Angular();
 
-    angular.module("if-cancel-animation", []).value("$animate", animate);
+    angular.createModule("if-cancel-animation", []).value("$animate", animate);
     const injector = angular.bootstrap(root, ["if-cancel-animation"]);
     const scope = injector.get("$rootScope");
     const element = injector.get("$compile")(

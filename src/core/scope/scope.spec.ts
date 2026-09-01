@@ -30,7 +30,7 @@ describe("Scope", () => {
     delete window.angular;
     window.angular = new Angular();
     window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception, cause) => {
           logs.push(exception);
@@ -5171,7 +5171,7 @@ describe("Scope optimizations", () => {
     delete window.angular;
     window.angular = new Angular();
     window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception, cause) => {
           logs.push(exception);
@@ -5512,6 +5512,38 @@ describe("Scope optimizations", () => {
   });
 
   describe("internal listener scheduler", () => {
+    it("should tolerate watcher deregistration while a listener task flushes", async () => {
+      const firstListener = jasmine.createSpy("first listener");
+
+      const secondListener = jasmine.createSpy("second listener");
+
+      let deregisterFirst = () => false;
+
+      let deregisterDuringFlush = false;
+
+      deregisterFirst = scope.watch("value", () => {
+        firstListener();
+
+        if (deregisterDuringFlush) {
+          deregisterFirst();
+        }
+      });
+
+      scope.watch("value", secondListener);
+      await wait();
+
+      firstListener.calls.reset();
+      secondListener.calls.reset();
+      deregisterDuringFlush = true;
+
+      scope.value = 1;
+      await wait();
+
+      expect(firstListener).toHaveBeenCalledTimes(1);
+      expect(secondListener).toHaveBeenCalledTimes(1);
+      expect(scope.$$watchersCount).toBe(1);
+    });
+
     it("should preserve remaining scheduled callbacks when a flush callback throws", () => {
       const queuedMicrotasks = [];
 

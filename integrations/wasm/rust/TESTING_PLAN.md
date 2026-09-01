@@ -128,7 +128,7 @@ Coverage:
 - Manifest parsing.
 - `templatePath` resolution.
 - Rejection of conflicting `template`, `templateUrl`, and `templatePath`.
-- Generated `angular.module(name, requires)`.
+- Generated `angular.createModule(name, requires)`.
 - Generated `module.factory(...)` for Rust services.
 - Generated `module.component(...)` for Rust components.
 - Generated controller wrapper with `$inject`.

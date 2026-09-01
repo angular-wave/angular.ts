@@ -5,7 +5,7 @@ function ItemController($scope, $state) {
 ItemController.$inject = ['$scope', '$state'];
 
 const routingParamTypesDemo = window.angular
-  .module('routingParamTypesDemo', [])
+  .createModule('routingParamTypesDemo', [])
   .config({
     $location: {
       html5Mode: false,

@@ -14,7 +14,7 @@ class TaskBoard {
 const { each } = angular.view;
 const { tags } = angular;
 
-angular.module('taskBoard', []).component('taskBoard', {
+angular.createModule('taskBoard', []).component('taskBoard', {
   controller: TaskBoard,
   view: ({ controller }) =>
     tags.main(

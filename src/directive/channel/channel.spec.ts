@@ -12,7 +12,7 @@ describe("channel", () => {
     dealoc(root);
     const angular = new Angular();
 
-    angular.module("myModule", ["ng"]);
+    angular.createModule("myModule", ["ng"]);
     angular.bootstrap(root, ["myModule"]).invoke([
       "$compile",
       "$eventBus",

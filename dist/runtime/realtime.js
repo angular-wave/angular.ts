@@ -22,7 +22,7 @@ const websocketModule = memoizeRuntimeModule((angular) => {
         destroyWebSocketRuntimeConfiguration(configuration);
     });
     return angular
-        .module("ng.websocket", [])
+        .createModule("ng.websocket", [])
         .factory(_websocket, () => createWebSocketService(createRuntimeLog(angular), configuration, runtimeWindow.WebSocket, composition.exceptionHandlerState.service));
 });
 /** Registers managed Server-Sent Events connections in a custom runtime. */
@@ -38,7 +38,7 @@ const sseModule = memoizeRuntimeModule((angular) => {
         destroySseRuntimeConfiguration(configuration);
     });
     return angular
-        .module("ng.sse", [])
+        .createModule("ng.sse", [])
         .factory(_sse, () => createSseService(createRuntimeLog(angular), configuration, () => runtimeWindow.EventSource, composition.exceptionHandlerState.service));
 });
 /** Registers managed WebTransport sessions in a custom runtime. */
@@ -54,14 +54,14 @@ const webTransportModule = memoizeRuntimeModule((angular) => {
         destroyWebTransportRuntimeConfiguration(configuration);
     });
     return angular
-        .module("ng.webTransport", [])
+        .createModule("ng.webTransport", [])
         .factory(_webTransport, () => createWebTransportService(createRuntimeLog(angular), configuration, () => runtimeWindow.WebTransport, runtimeWindow.location.href, composition.exceptionHandlerState.service));
 });
 /**
  * Registers managed websocket, SSE, and WebTransport services in a custom
  * AngularTS runtime.
  */
-const realtimeModule = memoizeRuntimeModule((angular) => angular.module("ng.realtime", [
+const realtimeModule = memoizeRuntimeModule((angular) => angular.createModule("ng.realtime", [
     websocketModule(angular).name,
     sseModule(angular).name,
     webTransportModule(angular).name,

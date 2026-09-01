@@ -631,7 +631,7 @@ function simpleCompare(val1, val2) {
       </div>
     </file>
     <file name="script.js">
-        angular.module('equalsExample', []).controller('ExampleController', ['$scope', function($scope) {
+        angular.createModule('equalsExample', []).controller('ExampleController', ['$scope', function($scope) {
           $scope.user1 = {};
           $scope.user2 = {};
           $scope.compare = function() {
@@ -2167,7 +2167,7 @@ const appliedRuntimeCommands = new WeakSet();
  * @param {Array<String|Function>} modulesToLoad
  * @returns {InjectorService}
  */
-function createInjector(modulesToLoad, configure, resolveModule = (name) => window.angular.module(name)) {
+function createInjector(modulesToLoad, configure, resolveModule = (name) => window.angular.getModule(name)) {
     if (!isArray(modulesToLoad)) {
         throw $injectorError$1("modules", "Modules to load must be an array.");
     }
@@ -4833,8 +4833,14 @@ class Scope {
                 const filteredListeners = task._filter
                     ? task._filter(task._listeners)
                     : task._listeners;
-                for (let i = 0, l = filteredListeners.length; i < l; i++) {
-                    this._notifyListener(filteredListeners[i], task._target, task._sourceHandler, task._sourceProperty);
+                for (let i = 0; i < filteredListeners.length;) {
+                    const listener = filteredListeners[i];
+                    this._notifyListener(listener, task._target, task._sourceHandler, task._sourceProperty);
+                    // Deregistration uses swap-and-pop. Revisit this index when the
+                    // current listener was removed so the moved listener is not skipped.
+                    if (filteredListeners[i] === listener) {
+                        i++;
+                    }
                 }
             }
         }
@@ -12357,7 +12363,7 @@ function createInterpolateRegistration(state, security) {
  *
  * ```js
  * angular
- *   .module('app')
+ *   .createModule('app')
  *   .factory('$exceptionHandler', ['myLogger', function(myLogger) {
  *     return function handleError(error) {
  *       myLogger.capture(error);
@@ -13672,16 +13678,19 @@ class AngularRuntime extends EventTarget {
         }
         return builtinNgModuleRegistrar(this);
     }
-    module(name, requires, configFn) {
-        validateNotHasOwnPropertyName(name, "module");
-        if (requires && hasOwn(this._moduleRegistry, name)) {
+    createModule(name, requires = [], configFn) {
+        validateNotHasOwnPropertyName(name, "createModule");
+        if (hasOwn(this._moduleRegistry, name)) {
             this._moduleRegistry[name] = null;
         }
         return ensure(this._moduleRegistry, name, () => {
-            if (!requires) {
-                throw $injectorError("nomod", "Module '{0}' is not available. Possibly misspelled or not loaded", name);
-            }
             return new NgModule(name, requires, configFn, this._composition.animationRegistry, this._composition.controllerRegistry, this._composition.filterRegistry, this._composition.compileRegistry, this._composition.appContext, this._composition.configRegistry);
+        });
+    }
+    getModule(name) {
+        validateNotHasOwnPropertyName(name, "getModule");
+        return ensure(this._moduleRegistry, name, () => {
+            throw $injectorError("nomod", "Module '{0}' is not available. Possibly misspelled or not loaded", name);
         });
     }
     /**
@@ -13786,7 +13795,7 @@ class AngularRuntime extends EventTarget {
      *
      * <script src="angular.js"></script>
      * <script>
-     *   let app = angular.module('demo', [])
+     *   let app = angular.createModule('demo', [])
      *   .controller('WelcomeController', ['$scope', function($scope) {
      *       $scope.greeting = 'Welcome!';
      *   }]);
@@ -13800,7 +13809,7 @@ class AngularRuntime extends EventTarget {
      * @param modules an array of modules to load into the application.
      *     Each item in the array should be the name of a predefined module or a (DI annotated)
      *     function that will be invoked by the injector as a `config` block.
-     *     See `angular.module()`.
+     *     See `angular.createModule()` and `angular.getModule()`.
      * @returns The created injector instance for this application.
      */
     bootstrap(element, modules) {
@@ -13817,7 +13826,7 @@ class AngularRuntime extends EventTarget {
         this._bootsrappedModules.unshift("ng");
         const injector = createInjector(this._bootsrappedModules, (registry) => {
             registry.value(_rootElement, element);
-        }, (name) => this.module(name));
+        }, (name) => this.getModule(name));
         injector.invoke([
             _rootScope,
             _rootElement,
@@ -13869,7 +13878,7 @@ class AngularRuntime extends EventTarget {
             this.currentInjector.loadNewModules(modules);
             return this.currentInjector;
         }
-        this.currentInjector = createInjector(modules, undefined, (name) => this.module(name));
+        this.currentInjector = createInjector(modules, undefined, (name) => this.getModule(name));
         this._injectorCreated = true;
         return this.currentInjector;
     }
@@ -21601,7 +21610,7 @@ function createHttpRuntimeConfiguration() {
      * ```js
      * // App served from `https://example.com/`.
      * angular
-     *   .module('xsrfTrustedOriginsExample', [])
+     *   .createModule('xsrfTrustedOriginsExample', [])
      *   .config({
      *     $http: {
      *       xsrfTrustedOrigins: ['https://api.example.com'],
@@ -24112,7 +24121,7 @@ class NgModelController {
      * @example
      * <example name="ng-model-cancel-update" module="cancel-update-example">
      *   <file name="app.js">
-     *     angular.module('cancel-update-example', [])
+     *     angular.createModule('cancel-update-example', [])
      *
      *     .controller('CancelUpdateController', ['$scope', function($scope) {
      *       $scope.model = {value1: '', value2: ''};
@@ -24584,7 +24593,7 @@ class NgModelController {
         </div>
        </file>
        <file name="app.js">
-        angular.module('inputExample', [])
+        angular.createModule('inputExample', [])
           .controller('inputController', ['$scope', function($scope) {
             $scope.items = [
               {name: 'Apricot', id: 443},
@@ -36707,7 +36716,7 @@ class StateRuntime {
      *
      * #### Example:
      * ```js
-     * let app = angular.module('app', []);
+     * let app = angular.createModule('app', []);
      *
      * app.controller('ctrl', ['$scope', '$state', function ($scope, $state) {
      *   $scope.changeState = function () {
@@ -40264,7 +40273,7 @@ function unwrapTrustedValueForContext(type, value) {
  * Here is what a secure configuration for this scenario might look like:
  *
  * ```
- *  angular.module('myApp', []).config({
+ *  angular.createModule('myApp', []).config({
  *    $sceDelegate: {
  *      trustedResourceUrlList: [
  *        // Allow same origin resource loads.
@@ -42934,7 +42943,7 @@ function registerNgModule(angular) {
     const composition = runtime._composition;
     const compileRegistry = composition.compileRegistry;
     composition._installAnimationRegistry(new AnimationRegistry());
-    const ngModule = angular.module("ng", []);
+    const ngModule = angular.createModule("ng", []);
     ngModule._registerProviders((registry) => {
         const composition = registerRuntimeHostValues(angular, registry);
         registry.factory(_compile, [
@@ -43010,7 +43019,7 @@ function registerComposedNgModule(angular, options) {
     const serviceRegistrations = normalizeRegistrations(options.services);
     const composition = getRuntimeComposition(angular);
     const { compileRegistry, platform } = composition;
-    const ngModule = angular.module(moduleName, options.requires);
+    const ngModule = angular.createModule(moduleName, options.requires);
     ngModule._registerProviders((registry) => {
         registry.value(_window, platform.window);
         registry.value(_document, platform.document);

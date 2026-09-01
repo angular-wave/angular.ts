@@ -1,5 +1,5 @@
 window.angular
-  .module('playCanvasConcept', [])
+  .createModule('playCanvasConcept', [])
   .model('cubeModel', () => ({
     spinning: true,
     speed: 1.2,

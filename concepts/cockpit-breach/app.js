@@ -20,7 +20,7 @@ const angular = createAngular({
     ngAttributeAliasDirectives,
   ],
 });
-const app = angular.module("cockpitBreachConcept", []);
+const app = angular.createModule("cockpitBreachConcept", []);
 
 const runtime = {
   frame: 0,

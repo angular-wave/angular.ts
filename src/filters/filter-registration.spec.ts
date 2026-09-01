@@ -13,7 +13,7 @@ describe("filter registration", () => {
 
   it("evaluates module filters in compiled templates", async () => {
     window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .filter("test", () => (value: unknown) => `${value}_test`);
     el.innerHTML = "<div> {{ 'hello' | test }}</div>";
 
@@ -26,7 +26,9 @@ describe("filter registration", () => {
   it("calls a module filter when evaluating an expression", () => {
     const filter = jasmine.createSpy("myFilter");
 
-    window.angular.module("myModule", []).filter("myFilter", () => filter);
+    window.angular
+      .createModule("myModule", [])
+      .filter("myFilter", () => filter);
 
     createInjector(["ng", "myModule"]).invoke([
       "$rootScope",

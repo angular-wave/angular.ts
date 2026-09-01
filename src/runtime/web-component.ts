@@ -25,7 +25,7 @@ export const webComponentModule: RuntimeModule = (angular) => {
   });
 
   return angular
-    .module("ng.webComponent", [])
+    .createModule("ng.webComponent", [])
     .factory(_webComponent, [
       _injector,
       _rootScope,
@@ -104,7 +104,7 @@ export function defineAngularElement<
   const elementModuleName =
     elementModule?.name ?? defaultElementModuleName(name);
 
-  const appModule = angular.module(
+  const appModule = angular.createModule(
     elementModuleName,
     elementModule?.requires ?? [],
   );
@@ -129,7 +129,7 @@ export function defineAngularElement<
     elementModule: appModule,
     injector,
     name,
-    ngModule: angular.module(ngModuleName),
+    ngModule: angular.getModule(ngModuleName),
   };
 }
 

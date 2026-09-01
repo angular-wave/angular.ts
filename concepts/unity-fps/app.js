@@ -1,5 +1,5 @@
 window.angular
-  .module("unityFpsConcept", [])
+  .createModule("unityFpsConcept", [])
   .model("unitySessionModel", () => ({
     runtime: "mock",
     status: "loading",

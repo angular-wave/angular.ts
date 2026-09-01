@@ -134,7 +134,7 @@ Configure shared request defaults before bootstrap when a group of resources
 should use the same backend behavior.
 
 ```ts
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $rest: {
     defaults: {
       withCredentials: true,

@@ -2,7 +2,7 @@ import angular.ts.Component
 import angular.ts.Directive
 import angular.ts.DirectiveRestrict
 import angular.ts.bootstrap
-import angular.ts.module
+import angular.ts.createModule
 import angular.ts.ng
 import org.w3c.dom.Element
 
@@ -13,7 +13,7 @@ private external interface GreetingService {
 private val greetingToken = ng.token<GreetingService>("kotlinGreeting")
 
 fun main() {
-    val app = ng.module("kotlinBasicApp")
+    val app = ng.createModule("kotlinBasicApp")
         .factory(
             greetingToken,
             ng.inject0 {

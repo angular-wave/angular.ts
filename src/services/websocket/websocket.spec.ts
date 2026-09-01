@@ -49,11 +49,13 @@ describe("$websocket", () => {
 
     angular = new Angular();
 
-    const module = angular.module("websocketExceptionBoundary", []).config({
-      $exceptionHandler: {
-        handler: (error) => exceptions.push(error),
-      },
-    });
+    const module = angular
+      .createModule("websocketExceptionBoundary", [])
+      .config({
+        $exceptionHandler: {
+          handler: (error) => exceptions.push(error),
+        },
+      });
 
     angular.bootstrap(el, [module.name]).invoke([
       "$websocket",
@@ -304,7 +306,7 @@ describe("$websocket", () => {
 
     document.body.appendChild(configuredEl);
 
-    angular.module("configuredWebSocketDefaults", []).config({
+    angular.createModule("configuredWebSocketDefaults", []).config({
       $websocket: {
         defaults: {
           heartbeatTimeout: 0,

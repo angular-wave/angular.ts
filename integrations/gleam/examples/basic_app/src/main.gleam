@@ -16,7 +16,7 @@ fn controller(_store: TodoStore) {
 }
 
 pub fn main() {
-  let app = ng.module("gleamDemo")
+  let app = ng.create_module("gleamDemo")
   let todo_store = ng.token("todoStore")
 
   app

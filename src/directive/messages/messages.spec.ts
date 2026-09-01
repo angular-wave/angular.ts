@@ -12,7 +12,7 @@ describe("ngMessages", () => {
     el = document.getElementById("app");
     dealoc(el);
     window.angular = new Angular();
-    window.angular.module("app", []).directive("messageWrap", () => ({
+    window.angular.createModule("app", []).directive("messageWrap", () => ({
       transclude: true,
       scope: {
         col: "=col",

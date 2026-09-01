@@ -502,7 +502,7 @@ function simpleCompare(val1, val2) {
       </div>
     </file>
     <file name="script.js">
-        angular.module('equalsExample', []).controller('ExampleController', ['$scope', function($scope) {
+        angular.createModule('equalsExample', []).controller('ExampleController', ['$scope', function($scope) {
           $scope.user1 = {};
           $scope.user2 = {};
           $scope.compare = function() {

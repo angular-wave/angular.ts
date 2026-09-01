@@ -944,7 +944,7 @@ describe("$workflow", () => {
   });
 
   it("registers named workflows as singleton injectables", async () => {
-    const app = window.angular.module("workflow-app", []);
+    const app = window.angular.createModule("workflow-app", []);
 
     app
       .workflow("buildWorkflow", {

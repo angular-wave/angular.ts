@@ -79,7 +79,7 @@ $http.post('/api/users/42/avatar', formData, {
 Set application-wide defaults during module configuration:
 
 ```ts
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $http: {
     defaults: {
       headers: {
@@ -96,7 +96,7 @@ angular.module('app', []).config({
 Runtime defaults are available through `$http.defaults`:
 
 ```ts
-angular.module('app').run([
+angular.getModule('app').run([
   '$http',
   ($http) => {
     $http.defaults.headers.common['X-App-Version'] = '2.1.0';
@@ -110,7 +110,7 @@ Interceptors centralize cross-cutting request and response behavior such as auth
 headers, retries, logging, and redirects.
 
 ```ts
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $http: {
     interceptors: [
       () => ({
@@ -157,7 +157,7 @@ header. Cross-origin APIs must be listed as trusted origins before AngularTS
 sends the token to them.
 
 ```ts
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $http: {
     xsrfTrustedOrigins: ['https://api.example.com'],
   },

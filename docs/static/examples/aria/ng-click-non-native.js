@@ -1,5 +1,5 @@
 window.angular
-  .module("ariaClickNonNativeDemo", [])
+  .createModule("ariaClickNonNativeDemo", [])
   .controller(
     "AriaClickNonNativeCtrl",
     class {

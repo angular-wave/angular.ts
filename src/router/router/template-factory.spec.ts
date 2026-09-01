@@ -17,7 +17,7 @@ describe("templateFactory", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
-      .module("defaultModule", [])
+      .createModule("defaultModule", [])
       .decorator("$exceptionHandler", () => {
         return (exception: any) => {
           error = exception.message;
@@ -79,7 +79,7 @@ describe("templateFactory", () => {
 
     beforeEach(() => {
       dealoc(document.getElementById("app"));
-      const mod = window.angular.module("defaultModule", []);
+      const mod = window.angular.createModule("defaultModule", []);
 
       mod.component("myComponent", { template: "hi" });
       $injector = window.angular.bootstrap(document.getElementById("app")!, [

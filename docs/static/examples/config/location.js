@@ -1,5 +1,5 @@
 window.angular
-  .module('locationConfigDemo', [])
+  .createModule('locationConfigDemo', [])
   .config({
     $location: {
       html5Mode: {

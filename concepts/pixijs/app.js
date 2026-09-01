@@ -1,5 +1,5 @@
 window.angular
-  .module('pixiConcept', [])
+  .createModule('pixiConcept', [])
   .model('spriteModel', () => ({
     x: 210,
     y: 130,

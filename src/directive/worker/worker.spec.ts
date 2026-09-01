@@ -52,7 +52,7 @@ describe("ngWorker", () => {
 
     angular = new Angular();
     const module = angular
-      .module("workerDirectiveTests", [])
+      .createModule("workerDirectiveTests", [])
       .config({
         $exceptionHandler: {
           handler: (exception) => {

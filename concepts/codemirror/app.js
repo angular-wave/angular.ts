@@ -1,7 +1,7 @@
 const editorViews = new WeakMap();
 
 window.angular
-  .module("codemirrorConcept", [])
+  .createModule("codemirrorConcept", [])
   .model("editorModel", () => ({
     status: "loading",
     title: "runtime-notes.js",

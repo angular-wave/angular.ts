@@ -300,7 +300,7 @@ function unwrapTrustedValueForContext(
  * Here is what a secure configuration for this scenario might look like:
  *
  * ```
- *  angular.module('myApp', []).config({
+ *  angular.createModule('myApp', []).config({
  *    $sceDelegate: {
  *      trustedResourceUrlList: [
  *        // Allow same origin resource loads.

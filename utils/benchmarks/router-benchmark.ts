@@ -74,7 +74,7 @@ function createRouterServices(moduleName: string): RouterServices {
 
   window.angular = runtime;
 
-  const app = window.angular.module(moduleName, ["ng"]);
+  const app = window.angular.createModule(moduleName, ["ng"]);
   app.component("benchView", {
     bindings: { id: "<" },
     template: "<p>{{$ctrl.id}}</p>",
@@ -141,7 +141,7 @@ function createFirstNavigationWorkload(index: number): RouterServices {
 
   window.angular = runtime;
 
-  const app = runtime.module(moduleName, ["ng"]);
+  const app = runtime.createModule(moduleName, ["ng"]);
 
   app.component("firstView", {
     bindings: { id: "<" },
@@ -188,7 +188,7 @@ function createRegistrationWorkload(index: number): DisposableWorkload {
 
   window.angular = runtime;
   const moduleName = `routerRegistrationBenchmark${index}`;
-  const app = runtime.module(moduleName, ["ng"]);
+  const app = runtime.createModule(moduleName, ["ng"]);
   app.router({
     name: "bench",
     url: "/bench",

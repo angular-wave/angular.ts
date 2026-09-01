@@ -58,7 +58,7 @@ have a unique name.
 
 ```js
 angular
-  .module('app', ['ng.router'])
+  .createModule('app', ['ng.router'])
   .router({
     name: 'home',
     url: '/home',
@@ -112,7 +112,7 @@ Place `ng-view` where you want the active state's template to render. An unnamed
 Use `$state.go()` in controllers or services to perform programmatic navigation.
 
 ```js
-angular.module('app').controller('ContactsCtrl', [
+angular.getModule('app').controller('ContactsCtrl', [
   '$state',
   function ($state) {
     this.viewContact = function (contactId) {
@@ -158,7 +158,7 @@ accessibility and scroll restoration consistent across the whole route tree
 without repeating settings on every route:
 
 ```js
-angular.module('demo', []).config({
+angular.createModule('demo', []).config({
   $router: {
     scroll: { top: 0 },
     focus: '[data-route-focus]',

@@ -45,7 +45,7 @@ const files = [
       "runtime.Module._malloc",
       "runtime.Module._free",
       "NgScopeOnTransactionJs",
-      'angular.module(moduleName, [])',
+      'angular.createModule(moduleName, [])',
       'app.controller("csharpTodoController"',
       "scopeAbi.createScope($scope, { name: scopeName })",
       "exports.TodoBind(scopeName)",

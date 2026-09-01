@@ -107,7 +107,7 @@ JSArray<JSAny?> _toJsTodos(List<Todo> todos) {
 }
 
 void main() {
-  final app = ng.module('dartDemo');
+  final app = ng.createModule('dartDemo');
 
   app.factory(todoStoreToken, ng.inject0(TodoStore.new));
 

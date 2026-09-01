@@ -4,7 +4,7 @@ import { parseAngularTsRegistrations } from "../analyzer/registrationParser";
 
 test("parses component, directive, filter, service, and controller registrations", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .component("userCard", {
         bindings: {
           user: "<",
@@ -68,7 +68,7 @@ test("parses component, directive, filter, service, and controller registrations
 
 test("defaults custom directives without restrict to attribute usage", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .directive("focusTrap", function() {
         return {
           link: function() {}
@@ -87,7 +87,7 @@ test("defaults custom directives without restrict to attribute usage", () => {
 
 test("maps directive restrict values to attribute and element completion locations", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .directive("attributeOnly", function() {
         return { restrict: "A" };
       })
@@ -119,7 +119,7 @@ test("maps directive restrict values to attribute and element completion locatio
 
 test("extracts component and directive definition metadata for hovers", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .component("userPanel", {
         template: "<section></section>",
         controller: function UserPanelController() {},
@@ -149,7 +149,7 @@ test("extracts component and directive definition metadata for hovers", () => {
 
 test("parses supported provider object-map registrations", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .config(function($compileProvider, $controllerProvider) {
         $compileProvider.directive({
           activeWhen: function() {
@@ -217,7 +217,7 @@ test("parses supported provider object-map registrations", () => {
 
 test("extracts leading JSDoc for custom registration descriptions", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       /**
        * Displays the current user profile.
        *
@@ -248,7 +248,7 @@ test("extracts leading JSDoc for custom registration descriptions", () => {
 
 test("parses state and router route declarations with params", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .state("admin.profile", {
         url: "/users/:userId?tab",
         params: {
@@ -320,7 +320,7 @@ test("parses state and router route declarations with params", () => {
 
 test("parses lazy state boundaries as non-navigable route metadata", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .lazyState("admin.**", () => import("./admin.routes"))
       .state("admin.profile", {
         url: "/profile"
@@ -346,7 +346,7 @@ test("extracts TypeScript-aware filter signatures from returned callbacks", () =
   const text = `
     type Todo = { done: boolean };
 
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .filter("visibleTodos", function() {
         const apply = (
           items: Todo[],
@@ -386,7 +386,7 @@ test("extracts TypeScript-aware filter signatures from returned callbacks", () =
 
 test("extracts JSDoc from supported object-map registration entries", () => {
   const text = `
-    angular.module("demo", [])
+    angular.createModule("demo", [])
       .config(function($compileProvider) {
         $compileProvider.directive({
           /**

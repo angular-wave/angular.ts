@@ -23,7 +23,7 @@ test("normalizes component names", () => {
 
 test("infers AngularTS module names from source", () => {
   assert.equal(
-    inferModuleName(`angular.module("demo", []).component("x", {});`),
+    inferModuleName(`angular.createModule("demo", []).component("x", {});`),
     "demo",
   );
   assert.equal(inferModuleName(`const x = 1;`), undefined);
@@ -49,7 +49,7 @@ test("generates external-template component files", () => {
       "user-card.component.spec.ts",
     ],
   );
-  assert.match(files[0].content, /angular\.module\("demo"\)\.component\("userCard"/);
+  assert.match(files[0].content, /angular\.getModule\("demo"\)\.component\("userCard"/);
   assert.match(files[0].content, /templateUrl: "\.\/user-card\.html"/);
   assert.match(files[1].content, /class="user-card"/);
 });

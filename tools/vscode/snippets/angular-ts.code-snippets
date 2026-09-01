@@ -2,7 +2,7 @@
   "AngularTS Component": {
     "prefix": "ngcomponent",
     "body": [
-      "angular.module(\"${1:app}\").component(\"${2:myComponent}\", {",
+      "angular.getModule(\"${1:app}\").component(\"${2:myComponent}\", {",
       "  templateUrl: \"${3:my-component.html}\",",
       "  bindings: {",
       "    ${4:item}: \"<\"",
@@ -15,7 +15,7 @@
   "AngularTS TemplateUrl Component": {
     "prefix": "ngcomponenturl",
     "body": [
-      "angular.module(\"${1:app}\").component(\"${2:myComponent}\", {",
+      "angular.getModule(\"${1:app}\").component(\"${2:myComponent}\", {",
       "  templateUrl: \"${3:my-component.html}\",",
       "  bindings: {",
       "    ${4:item}: \"<\"",
@@ -28,7 +28,7 @@
   "AngularTS Inline Template Component": {
     "prefix": "ngcomponentinline",
     "body": [
-      "angular.module(\"${1:app}\").component(\"${2:myComponent}\", {",
+      "angular.getModule(\"${1:app}\").component(\"${2:myComponent}\", {",
       "  template: `",
       "    <${3:section}>$0</${3:section}>",
       "  `,",
@@ -53,7 +53,7 @@
   "AngularTS Config": {
     "prefix": "ngconfig",
     "body": [
-      "angular.module(\"${1:app}\").config([\"${2:\\$provide}\", function(${3:\\$provide}) {",
+      "angular.getModule(\"${1:app}\").config([\"${2:\\$provide}\", function(${3:\\$provide}) {",
       "  $0",
       "}]);"
     ],
@@ -62,14 +62,14 @@
   "AngularTS Constant": {
     "prefix": "ngconstant",
     "body": [
-      "angular.module(\"${1:app}\").constant(\"${2:token}\", ${3:value});"
+      "angular.getModule(\"${1:app}\").constant(\"${2:token}\", ${3:value});"
     ],
     "description": "AngularTS constant registration"
   },
   "AngularTS Controller": {
     "prefix": "ngcontroller",
     "body": [
-      "angular.module(\"${1:app}\").controller(\"${2:MyController}\", [\"${3:\\$scope}\", function(${4:\\$scope}) {",
+      "angular.getModule(\"${1:app}\").controller(\"${2:MyController}\", [\"${3:\\$scope}\", function(${4:\\$scope}) {",
       "  $0",
       "}]);"
     ],
@@ -87,7 +87,7 @@
   "AngularTS Directive": {
     "prefix": "ngdirective",
     "body": [
-      "angular.module(\"${1:app}\").directive(\"${2:myDirective}\", function() {",
+      "angular.getModule(\"${1:app}\").directive(\"${2:myDirective}\", function() {",
       "  return {",
       "    restrict: \"${3:A}\",",
       "    scope: {",
@@ -104,7 +104,7 @@
   "AngularTS Factory": {
     "prefix": "ngfactory",
     "body": [
-      "angular.module(\"${1:app}\").factory(\"${2:myFactory}\", function() {",
+      "angular.getModule(\"${1:app}\").factory(\"${2:myFactory}\", function() {",
       "  return {",
       "    $0",
       "  };",
@@ -115,7 +115,7 @@
   "AngularTS Filter": {
     "prefix": "ngfilter",
     "body": [
-      "angular.module(\"${1:app}\").filter(\"${2:myFilter}\", function() {",
+      "angular.getModule(\"${1:app}\").filter(\"${2:myFilter}\", function() {",
       "  return function(${3:value}) {",
       "    return ${3:value};",
       "  };",
@@ -126,14 +126,14 @@
   "AngularTS Module": {
     "prefix": "ngmodule",
     "body": [
-      "angular.module(\"${1:app}\", [${2}]);"
+      "angular.createModule(\"${1:app}\", [${2}]);"
     ],
     "description": "AngularTS module declaration"
   },
   "AngularTS Provider": {
     "prefix": "ngprovider",
     "body": [
-      "angular.module(\"${1:app}\").provider(\"${2:myProvider}\", function() {",
+      "angular.getModule(\"${1:app}\").provider(\"${2:myProvider}\", function() {",
       "  this.get = function() {",
       "    return {",
       "      $0",
@@ -146,7 +146,7 @@
   "AngularTS Run": {
     "prefix": "ngrun",
     "body": [
-      "angular.module(\"${1:app}\").run([\"${2:\\$rootScope}\", function(${3:\\$rootScope}) {",
+      "angular.getModule(\"${1:app}\").run([\"${2:\\$rootScope}\", function(${3:\\$rootScope}) {",
       "  $0",
       "}]);"
     ],
@@ -155,7 +155,7 @@
   "AngularTS Service": {
     "prefix": "ngservice",
     "body": [
-      "angular.module(\"${1:app}\").service(\"${2:MyService}\", function() {",
+      "angular.getModule(\"${1:app}\").service(\"${2:MyService}\", function() {",
       "  $0",
       "});"
     ],

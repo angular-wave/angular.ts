@@ -13,7 +13,7 @@ describe("ngSrc", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular.module("myModule", ["ng"]);
+    window.angular.createModule("myModule", ["ng"]);
     createInjector(["myModule"]).invoke([
       "$rootScope",
       "$compile",
@@ -92,7 +92,7 @@ describe("ngSrc", () => {
       error = undefined;
       window.angular = new Angular();
       window.angular
-        .module("myModule", ["ng"])
+        .createModule("myModule", ["ng"])
         .decorator("$exceptionHandler", () => {
           return (exception, cause) => {
             error = exception;

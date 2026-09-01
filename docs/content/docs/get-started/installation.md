@@ -75,7 +75,7 @@ After installing, TypeScript will resolve types automatically. You can reference
 the type namespace in your project:
 
 ```ts
-const myModule: ng.NgModule = angular.module('myApp', []);
+const myModule: ng.NgModule = angular.createModule('myApp', []);
 
 myModule.controller('MyController', [
   '$scope',
@@ -108,7 +108,7 @@ To connect a named module, set `ng-app` to the module name:
 
 <script src="https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts/dist/angular-ts.umd.min.js"></script>
 <script>
-  angular.module('myApp', []).controller('GreetController', [
+  angular.createModule('myApp', []).controller('GreetController', [
     '$scope',
     function ($scope) {
       $scope.greeting = 'Hello from AngularTS';
@@ -142,7 +142,7 @@ For full control over when and how your application starts, call
     </div>
 
     <script>
-      angular.module('demo', []).controller('WelcomeController', [
+      angular.createModule('demo', []).controller('WelcomeController', [
         '$scope',
         function ($scope) {
           $scope.greeting = 'Welcome!';

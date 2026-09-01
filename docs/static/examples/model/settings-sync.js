@@ -1,5 +1,5 @@
 window.angular
-  .module('settingsSyncDemo', [])
+  .createModule('settingsSyncDemo', [])
   .model('settingsModel', () => ({
     theme: 'light',
     compact: false,

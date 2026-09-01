@@ -59,7 +59,7 @@ import angular.ts.*
 import org.scalajs.dom.document
 import scala.scalajs.js
 
-val app = AngularTS.module("demo")
+val app = AngularTS.createModule("demo")
 val userToken = AngularTS.token[String]("userName")
 
 final class HelloController(val user: String) extends js.Object
@@ -88,8 +88,8 @@ app
 AngularTS.bootstrap(document.body, Seq(app.name))
 ```
 
-`AngularTS.module("demo")` creates a module with no dependencies. Use
-`AngularTS.existingModule("demo")` only when intentionally looking up a module
+`AngularTS.createModule("demo")` creates a module with no dependencies. Use
+`AngularTS.getModule("demo")` only when intentionally looking up a module
 registered elsewhere.
 
 ## Programmatic Views

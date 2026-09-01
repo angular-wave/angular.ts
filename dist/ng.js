@@ -773,7 +773,7 @@ function registerNgModule(angular) {
     const composition = runtime._composition;
     const compileRegistry = composition.compileRegistry;
     composition._installAnimationRegistry(new AnimationRegistry());
-    const ngModule = angular.module("ng", []);
+    const ngModule = angular.createModule("ng", []);
     ngModule._registerProviders((registry) => {
         const composition = registerRuntimeHostValues(angular, registry);
         registry.factory(_compile, [

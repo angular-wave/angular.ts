@@ -54,7 +54,7 @@ class CounterController {
 }
 
 angular
-  .module('counterApp', [])
+  .createModule('counterApp', [])
   .controller('CounterController', CounterController);
 
 angular.init(document);

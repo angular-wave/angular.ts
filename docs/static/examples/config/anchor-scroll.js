@@ -1,5 +1,5 @@
 window.angular
-  .module('anchorScrollConfigDemo', [])
+  .createModule('anchorScrollConfigDemo', [])
   .config({
     $anchorScroll: {
       autoScrolling: false,

@@ -12,8 +12,8 @@
    ^js/ng.ScopeElementConstructor element-class
    factory]
   [(ng/injectable ["dependency"] factory)
-   (ng/module "existing")
-   (ng/module "created" ["dependency"])
+   (ng/get-module "existing")
+   (ng/create-module "created" ["dependency"])
    (ng/value app "value" #js {})
    (ng/constant app "constant" "value")
    (ng/config app #js {})

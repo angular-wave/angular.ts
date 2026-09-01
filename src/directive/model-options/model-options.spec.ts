@@ -41,7 +41,7 @@ describe("ngModelOptions", () => {
         dealoc(document.getElementById("app"));
         window.angular = new Angular();
         window.angular
-          .module("myModule", ["ng"])
+          .createModule("myModule", ["ng"])
           .decorator("$exceptionHandler", function () {
             return (exception, cause) => {
               throw new Error(exception.message);
@@ -888,7 +888,7 @@ describe("ngModelOptions", () => {
       beforeEach(() => {
         dealoc(document.getElementById("app"));
         window.angular = angular = new Angular();
-        module = angular.module("myModule", []).directive("foo", () => ({
+        module = angular.createModule("myModule", []).directive("foo", () => ({
           replace: true,
           template: '<input type="text" ng-model-options="{debounce: 1000}" />',
         }));

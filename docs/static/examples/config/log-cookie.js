@@ -1,5 +1,5 @@
 window.angular
-  .module('configDemo', [])
+  .createModule('configDemo', [])
   .config({
     $log: {
       debug: true,

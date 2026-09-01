@@ -1,5 +1,5 @@
 window.angular
-  .module('demo2', [])
+  .createModule('demo2', [])
   .run([
     '$anchorScroll',
     function ($anchorScroll) {

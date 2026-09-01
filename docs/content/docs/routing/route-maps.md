@@ -86,7 +86,7 @@ const adminTree = {
   ],
 } as const;
 
-angular.module('admin', []).router(adminTree);
+angular.createModule('admin', []).router(adminTree);
 type AdminRoutes = ng.RoutesOf<typeof adminTree>;
 declare const $state: ng.StateService<AdminRoutes>;
 $state.go('admin.users', { page: 1 });
@@ -122,7 +122,7 @@ itself, keep route names checked across chained `router(...)` calls and
 declarations to the route contract. Array-style resolves remain available when a
 route needs explicit resolve metadata such as `token`, `deps`, or `eager`.
 
-If a route map is supplied with `angular.module<Routes>(...)`, that explicit
+If a route map is supplied with `angular.createModule<Routes>(...)`, that explicit
 module contract is preserved after `router(...)`. This lets a feature module
 declare one route tree while the route map also includes lazy boundaries or
 states registered later in the same module.
@@ -156,7 +156,7 @@ const appTree = {
   url: '/item/{id:uuid}',
 } as const;
 
-angular.module('items', []).config({ $router: { paramTypes } }).router(appTree);
+angular.createModule('items', []).config({ $router: { paramTypes } }).router(appTree);
 
 type ItemRoutes = ng.RoutesOf<typeof appTree, typeof paramTypes>;
 declare const $state: ng.StateService<ItemRoutes>;
@@ -332,7 +332,7 @@ Current boundary:
   gives injected `$transition$` code typed `params()`, `params('to')`, and
   `params('from')`.
 - [`ng.RouterModule<TRoutes>`](../../../typedoc/types/RouterModule.html) lets
-  `angular.module<TRoutes>(...)` and `router(...)` carry route-name checking
+  `angular.createModule<TRoutes>(...)` and `router(...)` carry route-name checking
   into module declarations.
 - [`ng.RoutesOf<typeof tree>`](../../../typedoc/types/RoutesOf.html) derives a
   route map from a literal `router(...)` tree without exposing internal state,

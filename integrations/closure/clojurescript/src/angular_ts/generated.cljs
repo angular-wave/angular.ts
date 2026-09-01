@@ -466,15 +466,16 @@
 (def strict-wrapper-names
   "Extern methods with fully concrete ClojureScript wrapper signatures."
   #{"angular-call"
+    "angular-create-module"
     "angular-dispatch-event"
     "angular-emit"
     "angular-error-formatting-config"
     "angular-get-controller"
     "angular-get-injector"
+    "angular-get-module"
     "angular-get-scope"
     "angular-get-scope-by-name"
     "angular-injector"
-    "angular-module"
     "angular-register-ng-module"
     "angular-service-call"
     "angular-service-dispatch-event"
@@ -482,6 +483,7 @@
     "angular-service-error-formatting-config"
     "angular-service-get-controller"
     "angular-service-get-injector"
+    "angular-service-get-module"
     "angular-service-get-scope"
     "angular-service-get-scope-by-name"
     "angular-service-injector"
@@ -1155,6 +1157,11 @@
   ^js/Promise [^js/ng.Angular target ^string input]
   (.call target input))
 
+(defn angular-create-module
+  "Creates or replaces an AngularTS module. A module collects services, directives, controllers, filters, workers, WebAssembly modules, and configuration for an application.\n\nParams:\n- name: {string} The name of the module to create.\n- requires: {(!Array<string>|undefined)} The modules required by the new module.\n- configFn: {(!ng.Injectable|undefined)} Optional configuration function for the module that gets passed to `NgModule.config()`.\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.Angular target ^string name ^js/Array requires ^js/ng.Injectable configFn]
+  (.createModule target name requires configFn))
+
 (defn angular-dispatch-event
   "Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.\n\nParams:\n- event: {!Event} Value supplied for the event parameter.\n\nReturns: {boolean}"
   ^boolean [^js/ng.Angular target ^js/Event event]
@@ -1180,6 +1187,11 @@
   ^js/ng.InjectorService [^js/ng.Angular target ^js/Element element]
   (.getInjector target element))
 
+(defn angular-get-module
+  "Retrieves an existing module.\n\nParams:\n- name: {string} The name of the module to retrieve.\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.Angular target ^string name]
+  (.getModule target name))
+
 (defn angular-get-scope
   "Retrieve the scope cached on a compiled DOM element.\n\nParams:\n- element: {!Element} The DOM element to get data from.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.Angular target ^js/Element element]
@@ -1194,11 +1206,6 @@
   "Create a standalone injector without bootstrapping the DOM.\n\nParams:\n- modules: {!Array<(string|!ng.Injectable)>} Module names or config functions to load.\n\nReturns: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.Angular target ^js/Array modules]
   (.injector target modules))
-
-(defn angular-module
-  "The `angular.module` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. `angular.module` is used to configure the auto.$injector `$injector`. ```js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an injector and load your modules like this: ```js let injector = angular.injector(['ng', 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or `bootstrap()` to simplify this process.\n\nParams:\n- name: {string} The name of the module to create or retrieve.\n- requires: {(!Array<string>|undefined)} If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.\n- configFn: {(!ng.Injectable|undefined)} Optional configuration function for the module that gets passed to `NgModule.config()`.\n\nReturns: {!ng.NgModule}"
-  ^js/ng.NgModule [^js/ng.Angular target ^string name ^js/Array requires ^js/ng.Injectable configFn]
-  (.module target name requires configFn))
 
 (defn angular-register-ng-module
   "Registers the configured built-in `ng` module for this runtime instance.\n\nReturns: {!ng.NgModule}"
@@ -1234,6 +1241,11 @@
   "Retrieve the injector cached on a bootstrapped DOM element.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n\nReturns: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.AngularService target ^js/Element element]
   (.getInjector target element))
+
+(defn angular-service-get-module
+  "Retrieves an existing module.\n\nParams:\n- name: {string} The name of the module to retrieve.\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.AngularService target ^string name]
+  (.getModule target name))
 
 (defn angular-service-get-scope
   "Retrieve the scope cached on a compiled DOM element.\n\nParams:\n- element: {!Element} The DOM element to get data from.\n\nReturns: {!ng.Scope}"
@@ -4596,12 +4608,17 @@
   ^string [^js/ng.WorkflowSupervisor target]
   (.-status target))
 
-(defn module
-  "Retrieve or create an AngularTS module."
+(defn create-module
+  "Create or replace an AngularTS module."
   (^js/ng.NgModule [^string name]
-   (.module angular name))
+   (.createModule angular name #js []))
   (^js/ng.NgModule [^string name requires]
-   (.module angular name (to-array requires))))
+   (.createModule angular name (to-array requires))))
+
+(defn get-module
+  "Retrieve an AngularTS module."
+  ^js/ng.NgModule [^string name]
+  (.getModule angular name))
 
 (defn controller
   "Register an annotated controller or annotate a controller factory from a ClojureScript dependency collection."

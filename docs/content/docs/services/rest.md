@@ -26,7 +26,7 @@ Configure defaults before the application starts when every resource should
 share the same request behavior.
 
 ```ts
-angular.module('demo', []).config({
+angular.createModule('demo', []).config({
   $rest: {
     defaults: {
       timeout: 5000,

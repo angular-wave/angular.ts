@@ -102,7 +102,7 @@ Application code should require the fluent facade:
   (:require [angular-ts.core :as ng]))
 
 (defonce app
-  (-> (ng/module "example" [])
+  (-> (ng/create-module "example" [])
       (ng/controller "AppCtrl" ["todos"] create-controller)))
 ```
 

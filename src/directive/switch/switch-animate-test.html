@@ -8,7 +8,7 @@
     <script type="module" src="/src/auto.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        window.angular.module("app", []).controller("ExampleController", [
+        window.angular.createModule("app", []).controller("ExampleController", [
           "$scope",
           function ($scope) {
             $scope.items = ["settings", "home", "options", "other"];

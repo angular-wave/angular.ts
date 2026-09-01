@@ -10,7 +10,7 @@ successful location changes.
 - `AnchorScrollConfig`: typed `NgModule.config({ $anchorScroll: ... })` policy.
 
 ```ts
-const app = angular.module("app", ["ng"]);
+const app = angular.createModule("app", ["ng"]);
 
 app.config({
   $anchorScroll: {

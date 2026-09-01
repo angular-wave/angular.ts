@@ -1,5 +1,5 @@
 window.angular
-  .module("yjsConcept", [])
+  .createModule("yjsConcept", [])
   .model("documentModel", () => ({
     status: "loading",
     localText: "AngularTS owns app state. Yjs owns CRDT updates.",

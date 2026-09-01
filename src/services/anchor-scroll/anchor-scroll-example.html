@@ -8,7 +8,7 @@
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         window.angular
-          .module("test", [])
+          .createModule("test", [])
           .run([
             "$anchorScroll",
             function ($anchorScroll) {

@@ -1,5 +1,5 @@
 window.angular
-  .module('mapLibreConcept', [])
+  .createModule('mapLibreConcept', [])
   .model('mapModel', () => ({
     center: {
       lng: -0.1276,

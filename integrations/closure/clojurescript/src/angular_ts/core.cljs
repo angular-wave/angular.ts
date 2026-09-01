@@ -11,12 +11,17 @@
   ^js/ng.Injectable [deps factory]
   (generated/injectable deps factory))
 
-(defn module
-  "Retrieve or create an AngularTS module."
+(defn create-module
+  "Create or replace an AngularTS module."
   (^js/ng.NgModule [^string name]
-   (generated/module name))
+   (generated/create-module name #js []))
   (^js/ng.NgModule [^string name requires]
-   (generated/module name requires)))
+   (generated/create-module name requires)))
+
+(defn get-module
+  "Retrieve an AngularTS module."
+  ^js/ng.NgModule [^string name]
+  (generated/get-module name))
 
 (defn value
   "Register an injectable value and return the module."

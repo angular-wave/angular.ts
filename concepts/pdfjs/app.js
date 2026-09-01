@@ -1,7 +1,7 @@
 const pdfRuntimes = new WeakMap();
 
 window.angular
-  .module("pdfjsConcept", [])
+  .createModule("pdfjsConcept", [])
   .model("documentViewerModel", () => ({
     status: "loading",
     currentPage: 1,

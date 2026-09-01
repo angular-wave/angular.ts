@@ -1,4 +1,4 @@
-angular.module("demoJs", [])
+angular.createModule("demoJs", [])
   .component("todoList", {
     template: `
       <section>

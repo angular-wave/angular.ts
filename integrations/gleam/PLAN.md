@@ -113,7 +113,7 @@ pub fn new_store() {
 }
 
 pub fn main() {
-  let app = ng.module("demo")
+  let app = ng.create_module("demo")
   let todo_store = token.new("todoStore")
 
   app
@@ -141,8 +141,8 @@ AngularTS JavaScript registration glue.
 
 Initial package API:
 
-- `module(name: String) -> NgModule`
-- `module_with_requires(name: String, requires: List(String)) -> NgModule`
+- `create_module(name: String) -> NgModule`
+- `create_module_with_requires(name: String, requires: List(String)) -> NgModule`
 - `bootstrap(root: Element, modules: List(String))`
 - `token.new(name: String) -> Token(a)`
 - `component.new(...) -> Component(controller)`

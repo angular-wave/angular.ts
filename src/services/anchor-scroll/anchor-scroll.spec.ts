@@ -155,7 +155,7 @@ describe("AnchorScrollService", () => {
 
     angular = new Angular();
 
-    angular.module("default", []);
+    angular.createModule("default", []);
 
     $injector = angular.bootstrap(el, ["default"]);
     $anchorScroll = $injector.get("$anchorScroll");

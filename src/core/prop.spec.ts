@@ -20,7 +20,7 @@ describe("ngProp*", () => {
     window.angular = new Angular();
     compileRegistry = window.angular._composition.compileRegistry;
     window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           logs.push(exception);
@@ -625,7 +625,7 @@ describe("ngProp*", () => {
       beforeEach(() => {
         dealoc(document.getElementById("app"));
         window.angular
-          .module("propSceDisabled", ["myModule"])
+          .createModule("propSceDisabled", ["myModule"])
           .config({ $sce: { enabled: false } });
         window.angular
           .bootstrap(document.getElementById("app"), ["propSceDisabled"])
@@ -669,7 +669,7 @@ describe("ngProp*", () => {
       beforeEach(() => {
         dealoc(document.getElementById("app"));
         window.angular
-          .module("propSceEnabled", ["myModule"])
+          .createModule("propSceEnabled", ["myModule"])
           .config({ $sce: { enabled: true } });
         window.angular
           .bootstrap(document.getElementById("app"), ["propSceEnabled"])
@@ -748,22 +748,24 @@ describe("ngProp*", () => {
           this.val = val;
         }
 
-        window.angular.module("customSceProp", ["myModule"]).decorator("$sce", [
-          "$delegate",
-          ($delegate) => {
-            $delegate.trustAsHtml = function (html) {
-              return new MySafeHtml(html);
-            };
-            $delegate.getTrusted = function (type, mySafeHtml) {
-              return mySafeHtml && mySafeHtml.val;
-            };
-            $delegate.valueOf = function (v) {
-              return v instanceof MySafeHtml ? v.val : v;
-            };
+        window.angular
+          .createModule("customSceProp", ["myModule"])
+          .decorator("$sce", [
+            "$delegate",
+            ($delegate) => {
+              $delegate.trustAsHtml = function (html) {
+                return new MySafeHtml(html);
+              };
+              $delegate.getTrusted = function (type, mySafeHtml) {
+                return mySafeHtml && mySafeHtml.val;
+              };
+              $delegate.valueOf = function (v) {
+                return v instanceof MySafeHtml ? v.val : v;
+              };
 
-            return $delegate;
-          },
-        ]);
+              return $delegate;
+            },
+          ]);
 
         createInjector(["customSceProp"]).invoke([
           "$compile",

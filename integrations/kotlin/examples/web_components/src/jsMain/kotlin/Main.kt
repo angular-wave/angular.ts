@@ -3,7 +3,7 @@ import angular.ts.WebComponentEvent
 import angular.ts.bootstrap
 import angular.ts.inputBoolean
 import angular.ts.inputString
-import angular.ts.module
+import angular.ts.createModule
 import angular.ts.ng
 import org.w3c.dom.Element
 
@@ -20,7 +20,7 @@ private external interface StatusState {
 }
 
 fun main() {
-    val module = ng.module("kotlinWebComponents")
+    val module = ng.createModule("kotlinWebComponents")
         .appComponent(
             "kt-counter-card",
             AppComponent<CounterState>(

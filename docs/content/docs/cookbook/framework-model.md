@@ -21,7 +21,7 @@ framework store.
 <!-- tested-by: src/core/di/ng-module/ng-module.spec.ts -->
 
 ```js
-const shop = angular.module('shop', []);
+const shop = angular.createModule('shop', []);
 
 shop.model('cart', () => ({
   items: [],

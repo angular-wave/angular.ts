@@ -22,7 +22,7 @@ export const eventBusModule: RuntimeModule = (angular) => {
     destroyEventBusRuntimeState(state);
   });
 
-  return angular.module("ng.eventBus", []).factory(_eventBus, [
+  return angular.createModule("ng.eventBus", []).factory(_eventBus, [
     _exceptionHandler,
     _angular,
     ($exceptionHandler: ng.ExceptionHandlerService, angular: ng.Angular) => {

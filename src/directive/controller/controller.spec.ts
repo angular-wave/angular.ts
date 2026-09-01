@@ -60,7 +60,7 @@ describe("ngController", () => {
     angular = new Angular();
     window.angular = angular;
     angular
-      .module("controllerDirectiveTests", ["ng"])
+      .createModule("controllerDirectiveTests", ["ng"])
       .controller("PublicModule", function () {
         this.mark = "works";
       })
@@ -102,7 +102,7 @@ describe("ngController", () => {
     };
 
     angular
-      .module("controllerDirectiveTests")
+      .getModule("controllerDirectiveTests")
       .controller("BoundFoo", ["$scope", Foo.bind(null)]);
 
     injector = createInjector(["controllerDirectiveTests"]).invoke([
@@ -208,7 +208,7 @@ describe("ngController", () => {
     element = createElementFromHTML(
       '<div><div ng-controller="Greeter" ng-include="\'/mock/interpolation\'"></div></div>',
     );
-    window.angular.module("myModule", []).controller("Greeter", [
+    window.angular.createModule("myModule", []).controller("Greeter", [
       "$scope",
       "$element",
       function GreeterController($scope, $element) {
@@ -229,7 +229,7 @@ describe("ngController", () => {
       '<div><div ng-controller="Count" ng-include="\'/mock/interpolation\'"></div></div>',
     );
     window.angular
-      .module("myModule", [])
+      .createModule("myModule", [])
       .controller("Count", function CountController() {
         count += 1;
       });
@@ -251,7 +251,7 @@ describe("ngController", () => {
       '<div><div ng-controller="ExposeScope" ng-include="\'/mock/scopeinit\'"></div></div>',
     );
 
-    window.angular.module("myModule", []).controller("ExposeScope", [
+    window.angular.createModule("myModule", []).controller("ExposeScope", [
       "$scope",
       function ExposeScopeController($scope) {
         controllerScope = $scope;

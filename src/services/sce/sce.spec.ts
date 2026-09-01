@@ -32,7 +32,7 @@ describe("SCE", () => {
     beforeEach(() => {
       window.angular = new Angular();
       window.angular
-        .module("myModule", ["ng"])
+        .createModule("myModule", ["ng"])
         .config({
           $sce: { enabled: false },
           $exceptionHandler: {
@@ -61,7 +61,7 @@ describe("SCE", () => {
     beforeEach(() => {
       window.angular = new Angular();
       logs = [];
-      window.angular.module("sceEnabled", ["ng"]).config({
+      window.angular.createModule("sceEnabled", ["ng"]).config({
         $sce: { enabled: true },
         $exceptionHandler: {
           handler: (err) => {
@@ -108,7 +108,7 @@ describe("SCE", () => {
 
       window.angular = new Angular();
       window.angular
-        .module("sceWithSanitizer", ["ng"])
+        .createModule("sceWithSanitizer", ["ng"])
         .value("$sanitize", sanitize)
         .config({ $sce: { enabled: true } });
 
@@ -228,7 +228,7 @@ describe("SCE", () => {
     it("should override the default $sce.trustAs/valueOf/etc.", () => {
       window.angular = new Angular();
       window.angular
-        .module("sceDelegateOverride", ["ng"])
+        .createModule("sceDelegateOverride", ["ng"])
         .value("$sceDelegate", {
           trustAs(type, value) {
             return `wrapped:${value}`;
@@ -254,7 +254,7 @@ describe("SCE", () => {
     beforeEach(function () {
       logs = [];
       window.angular = new Angular();
-      window.angular.module("sceParseAs", ["ng"]).config({
+      window.angular.createModule("sceParseAs", ["ng"]).config({
         $exceptionHandler: {
           handler: (err) => logs.push(err.message),
         },
@@ -306,7 +306,7 @@ describe("SCE", () => {
     beforeEach(() => {
       logs = [];
       window.angular = new Angular();
-      window.angular.module("sceResourcePolicies", ["ng"]).config({
+      window.angular.createModule("sceResourcePolicies", ["ng"]).config({
         $exceptionHandler: {
           handler: (err) => logs.push(err.message),
         },
@@ -362,7 +362,7 @@ describe("SCE", () => {
     describe("regex matcher", () => {
       beforeEach(() => {
         window.angular = new Angular();
-        window.angular.module("sceRegexMatcher", ["ng"]).config({
+        window.angular.createModule("sceRegexMatcher", ["ng"]).config({
           $exceptionHandler: {
             handler: (err) => logs.push(err.message),
           },
@@ -428,7 +428,7 @@ describe("SCE", () => {
       beforeEach(() => {
         logs = [];
         window.angular = new Angular();
-        window.angular.module("sceStringMatchers", ["ng"]).config({
+        window.angular.createModule("sceStringMatchers", ["ng"]).config({
           $exceptionHandler: {
             handler: (err) => logs.push(err.message),
           },
@@ -533,7 +533,7 @@ describe("SCE", () => {
       beforeEach(() => {
         logs = [];
         window.angular = new Angular();
-        window.angular.module("sceSelfMatcher", ["ng"]).config({
+        window.angular.createModule("sceSelfMatcher", ["ng"]).config({
           $exceptionHandler: {
             handler: (err) => logs.push(err.message),
           },
@@ -561,7 +561,7 @@ describe("SCE", () => {
       describe("when the document base URL has changed", () => {
         beforeEach(() => {
           window.angular = new Angular();
-          window.angular.module("sceChangedBase", ["ng"]).config({
+          window.angular.createModule("sceChangedBase", ["ng"]).config({
             $exceptionHandler: {
               handler: (err) => logs.push(err.message),
             },
@@ -692,7 +692,7 @@ describe("SCE", () => {
       it("should sanitize URL contexts directly", () => {
         window.angular = new Angular();
         window.angular
-          .module("testSanitizeUri", ["ng"])
+          .createModule("testSanitizeUri", ["ng"])
           .config({ $sce: { enabled: true } });
         createInjector(["testSanitizeUri"]).invoke([
           "$sce",

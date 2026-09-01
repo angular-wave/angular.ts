@@ -1,5 +1,5 @@
 window.angular
-  .module('excaliburConcept', [])
+  .createModule('excaliburConcept', [])
   .model('playerModel', () => ({
     x: 80,
     y: 130,

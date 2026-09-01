@@ -1,5 +1,5 @@
 const routingScrollFocusDemo = window.angular
-  .module('routingScrollFocusDemo', [])
+  .createModule('routingScrollFocusDemo', [])
   .config({
     $location: {
       html5Mode: false,

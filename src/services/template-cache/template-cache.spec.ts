@@ -16,7 +16,7 @@ describe("$templateCache", () => {
     const angular = new Angular();
 
     configuredCache = new Map([["test", "hello"]]);
-    angular.module("default", []).config({
+    angular.createModule("default", []).config({
       $templateCache: {
         cache: configuredCache,
       },
@@ -72,7 +72,7 @@ describe("$templateCache", () => {
     window.angular = new Angular();
     configuredCache = new LocalStorageMap();
     configuredCache.set("test", "hello");
-    window.angular.module("customStorage", []).config({
+    window.angular.createModule("customStorage", []).config({
       $templateCache: {
         cache: configuredCache,
       },

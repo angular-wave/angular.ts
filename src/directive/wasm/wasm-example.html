@@ -22,7 +22,7 @@
         }
         Demo.$inject = ["adder"];
         window.angular
-          .module("todo", [])
+          .createModule("todo", [])
           .controller("DemoCtrl", Demo)
           .wasm("adder", { source: "/src/directive/wasm/math.wasm" });
       });

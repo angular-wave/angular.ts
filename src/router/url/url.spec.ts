@@ -32,7 +32,7 @@ describe("UrlMatcher", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
-      .module("defaultModule", [])
+      .createModule("defaultModule", [])
       .config({ $location: { html5Mode: false } });
     $injector = window.angular.bootstrap(document.getElementById("app"), [
       "defaultModule",

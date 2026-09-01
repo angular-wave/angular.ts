@@ -24,7 +24,7 @@ describe("$templateRequest", () => {
     errors = [];
     angular = window.angular = new Angular();
     module = angular
-      .module("test", ["ng"])
+      .createModule("test", ["ng"])
       .decorator("$exceptionHandler", () => {
         return (exception, cause) => {
           errors.push(exception.message);
@@ -145,7 +145,7 @@ describe("$templateRequest", () => {
 
         let configuredHttp;
 
-        angular.module("test", ["ng"]).config({
+        angular.createModule("test", ["ng"]).config({
           $templateRequest: {
             httpOptions: {
               headers: { Accept: "moo" },
@@ -183,7 +183,7 @@ describe("$templateRequest", () => {
 
         let configuredHttp;
 
-        angular.module("test", ["ng"]).config({
+        angular.createModule("test", ["ng"]).config({
           $templateRequest: {
             httpOptions: {
               cache,

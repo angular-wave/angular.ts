@@ -1,5 +1,5 @@
 window.angular
-  .module("ariaFormValidationDemo", [])
+  .createModule("ariaFormValidationDemo", [])
   .controller(
     "AriaFormValidationCtrl",
     class {

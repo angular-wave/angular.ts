@@ -1,5 +1,5 @@
 window.angular
-  .module('konvaConcept', [])
+  .createModule('konvaConcept', [])
   .model('shapeModel', () => ({
     kind: 'circle',
     x: 320,

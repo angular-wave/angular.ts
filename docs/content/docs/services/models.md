@@ -13,7 +13,7 @@ declarative application state that should outlive one DOM scope tree.
 Prefer the factory form:
 
 ```ts
-const app = angular.module('demo', []);
+const app = angular.createModule('demo', []);
 
 app.model('user', () => ({
   name: 'John',

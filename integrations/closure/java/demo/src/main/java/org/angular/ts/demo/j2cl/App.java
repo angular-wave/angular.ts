@@ -22,7 +22,7 @@ public final class App {
   @JsMethod
   @AngularEntryPoint
   public static void start() {
-    Angular.module("j2clTodo", new String[0])
+    Angular.createModule("j2clTodo", new String[0])
       .controller("TodoCtrl", (TodoControllerFactory) TodoController::new)
       .directive("j2clBadge", App::createBadgeDirective);
   }

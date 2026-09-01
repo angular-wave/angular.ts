@@ -97,7 +97,7 @@ describe("injector.modules", () => {
   });
 
   it("has a constant that has been registered to a module", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("aConstant", 42);
 
@@ -107,14 +107,14 @@ describe("injector.modules", () => {
   });
 
   it("does not have a non-registered constant", () => {
-    angular.module("myModule", []);
+    angular.createModule("myModule", []);
     const injector = createInjector(["myModule"]);
 
     expect(injector.has("aConstant")).toBe(false);
   });
 
   it("does not allow a constant called hasOwnProperty", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("hasOwnProperty", false);
     expect(() => {
@@ -123,7 +123,7 @@ describe("injector.modules", () => {
   });
 
   it("can return a registered constant", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("aConstant", 42);
     const injector = createInjector(["myModule"]);
@@ -146,7 +146,7 @@ describe("injector.modules", () => {
       theme = "dark";
     }
     angular
-      .module("cookieStore", [])
+      .createModule("cookieStore", [])
       .value("$cookie", cookie)
       .store("preferences", Preferences, "cookie");
 
@@ -168,7 +168,7 @@ describe("injector.modules", () => {
     localStorage.removeItem("localPreferences");
 
     angular
-      .module("webStorageStores", [])
+      .createModule("webStorageStores", [])
       .store("sessionPreferences", Preferences, "session")
       .store("localPreferences", Preferences, "local");
 
@@ -191,9 +191,9 @@ describe("injector.modules", () => {
   });
 
   it("loads multiple modules", () => {
-    const module1 = angular.module("myModule", []);
+    const module1 = angular.createModule("myModule", []);
 
-    const module2 = angular.module("myOtherModule", []);
+    const module2 = angular.createModule("myOtherModule", []);
 
     module1.constant("aConstant", 42);
     module2.constant("anotherConstant", 43);
@@ -210,19 +210,19 @@ describe("injector.modules", () => {
   });
 
   it("should allow new modules to be added after injector creation", () => {
-    angular.module("initial", []);
+    angular.createModule("initial", []);
     const injector = createInjector(["initial"]);
 
     expect(injector._modules.initial).toBeDefined();
     expect(injector._modules.lazy).toBeUndefined();
-    angular.module("lazy", []);
+    angular.createModule("lazy", []);
     injector.loadNewModules(["lazy"]);
     expect(injector._modules.lazy).toBeDefined();
   });
 
   it("should expose loadNewModules on the $injector service instance returned by get", () => {
-    angular.module("initial", []);
-    angular.module("lazy", []);
+    angular.createModule("initial", []);
+    angular.createModule("lazy", []);
 
     const injector = createInjector(["initial"]);
 
@@ -239,14 +239,14 @@ describe("injector.modules", () => {
   it("should execute runBlocks of new modules", () => {
     const log = [];
 
-    angular.module("initial", []).run(() => {
+    angular.createModule("initial", []).run(() => {
       log.push("initial");
     });
     const injector = createInjector(["initial"]);
 
     log.push("created");
 
-    angular.module("a", []).run(() => {
+    angular.createModule("a", []).run(() => {
       log.push("a");
     });
     injector.loadNewModules(["a"]);
@@ -256,7 +256,7 @@ describe("injector.modules", () => {
   it("should execute configBlocks of new modules", () => {
     const log = [];
 
-    angular.module("initial", [])._config(() => {
+    angular.createModule("initial", [])._config(() => {
       log.push("initial");
     });
     const injector = createInjector(["initial"]);
@@ -265,7 +265,7 @@ describe("injector.modules", () => {
     log.push("created");
 
     angular
-      .module("a", [], () => {
+      .createModule("a", [], () => {
         log.push("config1");
       })
       ._config(() => {
@@ -279,7 +279,7 @@ describe("injector.modules", () => {
     const log = [];
 
     angular
-      .module("initial", [], () => {
+      .createModule("initial", [], () => {
         log.push(1);
       })
       ._config(() => {
@@ -293,7 +293,7 @@ describe("injector.modules", () => {
     log.push("created");
 
     angular
-      .module("a", [], () => {
+      .createModule("a", [], () => {
         log.push(4);
       })
       ._config(() => {
@@ -307,14 +307,14 @@ describe("injector.modules", () => {
   });
 
   it("should load dependent modules", () => {
-    angular.module("initial", []);
+    angular.createModule("initial", []);
     const injector = createInjector(["initial"]);
 
     expect(injector._modules.initial).toBeDefined();
     expect(injector._modules.lazy1).toBeUndefined();
     expect(injector._modules.lazy2).toBeUndefined();
-    angular.module("lazy1", ["lazy2"]);
-    angular.module("lazy2", []);
+    angular.createModule("lazy1", ["lazy2"]);
+    angular.createModule("lazy2", []);
     injector.loadNewModules(["lazy1"]);
     expect(injector._modules.lazy1).toBeDefined();
     expect(injector._modules.lazy2).toBeDefined();
@@ -323,11 +323,11 @@ describe("injector.modules", () => {
   it("should execute blocks of new modules in the correct order", () => {
     const log = [];
 
-    angular.module("initial", []);
+    angular.createModule("initial", []);
     const injector = createInjector(["initial"]);
 
     angular
-      .module("lazy1", ["lazy2"], () => {
+      .createModule("lazy1", ["lazy2"], () => {
         log.push("lazy1-1");
       })
       ._config(() => {
@@ -337,7 +337,7 @@ describe("injector.modules", () => {
         log.push("lazy1-3");
       });
     angular
-      .module("lazy2", [], () => {
+      .createModule("lazy2", [], () => {
         log.push("lazy2-1");
       })
       ._config(() => {
@@ -361,7 +361,7 @@ describe("injector.modules", () => {
   it("should not reload a module that is already loaded", () => {
     const log = [];
 
-    angular.module("initial", []).run(() => {
+    angular.createModule("initial", []).run(() => {
       log.push("initial");
     });
     const injector = createInjector(["initial"]);
@@ -371,7 +371,7 @@ describe("injector.modules", () => {
     injector.loadNewModules(["initial"]);
     expect(log).toEqual(["initial"]);
 
-    angular.module("a", []).run(() => {
+    angular.createModule("a", []).run(() => {
       log.push("a");
     });
     injector.loadNewModules(["a"]);
@@ -379,13 +379,13 @@ describe("injector.modules", () => {
     injector.loadNewModules(["a"]);
     expect(log).toEqual(["initial", "a"]);
 
-    angular.module("b", ["a"]).run(() => {
+    angular.createModule("b", ["a"]).run(() => {
       log.push("b");
     });
-    angular.module("c", []).run(() => {
+    angular.createModule("c", []).run(() => {
       log.push("c");
     });
-    angular.module("d", ["b", "c"]).run(() => {
+    angular.createModule("d", ["b", "c"]).run(() => {
       log.push("d");
     });
     injector.loadNewModules(["d"]);
@@ -393,9 +393,9 @@ describe("injector.modules", () => {
   });
 
   it("loads the required modules of a module", () => {
-    const module1 = angular.module("myModule", []);
+    const module1 = angular.createModule("myModule", []);
 
-    const module2 = angular.module("myOtherModule", ["myModule"]);
+    const module2 = angular.createModule("myOtherModule", ["myModule"]);
 
     module1.constant("aConstant", 42);
     module2.constant("anotherConstant", 43);
@@ -406,11 +406,11 @@ describe("injector.modules", () => {
   });
 
   it("loads the transitively required modules of a module", () => {
-    const module1 = angular.module("myModule", []);
+    const module1 = angular.createModule("myModule", []);
 
-    const module2 = angular.module("myOtherModule", ["myModule"]);
+    const module2 = angular.createModule("myOtherModule", ["myModule"]);
 
-    const module3 = angular.module("myThirdModule", ["myOtherModule"]);
+    const module3 = angular.createModule("myThirdModule", ["myOtherModule"]);
 
     module1.constant("aConstant", 42);
     module2.constant("anotherConstant", 43);
@@ -423,15 +423,15 @@ describe("injector.modules", () => {
   });
 
   it("loads each module only once", () => {
-    angular.module("myModule", ["myOtherModule"]);
-    angular.module("myOtherModule", ["myModule"]);
+    angular.createModule("myModule", ["myOtherModule"]);
+    angular.createModule("myOtherModule", ["myModule"]);
     const injector = createInjector(["myModule"]);
 
     expect(Object.keys(injector._modules).length).toEqual(2);
   });
 
   it("invokes an annotated function with dependency injection", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -446,7 +446,7 @@ describe("injector.modules", () => {
   });
 
   it("invokes a class with static property with dependency injection", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -462,7 +462,7 @@ describe("injector.modules", () => {
   });
 
   it("invokes an annotated class with dependency injection", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -478,7 +478,7 @@ describe("injector.modules", () => {
   });
 
   it("does not accept non-strings as injection tokens", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     const injector = createInjector(["myModule"]);
@@ -494,7 +494,7 @@ describe("injector.modules", () => {
   });
 
   it("invokes a function with the given this context", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     const injector = createInjector(["myModule"]);
@@ -511,7 +511,7 @@ describe("injector.modules", () => {
   });
 
   it("invokes a function with array of injection tokens", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     const injector = createInjector(["myModule"]);
@@ -527,7 +527,7 @@ describe("injector.modules", () => {
   });
 
   it("overrides dependencies with locals when invoking", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -580,7 +580,7 @@ describe("annotate", () => {
   });
 
   it("invokes an array-annotated function with dependency injection", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -598,7 +598,7 @@ describe("annotate", () => {
   });
 
   it("instantiates an annotated constructor function", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -614,7 +614,7 @@ describe("annotate", () => {
   });
 
   it("instantiates an array-annotated constructor function", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -635,7 +635,7 @@ describe("annotate", () => {
       this.v = this.getValue();
     }
     Type.prototype = BaseType.prototype;
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     const injector = createInjector(["myModule"]);
 
@@ -645,7 +645,7 @@ describe("annotate", () => {
   });
 
   it("supports locals when instantiating", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -661,7 +661,7 @@ describe("annotate", () => {
   });
 
   it("supports es6", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.constant("b", 2);
@@ -683,7 +683,7 @@ describe("module provider registration", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("allows registering a provider and uses its get", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", {
       get: () => {
@@ -697,7 +697,7 @@ describe("module provider registration", () => {
   });
 
   it("injects the get method of a provider", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 1);
     module.provider("b", {
@@ -709,7 +709,7 @@ describe("module provider registration", () => {
   });
 
   it("injects the get method of a provider lazily", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("b", {
       get: annotated(["a"], (a) => {
@@ -723,7 +723,7 @@ describe("module provider registration", () => {
   });
 
   it("instantiates a dependency only once", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider(
       "a",
@@ -749,7 +749,7 @@ describe("module provider registration", () => {
     //    //
     //   s6
     angular
-      .module("myModule", [])
+      .createModule("myModule", [])
       .provider("s1", {
         get: annotated(["s6", "s5"], (s6, s5) => {
           log.push("s1");
@@ -808,7 +808,7 @@ describe("module provider registration", () => {
   });
 
   it("should return same instance from calling provider", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     let instance = "initial";
 
@@ -827,7 +827,7 @@ describe("module provider registration", () => {
   });
 
   it("cleans up the circular marker when instantiation fails", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", {
       get: () => {
@@ -845,7 +845,7 @@ describe("module provider registration", () => {
   });
 
   it("reports the complete circular dependency path", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", { get: annotated(["b"], (b) => undefined) });
     module.provider("b", { get: annotated(["c"], (c) => undefined) });
@@ -858,7 +858,7 @@ describe("module provider registration", () => {
   });
 
   it("instantiates a provider if given as a constructor function", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", function AProvider() {
       this.get = () => {
@@ -871,7 +871,7 @@ describe("module provider registration", () => {
   });
 
   it("injects the given provider constructor function", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("b", 2);
     module.provider(
@@ -888,7 +888,7 @@ describe("module provider registration", () => {
   });
 
   it("injects another provider to a provider constructor function", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", function AProvider() {
       let value = 1;
@@ -915,7 +915,7 @@ describe("module provider registration", () => {
   });
 
   it("does not inject an instance to a provider constructor function", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", function AProvider() {
       this.get = () => {
@@ -936,7 +936,7 @@ describe("module provider registration", () => {
   });
 
   it("does not inject a provider to a get function", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", function AProvider() {
       this.get = () => {
@@ -956,7 +956,7 @@ describe("module provider registration", () => {
   });
 
   it("does not inject a provider to invoke", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", function AProvider() {
       this.get = () => {
@@ -971,7 +971,7 @@ describe("module provider registration", () => {
   });
 
   it("does not give access to providers through get", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", function AProvider() {
       this.get = () => {
@@ -986,7 +986,7 @@ describe("module provider registration", () => {
   });
 
   it("registers constants first to make them available to providers", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider(
       "a",
@@ -1003,7 +1003,7 @@ describe("module provider registration", () => {
   });
 
   it("allows injecting the provider injector to provider", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", function AProvider() {
       this.value = 42;
@@ -1031,7 +1031,7 @@ describe("provider registration", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("should inject providers", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", function () {
       this.get = function () {
@@ -1057,7 +1057,7 @@ describe("config/run", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("runs config blocks when the injector is created", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     let hasRun = false;
 
@@ -1069,7 +1069,7 @@ describe("config/run", () => {
   });
 
   it("applies module declarations before config blocks", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.constant("a", 42);
     module._config(
@@ -1083,7 +1083,7 @@ describe("config/run", () => {
   });
 
   it("allows registering config blocks before providers", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module._config(annotated(["aProvider"], function (aProvider) {}));
     module.provider("a", function () {
@@ -1097,7 +1097,7 @@ describe("config/run", () => {
   it("runs a config block added during module registration", () => {
     let configured = false;
 
-    angular.module("myModule", [], function () {
+    angular.createModule("myModule", [], function () {
       configured = true;
     });
     createInjector(["myModule"]);
@@ -1106,7 +1106,7 @@ describe("config/run", () => {
   });
 
   it("runs run blocks when the injector is created", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     let hasRun = false;
 
@@ -1118,7 +1118,7 @@ describe("config/run", () => {
   });
 
   it("injects run blocks with the instance injector", () => {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.provider("a", { get: () => 42 });
     let gotA;
@@ -1133,7 +1133,7 @@ describe("config/run", () => {
   });
 
   it("configures all modules before running any run blocks", () => {
-    const module1 = angular.module("myModule", []);
+    const module1 = angular.createModule("myModule", []);
 
     module1.provider("a", { get: () => 1 });
     let result;
@@ -1143,7 +1143,7 @@ describe("config/run", () => {
         result = a + b;
       }),
     );
-    const module2 = angular.module("myOtherModule", []);
+    const module2 = angular.createModule("myOtherModule", []);
 
     module2.provider("b", { get: () => 2 });
     createInjector(["myModule", "myOtherModule"]);
@@ -1163,7 +1163,7 @@ describe("function modules", () => {
       },
     );
 
-    angular.module("myModule", [functionModule]);
+    angular.createModule("myModule", [functionModule]);
     createInjector(["myModule"], (registry) => {
       registry.constant("configurationValue", 42);
     });
@@ -1180,7 +1180,7 @@ describe("function modules", () => {
       },
     ];
 
-    angular.module("myModule", [functionModule]);
+    angular.createModule("myModule", [functionModule]);
     createInjector(["myModule"], (registry) => {
       registry.constant("configurationValue", 42);
     });
@@ -1197,7 +1197,7 @@ describe("function modules", () => {
       });
     };
 
-    angular.module("myModule", [functionModule]).constant("a", 42);
+    angular.createModule("myModule", [functionModule]).constant("a", 42);
     createInjector(["myModule"]);
     expect(result).toBe(42);
   });
@@ -1209,7 +1209,7 @@ describe("function modules", () => {
       loadedTimes++;
     };
 
-    angular.module("myModule", [functionModule, functionModule]);
+    angular.createModule("myModule", [functionModule, functionModule]);
     createInjector(["myModule"]);
     expect(loadedTimes).toBe(1);
   });
@@ -1219,7 +1219,7 @@ describe("factories", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("allows registering a factory", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.factory("a", function () {
       return 42;
@@ -1230,7 +1230,7 @@ describe("factories", () => {
   });
 
   it("injects a factory function with instances", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.factory("a", function () {
       return 1;
@@ -1247,7 +1247,7 @@ describe("factories", () => {
   });
 
   it("only calls a factory function once", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.factory("a", function () {
       return {};
@@ -1258,7 +1258,7 @@ describe("factories", () => {
   });
 
   it("forces a factory to return a value", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.factory("a", function () {});
     module.factory("b", function () {
@@ -1275,7 +1275,7 @@ describe("factories", () => {
   it("should be able to register a service from a new module", () => {
     const injector = createInjector([]);
 
-    angular.module("a", []).factory("aService", () => ({
+    angular.createModule("a", []).factory("aService", () => ({
       sayHello() {
         return "Hello";
       },
@@ -1293,7 +1293,7 @@ describe("values", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("allows registering a value", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.value("a", 42);
     const injector = createInjector(["myModule"]);
@@ -1302,7 +1302,7 @@ describe("values", () => {
   });
 
   it("does not make values available to config blocks", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.value("a", 42);
     module._config(annotated(["a"], function (a) {}));
@@ -1312,7 +1312,7 @@ describe("values", () => {
   });
 
   it("allows an undefined value", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.value("a", undefined);
     const injector = createInjector(["myModule"]);
@@ -1325,7 +1325,7 @@ describe("services", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("allows registering a service", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.service("aService", function MyService() {
       this.getValue = function () {
@@ -1338,7 +1338,7 @@ describe("services", () => {
   });
 
   it("injects service constructors with instances", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.value("theValue", 42);
     module.service(
@@ -1355,7 +1355,7 @@ describe("services", () => {
   });
 
   it("injects service ES6 constructors with instances", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.value("theValue", 42);
     module.service(
@@ -1379,7 +1379,7 @@ describe("services", () => {
   });
 
   it("only instantiates services once", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.service("aService", function MyService() {});
     const injector = createInjector(["myModule"]);
@@ -1392,7 +1392,7 @@ describe("decorators", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("allows changing an instance using a decorator", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.factory("aValue", function () {
       return { aKey: 42 };
@@ -1412,7 +1412,7 @@ describe("decorators", () => {
   });
 
   it("allows multiple decorators per service", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.factory("aValue", function () {
       return {};
@@ -1440,7 +1440,7 @@ describe("decorators", () => {
   });
 
   it("uses dependency injection with decorators", function () {
-    const module = angular.module("myModule", []);
+    const module = angular.createModule("myModule", []);
 
     module.factory("aValue", function () {
       return {};
@@ -1464,7 +1464,7 @@ describe("controllers", () => {
   beforeEach(() => (window.angular = new Angular()));
 
   it("should provide the caller name for controllers", () => {
-    window.angular.module("myModule", []).controller(
+    window.angular.createModule("myModule", []).controller(
       "myCtrl",
       annotated(["idontexist"], (idontexist) => {}),
     );
@@ -1476,7 +1476,7 @@ describe("controllers", () => {
   it("should be able to register a controller from a new module", () => {
     const injector = createInjector(["ng"]);
 
-    window.angular.module("a", []).controller(
+    window.angular.createModule("a", []).controller(
       "aController",
       annotated(["$scope"], function Controller($scope) {
         $scope.test = "b";
@@ -1500,7 +1500,7 @@ describe("filters", () => {
   it("should be able to register a filter from a new module", () => {
     const injector = createInjector(["ng"]);
 
-    window.angular.module("a", []).filter(
+    window.angular.createModule("a", []).filter(
       "aFilter",
       () =>
         function (input) {
@@ -1523,7 +1523,7 @@ describe("directive", () => {
 
   it("does not replay runtime-owned directives across injectors", () => {
     window.angular
-      .module("a", [])
+      .createModule("a", [])
       .directive("aDirective", () => ({ template: "test directive" }));
 
     createInjector(["ng", "a"]);
@@ -1543,7 +1543,7 @@ describe("directive", () => {
     const injector = createInjector(["ng"]);
 
     window.angular
-      .module("a", [])
+      .createModule("a", [])
       .directive("aDirective", () => ({ template: "test directive" }));
     injector.loadNewModules(["a"]);
     injector.invoke(
@@ -1562,7 +1562,7 @@ it("should define module", () => {
 
   window.angular = new Angular();
   window.angular
-    .module("definedModule", [])
+    .createModule("definedModule", [])
     .value("value", "value;")
     .factory("fn", () => "function;")
     .provider("service", function Provider() {
@@ -1600,11 +1600,11 @@ describe("module", () => {
     const values = { a: "", b: "", c: "" };
 
     angular
-      .module("baseProviders", [])
+      .createModule("baseProviders", [])
       .provider("a", { get: () => "A" })
       .provider("b", { get: () => "AB" })
       .provider("c", { get: () => "ABC" });
-    angular.module("functionModules", [
+    angular.createModule("functionModules", [
       "baseProviders",
       annotated(["aProvider"], function (aProvider) {
         values.a = aProvider.get();
@@ -1631,7 +1631,7 @@ describe("module", () => {
   });
 
   it("should run symbolic modules", () => {
-    angular.module("myModule", []).value("a", "abc");
+    angular.createModule("myModule", []).value("a", "abc");
     const $injector = createInjector(["myModule"]);
 
     expect($injector.get("a")).toEqual("abc");
@@ -1646,13 +1646,13 @@ describe("module", () => {
   it("should load dependant modules only once", () => {
     let log = "";
 
-    angular.module("a", [], () => {
+    angular.createModule("a", [], () => {
       log += "a";
     });
-    angular.module("b", ["a"], () => {
+    angular.createModule("b", ["a"], () => {
       log += "b";
     });
-    angular.module("c", ["a", "b"], () => {
+    angular.createModule("c", ["a", "b"], () => {
       log += "c";
     });
     createInjector(["c", "c"]);
@@ -1694,14 +1694,14 @@ describe("module", () => {
     let log = "";
 
     angular
-      .module("a", [], () => {
+      .createModule("a", [], () => {
         log += "a";
       })
       .run(() => {
         log += "A";
       });
     angular
-      .module("b", ["a"], () => {
+      .createModule("b", ["a"], () => {
         log += "b";
       })
       .run(() => {
@@ -1725,7 +1725,7 @@ describe("module", () => {
     let log = "";
 
     angular
-      .module("a", ["b"])
+      .createModule("a", ["b"])
       ._config(
         annotated(["$aProvider"], ($aProvider) => {
           log += "aConfig;";
@@ -1738,7 +1738,7 @@ describe("module", () => {
         };
       });
     angular
-      .module("b", [])
+      .createModule("b", [])
       ._config(
         annotated(["$bProvider"], ($bProvider) => {
           log += "bConfig;";
@@ -2126,7 +2126,7 @@ describe("error handling", () => {
   });
 
   it("should decorate the missing service error with module name", () => {
-    angular.module(
+    angular.createModule(
       "TestModule",
       [],
       annotated(["xyzzy"], (xyzzy) => {}),
@@ -2455,7 +2455,7 @@ describe("explicit annotation injector", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    module = angular.module("test1", []);
+    module = angular.createModule("test1", []);
   });
 
   it("should reject an unannotated service dependency", () => {

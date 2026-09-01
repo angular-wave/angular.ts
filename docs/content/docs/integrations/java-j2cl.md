@@ -70,7 +70,7 @@ templates access with `@AngularTemplateApi`.
 ```text
 @AngularEntryPoint
 public static void start() {
-  Angular.module("todo", new String[0])
+  Angular.createModule("todo", new String[0])
       .controller("TodoCtrl", (TodoFactory) TodoController::new);
 }
 

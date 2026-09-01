@@ -14,40 +14,40 @@ record recipes that the injector later uses to construct and wire together your
 application. This separation between declaration and instantiation is what makes
 AngularTS applications easy to test and compose.
 
-## Creating and retrieving modules
+## Create and retrieve modules
 
-Use `angular.module()` to both create and look up modules. The presence of the
-second argument — the `requires` array — is what distinguishes creation from
-retrieval.
+Use `angular.createModule()` to create or replace a module. Its dependency list
+defaults to an empty array. Use `angular.getModule()` to retrieve a module that
+is already registered.
 
 ### TypeScript
 
 ```ts
 // Create a new module with no dependencies
-const app = angular.module('myApp', []);
+const app = angular.createModule('myApp', []);
 
 // Retrieve an already-registered module
-const same = angular.module('myApp');
+const same = angular.getModule('myApp');
 ```
 
 ### JavaScript
 
 ```js
 // Create a new module
-var app = angular.module('myApp', []);
+var app = angular.createModule('myApp', []);
 
 // Retrieve it elsewhere (e.g., in another file)
-var same = angular.module('myApp');
+var same = angular.getModule('myApp');
 ```
 
-> **Warning:** Calling `angular.module('myApp', [])` a second time **replaces**
-> the existing module. Always pass the `requires` array only once — at the point
-> of creation — and omit it everywhere else.
+> **Warning:** Calling `angular.createModule('myApp')` a second time replaces the
+> existing module. Use `angular.getModule('myApp')` when you only need to add
+> registrations to the existing module.
 
 ## Module registration methods
 
 The [`NgModule`](../../../typedoc/classes/NgModule.html) instance returned by
-`angular.module()` exposes a fluent API for registering every kind of
+`angular.createModule()` or `angular.getModule()` exposes a fluent API for registering every kind of
 application artifact. All methods return the same module so calls can be
 chained.
 
@@ -115,7 +115,7 @@ controller, and a config block, then composes that module with a second utility
 module.
 
 ```ts
-const utilModule = angular.module('util', []);
+const utilModule = angular.createModule('util', []);
 
 utilModule.constant('API_BASE', 'https://api.example.com');
 
@@ -135,7 +135,7 @@ utilModule.factory('logger', [
 ```
 
 ```ts
-const app = angular.module('myApp', ['ng', 'util']);
+const app = angular.createModule('myApp', ['ng', 'util']);
 app.service('userService', UserService);
 app.component('userList', { controller: UserListController });
 app.router({ name: 'users', url: '/users', component: 'userList' });

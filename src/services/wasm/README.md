@@ -72,7 +72,7 @@ compilations, and clears the AppContext cache.
 Register app-owned resources with the module API:
 
 ```ts
-angular.module("game", []).wasm("physics", {
+angular.createModule("game", []).wasm("physics", {
   source: new URL("./physics.wasm", import.meta.url),
 });
 ```

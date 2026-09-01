@@ -944,7 +944,7 @@ export class StateRuntime {
    *
    * #### Example:
    * ```js
-   * let app = angular.module('app', []);
+   * let app = angular.createModule('app', []);
    *
    * app.controller('ctrl', ['$scope', '$state', function ($scope, $state) {
    *   $scope.changeState = function () {

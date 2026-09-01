@@ -37,7 +37,7 @@ service from the injector.
 ## Example
 
 ```ts
-const app = angular.module("app", []);
+const app = angular.createModule("app", []);
 
 app.config({
   $interpolate: {

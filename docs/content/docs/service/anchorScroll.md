@@ -21,7 +21,7 @@ Exact signatures live in TypeDoc:
 Use `module.config({ $anchorScroll: ... })` for application-wide scroll policy.
 
 ```js
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $anchorScroll: {
     autoScrolling: false,
   },

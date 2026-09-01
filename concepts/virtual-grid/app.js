@@ -1,7 +1,7 @@
 const gridRuntimes = new WeakMap();
 
 window.angular
-  .module("virtualGridConcept", [])
+  .createModule("virtualGridConcept", [])
   .model("gridModel", () => ({
     status: "loading",
     filter: "",

@@ -26,7 +26,7 @@ describe("$log", () => {
   }
 
   it("is injectable", () => {
-    angular.module("default", []);
+    angular.createModule("default", []);
 
     const log = bootstrap("default");
 
@@ -35,7 +35,7 @@ describe("$log", () => {
   });
 
   it("delegates errors to the console by default", () => {
-    angular.module("default", []);
+    angular.createModule("default", []);
     const consoleError = spyOn(window.console, "error");
 
     bootstrap("default").error("error message");
@@ -44,7 +44,7 @@ describe("$log", () => {
   });
 
   it("formats Error objects before logging them", () => {
-    angular.module("default", []);
+    angular.createModule("default", []);
     const consoleError = spyOn(window.console, "error");
     const error = new Error("broken");
 
@@ -55,7 +55,7 @@ describe("$log", () => {
   });
 
   it("suppresses debug logging by default", () => {
-    angular.module("default", []);
+    angular.createModule("default", []);
     const consoleDebug = spyOn(window.console, "debug");
 
     bootstrap("default").debug("details");
@@ -64,7 +64,7 @@ describe("$log", () => {
   });
 
   it("enables debug logging through typed object configuration", () => {
-    angular.module("debug", []).config({ $log: { debug: true } });
+    angular.createModule("debug", []).config({ $log: { debug: true } });
     const consoleDebug = spyOn(window.console, "debug");
 
     bootstrap("debug").debug("details");
@@ -75,7 +75,7 @@ describe("$log", () => {
   it("replaces the console implementation through typed configuration", () => {
     const customLog = jasmine.createSpy("customLog");
 
-    angular.module("custom", []).config({
+    angular.createModule("custom", []).config({
       $log: {
         logger: () => ({
           log: customLog,
@@ -177,7 +177,7 @@ describe("$log", () => {
     );
 
     angular
-      .module("beaconSerializer", [])
+      .createModule("beaconSerializer", [])
       .factory("clientLogSerializer", () => serialize)
       .config({
         $log: {
@@ -208,7 +208,7 @@ describe("$log", () => {
     const consoleError = spyOn(window.console, "error");
     const consoleWarn = spyOn(window.console, "warn");
 
-    angular.module("securedBeacon", []).config({
+    angular.createModule("securedBeacon", []).config({
       $log: { beacon: { url: "/client-logs" } },
       $security: {
         allowInsecureOrigins: [window.location.origin],

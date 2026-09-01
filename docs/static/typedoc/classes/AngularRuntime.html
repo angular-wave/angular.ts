@@ -98,7 +98,7 @@
             </p>
           </div>
         </section>
-        <section class="tsd-panel tsd-hierarchy" data-refl="252">
+        <section class="tsd-panel tsd-hierarchy" data-refl="258">
           <h4>
             Hierarchy (<a href="../hierarchy.html#AngularRuntime"
               >View Summary</a
@@ -310,6 +310,15 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>call</span></a
                     >
+                    <a href="#createmodule" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>create<wbr />Module</span></a
+                    >
                     <a href="#dispatchevent" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -327,6 +336,15 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>emit</span></a
+                    >
+                    <a href="#getmodule" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>get<wbr />Module</span></a
                     >
                     <a href="#getscopebyname" class="tsd-index-link"
                       ><svg
@@ -354,15 +372,6 @@
                       >
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>injector</span></a
-                    >
-                    <a href="#module" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Method"
-                      >
-                        <use href="../assets/icons.svg#icon-2048"></use></svg
-                      ><span>module</span></a
                     >
                     <a href="#registerngmodule" class="tsd-index-link"
                       ><svg
@@ -1823,7 +1832,7 @@
                         and making the injector inaccessible from outside the
                         app.
                       </p>
-                      <pre><code class="html"><span class="hl-0">&lt;!</span><span class="hl-1">doctype</span><span class="hl-2"> </span><span class="hl-3">html</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">html</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">body</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">div</span><span class="hl-2"> </span><span class="hl-3">ng-controller</span><span class="hl-2">=</span><span class="hl-4">&quot;WelcomeController&quot;</span><span class="hl-0">&gt;</span><br/><span class="hl-2">  {{greeting}}</span><br/><span class="hl-0">&lt;/</span><span class="hl-1">div</span><span class="hl-0">&gt;</span><br/><br/><span class="hl-0">&lt;</span><span class="hl-1">script</span><span class="hl-5"> </span><span class="hl-3">src</span><span class="hl-5">=</span><span class="hl-4">&quot;angular.js&quot;</span><span class="hl-0">&gt;&lt;/</span><span class="hl-1">script</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">script</span><span class="hl-0">&gt;</span><br/><span class="hl-5">  </span><span class="hl-6">let</span><span class="hl-5"> </span><span class="hl-7">app</span><span class="hl-5"> </span><span class="hl-2">=</span><span class="hl-5"> </span><span class="hl-7">angular</span><span class="hl-5">.</span><span class="hl-8">module</span><span class="hl-5">(</span><span class="hl-9">&#39;demo&#39;</span><span class="hl-5">, [])</span><br/><span class="hl-5">  .</span><span class="hl-8">controller</span><span class="hl-5">(</span><span class="hl-9">&#39;WelcomeController&#39;</span><span class="hl-5">, [</span><span class="hl-9">&#39;$scope&#39;</span><span class="hl-5">, </span><span class="hl-6">function</span><span class="hl-5">(</span><span class="hl-7">$scope</span><span class="hl-5">) {</span><br/><span class="hl-5">      </span><span class="hl-7">$scope</span><span class="hl-5">.</span><span class="hl-7">greeting</span><span class="hl-5"> </span><span class="hl-2">=</span><span class="hl-5"> </span><span class="hl-9">&#39;Welcome!&#39;</span><span class="hl-5">;</span><br/><span class="hl-5">  }]);</span><br/><span class="hl-5">  </span><span class="hl-7">angular</span><span class="hl-5">.</span><span class="hl-8">bootstrap</span><span class="hl-5">(</span><span class="hl-7">document</span><span class="hl-5">, [</span><span class="hl-9">&#39;demo&#39;</span><span class="hl-5">]);</span><br/><span class="hl-0">&lt;/</span><span class="hl-1">script</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;/</span><span class="hl-1">body</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;/</span><span class="hl-1">html</span><span class="hl-0">&gt;</span>
+                      <pre><code class="html"><span class="hl-0">&lt;!</span><span class="hl-1">doctype</span><span class="hl-2"> </span><span class="hl-3">html</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">html</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">body</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">div</span><span class="hl-2"> </span><span class="hl-3">ng-controller</span><span class="hl-2">=</span><span class="hl-4">&quot;WelcomeController&quot;</span><span class="hl-0">&gt;</span><br/><span class="hl-2">  {{greeting}}</span><br/><span class="hl-0">&lt;/</span><span class="hl-1">div</span><span class="hl-0">&gt;</span><br/><br/><span class="hl-0">&lt;</span><span class="hl-1">script</span><span class="hl-5"> </span><span class="hl-3">src</span><span class="hl-5">=</span><span class="hl-4">&quot;angular.js&quot;</span><span class="hl-0">&gt;&lt;/</span><span class="hl-1">script</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;</span><span class="hl-1">script</span><span class="hl-0">&gt;</span><br/><span class="hl-5">  </span><span class="hl-6">let</span><span class="hl-5"> </span><span class="hl-7">app</span><span class="hl-5"> </span><span class="hl-2">=</span><span class="hl-5"> </span><span class="hl-7">angular</span><span class="hl-5">.</span><span class="hl-8">createModule</span><span class="hl-5">(</span><span class="hl-9">&#39;demo&#39;</span><span class="hl-5">, [])</span><br/><span class="hl-5">  .</span><span class="hl-8">controller</span><span class="hl-5">(</span><span class="hl-9">&#39;WelcomeController&#39;</span><span class="hl-5">, [</span><span class="hl-9">&#39;$scope&#39;</span><span class="hl-5">, </span><span class="hl-6">function</span><span class="hl-5">(</span><span class="hl-7">$scope</span><span class="hl-5">) {</span><br/><span class="hl-5">      </span><span class="hl-7">$scope</span><span class="hl-5">.</span><span class="hl-7">greeting</span><span class="hl-5"> </span><span class="hl-2">=</span><span class="hl-5"> </span><span class="hl-9">&#39;Welcome!&#39;</span><span class="hl-5">;</span><br/><span class="hl-5">  }]);</span><br/><span class="hl-5">  </span><span class="hl-7">angular</span><span class="hl-5">.</span><span class="hl-8">bootstrap</span><span class="hl-5">(</span><span class="hl-7">document</span><span class="hl-5">, [</span><span class="hl-9">&#39;demo&#39;</span><span class="hl-5">]);</span><br/><span class="hl-0">&lt;/</span><span class="hl-1">script</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;/</span><span class="hl-1">body</span><span class="hl-0">&gt;</span><br/><span class="hl-0">&lt;/</span><span class="hl-1">html</span><span class="hl-0">&gt;</span>
 </code><button type="button">Copy</button></pre>
                     </div>
                     <div class="tsd-parameters">
@@ -1864,7 +1873,8 @@
                               predefined module or a (DI annotated) function
                               that will be invoked by the injector as a
                               <code>config</code> block. See
-                              <code>angular.module()</code>.
+                              <code>angular.createModule()</code> and
+                              <code>angular.getModule()</code>.
                             </p>
                           </div>
                         </li>
@@ -1935,6 +1945,303 @@
                       ><span class="tsd-signature-type">unknown</span
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="createmodule">
+                <span>create<wbr />Module</span
+                ><a
+                  href="#createmodule"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div
+                    class="tsd-signature tsd-anchor-link"
+                    id="createmodule-1"
+                  >
+                    <span class="tsd-kind-call-signature">createModule</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >requires</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">[]</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >configFn</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <a
+                      href="../types/ModuleConfigFn.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >ModuleConfigFn</a
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="NgModule.html"
+                      class="tsd-signature-type tsd-kind-class"
+                      >NgModule</a
+                    ><a
+                      href="#createmodule-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>Creates or replaces an AngularTS module.</p>
+                      <p>
+                        A module collects services, directives, controllers,
+                        filters, workers, WebAssembly modules, and configuration
+                        for an application.
+                      </p>
+                    </div>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>The name of the module to create.</p>
+                          </div>
+                        </li>
+                        <li>
+                          <span
+                            ><code class="tsd-tag">Optional</code
+                            ><span class="tsd-kind-parameter">requires</span>:
+                            <span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">[]</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>The modules required by the new module.</p>
+                          </div>
+                        </li>
+                        <li>
+                          <span
+                            ><code class="tsd-tag">Optional</code
+                            ><span class="tsd-kind-parameter">configFn</span>:
+                            <a
+                              href="../types/ModuleConfigFn.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >ModuleConfigFn</a
+                            ></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Optional configuration function for the module
+                              that gets passed to
+                              <code>NgModule.config()</code>.
+                            </p>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a
+                        href="NgModule.html"
+                        class="tsd-signature-type tsd-kind-class"
+                        >NgModule</a
+                      >
+                    </h4>
+                    <p>A newly registered module.</p>
+                    <div class="tsd-comment tsd-typography">
+                      <div class="tsd-tag-example">
+                        <h4 class="tsd-anchor-link" id="example">
+                          Example<a
+                            href="#example"
+                            aria-label="Permalink"
+                            class="tsd-anchor-icon"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                              <use
+                                href="../assets/icons.svg#icon-anchor"
+                              ></use></svg
+                          ></a>
+                        </h4>
+                        <pre><code class="js"><span class="hl-6">const</span><span class="hl-2"> </span><span class="hl-10">app</span><span class="hl-2"> = </span><span class="hl-7">angular</span><span class="hl-2">.</span><span class="hl-8">createModule</span><span class="hl-2">(</span><span class="hl-9">&quot;myApp&quot;</span><span class="hl-2">, [</span><span class="hl-9">&quot;ng&quot;</span><span class="hl-2">]);</span><br/><span class="hl-7">app</span><span class="hl-2">.</span><span class="hl-8">value</span><span class="hl-2">(</span><span class="hl-9">&quot;appName&quot;</span><span class="hl-2">, </span><span class="hl-9">&quot;My app&quot;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+                <li class="">
+                  <div
+                    class="tsd-signature tsd-anchor-link"
+                    id="createmodule-2"
+                  >
+                    <span class="tsd-kind-call-signature">createModule</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#createmoduletroutemap"
+                      >TRouteMap</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <a
+                      href="../types/RouteMap.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >RouteMap</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >requires</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">[]</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >configFn</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <a
+                      href="../types/ModuleConfigFn.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >ModuleConfigFn</a
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../types/RouterModule.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >RouterModule</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="Angular.html#createmoduletroutemap"
+                      >TRouteMap</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><a
+                      href="#createmodule-2"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>Creates or replaces an AngularTS module.</p>
+                      <p>
+                        A module collects services, directives, controllers,
+                        filters, workers, WebAssembly modules, and configuration
+                        for an application.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="createmoduletroutemap"
+                            ><span class="tsd-kind-type-parameter"
+                              >TRouteMap</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <a
+                              href="../types/RouteMap.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >RouteMap</a
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>The name of the module to create.</p>
+                          </div>
+                        </li>
+                        <li>
+                          <span
+                            ><code class="tsd-tag">Optional</code
+                            ><span class="tsd-kind-parameter">requires</span>:
+                            <span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">[]</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>The modules required by the new module.</p>
+                          </div>
+                        </li>
+                        <li>
+                          <span
+                            ><code class="tsd-tag">Optional</code
+                            ><span class="tsd-kind-parameter">configFn</span>:
+                            <a
+                              href="../types/ModuleConfigFn.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >ModuleConfigFn</a
+                            ></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Optional configuration function for the module
+                              that gets passed to
+                              <code>NgModule.config()</code>.
+                            </p>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a
+                        href="../types/RouterModule.html"
+                        class="tsd-signature-type tsd-kind-type-alias"
+                        >RouterModule</a
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="Angular.html#createmoduletroutemap"
+                        >TRouteMap</a
+                      ><span class="tsd-signature-symbol">&gt;</span>
+                    </h4>
+                    <p>A newly registered module.</p>
+                    <div class="tsd-comment tsd-typography">
+                      <div class="tsd-tag-example">
+                        <h4 class="tsd-anchor-link" id="example-1">
+                          Example<a
+                            href="#example-1"
+                            aria-label="Permalink"
+                            class="tsd-anchor-icon"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                              <use
+                                href="../assets/icons.svg#icon-anchor"
+                              ></use></svg
+                          ></a>
+                        </h4>
+                        <pre><code class="js"><span class="hl-6">const</span><span class="hl-2"> </span><span class="hl-10">app</span><span class="hl-2"> = </span><span class="hl-7">angular</span><span class="hl-2">.</span><span class="hl-8">createModule</span><span class="hl-2">(</span><span class="hl-9">&quot;myApp&quot;</span><span class="hl-2">, [</span><span class="hl-9">&quot;ng&quot;</span><span class="hl-2">]);</span><br/><span class="hl-7">app</span><span class="hl-2">.</span><span class="hl-8">value</span><span class="hl-2">(</span><span class="hl-9">&quot;appName&quot;</span><span class="hl-2">, </span><span class="hl-9">&quot;My app&quot;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+                      </div>
+                    </div>
                   </div>
                 </li>
               </ul>
@@ -2055,6 +2362,161 @@
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">void</span>
                     </h4>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="getmodule">
+                <span>get<wbr />Module</span
+                ><a
+                  href="#getmodule"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="getmodule-1">
+                    <span class="tsd-kind-call-signature">getModule</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="NgModule.html"
+                      class="tsd-signature-type tsd-kind-class"
+                      >NgModule</a
+                    ><a
+                      href="#getmodule-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>Retrieves an existing module.</p>
+                    </div>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>The name of the module to retrieve.</p>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a
+                        href="NgModule.html"
+                        class="tsd-signature-type tsd-kind-class"
+                        >NgModule</a
+                      >
+                    </h4>
+                    <p>The registered module.</p>
+                  </div>
+                </li>
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="getmodule-2">
+                    <span class="tsd-kind-call-signature">getModule</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#getmoduletroutemap"
+                      >TRouteMap</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <a
+                      href="../types/RouteMap.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >RouteMap</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../types/RouterModule.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >RouterModule</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="Angular.html#getmoduletroutemap"
+                      >TRouteMap</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><a
+                      href="#getmodule-2"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>Retrieves an existing module.</p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="getmoduletroutemap"
+                            ><span class="tsd-kind-type-parameter"
+                              >TRouteMap</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <a
+                              href="../types/RouteMap.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >RouteMap</a
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>The name of the module to retrieve.</p>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a
+                        href="../types/RouterModule.html"
+                        class="tsd-signature-type tsd-kind-type-alias"
+                        >RouterModule</a
+                      ><span class="tsd-signature-symbol">&lt;</span
+                      ><a
+                        class="tsd-signature-type tsd-kind-type-parameter"
+                        href="Angular.html#getmoduletroutemap"
+                        >TRouteMap</a
+                      ><span class="tsd-signature-symbol">&gt;</span>
+                    </h4>
+                    <p>The registered module.</p>
                   </div>
                 </li>
               </ul>
@@ -2265,344 +2727,6 @@
                       <span class="tsd-signature-type">InjectorService</span>
                     </h4>
                     <p>The created injector.</p>
-                  </div>
-                </li>
-              </ul>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="module">
-                <span>module</span
-                ><a
-                  href="#module"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <ul class="tsd-signatures">
-                <li class="">
-                  <div class="tsd-signature tsd-anchor-link" id="module-1">
-                    <span class="tsd-kind-call-signature">module</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">name</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">requires</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">[]</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">configFn</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <a
-                      href="../types/ModuleConfigFn.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >ModuleConfigFn</a
-                    ><span class="tsd-signature-symbol">)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="NgModule.html"
-                      class="tsd-signature-type tsd-kind-class"
-                      >NgModule</a
-                    ><a
-                      href="#module-1"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>
-                        The <code>angular.module</code> is a global place for
-                        creating, registering and retrieving AngularTS modules.
-                        All modules (AngularTS core or 3rd party) that should be
-                        available to an application must be registered using
-                        this mechanism.
-                      </p>
-                      <p>
-                        Passing one argument retrieves an existing ng.NgModule,
-                        whereas passing more than one argument creates a new
-                        ng.NgModule
-                      </p>
-                      <h1 id="module-3" class="tsd-anchor-link">
-                        Module<a
-                          href="#module-3"
-                          aria-label="Permalink"
-                          class="tsd-anchor-icon"
-                          ><svg viewBox="0 0 24 24" aria-hidden="true">
-                            <use
-                              href="../assets/icons.svg#icon-anchor"
-                            ></use></svg
-                        ></a>
-                      </h1>
-                      <p>
-                        A module is a collection of services, directives,
-                        controllers, filters, workers, WebAssembly modules, and
-                        configuration information.
-                        <code>angular.module</code> is used to configure the
-                        auto.$injector <code>$injector</code>.
-                      </p>
-                      <pre><code class="js"><span class="hl-10">// Create a new module</span><br/><span class="hl-6">let</span><span class="hl-2"> </span><span class="hl-7">myModule</span><span class="hl-2"> = </span><span class="hl-7">angular</span><span class="hl-2">.</span><span class="hl-8">module</span><span class="hl-2">(</span><span class="hl-9">&#39;myModule&#39;</span><span class="hl-2">, []);</span><br/><br/><span class="hl-10">// register a new service</span><br/><span class="hl-7">myModule</span><span class="hl-2">.</span><span class="hl-8">value</span><span class="hl-2">(</span><span class="hl-9">&#39;appName&#39;</span><span class="hl-2">, </span><span class="hl-9">&#39;MyCoolApp&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-10">// configure built-in services with typed object config.</span><br/><span class="hl-7">myModule</span><span class="hl-2">.</span><span class="hl-8">config</span><span class="hl-2">({</span><br/><span class="hl-2">  </span><span class="hl-7">location:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">hashPrefix:</span><span class="hl-2"> </span><span class="hl-9">&#39;!&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">});</span>
-</code><button type="button">Copy</button></pre>
-
-                      <p>
-                        Then you can create an injector and load your modules
-                        like this:
-                      </p>
-                      <pre><code class="js"><span class="hl-6">let</span><span class="hl-2"> </span><span class="hl-7">injector</span><span class="hl-2"> = </span><span class="hl-7">angular</span><span class="hl-2">.</span><span class="hl-8">injector</span><span class="hl-2">([</span><span class="hl-9">&#39;ng&#39;</span><span class="hl-2">, </span><span class="hl-9">&#39;myModule&#39;</span><span class="hl-2">])</span>
-</code><button type="button">Copy</button></pre>
-
-                      <p>
-                        However it's more likely that you'll use the
-                        <code>ng-app</code> directive or
-                        <code>bootstrap()</code> to simplify this process.
-                      </p>
-                    </div>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">name</span>:
-                            <span class="tsd-signature-type">string</span></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>The name of the module to create or retrieve.</p>
-                          </div>
-                        </li>
-                        <li>
-                          <span
-                            ><code class="tsd-tag">Optional</code
-                            ><span class="tsd-kind-parameter">requires</span>:
-                            <span class="tsd-signature-type">string</span
-                            ><span class="tsd-signature-symbol">[]</span></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>
-                              If specified then new module is being created. If
-                              unspecified then the module is being retrieved for
-                              further configuration.
-                            </p>
-                          </div>
-                        </li>
-                        <li>
-                          <span
-                            ><code class="tsd-tag">Optional</code
-                            ><span class="tsd-kind-parameter">configFn</span>:
-                            <a
-                              href="../types/ModuleConfigFn.html"
-                              class="tsd-signature-type tsd-kind-type-alias"
-                              >ModuleConfigFn</a
-                            ></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>
-                              Optional configuration function for the module
-                              that gets passed to
-                              <code>NgModule.config()</code>.
-                            </p>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="NgModule.html"
-                        class="tsd-signature-type tsd-kind-class"
-                        >NgModule</a
-                      >
-                    </h4>
-                    <p>A newly registered module.</p>
-                  </div>
-                </li>
-                <li class="">
-                  <div class="tsd-signature tsd-anchor-link" id="module-2">
-                    <span class="tsd-kind-call-signature">module</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><a
-                      class="tsd-signature-type tsd-kind-type-parameter"
-                      href="#moduletroutemap"
-                      >TRouteMap</a
-                    >
-                    <span class="tsd-signature-keyword">extends</span>
-                    <a
-                      href="../types/RouteMap.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >RouteMap</a
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">(</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >name</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >requires</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">[]</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >configFn</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <a
-                      href="../types/ModuleConfigFn.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >ModuleConfigFn</a
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../types/RouterModule.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >RouterModule</a
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><a
-                      class="tsd-signature-type tsd-kind-type-parameter"
-                      href="Angular.html#moduletroutemap"
-                      >TRouteMap</a
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><a
-                      href="#module-2"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>
-                        The <code>angular.module</code> is a global place for
-                        creating, registering and retrieving AngularTS modules.
-                        All modules (AngularTS core or 3rd party) that should be
-                        available to an application must be registered using
-                        this mechanism.
-                      </p>
-                      <p>
-                        Passing one argument retrieves an existing ng.NgModule,
-                        whereas passing more than one argument creates a new
-                        ng.NgModule
-                      </p>
-                      <h1 id="module-4" class="tsd-anchor-link">
-                        Module<a
-                          href="#module-4"
-                          aria-label="Permalink"
-                          class="tsd-anchor-icon"
-                          ><svg viewBox="0 0 24 24" aria-hidden="true">
-                            <use
-                              href="../assets/icons.svg#icon-anchor"
-                            ></use></svg
-                        ></a>
-                      </h1>
-                      <p>
-                        A module is a collection of services, directives,
-                        controllers, filters, workers, WebAssembly modules, and
-                        configuration information.
-                        <code>angular.module</code> is used to configure the
-                        auto.$injector <code>$injector</code>.
-                      </p>
-                      <pre><code class="js"><span class="hl-10">// Create a new module</span><br/><span class="hl-6">let</span><span class="hl-2"> </span><span class="hl-7">myModule</span><span class="hl-2"> = </span><span class="hl-7">angular</span><span class="hl-2">.</span><span class="hl-8">module</span><span class="hl-2">(</span><span class="hl-9">&#39;myModule&#39;</span><span class="hl-2">, []);</span><br/><br/><span class="hl-10">// register a new service</span><br/><span class="hl-7">myModule</span><span class="hl-2">.</span><span class="hl-8">value</span><span class="hl-2">(</span><span class="hl-9">&#39;appName&#39;</span><span class="hl-2">, </span><span class="hl-9">&#39;MyCoolApp&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-10">// configure built-in services with typed object config.</span><br/><span class="hl-7">myModule</span><span class="hl-2">.</span><span class="hl-8">config</span><span class="hl-2">({</span><br/><span class="hl-2">  </span><span class="hl-7">location:</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-7">hashPrefix:</span><span class="hl-2"> </span><span class="hl-9">&#39;!&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">});</span>
-</code><button type="button">Copy</button></pre>
-
-                      <p>
-                        Then you can create an injector and load your modules
-                        like this:
-                      </p>
-                      <pre><code class="js"><span class="hl-6">let</span><span class="hl-2"> </span><span class="hl-7">injector</span><span class="hl-2"> = </span><span class="hl-7">angular</span><span class="hl-2">.</span><span class="hl-8">injector</span><span class="hl-2">([</span><span class="hl-9">&#39;ng&#39;</span><span class="hl-2">, </span><span class="hl-9">&#39;myModule&#39;</span><span class="hl-2">])</span>
-</code><button type="button">Copy</button></pre>
-
-                      <p>
-                        However it's more likely that you'll use the
-                        <code>ng-app</code> directive or
-                        <code>bootstrap()</code> to simplify this process.
-                      </p>
-                    </div>
-                    <section class="tsd-panel">
-                      <h4>Type Parameters</h4>
-                      <ul class="tsd-type-parameter-list">
-                        <li>
-                          <span id="moduletroutemap"
-                            ><span class="tsd-kind-type-parameter"
-                              >TRouteMap</span
-                            >
-                            <span class="tsd-signature-keyword">extends</span>
-                            <a
-                              href="../types/RouteMap.html"
-                              class="tsd-signature-type tsd-kind-type-alias"
-                              >RouteMap</a
-                            ></span
-                          >
-                        </li>
-                      </ul>
-                    </section>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">name</span>:
-                            <span class="tsd-signature-type">string</span></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>The name of the module to create or retrieve.</p>
-                          </div>
-                        </li>
-                        <li>
-                          <span
-                            ><code class="tsd-tag">Optional</code
-                            ><span class="tsd-kind-parameter">requires</span>:
-                            <span class="tsd-signature-type">string</span
-                            ><span class="tsd-signature-symbol">[]</span></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>
-                              If specified then new module is being created. If
-                              unspecified then the module is being retrieved for
-                              further configuration.
-                            </p>
-                          </div>
-                        </li>
-                        <li>
-                          <span
-                            ><code class="tsd-tag">Optional</code
-                            ><span class="tsd-kind-parameter">configFn</span>:
-                            <a
-                              href="../types/ModuleConfigFn.html"
-                              class="tsd-signature-type tsd-kind-type-alias"
-                              >ModuleConfigFn</a
-                            ></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>
-                              Optional configuration function for the module
-                              that gets passed to
-                              <code>NgModule.config()</code>.
-                            </p>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../types/RouterModule.html"
-                        class="tsd-signature-type tsd-kind-type-alias"
-                        >RouterModule</a
-                      ><span class="tsd-signature-symbol">&lt;</span
-                      ><a
-                        class="tsd-signature-type tsd-kind-type-parameter"
-                        href="Angular.html#moduletroutemap"
-                        >TRouteMap</a
-                      ><span class="tsd-signature-symbol">&gt;</span>
-                    </h4>
-                    <p>A newly registered module.</p>
                   </div>
                 </li>
               </ul>
@@ -3110,6 +3234,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>call</span></a
+                  ><a href="#createmodule"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>create<wbr />Module</span></a
                   ><a href="#dispatchevent"
                     ><svg
                       class="tsd-kind-icon"
@@ -3126,6 +3258,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>emit</span></a
+                  ><a href="#getmodule"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>get<wbr />Module</span></a
                   ><a href="#getscopebyname"
                     ><svg
                       class="tsd-kind-icon"
@@ -3150,24 +3290,7 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>injector</span></a
-                  ><a href="#module"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Method"
-                    >
-                      <use href="../assets/icons.svg#icon-2048"></use></svg
-                    ><span>module</span></a
-                  >
-                  <ul>
-                    <li>
-                      <a href="#module-3"><span>Module</span></a>
-                    </li>
-                    <li>
-                      <a href="#module-4"><span>Module</span></a>
-                    </li>
-                  </ul>
-                  <a href="#registerngmodule"
+                  ><a href="#registerngmodule"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"

@@ -61,7 +61,9 @@ describe("$controller", () => {
       });
 
       it("injects dependencies to controller functions", function () {
-        window.angular.module("controllerDependency", []).constant("aDep", 42);
+        window.angular
+          .createModule("controllerDependency", [])
+          .constant("aDep", 42);
         const injector = createInjector(["ng", "controllerDependency"]);
 
         const $controller = injector.get("$controller");
@@ -80,7 +82,7 @@ describe("$controller", () => {
         function MyController() {}
 
         window.angular
-          .module("controllerConfig", ["ng"])
+          .createModule("controllerConfig", ["ng"])
           .controller("MyController", MyController);
         const injector = createInjector(["controllerConfig"]);
 
@@ -110,7 +112,7 @@ describe("$controller", () => {
       });
 
       it("allows registering controllers through modules", function () {
-        const module = window.angular.module("myModule", []);
+        const module = window.angular.createModule("myModule", []);
 
         module.controller("MyController", function MyController() {});
         const injector = createInjector(["ng", "myModule"]);
@@ -549,7 +551,7 @@ describe("$controller", () => {
       });
 
       it("should allow locals to override injectable dependencies", () => {
-        window.angular.module("controllerLocal", []).constant("aDep", 1);
+        window.angular.createModule("controllerLocal", []).constant("aDep", 1);
         const injector = createInjector(["ng", "controllerLocal"]);
 
         const $controller = injector.get("$controller");

@@ -15,13 +15,13 @@ delegate before the application runs.
 - Override the default implementation with a custom delegate
 
 ```js
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $sce: {
     enabled: true,
   },
 });
 
-angular.module("app").config({
+angular.getModule("app").config({
   $sceDelegate: {
     trustedResourceUrlList: ["self", "https://cdn.example.com/templates/**"],
     bannedResourceUrlList: ["https://cdn.example.com/templates/private/**"],
@@ -204,7 +204,7 @@ Trusted and banned resource URL lists accept:
 You can disable SCE globally — though this is strongly discouraged.
 
 ```js
-angular.module("myAppWithSceDisabled", []).config({
+angular.createModule("myAppWithSceDisabled", []).config({
   $sce: {
     // Completely disable SCE. For demonstration purposes only!
     // Do not use in new projects or libraries.

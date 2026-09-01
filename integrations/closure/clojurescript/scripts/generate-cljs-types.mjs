@@ -12,7 +12,7 @@ const rootPackagePath = resolve(cljsRoot, "..", "..", "..", "package.json");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
 const expectedTypeTagCount = 226;
-const expectedStrictWrapperCount = 221;
+const expectedStrictWrapperCount = 223;
 const expectedStrictPropertyReaderCount = 449;
 const strictWrapperParamTagOverrides = new Map([
   ["NgModule.machine.config", "js/Object"],
@@ -151,7 +151,12 @@ function collectCoreFacadeFunctions() {
 function validateCoreFacade() {
   const ngModuleMethods = collectNgModuleMethods();
   const facadeFunctions = collectCoreFacadeFunctions();
-  const facadeHelpers = new Set(["injectable", "module", "publish"]);
+  const facadeHelpers = new Set([
+    "create-module",
+    "get-module",
+    "injectable",
+    "publish",
+  ]);
   const missing = [...ngModuleMethods]
     .filter((name) => !facadeFunctions.has(name))
     .sort();
@@ -570,7 +575,11 @@ for (const typeName of [
   assertExtern(new RegExp(`\\bng\\.${typeName}\\b`), `ng.${typeName}`);
 }
 
-assertExtern(/\bangular\.module\s*=\s*function\b/, "angular.module");
+assertExtern(
+  /\bangular\.createModule\s*=\s*function\b/,
+  "angular.createModule",
+);
+assertExtern(/\bangular\.getModule\s*=\s*function\b/, "angular.getModule");
 assertExtern(
   /\bng\.NgModule\.prototype\.controller\s*=\s*function\b/,
   "ng.NgModule.prototype.controller",
@@ -730,12 +739,17 @@ ${generatedMethods.map(renderPrototypeWrapper).join("\n\n")}
 
 ${generatedProperties.map(renderPrototypePropertyReader).join("\n\n")}
 
-(defn module
-  "Retrieve or create an AngularTS module."
+(defn create-module
+  "Create or replace an AngularTS module."
   (^js/ng.NgModule [^string name]
-   (.module angular name))
+   (.createModule angular name #js []))
   (^js/ng.NgModule [^string name requires]
-   (.module angular name (to-array requires))))
+   (.createModule angular name (to-array requires))))
+
+(defn get-module
+  "Retrieve an AngularTS module."
+  ^js/ng.NgModule [^string name]
+  (.getModule angular name))
 
 (defn controller
   "Register an annotated controller or annotate a controller factory from a ClojureScript dependency collection."

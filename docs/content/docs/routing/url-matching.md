@@ -190,7 +190,7 @@ transitions.
 URL matching is case-sensitive by default. Allow case-insensitive matching:
 
 ```js
-angular.module('app').config({
+angular.getModule('app').config({
   $router: {
     caseInsensitive: true,
   },
@@ -203,7 +203,7 @@ By default, `/users/` and `/users` are distinct. Disable strict mode to treat
 trailing slashes as equivalent:
 
 ```js
-angular.module('app').config({
+angular.getModule('app').config({
   $router: {
     strict: false, // /users/ matches /users
   },
@@ -216,7 +216,7 @@ Control the global default for how parameters with default values appear in
 URLs:
 
 ```js
-angular.module('app').config({
+angular.getModule('app').config({
   $router: {
     // 'false' (default): include the default value in the URL
     // 'true': omit default value from URL
@@ -233,7 +233,7 @@ using it in state URL patterns. The type must implement `encode`, `decode`,
 `is`, `equals`, and optionally `pattern`:
 
 ```js
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $router: {
     paramTypes: {
       intarray: {
@@ -252,7 +252,7 @@ angular.module('app', []).config({
 Use the custom type in a state URL:
 
 ```js
-angular.module('app').router({
+angular.getModule('app').router({
   name: 'report',
   url: '/reports/{ids:intarray}',
   component: 'Report',
@@ -278,7 +278,7 @@ URLs use a hash fragment: `http://example.com/app/#/contacts/42`. No server
 configuration is needed; the hash segment is never sent to the server.
 
 ```js
-angular.module('app').config({
+angular.getModule('app').config({
   $location: {
     html5Mode: false,
     hashPrefix: '!', // optional: use #!/ instead of #/
@@ -294,7 +294,7 @@ URLs use real paths: `http://example.com/contacts/42`. The server must return
 the app's `index.html` for all routes.
 
 ```js
-angular.module('app').config({
+angular.getModule('app').config({
   $location: {
     html5Mode: {
       enabled: true,
@@ -375,7 +375,7 @@ When loading states asynchronously, register them before enabling navigation
 links or calling `$state.go()` for URL-driven destinations:
 
 ```js
-angular.module('app').run([
+angular.getModule('app').run([
   '$stateRegistry',
   '$state',
   function ($stateRegistry, $state) {

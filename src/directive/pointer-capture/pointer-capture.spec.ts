@@ -30,7 +30,7 @@ describe("ngPointerCapture", () => {
 
     const angular = new Angular();
 
-    angular.module("myModule", ["ng"]);
+    angular.createModule("myModule", ["ng"]);
 
     angular.bootstrap(app, ["myModule"]).invoke([
       "$compile",

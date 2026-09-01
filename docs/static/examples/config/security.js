@@ -12,7 +12,7 @@ const securityConfig = {
 };
 
 window.angular
-  .module('securityConfigDemo', [])
+  .createModule('securityConfigDemo', [])
   .config({
     $security: securityConfig,
   })

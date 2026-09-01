@@ -1,5 +1,5 @@
 window.angular
-  .module("compileConfigDemo", ["ng"])
+  .createModule("compileConfigDemo", ["ng"])
   .config({
     $compile: {
       strictComponentBindingsEnabled: true,

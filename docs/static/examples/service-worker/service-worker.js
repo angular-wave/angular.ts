@@ -1,4 +1,4 @@
-window.angular.module('serviceWorkerDemo', []).controller(
+window.angular.createModule('serviceWorkerDemo', []).controller(
   'ServiceWorkerCtrl',
   class {
     static $inject = ['$serviceWorker', '$scope'];

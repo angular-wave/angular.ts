@@ -771,7 +771,7 @@ describe("$worker", () => {
   it("applies $security before creating a native worker", () => {
     const app = document.getElementById("app");
     const angular = new Angular();
-    const module = angular.module("secureWorkers", []).config({
+    const module = angular.createModule("secureWorkers", []).config({
       $security: {
         fallback: "deny",
         credentials: { bearer: "token" },
@@ -799,7 +799,7 @@ describe("$worker", () => {
   it("uses a stable error when a worker security denial has no reason", () => {
     const app = document.getElementById("app");
     const angular = new Angular();
-    const module = angular.module("deniedWorkers", []).config({
+    const module = angular.createModule("deniedWorkers", []).config({
       $security: { fallback: "deny" },
     });
     let workerService;

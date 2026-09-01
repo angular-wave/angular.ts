@@ -19,7 +19,7 @@ describe("StateBuilder", function () {
   beforeEach(function () {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    window.angular.module("default", []);
+    window.angular.createModule("default", []);
     const $injector = window.angular.bootstrap(document.getElementById("app"), [
       "default",
     ]);

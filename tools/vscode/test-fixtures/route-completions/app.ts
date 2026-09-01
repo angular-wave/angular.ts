@@ -1,4 +1,4 @@
-angular.module("routeCompletionFixture", [])
+angular.createModule("routeCompletionFixture", [])
   .lazyState("reports.**", () => import("./reports.routes"))
   .state("admin", {
     url: "/admin",

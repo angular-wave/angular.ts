@@ -45,7 +45,7 @@ Preferred user paths:
 - declare app structure through `NgModule`
 - declare shared reactive state through `app.model(...)`
 - declare service config through service-owned config
-- declare third-party modules through `angular.module(...)` and module
+- declare third-party modules through `angular.createModule()` and `angular.getModule()` and module
   dependencies
 - declare operational behavior through policies
 - consume runtime services through injection

@@ -93,7 +93,7 @@ import 'package:angular_ts/angular_ts.dart' as ng;
 import 'package:web/web.dart';
 
 void main() {
-  final app = ng.module('demo');
+  final app = ng.createModule('demo');
 
   final todoStore = ng.token<TodoStore>('todoStore');
 
@@ -117,7 +117,7 @@ void main() {
 
 Initial package API:
 
-- `ng.module(String name, [List<String> requires])`
+- `ng.createModule(String name, [List<String> requires])`
 - `ng.bootstrap(Element root, List<String> modules)`
 - `Token<T> ng.token<T>(String name)`
 - `NgModule.component<TController>(String name, Component<TController> options)`
@@ -189,7 +189,7 @@ through `TState`, while unknown property access requires `scope.unsafe`.
 Dart users should also be able to publish AngularTS-backed custom elements:
 
 ```dart
-final app = ng.module('widgets');
+final app = ng.createModule('widgets');
 
 app.appComponent('billing-summary', ng.AppComponent(
   shadow: true,

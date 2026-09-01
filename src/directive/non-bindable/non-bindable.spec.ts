@@ -15,7 +15,7 @@ describe("ngNonBindable", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular.module("myModule", ["ng"]);
+    window.angular.createModule("myModule", ["ng"]);
     injector = createInjector(["myModule"]);
     $compile = injector.get("$compile");
     $rootScope = injector.get("$rootScope");

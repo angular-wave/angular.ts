@@ -16,7 +16,7 @@ describe("Filter: limitTo", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular.module("myModule", ["ng"]);
+    window.angular.createModule("myModule", ["ng"]);
     const injector = createInjector(["myModule"]);
 
     const $filter = injector.get("$filter") as ng.FilterService;

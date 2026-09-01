@@ -1,5 +1,5 @@
 window.angular
-  .module('httpConfigDemo', [])
+  .createModule('httpConfigDemo', [])
   .config({
     $http: {
       defaults: {

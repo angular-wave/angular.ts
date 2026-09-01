@@ -27,7 +27,7 @@ provider.
 ## Configuration
 
 ```ts
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $security: {
     fallback: "deny",
     credentials: {

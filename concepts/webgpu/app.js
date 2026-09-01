@@ -1,5 +1,5 @@
 window.angular
-  .module('webgpuConcept', [])
+  .createModule('webgpuConcept', [])
   .model('clearModel', () => ({
     red: 0.1,
     green: 0.3,

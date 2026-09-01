@@ -70,7 +70,7 @@ function retainedTab(label, key) {
 }
 
 const routingRetentionDemo = window.angular
-  .module('routingRetentionDemo', [])
+  .createModule('routingRetentionDemo', [])
   .router({
     name: 'retention',
     abstract: true,

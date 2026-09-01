@@ -30,7 +30,7 @@ Register most states as one module-owned route tree or forest through
 
 ```js
 angular
-  .module('demo', [])
+  .createModule('demo', [])
   .router({
     name: 'home',
     url: '/home',
@@ -48,7 +48,7 @@ angular
 Register states at runtime when a feature is loaded after bootstrap.
 
 ```js
-angular.module('demo').run(["$stateRegistry", ($stateRegistry) => {
+angular.getModule('demo').run(["$stateRegistry", ($stateRegistry) => {
   $stateRegistry.register({
     name: 'settings',
     url: '/settings',
@@ -66,7 +66,7 @@ Use dot notation or an explicit `parent` property to create a hierarchy.
 
 ```js
 angular
-  .module('demo', [])
+  .createModule('demo', [])
   .router({
     name: 'contacts',
     url: '/contacts',
@@ -96,7 +96,7 @@ resolves, metadata, or layout with child states.
 
 ```js
 angular
-  .module('demo', [])
+  .createModule('demo', [])
   .router({
     name: 'admin',
     url: '/admin',
@@ -121,7 +121,7 @@ Navigating to `admin.dashboard` enters both `admin` and `admin.dashboard`.
 URL parameters are parsed from path and query segments.
 
 ```js
-angular.module('demo', []).router({
+angular.createModule('demo', []).router({
   name: 'product',
   url: '/products/:category?page&sort',
   component: 'productList',
@@ -131,7 +131,7 @@ angular.module('demo', []).router({
 Non-URL parameters belong in the `params` block.
 
 ```js
-angular.module('demo', []).router({
+angular.createModule('demo', []).router({
   name: 'search',
   url: '/search?q',
   params: {
@@ -151,7 +151,7 @@ Resolves fetch or compute data before a state renders. The router waits for
 required resolves before entering the state.
 
 ```js
-angular.module('demo', []).router({
+angular.createModule('demo', []).router({
   name: 'contacts.detail',
   url: '/:contactId',
   resolve: {
@@ -249,7 +249,7 @@ Prefer `policy.navigation` for auth/authorization and auth-like policy checks.
 `policy.transition.dirty` centralizes unsaved-change prompts for state leaves.
 
 ```js
-angular.module('editor', []).router({
+angular.createModule('editor', []).router({
   name: 'edit',
   url: '/edit',
   component: 'editorPage',
@@ -276,7 +276,7 @@ the transition continues, and use `fallbackTo` to route to a recovery state when
 the final attempt fails.
 
 ```js
-angular.module('demo', []).router({
+angular.createModule('demo', []).router({
   name: 'report',
   component: 'reportPage',
   policy: {
@@ -301,7 +301,7 @@ behavior.
 Use `$router` config when most routes should share the same transition policy:
 
 ```js
-angular.module('demo', []).config({
+angular.createModule('demo', []).config({
   $router: {
     loading: 'loading',
     retry: 2,
@@ -321,7 +321,7 @@ Use `error` to select the boundary for a recoverable transition failure.
 
 ```js
 angular
-  .module('editorDemo', [])
+  .createModule('editorDemo', [])
   .router({
     name: 'profile',
     url: '/profile',
@@ -354,7 +354,7 @@ Use `policy.retention` for route branches that should deactivate while inactive
 instead of losing DOM, scope, and component state on every navigation.
 
 ```js
-angular.module('retentionDemo', []).router({
+angular.createModule('retentionDemo', []).router({
   name: 'workspace',
   abstract: true,
   component: 'workspacePage',
@@ -378,7 +378,7 @@ Use `$router.retention` when the entire application or module should share a
 default retention policy:
 
 ```js
-angular.module('workspaceApp', []).config({
+angular.createModule('workspaceApp', []).config({
   $router: {
     retention: {
       mode: 'keep-alive',

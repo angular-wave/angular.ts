@@ -44,7 +44,7 @@ export const serviceWorkerModule: RuntimeModule = (angular) => {
     if (service) destroyServiceWorkerService(service);
   });
 
-  return angular.module("ng.serviceWorker", []).factory(_serviceWorker, [
+  return angular.createModule("ng.serviceWorker", []).factory(_serviceWorker, [
     _exceptionHandler,
     ($exceptionHandler: ng.ExceptionHandlerService) => {
       service = createServiceWorkerService(

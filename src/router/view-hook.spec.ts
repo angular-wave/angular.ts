@@ -27,7 +27,7 @@ describe("view hooks", () => {
     );
     window.angular = new Angular();
     app = window.angular
-      .module("defaultModule", [])
+      .createModule("defaultModule", [])
       .router({ name: "foo", url: "/foo", component: "foo" })
       .router({ name: "bar", url: "/bar", component: "bar" })
       .router({ name: "baz", url: "/baz", component: "baz" })

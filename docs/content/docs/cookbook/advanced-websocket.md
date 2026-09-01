@@ -63,7 +63,7 @@ class ChatController {
   }
 }
 
-angular.module('chat', []).controller('ChatController', ChatController);
+angular.createModule('chat', []).controller('ChatController', ChatController);
 ```
 
 `send()` serializes the object as JSON. Give every client message an ID so the

@@ -7,7 +7,7 @@ page-owned background-computation primitive.
 ## Module Configuration
 
 ```ts
-angular.module("app", []).serviceWorker("/service-worker.js", {
+angular.createModule("app", []).serviceWorker("/service-worker.js", {
   scope: "/app/",
   type: "module",
   updateViaCache: "imports",

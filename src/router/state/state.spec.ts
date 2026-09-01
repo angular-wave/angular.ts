@@ -110,7 +110,7 @@ describe("$state", () => {
       // some tests are polluting the cache
       window.angular = new Angular();
       module = window.angular
-        .module("defaultModule", [])
+        .createModule("defaultModule", [])
         .decorator("$exceptionHandler", function () {
           return (exception) => {
             errorLog.push(exception.message);
@@ -184,7 +184,7 @@ describe("$state", () => {
       dealoc(document.getElementById("app"));
       window.angular = new Angular();
       module = window.angular
-        .module("defaultModule", [])
+        .createModule("defaultModule", [])
         .decorator("$exceptionHandler", function () {
           return (exception) => {
             errorLog.push(exception.message);

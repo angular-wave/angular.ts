@@ -3,7 +3,7 @@ const configuredTemplateCache = new Map([
 ]);
 
 window.angular
-  .module('templateCacheConfigDemo', [])
+  .createModule('templateCacheConfigDemo', [])
   .config({
     $templateCache: {
       cache: configuredTemplateCache,

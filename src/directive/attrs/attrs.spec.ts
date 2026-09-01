@@ -14,7 +14,7 @@ describe("ngSrcset", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", () => {
         return (exception: any) => {
           throw new Error(exception.message);

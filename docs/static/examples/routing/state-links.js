@@ -1,5 +1,5 @@
 const routingStateLinksDemo = window.angular
-  .module('routingStateLinksDemo', [])
+  .createModule('routingStateLinksDemo', [])
   .config({
     $location: {
       html5Mode: false,

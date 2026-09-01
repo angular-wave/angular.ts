@@ -11,7 +11,7 @@ describe("Filter: filter", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular.module("myModule", ["ng"]);
+    window.angular.createModule("myModule", ["ng"]);
     const injector = createInjector(["myModule"]);
 
     filter = (injector.get("$filter") as ng.FilterService)(

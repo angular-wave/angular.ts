@@ -54,7 +54,7 @@ export type ModuleResolver = (name: string) => NgModule;
 export function createInjector(
   modulesToLoad: ModuleLike[],
   configure?: (registry: ProviderRegistry) => void,
-  resolveModule: ModuleResolver = (name) => window.angular.module(name),
+  resolveModule: ModuleResolver = (name) => window.angular.getModule(name),
 ): InjectorService {
   if (!isArray(modulesToLoad)) {
     throw $injectorError("modules", "Modules to load must be an array.");

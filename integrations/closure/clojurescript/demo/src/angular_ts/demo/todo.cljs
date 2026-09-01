@@ -38,6 +38,6 @@
   model)
 
 (defonce app
-  (-> (ng/module "cljsTodo" [])
+  (-> (ng/create-module "cljsTodo" [])
       (ng/model "todoModel" [] create-todo-model)
       (ng/controller "TodoCtrl" ["todoModel"] create-todo-controller)))

@@ -18,12 +18,19 @@ var angular = {};
 var ng = {};
 
 /**
- * Retrieve or create an AngularTS module.
- * @param {string} name Module name to create or retrieve.
- * @param {!Array<string>=} requires Dependency module names when creating a module.
+ * Create or replace an AngularTS module.
+ * @param {string} name Module name to create.
+ * @param {!Array<string>=} requires Dependency module names.
  * @return {!ng.NgModule}
  */
-angular.module = function(name, requires) {};
+angular.createModule = function(name, requires) {};
+
+/**
+ * Retrieve an AngularTS module.
+ * @param {string} name Module name to retrieve.
+ * @return {!ng.NgModule}
+ */
+angular.getModule = function(name) {};
 
 /**
  * AngularTS runtime instance used to create modules, bootstrap DOM trees, create injectors, and recover scopes from native elements.
@@ -146,13 +153,20 @@ ng.Angular.prototype.tokens;
 ng.Angular.prototype.registerNgModule = function() {};
 
 /**
- * The `angular.module` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. `angular.module` is used to configure the auto.$injector `$injector`. ```js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an injector and load your modules like this: ```js let injector = angular.injector(['ng', 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or `bootstrap()` to simplify this process.
- * @param {string} name The name of the module to create or retrieve.
- * @param {(!Array<string>|undefined)} requires If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.
+ * Creates or replaces an AngularTS module. A module collects services, directives, controllers, filters, workers, WebAssembly modules, and configuration for an application.
+ * @param {string} name The name of the module to create.
+ * @param {(!Array<string>|undefined)} requires The modules required by the new module.
  * @param {(!ng.Injectable|undefined)} configFn Optional configuration function for the module that gets passed to `NgModule.config()`.
  * @return {!ng.NgModule}
  */
-ng.Angular.prototype.module = function(name, requires, configFn) {};
+ng.Angular.prototype.createModule = function(name, requires, configFn) {};
+
+/**
+ * Retrieves an existing module.
+ * @param {string} name The name of the module to retrieve.
+ * @return {!ng.NgModule}
+ */
+ng.Angular.prototype.getModule = function(name) {};
 
 /**
  * Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.
@@ -176,9 +190,9 @@ ng.Angular.prototype.emit = function(input) {};
 ng.Angular.prototype.call = function(input) {};
 
 /**
- * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
+ * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.createModule('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
  * @param {(!Document|!HTMLElement|string)} element DOM element which is the root of AngularTS application.
- * @param {(!Array<(string|!ng.Injectable)>|undefined)} modules an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.module()`.
+ * @param {(!Array<(string|!ng.Injectable)>|undefined)} modules an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.createModule()` and `angular.getModule()`.
  * @return {!ng.InjectorService<?>}
  */
 ng.Angular.prototype.bootstrap = function(element, modules) {};
@@ -1600,13 +1614,20 @@ ng.AngularService.prototype.tokens;
 ng.AngularService.prototype.registerNgModule = function() {};
 
 /**
- * The `angular.module` is a global place for creating, registering and retrieving AngularTS modules. All modules (AngularTS core or 3rd party) that should be available to an application must be registered using this mechanism. Passing one argument retrieves an existing ng.NgModule, whereas passing more than one argument creates a new ng.NgModule # Module A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information. `angular.module` is used to configure the auto.$injector `$injector`. ```js // Create a new module let myModule = angular.module('myModule', []); // register a new service myModule.value('appName', 'MyCoolApp'); // configure built-in services with typed object config. myModule.config({ location: { hashPrefix: '!', }, }); ``` Then you can create an injector and load your modules like this: ```js let injector = angular.injector(['ng', 'myModule']) ``` However it's more likely that you'll use the `ng-app` directive or `bootstrap()` to simplify this process.
- * @param {string} name The name of the module to create or retrieve.
- * @param {(!Array<string>|undefined)} requires If specified then new module is being created. If unspecified then the module is being retrieved for further configuration.
+ * Creates or replaces an AngularTS module. A module collects services, directives, controllers, filters, workers, WebAssembly modules, and configuration for an application.
+ * @param {string} name The name of the module to create.
+ * @param {(!Array<string>|undefined)} requires The modules required by the new module.
  * @param {(!Array<function(...?): ?>|function(...?): ?|undefined)} configFn Optional configuration function for the module that gets passed to `NgModule.config()`.
  * @return {!ng.NgModule}
  */
-ng.AngularService.prototype.module = function(name, requires, configFn) {};
+ng.AngularService.prototype.createModule = function(name, requires, configFn) {};
+
+/**
+ * Retrieves an existing module.
+ * @param {string} name The name of the module to retrieve.
+ * @return {!ng.NgModule}
+ */
+ng.AngularService.prototype.getModule = function(name) {};
 
 /**
  * Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.
@@ -1630,9 +1651,9 @@ ng.AngularService.prototype.emit = function(input) {};
 ng.AngularService.prototype.call = function(input) {};
 
 /**
- * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.module('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
+ * Use this function to manually start up AngularTS application. AngularTS will detect if it has been loaded into the browser more than once and only allow the first loaded script to be bootstrapped and will report a warning to the browser console for each of the subsequent scripts. This prevents strange results in applications, where otherwise multiple instances of AngularTS try to work on the DOM. **Note:** Do not bootstrap the app on an element with a directive that uses transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this misplaces the app root element and injector, causing animations to stop working and making the injector inaccessible from outside the app. ```html <!doctype html> <html> <body> <div ng-controller="WelcomeController"> {{greeting}} </div> <script src="angular.js"></script> <script> let app = angular.createModule('demo', []) .controller('WelcomeController', ['$scope', function($scope) { $scope.greeting = 'Welcome!'; }]); angular.bootstrap(document, ['demo']); </script> </body> </html> ```
  * @param {(!Document|!HTMLElement|string)} element DOM element which is the root of AngularTS application.
- * @param {(!Array<(!Array<function(...?): ?>|function(...?): ?|string)>|undefined)} modules an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.module()`.
+ * @param {(!Array<(!Array<function(...?): ?>|function(...?): ?|string)>|undefined)} modules an array of modules to load into the application. Each item in the array should be the name of a predefined module or a (DI annotated) function that will be invoked by the injector as a `config` block. See `angular.createModule()` and `angular.getModule()`.
  * @return {!ng.InjectorService<?>}
  */
 ng.AngularService.prototype.bootstrap = function(element, modules) {};

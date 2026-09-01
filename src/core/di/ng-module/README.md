@@ -7,7 +7,7 @@ state trees, and runtime adapters before the injector creates them.
 
 ## Responsibilities
 
-- Register application declarations through `angular.module(...)`.
+- Register application declarations through `angular.createModule()` and `angular.getModule()`.
 - Keep provider-era wiring internal to the injector/runtime.
 - Expose typed convenience methods for common AngularTS primitives.
 - Preserve dependency ordering and singleton service semantics.
@@ -15,7 +15,7 @@ state trees, and runtime adapters before the injector creates them.
 
 ## Public Surface
 
-- `NgModule`: public module builder returned by `angular.module(name, deps)`.
+- `NgModule`: public module builder returned by `angular.createModule(name, deps)`.
 - `service`, `factory`, `value`, `constant`, `component`, `directive`,
   `controller`, and `filter`: standard registration methods.
 - `config(configObject)`: typed service configuration object for framework
@@ -39,7 +39,7 @@ states, and runtime adapters.
 
 The main flow is:
 
-1. `angular.module(name, dependencies)` creates or retrieves a module record.
+1. `angular.createModule(name, dependencies)` creates or retrieves a module record.
 2. Module methods append typed declarations to that record.
 3. Injector creation loads dependencies in order.
 4. Config objects are applied to the service recipes that own configuration.

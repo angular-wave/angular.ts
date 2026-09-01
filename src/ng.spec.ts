@@ -25,7 +25,8 @@ describe("public", () => {
 
   it("sets up the angular object and the module loader", () => {
     expect(window.angular).toBeDefined();
-    expect(window.angular.module).toBeDefined();
+    expect(window.angular.createModule).toBeDefined();
+    expect(window.angular.getModule).toBeDefined();
     expect(window.angular.tokens).toBeDefined();
   });
 
@@ -220,7 +221,7 @@ describe("public", () => {
     try {
       const angular = (window.angular = new Angular());
       const module = angular
-        .module("configuredServiceWorker", [])
+        .createModule("configuredServiceWorker", [])
         .serviceWorker("/app-sw.js", {
           scope: "/app/",
           type: "module",

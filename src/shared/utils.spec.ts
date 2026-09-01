@@ -91,7 +91,7 @@ describe("utility functions", () => {
 
   beforeEach(() => {
     angular = new Angular();
-    module = angular.module("defaultModule", ["ng"]);
+    module = angular.createModule("defaultModule", ["ng"]);
     injector = createInjector(["ng", "defaultModule"]);
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");

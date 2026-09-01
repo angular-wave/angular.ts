@@ -129,21 +129,21 @@ describe("$compile", () => {
     Cache.clear();
     angular = new Angular();
     module = window.angular
-      .module("test1", ["ng"])
+      .createModule("test1", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           errorLog.push(exception.message);
         };
       });
     defaultModule = window.angular
-      .module("defaultModule", ["ng"])
+      .createModule("defaultModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           errorLog.push(exception.message);
         };
       });
     myModule = window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           errorLog.push(exception.message);
@@ -157,7 +157,7 @@ describe("$compile", () => {
   }
 
   function registerDirectives(...args: any[]) {
-    myModule = window.angular.module("myModule", ["ng"]);
+    myModule = window.angular.createModule("myModule", ["ng"]);
 
     if (typeof args[0] === "string") {
       myModule.directive(args[0], args[1]);
@@ -5773,7 +5773,7 @@ describe("$compile", () => {
     });
 
     it("should support directives with SVG templates and a slow url that are stamped out later by a transcluding directive", async () => {
-      window.angular.module("test", []).directive("svgCircleUrl", () => ({
+      window.angular.createModule("test", []).directive("svgCircleUrl", () => ({
         replace: true,
         templateUrl: "/mock/circle-svg",
         templateNamespace: "SVG",
@@ -6883,7 +6883,7 @@ describe("$compile", () => {
       });
 
       it("should copy classes from pre-template node into linked element", async () => {
-        window.angular.module("test1", ["ng"]).directive("test", () => ({
+        window.angular.createModule("test1", ["ng"]).directive("test", () => ({
           templateUrl: "test.html",
           replace: true,
         }));
@@ -6917,11 +6917,13 @@ describe("$compile", () => {
           log = [];
           dealoc(ELEMENT);
           angular = new Angular();
-          module = angular.module("test1", ["ng"]).directive("hello", () => ({
-            restrict: "A",
-            templateUrl: "/mock/hello",
-            transclude: true,
-          }));
+          module = angular
+            .createModule("test1", ["ng"])
+            .directive("hello", () => ({
+              restrict: "A",
+              templateUrl: "/mock/hello",
+              transclude: true,
+            }));
 
           function logDirective(name, priority, options = {}) {
             module.directive(name, () =>
@@ -7078,7 +7080,7 @@ describe("$compile", () => {
             angular = window.angular;
             errorLog = [];
             module = window.angular
-              .module("test1", ["ng"])
+              .createModule("test1", ["ng"])
               .decorator("$exceptionHandler", () => {
                 return (exception) => {
                   errorLog.push(exception.message);
@@ -7414,20 +7416,22 @@ describe("$compile", () => {
         dealoc(ELEMENT);
         ELEMENT.innerHTML =
           '<div my-directive="some value">original content<div>';
-        window.angular.module("test1", ["ng"]).directive("myDirective", () => ({
-          replace: true,
-          templateUrl($element) {
-            expect($element.textContent).toBe("original content");
-            expect(getNormalizedAttr($element, "myDirective")).toBe(
-              "some value",
-            );
-            return "my-directive.html";
-          },
-          compile($element) {
-            expect($element.textContent).toBe("template content");
-            expect(getNormalizedAttr($element, "id")).toBe("templateContent");
-          },
-        }));
+        window.angular
+          .createModule("test1", ["ng"])
+          .directive("myDirective", () => ({
+            replace: true,
+            templateUrl($element) {
+              expect($element.textContent).toBe("original content");
+              expect(getNormalizedAttr($element, "myDirective")).toBe(
+                "some value",
+              );
+              return "my-directive.html";
+            },
+            compile($element) {
+              expect($element.textContent).toBe("template content");
+              expect(getNormalizedAttr($element, "id")).toBe("templateContent");
+            },
+          }));
 
         injector = window.angular.bootstrap(ELEMENT, ["test1"]);
 
@@ -7455,7 +7459,7 @@ describe("$compile", () => {
 
         window.angular = new Angular();
         module = window.angular
-          .module("test1", ["ng"])
+          .createModule("test1", ["ng"])
           .decorator("$exceptionHandler", () => {
             return (exception) => {
               log.push(exception.message);
@@ -7894,7 +7898,7 @@ describe("$compile", () => {
 
       beforeEach(() => {
         log = [];
-        module = window.angular.module("test1", ["ng"]);
+        module = window.angular.createModule("test1", ["ng"]);
         dealoc(document.getElementById("app"));
         window.angular
           .bootstrap(document.getElementById("app"), ["test1"])
@@ -8218,7 +8222,7 @@ describe("$compile", () => {
 
       beforeEach(() => {
         log = [];
-        module = window.angular.module("test1", ["ng"]);
+        module = window.angular.createModule("test1", ["ng"]);
         ["a", "b", "c"].forEach((name) => {
           module.directive(name, () => ({
             compile() {
@@ -8292,7 +8296,7 @@ describe("$compile", () => {
 
       beforeEach(() => {
         log = [];
-        module = window.angular.module("test1", ["ng"]);
+        module = window.angular.createModule("test1", ["ng"]);
         module
           .directive("d1", () => ({
             scope: true,
@@ -8351,7 +8355,7 @@ describe("$compile", () => {
 
       beforeEach(() => {
         log = [];
-        module = window.angular.module("test1", ["ng"]);
+        module = window.angular.createModule("test1", ["ng"]);
       });
 
       describe("onInit", () => {
@@ -9257,7 +9261,7 @@ describe("$compile", () => {
 
       beforeEach(() => {
         error = undefined;
-        module = window.angular.module("test1", ["ng"]);
+        module = window.angular.createModule("test1", ["ng"]);
         module
           .decorator("$exceptionHandler", () => {
             return (exception, cause) => {
@@ -11524,7 +11528,7 @@ describe("$compile", () => {
       let module;
 
       beforeEach(() => {
-        module = window.angular.module("test1", ["ng"]);
+        module = window.angular.createModule("test1", ["ng"]);
       });
 
       it("should get required controller", () => {

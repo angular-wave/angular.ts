@@ -8,13 +8,13 @@ object AngularTS:
   def tags: ProgrammaticTags = ProgrammaticTags(RuntimeAngular.tags)
   def view: ProgrammaticViewApi = ProgrammaticViewApi(RuntimeAngular.view)
 
-  def module(name: String, requires: Seq[String] = Seq.empty): NgModule =
-    val raw = RuntimeAngular.module(name, requires.toJSArray)
+  def createModule(name: String, requires: Seq[String] = Seq.empty): NgModule =
+    val raw = RuntimeAngular.createModule(name, requires.toJSArray)
 
     NgModule(raw)
 
-  def existingModule(name: String): NgModule =
-    NgModule(RuntimeAngular.module(name))
+  def getModule(name: String): NgModule =
+    NgModule(RuntimeAngular.getModule(name))
 
   def bootstrap(
       element: dom.Element,

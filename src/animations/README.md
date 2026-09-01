@@ -13,7 +13,7 @@ property animations, native Web Animations, and document view transitions.
 - `NgModule.animation(...)`: declarative named preset registration.
 
 ```ts
-const app = angular.module("app", ["ng"]);
+const app = angular.createModule("app", ["ng"]);
 
 app.animation("fade-fast", () => ({
   enter: [{ opacity: 0 }, { opacity: 1 }],

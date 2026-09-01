@@ -34,7 +34,7 @@ describe("ngRepeat", () => {
     window.angular = new Angular();
     compileRegistry = window.angular._composition.compileRegistry;
     window.angular
-      .module("defaultModule", ["ng"])
+      .createModule("defaultModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception, cause) => {
           logs.push(exception);
@@ -124,7 +124,7 @@ describe("ngRepeat", () => {
     const angular = new Angular();
 
     document.body.appendChild(root);
-    angular.module("animatedRepeat", []).value("$animate", animate);
+    angular.createModule("animatedRepeat", []).value("$animate", animate);
     const localInjector = angular.bootstrap(root, ["animatedRepeat"]);
     const localScope = localInjector.get("$rootScope");
 

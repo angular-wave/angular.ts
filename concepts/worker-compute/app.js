@@ -1,5 +1,5 @@
 window.angular
-  .module("workerComputeConcept", [])
+  .createModule("workerComputeConcept", [])
   .model("computeModel", () => ({
     status: "idle",
     input: 42,

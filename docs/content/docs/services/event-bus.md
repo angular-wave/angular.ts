@@ -123,7 +123,7 @@ application-wide rule. The callback is contextually typed as
 ordinary configuration does not require a separate decision type.
 
 ```ts
-angular.module('admin', []).config({
+angular.createModule('admin', []).config({
   $eventBus: {
     deliveryPolicy(context) {
       return context.topic.startsWith('internal:') ? 'drop' : 'deliver';

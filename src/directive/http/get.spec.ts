@@ -73,7 +73,7 @@ describe("ng-get", () => {
     const angular = new Angular();
 
     angular
-      .module("default", [])
+      .createModule("default", [])
       .value("$animate", animateSpy)
       .router({
         name: "success",

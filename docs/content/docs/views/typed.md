@@ -26,7 +26,7 @@ class TodoForm {
 }
 
 const { tags } = angular.view;
-const app = angular.module('todoApp', []);
+const app = angular.createModule('todoApp', []);
 
 app.component('todoForm', {
   controller: TodoForm,

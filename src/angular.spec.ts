@@ -11,7 +11,7 @@ describe("angular", () => {
 
   beforeEach(() => {
     angular = new Angular();
-    module = angular.module("default", ["ng"]);
+    module = angular.createModule("default", ["ng"]);
     injector = createInjector(["ng", "default"]);
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
@@ -44,7 +44,7 @@ describe("angular", () => {
     });
 
     it("should look for ngApp directive as attr", () => {
-      window.angular.module("ABC", []);
+      window.angular.createModule("ABC", []);
       const appElement = createElementFromHTML('<div ng-app="ABC"></div>');
 
       window.angular.init(appElement);
@@ -52,7 +52,7 @@ describe("angular", () => {
     });
 
     it("should look for ngApp directive using querySelectorAll", () => {
-      window.angular.module("ABC", []);
+      window.angular.createModule("ABC", []);
       element = createElementFromHTML('<div><div ng-app="ABC"></div></div>');
       window.angular.init(element);
       expect(bootstrapSpy).toHaveBeenCalled();
@@ -214,7 +214,7 @@ describe("angular", () => {
   describe("AngularTS service", () => {
     it("should override services", () => {
       angular
-        .module("serviceOverride", [])
+        .createModule("serviceOverride", [])
         .value("fake", "old")
         .value("fake", "new");
       injector = createInjector(["serviceOverride"]);
@@ -223,7 +223,7 @@ describe("angular", () => {
 
     it("should inject dependencies specified by $inject and ignore function argument name", () => {
       angular
-        .module("annotatedServices", [])
+        .createModule("annotatedServices", [])
         .factory("svc1", () => "svc1")
         .factory("svc2", [
           "svc1",
@@ -300,7 +300,7 @@ describe("angular", () => {
 
     beforeEach(() => {
       angular = new Angular();
-      module = angular.module("default", ["ng"]);
+      module = angular.createModule("default", ["ng"]);
       injector = createInjector(["default"]);
       $rootScope = injector.get("$rootScope");
       $compile = injector.get("$compile");
@@ -352,7 +352,7 @@ describe("angular", () => {
 
     beforeEach(() => {
       angular = new Angular();
-      module = angular.module("default", ["ng"]).controller(
+      module = angular.createModule("default", ["ng"]).controller(
         "demo",
         class Demo {
           static scopeName = "demo";
@@ -403,7 +403,7 @@ describe("angular", () => {
     beforeEach(() => {
       angular = new Angular();
       module = angular
-        .module("default", [])
+        .createModule("default", [])
         .service(
           "store",
           class Store {
@@ -460,28 +460,34 @@ describe("module loader", () => {
   });
 
   it("allows registering a module", () => {
-    const myModule = angular.module("myModule", []);
+    const myModule = angular.createModule("myModule", []);
 
     expect(myModule).toBeDefined();
     expect(myModule.name).toEqual("myModule");
   });
 
-  it("allows getting a module", () => {
-    const myModule = angular.module("myModule", []);
+  it("creates a module without an explicit dependency list", () => {
+    const myModule = angular.createModule("myModule");
 
-    const gotModule = angular.module("myModule");
+    expect(angular.getModule("myModule")).toBe(myModule);
+  });
+
+  it("allows getting a module", () => {
+    const myModule = angular.createModule("myModule", []);
+
+    const gotModule = angular.getModule("myModule");
 
     expect(gotModule).toBeDefined();
     expect(gotModule).toBe(myModule);
   });
 
   it("allows recreating a module", () => {
-    angular.module("myModule", []);
-    const gotModule = angular.module("myModule");
+    angular.createModule("myModule", []);
+    const gotModule = angular.getModule("myModule");
 
-    const myModule2 = angular.module("myModule", []);
+    const myModule2 = angular.createModule("myModule", []);
 
-    const gotModule2 = angular.module("myModule");
+    const gotModule2 = angular.getModule("myModule");
 
     expect(myModule2).toBeDefined();
     expect(myModule2).toBe(gotModule2);
@@ -489,40 +495,40 @@ describe("module loader", () => {
   });
 
   it("creates an instance on NgModule", () => {
-    angular.module("myModule", []);
-    const gotModule = angular.module("myModule");
+    angular.createModule("myModule", []);
+    const gotModule = angular.getModule("myModule");
 
     expect(gotModule).toBeInstanceOf(NgModule);
   });
 
   it("throws when trying to get a nonexistent module", () => {
     expect(() => {
-      angular.module("nonexistent");
+      angular.getModule("nonexistent");
     }).toThrow();
   });
 
   it("does not allow a module to be called hasOwnProperty", () => {
     expect(() => {
-      angular.module("hasOwnProperty", []);
+      angular.createModule("hasOwnProperty", []);
     }).toThrow();
   });
 
   it("attaches the requires array to the registered module", () => {
-    const myModule = angular.module("myModule", ["myOtherModule"]);
+    const myModule = angular.createModule("myModule", ["myOtherModule"]);
 
     expect(myModule._requires).toEqual(["myOtherModule"]);
   });
 
   it("replaces a module when registered with same name again", () => {
-    const myModule = angular.module("myModule", []);
+    const myModule = angular.createModule("myModule", []);
 
-    const myNewModule = angular.module("myModule", []);
+    const myNewModule = angular.createModule("myModule", []);
 
     expect(myNewModule).not.toBe(myModule);
   });
 
   it("should record calls", () => {
-    const otherModule = angular.module("other", []);
+    const otherModule = angular.createModule("other", []);
 
     const init = () => {};
 
@@ -534,7 +540,7 @@ describe("module loader", () => {
 
     otherModule._config(init);
 
-    const myModule = angular.module("my", ["other"], config);
+    const myModule = angular.createModule("my", ["other"], config);
 
     const filterFn = () => () => "filterFn";
 
@@ -592,7 +598,7 @@ describe("module loader", () => {
 
   it("should not throw error when `module.decorator` is declared before provider that it decorates", () => {
     angular
-      .module("theModule", [])
+      .createModule("theModule", [])
       .decorator("theProvider", ["$delegate", ($delegate) => $delegate])
       .factory("theProvider", () => ({}));
 
@@ -605,7 +611,7 @@ describe("module loader", () => {
     let log = "";
 
     angular
-      .module("theModule", [])
+      .createModule("theModule", [])
       .factory("theProvider", () => ({ api: "provider" }))
       .decorator("theProvider", [
         "$delegate",
@@ -646,7 +652,7 @@ describe("module loader", () => {
     let log = "";
 
     angular
-      .module("theModule", [])
+      .createModule("theModule", [])
       .factory("theProvider", () => ({
         api: "firstProvider",
       }))
@@ -673,18 +679,20 @@ describe("module loader", () => {
   });
 
   it("should allow module redefinition", () => {
-    expect(angular.module("a", [])).not.toBe(angular.module("a", []));
+    expect(angular.createModule("a", [])).not.toBe(
+      angular.createModule("a", []),
+    );
   });
 
   it("should complain of no module", () => {
     expect(() => {
-      angular.module("dontExist");
+      angular.getModule("dontExist");
     }).toThrow();
   });
 
   it('should complain if a module is called "hasOwnProperty', () => {
     expect(() => {
-      angular.module("hasOwnProperty", []);
+      angular.createModule("hasOwnProperty", []);
     }).toThrow();
   });
 });

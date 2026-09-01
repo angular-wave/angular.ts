@@ -1,5 +1,5 @@
 window.angular
-  .module('canvasConcept', [])
+  .createModule('canvasConcept', [])
   .model('spriteModel', () => ({
     x: 120,
     y: 100,

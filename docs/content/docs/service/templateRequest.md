@@ -11,7 +11,7 @@ Configure template request defaults before bootstrap with
 `module.config({ $templateRequest: ... })`.
 
 ```js
-angular.module("demo", []).config({
+angular.createModule("demo", []).config({
   $templateRequest: {
     httpOptions: {
       headers: {

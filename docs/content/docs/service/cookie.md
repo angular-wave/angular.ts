@@ -18,7 +18,7 @@ cookies in AngularTS applications. It allows you to:
 #### Example
 
 ```js
-angular.module('app').controller(
+angular.getModule('app').controller(
   'UserCtrl',
   /** @param {ng.CookieService} $cookie */
   ["$cookie", function ($cookie) {
@@ -44,7 +44,7 @@ Cookie behavior can be customized globally with
 `module.config({ $cookie: ... })`.
 
 ```js
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $cookie: {
     defaults: {
       path: "/",

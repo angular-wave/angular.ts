@@ -20,7 +20,7 @@ const angular = createAngular({
     ngAttributeAliasDirectives,
   ],
 });
-const app = angular.module("htmlCanvasConcept", []);
+const app = angular.createModule("htmlCanvasConcept", []);
 
 app.model("panelModel", () => ({
   shipName: "The Canvas Voyager",

@@ -25,7 +25,7 @@ final class TodoModel(
 
 object BasicApp:
   @main def main(): Unit =
-    val app = AngularTS.module("scalaTodo")
+    val app = AngularTS.createModule("scalaTodo")
     val todoModel = AngularTS.token[Model[TodoModel]]("todoModel")
 
     app

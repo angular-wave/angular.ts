@@ -200,7 +200,7 @@ describe("ngOptions", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     const myModule = window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           console.error(exception.message);

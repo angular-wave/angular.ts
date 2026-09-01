@@ -12,7 +12,7 @@ describe("$cookie service", () => {
     clearCookies();
     const angular = new Angular();
 
-    angular.module("default", []).config({
+    angular.createModule("default", []).config({
       $cookie: {
         defaults: {
           path: "/",

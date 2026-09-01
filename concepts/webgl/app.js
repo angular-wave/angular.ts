@@ -1,5 +1,5 @@
 window.angular
-  .module('webglConcept', [])
+  .createModule('webglConcept', [])
   .model('clearModel', () => ({
     red: 0.1,
     green: 0.3,

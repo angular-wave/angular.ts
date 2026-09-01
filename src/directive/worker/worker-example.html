@@ -21,7 +21,7 @@
         }
         Demo.$inject = ["echo"];
         window.angular
-          .module("todo", [])
+          .createModule("todo", [])
           .worker("echo", "/src/directive/worker/echo-worker.ts", {})
           .controller("DemoCtrl", Demo);
       });

@@ -12,7 +12,7 @@ const eventBusModule = (angular) => {
     composition.addDisposer(() => {
         destroyEventBusRuntimeState(state);
     });
-    return angular.module("ng.eventBus", []).factory(_eventBus, [
+    return angular.createModule("ng.eventBus", []).factory(_eventBus, [
         _exceptionHandler,
         _angular,
         ($exceptionHandler, angular) => {

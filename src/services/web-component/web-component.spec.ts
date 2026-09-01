@@ -33,7 +33,7 @@ describe("$webComponent", () => {
 
     let rootScope;
 
-    angular.module(moduleName, []).appComponent(tagName, {
+    angular.createModule(moduleName, []).appComponent(tagName, {
       shadow: true,
       scope: {
         local: "ready",
@@ -132,7 +132,7 @@ describe("$webComponent", () => {
     const angular = new Angular();
 
     angular
-      .module(moduleName, [])
+      .createModule(moduleName, [])
       .config({
         $webComponent: {
           defaults: {
@@ -164,7 +164,7 @@ describe("$webComponent", () => {
     const exceptions = [];
 
     angular
-      .module(moduleName, [])
+      .createModule(moduleName, [])
       .config({
         $exceptionHandler: {
           handler: (error) => exceptions.push(error),
@@ -198,7 +198,7 @@ describe("$webComponent", () => {
     const exceptions = [];
 
     angular
-      .module(moduleName, [])
+      .createModule(moduleName, [])
       .config({
         $exceptionHandler: {
           handler: (error) => exceptions.push(error),
@@ -379,7 +379,7 @@ describe("$webComponent", () => {
 
     const events = [];
 
-    angular.module(moduleName, []).appComponent(tagName, {
+    angular.createModule(moduleName, []).appComponent(tagName, {
       scope: {
         title: "cleanup",
       },
@@ -426,7 +426,7 @@ describe("$webComponent", () => {
     const firstContainer = document.createElement("div");
     const secondContainer = document.createElement("div");
 
-    angular.module(moduleName, []).appComponent(tagName, {
+    angular.createModule(moduleName, []).appComponent(tagName, {
       template: "<span>connected</span>",
     });
 
@@ -457,7 +457,7 @@ describe("$webComponent", () => {
 
     const events = [];
 
-    angular.module(moduleName, []).appComponent(tagName, {
+    angular.createModule(moduleName, []).appComponent(tagName, {
       shadow: true,
       scope: {
         title: "eventful",
@@ -531,7 +531,7 @@ describe("$webComponent", () => {
     }
 
     angular
-      .module(moduleName, [])
+      .createModule(moduleName, [])
       .service("labelService", LabelService)
       .webComponent(tagName, StatusCard);
 
@@ -592,7 +592,7 @@ describe("$webComponent", () => {
     }
 
     angular
-      .module(moduleName, [])
+      .createModule(moduleName, [])
       .webComponent(childTagName, ChildElement)
       .webComponent(parentTagName, ParentElement);
 
@@ -649,7 +649,7 @@ describe("$webComponent", () => {
     }
 
     angular
-      .module(moduleName, [])
+      .createModule(moduleName, [])
       .webComponent(childTagName, ChildElement)
       .webComponent(parentTagName, ParentElement);
 

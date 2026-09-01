@@ -23,7 +23,7 @@ describe("transition security policy", () => {
 
     const moduleName = `securityTransitionModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -155,7 +155,10 @@ describe("transition configured security policy", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
 
-    const app = window.angular.module("configuredSecurityTransitionModule", []);
+    const app = window.angular.createModule(
+      "configuredSecurityTransitionModule",
+      [],
+    );
 
     app.config({
       $security: {
@@ -224,7 +227,7 @@ describe("transition route-tree navigation policy", () => {
 
     const moduleName = `routePolicyModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -734,7 +737,7 @@ describe("transition canExit policy", () => {
 
     const moduleName = `canExitPolicyModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -867,7 +870,7 @@ describe("transition dirty policy", () => {
 
     const moduleName = `dirtyPolicyModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -986,7 +989,7 @@ describe("transition policy composition with navigation policy", () => {
 
     const moduleName = `policyCompositionModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -1079,7 +1082,7 @@ describe("transition loading policy", () => {
 
     const moduleName = `loadingPolicyModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -1139,7 +1142,7 @@ describe("transition loading policy", () => {
 
     const moduleName = `loadingPolicyOverrideModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -1439,7 +1442,7 @@ describe("transition retry policy", () => {
 
     resolveAttempts = 0;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -1505,7 +1508,7 @@ describe("transition retry policy", () => {
     lazyLoadAttempts = 0;
 
     const moduleName = `retryPolicyLazyModule${moduleId}`;
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -1793,7 +1796,7 @@ describe("transition fallback policy", () => {
 
     resolveAttempts = 0;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -1857,7 +1860,7 @@ describe("transition fallback policy", () => {
 
     const moduleName = `fallbackInheritedModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -1912,7 +1915,7 @@ describe("transition fallback policy", () => {
 
     const moduleName = `fallbackLazyModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -2305,7 +2308,7 @@ describe("transition error boundary policy", () => {
 
     const moduleName = `errorPolicyModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {
@@ -2435,7 +2438,7 @@ describe("transition error boundary policy", () => {
 
     const moduleName = `errorLazyModule${moduleId}`;
 
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
 
     app.config({
       $security: {

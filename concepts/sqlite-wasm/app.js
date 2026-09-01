@@ -1,5 +1,5 @@
 window.angular
-  .module("sqliteConcept", [])
+  .createModule("sqliteConcept", [])
   .model("databaseModel", () => ({
     status: "loading",
     filter: "",

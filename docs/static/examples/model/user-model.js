@@ -1,5 +1,5 @@
 window.angular
-  .module('modelDemo', [])
+  .createModule('modelDemo', [])
   .model('user', () => ({
     name: 'John',
     authenticated: false,

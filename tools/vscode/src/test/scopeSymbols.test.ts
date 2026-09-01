@@ -72,7 +72,7 @@ test("infers ng-repeat item locals at nested offsets", () => {
 test("infers component controller locals inside inline templates", () => {
   const source = `
     class UserCardController {}
-    angular.module("demo", []).component("userCard", {
+    angular.createModule("demo", []).component("userCard", {
       controller: UserCardController,
       template: \`<p>{{$ctrl.user.name}}</p>\`
     });
@@ -100,7 +100,7 @@ test("infers component controller locals inside inline templates", () => {
 test("uses explicit component controllerAs aliases inside inline templates", () => {
   const source = `
     class UserCardController {}
-    angular.module("demo", []).component("userCard", {
+    angular.createModule("demo", []).component("userCard", {
       controller: UserCardController,
       controllerAs: "card",
       template: \`<p>{{card.user.name}}</p>\`
@@ -119,7 +119,7 @@ test("uses explicit component controllerAs aliases inside inline templates", () 
 test("augments inline component controller locals with binding types", () => {
   const source = `
     class UserCardController {}
-    angular.module("demo", []).component("userCard", {
+    angular.createModule("demo", []).component("userCard", {
       controller: UserCardController,
       bindings: {
         label: "@",

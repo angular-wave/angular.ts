@@ -125,7 +125,7 @@ describe("$aria", () => {
 
     if (logger) config.$log = { logger };
 
-    window.angular.module("test", ["ng"]).config(config);
+    window.angular.createModule("test", ["ng"]).config(config);
 
     return createInjector(["test"]);
   }
@@ -153,7 +153,7 @@ describe("$aria", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular
-      .module("test", ["ng"])
+      .createModule("test", ["ng"])
       .decorator(
         "$exceptionHandler",
         () => (exception) => errorLog.push(exception.message),
@@ -1400,7 +1400,7 @@ describe("$aria", () => {
 
   describe("ngModel", () => {
     it("should not break when manually compiling", async () => {
-      window.angular.module("test", ["ng"]).directive("foo", () => ({
+      window.angular.createModule("test", ["ng"]).directive("foo", () => ({
         priority: 10,
         terminal: true,
         link(scope, elem) {

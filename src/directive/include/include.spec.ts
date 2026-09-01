@@ -32,13 +32,13 @@ describe("ngInclude", () => {
       delete window.angular;
       angular = window.angular = new Angular();
       module = angular
-        .module("myModule", ["ng"])
+        .createModule("myModule", ["ng"])
         .decorator("$exceptionHandler", function () {
           return (exception) => {
             errorLog.push(exception.message);
           };
         });
-      // module = window.angular.module("myModule", []);
+      // module = window.angular.createModule("myModule", []);
       injector = createInjector(["myModule"]);
       $rootScope = injector.get("$rootScope");
       $templateCache = injector.get("$templateCache");
@@ -78,7 +78,9 @@ describe("ngInclude", () => {
       const localAngular = new Angular();
 
       document.body.appendChild(root);
-      localAngular.module("animatedInclude", []).value("$animate", animation);
+      localAngular
+        .createModule("animatedInclude", [])
+        .value("$animate", animation);
       const localInjector = localAngular.bootstrap(root, ["animatedInclude"]);
       const localScope = localInjector.get("$rootScope");
       const cache = localInjector.get("$templateCache");
@@ -109,7 +111,7 @@ describe("ngInclude", () => {
 
       document.body.appendChild(root);
       localAngular
-        .module("interruptedInclude", [])
+        .createModule("interruptedInclude", [])
         .value("$animate", animation);
       const localInjector = localAngular.bootstrap(root, [
         "interruptedInclude",
@@ -323,7 +325,7 @@ describe("ngInclude", () => {
     it("should fire $includeContentLoaded event on child scope after linking the content", async () => {
       let called = false;
 
-      window.angular.module("myModule", []).run([
+      window.angular.createModule("myModule", []).run([
         "$rootScope",
         ($rootScope) => {
           $rootScope.on("$includeContentLoaded", () => {
@@ -467,7 +469,7 @@ describe("ngInclude", () => {
     });
 
     it("should not break attribute bindings on the same element", async () => {
-      window.angular.module("myModule", []);
+      window.angular.createModule("myModule", []);
       element = createElementFromHTML(
         '<div><span foo="#/{{hrefUrl}}" ng-include="includeUrl"></span></div>',
       );
@@ -500,7 +502,7 @@ describe("ngInclude", () => {
     });
 
     it("should construct SVG template elements with correct namespace", async () => {
-      window.angular.module("myModule", []).directive("test", () => ({
+      window.angular.createModule("myModule", []).directive("test", () => ({
         templateNamespace: "svg",
         templateUrl: "/mock/my-rect.html",
         replace: true,
@@ -515,7 +517,7 @@ describe("ngInclude", () => {
     });
 
     it("should compile only the template content of an SVG template", async () => {
-      window.angular.module("myModule", []).directive("test", () => ({
+      window.angular.createModule("myModule", []).directive("test", () => ({
         templateNamespace: "svg",
         templateUrl: "/mock/my-rect2.html",
         replace: true,
@@ -529,7 +531,7 @@ describe("ngInclude", () => {
     });
 
     it("should not compile template if original scope is destroyed", (done) => {
-      window.angular.module("myModule", []);
+      window.angular.createModule("myModule", []);
       element = createElementFromHTML(
         '<div ng-if="show"><div ng-include="\'/mock/hello\'"></div></div>',
       );
@@ -552,7 +554,7 @@ describe("ngInclude", () => {
       it("should call $anchorScroll if autoscroll attribute is present", async () => {
         autoScrollSpy = jasmine.createSpy("$anchorScroll");
         window.angular
-          .module("myModule", [])
+          .createModule("myModule", [])
           .value("$anchorScroll", autoScrollSpy);
         element = createElementFromHTML(
           '<div><ng-include src="tpl" autoscroll></ng-include></div>',
@@ -570,7 +572,7 @@ describe("ngInclude", () => {
       it("should call $anchorScroll if autoscroll evaluates to true", async () => {
         autoScrollSpy = jasmine.createSpy("$anchorScroll");
         window.angular
-          .module("myModule", [])
+          .createModule("myModule", [])
           .value("$anchorScroll", autoScrollSpy);
         element = createElementFromHTML(
           '<div><ng-include src="tpl" autoscroll="value"></ng-include></div>',
@@ -589,7 +591,7 @@ describe("ngInclude", () => {
       it("should not call $anchorScroll if autoscroll attribute is not present", async () => {
         autoScrollSpy = jasmine.createSpy("$anchorScroll");
         window.angular
-          .module("myModule", [])
+          .createModule("myModule", [])
           .value("$anchorScroll", autoScrollSpy);
 
         element = createElementFromHTML(
@@ -607,7 +609,7 @@ describe("ngInclude", () => {
       it("should not call $anchorScroll if autoscroll evaluates to false", async () => {
         autoScrollSpy = jasmine.createSpy("$anchorScroll");
         window.angular
-          .module("myModule", [])
+          .createModule("myModule", [])
           .value("$anchorScroll", autoScrollSpy);
 
         element = createElementFromHTML(
@@ -660,7 +662,7 @@ describe("ngInclude", () => {
         let controller;
 
         window.angular
-          .module("myModule", [])
+          .createModule("myModule", [])
           .directive("template", () => ({
             template: "<div ng-include=\"'/mock/directive'\"></div>",
             replace: true,
@@ -686,7 +688,7 @@ describe("ngInclude", () => {
       it("should compile its content correctly (although we remove it later)", async () => {
         let testElement;
 
-        window.angular.module("myModule", []).directive("test", () => ({
+        window.angular.createModule("myModule", []).directive("test", () => ({
           link(scope, element) {
             testElement = element;
           },
@@ -706,7 +708,7 @@ describe("ngInclude", () => {
       it("should link directives on the same element after the content has been loaded", async () => {
         let contentOnLink;
 
-        window.angular.module("myModule", []).directive("test", () => ({
+        window.angular.createModule("myModule", []).directive("test", () => ({
           link(scope, element) {
             contentOnLink = element.textContent;
           },
@@ -724,7 +726,7 @@ describe("ngInclude", () => {
       it("should add the content to the element before compiling it", async () => {
         let root;
 
-        window.angular.module("myModule", []).directive("test", () => ({
+        window.angular.createModule("myModule", []).directive("test", () => ({
           link(scope, el) {
             root = el.parentElement.parentElement.parentElement;
           },

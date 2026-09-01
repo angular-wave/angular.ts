@@ -13,7 +13,7 @@ describe("ng-get prefetch pattern", () => {
     el.innerHTML = "";
 
     const angular = new Angular();
-    angular.module("default", []);
+    angular.createModule("default", []);
     angular.bootstrap(el, ["default"]).invoke([
       "$compile",
       "$rootScope",

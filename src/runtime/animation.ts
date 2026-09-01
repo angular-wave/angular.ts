@@ -16,7 +16,7 @@ export const animationModule: RuntimeModule = (angular) => {
   composition._installAnimationRegistry(animationRegistry);
 
   return angular
-    .module("ng.animation", [])
+    .createModule("ng.animation", [])
     .factory(_animate, [
       _injector,
       ($injector: ng.InjectorService) =>

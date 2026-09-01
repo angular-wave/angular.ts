@@ -44,7 +44,7 @@ class CounterController {
   count = 0;
 }
 
-angular.module('app', []).component('counterButton', {
+angular.createModule('app', []).component('counterButton', {
   controller: CounterController,
   view: ({ controller }) =>
     tags.button(

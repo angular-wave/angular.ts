@@ -15,7 +15,7 @@ describe("router services", () => {
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    const module = window.angular.module("defaultModule", []).router({
+    const module = window.angular.createModule("defaultModule", []).router({
       name: "home",
       url: "/startup-home",
       template: "home",
@@ -47,7 +47,10 @@ describe("router services", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
 
-    const configuredModule = window.angular.module("routerConfigModule", []);
+    const configuredModule = window.angular.createModule(
+      "routerConfigModule",
+      [],
+    );
     configuredModule.config({
       $router: {
         scroll: { top: 12, behavior: "auto" },
@@ -85,7 +88,10 @@ describe("router services", () => {
       dealoc(document.getElementById("app"));
       window.angular = new Angular();
 
-      customStateModule = window.angular.module("customParamTypeModule", []);
+      customStateModule = window.angular.createModule(
+        "customParamTypeModule",
+        [],
+      );
       customStateModule
         .config({
           $router: {

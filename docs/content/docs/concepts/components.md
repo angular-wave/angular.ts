@@ -10,7 +10,7 @@ A component is a reusable UI unit registered on a module. It owns a DOM region,
 an optional controller, explicit inputs, and one rendering definition.
 
 ```js
-angular.module('todoApp').component('todoSummary', {
+angular.getModule('todoApp').component('todoSummary', {
   bindings: { count: '<' },
   template: '<strong>{{ $ctrl.count }} remaining</strong>',
 });

@@ -2165,8 +2165,14 @@ class Scope {
                 const filteredListeners = task._filter
                     ? task._filter(task._listeners)
                     : task._listeners;
-                for (let i = 0, l = filteredListeners.length; i < l; i++) {
-                    this._notifyListener(filteredListeners[i], task._target, task._sourceHandler, task._sourceProperty);
+                for (let i = 0; i < filteredListeners.length;) {
+                    const listener = filteredListeners[i];
+                    this._notifyListener(listener, task._target, task._sourceHandler, task._sourceProperty);
+                    // Deregistration uses swap-and-pop. Revisit this index when the
+                    // current listener was removed so the moved listener is not skipped.
+                    if (filteredListeners[i] === listener) {
+                        i++;
+                    }
                 }
             }
         }

@@ -1243,7 +1243,7 @@ describe("$compile incremental fragment ownership", () => {
 
   it("does not apply async templateUrl content after fragment disposal", async () => {
     const moduleName = "incrementalTemplateUrlApp";
-    const app = window.angular.module(moduleName, []);
+    const app = window.angular.createModule(moduleName, []);
     let resolveTemplate: ((content: string) => void) | undefined;
     const templatePromise = new Promise<string>((resolve) => {
       resolveTemplate = resolve;

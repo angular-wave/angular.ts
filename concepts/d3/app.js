@@ -1,5 +1,5 @@
 window.angular
-  .module('d3Concept', [])
+  .createModule('d3Concept', [])
   .model('chartModel', () => ({
     labels: ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'],
     values: [18, 28, 14, 34, 22],

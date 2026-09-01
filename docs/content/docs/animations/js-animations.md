@@ -49,7 +49,7 @@ selector must begin with `.`. The factory is an injectable function that returns
 an object containing lifecycle hook methods.
 
 ```js
-angular.module('app', []).animation('.fade', function () {
+angular.createModule('app', []).animation('.fade', function () {
   return {
     enter: function (element, done) {
       // animate element in, then call done()
@@ -79,7 +79,7 @@ angular.module('app', []).animation('.fade', function () {
 The same method can be chained with other module declarations:
 
 ```js
-angular.module('app', []).animation('.slide', function () {
+angular.createModule('app', []).animation('.slide', function () {
   return {
     enter: function (element, done) {
       /* ... */ done();
@@ -156,7 +156,7 @@ returns a promise-like `Animation` object with `onfinish` and `oncancel`
 callbacks.
 
 ```js
-angular.module('app').animation('.pop-in', function () {
+angular.getModule('app').animation('.pop-in', function () {
   const play = (element, frames, duration, done) => {
     const animation = element.animate(frames, {
       duration,
@@ -195,7 +195,7 @@ The `addClass` and `removeClass` hooks fire when `$animate.addClass()` or
 being added or removed.
 
 ```js
-angular.module('app').animation('.highlight', function () {
+angular.getModule('app').animation('.highlight', function () {
   const animate = (element, from, to, done) => {
     const animation = element.animate(
       [{ backgroundColor: from }, { backgroundColor: to }],
@@ -226,7 +226,7 @@ element that exits while an entering element waits — you can share state via
 closure:
 
 ```js
-angular.module('app').animation('.swap', function () {
+angular.getModule('app').animation('.swap', function () {
   let leaving = Promise.resolve();
   return {
     leave(element, done) {

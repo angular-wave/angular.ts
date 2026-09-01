@@ -10,7 +10,7 @@ const animationModule = (angular) => {
     const animationRegistry = new AnimationRegistry();
     composition._installAnimationRegistry(animationRegistry);
     return angular
-        .module("ng.animation", [])
+        .createModule("ng.animation", [])
         .factory(_animate, [
         _injector,
         ($injector) => createAnimateService(animationRegistry, $injector),

@@ -15,7 +15,7 @@ describe("ngShow / ngHide", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular.module("myModule", ["ng"]);
+    window.angular.createModule("myModule", ["ng"]);
     createInjector(["myModule"]).invoke([
       "$rootScope",
       "$compile",

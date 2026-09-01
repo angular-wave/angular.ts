@@ -14,7 +14,7 @@
  *
  * ```js
  * angular
- *   .module('app')
+ *   .createModule('app')
  *   .factory('$exceptionHandler', ['myLogger', function(myLogger) {
  *     return function handleError(error) {
  *       myLogger.capture(error);

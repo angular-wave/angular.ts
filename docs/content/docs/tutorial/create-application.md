@@ -21,7 +21,7 @@ Create the application entrypoint:
 ```ts
 import { angular } from '@angular-wave/angular.ts';
 
-export const app = angular.module('taskBoard', []);
+export const app = angular.createModule('taskBoard', []);
 angular.bootstrap(document, ['taskBoard']);
 ```
 

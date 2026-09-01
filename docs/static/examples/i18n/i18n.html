@@ -39,7 +39,7 @@
           return null; // Not found
         }
         window.angular
-          .module('i18n', [])
+          .createModule('i18n', [])
           .directive('ngTranslate', ["$rootScope", ($rootScope) => {
             return {
               link(scope, el) {

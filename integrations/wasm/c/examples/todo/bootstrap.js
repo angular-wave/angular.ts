@@ -27,7 +27,7 @@ const callWithString = (exports, fn, value) => {
 };
 
 const app = angular
-  .module(moduleName, [installedWasmModule.name])
+  .createModule(moduleName, [installedWasmModule.name])
   .wasm("cTodoGuest", { source: wasmURL });
 
 app.controller("cTodoController", [

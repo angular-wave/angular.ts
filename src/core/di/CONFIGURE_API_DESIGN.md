@@ -190,8 +190,8 @@ Third-party modules should not extend `AngularConfigMap` by default.
 The default extension path is the AngularTS module system:
 
 ```ts
-angular.module("firebase", []);
-angular.module("app", ["firebase"]);
+angular.createModule("firebase", []);
+angular.createModule("app", ["firebase"]);
 ```
 
 Built-in-style config keys are reserved for framework-owned services unless a

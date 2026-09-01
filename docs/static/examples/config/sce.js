@@ -1,5 +1,5 @@
 window.angular
-  .module('sceConfigDemo', [])
+  .createModule('sceConfigDemo', [])
   .config({
     $sce: {
       enabled: true,

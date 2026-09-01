@@ -14,7 +14,7 @@ describe("observe", () => {
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    window.angular.module("myModule", ["ng"]);
+    window.angular.createModule("myModule", ["ng"]);
     window.angular
       .bootstrap(document.getElementById("app")!, ["myModule"])
       .invoke([

@@ -1,5 +1,5 @@
 window.angular
-  .module('echartsConcept', [])
+  .createModule('echartsConcept', [])
   .model('chartModel', () => ({
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     values: [12, 18, 9, 24, 16, 21],

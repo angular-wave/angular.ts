@@ -14,7 +14,7 @@ const htmlCanvasModule = (angular) => {
         destroyHtmlCanvasRuntimeState(state);
     });
     return angular
-        .module("ng.htmlCanvas", [])
+        .createModule("ng.htmlCanvas", [])
         .factory(_htmlCanvas, [
         _window,
         _document,

@@ -30,7 +30,7 @@ describe("ng-post", () => {
     const angular = new Angular();
 
     angular
-      .module("default", [])
+      .createModule("default", [])
       .router({
         name: "success",
         url: "/success",

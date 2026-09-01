@@ -32,7 +32,7 @@ describe("programmatic view API", () => {
   ): ng.InjectorService {
     new Angular();
     const name = `programmaticViewApiSpec${moduleIndex++}`;
-    const module = window.angular.module(name, ["ng"]);
+    const module = window.angular.createModule(name, ["ng"]);
 
     register(module);
     host.innerHTML = html;

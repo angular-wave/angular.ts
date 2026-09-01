@@ -237,6 +237,6 @@ function calculateWinner(squares) {
 }
 
 angular
-  .module("scopeElementDemo", ["ng"])
+  .createModule("scopeElementDemo", ["ng"])
   .webComponent("tic-square", SquareElement)
   .webComponent("tic-board", BoardElement);

@@ -235,7 +235,7 @@ describe("$interpolate", () => {
     });
 
     it("should support escaping custom interpolation start/end symbols", () => {
-      angular.module("customInterpolationApp", ["ng"]).config({
+      angular.createModule("customInterpolationApp", ["ng"]).config({
         $interpolate: {
           startSymbol: "[[",
           endSymbol: "]]",
@@ -270,7 +270,7 @@ describe("$interpolate", () => {
     });
 
     it("allows configuring start and end symbols", function () {
-      angular.module("customInterpolationApp", ["ng"]).config({
+      angular.createModule("customInterpolationApp", ["ng"]).config({
         $interpolate: { startSymbol: "FOO", endSymbol: "OOF" },
       });
       const injector = createInjector(["customInterpolationApp"]);
@@ -282,7 +282,7 @@ describe("$interpolate", () => {
     });
 
     it("works with start and end symbols that differ from default", function () {
-      angular.module("customInterpolationApp", ["ng"]).config({
+      angular.createModule("customInterpolationApp", ["ng"]).config({
         $interpolate: { startSymbol: "FOO", endSymbol: "OOF" },
       });
       const injector = createInjector(["customInterpolationApp"]);
@@ -295,7 +295,7 @@ describe("$interpolate", () => {
     });
 
     it("does not work with default symbols when reconfigured", function () {
-      angular.module("customInterpolationApp", ["ng"]).config({
+      angular.createModule("customInterpolationApp", ["ng"]).config({
         $interpolate: { startSymbol: "FOO", endSymbol: "OOF" },
       });
       const injector = createInjector(["customInterpolationApp"]);
@@ -308,7 +308,7 @@ describe("$interpolate", () => {
     });
 
     it("supports unescaping for reconfigured symbols", function () {
-      angular.module("customInterpolationApp", ["ng"]).config({
+      angular.createModule("customInterpolationApp", ["ng"]).config({
         $interpolate: { startSymbol: "FOO", endSymbol: "OOF" },
       });
       const injector = createInjector(["customInterpolationApp"]);
@@ -429,7 +429,7 @@ describe("$interpolate", () => {
 
     beforeEach(() => {
       angular
-        .module("customInterpolationApp", ["ng"])
+        .createModule("customInterpolationApp", ["ng"])
         .config({ $sce: { enabled: true } });
 
       $injector = createInjector(["customInterpolationApp"]);
@@ -477,7 +477,7 @@ describe("$interpolate", () => {
 
   describe("custom delimiters", () => {
     beforeEach(() => {
-      angular.module("customInterpolationApp", ["ng"]).config({
+      angular.createModule("customInterpolationApp", ["ng"]).config({
         $interpolate: {
           startSymbol: "--",
           endSymbol: "--",
@@ -634,7 +634,7 @@ describe("$interpolate", () => {
   describe("delimiter configuration", () => {
     beforeEach(() => {
       angular
-        .module("customInterpolationApp", ["ng"])
+        .createModule("customInterpolationApp", ["ng"])
         .config({ $interpolate: { startSymbol: "((" } })
         .config({ $interpolate: { endSymbol: "))" } });
 

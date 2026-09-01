@@ -34,7 +34,7 @@ describe("ngModel", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           errors.push(exception.message);
@@ -1711,7 +1711,7 @@ describe("ngModel", () => {
       dealoc(document.getElementById("app"));
       window.angular = new Angular();
       module = window.angular
-        .module("myModule", [])
+        .createModule("myModule", [])
         .directive("customFormat", () => ({
           require: "ngModel",
           link(scope, element, ngModelCtrl) {

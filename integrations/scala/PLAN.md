@@ -120,7 +120,7 @@ final class TodoList(store: TodoStore):
   def add(title: String): Unit = store.add(title)
 
 @main def main(): Unit =
-  val app = ng.module("demo")
+  val app = ng.createModule("demo")
   val todoStore = ng.token[TodoStore]("todoStore")
 
   app.service(todoStore, ng.inject0(TodoStore()))
@@ -147,7 +147,7 @@ AngularTS JavaScript registration glue.
 
 Initial package API:
 
-- `ng.module(name: String, requires: Seq[String] = Seq.empty): NgModule`
+- `ng.createModule(name: String, requires: Seq[String] = Seq.empty): NgModule`
 - `ng.bootstrap(root: Element, modules: Seq[String])`
 - `ng.token[A](name: String): Token[A]`
 - `NgModule.component[A](name: String, options: Component[A])`

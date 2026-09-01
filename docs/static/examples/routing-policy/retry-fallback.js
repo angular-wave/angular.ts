@@ -7,7 +7,7 @@ window.routingRetryFallbackDiagnostics = {
 };
 
 const routingRetryFallbackDemo = window.angular
-  .module('routingRetryFallbackDemo', [])
+  .createModule('routingRetryFallbackDemo', [])
   .config({
     $security: {
       fallback: 'allow',

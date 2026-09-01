@@ -25,7 +25,7 @@ function createClosureBadgeDirective() {
 }
 
 /** @type {!ng.NgModule} */
-const module = angular.module("closureTodo", []);
+const module = angular.createModule("closureTodo", []);
 
 module
   .controller("TodoCtrl", [createTodoController])

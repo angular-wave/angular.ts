@@ -317,7 +317,7 @@ function createHttpRuntimeConfiguration() {
      * ```js
      * // App served from `https://example.com/`.
      * angular
-     *   .module('xsrfTrustedOriginsExample', [])
+     *   .createModule('xsrfTrustedOriginsExample', [])
      *   .config({
      *     $http: {
      *       xsrfTrustedOrigins: ['https://api.example.com'],

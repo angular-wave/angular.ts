@@ -2,7 +2,7 @@ window.routingPolicyToken = null;
 window.routingPolicyPermissions = [];
 
 const routingPolicyDemo = window.angular
-  .module('routingPolicyDemo', [])
+  .createModule('routingPolicyDemo', [])
   .config({
     $security: {
       fallback: 'allow',

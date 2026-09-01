@@ -40,7 +40,7 @@ access.
 ## Example
 
 ```ts
-const app = angular.module("app", []);
+const app = angular.createModule("app", []);
 
 app.controller("GreetingController", [
   "$scope",

@@ -1,5 +1,5 @@
 window.angular
-  .module("realtimeConfigDemo", [])
+  .createModule("realtimeConfigDemo", [])
   .config({
     $sse: {
       defaults: {

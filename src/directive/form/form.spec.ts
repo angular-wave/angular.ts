@@ -26,7 +26,7 @@ describe("form", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     const myModule = window.angular
-      .module("myModule", ["ng"])
+      .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           throw new Error(exception);
@@ -1751,7 +1751,7 @@ describe("form", () => {
       dummy = document.getElementById("app");
       dealoc(dummy);
       window.angular = new Angular();
-      myModule = window.angular.module("myModule", []);
+      myModule = window.angular.createModule("myModule", []);
 
       injector = window.angular.bootstrap(dummy, ["myModule"]);
       injector.invoke([

@@ -12,7 +12,7 @@ const webComponentModule = (angular) => {
         destroyWebComponentRuntimeState(state);
     });
     return angular
-        .module("ng.webComponent", [])
+        .createModule("ng.webComponent", [])
         .factory(_webComponent, [
         _injector,
         _rootScope,
@@ -36,7 +36,7 @@ function defineAngularElement(name, options) {
     });
     const ngModuleName = composition.name ?? "ng";
     const elementModuleName = elementModule?.name ?? defaultElementModuleName(name);
-    const appModule = angular.module(elementModuleName, elementModule?.requires ?? []);
+    const appModule = angular.createModule(elementModuleName, elementModule?.requires ?? []);
     elementModule?.configure?.(appModule, angular);
     appModule.appComponent(name, component);
     const injector = angular.injector([ngModuleName, elementModuleName]);
@@ -52,7 +52,7 @@ function defineAngularElement(name, options) {
         elementModule: appModule,
         injector,
         name,
-        ngModule: angular.module(ngModuleName),
+        ngModule: angular.getModule(ngModuleName),
     };
 }
 /** Alias for callers that prefer factory-style naming. */

@@ -56,7 +56,7 @@ export const websocketModule: RuntimeModule = memoizeRuntimeModule(
     });
 
     return angular
-      .module("ng.websocket", [])
+      .createModule("ng.websocket", [])
       .factory(_websocket, () =>
         createWebSocketService(
           createRuntimeLog(angular),
@@ -85,7 +85,7 @@ export const sseModule: RuntimeModule = memoizeRuntimeModule((angular) => {
   });
 
   return angular
-    .module("ng.sse", [])
+    .createModule("ng.sse", [])
     .factory(_sse, () =>
       createSseService(
         createRuntimeLog(angular),
@@ -122,7 +122,7 @@ export const webTransportModule: RuntimeModule = memoizeRuntimeModule(
     });
 
     return angular
-      .module("ng.webTransport", [])
+      .createModule("ng.webTransport", [])
       .factory(_webTransport, () =>
         createWebTransportService(
           createRuntimeLog(angular),
@@ -140,7 +140,7 @@ export const webTransportModule: RuntimeModule = memoizeRuntimeModule(
  * AngularTS runtime.
  */
 export const realtimeModule: RuntimeModule = memoizeRuntimeModule((angular) =>
-  angular.module("ng.realtime", [
+  angular.createModule("ng.realtime", [
     websocketModule(angular).name,
     sseModule(angular).name,
     webTransportModule(angular).name,

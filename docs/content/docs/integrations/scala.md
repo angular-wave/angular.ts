@@ -55,7 +55,7 @@ final class TodoModel(var newTodo: String = "") extends js.Object
 
 object App:
   @main def main(): Unit =
-    val app = AngularTS.module("todo")
+    val app = AngularTS.createModule("todo")
     val model = AngularTS.token[Model[TodoModel]]("todoModel")
 
     app

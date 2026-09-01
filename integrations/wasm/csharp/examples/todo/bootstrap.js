@@ -76,7 +76,7 @@ const loadDotnetExports = async () => {
 
 const { exports } = await loadDotnetExports();
 
-const app = angular.module(moduleName, []);
+const app = angular.createModule(moduleName, []);
 
 app.controller("csharpTodoController", [
   "$scope",

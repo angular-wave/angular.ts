@@ -75,7 +75,7 @@ export function componentNames(input: string): {
 }
 
 export function inferModuleName(sourceText: string): string | undefined {
-  const match = /\bangular\.module\(\s*(['"`])([^'"`]+)\1/.exec(sourceText);
+  const match = /\bangular\.(?:createModule|getModule)\(\s*(['"`])([^'"`]+)\1/.exec(sourceText);
   return match?.[2];
 }
 
@@ -90,10 +90,10 @@ function componentSource(
       : "  template: `<section></section>`,";
 
   if (options.language === "ts") {
-    return `class ${controllerName} {\n}\n\nangular.module("${options.moduleName}").component("${names.camel}", {\n${templateLine}\n  bindings: {},\n  controller: ${controllerName},\n});\n`;
+    return `class ${controllerName} {\n}\n\nangular.getModule("${options.moduleName}").component("${names.camel}", {\n${templateLine}\n  bindings: {},\n  controller: ${controllerName},\n});\n`;
   }
 
-  return `function ${controllerName}() {\n}\n\nangular.module("${options.moduleName}").component("${names.camel}", {\n${templateLine}\n  bindings: {},\n  controller: ${controllerName},\n});\n`;
+  return `function ${controllerName}() {\n}\n\nangular.getModule("${options.moduleName}").component("${names.camel}", {\n${templateLine}\n  bindings: {},\n  controller: ${controllerName},\n});\n`;
 }
 
 function componentTestSource(

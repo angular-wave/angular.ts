@@ -1,5 +1,5 @@
 window.angular
-  .module('phaserConcept', [])
+  .createModule('phaserConcept', [])
   .model('playerModel', () => ({
     x: 210,
     y: 130,

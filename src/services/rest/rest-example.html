@@ -34,7 +34,7 @@
         User.$nonscope = true;
 
         window.angular
-          .module("example", [])
+          .createModule("example", [])
           .rest("user", "/mock/users/", User)
           .controller("Demo", Demo);
       });

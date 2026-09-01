@@ -1,7 +1,7 @@
 const terminals = new WeakMap();
 
 window.angular
-  .module("xtermConcept", [])
+  .createModule("xtermConcept", [])
   .model("terminalModel", () => ({
     status: "loading",
     connected: false,

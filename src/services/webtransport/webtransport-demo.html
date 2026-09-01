@@ -76,7 +76,7 @@
       window.angular = angular;
 
       angular
-        .module("webTransportDemo", [])
+        .createModule("webTransportDemo", [])
         .controller("WebTransportDemo", WebTransportDemo);
 
       if (document.readyState === "loading") {

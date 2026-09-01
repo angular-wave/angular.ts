@@ -117,7 +117,7 @@ describe("ngInit", () => {
       '<div><div ng-include="template" ' +
         "ng-init=\"template='template2.tpl'\"></div></div>",
     );
-    window.angular.module("myModule", []).run([
+    window.angular.createModule("myModule", []).run([
       "$templateCache",
       ($templateCache: any) => {
         $templateCache.set("template1.tpl", "<span>1</span>");
@@ -135,7 +135,7 @@ describe("ngInit", () => {
 
   it("should be evaluated after ngController", async () => {
     window.angular
-      .module("test1", ["ng"])
+      .createModule("test1", ["ng"])
       .controller("TestCtrl", (): undefined => undefined);
     createInjector(["test1"]).invoke([
       "$rootScope",

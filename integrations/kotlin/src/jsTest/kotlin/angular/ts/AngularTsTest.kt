@@ -92,7 +92,7 @@ class AngularTsTest {
 
     @Test
     fun createsNamedModule() {
-        val app = ng.module("kotlinSmoke")
+        val app = ng.createModule("kotlinSmoke")
 
         assertEquals("kotlinSmoke", app.name)
     }
@@ -294,7 +294,7 @@ class AngularTsTest {
                 ),
             ),
         )
-        val app = ng.module("kotlinRouterSmoke").router(declaration)
+        val app = ng.createModule("kotlinRouterSmoke").router(declaration)
 
         js("document.body.appendChild(root)")
         val injector = ng.bootstrap(root.unsafeCast<Element>(), listOf(app.name))
@@ -312,7 +312,7 @@ class AngularTsTest {
 
         val literal = ResolvableLiteral("answer", ng.inject0 { 42 }, eager = true)
         val redirect = RedirectTo(state = "kotlinRouterState", params = mapOf("id" to 7))
-        val module = ng.module("kotlinRouterModule")
+        val module = ng.createModule("kotlinRouterModule")
             .router(StateDeclaration(name = "kotlinRouterModule.home", redirectTo = redirect))
         val hookDisposer = transitions.onStart(mapOf("to" to "kotlinRouterState")) { transition ->
             assertNotNull(transition)
@@ -411,7 +411,7 @@ class AngularTsTest {
         assertEquals("done", transportRaw.closeInfo)
 
         val token = ng.token<WebSocketConnection>("kotlinSocket")
-        val app = ng.module("kotlinRealtimeRegistrations")
+        val app = ng.createModule("kotlinRealtimeRegistrations")
             .sse(ng.token<SseConnection>("kotlinEvents"), SseRegistration("/events", sseConfig))
             .websocket(
                 token,
@@ -483,7 +483,7 @@ class AngularTsTest {
         assertEquals(rawHandle, rawAnimate.cancelled)
         assertEquals("enter", AnimationPhase.Enter.raw)
 
-        val module = ng.module("kotlinAnimationRegistrations")
+        val module = ng.createModule("kotlinAnimationRegistrations")
             .animation("fade", preset)
 
         assertEquals("kotlinAnimationRegistrations", module.name)
@@ -572,7 +572,7 @@ class AngularTsTest {
 
         val workerToken = ng.token<WorkerHandle>("kotlinWorker")
         val wasmToken = ng.token<WasmResource>("kotlinWasm")
-        val module = ng.module("kotlinWorkerWasmRegistrations")
+        val module = ng.createModule("kotlinWorkerWasmRegistrations")
             .worker(workerToken, WorkerRegistration("/worker.js", WorkerConfig(restart = true)))
             .wasm(wasmToken, WasmLoadOptions("/module.wasm"))
 
@@ -767,7 +767,7 @@ class AngularTsTest {
     @Test
     fun registersModuleEntries() {
         val message = ng.token<String>("message")
-        val app = ng.module("kotlinRegistrations")
+        val app = ng.createModule("kotlinRegistrations")
 
         app
             .value(message, "hello")
@@ -815,7 +815,7 @@ class AngularTsTest {
         js("document.body.appendChild(root)")
         root.innerHTML = "<kotlin-hello></kotlin-hello><section kotlin-linked></section>"
 
-        val app = ng.module("kotlinRenderSmoke")
+        val app = ng.createModule("kotlinRenderSmoke")
 
         app
             .component(

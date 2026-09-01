@@ -662,7 +662,7 @@ export function simpleCompare(val1: unknown, val2: unknown): boolean {
       </div>
     </file>
     <file name="script.js">
-        angular.module('equalsExample', []).controller('ExampleController', ['$scope', function($scope) {
+        angular.createModule('equalsExample', []).controller('ExampleController', ['$scope', function($scope) {
           $scope.user1 = {};
           $scope.user2 = {};
           $scope.compare = function() {

@@ -1,5 +1,5 @@
 window.angular
-  .module('babylonSharkConcept', [])
+  .createModule('babylonSharkConcept', [])
   .model('sharkModel', () => ({
     swimming: true,
     speed: 0.03,

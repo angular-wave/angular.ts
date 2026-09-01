@@ -185,7 +185,7 @@ test("uses inferred component controller locals for inline template expressions"
     class UserCardController {
       user!: User;
     }
-    angular.module("demo", []).component("userCard", {
+    angular.createModule("demo", []).component("userCard", {
       controller: UserCardController,
       template: \`<p>{{$ctrl.user.name}}</p>\`
     });
@@ -204,7 +204,7 @@ test("uses inferred component controller locals for inline template expressions"
 test("uses inferred component binding types for inline template expressions", () => {
   const source = `
     class UserCardController {}
-    angular.module("demo", []).component("userCard", {
+    angular.createModule("demo", []).component("userCard", {
       controller: UserCardController,
       bindings: {
         label: "@",
@@ -230,7 +230,7 @@ test("resolves inline template property definitions to component controller sour
     class UserCardController {
       user!: User;
     }
-    angular.module("demo", []).component("userCard", {
+    angular.createModule("demo", []).component("userCard", {
       controller: UserCardController,
       template: \`<p>{{$ctrl.user.name}}</p>\`
     });

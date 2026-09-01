@@ -23,7 +23,7 @@ describe("$location", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    module = window.angular.module("test1", ["ng"]);
+    module = window.angular.createModule("test1", ["ng"]);
   });
 
   describe("defaults", () => {
@@ -4059,7 +4059,7 @@ describe("$location", () => {
     });
 
     // it("should complain if no base tag present", () => {
-    //   let module = window.angular.module("test1", ["ng"]);
+    //   let module = window.angular.createModule("test1", ["ng"]);
     //   module.config({ $location: { html5Mode: true } });
 
     //   createInjector(["test1"]).invoke(($browser, $injector) => {

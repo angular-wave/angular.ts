@@ -81,7 +81,7 @@ string, and the last element is the function.
 ### Array annotation (recommended)
 
 ```ts
-angular.module('myApp', []).controller('UserCtrl', [
+angular.createModule('myApp', []).controller('UserCtrl', [
   '$scope',
   '$http',
   'userService',
@@ -113,7 +113,7 @@ class UserCtrl {
   }
 }
 
-angular.module('myApp', []).controller('UserCtrl', UserCtrl);
+angular.createModule('myApp', []).controller('UserCtrl', UserCtrl);
 ```
 
 > **Note:** The `$inject` static property on a class is the TypeScript-idiomatic
@@ -184,7 +184,7 @@ instance produced by `get` is injected.
   }];
 }
 
-angular.module('myApp', [])
+angular.createModule('myApp', [])
   .provider('greeter', GreeterProvider)
   .config(['greeterProvider', function (greeterProvider) {
     // During config, the *provider* is injected — note the "Provider" suffix

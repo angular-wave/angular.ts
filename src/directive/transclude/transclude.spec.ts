@@ -16,7 +16,7 @@ describe("ngTransclude", () => {
     dealoc(app);
     window.angular = new Angular();
     compileRegistry = window.angular._composition.compileRegistry;
-    window.angular.module("test", []);
+    window.angular.createModule("test", []);
 
     const injector = window.angular.bootstrap(app, ["test"]);
 

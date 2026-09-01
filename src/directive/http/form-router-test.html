@@ -9,7 +9,7 @@
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         window.angular
-          .module("router", [])
+          .createModule("router", [])
           .config({
             $location: {
               html5Mode: {

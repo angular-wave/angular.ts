@@ -17,7 +17,7 @@ describe("ngClass", () => {
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    window.angular.module("test", []);
+    window.angular.createModule("test", []);
     injector = window.angular.bootstrap(document.getElementById("app"), [
       "test",
     ]);
@@ -460,7 +460,7 @@ describe("ngClass", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
-      .module("test", [])
+      .createModule("test", [])
       .filter("foo", () => (value) => value.a || value.b);
     injector = window.angular.bootstrap(document.getElementById("app"), [
       "test",

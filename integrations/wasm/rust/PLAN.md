@@ -218,7 +218,7 @@ import init, * as app from "./pkg/demo.js";
 await init();
 
 angular
-  .module("demo")
+  .createModule("demo")
   .service("todoStore", app.__ng_service_TodoStore)
   .component("todoList", app.__ng_component_TodoList());
 

@@ -10,7 +10,7 @@ describe("setter", () => {
     dealoc(document.getElementById("app"));
     const angular = new Angular();
 
-    angular.module("myModule", []);
+    angular.createModule("myModule", []);
     angular.bootstrap(document.getElementById("app")!, ["myModule"]).invoke([
       "$compile",
       "$rootScope",

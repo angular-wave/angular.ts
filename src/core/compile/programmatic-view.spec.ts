@@ -32,7 +32,7 @@ describe("programmatic views", () => {
   ): ng.InjectorService {
     new Angular();
     const name = `programmaticViewSpec${moduleIndex++}`;
-    const module = window.angular.module(name, ["ng"]);
+    const module = window.angular.createModule(name, ["ng"]);
 
     register(module);
     host.innerHTML = html;
@@ -574,7 +574,7 @@ describe("programmatic views", () => {
       new Angular();
       const invalidModuleName = `programmaticViewSpec${moduleIndex++}`;
       window.angular
-        .module(invalidModuleName, ["ng"])
+        .createModule(invalidModuleName, ["ng"])
         .component("invalidView", {
           view: () => null,
           replace: true,

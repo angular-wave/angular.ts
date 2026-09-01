@@ -1,4 +1,4 @@
-window.angular.module('demo', []).controller('ScrollController', [
+window.angular.createModule('demo', []).controller('ScrollController', [
   '$scope',
   '$location',
   '$anchorScroll',

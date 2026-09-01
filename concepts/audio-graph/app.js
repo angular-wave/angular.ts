@@ -1,5 +1,5 @@
 window.angular
-  .module('audioGraphConcept', [])
+  .createModule('audioGraphConcept', [])
   .model('synthModel', () => ({
     frequency: 440,
     volume: 0.1,

@@ -7,7 +7,7 @@
     <script type="module" src="../../auto.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        window.angular.module("events", []).controller(
+        window.angular.createModule("events", []).controller(
           "EventsController",
           class EventsController {
             constructor() {}

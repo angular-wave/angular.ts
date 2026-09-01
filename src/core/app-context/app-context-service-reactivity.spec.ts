@@ -116,7 +116,7 @@ describe("AppContext service reactivity without DOM", () => {
     const angular = new Angular();
 
     angular
-      .module("noDomModelServiceApp", ["ng"])
+      .createModule("noDomModelServiceApp", ["ng"])
       .model("session", () => ({ token: "" }))
       .service("sessionService", [
         "session",

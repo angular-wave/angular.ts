@@ -27,7 +27,7 @@ describe("ngStateRef", () => {
     window.location.hash = "";
     window.angular = new Angular();
     const module = window.angular
-      .module("defaultModule", [])
+      .createModule("defaultModule", [])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           errorLog.push(exception.message);
@@ -456,7 +456,7 @@ describe("ngStateRef", () => {
       window.history.replaceState(null, "", "/");
       window.angular = new Angular();
       const module = window.angular
-        .module("html5Module", [])
+        .createModule("html5Module", [])
         .decorator("$exceptionHandler", function () {
           return (exception) => {
             errorLog.push(exception.message);
@@ -1008,7 +1008,7 @@ describe("ngStateActive", () => {
     dealoc(document.getElementById("app"));
     window.location.hash = "";
     window.angular = new Angular();
-    const module = window.angular.module("defaultModule", []);
+    const module = window.angular.createModule("defaultModule", []);
 
     registerStates(
       module,

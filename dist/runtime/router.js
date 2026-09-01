@@ -63,7 +63,7 @@ const routerModule = (angular) => {
         destroyAriaRuntimeState(aria);
     });
     const module = angular
-        .module("ng.router", [])
+        .createModule("ng.router", [])
         .value(_security, security)
         .factory(_aria, () => createAriaService(aria, log))
         .factory(_location, [

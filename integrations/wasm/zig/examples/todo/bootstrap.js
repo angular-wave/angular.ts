@@ -13,7 +13,7 @@ const runCommand = (name, command, ...args) => {
 };
 
 const app = angular
-  .module(moduleName, [installedWasmModule.name])
+  .createModule(moduleName, [installedWasmModule.name])
   .wasm("zigTodoGuest", { source: wasmURL });
 
 app.controller("zigTodoController", [

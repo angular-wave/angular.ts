@@ -12,7 +12,7 @@ describe("ngOn* event binding", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    module = window.angular.module("test1", ["ng"]);
+    module = window.angular.createModule("test1", ["ng"]);
     injector = createInjector(["ng", "test1"]);
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
@@ -174,27 +174,32 @@ describe("ngOn* event binding", () => {
   it("should use the full ng-on-* attribute name in $attr mappings", () => {
     let snapshot;
 
-    window.angular.module("test", ["ng"]).directive("attrExposer", () => ({
-      link($scope, $element) {
-        snapshot = {
-          title: getNormalizedAttr($element, "title"),
-          titleAttr: getNormalizedAttrName($element, "title"),
-          ngOnTitle: getNormalizedAttr($element, "ngOnTitle"),
-          ngOnTitleAttr: getNormalizedAttrName($element, "ngOnTitle"),
-          superTitle: getNormalizedAttr($element, "superTitle"),
-          superTitleAttr: getNormalizedAttrName($element, "superTitle"),
-          ngOnSuperTitle: getNormalizedAttr($element, "ngOnSuperTitle"),
-          ngOnSuperTitleAttr: getNormalizedAttrName($element, "ngOnSuperTitle"),
-          myCamelTitle: getNormalizedAttr($element, "myCamelTitle"),
-          myCamelTitleAttr: getNormalizedAttrName($element, "myCamelTitle"),
-          ngOnMyCamelTitle: getNormalizedAttr($element, "ngOnMyCamelTitle"),
-          ngOnMyCamelTitleAttr: getNormalizedAttrName(
-            $element,
-            "ngOnMyCamelTitle",
-          ),
-        };
-      },
-    }));
+    window.angular
+      .createModule("test", ["ng"])
+      .directive("attrExposer", () => ({
+        link($scope, $element) {
+          snapshot = {
+            title: getNormalizedAttr($element, "title"),
+            titleAttr: getNormalizedAttrName($element, "title"),
+            ngOnTitle: getNormalizedAttr($element, "ngOnTitle"),
+            ngOnTitleAttr: getNormalizedAttrName($element, "ngOnTitle"),
+            superTitle: getNormalizedAttr($element, "superTitle"),
+            superTitleAttr: getNormalizedAttrName($element, "superTitle"),
+            ngOnSuperTitle: getNormalizedAttr($element, "ngOnSuperTitle"),
+            ngOnSuperTitleAttr: getNormalizedAttrName(
+              $element,
+              "ngOnSuperTitle",
+            ),
+            myCamelTitle: getNormalizedAttr($element, "myCamelTitle"),
+            myCamelTitleAttr: getNormalizedAttrName($element, "myCamelTitle"),
+            ngOnMyCamelTitle: getNormalizedAttr($element, "ngOnMyCamelTitle"),
+            ngOnMyCamelTitleAttr: getNormalizedAttrName(
+              $element,
+              "ngOnMyCamelTitle",
+            ),
+          };
+        },
+      }));
     injector = createInjector(["ng", "test"]);
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
@@ -221,15 +226,17 @@ describe("ngOn* event binding", () => {
   it("should not conflict with (ng-attr-)attribute mappings of the same name", () => {
     let snapshot;
 
-    window.angular.module("test", ["ng"]).directive("attrExposer", () => ({
-      link($scope, $element) {
-        snapshot = {
-          title: getNormalizedAttr($element, "title"),
-          titleAttr: getNormalizedAttrName($element, "title"),
-          ngOnTitleAttr: getNormalizedAttrName($element, "ngOnTitle"),
-        };
-      },
-    }));
+    window.angular
+      .createModule("test", ["ng"])
+      .directive("attrExposer", () => ({
+        link($scope, $element) {
+          snapshot = {
+            title: getNormalizedAttr($element, "title"),
+            titleAttr: getNormalizedAttrName($element, "title"),
+            ngOnTitleAttr: getNormalizedAttrName($element, "ngOnTitle"),
+          };
+        },
+      }));
     injector = createInjector(["ng", "test"]);
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");

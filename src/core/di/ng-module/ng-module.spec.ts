@@ -44,7 +44,7 @@ function createRuntimeInjector(angular, modules) {
     (registry) => {
       registry.value(_rootElement, document.createElement("div"));
     },
-    (name) => angular.module(name),
+    (name) => angular.getModule(name),
   );
 }
 
@@ -575,7 +575,7 @@ describe("NgModule", () => {
 
   it("applies built-in config during config phase", async () => {
     window.angular = new Angular();
-    const configured = window.angular.module("configured", []);
+    const configured = window.angular.createModule("configured", []);
     const compileRegistry = configured._compileRegistry;
     let routerProvider;
     const configuredError = new Error("configured");
@@ -887,7 +887,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("booleanLocationConfigApp", ["ng"])
+      .createModule("booleanLocationConfigApp", ["ng"])
       .config({ $location: { html5Mode: false } });
 
     const injector = createRuntimeInjector(angular, [
@@ -903,7 +903,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("emptyHttpHeaderConfigApp", ["ng"])
+      .createModule("emptyHttpHeaderConfigApp", ["ng"])
       .config({
         $http: {
           defaults: {
@@ -1451,7 +1451,7 @@ describe("NgModule", () => {
   it("registers named machines through the machine service", () => {
     const angular = new Angular();
 
-    angular.module("machineApp", ["ng"]).machine("sessionMachine", {
+    angular.createModule("machineApp", ["ng"]).machine("sessionMachine", {
       initial: "setup",
       data: {
         roomId: "",
@@ -1486,7 +1486,7 @@ describe("NgModule", () => {
       count: 0,
     });
 
-    angular.module("modelApp", ["ng"]).model("counter", initialFactory);
+    angular.createModule("modelApp", ["ng"]).model("counter", initialFactory);
 
     const injector = createInjector(["modelApp"]);
     const counter = injector.get("counter");
@@ -1510,7 +1510,7 @@ describe("NgModule", () => {
       }));
 
     angular
-      .module("injectableModelApp", ["ng"])
+      .createModule("injectableModelApp", ["ng"])
       .constant("initialToken", "abc")
       .model("session", ["initialToken", initialFactory]);
 
@@ -1575,7 +1575,7 @@ describe("NgModule", () => {
   it("shares named model instances across roots managed by one AppContext", () => {
     const angular = new Angular();
 
-    angular.module("sharedModelApp", ["ng"]).model("session", () => ({
+    angular.createModule("sharedModelApp", ["ng"]).model("session", () => ({
       token: "",
     }));
 
@@ -1595,7 +1595,7 @@ describe("NgModule", () => {
   it("notifies consuming scope watchers when an injected model changes", async () => {
     const angular = new Angular();
 
-    angular.module("reactiveModelApp", ["ng"]).model("user", () => ({
+    angular.createModule("reactiveModelApp", ["ng"]).model("user", () => ({
       name: "John",
     }));
 
@@ -1641,7 +1641,7 @@ describe("NgModule", () => {
     const writes: unknown[] = [];
 
     angular
-      .module("modelSyncTargetApp", ["ng"])
+      .createModule("modelSyncTargetApp", ["ng"])
       .value("playerSocketSync", {
         write(snapshot: unknown, change: unknown) {
           writes.push({ snapshot, change });
@@ -1674,7 +1674,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("modelStateEngineSyncApp", ["ng"])
+      .createModule("modelStateEngineSyncApp", ["ng"])
       .model("player", () => ({
         health: 100,
       }))
@@ -1763,7 +1763,7 @@ describe("NgModule", () => {
   it("updates DOM interpolation when an app model assigned to scope changes", async () => {
     const angular = new Angular();
 
-    angular.module("modelDomApp", ["ng"]).model("player", () => ({
+    angular.createModule("modelDomApp", ["ng"]).model("player", () => ({
       x: 210,
       y: 130,
     }));
@@ -1791,7 +1791,7 @@ describe("NgModule", () => {
   it("updates ng-bind when an app model assigned to scope changes", async () => {
     const angular = new Angular();
 
-    angular.module("modelBindDomApp", ["ng"]).model("player", () => ({
+    angular.createModule("modelBindDomApp", ["ng"]).model("player", () => ({
       x: 210,
     }));
 
@@ -1818,9 +1818,11 @@ describe("NgModule", () => {
   it("updates derived DOM interpolation when a model condition changes", async () => {
     const angular = new Angular();
 
-    angular.module("modelConditionalDomApp", ["ng"]).model("synth", () => ({
-      playing: false,
-    }));
+    angular
+      .createModule("modelConditionalDomApp", ["ng"])
+      .model("synth", () => ({
+        playing: false,
+      }));
 
     const injector = angular.injector(["modelConditionalDomApp"]);
     const rootScope = injector.get("$rootScope");
@@ -1847,7 +1849,7 @@ describe("NgModule", () => {
   it("updates derived DOM interpolation when a model method-call input changes", async () => {
     const angular = new Angular();
 
-    angular.module("modelCallDomApp", ["ng"]).model("shark", () => ({
+    angular.createModule("modelCallDomApp", ["ng"]).model("shark", () => ({
       speed: 0.03,
     }));
 
@@ -1874,7 +1876,7 @@ describe("NgModule", () => {
   it("updates multi-part derived DOM interpolation when model method-call inputs change", async () => {
     const angular = new Angular();
 
-    angular.module("modelMultiCallDomApp", ["ng"]).model("shark", () => ({
+    angular.createModule("modelMultiCallDomApp", ["ng"]).model("shark", () => ({
       speed: 0.03,
       depth: 0,
     }));
@@ -1905,7 +1907,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("modelAliasDomApp", ["ng"])
+      .createModule("modelAliasDomApp", ["ng"])
       .model("player", () => ({
         x: 210,
         y: 130,
@@ -1944,7 +1946,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("modelAliasClickDomApp", ["ng"])
+      .createModule("modelAliasClickDomApp", ["ng"])
       .model("player", () => ({
         x: 210,
       }))
@@ -1990,7 +1992,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("modelAliasDestroyDomApp", ["ng"])
+      .createModule("modelAliasDestroyDomApp", ["ng"])
       .model("session", () => ({
         token: "initial",
       }))
@@ -2039,7 +2041,7 @@ describe("NgModule", () => {
   it("updates DOM interpolation when a nested model property changes", async () => {
     const angular = new Angular();
 
-    angular.module("modelNestedDomApp", ["ng"]).model("user", () => ({
+    angular.createModule("modelNestedDomApp", ["ng"]).model("user", () => ({
       profile: {
         name: "John",
       },
@@ -2068,11 +2070,13 @@ describe("NgModule", () => {
   it("updates DOM interpolation when a nested model parent is replaced", async () => {
     const angular = new Angular();
 
-    angular.module("modelParentReplaceDomApp", ["ng"]).model("user", () => ({
-      profile: {
-        name: "John",
-      },
-    }));
+    angular
+      .createModule("modelParentReplaceDomApp", ["ng"])
+      .model("user", () => ({
+        profile: {
+          name: "John",
+        },
+      }));
 
     const injector = angular.injector(["modelParentReplaceDomApp"]);
     const rootScope = injector.get("$rootScope");
@@ -2097,7 +2101,7 @@ describe("NgModule", () => {
   it("updates DOM interpolation when a nested model array mutates", async () => {
     const angular = new Angular();
 
-    angular.module("modelArrayDomApp", ["ng"]).model("cart", () => ({
+    angular.createModule("modelArrayDomApp", ["ng"]).model("cart", () => ({
       items: ["alpha"],
     }));
 
@@ -2124,10 +2128,12 @@ describe("NgModule", () => {
   it("updates a repeat linked after a model array already contains an item", async () => {
     const angular = new Angular();
 
-    angular.module("conditionalModelRepeatApp", ["ng"]).model("cart", () => ({
-      items: [],
-      state: "empty",
-    }));
+    angular
+      .createModule("conditionalModelRepeatApp", ["ng"])
+      .model("cart", () => ({
+        items: [],
+        state: "empty",
+      }));
 
     const injector = angular.injector(["conditionalModelRepeatApp"]);
     const rootScope = injector.get("$rootScope");
@@ -2160,11 +2166,13 @@ describe("NgModule", () => {
   it("updates DOM interpolation when a nested model property is deleted", async () => {
     const angular = new Angular();
 
-    angular.module("modelDeleteNestedDomApp", ["ng"]).model("user", () => ({
-      profile: {
-        name: "John",
-      },
-    }));
+    angular
+      .createModule("modelDeleteNestedDomApp", ["ng"])
+      .model("user", () => ({
+        profile: {
+          name: "John",
+        },
+      }));
 
     const injector = angular.injector(["modelDeleteNestedDomApp"]);
     const rootScope = injector.get("$rootScope");
@@ -2189,9 +2197,11 @@ describe("NgModule", () => {
   it("notifies consuming scope watchers when an injected model property is deleted", async () => {
     const angular = new Angular();
 
-    angular.module("deleteReactiveModelApp", ["ng"]).model("user", () => ({
-      name: "John",
-    }));
+    angular
+      .createModule("deleteReactiveModelApp", ["ng"])
+      .model("user", () => ({
+        name: "John",
+      }));
 
     const injector = angular.injector(["deleteReactiveModelApp"]);
     const rootScope = injector.get("$rootScope");
@@ -2223,11 +2233,13 @@ describe("NgModule", () => {
   it("proxies nested model objects lazily", () => {
     const angular = new Angular();
 
-    angular.module("nestedReactiveModelApp", ["ng"]).model("user", () => ({
-      profile: {
-        name: "John",
-      },
-    }));
+    angular
+      .createModule("nestedReactiveModelApp", ["ng"])
+      .model("user", () => ({
+        profile: {
+          name: "John",
+        },
+      }));
 
     const injector = angular.injector(["nestedReactiveModelApp"]);
     const user = injector.get("user");
@@ -2241,7 +2253,7 @@ describe("NgModule", () => {
   it("notifies consuming scope watchers when a nested injected model object changes", async () => {
     const angular = new Angular();
 
-    angular.module("nestedModelWatchApp", ["ng"]).model("user", () => ({
+    angular.createModule("nestedModelWatchApp", ["ng"]).model("user", () => ({
       profile: {
         name: "John",
       },
@@ -2284,9 +2296,11 @@ describe("NgModule", () => {
   it("notifies consuming scope watchers when a nested injected model array changes", async () => {
     const angular = new Angular();
 
-    angular.module("nestedModelArrayWatchApp", ["ng"]).model("user", () => ({
-      items: ["alpha"],
-    }));
+    angular
+      .createModule("nestedModelArrayWatchApp", ["ng"])
+      .model("user", () => ({
+        items: ["alpha"],
+      }));
 
     const injector = angular.injector(["nestedModelArrayWatchApp"]);
     const rootScope = injector.get("$rootScope");
@@ -2325,7 +2339,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("crossRootReactiveModelApp", ["ng"])
+      .createModule("crossRootReactiveModelApp", ["ng"])
       .model("session", () => ({
         token: "",
       }));
@@ -2381,7 +2395,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("rootDestroyReactiveModelApp", ["ng"])
+      .createModule("rootDestroyReactiveModelApp", ["ng"])
       .model("session", () => ({
         token: "",
       }));
@@ -2429,9 +2443,11 @@ describe("NgModule", () => {
   it("removes DOM model observations when a consuming scope is destroyed", async () => {
     const angular = new Angular();
 
-    angular.module("modelDomScopeDestroyApp", ["ng"]).model("session", () => ({
-      token: "initial",
-    }));
+    angular
+      .createModule("modelDomScopeDestroyApp", ["ng"])
+      .model("session", () => ({
+        token: "initial",
+      }));
 
     const injector = angular.injector(["modelDomScopeDestroyApp"]);
     const rootScope = injector.get("$rootScope");
@@ -2462,7 +2478,7 @@ describe("NgModule", () => {
     const angular = new Angular();
 
     angular
-      .module("modelDomSiblingRootDestroyApp", ["ng"])
+      .createModule("modelDomSiblingRootDestroyApp", ["ng"])
       .model("session", () => ({
         token: "initial",
       }));
@@ -2518,9 +2534,11 @@ describe("NgModule", () => {
   it("allows app model mutation after all DOM roots are destroyed", async () => {
     const angular = new Angular();
 
-    angular.module("modelDomZeroRootApp", ["ng"]).model("session", () => ({
-      token: "initial",
-    }));
+    angular
+      .createModule("modelDomZeroRootApp", ["ng"])
+      .model("session", () => ({
+        token: "initial",
+      }));
 
     const injector = angular.injector(["modelDomZeroRootApp"]);
     const rootScope = injector.get("$rootScope");
@@ -2653,7 +2671,7 @@ describe("NgModule", () => {
       children: [detail],
     };
 
-    angular.module("stateApp", ["ng"]).router(home);
+    angular.createModule("stateApp", ["ng"]).router(home);
 
     const injector = createRuntimeInjector(angular, ["stateApp"]);
 
@@ -2669,7 +2687,7 @@ describe("NgModule", () => {
   it("registers module router trees through router composition", () => {
     const angular = new Angular();
 
-    angular.module("routerTreeApp", ["ng"]).router({
+    angular.createModule("routerTreeApp", ["ng"]).router({
       name: "admin",
       url: "/admin",
       abstract: true,
@@ -2704,7 +2722,7 @@ describe("NgModule", () => {
   it("registers multiple top-level module router trees", () => {
     const angular = new Angular();
 
-    angular.module("routerComposeApp", ["ng"]).router([
+    angular.createModule("routerComposeApp", ["ng"]).router([
       {
         name: "login",
         url: "/login",
@@ -2778,7 +2796,7 @@ describe("NgModule", () => {
         template: "<h1>Admin</h1>",
       },
     ];
-    angular.module("lazyStateApp", ["ng"]).lazyState("admin.**", loader);
+    angular.createModule("lazyStateApp", ["ng"]).lazyState("admin.**", loader);
 
     const state = createRuntimeInjector(angular, ["lazyStateApp"]).get(
       "$state",

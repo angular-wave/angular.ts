@@ -472,7 +472,7 @@ class NgModelController {
      * @example
      * <example name="ng-model-cancel-update" module="cancel-update-example">
      *   <file name="app.js">
-     *     angular.module('cancel-update-example', [])
+     *     angular.createModule('cancel-update-example', [])
      *
      *     .controller('CancelUpdateController', ['$scope', function($scope) {
      *       $scope.model = {value1: '', value2: ''};
@@ -944,7 +944,7 @@ class NgModelController {
         </div>
        </file>
        <file name="app.js">
-        angular.module('inputExample', [])
+        angular.createModule('inputExample', [])
           .controller('inputController', ['$scope', function($scope) {
             $scope.items = [
               {name: 'Apricot', id: 443},

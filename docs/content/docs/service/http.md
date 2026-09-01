@@ -82,7 +82,7 @@ Configure defaults before bootstrap with `module.config({ $http: ... })`, or
 mutate runtime defaults through `$http.defaults`.
 
 ```ts
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $http: {
     defaults: {
       headers: {
@@ -108,7 +108,7 @@ Interceptors are registered with `module.config({ $http: ... })`. Request hooks
 run in registration order; response hooks run in reverse order.
 
 ```ts
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $http: {
     interceptors: [
       () => ({
@@ -136,7 +136,7 @@ angular.module("app", []).config({
 header for trusted origins. Add cross-origin APIs explicitly:
 
 ```ts
-angular.module("app", []).config({
+angular.createModule("app", []).config({
   $http: {
     xsrfTrustedOrigins: ["https://api.example.com"],
   },

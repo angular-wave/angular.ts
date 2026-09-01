@@ -30,7 +30,7 @@ Exact policy signatures live in TypeDoc:
 Use `app.config({ $security: ... })` to set your app policy:
 
 ```js
-angular.module('app', []).config({
+angular.createModule('app', []).config({
   $security: {
     fallback: 'deny',
     allowInsecureOrigins: ['http://localhost:3000'],
@@ -93,7 +93,7 @@ resolves, controllers, or views run.
 
 ```js
 angular
-  .module('admin', [])
+  .createModule('admin', [])
   .router({
     name: 'admin',
     url: '/admin',

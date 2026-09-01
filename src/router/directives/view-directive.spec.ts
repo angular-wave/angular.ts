@@ -815,7 +815,7 @@ describe("ngView", () => {
     retainedLazyLoadAttempts = 0;
     retainedLazyCompiles = 0;
     app = window.angular
-      .module("defaultModule", [installedWasmModule.name])
+      .createModule("defaultModule", [installedWasmModule.name])
       .config({
         $security: {
           fallback: "allow",
@@ -2410,7 +2410,7 @@ describe("ngView transclusion", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     const module = window.angular
-      .module("defaultModule", [])
+      .createModule("defaultModule", [])
       .directive("scopeObserver", () => {
         return {
           restrict: "E",
@@ -2474,7 +2474,7 @@ describe("ngView controllers or onEnter handlers", () => {
     window.angular = new Angular();
     count = 0;
     const module = window.angular
-      .module("defaultModule", [])
+      .createModule("defaultModule", [])
       .config({ $location: { html5Mode: false } });
     registerStates(
       module,
@@ -2563,7 +2563,7 @@ describe("angular 1.5+ style .component()", () => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
-      .module("defaultModule", [])
+      .createModule("defaultModule", [])
       .decorator("$exceptionHandler", function () {
         return (exception) => {
           errorLog.push(exception.message);

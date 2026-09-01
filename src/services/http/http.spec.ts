@@ -67,7 +67,7 @@ describe("$http", function () {
   beforeEach(function () {
     window.angular = new Angular();
     securityId += 1;
-    httpConfigModule = window.angular.module(
+    httpConfigModule = window.angular.createModule(
       `httpSecurityCompat${securityId}`,
       [],
     );
@@ -962,7 +962,7 @@ describe("$http", function () {
 
   it("allows substituting param serializer through DI", async function () {
     window.angular
-      .module("specialSerializer", [])
+      .createModule("specialSerializer", [])
       .factory("mySpecialSerializer", function () {
         return function (params) {
           return Object.keys(params)
@@ -1284,7 +1284,7 @@ describe("$http", function () {
     const interceptorFactorySpy = jasmine.createSpy().and.returnValue({});
 
     window.angular
-      .module("existingInterceptor", [])
+      .createModule("existingInterceptor", [])
       .factory("myInterceptor", interceptorFactorySpy)
       .config({
         $http: { interceptors: ["myInterceptor"] },
@@ -1586,7 +1586,10 @@ describe("$http security policy", () => {
     };
 
     window.angular = new Angular();
-    const module = window.angular.module("defaultSecurityPolicyModule", []);
+    const module = window.angular.createModule(
+      "defaultSecurityPolicyModule",
+      [],
+    );
 
     module.value("$security", {
       check: () => requestDecision,
@@ -1772,7 +1775,7 @@ describe("$http security policy via app.config", () => {
     const moduleName = `httpSecurityConfiguredModule${injectorId}`;
 
     window.angular = new Angular();
-    const module = window.angular.module(moduleName, []);
+    const module = window.angular.createModule(moduleName, []);
     module.config({ $security: config });
 
     fetchEnv = installFakeFetch();

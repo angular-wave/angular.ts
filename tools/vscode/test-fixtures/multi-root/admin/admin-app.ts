@@ -1,4 +1,4 @@
-angular.module("adminApp", [])
+angular.createModule("adminApp", [])
   .component("adminPanel", {
     templateUrl: "admin-panel.html",
     bindings: {

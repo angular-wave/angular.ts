@@ -42,7 +42,7 @@ The router is part of the built-in runtime; do not add a speculative `ng.router`
 module dependency.
 
 ```js
-const app = angular.module('taskBoard', []);
+const app = angular.createModule('taskBoard', []);
 
 app
   .router({

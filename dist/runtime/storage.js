@@ -7,7 +7,7 @@ import { createPersistentProxy } from '../services/storage/storage.js';
  * Include this module when using module-level `store(...)` declarations.
  */
 const storageModule = (angular) => angular
-    .module("ng.storage", [])
+    .createModule("ng.storage", [])
     .factory(_storage, () => createPersistentProxy);
 
 export { storageModule };

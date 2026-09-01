@@ -129,7 +129,7 @@ To register a JavaScript animation, call the module-level `.animation()` method.
 The name must be a CSS class selector starting with `.`:
 
 ```ts
-angular.module('app', []).animation('.fade-animation', () => {
+angular.createModule('app', []).animation('.fade-animation', () => {
   return {
     enter(element, done) {
       element

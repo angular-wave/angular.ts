@@ -17,7 +17,7 @@ describe("ngInject", () => {
     const angular = new Angular();
 
     angular
-      .module("default", [])
+      .createModule("default", [])
       .value("$test", { a: 1 })
       .value("$a", { x: 1 })
       .value("$b", { y: 2 })

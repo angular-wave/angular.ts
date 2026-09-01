@@ -8,11 +8,13 @@
     <script type="module" src="/src/auto.ts"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        window.angular.module("test", []).directive("svgContainer", () => ({
-          template: "<svg ng-transclude></svg>",
-          replace: true,
-          transclude: true,
-        }));
+        window.angular
+          .createModule("test", [])
+          .directive("svgContainer", () => ({
+            template: "<svg ng-transclude></svg>",
+            replace: true,
+            transclude: true,
+          }));
       });
     </script>
   </head>

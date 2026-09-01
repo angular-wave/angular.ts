@@ -44,11 +44,11 @@ import { angular } from '@angular-wave/angular.ts';
 ### Create a module
 
 A module is the top-level container for your application. It holds controllers,
-services, directives, and filters. Create one by calling `angular.module()` with
+services, directives, and filters. Create one by calling `angular.createModule()` with
 a name and an empty dependency array:
 
 ```js
-const app = angular.module('myApp', []);
+const app = angular.createModule('myApp', []);
 ```
 
 The first argument is the module name. The second argument lists other modules
@@ -70,7 +70,7 @@ object — a plain JavaScript object that acts as the data model for their
 template. Anything you put on `$scope` becomes available in the HTML template.
 
 ```js
-const app = angular.module('myApp', []);
+const app = angular.createModule('myApp', []);
 
 app.controller('CounterController', [
   '$scope',
@@ -160,7 +160,7 @@ the normal AngularTS script tag in the document head as shown above.
 </section>
 
 <script>
-  angular.module('todoApp', []).controller('TodoController', [
+  angular.createModule('todoApp', []).controller('TodoController', [
     '$scope',
     ($scope) => {
       $scope.todos = [];
@@ -200,7 +200,7 @@ interface TodoScope extends ng.Scope {
   remaining(): number;
 }
 
-angular.module('todoApp', []).controller('TodoController', [
+angular.createModule('todoApp', []).controller('TodoController', [
   '$scope',
   function ($scope: TodoScope) {
     $scope.todos = [{ text: 'Learn AngularTS', done: false }];

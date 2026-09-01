@@ -1,5 +1,5 @@
 window.angular
-  .module("interpolateConfigDemo", [])
+  .createModule("interpolateConfigDemo", [])
   .config({
     $interpolate: {
       startSymbol: "[[",

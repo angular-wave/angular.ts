@@ -129,7 +129,7 @@ export const routerModule: RuntimeModule = (angular) => {
   });
 
   const module = angular
-    .module("ng.router", [])
+    .createModule("ng.router", [])
     .value(_security, security)
     .factory(_aria, () => createAriaService(aria, log))
     .factory(_location, [

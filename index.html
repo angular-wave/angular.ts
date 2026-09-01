@@ -23,31 +23,31 @@
           }
 
           greet() {
-            this.greeting = this.greeting + " !"
+            this.greeting = this.greeting + " !";
           }
         }
         window.angular
-          .module("todo", [])
+          .createModule("todo", [])
           .service("Greeter", Greeter)
-          .component('counterButton', {
+          .component("counterButton", {
             view: (res) => {
-             const { scope } = res;
-             res.scope.$ctrl.count = 0;
-             return angular.view.tags.button(
+              const { scope } = res;
+              res.scope.$ctrl.count = 0;
+              return angular.view.tags.button(
                 { onclick: () => res.scope.$ctrl.count++ },
                 () => `Count: ${res.scope.$ctrl.count}`,
-              )
-            }
+              );
+            },
           })
           .controller("DemoCtrl", ["Greeter", Demo]);
 
-        window.angular.bootstrap(document, ["todo"]);  
+        window.angular.bootstrap(document, ["todo"]);
       });
     </script>
   </head>
   <body>
     <main id="$ctrl" ng-controller="DemoCtrl as $ctrl">
-      <h3>{{ $ctrl.greeter.greeting  }}</h3>
+      <h3>{{ $ctrl.greeter.greeting }}</h3>
       <button ng-click="$ctrl.greeter.greet()">Greet</button>
       <counter-button></counter-button>
       {{ $ctrl.count }}

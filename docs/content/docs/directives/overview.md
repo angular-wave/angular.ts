@@ -58,7 +58,7 @@ Register directives on a module with `.directive(name, factory)`. The factory
 returns a directive definition object.
 
 ```js
-angular.module('demo', []).directive('highlight', () => {
+angular.createModule('demo', []).directive('highlight', () => {
   return {
     restrict: 'A',
     scope: {

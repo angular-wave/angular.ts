@@ -205,80 +205,45 @@ export class AngularRuntime extends EventTarget {
   }
 
   /**
-   * The `angular.module` is a global place for creating, registering and retrieving AngularTS
-   * modules.
-   * All modules (AngularTS core or 3rd party) that should be available to an application must be
-   * registered using this mechanism.
+   * Creates or replaces an AngularTS module.
    *
-   * Passing one argument retrieves an existing ng.NgModule,
-   * whereas passing more than one argument creates a new ng.NgModule
+   * A module collects services, directives, controllers, filters, workers,
+   * WebAssembly modules, and configuration for an application.
    *
-   * # Module
-   *
-   * A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information.
-   * `angular.module` is used to configure the auto.$injector `$injector`.
-   *
+   * @example
    * ```js
-   * // Create a new module
-   * let myModule = angular.module('myModule', []);
-   *
-   * // register a new service
-   * myModule.value('appName', 'MyCoolApp');
-   *
-   * // configure built-in services with typed object config.
-   * myModule.config({
-   *   location: {
-   *     hashPrefix: '!',
-   *   },
-   * });
+   * const app = angular.createModule("myApp", ["ng"]);
+   * app.value("appName", "My app");
    * ```
    *
-   * Then you can create an injector and load your modules like this:
-   *
-   * ```js
-   * let injector = angular.injector(['ng', 'myModule'])
-   * ```
-   *
-   * However it's more likely that you'll use the `ng-app` directive or
-   * `bootstrap()` to simplify this process.
-   *
-   * @param name The name of the module to create or retrieve.
-   * @param requires If specified then new module is being created. If
-   * unspecified then the module is being retrieved for further configuration.
+   * @param name The name of the module to create.
+   * @param requires The modules required by the new module.
    * @param configFn Optional configuration function for the module that gets
    * passed to `NgModule.config()`.
    * @returns A newly registered module.
    */
-  module(
+  createModule(
     name: string,
     requires?: string[],
     configFn?: ModuleConfigFn,
   ): NgModule;
-  module<TRouteMap extends RouteMap>(
+  createModule<TRouteMap extends RouteMap>(
     name: string,
     requires?: string[],
     configFn?: ModuleConfigFn,
   ): RouterModule<TRouteMap>;
-  module(
+  createModule(
     name: string,
-    requires?: string[],
+    requires: string[] = [],
     configFn?: ModuleConfigFn,
   ): NgModule | RouterModule {
-    validateNotHasOwnPropertyName(name, "module");
+    validateNotHasOwnPropertyName(name, "createModule");
 
-    if (requires && hasOwn(this._moduleRegistry, name)) {
+    if (hasOwn(this._moduleRegistry, name)) {
       this._moduleRegistry[name] = null;
     }
 
     return ensure(this._moduleRegistry, name, () => {
-      if (!requires) {
-        throw $injectorError(
-          "nomod",
-          "Module '{0}' is not available. Possibly misspelled or not loaded",
-          name,
-        );
-      }
-
       return new NgModule(
         name,
         requires,
@@ -289,6 +254,26 @@ export class AngularRuntime extends EventTarget {
         this._composition.compileRegistry,
         this._composition.appContext,
         this._composition.configRegistry,
+      );
+    });
+  }
+
+  /**
+   * Retrieves an existing module.
+   *
+   * @param name The name of the module to retrieve.
+   * @returns The registered module.
+   */
+  getModule(name: string): NgModule;
+  getModule<TRouteMap extends RouteMap>(name: string): RouterModule<TRouteMap>;
+  getModule(name: string): NgModule | RouterModule {
+    validateNotHasOwnPropertyName(name, "getModule");
+
+    return ensure(this._moduleRegistry, name, () => {
+      throw $injectorError(
+        "nomod",
+        "Module '{0}' is not available. Possibly misspelled or not loaded",
+        name,
       );
     });
   }
@@ -415,7 +400,7 @@ export class AngularRuntime extends EventTarget {
    *
    * <script src="angular.js"></script>
    * <script>
-   *   let app = angular.module('demo', [])
+   *   let app = angular.createModule('demo', [])
    *   .controller('WelcomeController', ['$scope', function($scope) {
    *       $scope.greeting = 'Welcome!';
    *   }]);
@@ -429,7 +414,7 @@ export class AngularRuntime extends EventTarget {
    * @param modules an array of modules to load into the application.
    *     Each item in the array should be the name of a predefined module or a (DI annotated)
    *     function that will be invoked by the injector as a `config` block.
-   *     See `angular.module()`.
+   *     See `angular.createModule()` and `angular.getModule()`.
    * @returns The created injector instance for this application.
    */
   bootstrap(
@@ -458,7 +443,7 @@ export class AngularRuntime extends EventTarget {
       (registry) => {
         registry.value(_rootElement, element);
       },
-      (name) => this.module(name),
+      (name) => this.getModule(name),
     );
 
     injector.invoke([
@@ -532,7 +517,7 @@ export class AngularRuntime extends EventTarget {
     }
 
     this.currentInjector = createInjector(modules, undefined, (name) =>
-      this.module(name),
+      this.getModule(name),
     );
     this._injectorCreated = true;
 

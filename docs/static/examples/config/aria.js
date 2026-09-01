@@ -1,5 +1,5 @@
 window.angular
-  .module("ariaConfigDemo", [])
+  .createModule("ariaConfigDemo", [])
   .config({
     $aria: {
       ariaDisabled: false,
