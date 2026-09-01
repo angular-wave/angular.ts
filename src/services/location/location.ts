@@ -166,7 +166,7 @@ export class Location {
   }
 
   /**
-   * Change path, search and hash, when called with parameter and return `$location`.
+   * Set the path, search, and hash, then return `$location`.
    *
    * @param url - New URL without base prefix (e.g. `/path?a=b#hash`).
    * @returns The `Location` instance.
@@ -193,20 +193,12 @@ export class Location {
   }
 
   /**
-   * Return URL (e.g. `/path?a=b#hash`) when called without any parameter.
+   * Return the current URL (for example, `/path?a=b#hash`).
    *
    * @returns The current path/search/hash string.
    */
   getUrl() {
     return this._url;
-  }
-
-  url(): string;
-  url(url: string): this;
-  url(url?: string) {
-    return arguments.length
-      ? this.setUrl(validateRequired(url, "url"))
-      : this.getUrl();
   }
 
   /**
@@ -234,14 +226,8 @@ export class Location {
     return this._path;
   }
 
-  path(): string;
-  path(path: string | number | null): this;
-  path(path?: string | number | null) {
-    return arguments.length ? this.setPath(path ?? null) : this.getPath();
-  }
-
   /**
-   * Changes the hash fragment when called with a parameter and returns `$location`.
+   * Set the hash fragment and return `$location`.
    * @param hash - New hash fragment.
    * @returns The `Location` instance.
    */
@@ -254,17 +240,11 @@ export class Location {
   }
 
   /**
-   * Returns the hash fragment when called without any parameters.
+   * Return the current hash fragment.
    * @returns The current hash fragment.
    */
   getHash() {
     return this._hash;
-  }
-
-  hash(): string;
-  hash(hash: string | number | null): this;
-  hash(hash?: string | number | null) {
-    return arguments.length ? this.setHash(hash ?? null) : this.getHash();
   }
 
   /**
@@ -296,7 +276,7 @@ export class Location {
         } else {
           throw $locationError(
             "isrcharg",
-            "The first argument of the `$location#search()` call must be a string or an object.",
+            "The first argument of `$location.setSearch()` must be a string or an object.",
           );
         }
         break;
@@ -304,7 +284,7 @@ export class Location {
         if (!isString(search) && !isNumber(search)) {
           throw $locationError(
             "isrcharg",
-            "The first argument of the `$location#search()` call must be a string or number when setting a single parameter.",
+            "The first argument of `$location.setSearch()` must be a string or number when setting a single parameter.",
           );
         }
 
@@ -333,21 +313,6 @@ export class Location {
     return this._search;
   }
 
-  search(): Record<string, unknown>;
-  search(
-    search: string | number | Record<string, unknown>,
-    paramValue?: string | number | string[] | boolean | null,
-  ): this;
-
-  search(
-    search?: string | number | Record<string, unknown>,
-    paramValue?: string | number | string[] | boolean | null,
-  ) {
-    return arguments.length
-      ? this.setSearch(validateRequired(search, "search"), paramValue)
-      : this.getSearch();
-  }
-
   /**
    * @internal
    * Compose url and update `url` and `absUrl` property
@@ -362,7 +327,7 @@ export class Location {
   }
 
   /**
-   * Change the history state object when called with one parameter and return `$location`.
+   * Set the history state object and return `$location`.
    * The state object is later passed to `pushState` or `replaceState`.
    * See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state|History.state}
    *
@@ -393,12 +358,6 @@ export class Location {
    */
   getState(): unknown {
     return this._state;
-  }
-
-  state(): unknown;
-  state(state: unknown): this;
-  state(state?: unknown): unknown {
-    return arguments.length ? this.setState(state) : this.getState();
   }
 
   /** Attempts to parse a clicked link into an app-relative URL update. */

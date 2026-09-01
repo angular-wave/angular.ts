@@ -538,13 +538,9 @@
     "location-service-get-path"
     "location-service-get-search"
     "location-service-get-url"
-    "location-service-hash"
     "location-service-parse"
     "location-service-parse-link-url"
-    "location-service-path"
-    "location-service-search"
     "location-service-set-url"
-    "location-service-url"
     "log-service-debug"
     "log-service-error"
     "log-service-info"
@@ -1506,7 +1502,7 @@
   (.startSymbol target))
 
 (defn location-service-get-hash
-  "Returns the hash fragment when called without any parameters.\n\nReturns: {string}"
+  "Return the current hash fragment.\n\nReturns: {string}"
   ^string [^js/ng.LocationService target]
   (.getHash target))
 
@@ -1521,14 +1517,9 @@
   (.getSearch target))
 
 (defn location-service-get-url
-  "Return URL (e.g. `/path?a=b#hash`) when called without any parameter.\n\nReturns: {string}"
+  "Return the current URL (for example, `/path?a=b#hash`).\n\nReturns: {string}"
   ^string [^js/ng.LocationService target]
   (.getUrl target))
-
-(defn location-service-hash
-  "Public LocationService.hash member exposed by the AngularTS namespace contract.\n\nReturns: {string}"
-  ^string [^js/ng.LocationService target]
-  (.hash target))
 
 (defn location-service-parse
   "Parse given HTML5 (regular) URL string into properties\n\nParams:\n- url: {string} HTML5 URL\n\nReturns: {void}"
@@ -1540,25 +1531,10 @@
   ^boolean [^js/ng.LocationService target ^string url ^string relHref]
   (.parseLinkUrl target url relHref))
 
-(defn location-service-path
-  "Public LocationService.path member exposed by the AngularTS namespace contract.\n\nReturns: {string}"
-  ^string [^js/ng.LocationService target]
-  (.path target))
-
-(defn location-service-search
-  "Public LocationService.search member exposed by the AngularTS namespace contract.\n\nReturns: {!Object<string, ?>}"
-  ^js/Object [^js/ng.LocationService target]
-  (.search target))
-
 (defn location-service-set-url
-  "Change path, search and hash, when called with parameter and return `$location`.\n\nParams:\n- url: {string} New URL without base prefix (e.g. `/path?a=b#hash`).\n\nReturns: {!ng.LocationService}"
+  "Set the path, search, and hash, then return `$location`.\n\nParams:\n- url: {string} New URL without base prefix (e.g. `/path?a=b#hash`).\n\nReturns: {!ng.LocationService}"
   ^js/ng.LocationService [^js/ng.LocationService target ^string url]
   (.setUrl target url))
-
-(defn location-service-url
-  "Public LocationService.url member exposed by the AngularTS namespace contract.\n\nReturns: {string}"
-  ^string [^js/ng.LocationService target]
-  (.url target))
 
 (defn log-service-debug
   "Log a debug message.\n\nParams:\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {void}"

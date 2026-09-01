@@ -327,19 +327,19 @@ entries.
 Use `$location` to read URL components:
 
 ```js
-$location.path(); // "/contacts/42"
-$location.search(); // { tab: 'notes' }
-$location.hash(); // "section1"
-$location.url(); // "/contacts/42?tab=notes#section1"
+$location.getPath(); // "/contacts/42"
+$location.getSearch(); // { tab: 'notes' }
+$location.getHash(); // "section1"
+$location.getUrl(); // "/contacts/42?tab=notes#section1"
 ```
 
 ## Updating the URL
 
-Use `$location.url(newUrl)` to replace the current URL. The router then syncs
+Use `$location.setUrl(newUrl)` to replace the current URL. The router then syncs
 the matching state:
 
 ```js
-$location.url('/contacts/99?tab=history');
+$location.setUrl('/contacts/99?tab=history');
 ```
 
 ## URL rule priority and matching weight
@@ -364,7 +364,7 @@ Listen for `$locationChangeSuccess` when code needs URL-level notifications:
 
 ```js
 const deregister = $rootScope.on('$locationChangeSuccess', () => {
-  console.log('URL changed to:', $location.url());
+  console.log('URL changed to:', $location.getUrl());
 });
 
 // Stop listening

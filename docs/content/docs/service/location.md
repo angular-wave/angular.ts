@@ -15,10 +15,10 @@ Exact signatures live in TypeDoc:
 ## Read The Current URL
 
 ```ts
-$location.path();
-$location.search();
-$location.hash();
-$location.url();
+$location.getPath();
+$location.getSearch();
+$location.getHash();
+$location.getUrl();
 $location.absUrl();
 ```
 
@@ -26,9 +26,9 @@ $location.absUrl();
 
 ```ts
 $location
-  .path("/settings")
-  .search({ tab: "profile" })
-  .hash("details");
+  .setPath("/settings")
+  .setSearch({ tab: "profile" })
+  .setHash("details");
 ```
 
 Setter methods return `$location`, so updates can be chained.

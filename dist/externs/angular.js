@@ -3370,23 +3370,17 @@ ng.LocationService.prototype.hashPrefix;
 ng.LocationService.prototype.absUrl;
 
 /**
- * Change path, search and hash, when called with parameter and return `$location`.
+ * Set the path, search, and hash, then return `$location`.
  * @param {string} url New URL without base prefix (e.g. `/path?a=b#hash`).
  * @return {!ng.LocationService}
  */
 ng.LocationService.prototype.setUrl = function(url) {};
 
 /**
- * Return URL (e.g. `/path?a=b#hash`) when called without any parameter.
+ * Return the current URL (for example, `/path?a=b#hash`).
  * @return {string}
  */
 ng.LocationService.prototype.getUrl = function() {};
-
-/**
- * Public LocationService.url member exposed by the AngularTS namespace contract.
- * @return {string}
- */
-ng.LocationService.prototype.url = function() {};
 
 /**
  * Changes the path parameter and returns `$location`.
@@ -3402,29 +3396,17 @@ ng.LocationService.prototype.setPath = function(path) {};
 ng.LocationService.prototype.getPath = function() {};
 
 /**
- * Public LocationService.path member exposed by the AngularTS namespace contract.
- * @return {string}
- */
-ng.LocationService.prototype.path = function() {};
-
-/**
- * Changes the hash fragment when called with a parameter and returns `$location`.
+ * Set the hash fragment and return `$location`.
  * @param {(null|number|string)} hash New hash fragment.
  * @return {!ng.LocationService}
  */
 ng.LocationService.prototype.setHash = function(hash) {};
 
 /**
- * Returns the hash fragment when called without any parameters.
+ * Return the current hash fragment.
  * @return {string}
  */
 ng.LocationService.prototype.getHash = function() {};
-
-/**
- * Public LocationService.hash member exposed by the AngularTS namespace contract.
- * @return {string}
- */
-ng.LocationService.prototype.hash = function() {};
 
 /**
  * Sets the search part of the current URL as an object.
@@ -3441,13 +3423,7 @@ ng.LocationService.prototype.setSearch = function(search, paramValue) {};
 ng.LocationService.prototype.getSearch = function() {};
 
 /**
- * Public LocationService.search member exposed by the AngularTS namespace contract.
- * @return {!Object<string, ?>}
- */
-ng.LocationService.prototype.search = function() {};
-
-/**
- * Change the history state object when called with one parameter and return `$location`. The state object is later passed to `pushState` or `replaceState`. See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state} NOTE: This method is supported only in HTML5 mode and only in browsers supporting the HTML5 History API (i.e. methods `pushState` and `replaceState`). If you need to support older browsers (like IE9 or Android < 4.0), don't use this method.
+ * Set the history state object and return `$location`. The state object is later passed to `pushState` or `replaceState`. See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state} NOTE: This method is supported only in HTML5 mode and only in browsers supporting the HTML5 History API (i.e. methods `pushState` and `replaceState`). If you need to support older browsers (like IE9 or Android < 4.0), don't use this method.
  * @param {?} state Value supplied for the state parameter.
  * @return {!ng.LocationService}
  */
@@ -3458,12 +3434,6 @@ ng.LocationService.prototype.setState = function(state) {};
  * @return {?}
  */
 ng.LocationService.prototype.getState = function() {};
-
-/**
- * Public LocationService.state member exposed by the AngularTS namespace contract.
- * @return {?}
- */
-ng.LocationService.prototype.state = function() {};
 
 /**
  * Attempts to parse a clicked link into an app-relative URL update.

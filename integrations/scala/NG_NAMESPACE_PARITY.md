@@ -357,23 +357,18 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `InjectorService.loadNewModules` | Invokes the loadNewModules member of ng.InjectorService. | `mods: (string \| Callable<unknown> \| AnnotatedFactory<Callable<unknown>>)[]` - Value supplied for the mods parameter. |
 | `InterpolateService.endSymbol` | Return the configured interpolation end delimiter. | None |
 | `InterpolateService.startSymbol` | Return the configured interpolation start delimiter. | None |
-| `LocationService.getHash` | Returns the hash fragment when called without any parameters. | None |
+| `LocationService.getHash` | Return the current hash fragment. | None |
 | `LocationService.getPath` | Returns the path of the current URL. | None |
 | `LocationService.getSearch` | Returns the search part of the current URL as an object. | None |
 | `LocationService.getState` | Returns the current history state object. | None |
-| `LocationService.getUrl` | Return URL (e.g. \`/path?a=b#hash\`) when called without any parameter. | None |
-| `LocationService.hash` | Invokes the hash member of ng.LocationService. | `hash: string \| number` - Value supplied for the hash parameter. |
+| `LocationService.getUrl` | Return the current URL (for example, \`/path?a=b#hash\`). | None |
 | `LocationService.parse` | Parse given HTML5 (regular) URL string into properties | `url: string` - HTML5 URL |
 | `LocationService.parseLinkUrl` | Attempts to parse a clicked link into an app-relative URL update. | `url: string` - Value supplied for the url parameter.<br>`relHref: string` - Value supplied for the relHref parameter. |
-| `LocationService.path` | Invokes the path member of ng.LocationService. | `path: string \| number` - Value supplied for the path parameter. |
-| `LocationService.search` | Invokes the search member of ng.LocationService. | `search: string \| number \| Record<string, unknown>` - Value supplied for the search parameter.<br>`paramValue: string \| number \| boolean \| string[]` - Value supplied for the paramValue parameter. |
-| `LocationService.setHash` | Changes the hash fragment when called with a parameter and returns \`$location\`. | `hash: string \| number` - New hash fragment. |
+| `LocationService.setHash` | Set the hash fragment and return \`$location\`. | `hash: string \| number` - New hash fragment. |
 | `LocationService.setPath` | Changes the path parameter and returns \`$location\`. | `path: string \| number` - New path. |
 | `LocationService.setSearch` | Sets the search part of the current URL as an object. | `search: string \| number \| Record<string, unknown>` - New search params as a string or object.<br>`paramValue: string \| number \| boolean \| string[]` - If \`search\` is a string or number, overrides only a single search property. |
-| `LocationService.setState` | Change the history state object when called with one parameter and return \`$location\`. The state object is later passed to \`pushState\` or \`replaceState\`. See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state} NOTE: This method is supported only in HTML5 mode and only in browsers supporting the HTML5 History API (i.e. methods \`pushState\` and \`replaceState\`). If you need to support older browsers (like IE9 or Android < 4.0), don't use this method. | `state: unknown` - Value supplied for the state parameter. |
-| `LocationService.setUrl` | Change path, search and hash, when called with parameter and return \`$location\`. | `url: string` - New URL without base prefix (e.g. \`/path?a=b#hash\`). |
-| `LocationService.state` | Invokes the state member of ng.LocationService. | `state: unknown` - Value supplied for the state parameter. |
-| `LocationService.url` | Invokes the url member of ng.LocationService. | `url: string` - Value supplied for the url parameter. |
+| `LocationService.setState` | Set the history state object and return \`$location\`. The state object is later passed to \`pushState\` or \`replaceState\`. See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state} NOTE: This method is supported only in HTML5 mode and only in browsers supporting the HTML5 History API (i.e. methods \`pushState\` and \`replaceState\`). If you need to support older browsers (like IE9 or Android < 4.0), don't use this method. | `state: unknown` - Value supplied for the state parameter. |
+| `LocationService.setUrl` | Set the path, search, and hash, then return \`$location\`. | `url: string` - New URL without base prefix (e.g. \`/path?a=b#hash\`). |
 | `LogService.debug` | Log a debug message. | `args: unknown[]` - Value supplied for the args parameter. |
 | `LogService.error` | Log an error message. | `args: unknown[]` - Value supplied for the args parameter. |
 | `LogService.info` | Log an info message. | `args: unknown[]` - Value supplied for the args parameter. |

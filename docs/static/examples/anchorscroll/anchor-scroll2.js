@@ -15,12 +15,12 @@ window.angular
         window.$locationTest = $location;
         const newHash = 'anchor' + x;
         if ($location.getHash() !== newHash) {
-          // set the $location.hash to `newHash` and
+          // Pass `newHash` to setHash() and
           // $anchorScroll will automatically scroll to it
           $location.setHash('anchor' + x);
         } else {
           // call $anchorScroll() explicitly,
-          // since $location.hash hasn't changed
+          // since getHash() still returns the same value
           $anchorScroll();
         }
       };

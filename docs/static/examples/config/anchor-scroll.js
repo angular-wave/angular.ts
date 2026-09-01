@@ -17,7 +17,7 @@ window.angular
       }
 
       openDetails() {
-        this.$location.hash('details');
+        this.$location.setHash('details');
         this.$anchorScroll('details');
         this.currentHash = this.$location.getHash();
       }

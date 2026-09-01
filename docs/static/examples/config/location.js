@@ -17,12 +17,12 @@ window.angular
 
       constructor($location) {
         this.$location = $location;
-        this.currentUrl = $location.url();
+        this.currentUrl = $location.getUrl();
       }
 
       openSettings() {
-        this.$location.path('/settings').search({ tab: 'profile' });
-        this.currentUrl = this.$location.url();
+        this.$location.setPath('/settings').setSearch({ tab: 'profile' });
+        this.currentUrl = this.$location.getUrl();
       }
     },
   );

@@ -34,7 +34,7 @@ Executable sample:
 ## Manual Scrolling
 
 ```js
-$location.hash("details");
+$location.setHash("details");
 $anchorScroll("details");
 ```
 

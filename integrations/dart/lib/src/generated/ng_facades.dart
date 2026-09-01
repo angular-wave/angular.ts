@@ -3702,7 +3702,7 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
     raw.setProperty('absUrl'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Change path, search and hash, when called with parameter and return `$location`.
+  /// Set the path, search, and hash, then return `$location`.
   ///
   /// Parameters:
   /// - [url]: New URL without base prefix (e.g. `/path?a=b#hash`).
@@ -3714,23 +3714,10 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
     return this;
   }
 
-  /// Return URL (e.g. `/path?a=b#hash`) when called without any parameter.
+  /// Return the current URL (for example, `/path?a=b#hash`).
   String getUrl() {
     return _toDartString(
         raw.callMethodVarArgs('getUrl'.toJS, const <JSAny?>[]))!;
-  }
-
-  /// The url member of ng.LocationService.
-  ///
-  /// Parameters:
-  /// - [url]: Value supplied for the url parameter.
-  Object? url([Object? url = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    if (!identical(url, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(url));
-    }
-
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('url'.toJS, args));
   }
 
   /// Changes the path parameter and returns `$location`.
@@ -3751,20 +3738,7 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
         raw.callMethodVarArgs('getPath'.toJS, const <JSAny?>[]))!;
   }
 
-  /// The path member of ng.LocationService.
-  ///
-  /// Parameters:
-  /// - [path]: Value supplied for the path parameter.
-  Object? path([Object? path = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    if (!identical(path, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(path));
-    }
-
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('path'.toJS, args));
-  }
-
-  /// Changes the hash fragment when called with a parameter and returns `$location`.
+  /// Set the hash fragment and return `$location`.
   ///
   /// Parameters:
   /// - [hash]: New hash fragment.
@@ -3776,23 +3750,10 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
     return this;
   }
 
-  /// Returns the hash fragment when called without any parameters.
+  /// Return the current hash fragment.
   String getHash() {
     return _toDartString(
         raw.callMethodVarArgs('getHash'.toJS, const <JSAny?>[]))!;
-  }
-
-  /// The hash member of ng.LocationService.
-  ///
-  /// Parameters:
-  /// - [hash]: Value supplied for the hash parameter.
-  Object? hash([Object? hash = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    if (!identical(hash, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(hash));
-    }
-
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('hash'.toJS, args));
   }
 
   /// Sets the search part of the current URL as an object.
@@ -3818,27 +3779,8 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
         raw.callMethodVarArgs('getSearch'.toJS, const <JSAny?>[]));
   }
 
-  /// The search member of ng.LocationService.
-  ///
-  /// Parameters:
-  /// - [search]: Value supplied for the search parameter.
-  /// - [paramValue]: Value supplied for the paramValue parameter.
-  Object? search(
-      [Object? search = _undefinedArgument,
-      Object? paramValue = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    if (!identical(search, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(search));
-    }
-    if (!identical(paramValue, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(paramValue));
-    }
-
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('search'.toJS, args));
-  }
-
-  /// Change the history state object when called with one parameter and return `$location`. The state
-  /// object is later passed to `pushState` or `replaceState`. See {@link
+  /// Set the history state object and return `$location`. The state object is later passed to
+  /// `pushState` or `replaceState`. See {@link
   /// https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state} NOTE:
   /// This method is supported only in HTML5 mode and only in browsers supporting the HTML5 History
   /// API (i.e. methods `pushState` and `replaceState`). If you need to support older browsers (like
@@ -3858,19 +3800,6 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
   Object? getState() {
     return unsafe.jsToDart<Object?>(
         raw.callMethodVarArgs('getState'.toJS, const <JSAny?>[]));
-  }
-
-  /// The state member of ng.LocationService.
-  ///
-  /// Parameters:
-  /// - [state]: Value supplied for the state parameter.
-  Object? state([Object? state = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    if (!identical(state, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(state));
-    }
-
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('state'.toJS, args));
   }
 
   /// Attempts to parse a clicked link into an app-relative URL update.

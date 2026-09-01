@@ -22,10 +22,10 @@ Exact routing API signatures live in TypeDoc:
 Use `$location` when code needs to inspect or change the raw URL.
 
 ```ts
-$location.path(); // "/dashboard"
-$location.search(); // { tab: "overview" }
-$location.hash(); // "summary"
-$location.url(); // "/dashboard?tab=overview#summary"
+$location.getPath(); // "/dashboard"
+$location.getSearch(); // { tab: "overview" }
+$location.getHash(); // "summary"
+$location.getUrl(); // "/dashboard?tab=overview#summary"
 $location.absUrl(); // "https://app.example.com/dashboard?tab=overview#summary"
 ```
 
@@ -33,9 +33,9 @@ Setter methods return `$location`, so related URL changes can be chained.
 
 ```ts
 $location
-  .path('/settings/profile')
-  .search({ tab: 'security' })
-  .hash('billing-section');
+  .setPath('/settings/profile')
+  .setSearch({ tab: 'security' })
+  .setHash('billing-section');
 ```
 
 Changes to `$location` are applied asynchronously. `$locationChangeStart` and

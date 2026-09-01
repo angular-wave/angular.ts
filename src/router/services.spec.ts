@@ -36,7 +36,7 @@ describe("router services", () => {
   });
 
   it("activates the initial url-matched state after sync", async () => {
-    $location.url("/startup-home");
+    $location.setUrl("/startup-home");
     routerState._sync();
     await waitUntil(() => $state.current.name === "home");
 
@@ -126,7 +126,7 @@ describe("router services", () => {
     });
 
     it("reaches states and decodes params with a custom type", async () => {
-      location.url("/item/S-abc-12");
+      location.setUrl("/item/S-abc-12");
       router._sync();
 
       await waitUntil(() => state.current.name === "item");
@@ -135,7 +135,7 @@ describe("router services", () => {
       expect(state.params.slug).toBe("abc-12");
 
       await state.go("item", { slug: "def-34" });
-      expect(location.url()).toContain("/item/S-def-34");
+      expect(location.getUrl()).toContain("/item/S-def-34");
       expect(state.params.slug).toBe("def-34");
     });
   });

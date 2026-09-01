@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Removed overloaded `$location` getter/setter aliases; use explicit `getUrl`,
+  `setUrl`, `getPath`, `setPath`, `getSearch`, `setSearch`, `getHash`, `setHash`,
+  `getState`, and `setState` methods.
+
 ## [0.34.0] - 2026-08-29
 
 - Finalized type-safe Programmatic View APIs and view contexts across integrations.

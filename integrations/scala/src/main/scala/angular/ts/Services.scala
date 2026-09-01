@@ -3029,18 +3029,19 @@ object WorkerService:
 @js.native
 trait LocationService extends js.Object:
   def absUrl: String = js.native
-  def url(): String = js.native
-  def url(value: String): LocationService = js.native
-  def path(): String = js.native
-  def path(value: String): LocationService = js.native
-  def search(): js.Dictionary[js.Any] = js.native
-  def search(value: String): LocationService = js.native
-  def search(value: js.Dictionary[js.Any]): LocationService = js.native
-  def hash(): String = js.native
-  def hash(value: String): LocationService = js.native
+  def getUrl(): String = js.native
+  def setUrl(value: String): LocationService = js.native
+  def getPath(): String = js.native
+  def setPath(value: String | Double | Null): LocationService = js.native
+  def getSearch(): js.Dictionary[js.Any] = js.native
+  def setSearch(value: String | Double): LocationService = js.native
+  def setSearch(value: js.Dictionary[js.Any]): LocationService = js.native
+  def setSearch(name: String | Double, value: js.Any): LocationService = js.native
+  def getHash(): String = js.native
+  def setHash(value: String | Double | Null): LocationService = js.native
   def replace(): LocationService = js.native
-  def state(): js.Any = js.native
-  def state(value: js.Any): LocationService = js.native
+  def getState(): js.Any = js.native
+  def setState(value: js.Any): LocationService = js.native
 
 final case class CookieOptions(
     path: js.UndefOr[String] = js.undefined,

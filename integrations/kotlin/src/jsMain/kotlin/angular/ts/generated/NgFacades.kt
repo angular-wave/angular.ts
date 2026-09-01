@@ -2799,7 +2799,7 @@ public external interface LocationService {
      */
     public var basePrefix: String
     /**
-     * Returns the hash fragment when called without any parameters.
+     * Return the current hash fragment.
      */
     public fun getHash(): String
     /**
@@ -2815,14 +2815,9 @@ public external interface LocationService {
      */
     public fun getState(): dynamic
     /**
-     * Return URL (e.g. `/path?a=b#hash`) when called without any parameter.
+     * Return the current URL (for example, `/path?a=b#hash`).
      */
     public fun getUrl(): String
-    /**
-     * The hash member of ng.LocationService.
-     * @param hash Value supplied for the hash parameter.
-     */
-    public fun hash(hash: dynamic = definedExternally): dynamic
     /**
      * The hashPrefix member of ng.LocationService.
      */
@@ -2843,18 +2838,7 @@ public external interface LocationService {
      */
     public fun parseLinkUrl(url: String = definedExternally, relHref: String = definedExternally): Boolean
     /**
-     * The path member of ng.LocationService.
-     * @param path Value supplied for the path parameter.
-     */
-    public fun path(path: dynamic = definedExternally): dynamic
-    /**
-     * The search member of ng.LocationService.
-     * @param search Value supplied for the search parameter.
-     * @param paramValue Value supplied for the paramValue parameter.
-     */
-    public fun search(search: dynamic = definedExternally, paramValue: dynamic = definedExternally): dynamic
-    /**
-     * Changes the hash fragment when called with a parameter and returns `$location`.
+     * Set the hash fragment and return `$location`.
      * @param hash New hash fragment.
      */
     public fun setHash(hash: dynamic = definedExternally): dynamic
@@ -2870,8 +2854,8 @@ public external interface LocationService {
      */
     public fun setSearch(search: dynamic = definedExternally, paramValue: dynamic = definedExternally): dynamic
     /**
-     * Change the history state object when called with one parameter and return `$location`.
-     * The state object is later passed to `pushState` or `replaceState`. See {@link
+     * Set the history state object and return `$location`. The state object is later passed to
+     * `pushState` or `replaceState`. See {@link
      * https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state}
      * NOTE: This method is supported only in HTML5 mode and only in browsers supporting the
      * HTML5 History API (i.e. methods `pushState` and `replaceState`). If you need to support
@@ -2880,20 +2864,10 @@ public external interface LocationService {
      */
     public fun setState(state: dynamic = definedExternally): dynamic
     /**
-     * Change path, search and hash, when called with parameter and return `$location`.
+     * Set the path, search, and hash, then return `$location`.
      * @param url New URL without base prefix (e.g. `/path?a=b#hash`).
      */
     public fun setUrl(url: String = definedExternally): dynamic
-    /**
-     * The state member of ng.LocationService.
-     * @param state Value supplied for the state parameter.
-     */
-    public fun state(state: dynamic = definedExternally): dynamic
-    /**
-     * The url member of ng.LocationService.
-     * @param url Value supplied for the url parameter.
-     */
-    public fun url(url: String = definedExternally): dynamic
 }
 
 /**
