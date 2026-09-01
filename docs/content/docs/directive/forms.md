@@ -8,6 +8,32 @@ AngularTS enhances native HTML forms with a form controller that tracks validity
 and user interaction state. The `form` and `ng-form` directives attach this
 controller to the scope, and the built-in validators populate it automatically.
 
+## Geolocation
+
+The experimental HTML `<geolocation>` element can write its latest result to
+`ng-model`:
+
+```html
+<geolocation ng-model="position" ng-el="locationPicker" watch>
+  <button type="button">Use my location</button>
+</geolocation>
+```
+
+Each native `location` event replaces `position` with a plain, serializable
+[`GeolocationValue`](../../../typedoc/interfaces/GeolocationValue.html). A
+failed request clears the model and adds `geolocation` to the model controller's
+`error` object. Use `ng-el` when you also need native details such as
+`locationPicker.error` or `locationPicker.permissionStatus`.
+
+The binding is view-to-model only. Changing `position` does not request browser
+permission and cannot write to the element's read-only native `position`.
+Attributes such as `watch` and `autolocate` keep their browser-defined behavior.
+Browsers without `<geolocation>` support display its fallback content.
+
+This element is experimental and has limited browser support. Check the
+[browser compatibility table](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/geolocation#browser_compatibility)
+before relying on it.
+
 ## form / ng-form
 
 A plain `<form>` element with a `name` attribute creates a `FormController` on

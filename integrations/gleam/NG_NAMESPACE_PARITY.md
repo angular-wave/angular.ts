@@ -268,6 +268,7 @@ part of the Gleam public facade.
 | `CookieStoreOptions` | started |
 | `ErrorFormattingConfig` | inventory |
 | `InterpolationFunction` | inventory |
+| `GeolocationValue` | started |
 | `NgModelController` | inventory |
 | `HtmlCanvasConfig` | inventory |
 | `HtmlCanvasRuntimeSupport` | inventory |

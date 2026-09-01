@@ -303,6 +303,7 @@ part of the Kotlin public facade.
 | `ErrorFormattingConfig` | generated |
 | `InterpolationFunction` | generated |
 | `NgModelController` | generated |
+| `GeolocationValue` | generated |
 | `HtmlCanvasConfig` | generated |
 | `HtmlCanvasRuntimeSupport` | generated |
 | `HtmlCanvasService` | generated |

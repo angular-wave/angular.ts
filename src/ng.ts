@@ -34,6 +34,7 @@ import {
   _workflowSupervisor,
 } from "./injection-tokens.ts";
 import type { AngularRuntime } from "./angular-runtime.ts";
+import { geolocationDirective } from "./directive/geolocation/geolocation.ts";
 import {
   AnimationRegistry,
   createAnimateService,
@@ -350,6 +351,10 @@ export type {
   NgEventName,
 } from "./directive/events/events.ts";
 export { formDirective, ngFormDirective } from "./directive/form/form.ts";
+export {
+  geolocationDirective,
+  type GeolocationValue,
+} from "./directive/geolocation/geolocation.ts";
 export {
   ngDeleteDirective,
   ngGetDirective,
@@ -1239,6 +1244,7 @@ export const ngIntegrationProviders = {
 
 /** Element, form, and script directives for normal HTML integration. */
 export const ngElementDirectives = {
+  geolocation: geolocationDirective,
   input: inputDirective,
   textarea: inputDirective,
   form: formDirective,

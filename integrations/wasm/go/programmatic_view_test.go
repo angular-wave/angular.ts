@@ -13,7 +13,7 @@ func TestProgrammaticViewManifest(t *testing.T) {
 			"viewPanel",
 			"view-panel",
 			"newViewPanel",
-			ProgrammaticView("renderViewPanel"),
+			ProgrammaticViewSource("renderViewPanel"),
 		),
 	)
 
@@ -28,7 +28,7 @@ func TestProgrammaticViewManifest(t *testing.T) {
 }
 
 func TestProgrammaticViewIsMutuallyExclusiveWithTemplates(t *testing.T) {
-	source := ProgrammaticView("renderView")
+	source := ProgrammaticViewSource("renderView")
 	source.inline = "<p>invalid</p>"
 
 	if err := source.Validate(); err == nil {

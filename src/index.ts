@@ -64,6 +64,7 @@ export {
   tags,
 } from "./core/compile/programmatic-view.ts";
 export { defineWorkflow } from "./services/workflow/workflow.ts";
+export type { GeolocationValue } from "./directive/geolocation/geolocation.ts";
 export type {
   ProgrammaticViewProperties,
   ProgrammaticViewPropertyValue,

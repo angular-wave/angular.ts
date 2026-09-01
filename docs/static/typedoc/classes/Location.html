@@ -270,6 +270,15 @@
                         <use href="../assets/icons.svg#icon-2048"></use></svg
                       ><span>set<wbr />Search</span></a
                     >
+                    <a href="#setsearchparam" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Method"
+                      >
+                        <use href="../assets/icons.svg#icon-2048"></use></svg
+                      ><span>set<wbr />Search<wbr />Param</span></a
+                    >
                     <a href="#setstate" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -1043,9 +1052,8 @@
                 <li class="">
                   <div class="tsd-signature tsd-anchor-link" id="setsearch-1">
                     <span class="tsd-kind-call-signature">setSearch</span
-                    ><span class="tsd-signature-symbol">(</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >search</span
+                    ><span class="tsd-signature-symbol">(</span
+                    ><span class="tsd-kind-parameter">search</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">string</span>
                     <span class="tsd-signature-symbol">|</span>
@@ -1057,23 +1065,7 @@
                     ><span class="tsd-signature-symbol">,</span>
                     <span class="tsd-signature-type">unknown</span
                     ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">,</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >paramValue</span
-                    ><span class="tsd-signature-symbol">?:</span>
-                    <span class="tsd-signature-type">string</span>
-                    <span class="tsd-signature-symbol">|</span>
-                    <span class="tsd-signature-type">number</span>
-                    <span class="tsd-signature-symbol">|</span>
-                    <span class="tsd-signature-type">boolean</span>
-                    <span class="tsd-signature-symbol">|</span>
-                    <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">[]</span>
-                    <span class="tsd-signature-symbol">|</span>
-                    <span class="tsd-signature-type">null</span
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >)</span
+                    ><span class="tsd-signature-symbol">)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a href="" class="tsd-signature-type tsd-kind-class"
                       >Location</a
@@ -1114,28 +1106,6 @@
                             <p>New search params as a string or object.</p>
                           </div>
                         </li>
-                        <li>
-                          <span
-                            ><code class="tsd-tag">Optional</code
-                            ><span class="tsd-kind-parameter">paramValue</span>:
-                            <span class="tsd-signature-type">string</span>
-                            <span class="tsd-signature-symbol">|</span>
-                            <span class="tsd-signature-type">number</span>
-                            <span class="tsd-signature-symbol">|</span>
-                            <span class="tsd-signature-type">boolean</span>
-                            <span class="tsd-signature-symbol">|</span>
-                            <span class="tsd-signature-type">string</span
-                            ><span class="tsd-signature-symbol">[]</span>
-                            <span class="tsd-signature-symbol">|</span>
-                            <span class="tsd-signature-type">null</span></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>
-                              If <code>search</code> is a string or number,
-                              overrides only a single search property.
-                            </p>
-                          </div>
-                        </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
@@ -1145,6 +1115,107 @@
                       >
                     </h4>
                     <p>The <code>Location</code> instance.</p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="setsearchparam">
+                <span>set<wbr />Search<wbr />Param</span
+                ><a
+                  href="#setsearchparam"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <ul class="tsd-signatures">
+                <li class="">
+                  <div
+                    class="tsd-signature tsd-anchor-link"
+                    id="setsearchparam-1"
+                  >
+                    <span class="tsd-kind-call-signature">setSearchParam</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">number</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >value</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">number</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">boolean</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">[]</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">null</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">undefined</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a href="" class="tsd-signature-type tsd-kind-class"
+                      >Location</a
+                    ><a
+                      href="#setsearchparam-1"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>Set or remove one search parameter.</p>
+                    </div>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type">number</span></span
+                          >
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">value</span>:
+                            <span class="tsd-signature-type">string</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type">number</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type">boolean</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">[]</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type">null</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >undefined</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns
+                      <a href="" class="tsd-signature-type tsd-kind-class"
+                        >Location</a
+                      >
+                    </h4>
                   </div>
                 </li>
               </ul>
@@ -1628,6 +1699,14 @@
                     >
                       <use href="../assets/icons.svg#icon-2048"></use></svg
                     ><span>set<wbr />Search</span></a
+                  ><a href="#setsearchparam"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Method"
+                    >
+                      <use href="../assets/icons.svg#icon-2048"></use></svg
+                    ><span>set<wbr />Search<wbr />Param</span></a
                   ><a href="#setstate"
                     ><svg
                       class="tsd-kind-icon"

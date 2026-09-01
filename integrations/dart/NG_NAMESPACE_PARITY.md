@@ -271,6 +271,7 @@ part of the Dart public facade.
 | `ErrorFormattingConfig` | started |
 | `InterpolationFunction` | started |
 | `NgModelController` | started |
+| `GeolocationValue` | started |
 | `HtmlCanvasConfig` | started |
 | `HtmlCanvasRuntimeSupport` | started |
 | `HtmlCanvasService` | started |

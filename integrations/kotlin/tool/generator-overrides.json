@@ -1,6 +1,12 @@
 {
   "callableProperties": [],
   "manual": [],
+  "propertyTypes": {
+    "GeolocationValue.altitude": "Double?",
+    "GeolocationValue.altitudeAccuracy": "Double?",
+    "GeolocationValue.heading": "Double?",
+    "GeolocationValue.speed": "Double?"
+  },
   "renames": {},
   "returnTypes": {},
   "types": {

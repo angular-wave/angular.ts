@@ -240,6 +240,7 @@ import type {
   RestService as TRestService,
 } from "./services/rest/rest.ts";
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
+import type { GeolocationValue as TGeolocationValue } from "./directive/geolocation/geolocation.ts";
 import type {
   ParamsOf as TParamsOf,
   ResolvesOf as TResolvesOf,
@@ -695,6 +696,8 @@ declare global {
     > = TWorkflowSupervisorSnapshot<TWorkflowSnapshots>;
 
     export type NgModelController = TNgModelController;
+
+    export type GeolocationValue = TGeolocationValue;
 
     export type HttpRequestConfig = THttpRequestConfig;
 

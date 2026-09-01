@@ -320,6 +320,7 @@ Rust reference example makes one necessary.
 | `CookieStoreOptions` | covered |
 | `ErrorFormattingConfig` | deferred |
 | `InterpolationFunction` | deferred |
+| `GeolocationValue` | covered |
 | `NgModelController` | deferred |
 | `HtmlCanvasConfig` | deferred |
 | `HtmlCanvasRuntimeSupport` | deferred |

@@ -4,6 +4,7 @@
 //! procedural macros and generated JavaScript bridge will target.
 
 pub mod component;
+pub mod geolocation;
 pub mod injector;
 pub mod module;
 pub mod scope;
@@ -17,6 +18,7 @@ pub mod wasm_types;
 
 pub use angular_ts_macros::{angular_module, component, on_destroy, on_init, service, wasm_bridge};
 pub use component::{ComponentController, ComponentMetadata, InjectionMetadata, TemplateSource};
+pub use geolocation::GeolocationValue;
 pub use injector::{InjectionError, Injector, ServiceRef, UnsafeValue};
 pub use module::{
     module_manifest_json, Controller, Factory, NgModule, Registration, RegistrationKind, Value,
@@ -48,8 +50,8 @@ pub use token::{token, Token};
 #[cfg(target_arch = "wasm32")]
 pub use view::{
     ComponentDefinition, ProgrammaticView, ProgrammaticViewChild, ProgrammaticViewContext,
-    ProgrammaticViewPrimitive, ProgrammaticViewProperties, ProgrammaticViewPropertyValue, ProgrammaticViewTag,
-    ProgrammaticViewTags,
+    ProgrammaticViewPrimitive, ProgrammaticViewProperties, ProgrammaticViewPropertyValue,
+    ProgrammaticViewTag, ProgrammaticViewTags,
 };
 #[cfg(target_arch = "wasm32")]
 pub use wasm::{WasmScope, Watch};

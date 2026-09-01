@@ -4950,6 +4950,44 @@ public external interface NgModelController {
 }
 
 /**
+ * Plain, serializable location data written by the `geolocation` directive.
+ */
+public external interface GeolocationValue {
+    /**
+     * Position accuracy in metres.
+     */
+    public var accuracy: Double
+    /**
+     * Altitude in metres, or `null` when unavailable.
+     */
+    public var altitude: Double?
+    /**
+     * Altitude accuracy in metres, or `null` when unavailable.
+     */
+    public var altitudeAccuracy: Double?
+    /**
+     * Direction of travel in degrees, or `null` when unavailable.
+     */
+    public var heading: Double?
+    /**
+     * Latitude in decimal degrees.
+     */
+    public var latitude: Double
+    /**
+     * Longitude in decimal degrees.
+     */
+    public var longitude: Double
+    /**
+     * Speed in metres per second, or `null` when unavailable.
+     */
+    public var speed: Double?
+    /**
+     * Time when the position was acquired, in milliseconds since the epoch.
+     */
+    public var timestamp: Double
+}
+
+/**
  * Full request configuration accepted by `$http(...)`. See
  * http://docs.angularjs.org/api/ng/service/$http#usage
  */

@@ -20,6 +20,10 @@
         "el": { "page": "directive/el.md", "coverage": "dedicated" },
         "events": { "page": "directives/overview.md", "coverage": "canonical" },
         "form": { "page": "directive/forms.md", "coverage": "dedicated" },
+        "geolocation": {
+          "page": "directive/forms.md",
+          "coverage": "dedicated"
+        },
         "html-canvas": {
           "page": "directives/advanced.md",
           "coverage": "canonical"

@@ -210,6 +210,7 @@ function renderParity(typeNames, methods) {
     "FilterFn",
     "FilterService",
     "CurrencyFilterOptions",
+    "GeolocationValue",
     "HtmlCanvasConfig",
     "HttpMethod",
     "HttpParamSerializerService",

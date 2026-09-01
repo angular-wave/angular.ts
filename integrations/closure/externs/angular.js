@@ -5855,6 +5855,60 @@ ng.NgModelController.prototype.overrideModelOptions = function(options) {};
 ng.NgModelController.prototype.processModelValue = function() {};
 
 /**
+ * Plain, serializable location data written by the `geolocation` directive.
+ * @record
+ */
+ng.GeolocationValue = function() {};
+
+/**
+ * Latitude in decimal degrees.
+ * @type {number}
+ */
+ng.GeolocationValue.prototype.latitude;
+
+/**
+ * Longitude in decimal degrees.
+ * @type {number}
+ */
+ng.GeolocationValue.prototype.longitude;
+
+/**
+ * Position accuracy in metres.
+ * @type {number}
+ */
+ng.GeolocationValue.prototype.accuracy;
+
+/**
+ * Altitude in metres, or `null` when unavailable.
+ * @type {(null|number)}
+ */
+ng.GeolocationValue.prototype.altitude;
+
+/**
+ * Altitude accuracy in metres, or `null` when unavailable.
+ * @type {(null|number)}
+ */
+ng.GeolocationValue.prototype.altitudeAccuracy;
+
+/**
+ * Direction of travel in degrees, or `null` when unavailable.
+ * @type {(null|number)}
+ */
+ng.GeolocationValue.prototype.heading;
+
+/**
+ * Speed in metres per second, or `null` when unavailable.
+ * @type {(null|number)}
+ */
+ng.GeolocationValue.prototype.speed;
+
+/**
+ * Time when the position was acquired, in milliseconds since the epoch.
+ * @type {number}
+ */
+ng.GeolocationValue.prototype.timestamp;
+
+/**
  * Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage
  * @record
  */

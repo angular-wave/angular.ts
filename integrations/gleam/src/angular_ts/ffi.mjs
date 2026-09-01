@@ -34,6 +34,10 @@ export function get_property(target, key) {
   return target[key];
 }
 
+export function is_nullish(value) {
+  return value == null;
+}
+
 export function programmatic_event(listener) {
   return getAngular().view.event(listener);
 }

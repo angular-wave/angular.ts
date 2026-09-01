@@ -181,7 +181,9 @@ function collectMembers(checker, overrides, typeName, type) {
         documentation,
         kind: "property",
         name: renameMember(overrides, typeName, property.name),
-        type: kotlinType(checker, overrides, propertyType),
+        type:
+          overrides.propertyTypes?.[`${typeName}.${property.name}`] ??
+          kotlinType(checker, overrides, propertyType),
       });
     }
   }

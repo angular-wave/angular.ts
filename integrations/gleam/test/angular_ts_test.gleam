@@ -2,6 +2,7 @@ import angular_ts as ng
 import angular_ts/component
 import angular_ts/cookie
 import angular_ts/filters
+import angular_ts/geolocation
 import angular_ts/http
 import angular_ts/injectable
 import angular_ts/injection_tokens
@@ -149,6 +150,30 @@ pub fn entry_filter_item_test() {
 
   item.value
   |> should.equal("AngularTS")
+}
+
+pub fn geolocation_value_test() {
+  let value =
+    unsafe.empty_object()
+    |> unsafe.set_property("latitude", unsafe.coerce(56.9496))
+    |> unsafe.set_property("longitude", unsafe.coerce(24.1052))
+    |> unsafe.set_property("accuracy", unsafe.coerce(4.5))
+    |> unsafe.set_property("altitudeAccuracy", unsafe.coerce(8.0))
+    |> unsafe.set_property("heading", unsafe.coerce(90.0))
+    |> unsafe.set_property("timestamp", unsafe.coerce(1_788_192_000_000.0))
+    |> geolocation.from_dynamic
+
+  value
+  |> geolocation.latitude
+  |> should.equal(56.9496)
+
+  value
+  |> geolocation.altitude
+  |> should.equal(option.None)
+
+  value
+  |> geolocation.altitude_accuracy
+  |> should.equal(option.Some(8.0))
 }
 
 pub fn worker_restart_policy_test() {

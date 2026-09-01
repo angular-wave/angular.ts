@@ -7,6 +7,7 @@ export 'src/cookie.dart';
 export 'src/directive.dart';
 export 'src/facade.dart';
 export 'src/filters.dart';
+export 'src/geolocation.dart';
 export 'src/http.dart';
 export 'src/injectable.dart';
 export 'src/injector.dart';

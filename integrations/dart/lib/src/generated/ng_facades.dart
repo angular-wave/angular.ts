@@ -2563,6 +2563,39 @@ base class GeneratedNgFilterService extends GeneratedNgFacade {
   }
 }
 
+/// Plain, serializable location data written by the `geolocation` directive.
+///
+/// Raw JavaScript facade for `ng.GeolocationValue`.
+base class GeneratedNgGeolocationValue extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.GeolocationValue.
+  const GeneratedNgGeolocationValue(super.raw);
+
+  /// Latitude in decimal degrees.
+  num get latitude => _toDartNumber(raw.getProperty('latitude'.toJS))!;
+
+  /// Longitude in decimal degrees.
+  num get longitude => _toDartNumber(raw.getProperty('longitude'.toJS))!;
+
+  /// Position accuracy in metres.
+  num get accuracy => _toDartNumber(raw.getProperty('accuracy'.toJS))!;
+
+  /// Altitude in metres, or `null` when unavailable.
+  num? get altitude => _toDartNumber(raw.getProperty('altitude'.toJS));
+
+  /// Altitude accuracy in metres, or `null` when unavailable.
+  num? get altitudeAccuracy =>
+      _toDartNumber(raw.getProperty('altitudeAccuracy'.toJS));
+
+  /// Direction of travel in degrees, or `null` when unavailable.
+  num? get heading => _toDartNumber(raw.getProperty('heading'.toJS));
+
+  /// Speed in metres per second, or `null` when unavailable.
+  num? get speed => _toDartNumber(raw.getProperty('speed'.toJS));
+
+  /// Time when the position was acquired, in milliseconds since the epoch.
+  num get timestamp => _toDartNumber(raw.getProperty('timestamp'.toJS))!;
+}
+
 /// Declarative config accepted by `NgModule.config({ $htmlCanvas: ... })`. The integration is
 /// disabled by default and has no AngularTS fallback.
 ///

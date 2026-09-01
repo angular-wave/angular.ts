@@ -64,6 +64,7 @@
     "js/ng.FilterFactory"
     "js/ng.FilterFn"
     "js/ng.FilterService"
+    "js/ng.GeolocationValue"
     "js/ng.HtmlCanvasConfig"
     "js/ng.HtmlCanvasRuntimeSupport"
     "js/ng.HtmlCanvasService"
@@ -294,6 +295,7 @@
      "js/ng.FilterFactory" "Public AngularTS FilterFactory contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.FilterFn" "Public AngularTS FilterFn contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.FilterService" "Public AngularTS FilterService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.GeolocationValue" "Plain, serializable location data written by the `geolocation` directive."
      "js/ng.HtmlCanvasConfig" "Declarative config accepted by `NgModule.config({ $htmlCanvas: ... })`. The integration is disabled by default and has no AngularTS fallback."
      "js/ng.HtmlCanvasRuntimeSupport" "Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HtmlCanvasService" "Public AngularTS HtmlCanvasService contract exposed through the global ng namespace for Closure-annotated applications."
@@ -794,6 +796,14 @@
     "event-delivery-policy-context-scope-owned"
     "event-delivery-policy-context-target-alive"
     "event-delivery-policy-context-topic"
+    "geolocation-value-accuracy"
+    "geolocation-value-altitude"
+    "geolocation-value-altitude-accuracy"
+    "geolocation-value-heading"
+    "geolocation-value-latitude"
+    "geolocation-value-longitude"
+    "geolocation-value-speed"
+    "geolocation-value-timestamp"
     "html-canvas-config-default-mode"
     "html-canvas-config-default-scheduler"
     "html-canvas-config-require-flag"
@@ -2876,6 +2886,46 @@
   "Public EventDeliveryPolicyContext.topic member exposed by the AngularTS namespace contract.\n\nType: {string}"
   ^string [^js/ng.EventDeliveryPolicyContext target]
   (.-topic target))
+
+(defn geolocation-value-accuracy
+  "Position accuracy in metres.\n\nType: {number}"
+  ^number [^js/ng.GeolocationValue target]
+  (.-accuracy target))
+
+(defn geolocation-value-altitude
+  "Altitude in metres, or `null` when unavailable.\n\nType: {(null|number)}"
+  ^number [^js/ng.GeolocationValue target]
+  (.-altitude target))
+
+(defn geolocation-value-altitude-accuracy
+  "Altitude accuracy in metres, or `null` when unavailable.\n\nType: {(null|number)}"
+  ^number [^js/ng.GeolocationValue target]
+  (.-altitudeAccuracy target))
+
+(defn geolocation-value-heading
+  "Direction of travel in degrees, or `null` when unavailable.\n\nType: {(null|number)}"
+  ^number [^js/ng.GeolocationValue target]
+  (.-heading target))
+
+(defn geolocation-value-latitude
+  "Latitude in decimal degrees.\n\nType: {number}"
+  ^number [^js/ng.GeolocationValue target]
+  (.-latitude target))
+
+(defn geolocation-value-longitude
+  "Longitude in decimal degrees.\n\nType: {number}"
+  ^number [^js/ng.GeolocationValue target]
+  (.-longitude target))
+
+(defn geolocation-value-speed
+  "Speed in metres per second, or `null` when unavailable.\n\nType: {(null|number)}"
+  ^number [^js/ng.GeolocationValue target]
+  (.-speed target))
+
+(defn geolocation-value-timestamp
+  "Time when the position was acquired, in milliseconds since the epoch.\n\nType: {number}"
+  ^number [^js/ng.GeolocationValue target]
+  (.-timestamp target))
 
 (defn html-canvas-config-default-mode
   "Default canvas rendering target for directives that do not specify one.\n\nType: {(string|undefined)}"

@@ -30,6 +30,23 @@ final class ViewController {
 }
 
 void main() {
+  test('geolocation values expose nullable coordinates', () {
+    final raw = JSObject()
+      ..setProperty('latitude'.toJS, 56.9496.toJS)
+      ..setProperty('longitude'.toJS, 24.1052.toJS)
+      ..setProperty('accuracy'.toJS, 4.5.toJS)
+      ..setProperty('altitude'.toJS, null)
+      ..setProperty('altitudeAccuracy'.toJS, 8.toJS)
+      ..setProperty('heading'.toJS, 90.toJS)
+      ..setProperty('speed'.toJS, null)
+      ..setProperty('timestamp'.toJS, 1788192000000.toJS);
+    final value = ng.GeolocationValue(raw);
+
+    expect(value.latitude, 56.9496);
+    expect(value.altitude, isNull);
+    expect(value.altitudeAccuracy, 8);
+  });
+
   test('programmatic view context exposes typed runtime values', () {
     const controller = ViewController('ready');
     final host = document.createElement('section');

@@ -488,6 +488,9 @@ pub type WorkflowSupervisorSnapshot(a)
 /// Public AngularTS NgModelController contract exposed through the ng namespace.
 pub type NgModelController
 
+/// Plain, serializable location data written by the `geolocation` directive.
+pub type GeolocationValue
+
 /// Full request configuration accepted by `$http(...)`. See
 /// http://docs.angularjs.org/api/ng/service/$http#usage
 pub type HttpRequestConfig

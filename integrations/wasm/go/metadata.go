@@ -26,8 +26,8 @@ func TemplateURL(url string) TemplateSource {
 	return TemplateSource{url: url}
 }
 
-// ProgrammaticView creates metadata for an exported programmatic view function.
-func ProgrammaticView(exportName string) TemplateSource {
+// ProgrammaticViewSource creates metadata for an exported programmatic view function.
+func ProgrammaticViewSource(exportName string) TemplateSource {
 	return TemplateSource{view: exportName}
 }
 

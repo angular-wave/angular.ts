@@ -315,6 +315,7 @@ reference example makes one necessary.
 | `HtmlCanvasRuntimeSupport` | deferred |
 | `HtmlCanvasService` | deferred |
 | `InterpolationFunction` | deferred |
+| `GeolocationValue` | covered |
 | `NgModelController` | deferred |
 | `HtmlCanvasConfig` | deferred |
 | `StorageBackend` | covered |

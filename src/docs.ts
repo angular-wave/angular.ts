@@ -7,6 +7,7 @@ export type {
   RuntimeModule,
 } from "./angular-runtime.ts";
 export type { ErrorFormattingConfig, Validator } from "./shared/interface.ts";
+export type { GeolocationValue } from "./directive/geolocation/geolocation.ts";
 export type {
   ProgrammaticView,
   ProgrammaticViewChild,

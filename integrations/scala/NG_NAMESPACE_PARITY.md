@@ -156,6 +156,7 @@ Statuses:
 | `WorkflowSupervisorPersistence` | Public AngularTS WorkflowSupervisorPersistence contract exposed through the ng namespace. | manual |
 | `WorkflowSupervisorSnapshot` | Public AngularTS WorkflowSupervisorSnapshot contract exposed through the ng namespace. | manual |
 | `NgModelController` | Public AngularTS NgModelController contract exposed through the ng namespace. | manual |
+| `GeolocationValue` | Plain, serializable location data written by the `geolocation` directive. | manual |
 | `HttpRequestConfig` | Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage | manual |
 | `HttpRequestOptions` | Request options shared by the `$http` shortcut methods. See http://docs.angularjs.org/api/ng/service/$http#usage | manual |
 | `RestFactory` | Factory service exposed as `$rest`. Creates a typed RestService for a base URL, optional entity mapper, and optional backend request defaults. | manual |

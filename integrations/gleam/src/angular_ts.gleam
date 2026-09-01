@@ -20,6 +20,9 @@ pub type Injector =
 pub type NgModule =
   module.NgModule
 
+pub type GeolocationValue =
+  namespace.GeolocationValue
+
 pub type Token(value) =
   token_module.Token(value)
 
