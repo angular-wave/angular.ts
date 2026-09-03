@@ -135,6 +135,7 @@ describe("programmatic view API", () => {
                 "data-label": () => value.scope.label,
               }),
               ...props({ callback }),
+              class: () => value.scope.label,
               customValue: () => value.scope.label,
               activate: event(clicks, { once: true }),
             },
@@ -150,6 +151,7 @@ describe("programmatic view API", () => {
     };
 
     expect(button.getAttribute("data-label")).toBe("first");
+    expect(button.className).toBe("first");
     expect(button.getAttribute("aria-hidden")).toBe("false");
     expect(button.callback).toBe(callback);
     expect(callback).not.toHaveBeenCalled();
@@ -164,6 +166,7 @@ describe("programmatic view API", () => {
     await settle();
 
     expect(button.getAttribute("data-label")).toBe("second");
+    expect(button.className).toBe("second");
     expect(button.customValue).toBe("second");
     expect(button.textContent).toBe("second");
   });
@@ -199,20 +202,45 @@ describe("programmatic view API", () => {
     const reordered = Array.from(host.querySelectorAll("li"));
     expect(reordered).toEqual([initial[1], initial[0]]);
 
+    context.scope.items.push({ id: 3, label: "three" });
+    await settle();
+    expect(host.querySelectorAll("li").length).toBe(3);
+
+    const third = host.querySelectorAll("li")[2];
+
+    context.scope.items[0] = context.scope.items[2];
+    context.scope.items[2] = second;
+    await settle();
+    expect(Array.from(host.querySelectorAll("li"))).toEqual([
+      third,
+      initial[0],
+      initial[1],
+    ]);
+
+    context.scope.items.splice(1, 1);
+    await settle();
+    expect(Array.from(host.querySelectorAll("li"))).toEqual([
+      third,
+      initial[1],
+    ]);
+
     const list = host.querySelector("ul");
     const insertBefore = spyOn(list, "insertBefore").and.callThrough();
 
-    context.scope.items = [second, first];
+    context.scope.items = [{ id: 3, label: "three" }, second];
     await settle();
     expect(insertBefore).not.toHaveBeenCalled();
 
-    context.scope.items = [{ id: 2, label: "replacement" }, first];
+    context.scope.items = [
+      { id: 3, label: "three" },
+      { id: 2, label: "replacement" },
+    ];
     await settle();
 
     const replaced = Array.from(host.querySelectorAll("li"));
-    expect(replaced[0]).toBe(initial[1]);
-    expect(replaced[0].textContent).toBe("replacement");
-    expect(replaced[1]).toBe(initial[0]);
+    expect(replaced[0]).toBe(third);
+    expect(replaced[1]).toBe(initial[1]);
+    expect(replaced[1].textContent).toBe("replacement");
 
     context.scope.items = null;
     await settle();

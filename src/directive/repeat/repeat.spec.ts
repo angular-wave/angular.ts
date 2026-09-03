@@ -84,6 +84,18 @@ describe("ngRepeat", () => {
       }).toThrowError(/Expected expression/);
     });
 
+    it("should direct track by expressions to data-index", () => {
+      const directive = ngRepeatDirective(injector);
+
+      const element = document.createElement("li");
+
+      element.setAttribute("ng-repeat", "item in items track by item.id");
+
+      expect(() => {
+        directive.compile(element, {} as any);
+      }).toThrowError(/data-index/);
+    });
+
     it("should reject long invalid repeat expressions during compile", () => {
       const directive = ngRepeatDirective(injector);
 

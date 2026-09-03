@@ -7,9 +7,14 @@ import type {
 } from "../../interface.ts";
 import { addElementDisposer, getCacheData } from "../../shared/dom.ts";
 import { isArray, isFunction } from "../../shared/utils.ts";
-import { createScope, observeScopeExpression } from "../scope/scope.ts";
+import {
+  createScope,
+  getArrayMutationMeta,
+  observeScopeExpression,
+} from "../scope/scope.ts";
 import {
   addCompiledFragmentDisposer,
+  disposeCompiledFragmentRecords,
   getCompiledFragmentRecord,
   type CompiledFragmentRecord,
 } from "./incremental-fragment.ts";
@@ -268,13 +273,89 @@ type PendingBinding =
 interface LinkedChildState {
   readonly _nodes: Node[];
   readonly _records: CompiledFragmentRecord[];
+  readonly _disposeBindings: () => void;
 }
 
 interface KeyedChildState {
   readonly _key: PropertyKey;
-  readonly _value: unknown;
+  _value: unknown;
   readonly _holder: { value: unknown };
   readonly _children: LinkedChildState[];
+  _index: number;
+}
+
+function firstKeyedStateNode(state: KeyedChildState): Node | undefined {
+  for (let index = 0; index < state._children.length; index++) {
+    const nodes = state._children[index]._nodes;
+
+    if (nodes.length > 0) return nodes[0];
+  }
+
+  return undefined;
+}
+
+function lastKeyedStateNode(state: KeyedChildState): Node | undefined {
+  for (let index = state._children.length - 1; index >= 0; index--) {
+    const nodes = state._children[index]._nodes;
+
+    if (nodes.length > 0) return nodes[nodes.length - 1];
+  }
+
+  return undefined;
+}
+
+function detachKeyedStateRange(
+  states: Iterable<KeyedChildState>,
+  anchor: Node,
+): void {
+  let firstState: KeyedChildState | undefined;
+  let lastState: KeyedChildState | undefined;
+
+  for (const state of states) {
+    if (!firstState || state._index < firstState._index) firstState = state;
+    if (!lastState || state._index > lastState._index) lastState = state;
+  }
+
+  if (!firstState || !lastState) return;
+
+  const firstNode = firstKeyedStateNode(firstState);
+  const lastNode = lastKeyedStateNode(lastState);
+
+  const parent = firstNode?.parentNode;
+
+  if (!firstNode || !lastNode || !parent || parent !== lastNode.parentNode) {
+    return;
+  }
+
+  if (
+    firstNode === parent.firstChild &&
+    lastNode.nextSibling === anchor &&
+    anchor.nextSibling === null
+  ) {
+    parent.replaceChildren(anchor);
+
+    return;
+  }
+
+  const range = document.createRange();
+
+  range.setStartBefore(firstNode);
+  range.setEndAfter(lastNode);
+  range.deleteContents();
+}
+
+function moveKeyedStateBefore(
+  parent: Node,
+  state: KeyedChildState,
+  before: Node | null,
+): void {
+  for (let childIndex = 0; childIndex < state._children.length; childIndex++) {
+    const nodes = state._children[childIndex]._nodes;
+
+    for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
+      parent.insertBefore(nodes[nodeIndex], before);
+    }
+  }
 }
 
 interface ProgrammaticBindingRuntime {
@@ -289,6 +370,17 @@ interface ProgrammaticBindingRuntime {
   readonly _ownDisposer: (disposer: () => void) => () => void;
 }
 
+type ProgrammaticCompileService = ng.CompileService & {
+  _linkProgrammaticNode(
+    node: Node,
+    scope: ng.Scope,
+    options: {
+      readonly _futureParentElement: Node;
+      readonly _ownsNodes: boolean;
+    },
+  ): Element | Node | ChildNode | Node[] | null;
+};
+
 export interface ProgrammaticDirectiveCompileOptions {
   readonly name: string;
   readonly view: ProgrammaticView;
@@ -297,7 +389,7 @@ export interface ProgrammaticDirectiveCompileOptions {
   readonly sanitizeProperty: ProgrammaticBindingRuntime["_sanitizeProperty"];
 }
 
-const pendingBindings = new WeakMap<Node, PendingBinding[]>();
+const pendingBindings = new WeakMap<Node, PendingBinding | PendingBinding[]>();
 
 const tagProxyCache = new Map<
   string,
@@ -305,14 +397,19 @@ const tagProxyCache = new Map<
 >();
 
 function addPendingBinding(node: Node, binding: PendingBinding): void {
-  let bindings = pendingBindings.get(node);
+  const bindings = pendingBindings.get(node);
 
   if (!bindings) {
-    bindings = [];
-    pendingBindings.set(node, bindings);
+    pendingBindings.set(node, binding);
+
+    return;
   }
 
-  bindings.push(binding);
+  if (isArray(bindings)) {
+    bindings.push(binding);
+  } else {
+    pendingBindings.set(node, [bindings, binding]);
+  }
 }
 
 function isProperties(value: unknown): value is ProgrammaticViewProperties {
@@ -490,7 +587,8 @@ function applyProperty(
       _kind: "property",
       _name: propertyName,
       _read: propertyValue as () => unknown,
-      _target: target === "auto" ? "property" : target,
+      _target:
+        target === "auto" && propertyName !== "class" ? "property" : target,
     });
   } else if (deferredStaticProperties.has(propertyName.toLowerCase())) {
     addPendingBinding(element, {
@@ -574,13 +672,16 @@ export function materializeProgrammaticView(
 function appendChildren(
   element: Element,
   children: readonly ProgrammaticViewChild[],
+  startIndex: number,
 ): void {
-  for (let index = 0; index < children.length; index++) {
-    const nodes = materializeProgrammaticView(children[index]);
+  const nodes: Node[] = [];
 
-    for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
-      element.appendChild(nodes[nodeIndex]);
-    }
+  for (let index = startIndex; index < children.length; index++) {
+    materializeChild(children[index], nodes);
+  }
+
+  for (let index = 0; index < nodes.length; index++) {
+    element.appendChild(nodes[index]);
   }
 }
 
@@ -594,7 +695,6 @@ function createTag(
   )[]
 ): Element {
   const properties = isProperties(args[0]) ? args[0] : undefined;
-  const children = properties ? args.slice(1) : args;
   const customElementName = properties?.is;
   const element = namespaceUri
     ? document.createElementNS(
@@ -608,10 +708,19 @@ function createTag(
       );
 
   if (properties) {
-    for (const [propertyName, propertyValue] of Object.entries(properties)) {
+    const propertyNames = Object.keys(properties);
+
+    for (let index = 0; index < propertyNames.length; index++) {
+      const propertyName = propertyNames[index];
+
       if (propertyName === "is") continue;
 
-      applyProperty(element, propertyName, propertyValue, "auto");
+      applyProperty(
+        element,
+        propertyName,
+        (properties as Record<string, unknown>)[propertyName],
+        "auto",
+      );
     }
 
     if (isPropertyGroup(properties)) {
@@ -619,20 +728,32 @@ function createTag(
       const propertyValues = properties[propertyGroup];
 
       if (attributeValues) {
-        for (const [name, value] of Object.entries(attributeValues)) {
-          applyProperty(element, name, value, "attribute");
+        const names = Object.keys(attributeValues);
+
+        for (let index = 0; index < names.length; index++) {
+          const name = names[index];
+
+          applyProperty(element, name, attributeValues[name], "attribute");
         }
       }
 
       if (propertyValues) {
-        for (const [name, value] of Object.entries(propertyValues)) {
-          applyProperty(element, name, value, "property");
+        const names = Object.keys(propertyValues);
+
+        for (let index = 0; index < names.length; index++) {
+          const name = names[index];
+
+          applyProperty(element, name, propertyValues[name], "property");
         }
       }
     }
   }
 
-  appendChildren(element, children as readonly ProgrammaticViewChild[]);
+  appendChildren(
+    element,
+    args as readonly ProgrammaticViewChild[],
+    properties ? 1 : 0,
+  );
 
   return element;
 }
@@ -725,9 +846,9 @@ function getTagProxy(
   return proxy;
 }
 
-const htmlTags = getTagProxy();
+const htmlTags = /* @__PURE__ */ getTagProxy();
 
-export const tags = new Proxy(
+export const tags = /* @__PURE__ */ new Proxy(
   ((namespaceUri: string) => getTagProxy(namespaceUri)) as ProgrammaticViewTags,
   {
     get(_target, property): unknown {
@@ -737,6 +858,538 @@ export const tags = new Proxy(
     },
   },
 );
+
+/** Direct, tree-shakable factories for every supported HTML element. */
+// HTMLElementTagNameMap
+export const a: ProgrammaticViewTag<HTMLElementTagNameMap["a"]> = (...args) =>
+  createTag(undefined, "a", ...args) as HTMLElementTagNameMap["a"];
+export const abbr: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "abbr", ...args) as HTMLElementTagNameMap["abbr"];
+export const address: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "address", ...args) as HTMLElementTagNameMap["address"];
+export const area: ProgrammaticViewTag<HTMLElementTagNameMap["area"]> = (
+  ...args
+) => createTag(undefined, "area", ...args) as HTMLElementTagNameMap["area"];
+export const article: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "article", ...args) as HTMLElementTagNameMap["article"];
+export const aside: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "aside", ...args) as HTMLElementTagNameMap["aside"];
+export const audio: ProgrammaticViewTag<HTMLElementTagNameMap["audio"]> = (
+  ...args
+) => createTag(undefined, "audio", ...args) as HTMLElementTagNameMap["audio"];
+export const b: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "b", ...args) as HTMLElementTagNameMap["b"];
+export const base: ProgrammaticViewTag<HTMLElementTagNameMap["base"]> = (
+  ...args
+) => createTag(undefined, "base", ...args) as HTMLElementTagNameMap["base"];
+export const bdi: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "bdi", ...args) as HTMLElementTagNameMap["bdi"];
+export const bdo: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "bdo", ...args) as HTMLElementTagNameMap["bdo"];
+export const blockquote: ProgrammaticViewTag<
+  HTMLElementTagNameMap["blockquote"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "blockquote",
+    ...args,
+  ) as HTMLElementTagNameMap["blockquote"];
+export const body: ProgrammaticViewTag<HTMLElementTagNameMap["body"]> = (
+  ...args
+) => createTag(undefined, "body", ...args) as HTMLElementTagNameMap["body"];
+export const br: ProgrammaticViewTag<HTMLElementTagNameMap["br"]> = (...args) =>
+  createTag(undefined, "br", ...args) as HTMLElementTagNameMap["br"];
+export const button: ProgrammaticViewTag<HTMLElementTagNameMap["button"]> = (
+  ...args
+) => createTag(undefined, "button", ...args) as HTMLElementTagNameMap["button"];
+export const canvas: ProgrammaticViewTag<HTMLElementTagNameMap["canvas"]> = (
+  ...args
+) => createTag(undefined, "canvas", ...args) as HTMLElementTagNameMap["canvas"];
+export const caption: ProgrammaticViewTag<HTMLElementTagNameMap["caption"]> = (
+  ...args
+) =>
+  createTag(undefined, "caption", ...args) as HTMLElementTagNameMap["caption"];
+export const cite: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "cite", ...args) as HTMLElementTagNameMap["cite"];
+export const code: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "code", ...args) as HTMLElementTagNameMap["code"];
+export const col: ProgrammaticViewTag<HTMLElementTagNameMap["col"]> = (
+  ...args
+) => createTag(undefined, "col", ...args) as HTMLElementTagNameMap["col"];
+export const colgroup: ProgrammaticViewTag<
+  HTMLElementTagNameMap["colgroup"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "colgroup",
+    ...args,
+  ) as HTMLElementTagNameMap["colgroup"];
+export const data: ProgrammaticViewTag<HTMLElementTagNameMap["data"]> = (
+  ...args
+) => createTag(undefined, "data", ...args) as HTMLElementTagNameMap["data"];
+export const datalist: ProgrammaticViewTag<
+  HTMLElementTagNameMap["datalist"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "datalist",
+    ...args,
+  ) as HTMLElementTagNameMap["datalist"];
+export const dd: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "dd", ...args) as HTMLElementTagNameMap["dd"];
+export const del: ProgrammaticViewTag<HTMLElementTagNameMap["del"]> = (
+  ...args
+) => createTag(undefined, "del", ...args) as HTMLElementTagNameMap["del"];
+export const details: ProgrammaticViewTag<HTMLElementTagNameMap["details"]> = (
+  ...args
+) =>
+  createTag(undefined, "details", ...args) as HTMLElementTagNameMap["details"];
+export const dfn: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "dfn", ...args) as HTMLElementTagNameMap["dfn"];
+export const dialog: ProgrammaticViewTag<HTMLElementTagNameMap["dialog"]> = (
+  ...args
+) => createTag(undefined, "dialog", ...args) as HTMLElementTagNameMap["dialog"];
+export const div: ProgrammaticViewTag<HTMLElementTagNameMap["div"]> = (
+  ...args
+) => createTag(undefined, "div", ...args) as HTMLElementTagNameMap["div"];
+export const dl: ProgrammaticViewTag<HTMLElementTagNameMap["dl"]> = (...args) =>
+  createTag(undefined, "dl", ...args) as HTMLElementTagNameMap["dl"];
+export const dt: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "dt", ...args) as HTMLElementTagNameMap["dt"];
+export const em: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "em", ...args) as HTMLElementTagNameMap["em"];
+export const embed: ProgrammaticViewTag<HTMLElementTagNameMap["embed"]> = (
+  ...args
+) => createTag(undefined, "embed", ...args) as HTMLElementTagNameMap["embed"];
+export const fieldset: ProgrammaticViewTag<
+  HTMLElementTagNameMap["fieldset"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "fieldset",
+    ...args,
+  ) as HTMLElementTagNameMap["fieldset"];
+export const figcaption: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "figcaption",
+    ...args,
+  ) as HTMLElementTagNameMap["figcaption"];
+export const figure: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "figure", ...args) as HTMLElementTagNameMap["figure"];
+export const footer: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "footer", ...args) as HTMLElementTagNameMap["footer"];
+export const form: ProgrammaticViewTag<HTMLElementTagNameMap["form"]> = (
+  ...args
+) => createTag(undefined, "form", ...args) as HTMLElementTagNameMap["form"];
+export const h1: ProgrammaticViewTag<HTMLElementTagNameMap["h1"]> = (...args) =>
+  createTag(undefined, "h1", ...args) as HTMLElementTagNameMap["h1"];
+export const h2: ProgrammaticViewTag<HTMLElementTagNameMap["h2"]> = (...args) =>
+  createTag(undefined, "h2", ...args) as HTMLElementTagNameMap["h2"];
+export const h3: ProgrammaticViewTag<HTMLElementTagNameMap["h3"]> = (...args) =>
+  createTag(undefined, "h3", ...args) as HTMLElementTagNameMap["h3"];
+export const h4: ProgrammaticViewTag<HTMLElementTagNameMap["h4"]> = (...args) =>
+  createTag(undefined, "h4", ...args) as HTMLElementTagNameMap["h4"];
+export const h5: ProgrammaticViewTag<HTMLElementTagNameMap["h5"]> = (...args) =>
+  createTag(undefined, "h5", ...args) as HTMLElementTagNameMap["h5"];
+export const h6: ProgrammaticViewTag<HTMLElementTagNameMap["h6"]> = (...args) =>
+  createTag(undefined, "h6", ...args) as HTMLElementTagNameMap["h6"];
+export const head: ProgrammaticViewTag<HTMLElementTagNameMap["head"]> = (
+  ...args
+) => createTag(undefined, "head", ...args) as HTMLElementTagNameMap["head"];
+export const header: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "header", ...args) as HTMLElementTagNameMap["header"];
+export const hgroup: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "hgroup", ...args) as HTMLElementTagNameMap["hgroup"];
+export const hr: ProgrammaticViewTag<HTMLElementTagNameMap["hr"]> = (...args) =>
+  createTag(undefined, "hr", ...args) as HTMLElementTagNameMap["hr"];
+export const html: ProgrammaticViewTag<HTMLElementTagNameMap["html"]> = (
+  ...args
+) => createTag(undefined, "html", ...args) as HTMLElementTagNameMap["html"];
+export const i: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "i", ...args) as HTMLElementTagNameMap["i"];
+export const iframe: ProgrammaticViewTag<HTMLElementTagNameMap["iframe"]> = (
+  ...args
+) => createTag(undefined, "iframe", ...args) as HTMLElementTagNameMap["iframe"];
+export const img: ProgrammaticViewTag<HTMLElementTagNameMap["img"]> = (
+  ...args
+) => createTag(undefined, "img", ...args) as HTMLElementTagNameMap["img"];
+export const input: ProgrammaticViewTag<HTMLElementTagNameMap["input"]> = (
+  ...args
+) => createTag(undefined, "input", ...args) as HTMLElementTagNameMap["input"];
+export const ins: ProgrammaticViewTag<HTMLElementTagNameMap["ins"]> = (
+  ...args
+) => createTag(undefined, "ins", ...args) as HTMLElementTagNameMap["ins"];
+export const kbd: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "kbd", ...args) as HTMLElementTagNameMap["kbd"];
+export const label: ProgrammaticViewTag<HTMLElementTagNameMap["label"]> = (
+  ...args
+) => createTag(undefined, "label", ...args) as HTMLElementTagNameMap["label"];
+export const legend: ProgrammaticViewTag<HTMLElementTagNameMap["legend"]> = (
+  ...args
+) => createTag(undefined, "legend", ...args) as HTMLElementTagNameMap["legend"];
+export const li: ProgrammaticViewTag<HTMLElementTagNameMap["li"]> = (...args) =>
+  createTag(undefined, "li", ...args) as HTMLElementTagNameMap["li"];
+export const link: ProgrammaticViewTag<HTMLElementTagNameMap["link"]> = (
+  ...args
+) => createTag(undefined, "link", ...args) as HTMLElementTagNameMap["link"];
+export const main: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "main", ...args) as HTMLElementTagNameMap["main"];
+export const map: ProgrammaticViewTag<HTMLElementTagNameMap["map"]> = (
+  ...args
+) => createTag(undefined, "map", ...args) as HTMLElementTagNameMap["map"];
+export const mark: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "mark", ...args) as HTMLElementTagNameMap["mark"];
+export const menu: ProgrammaticViewTag<HTMLElementTagNameMap["menu"]> = (
+  ...args
+) => createTag(undefined, "menu", ...args) as HTMLElementTagNameMap["menu"];
+export const meta: ProgrammaticViewTag<HTMLElementTagNameMap["meta"]> = (
+  ...args
+) => createTag(undefined, "meta", ...args) as HTMLElementTagNameMap["meta"];
+export const meter: ProgrammaticViewTag<HTMLElementTagNameMap["meter"]> = (
+  ...args
+) => createTag(undefined, "meter", ...args) as HTMLElementTagNameMap["meter"];
+export const nav: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "nav", ...args) as HTMLElementTagNameMap["nav"];
+export const noscript: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "noscript",
+    ...args,
+  ) as HTMLElementTagNameMap["noscript"];
+export const object: ProgrammaticViewTag<HTMLElementTagNameMap["object"]> = (
+  ...args
+) => createTag(undefined, "object", ...args) as HTMLElementTagNameMap["object"];
+export const ol: ProgrammaticViewTag<HTMLElementTagNameMap["ol"]> = (...args) =>
+  createTag(undefined, "ol", ...args) as HTMLElementTagNameMap["ol"];
+export const optgroup: ProgrammaticViewTag<
+  HTMLElementTagNameMap["optgroup"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "optgroup",
+    ...args,
+  ) as HTMLElementTagNameMap["optgroup"];
+export const option: ProgrammaticViewTag<HTMLElementTagNameMap["option"]> = (
+  ...args
+) => createTag(undefined, "option", ...args) as HTMLElementTagNameMap["option"];
+export const output: ProgrammaticViewTag<HTMLElementTagNameMap["output"]> = (
+  ...args
+) => createTag(undefined, "output", ...args) as HTMLElementTagNameMap["output"];
+export const p: ProgrammaticViewTag<HTMLElementTagNameMap["p"]> = (...args) =>
+  createTag(undefined, "p", ...args) as HTMLElementTagNameMap["p"];
+export const picture: ProgrammaticViewTag<HTMLElementTagNameMap["picture"]> = (
+  ...args
+) =>
+  createTag(undefined, "picture", ...args) as HTMLElementTagNameMap["picture"];
+export const pre: ProgrammaticViewTag<HTMLElementTagNameMap["pre"]> = (
+  ...args
+) => createTag(undefined, "pre", ...args) as HTMLElementTagNameMap["pre"];
+export const progress: ProgrammaticViewTag<
+  HTMLElementTagNameMap["progress"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "progress",
+    ...args,
+  ) as HTMLElementTagNameMap["progress"];
+export const q: ProgrammaticViewTag<HTMLElementTagNameMap["q"]> = (...args) =>
+  createTag(undefined, "q", ...args) as HTMLElementTagNameMap["q"];
+export const rp: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "rp", ...args) as HTMLElementTagNameMap["rp"];
+export const rt: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "rt", ...args) as HTMLElementTagNameMap["rt"];
+export const ruby: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "ruby", ...args) as HTMLElementTagNameMap["ruby"];
+export const s: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "s", ...args) as HTMLElementTagNameMap["s"];
+export const samp: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "samp", ...args) as HTMLElementTagNameMap["samp"];
+export const script: ProgrammaticViewTag<HTMLElementTagNameMap["script"]> = (
+  ...args
+) => createTag(undefined, "script", ...args) as HTMLElementTagNameMap["script"];
+export const search: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "search", ...args) as HTMLElementTagNameMap["search"];
+export const section: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "section", ...args) as HTMLElementTagNameMap["section"];
+export const select: ProgrammaticViewTag<HTMLElementTagNameMap["select"]> = (
+  ...args
+) => createTag(undefined, "select", ...args) as HTMLElementTagNameMap["select"];
+export const slot: ProgrammaticViewTag<HTMLElementTagNameMap["slot"]> = (
+  ...args
+) => createTag(undefined, "slot", ...args) as HTMLElementTagNameMap["slot"];
+export const small: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "small", ...args) as HTMLElementTagNameMap["small"];
+export const source: ProgrammaticViewTag<HTMLElementTagNameMap["source"]> = (
+  ...args
+) => createTag(undefined, "source", ...args) as HTMLElementTagNameMap["source"];
+export const span: ProgrammaticViewTag<HTMLElementTagNameMap["span"]> = (
+  ...args
+) => createTag(undefined, "span", ...args) as HTMLElementTagNameMap["span"];
+export const strong: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "strong", ...args) as HTMLElementTagNameMap["strong"];
+export const style: ProgrammaticViewTag<HTMLElementTagNameMap["style"]> = (
+  ...args
+) => createTag(undefined, "style", ...args) as HTMLElementTagNameMap["style"];
+export const sub: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "sub", ...args) as HTMLElementTagNameMap["sub"];
+export const summary: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "summary", ...args) as HTMLElementTagNameMap["summary"];
+export const sup: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "sup", ...args) as HTMLElementTagNameMap["sup"];
+export const table: ProgrammaticViewTag<HTMLElementTagNameMap["table"]> = (
+  ...args
+) => createTag(undefined, "table", ...args) as HTMLElementTagNameMap["table"];
+export const tbody: ProgrammaticViewTag<HTMLElementTagNameMap["tbody"]> = (
+  ...args
+) => createTag(undefined, "tbody", ...args) as HTMLElementTagNameMap["tbody"];
+export const td: ProgrammaticViewTag<HTMLElementTagNameMap["td"]> = (...args) =>
+  createTag(undefined, "td", ...args) as HTMLElementTagNameMap["td"];
+export const template: ProgrammaticViewTag<
+  HTMLElementTagNameMap["template"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "template",
+    ...args,
+  ) as HTMLElementTagNameMap["template"];
+export const textarea: ProgrammaticViewTag<
+  HTMLElementTagNameMap["textarea"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "textarea",
+    ...args,
+  ) as HTMLElementTagNameMap["textarea"];
+export const tfoot: ProgrammaticViewTag<HTMLElementTagNameMap["tfoot"]> = (
+  ...args
+) => createTag(undefined, "tfoot", ...args) as HTMLElementTagNameMap["tfoot"];
+export const th: ProgrammaticViewTag<HTMLElementTagNameMap["th"]> = (...args) =>
+  createTag(undefined, "th", ...args) as HTMLElementTagNameMap["th"];
+export const thead: ProgrammaticViewTag<HTMLElementTagNameMap["thead"]> = (
+  ...args
+) => createTag(undefined, "thead", ...args) as HTMLElementTagNameMap["thead"];
+export const time: ProgrammaticViewTag<HTMLElementTagNameMap["time"]> = (
+  ...args
+) => createTag(undefined, "time", ...args) as HTMLElementTagNameMap["time"];
+export const title: ProgrammaticViewTag<HTMLElementTagNameMap["title"]> = (
+  ...args
+) => createTag(undefined, "title", ...args) as HTMLElementTagNameMap["title"];
+export const tr: ProgrammaticViewTag<HTMLElementTagNameMap["tr"]> = (...args) =>
+  createTag(undefined, "tr", ...args) as HTMLElementTagNameMap["tr"];
+export const track: ProgrammaticViewTag<HTMLElementTagNameMap["track"]> = (
+  ...args
+) => createTag(undefined, "track", ...args) as HTMLElementTagNameMap["track"];
+export const u: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "u", ...args) as HTMLElementTagNameMap["u"];
+export const ul: ProgrammaticViewTag<HTMLElementTagNameMap["ul"]> = (...args) =>
+  createTag(undefined, "ul", ...args) as HTMLElementTagNameMap["ul"];
+export const varTag: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "var", ...args) as HTMLElementTagNameMap["var"];
+export const video: ProgrammaticViewTag<HTMLElementTagNameMap["video"]> = (
+  ...args
+) => createTag(undefined, "video", ...args) as HTMLElementTagNameMap["video"];
+export const wbr: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "wbr", ...args) as HTMLElementTagNameMap["wbr"];
+// HTMLElementDeprecatedTagNameMap
+export const acronym: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "acronym",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["acronym"];
+export const applet: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["applet"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "applet",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["applet"];
+export const basefont: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "basefont",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["basefont"];
+export const bgsound: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["bgsound"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "bgsound",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["bgsound"];
+export const big: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "big",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["big"];
+export const blink: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["blink"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "blink",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["blink"];
+export const center: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "center",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["center"];
+export const dir: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["dir"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "dir",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["dir"];
+export const font: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["font"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "font",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["font"];
+export const frame: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["frame"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "frame",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["frame"];
+export const frameset: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["frameset"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "frameset",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["frameset"];
+export const isindex: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["isindex"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "isindex",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["isindex"];
+export const keygen: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["keygen"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "keygen",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["keygen"];
+export const listing: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["listing"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "listing",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["listing"];
+export const marquee: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["marquee"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "marquee",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["marquee"];
+export const menuitem: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "menuitem",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["menuitem"];
+export const multicol: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["multicol"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "multicol",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["multicol"];
+export const nextid: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["nextid"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "nextid",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["nextid"];
+export const nobr: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "nobr",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["nobr"];
+export const noembed: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "noembed",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["noembed"];
+export const noframes: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "noframes",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["noframes"];
+export const param: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["param"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "param",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["param"];
+export const plaintext: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "plaintext",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["plaintext"];
+export const rb: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "rb", ...args) as HTMLElementDeprecatedTagNameMap["rb"];
+export const rtc: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "rtc",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["rtc"];
+export const spacer: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["spacer"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "spacer",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["spacer"];
+export const strike: ProgrammaticViewTag = (...args) =>
+  createTag(
+    undefined,
+    "strike",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["strike"];
+export const tt: ProgrammaticViewTag = (...args) =>
+  createTag(undefined, "tt", ...args) as HTMLElementDeprecatedTagNameMap["tt"];
+export const xmp: ProgrammaticViewTag<
+  HTMLElementDeprecatedTagNameMap["xmp"]
+> = (...args) =>
+  createTag(
+    undefined,
+    "xmp",
+    ...args,
+  ) as HTMLElementDeprecatedTagNameMap["xmp"];
 
 function uniqueRecords(nodes: readonly Node[]): CompiledFragmentRecord[] {
   const records: CompiledFragmentRecord[] = [];
@@ -754,33 +1407,60 @@ function uniqueRecords(nodes: readonly Node[]): CompiledFragmentRecord[] {
   return records;
 }
 
-function disposeLinkedChildren(children: LinkedChildState[]): void {
+function disposeLinkedChildrenGroups(
+  groups: readonly LinkedChildState[][],
+): void {
   const disposedRecords = new Set<CompiledFragmentRecord>();
+  const records: CompiledFragmentRecord[] = [];
 
-  for (let index = children.length - 1; index >= 0; index--) {
-    const child = children[index];
+  for (let groupIndex = groups.length - 1; groupIndex >= 0; groupIndex--) {
+    const children = groups[groupIndex];
 
-    for (
-      let recordIndex = child._records.length - 1;
-      recordIndex >= 0;
-      recordIndex--
-    ) {
-      const record = child._records[recordIndex];
+    for (let index = children.length - 1; index >= 0; index--) {
+      const child = children[index];
 
-      if (!record.disposed && !disposedRecords.has(record)) {
-        disposedRecords.add(record);
-        record.dispose();
+      child._disposeBindings();
+
+      for (
+        let recordIndex = child._records.length - 1;
+        recordIndex >= 0;
+        recordIndex--
+      ) {
+        const record = child._records[recordIndex];
+
+        if (!record.disposed && !disposedRecords.has(record)) {
+          disposedRecords.add(record);
+          records.push(record);
+        }
       }
-    }
-
-    for (let nodeIndex = child._nodes.length - 1; nodeIndex >= 0; nodeIndex--) {
-      const node = child._nodes[nodeIndex];
-
-      node.parentNode?.removeChild(node);
     }
   }
 
-  children.length = 0;
+  disposeCompiledFragmentRecords(records);
+
+  for (let groupIndex = groups.length - 1; groupIndex >= 0; groupIndex--) {
+    const children = groups[groupIndex];
+
+    for (let index = children.length - 1; index >= 0; index--) {
+      const child = children[index];
+
+      for (
+        let nodeIndex = child._nodes.length - 1;
+        nodeIndex >= 0;
+        nodeIndex--
+      ) {
+        const node = child._nodes[nodeIndex];
+
+        node.parentNode?.removeChild(node);
+      }
+    }
+
+    children.length = 0;
+  }
+}
+
+function disposeLinkedChildren(children: LinkedChildState[]): void {
+  disposeLinkedChildrenGroups([children]);
 }
 
 function linkChildValue(
@@ -811,17 +1491,33 @@ function linkMaterializedChildren(
     parent.insertBefore(rawNode, anchor);
 
     const linkedNodes = runtime._linkNode(rawNode, parent, anchor);
+    let cursor = anchor;
+    let alreadyPlaced = true;
+
+    for (let nodeIndex = linkedNodes.length - 1; nodeIndex >= 0; nodeIndex--) {
+      const linkedNode = linkedNodes[nodeIndex];
+
+      if (
+        linkedNode.parentNode !== parent ||
+        linkedNode.nextSibling !== cursor
+      ) {
+        alreadyPlaced = false;
+        break;
+      }
+
+      cursor = linkedNode;
+    }
 
     for (let nodeIndex = 0; nodeIndex < linkedNodes.length; nodeIndex++) {
       const linkedNode = linkedNodes[nodeIndex];
 
-      parent.insertBefore(linkedNode, anchor);
-      activateProgrammaticBindings([linkedNode], runtime);
+      if (!alreadyPlaced) parent.insertBefore(linkedNode, anchor);
     }
 
     children.push({
       _nodes: linkedNodes,
       _records: uniqueRecords(linkedNodes),
+      _disposeBindings: activateProgrammaticBindings(linkedNodes, runtime),
     });
   }
 
@@ -835,39 +1531,44 @@ function activateChildBinding(
 ): () => void {
   const linkedChildren: LinkedChildState[] = [];
 
-  const stop = observeScopeExpression(runtime._scope, read, (value) => {
-    const parent = anchor.parentNode;
+  const stop = observeScopeExpression(
+    runtime._scope,
+    read,
+    (value) => {
+      const parent = anchor.parentNode;
 
-    if (!parent) return;
+      if (!parent) return;
 
-    if (
-      linkedChildren.length === 1 &&
-      linkedChildren[0]._nodes.length === 1 &&
-      linkedChildren[0]._nodes[0] instanceof Text &&
-      value !== null &&
-      value !== undefined &&
-      value !== false &&
-      !isFunction(value) &&
-      !isArray(value) &&
-      !(value instanceof Node)
-    ) {
-      linkedChildren[0]._nodes[0].data = String(
-        value as string | number | boolean | bigint,
+      if (
+        linkedChildren.length === 1 &&
+        linkedChildren[0]._nodes.length === 1 &&
+        linkedChildren[0]._nodes[0] instanceof Text &&
+        value !== null &&
+        value !== undefined &&
+        value !== false &&
+        !isFunction(value) &&
+        !isArray(value) &&
+        !(value instanceof Node)
+      ) {
+        linkedChildren[0]._nodes[0].data = String(
+          value as string | number | boolean | bigint,
+        );
+        return;
+      }
+
+      disposeLinkedChildren(linkedChildren);
+
+      linkedChildren.push(
+        ...linkChildValue(
+          value as ProgrammaticViewChild,
+          parent,
+          anchor,
+          runtime,
+        ),
       );
-      return;
-    }
-
-    disposeLinkedChildren(linkedChildren);
-
-    linkedChildren.push(
-      ...linkChildValue(
-        value as ProgrammaticViewChild,
-        parent,
-        anchor,
-        runtime,
-      ),
-    );
-  });
+    },
+    false,
+  );
 
   return () => {
     stop();
@@ -881,38 +1582,368 @@ function activateKeyedChildBinding(
   runtime: ProgrammaticBindingRuntime,
 ): () => void {
   let states = new Map<PropertyKey, KeyedChildState>();
+  let observedItems: unknown[] = [];
+  let stablePrefixLength = 0;
+  let removedIndex = -1;
+  let swappedIndexes: [number, number] | undefined;
+  let observedArray: unknown[] | undefined;
+  let lastSeenArrayMutationVersion = 0;
 
   const stop = observeScopeExpression(
     runtime._scope,
-    binding._read,
+    () => {
+      const value = binding._read();
+
+      if (value === null || value === undefined) {
+        stablePrefixLength = 0;
+        removedIndex = -1;
+        swappedIndexes = undefined;
+        observedArray = undefined;
+        if (observedItems.length !== 0) observedItems = [];
+
+        return observedItems;
+      }
+
+      if (isArray(value)) {
+        const length = value.length;
+        const mutationMeta =
+          observedArray === value ? getArrayMutationMeta(value) : undefined;
+
+        if (
+          mutationMeta &&
+          mutationMeta._version > lastSeenArrayMutationVersion &&
+          mutationMeta._previousLength === observedItems.length &&
+          mutationMeta._currentLength === length
+        ) {
+          lastSeenArrayMutationVersion = mutationMeta._version;
+
+          if (mutationMeta._kind === "swap") {
+            stablePrefixLength = mutationMeta._swapFromIndex;
+            removedIndex = -1;
+            swappedIndexes = [
+              mutationMeta._swapFromIndex,
+              mutationMeta._swapToIndex,
+            ];
+            observedItems = value.slice();
+
+            return observedItems;
+          }
+
+          if (
+            mutationMeta._kind === "splice" &&
+            mutationMeta._deleteCount === 0 &&
+            mutationMeta._index === mutationMeta._previousLength
+          ) {
+            stablePrefixLength = mutationMeta._previousLength;
+            removedIndex = -1;
+            swappedIndexes = undefined;
+            observedItems = value.slice();
+
+            return observedItems;
+          }
+
+          if (
+            mutationMeta._kind === "splice" &&
+            mutationMeta._deleteCount === 1 &&
+            mutationMeta._insertCount === 0
+          ) {
+            stablePrefixLength = mutationMeta._index;
+            removedIndex = mutationMeta._index;
+            swappedIndexes = undefined;
+            observedItems = value.slice();
+
+            return observedItems;
+          }
+        }
+
+        let index = 0;
+
+        while (
+          index < length &&
+          index < observedItems.length &&
+          Object.is(observedItems[index], value[index])
+        ) {
+          index++;
+        }
+
+        stablePrefixLength = index;
+        removedIndex = -1;
+        swappedIndexes = undefined;
+
+        if (index === length && index === observedItems.length) {
+          return observedItems;
+        }
+
+        if (
+          observedItems.length === length + 1 &&
+          index < observedItems.length
+        ) {
+          let suffixIndex = index;
+
+          while (
+            suffixIndex < length &&
+            Object.is(observedItems[suffixIndex + 1], value[suffixIndex])
+          ) {
+            suffixIndex++;
+          }
+
+          if (suffixIndex === length) removedIndex = index;
+        } else if (observedItems.length === length && index < length) {
+          let secondIndex = index + 1;
+
+          while (
+            secondIndex < length &&
+            Object.is(observedItems[secondIndex], value[secondIndex])
+          ) {
+            secondIndex++;
+          }
+
+          if (
+            secondIndex < length &&
+            Object.is(observedItems[index], value[secondIndex]) &&
+            Object.is(observedItems[secondIndex], value[index])
+          ) {
+            let suffixIndex = secondIndex + 1;
+
+            while (
+              suffixIndex < length &&
+              Object.is(observedItems[suffixIndex], value[suffixIndex])
+            ) {
+              suffixIndex++;
+            }
+
+            if (suffixIndex === length) {
+              swappedIndexes = [index, secondIndex];
+            }
+          }
+        }
+
+        observedItems = value.slice();
+        observedArray = value;
+
+        return observedItems;
+      }
+
+      let nextItems: unknown[] | undefined;
+      let index = 0;
+
+      stablePrefixLength = 0;
+      removedIndex = -1;
+      swappedIndexes = undefined;
+      observedArray = undefined;
+
+      for (const item of value) {
+        if (nextItems) {
+          nextItems.push(item);
+        } else if (
+          index >= observedItems.length ||
+          !Object.is(observedItems[index], item)
+        ) {
+          nextItems = observedItems.slice(0, index);
+          nextItems.push(item);
+        }
+
+        index++;
+      }
+
+      if (nextItems) {
+        observedItems = nextItems;
+      } else if (index !== observedItems.length) {
+        observedItems = observedItems.slice(0, index);
+      }
+
+      return observedItems;
+    },
     (value) => {
       const parent = anchor.parentNode;
 
       if (!parent) return;
 
-      const items =
-        value === null || value === undefined
-          ? []
-          : Array.from(value as Iterable<unknown>);
-      const descriptors: Array<{
+      const items = value as unknown[];
+      const retainedLength = states.size;
+      const indexToRemove = removedIndex;
+      const indexesToSwap = swappedIndexes;
+
+      removedIndex = -1;
+      swappedIndexes = undefined;
+
+      if (indexesToSwap && retainedLength === items.length) {
+        const leftIndex = indexesToSwap[0];
+        const rightIndex = indexesToSwap[1];
+        let leftState: KeyedChildState | undefined;
+        let rightState: KeyedChildState | undefined;
+
+        for (const state of states.values()) {
+          if (state._index === leftIndex) leftState = state;
+          else if (state._index === rightIndex) rightState = state;
+
+          if (leftState && rightState) break;
+        }
+
+        const leftStart = leftState && firstKeyedStateNode(leftState);
+        const rightEnd = rightState && lastKeyedStateNode(rightState);
+
+        if (leftState && rightState && leftStart && rightEnd) {
+          const afterRight = rightEnd.nextSibling;
+
+          moveKeyedStateBefore(parent, rightState, leftStart);
+          moveKeyedStateBefore(parent, leftState, afterRight);
+
+          rightState._index = leftIndex;
+          leftState._index = rightIndex;
+
+          return;
+        }
+      }
+
+      if (indexToRemove >= 0 && retainedLength === items.length + 1) {
+        let removedState: KeyedChildState | undefined;
+
+        for (const state of states.values()) {
+          if (state._index === indexToRemove) {
+            removedState = state;
+          } else if (state._index > indexToRemove) {
+            state._index--;
+          }
+        }
+
+        if (removedState) {
+          disposeLinkedChildren(removedState._children);
+          states.delete(removedState._key);
+
+          return;
+        }
+      }
+
+      if (stablePrefixLength === 0 && retainedLength > 0 && items.length > 0) {
+        const replacementKeys = new Array<PropertyKey>(items.length);
+        const seenReplacementKeys = new Set<PropertyKey>();
+        let isDisjointReplacement = true;
+
+        for (let index = 0; index < items.length; index++) {
+          const key = binding._key(items[index]);
+
+          if (seenReplacementKeys.has(key)) {
+            throw new TypeError(
+              `Duplicate programmatic view key '${String(key)}'.`,
+            );
+          }
+
+          if (states.has(key)) {
+            isDisjointReplacement = false;
+            break;
+          }
+
+          seenReplacementKeys.add(key);
+          replacementKeys[index] = key;
+        }
+
+        if (isDisjointReplacement) {
+          const removedChildren = new Array<LinkedChildState[]>(retainedLength);
+          let removedIndex = 0;
+
+          for (const state of states.values()) {
+            removedChildren[removedIndex++] = state._children;
+          }
+
+          detachKeyedStateRange(states.values(), anchor);
+          disposeLinkedChildrenGroups(removedChildren);
+          states = new Map<PropertyKey, KeyedChildState>();
+
+          for (let index = 0; index < items.length; index++) {
+            const item = items[index];
+            const key = replacementKeys[index];
+            const holder = createScope(
+              { value: item },
+              runtime._scope._handler,
+            ) as { value: unknown };
+            const children = linkMaterializedChildren(
+              materializeProgrammaticView(binding._render(() => holder.value)),
+              parent,
+              anchor,
+              runtime,
+            );
+
+            states.set(key, {
+              _key: key,
+              _value: item,
+              _holder: holder,
+              _children: children,
+              _index: index,
+            });
+          }
+
+          return;
+        }
+      }
+
+      if (
+        stablePrefixLength === retainedLength &&
+        items.length > retainedLength
+      ) {
+        const appendedLength = items.length - retainedLength;
+        const appendedKeys = new Array<PropertyKey>(appendedLength);
+        const seenAppendedKeys = new Set<PropertyKey>();
+
+        for (let index = retainedLength; index < items.length; index++) {
+          const key = binding._key(items[index]);
+
+          if (states.has(key) || seenAppendedKeys.has(key)) {
+            throw new TypeError(
+              `Duplicate programmatic view key '${String(key)}'.`,
+            );
+          }
+
+          seenAppendedKeys.add(key);
+          appendedKeys[index - retainedLength] = key;
+        }
+
+        for (let index = retainedLength; index < items.length; index++) {
+          const item = items[index];
+          const key = appendedKeys[index - retainedLength];
+          const holder = createScope(
+            { value: item },
+            runtime._scope._handler,
+          ) as { value: unknown };
+          const children = linkMaterializedChildren(
+            materializeProgrammaticView(binding._render(() => holder.value)),
+            parent,
+            anchor,
+            runtime,
+          );
+
+          states.set(key, {
+            _key: key,
+            _value: item,
+            _holder: holder,
+            _children: children,
+            _index: index,
+          });
+        }
+
+        return;
+      }
+
+      const descriptors = new Array<{
         readonly _key: PropertyKey;
         readonly _value: unknown;
         readonly _holder: { value: unknown };
-        readonly _nodes: readonly Node[];
-      }> = [];
-      const descriptorByKey = new Map<PropertyKey, unknown>();
+        readonly _nodes?: readonly Node[];
+        readonly _previousIndex: number;
+      }>(items.length);
+      const seenKeys = new Set<PropertyKey>();
 
       for (let index = 0; index < items.length; index++) {
         const item = items[index];
         const key = binding._key(item);
 
-        if (descriptorByKey.has(key)) {
+        if (seenKeys.has(key)) {
           throw new TypeError(
             `Duplicate programmatic view key '${String(key)}'.`,
           );
         }
 
-        descriptorByKey.set(key, item);
+        seenKeys.add(key);
         const previous = states.get(key);
         const holder = previous
           ? previous._holder
@@ -920,23 +1951,40 @@ function activateKeyedChildBinding(
               value: unknown;
             });
 
-        descriptors.push({
-          _key: key,
-          _value: item,
-          _holder: holder,
-          _nodes: previous
-            ? []
-            : materializeProgrammaticView(binding._render(() => holder.value)),
-        });
+        if (previous) {
+          descriptors[index] = {
+            _key: key,
+            _value: item,
+            _holder: holder,
+            _previousIndex: previous._index,
+          };
+        } else {
+          descriptors[index] = {
+            _key: key,
+            _value: item,
+            _holder: holder,
+            _nodes: materializeProgrammaticView(
+              binding._render(() => holder.value),
+            ),
+            _previousIndex: -1,
+          };
+        }
       }
 
       const nextStates = new Map<PropertyKey, KeyedChildState>();
 
+      const removedChildren: LinkedChildState[][] = [];
+
       for (const [key, state] of states) {
-        if (!descriptorByKey.has(key)) {
-          disposeLinkedChildren(state._children);
+        if (!seenKeys.has(key)) {
+          removedChildren.push(state._children);
         }
       }
+
+      if (descriptors.length === 0) {
+        detachKeyedStateRange(states.values(), anchor);
+      }
+      disposeLinkedChildrenGroups(removedChildren);
 
       for (let index = 0; index < descriptors.length; index++) {
         const descriptor = descriptors[index];
@@ -944,7 +1992,7 @@ function activateKeyedChildBinding(
         const children = previous
           ? previous._children
           : linkMaterializedChildren(
-              descriptor._nodes,
+              descriptor._nodes ?? [],
               parent,
               anchor,
               runtime,
@@ -954,20 +2002,47 @@ function activateKeyedChildBinding(
           descriptor._holder.value = descriptor._value;
         }
 
-        const state: KeyedChildState = {
+        const state: KeyedChildState = previous ?? {
           _key: descriptor._key,
           _value: descriptor._value,
           _holder: descriptor._holder,
           _children: children,
+          _index: index,
         };
+
+        state._value = descriptor._value;
+        state._index = index;
 
         nextStates.set(state._key, state);
       }
 
       states = nextStates;
 
+      let lastPreviousIndex = -1;
+      let sawNewState = false;
+      let needsPlacement = false;
+
+      for (let index = 0; index < descriptors.length; index++) {
+        const indexInPrevious = descriptors[index]._previousIndex;
+
+        if (indexInPrevious < 0) {
+          sawNewState = true;
+        } else {
+          if (indexInPrevious < lastPreviousIndex || sawNewState) {
+            needsPlacement = true;
+          }
+
+          lastPreviousIndex = indexInPrevious;
+        }
+      }
+
+      if (!needsPlacement) return;
+
       let cursor: Node = anchor;
       const orderedStates = Array.from(states.values());
+      const stableIndexes = findStableKeyedIndexes(
+        descriptors.map((descriptor) => descriptor._previousIndex),
+      );
 
       for (
         let stateIndex = orderedStates.length - 1;
@@ -975,6 +2050,7 @@ function activateKeyedChildBinding(
         stateIndex--
       ) {
         const children = orderedStates[stateIndex]._children;
+        const move = stableIndexes[stateIndex] === 0;
 
         for (
           let childIndex = children.length - 1;
@@ -986,23 +2062,65 @@ function activateKeyedChildBinding(
           for (let nodeIndex = nodes.length - 1; nodeIndex >= 0; nodeIndex--) {
             const node = nodes[nodeIndex];
 
-            if (node.nextSibling !== cursor) parent.insertBefore(node, cursor);
+            if (move && node.nextSibling !== cursor) {
+              parent.insertBefore(node, cursor);
+            }
             cursor = node;
           }
         }
       }
     },
+    false,
   );
 
   return () => {
     stop();
 
-    for (const state of states.values()) {
-      disposeLinkedChildren(state._children);
-    }
+    disposeLinkedChildrenGroups(
+      Array.from(states.values(), (state) => state._children),
+    );
 
     states.clear();
   };
+}
+
+function findStableKeyedIndexes(previousIndexes: number[]): Uint8Array {
+  const tails: number[] = [];
+  const predecessors = new Int32Array(previousIndexes.length);
+
+  predecessors.fill(-1);
+
+  for (let index = 0; index < previousIndexes.length; index++) {
+    const previousIndex = previousIndexes[index];
+
+    if (previousIndex < 0) continue;
+
+    let low = 0;
+    let high = tails.length;
+
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+
+      if (previousIndexes[tails[middle]] < previousIndex) {
+        low = middle + 1;
+      } else {
+        high = middle;
+      }
+    }
+
+    if (low > 0) predecessors[index] = tails[low - 1];
+    tails[low] = index;
+  }
+
+  const stable = new Uint8Array(previousIndexes.length);
+  let index = tails.length > 0 ? tails[tails.length - 1] : -1;
+
+  while (index >= 0) {
+    stable[index] = 1;
+    index = predecessors[index];
+  }
+
+  return stable;
 }
 
 function activateNodeBindings(
@@ -1014,9 +2132,11 @@ function activateNodeBindings(
 
   if (bindings) {
     pendingBindings.delete(node);
+    const multipleBindings = isArray(bindings);
+    const bindingCount = multipleBindings ? bindings.length : 1;
 
-    for (let index = 0; index < bindings.length; index++) {
-      const binding = bindings[index];
+    for (let index = 0; index < bindingCount; index++) {
+      const binding = multipleBindings ? bindings[index] : bindings;
 
       if (binding._kind === "event") {
         const eventTarget = node as EventTarget;
@@ -1065,24 +2185,29 @@ function activateNodeBindings(
         let previousValue: unknown;
 
         disposers.push(
-          observeScopeExpression(runtime._scope, binding._read, (value) => {
-            const sanitizedValue = runtime._sanitizeProperty(
-              node as Element,
-              binding._name,
-              value,
-            );
+          observeScopeExpression(
+            runtime._scope,
+            binding._read,
+            (value) => {
+              const sanitizedValue = runtime._sanitizeProperty(
+                node as Element,
+                binding._name,
+                value,
+              );
 
-            if (hasValue && Object.is(previousValue, sanitizedValue)) return;
+              if (hasValue && Object.is(previousValue, sanitizedValue)) return;
 
-            hasValue = true;
-            previousValue = sanitizedValue;
-            setDomValue(
-              node as Element,
-              binding._name,
-              sanitizedValue,
-              binding._target,
-            );
-          }),
+              hasValue = true;
+              previousValue = sanitizedValue;
+              setDomValue(
+                node as Element,
+                binding._name,
+                sanitizedValue,
+                binding._target,
+              );
+            },
+            false,
+          ),
         );
       } else if (binding._kind === "child") {
         disposers.push(activateChildBinding(node, binding._read, runtime));
@@ -1094,10 +2219,20 @@ function activateNodeBindings(
     }
   }
 
-  const childNodes = Array.from(node.childNodes);
+  const childNodes = node.childNodes;
 
-  for (let index = 0; index < childNodes.length; index++) {
-    activateNodeBindings(childNodes[index], runtime, disposers);
+  if (childNodes.length === 0) return;
+
+  if (childNodes.length === 1) {
+    activateNodeBindings(childNodes[0], runtime, disposers);
+
+    return;
+  }
+
+  const snapshot = Array.from(childNodes);
+
+  for (let index = 0; index < snapshot.length; index++) {
+    activateNodeBindings(snapshot[index], runtime, disposers);
   }
 }
 
@@ -1175,7 +2310,9 @@ export function createProgrammaticDirectiveCompile(
       const controller = getCacheData(element, `$${options.name}Controller`) as
         | ng.Controller
         | undefined;
-      const $compile = options.injector.get(_compile);
+      const $compile = options.injector.get(
+        _compile,
+      ) as ProgrammaticCompileService;
       const $exceptionHandler = options.injector.get(_exceptionHandler);
       const cleanups: Array<() => void> = [];
       let destroyed = false;
@@ -1262,12 +2399,19 @@ export function createProgrammaticDirectiveCompile(
         /** @internal Links one generated node against the owning scope. */
         _linkNode(node, parent) {
           try {
-            const linked = $compile(node)(scope, undefined, {
+            const linkOptions = {
               _futureParentElement: parent,
               _ownsNodes: true,
-            });
+            } as const;
+            const directlyLinked = $compile._linkProgrammaticNode(
+              node,
+              scope,
+              linkOptions,
+            );
 
-            return normalizeLinkResult(linked);
+            if (directlyLinked === null) return [node];
+
+            return normalizeLinkResult(directlyLinked);
           } catch (error) {
             node.parentNode?.removeChild(node);
             $exceptionHandler(error);

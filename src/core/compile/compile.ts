@@ -3212,6 +3212,38 @@ export class CompileRegistry {
           });
         }
 
+        Object.assign(compile, {
+          /** @internal Links a programmatic node without public-link overhead when no directives match. */
+          _linkProgrammaticNode(
+            node: Node,
+            scope: ng.Scope,
+            options: {
+              readonly _futureParentElement: Node;
+              readonly _ownsNodes: boolean;
+            },
+          ): Element | Node | ChildNode | Node[] | null {
+            const publicLinkState = createPublicLinkState(node, null);
+            const templatePlan = planTemplate(
+              assertInvariantDefined(publicLinkState._nodes),
+              undefined,
+              undefined,
+              undefined,
+              null,
+            );
+
+            if (!templatePlan) return null;
+
+            if (templatePlan._trackedNodeList) {
+              publicLinkState._nodes = templatePlan._trackedNodeList;
+            }
+
+            publicLinkState._templateLinkExecutor =
+              createTemplateLinkExecutor(templatePlan);
+
+            return invokePublicLink(publicLinkState, scope, undefined, options);
+          },
+        });
+
         return compile;
 
         function compile(

@@ -306,6 +306,7 @@ export function observeScopeExpression(
   scope: ng.Scope,
   read: () => unknown,
   listener: (value: unknown) => void,
+  registerDestroy = true,
 ): () => void {
   const owner = scope._handler;
   const observer: ScopeExpressionObserver = {
@@ -328,7 +329,9 @@ export function observeScopeExpression(
     observer._deregisterDestroy = undefined;
   };
 
-  observer._deregisterDestroy = scope.on("$destroy", dispose);
+  if (registerDestroy) {
+    observer._deregisterDestroy = scope.on("$destroy", dispose);
+  }
   runScopeExpressionObserver(observer);
 
   return dispose;

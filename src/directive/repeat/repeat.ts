@@ -57,7 +57,7 @@ function isRepeatExpressionWhitespace(value: string): boolean {
 
 function findRepeatExpressionSeparator(
   expression: string,
-  keyword: "in" | "as",
+  keyword: "in" | "as" | "track by",
 ): { start: number; end: number } | undefined {
   for (let index = 0; index < expression.length; index++) {
     if (!isRepeatExpressionWhitespace(expression.charAt(index))) {
@@ -630,6 +630,13 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
         undefined;
 
       const hasLazy = hasNormalizedAttr($element, "lazy");
+
+      if (findRepeatExpressionSeparator(expression.trim(), "track by")) {
+        throw ngRepeatError(
+          "utrack",
+          "'track by' is not supported. Use the 'data-index' attribute to select the repeat key property.",
+        );
+      }
 
       const repeatExpression = parseRepeatExpression(expression);
 
