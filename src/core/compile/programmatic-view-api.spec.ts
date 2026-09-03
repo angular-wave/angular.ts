@@ -329,6 +329,13 @@ describe("programmatic view API", () => {
     expect(host.querySelector("span")).toBe(original);
     expect(original.textContent).toBe("stable");
     expect(errors[0].message).toBe("render failed");
+
+    context.scope.items = [{ id: 3, label: "committed" }];
+    await settle();
+
+    expect(host.querySelector("span")).not.toBe(original);
+    expect(host.textContent).toBe("committed");
+    expect(errors.length).toBe(1);
   });
 
   it("routes programmatic event errors through the exception handler", () => {

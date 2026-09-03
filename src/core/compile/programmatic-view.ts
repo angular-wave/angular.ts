@@ -371,7 +371,8 @@ interface ProgrammaticBindingRuntime {
 }
 
 type ProgrammaticCompileService = ng.CompileService & {
-  _linkProgrammaticNode(
+  /** @internal */
+  _linkProgrammaticNode?(
     node: Node,
     scope: ng.Scope,
     options: {
@@ -1839,6 +1840,26 @@ function activateKeyedChildBinding(
         }
 
         if (isDisjointReplacement) {
+          const replacements = new Array<{
+            readonly _holder: { value: unknown };
+            readonly _nodes: readonly Node[];
+          }>(items.length);
+
+          for (let index = 0; index < items.length; index++) {
+            const item = items[index];
+            const holder = createScope(
+              { value: item },
+              runtime._scope._handler,
+            ) as { value: unknown };
+
+            replacements[index] = {
+              _holder: holder,
+              _nodes: materializeProgrammaticView(
+                binding._render(() => holder.value),
+              ),
+            };
+          }
+
           const removedChildren = new Array<LinkedChildState[]>(retainedLength);
           let removedIndex = 0;
 
@@ -1853,12 +1874,9 @@ function activateKeyedChildBinding(
           for (let index = 0; index < items.length; index++) {
             const item = items[index];
             const key = replacementKeys[index];
-            const holder = createScope(
-              { value: item },
-              runtime._scope._handler,
-            ) as { value: unknown };
+            const replacement = replacements[index];
             const children = linkMaterializedChildren(
-              materializeProgrammaticView(binding._render(() => holder.value)),
+              replacement._nodes,
               parent,
               anchor,
               runtime,
@@ -1867,7 +1885,7 @@ function activateKeyedChildBinding(
             states.set(key, {
               _key: key,
               _value: item,
-              _holder: holder,
+              _holder: replacement._holder,
               _children: children,
               _index: index,
             });
@@ -2403,11 +2421,9 @@ export function createProgrammaticDirectiveCompile(
               _futureParentElement: parent,
               _ownsNodes: true,
             } as const;
-            const directlyLinked = $compile._linkProgrammaticNode(
-              node,
-              scope,
-              linkOptions,
-            );
+            const directlyLinked = $compile._linkProgrammaticNode
+              ? $compile._linkProgrammaticNode(node, scope, linkOptions)
+              : $compile(node)(scope, undefined, linkOptions);
 
             if (directlyLinked === null) return [node];
 
