@@ -1,0 +1,70 @@
+{
+  "savedAt": "2026-09-04T14:26:32.578Z",
+  "result": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+    "iterations": 100,
+    "samples": 3,
+    "results": [
+      {
+        "name": "append/remove",
+        "template": "each(100 keyed items)",
+        "iterations": 100,
+        "samples": 3,
+        "minMs": 11.299999999813735,
+        "medianMs": 11.300000000046566,
+        "meanMs": 12.333333333333334,
+        "opsPerSecond": 8108.108108108108
+      },
+      {
+        "name": "prepend/remove",
+        "template": "each(100 keyed items)",
+        "iterations": 100,
+        "samples": 3,
+        "minMs": 10.600000000093132,
+        "medianMs": 10.699999999953434,
+        "meanMs": 11.433333333348855,
+        "opsPerSecond": 8746.35568511932
+      },
+      {
+        "name": "swap",
+        "template": "each(100 keyed items)",
+        "iterations": 100,
+        "samples": 3,
+        "minMs": 9.800000000046566,
+        "medianMs": 10,
+        "meanMs": 10.066666666651145,
+        "opsPerSecond": 9933.774834452404
+      },
+      {
+        "name": "reverse",
+        "template": "each(100 keyed items)",
+        "iterations": 100,
+        "samples": 3,
+        "minMs": 10.899999999906868,
+        "medianMs": 11.300000000046566,
+        "meanMs": 11.166666666666666,
+        "opsPerSecond": 8955.223880597016
+      },
+      {
+        "name": "sparse replacement",
+        "template": "each(100 keyed items)",
+        "iterations": 100,
+        "samples": 3,
+        "minMs": 12.700000000186265,
+        "medianMs": 12.899999999906868,
+        "meanMs": 12.86666666669771,
+        "opsPerSecond": 7772.020725369849
+      },
+      {
+        "name": "disjoint replacement",
+        "template": "each(100 keyed items)",
+        "iterations": 100,
+        "samples": 3,
+        "minMs": 114.0999999998603,
+        "medianMs": 128,
+        "meanMs": 132.06666666665114,
+        "opsPerSecond": 757.1933366987261
+      }
+    ]
+  }
+}

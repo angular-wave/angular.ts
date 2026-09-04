@@ -30,12 +30,14 @@ root-types:
 
 generate: root-types
 	$(NODE) tool/generate_kotlin_bindings.mjs
+	$(NODE) ../../utils/generate-programmatic-view-tags.mjs --integration kotlin
 	$(GRADLE) formatKotlin
 
 generate-check: root-types generate-check-local
 
 generate-check-local:
 	$(NODE) tool/check_generated_bindings.mjs
+	$(NODE) ../../utils/generate-programmatic-view-tags.mjs --integration kotlin --check
 
 parity: root-types
 	$(NODE) tool/check_ng_namespace_parity.mjs

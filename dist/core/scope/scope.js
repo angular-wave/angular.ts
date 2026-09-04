@@ -112,7 +112,7 @@ function scheduleScopeExpressionObservers(target, property) {
     }
 }
 /** @internal Observes the Scope-backed values read while evaluating a function. */
-function observeScopeExpression(scope, read, listener) {
+function observeScopeExpression(scope, read, listener, registerDestroy = true) {
     const owner = scope._handler;
     const observer = {
         _owner: owner,
@@ -132,7 +132,9 @@ function observeScopeExpression(scope, read, listener) {
         observer._deregisterDestroy?.();
         observer._deregisterDestroy = undefined;
     };
-    observer._deregisterDestroy = scope.on("$destroy", dispose);
+    if (registerDestroy) {
+        observer._deregisterDestroy = scope.on("$destroy", dispose);
+    }
     runScopeExpressionObserver(observer);
     return dispose;
 }

@@ -16,17 +16,17 @@ component is removed.
 Complete [typed views]({{< relref "/docs/views/typed" >}}).
 
 ```ts
-const { each, tags } = angular.view;
+import { each, li, ul } from '@angular-wave/angular.ts';
 
 view: ({ controller, onDestroy }) => {
   const channel = new BroadcastChannel('todos');
   onDestroy(() => channel.close());
 
-  return tags.ul(
+  return ul(
     each(
       () => controller.todos,
       (todo) => todo.id,
-      (todo) => tags.li(() => todo().title),
+      (todo) => li(() => todo().title),
     ),
   );
 };

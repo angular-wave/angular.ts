@@ -37,6 +37,7 @@ class AngularTsTest {
         assertEquals("ready", context.controller)
         assertEquals(host, context.host)
         assertEquals("view", ProgrammaticTags(rawTags).tag("section", children = arrayOf("view")).textContent)
+        assertEquals("Save", button(children = arrayOf("Save")).textContent)
     }
 
     @Test

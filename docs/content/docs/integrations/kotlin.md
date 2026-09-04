@@ -30,6 +30,9 @@ must consume the integration as a package.
 
 ## Best practices
 
+- Import package-level HTML factories such as `button()` instead of passing
+  fixed names to `view.tag()`.
+
 - Prefer handwritten typed builders over raw dynamic JavaScript access.
 - Keep generated facades isolated and regenerate them from root declarations.
 - Use typed injection tokens and explicit dependency order.

@@ -84,6 +84,8 @@ Build with `npx shadow-cljs release app`. Serve `public` over HTTP.
 
 ## Production practices
 
+- Import `angular-ts.view` for named HTML factories and keyed view bindings.
+
 - Prefer the fluent facade; use generated bindings when no facade helper exists.
 - Keep `*warn-on-infer*` enabled and fix every inference warning.
 - Use explicit injection vectors for controllers, services, directives, and

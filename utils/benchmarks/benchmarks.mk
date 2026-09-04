@@ -1,4 +1,4 @@
-.PHONY: benchmark-parse benchmark-compile benchmark-link benchmark-router benchmark-bootstrap benchmark-wasm benchmark-build-size benchmark-npm
+.PHONY: benchmark-parse benchmark-compile benchmark-link benchmark-programmatic-view benchmark-router benchmark-bootstrap benchmark-wasm benchmark-build-size benchmark-npm
 
 benchmark-parse: ensure-deps
 	@node ./utils/benchmarks/run-parse-benchmark.mjs $(ARGS)
@@ -8,6 +8,9 @@ benchmark-compile: ensure-deps
 
 benchmark-link: ensure-deps
 	@node ./utils/benchmarks/run-link-benchmark.mjs $(ARGS)
+
+benchmark-programmatic-view: ensure-deps
+	@node ./utils/benchmarks/run-programmatic-view-benchmark.mjs $(ARGS)
 
 benchmark-router: ensure-deps
 	@node ./utils/benchmarks/run-router-benchmark.mjs $(ARGS)

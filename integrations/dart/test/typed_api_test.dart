@@ -92,6 +92,7 @@ void main() {
       tags.namespace('http://www.w3.org/2000/svg').tag('circle'),
       same(svgCircle),
     );
+    expect(ng.button, isA<Function>());
 
     final viewRaw = JSObject()
       ..setProperty(

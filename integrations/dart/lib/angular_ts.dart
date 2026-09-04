@@ -14,6 +14,7 @@ export 'src/injector.dart';
 export 'src/misc.dart';
 export 'src/model.dart';
 export 'src/programmatic_view.dart';
+export 'src/programmatic_view_tags.dart';
 export 'src/module.dart';
 export 'src/module_options.dart';
 export 'src/rest.dart';

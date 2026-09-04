@@ -371,6 +371,9 @@ function ngRepeatDirective($injector) {
                 getNormalizedAttr($element, "dataIndex") ??
                 undefined;
             const hasLazy = hasNormalizedAttr($element, "lazy");
+            if (findRepeatExpressionSeparator(expression.trim(), "track by")) {
+                throw ngRepeatError("utrack", "'track by' is not supported. Use the 'data-index' attribute to select the repeat key property.");
+            }
             const repeatExpression = parseRepeatExpression(expression);
             if (!repeatExpression) {
                 throw ngRepeatError("iexp", "Expected expression in form of '_item_ in _collection_' but got '{0}'.", expression);

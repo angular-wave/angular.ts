@@ -7,7 +7,8 @@ description:
 ---
 
 Programmatic views provide a JSX-free alternative to HTML templates. A view is
-an ordinary function that returns real DOM nodes created with `tags`. It uses
+an ordinary function that returns real DOM nodes created with typed tag
+factories. It uses
 the normal AngularTS compiler, scope lifecycle, dependency injection, component
 registration, directive registration, and transclusion pipeline.
 
@@ -22,20 +23,29 @@ Import the helpers you use from the package entry point:
 import {
   angular,
   attrs,
+  button,
+  div,
   each,
   event,
+  h2,
+  input,
+  li,
+  output,
+  p,
   props,
+  section,
   tag,
   tagNS,
   tags,
+  time,
+  ul,
 } from '@angular-wave/angular.ts';
 ```
 
-The same helpers are available together through `angular.view`.
-
-```ts
-const { attrs, each, event, props, tag, tagNS, tags } = angular.view;
-```
+Named imports are preferred in ESM applications because bundlers can retain
+only the factories that are used. No-build UMD applications can access tag
+factories through `angular.tags` and helpers through `angular.view`. Keep
+`tags` for namespace proxies; use `tag()` when the element name is dynamic.
 
 Define the view directly on the component registration:
 
@@ -47,7 +57,7 @@ class CounterController {
 angular.createModule('app', []).component('counterButton', {
   controller: CounterController,
   view: ({ controller }) =>
-    tags.button(
+    button(
       { onclick: () => controller.count++ },
       () => `Count: ${controller.count}`,
     ),
@@ -77,8 +87,8 @@ and document fragments contribute their current child nodes.
 
 ```ts
 view: ({ controller }) => [
-  tags.h2(() => controller.title),
-  controller.showDetails ? tags.p(controller.initialDetails) : null,
+  h2(() => controller.title),
+  controller.showDetails ? p(controller.initialDetails) : null,
 ];
 ```
 
@@ -87,8 +97,8 @@ constructed. Make the condition itself a reader when it must remain reactive:
 
 ```ts
 view: ({ controller }) => [
-  tags.h2(() => controller.title),
-  () => (controller.showDetails ? tags.p(controller.details) : null),
+  h2(() => controller.title),
+  () => (controller.showDetails ? p(controller.details) : null),
 ];
 ```
 
@@ -99,13 +109,13 @@ reader. AngularTS executes it, tracks the proxied scope and controller state it
 reads, and updates only the corresponding DOM binding when that state changes.
 
 ```ts
-tags.output(() => controller.total);
+output(() => controller.total);
 
-tags.button({
+button({
   disabled: () => !controller.canSubmit,
 });
 
-tags.input({
+input({
   value: () => controller.query,
 });
 ```
@@ -113,8 +123,8 @@ tags.input({
 A value that is evaluated before the tag function is a static snapshot:
 
 ```ts
-tags.output(controller.total);
-tags.button({ disabled: !controller.canSubmit });
+output(controller.total);
+button({ disabled: !controller.canSubmit });
 ```
 
 Use reader functions whenever a child or property must be reevaluated
@@ -138,7 +148,7 @@ for arbitrary attribute names and `props()` for custom-element properties;
 misspelled native properties are rejected by TypeScript.
 
 ```ts
-tags.input({
+input({
   value: () => controller.name,
   disabled: () => controller.saving,
   'data-field': 'name',
@@ -149,7 +159,7 @@ Use `attrs()` to force attribute semantics. Functions inside `attrs()` remain
 reactive readers.
 
 ```ts
-tags.section({
+section({
   ...attrs({
     'aria-busy': () => controller.loading,
     'data-count': () => controller.items.length,
@@ -178,10 +188,10 @@ Do not place reactive readers inside `props()`:
 
 ```ts
 // Reactive property
-tags.input({ value: () => controller.name });
+input({ value: () => controller.name });
 
 // Literal function assigned as the value property
-tags.input(props({ value: () => controller.name }));
+input(props({ value: () => controller.name }));
 ```
 
 Potentially dangerous properties such as `innerHTML` and `srcdoc` still pass
@@ -193,7 +203,7 @@ content has been reviewed and is intentionally trusted.
 Functions assigned to native `on*` properties are event handlers:
 
 ```ts
-tags.button({
+button({
   onclick: (event) => controller.submit(event),
 });
 ```
@@ -202,7 +212,7 @@ Use `event()` for listener options, object listeners, or custom event names. It
 uses native `addEventListener` semantics and is removed with the view.
 
 ```ts
-tags.button({
+button({
   click: event(() => controller.submit(), { once: true }),
 });
 
@@ -221,7 +231,7 @@ through `$exceptionHandler`.
 Standard array methods are useful for static collections:
 
 ```ts
-tags.ul(controller.todos.map((todo) => tags.li(todo.title)));
+ul(controller.todos.map((todo) => li(todo.title)));
 ```
 
 This calls `map()` once and creates a DOM snapshot. Changes to the array do not
@@ -230,11 +240,11 @@ insert, remove, or reorder list nodes.
 Use `each()` for a reactive collection:
 
 ```ts
-tags.ul(
+ul(
   each(
     () => controller.todos,
     (todo) => todo.id,
-    (todo) => tags.li(() => todo().title),
+    (todo) => li(() => todo().title),
   ),
 );
 ```
@@ -313,7 +323,7 @@ app.directive('liveClock', () => ({
     scope.now = new Date();
     const timer = setInterval(() => (scope.now = new Date()), 1000);
     onDestroy(() => clearInterval(timer));
-    return tags.time(() => scope.now.toLocaleTimeString());
+    return time(() => scope.now.toLocaleTimeString());
   },
 }));
 ```
@@ -334,7 +344,7 @@ disposed automatically. Register resources created by application code with
 view: ({ onDestroy }) => {
   const socket = new WebSocket('/events');
   onDestroy(() => socket.close());
-  return tags.div('Connected');
+  return div('Connected');
 };
 ```
 

@@ -1,5 +1,4 @@
-export { afterRender, angular, queueAfterRender } from "./index.ts";
-export type { Policy, PolicyContext, PolicyDecision } from "./index.ts";
+export * from "./index.ts";
 
 import type { Angular as TAngular } from "./angular.ts";
 import type {

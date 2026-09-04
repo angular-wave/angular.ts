@@ -10,19 +10,19 @@ advantage over string templates is type safety between the component model and
 its bindings.
 
 ```ts
+import { h1, main, p } from '@angular-wave/angular.ts';
+
 class TaskBoard {
   title = 'Task board';
   tasks = [{ id: 1, title: 'Read the guide', done: false }];
 }
 
-const { tags } = angular;
-
 app.component<TaskBoard>('taskBoard', {
   controller: TaskBoard,
   view: ({ controller }) =>
-    tags.main(
-      tags.h1(() => controller.title),
-      tags.p(() => `${controller.tasks.length} task(s)`),
+    main(
+      h1(() => controller.title),
+      p(() => `${controller.tasks.length} task(s)`),
     ),
 });
 ```

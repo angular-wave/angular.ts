@@ -22,9 +22,10 @@ token is absent from the loaded module graph.
 
 For typed views, verify changing positions receive a function reader rather than
 a snapshot. Call keyed item readers inside nested bindings. Replace collection
-properties in controller methods. Tag factories come from `angular.tags`;
-controller typing is supplied to `component<T>()`; use DOM property names such
-as `htmlFor`.
+properties in controller methods. ESM applications import tag factories such as
+`div` and `button` directly from `@angular-wave/angular.ts`; no-build UMD
+applications use `angular.tags`. Controller typing is supplied to
+`component<T>()`; use DOM property names such as `htmlFor`.
 
 Remove sibling features while preserving the failing owner, data, and timing. Do
 not hide races with timeouts. Use the [error catalog](/docs/reference/errors/)

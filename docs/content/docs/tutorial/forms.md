@@ -21,22 +21,24 @@ submit() {
 Add the form before the list:
 
 ```ts
-tags.form(
+import { button, form, input, label } from '@angular-wave/angular.ts';
+
+form(
   {
     onsubmit: (event) => {
       event.preventDefault();
       controller.submit();
     },
   },
-  tags.label({ htmlFor: 'new-task' }, 'Task'),
-  tags.input({
+  label({ htmlFor: 'new-task' }, 'Task'),
+  input({
     id: 'new-task',
     value: () => controller.draft,
     oninput: (event) => {
       controller.draft = (event.currentTarget as HTMLInputElement).value;
     },
   }),
-  tags.button({ disabled: () => !controller.draft.trim() }, 'Add'),
+  button({ disabled: () => !controller.draft.trim() }, 'Add'),
 );
 ```
 

@@ -23,9 +23,11 @@ example-build:
 
 generate: root-types
 	$(NODE) tool/generate_ng_namespace_parity.mjs
+	$(NODE) ../../utils/generate-programmatic-view-tags.mjs --integration scala
 
 generate-check: root-types
 	$(NODE) tool/generate_ng_namespace_parity.mjs --check
+	$(NODE) ../../utils/generate-programmatic-view-tags.mjs --integration scala --check
 
 parity: generate-check
 	$(NODE) tool/check_ng_namespace_parity.mjs

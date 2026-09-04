@@ -15,6 +15,8 @@ Create the resource inside the component view and register its cleanup at the
 same time.
 
 ```ts
+import { time } from '@angular-wave/angular.ts';
+
 class ClockController {
   now = new Date();
 }
@@ -22,8 +24,6 @@ class ClockController {
 app.component<ClockController>('clock', {
   controller: ClockController,
   view: ({ controller, onDestroy }) => {
-    const { time } = angular.tags;
-
     const timer = window.setInterval(() => {
       controller.now = new Date();
     }, 1_000);

@@ -102,6 +102,9 @@ Build with `mvn package`. Serve the page over HTTP; do not open it through a
 
 ## Production practices
 
+- Statically import `org.angular.ts.view.Tags` for fixed HTML names and use
+  `org.angular.ts.view.View` for bindings and keyed collections.
+
 - Use the published artifact as a dependency; never copy generated bindings
   into the application.
 - Keep Closure ADVANCED optimization enabled and keep template extern

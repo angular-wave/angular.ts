@@ -30,10 +30,12 @@ manual-overrides-check:
 
 generate:
 	node tool/generate_dart_bindings.mjs
+	node ../../utils/generate-programmatic-view-tags.mjs --integration dart
 	$(DART) format lib/src/generated/ng_facades.dart
 
 generate-check:
 	node tool/check_generated_bindings.mjs
+	node ../../utils/generate-programmatic-view-tags.mjs --integration dart --check
 
 format:
 	$(DART) format lib test example tool

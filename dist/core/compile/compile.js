@@ -1,9 +1,9 @@
 import { _templateRequest, _scope, _injector, _sce } from '../../injection-tokens.js';
-import { setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, createElementFromHTML, setScope, setCacheData, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, hasNormalizedAttr, getDirectiveHostElement, getNormalizedAttr, getBooleanAttrName, FUTURE_PARENT_ELEMENT_KEY, cloneTranscludedHostElements, setNormalizedAttr } from '../../shared/dom.js';
+import { setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, createElementFromHTML, setScope, setCacheData, FUTURE_PARENT_ELEMENT_KEY, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, hasNormalizedAttr, getDirectiveHostElement, getNormalizedAttr, getBooleanAttrName, cloneTranscludedHostElements, setNormalizedAttr } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { identifierForController } from '../controller/controller.js';
 import { createScope } from '../scope/scope.js';
-import { deleteProperty, nullObject, assign, getNodeName, uppercase, isFunction, trim, hasOwn, assertInvariantDefined, inherit, stringify, arrayRemove, directiveNormalize, validateNotHasOwnPropertyName, isString, isArray, extend, callFunction, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, shouldHandleViewRetentionPause, equals } from '../../shared/utils.js';
+import { deleteProperty, nullObject, assertInvariantDefined, assign, getNodeName, uppercase, isFunction, trim, hasOwn, inherit, stringify, arrayRemove, directiveNormalize, validateNotHasOwnPropertyName, isString, isArray, extend, callFunction, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, shouldHandleViewRetentionPause, equals } from '../../shared/utils.js';
 import { validateTruthy } from '../../shared/validate.js';
 import { SCE_CONTEXTS } from '../../services/sce/context.js';
 import { PREFIX_REGEXP, ALIASED_ATTR } from '../../shared/constants.js';
@@ -12,7 +12,7 @@ import { updateClass } from '../../animations/class-mutation.js';
 import { createEventDirective, createWindowEventDirective } from '../../directive/events/events.js';
 import { ngObserveDirective } from '../../directive/observe/observe.js';
 import { AFTER_RENDER_EVENT_SCHEDULER_KEY, queueScopedAfterRender } from '../render/after-render.js';
-import { getCompiledFragmentRecord, addCompiledFragmentAsyncWork, createPublicLinkSingleNodeCompiledFragmentRecord, createPublicLinkCompiledFragmentRecord, registerCompiledFragmentNode, registerCompiledFragmentNodes, findCompiledFragmentRecord, addCompiledFragmentChild, removeCompiledFragmentAsyncWork, shouldRunCompiledFragmentCallback } from './incremental-fragment.js';
+import { createPublicLinkSingleNodeCompiledFragmentRecord, createPublicLinkCompiledFragmentRecord, registerCompiledFragmentNode, registerCompiledFragmentNodes, findCompiledFragmentRecord, addCompiledFragmentChild, getCompiledFragmentRecord, addCompiledFragmentAsyncWork, removeCompiledFragmentAsyncWork, shouldRunCompiledFragmentCallback } from './incremental-fragment.js';
 import { createComponentTemplateInvocationLocals } from './invocation-context.js';
 import { createProgrammaticDirectiveCompile, PROGRAMMATIC_VIEW_TEMPLATE, sanitizeProgrammaticSrcset } from './programmatic-view.js';
 
@@ -1344,6 +1344,21 @@ class CompileRegistry {
                         _futureParentElement,
                     });
                 }
+                Object.assign(compile, {
+                    /** @internal Links a programmatic node without public-link overhead when no directives match. */
+                    _linkProgrammaticNode(node, scope, options) {
+                        const publicLinkState = createPublicLinkState(node, null);
+                        const templatePlan = planTemplate(assertInvariantDefined(publicLinkState._nodes), undefined, undefined, undefined, null);
+                        if (!templatePlan)
+                            return null;
+                        if (templatePlan._trackedNodeList) {
+                            publicLinkState._nodes = templatePlan._trackedNodeList;
+                        }
+                        publicLinkState._templateLinkExecutor =
+                            createTemplateLinkExecutor(templatePlan);
+                        return invokePublicLink(publicLinkState, scope, undefined, options);
+                    },
+                });
                 return compile;
                 function compile(element, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
                     const publicLinkState = createPublicLinkState(element, previousCompileContext);

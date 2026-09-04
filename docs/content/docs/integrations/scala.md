@@ -86,6 +86,9 @@ the page at the generated `main.js` and serve it over HTTP.
 
 ## Production practices
 
+- Import `angular.ts.tags.*` for fixed HTML names and reserve
+  `AngularTS.view.tag()` for names selected at runtime.
+
 - Prefer typed tokens, builders, and injection helpers over `js.Dynamic`.
 - Keep AngularTS models as the shared reactive boundary rather than mirroring
   state into DOM-root scopes.

@@ -41,18 +41,17 @@ checks reject stale type overrides.
 `Component.view` and `Directive.view` receive a typed
 `ProgrammaticViewContext`. Its `controller`, `required`, `scope`, `host`, and
 `transclude` members map directly to the AngularTS runtime context.
-`AngularTsRuntime.global().tags` creates real DOM without parsing HTML:
+Import named factories for ordinary HTML:
 
 ```dart
-final tags = AngularTsRuntime.global().tags;
-final button = tags.tag(
-  'button',
+final save = button(
   properties: {'type': 'button'},
   children: [reactiveViewChild(() => controller.label)],
 );
 ```
 
-Use `tags.namespace(uri)` for SVG or MathML factories.
+Use `AngularTsRuntime.global().view.tag(...)` for names selected at runtime and
+`tagNS(...)` for dynamic SVG or MathML elements.
 
 Install the published package with `dart pub add angular_ts`.
 

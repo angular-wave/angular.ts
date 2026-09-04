@@ -10,6 +10,7 @@ import angular_ts/programmatic_view
 import angular_ts/storage
 import angular_ts/token
 import angular_ts/unsafe
+import angular_ts/view_tags
 import angular_ts/worker
 import gleam/dynamic.{type Dynamic}
 import gleam/option
@@ -107,6 +108,10 @@ pub fn programmatic_view_helpers_test() {
   programmatic_view.tag_ns("http://www.w3.org/2000/svg", "circle", [], [])
   |> marker_kind
   |> should.equal("view-tag-ns")
+
+  view_tags.button([], [programmatic_view.child("Save")])
+  |> marker_kind
+  |> should.equal("view-tag")
 }
 
 pub fn generated_http_token_test() {

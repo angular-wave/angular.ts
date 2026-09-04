@@ -18,33 +18,32 @@ Install the npm package, enable TypeScript, and read
 [components]({{< relref "/docs/concepts/components" >}}).
 
 ```ts
-import { angular } from '@angular-wave/angular.ts';
+import { angular, button, form, input } from '@angular-wave/angular.ts';
 
 class TodoForm {
   draft = '';
   add() {}
 }
 
-const { tags } = angular.view;
 const app = angular.createModule('todoApp', []);
 
 app.component('todoForm', {
   controller: TodoForm,
   view: ({ controller }) =>
-    tags.form(
+    form(
       {
         onsubmit: (event) => {
           event.preventDefault();
           controller.add();
         },
       },
-      tags.input({
+      input({
         value: () => controller.draft,
         oninput: (event) => {
           controller.draft = (event.currentTarget as HTMLInputElement).value;
         },
       }),
-      tags.button({ disabled: () => !controller.draft.trim() }, 'Add'),
+      button({ disabled: () => !controller.draft.trim() }, 'Add'),
     ),
 });
 ```

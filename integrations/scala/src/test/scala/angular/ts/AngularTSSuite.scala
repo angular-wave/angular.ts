@@ -7,6 +7,25 @@ import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
 
 class AngularTSSuite extends munit.FunSuite:
+  test("named programmatic tags create typed elements"):
+    val global = js.Dynamic.global.selectDynamic("globalThis")
+    val previousAngular = global.selectDynamic("angular")
+    val runtimeTags = js.Dynamic.literal(
+      button = (_: js.Any, child: String) =>
+        js.Dynamic
+          .literal(tagName = "BUTTON", textContent = child)
+          .asInstanceOf[dom.Element],
+    )
+    global.updateDynamic("angular")(
+      js.Dynamic.literal(tags = runtimeTags),
+    )
+
+    val button = try tags.button(Map("type" -> "button"), "Save")
+    finally global.updateDynamic("angular")(previousAngular)
+
+    assertEquals(button.tagName, "BUTTON")
+    assertEquals(button.textContent, "Save")
+
   test("typed tokens preserve their runtime names"):
     val token = AngularTS.token[String]("userName")
     assertEquals(token.name, "userName")

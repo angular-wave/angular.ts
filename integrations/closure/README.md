@@ -39,7 +39,10 @@ Supported direction:
 
 Programmatic component and directive views are part of the generated extern
 surface. Closure sees documented `ng.ProgrammaticView`, context, child, property,
-tag, and tag-collection contracts, including `angular.tags`.
+tag, and tag-collection contracts, including `angular.tags`. ClojureScript
+applications import named factories from `angular-ts.view`. Java applications
+statically import `org.angular.ts.view.Tags` and use
+`org.angular.ts.view.View` for keyed collections and binding helpers.
 
 ## WASM Scope And App Models
 

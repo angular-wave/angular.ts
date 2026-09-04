@@ -1,47 +1,28 @@
+import { angular, button, each, form, h1, input, label, li, main, ul, } from '@angular-wave/angular.ts';
 class TaskBoard {
-  draft = '';
-  nextId = 2;
-  tasks = [{ id: 1, title: 'Read the guide' }];
-
-  add() {
-    const title = this.draft.trim();
-    if (!title) return;
-    this.tasks = [...this.tasks, { id: this.nextId++, title }];
-    this.draft = '';
-  }
+    draft = '';
+    nextId = 2;
+    tasks = [{ id: 1, title: 'Read the guide' }];
+    add() {
+        const title = this.draft.trim();
+        if (!title)
+            return;
+        this.tasks = [...this.tasks, { id: this.nextId++, title }];
+        this.draft = '';
+    }
 }
-
-const { each } = angular.view;
-const { tags } = angular;
-
 angular.createModule('taskBoard', []).component('taskBoard', {
-  controller: TaskBoard,
-  view: ({ controller }) =>
-    tags.main(
-      tags.h1('Task board'),
-      tags.form(
-        {
-          onsubmit: (event) => {
+    controller: TaskBoard,
+    view: ({ controller }) => main(h1('Task board'), form({
+        onsubmit: (event) => {
             event.preventDefault();
             controller.add();
-          },
         },
-        tags.label({ htmlFor: 'new-task' }, 'Task'),
-        tags.input({
-          id: 'new-task',
-          value: () => controller.draft,
-          oninput: (event) => {
+    }, label({ htmlFor: 'new-task' }, 'Task'), input({
+        id: 'new-task',
+        value: () => controller.draft,
+        oninput: (event) => {
             controller.draft = event.currentTarget.value;
-          },
-        }),
-        tags.button({ disabled: () => !controller.draft.trim() }, 'Add'),
-      ),
-      tags.ul(
-        each(
-          () => controller.tasks,
-          (task) => task.id,
-          (task) => tags.li(() => task().title),
-        ),
-      ),
-    ),
+        },
+    }), button({ disabled: () => !controller.draft.trim() }, 'Add')), ul(each(() => controller.tasks, (task) => task.id, (task) => li(() => task().title)))),
 });

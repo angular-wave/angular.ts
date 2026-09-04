@@ -294,6 +294,57 @@ function disposeCompiledFragmentRecord(record, releaseOwnedNodes = true) {
         throw new AggregateError(errors, `Compiled fragment '${record.id}' disposal failed.`);
     }
 }
+/** @internal Disposes fragment records after detaching sibling groups in one pass. */
+function disposeCompiledFragmentRecords(records, releaseOwnedNodes = true) {
+    const pending = [];
+    const selected = new Set();
+    for (let index = 0; index < records.length; index++) {
+        const record = records[index];
+        if (!record.disposed && !selected.has(record)) {
+            selected.add(record);
+            pending.push(record);
+        }
+    }
+    if (pending.length === 0)
+        return;
+    const removalsByParent = new Map();
+    for (let index = 0; index < pending.length; index++) {
+        const record = pending[index];
+        const parent = compiledFragmentParents.get(record);
+        if (!parent)
+            continue;
+        compiledFragmentParents.delete(record);
+        if (parent.disposed || selected.has(parent))
+            continue;
+        let removals = removalsByParent.get(parent);
+        if (!removals) {
+            removals = new Set();
+            removalsByParent.set(parent, removals);
+        }
+        removals.add(record);
+    }
+    for (const [parent, removals] of removalsByParent) {
+        const children = getFragmentArray(parent, "childFragments");
+        if (!children)
+            continue;
+        let writeIndex = 0;
+        for (let index = 0; index < children.length; index++) {
+            const child = children[index];
+            if (!removals.has(child))
+                children[writeIndex++] = child;
+        }
+        children.length = writeIndex;
+    }
+    const errors = [];
+    disposeReverse(pending, (record) => {
+        disposeCompiledFragmentRecord(record, releaseOwnedNodes);
+    }, errors);
+    if (errors.length === 1)
+        throw errors[0];
+    if (errors.length > 1) {
+        throw new AggregateError(errors, "Compiled fragment disposal failed.");
+    }
+}
 function detachCompiledFragmentParent(record) {
     const parent = compiledFragmentParents.get(record);
     if (!parent)
@@ -546,4 +597,4 @@ function disposeCompiledFragmentRecordSelf() {
     disposeCompiledFragmentRecord(this);
 }
 
-export { addCompiledFragmentAsyncWork, addCompiledFragmentChild, addCompiledFragmentDisposer, createCompiledFragmentRecord, createPublicLinkCompiledFragmentRecord, createPublicLinkSingleNodeCompiledFragmentRecord, createSingleNodeCompiledFragmentRecord, disposeCompiledFragmentRecord, findCompiledFragmentRecord, getCompiledFragmentRecord, getCompiledFragmentRecordFromNodes, getCompiledFragmentRecordsFromNodes, markCompiledFragmentLinked, registerCompiledFragmentNode, registerCompiledFragmentNodes, removeCompiledFragmentAsyncWork, replaceCompiledFragmentNodes, scheduleCompiledFragmentDomWork, shouldRunCompiledFragmentCallback, snapshotCompiledFragmentNodes };
+export { addCompiledFragmentAsyncWork, addCompiledFragmentChild, addCompiledFragmentDisposer, createCompiledFragmentRecord, createPublicLinkCompiledFragmentRecord, createPublicLinkSingleNodeCompiledFragmentRecord, createSingleNodeCompiledFragmentRecord, disposeCompiledFragmentRecord, disposeCompiledFragmentRecords, findCompiledFragmentRecord, getCompiledFragmentRecord, getCompiledFragmentRecordFromNodes, getCompiledFragmentRecordsFromNodes, markCompiledFragmentLinked, registerCompiledFragmentNode, registerCompiledFragmentNodes, removeCompiledFragmentAsyncWork, replaceCompiledFragmentNodes, scheduleCompiledFragmentDomWork, shouldRunCompiledFragmentCallback, snapshotCompiledFragmentNodes };

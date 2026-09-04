@@ -5,7 +5,7 @@ import type {
   ProgrammaticViewContext,
   ProgrammaticViewReader,
 } from "../../interface.ts";
-import { addElementDisposer, getCacheData } from "../../shared/dom.ts";
+import { addElementDisposer, dealoc, getCacheData } from "../../shared/dom.ts";
 import { isArray, isFunction } from "../../shared/utils.ts";
 import {
   createScope,
@@ -18,6 +18,7 @@ import {
   getCompiledFragmentRecord,
   type CompiledFragmentRecord,
 } from "./incremental-fragment.ts";
+import { planKeyedReconciliation } from "./keyed-reconciler.ts";
 
 export const PROGRAMMATIC_VIEW_MARKER = "ng-programmatic-view";
 
@@ -1452,6 +1453,7 @@ function disposeLinkedChildrenGroups(
       ) {
         const node = child._nodes[nodeIndex];
 
+        if (node instanceof Element) dealoc(node);
         node.parentNode?.removeChild(node);
       }
     }
@@ -1942,93 +1944,59 @@ function activateKeyedChildBinding(
         return;
       }
 
-      const descriptors = new Array<{
-        readonly _key: PropertyKey;
-        readonly _value: unknown;
-        readonly _holder: { value: unknown };
-        readonly _nodes?: readonly Node[];
-        readonly _previousIndex: number;
-      }>(items.length);
-      const seenKeys = new Set<PropertyKey>();
+      const plan = planKeyedReconciliation(
+        items,
+        states,
+        binding._key,
+        (state) => state._index,
+        (item) => {
+          const holder = createScope(
+            { value: item },
+            runtime._scope._handler,
+          ) as { value: unknown };
 
-      for (let index = 0; index < items.length; index++) {
-        const item = items[index];
-        const key = binding._key(item);
-
-        if (seenKeys.has(key)) {
-          throw new TypeError(
-            `Duplicate programmatic view key '${String(key)}'.`,
-          );
-        }
-
-        seenKeys.add(key);
-        const previous = states.get(key);
-        const holder = previous
-          ? previous._holder
-          : (createScope({ value: item }, runtime._scope._handler) as {
-              value: unknown;
-            });
-
-        if (previous) {
-          descriptors[index] = {
-            _key: key,
-            _value: item,
-            _holder: holder,
-            _previousIndex: previous._index,
-          };
-        } else {
-          descriptors[index] = {
-            _key: key,
-            _value: item,
+          return {
             _holder: holder,
             _nodes: materializeProgrammaticView(
               binding._render(() => holder.value),
             ),
-            _previousIndex: -1,
           };
-        }
-      }
-
+        },
+      );
       const nextStates = new Map<PropertyKey, KeyedChildState>();
+      const removedChildren = plan.removed.map((state) => state._children);
 
-      const removedChildren: LinkedChildState[][] = [];
-
-      for (const [key, state] of states) {
-        if (!seenKeys.has(key)) {
-          removedChildren.push(state._children);
-        }
-      }
-
-      if (descriptors.length === 0) {
+      if (plan.entries.length === 0) {
         detachKeyedStateRange(states.values(), anchor);
       }
       disposeLinkedChildrenGroups(removedChildren);
 
-      for (let index = 0; index < descriptors.length; index++) {
-        const descriptor = descriptors[index];
-        const previous = states.get(descriptor._key);
-        const children = previous
-          ? previous._children
-          : linkMaterializedChildren(
-              descriptor._nodes ?? [],
+      for (let index = 0; index < plan.entries.length; index++) {
+        const descriptor = plan.entries[index];
+        let state: KeyedChildState;
+
+        if (descriptor.kind === "reused") {
+          state = descriptor.previous;
+
+          if (!Object.is(state._value, descriptor.value)) {
+            state._holder.value = descriptor.value;
+          }
+        } else {
+          state = {
+            _key: descriptor.key,
+            _value: descriptor.value,
+            _holder: descriptor.created._holder,
+            _children: linkMaterializedChildren(
+              descriptor.created._nodes,
               parent,
               anchor,
               runtime,
-            );
-
-        if (previous && !Object.is(previous._value, descriptor._value)) {
-          descriptor._holder.value = descriptor._value;
+            ),
+            _index: index,
+          };
         }
 
-        const state: KeyedChildState = previous ?? {
-          _key: descriptor._key,
-          _value: descriptor._value,
-          _holder: descriptor._holder,
-          _children: children,
-          _index: index,
-        };
-
-        state._value = descriptor._value;
+        state._value = descriptor.value;
         state._index = index;
 
         nextStates.set(state._key, state);
@@ -2040,8 +2008,8 @@ function activateKeyedChildBinding(
       let sawNewState = false;
       let needsPlacement = false;
 
-      for (let index = 0; index < descriptors.length; index++) {
-        const indexInPrevious = descriptors[index]._previousIndex;
+      for (let index = 0; index < plan.entries.length; index++) {
+        const indexInPrevious = plan.entries[index].previousIndex;
 
         if (indexInPrevious < 0) {
           sawNewState = true;
@@ -2058,9 +2026,7 @@ function activateKeyedChildBinding(
 
       let cursor: Node = anchor;
       const orderedStates = Array.from(states.values());
-      const stableIndexes = findStableKeyedIndexes(
-        descriptors.map((descriptor) => descriptor._previousIndex),
-      );
+      const stableIndexes = plan.stable;
 
       for (
         let stateIndex = orderedStates.length - 1;
@@ -2100,45 +2066,6 @@ function activateKeyedChildBinding(
 
     states.clear();
   };
-}
-
-function findStableKeyedIndexes(previousIndexes: number[]): Uint8Array {
-  const tails: number[] = [];
-  const predecessors = new Int32Array(previousIndexes.length);
-
-  predecessors.fill(-1);
-
-  for (let index = 0; index < previousIndexes.length; index++) {
-    const previousIndex = previousIndexes[index];
-
-    if (previousIndex < 0) continue;
-
-    let low = 0;
-    let high = tails.length;
-
-    while (low < high) {
-      const middle = (low + high) >>> 1;
-
-      if (previousIndexes[tails[middle]] < previousIndex) {
-        low = middle + 1;
-      } else {
-        high = middle;
-      }
-    }
-
-    if (low > 0) predecessors[index] = tails[low - 1];
-    tails[low] = index;
-  }
-
-  const stable = new Uint8Array(previousIndexes.length);
-  let index = tails.length > 0 ? tails[tails.length - 1] : -1;
-
-  while (index >= 0) {
-    stable[index] = 1;
-    index = predecessors[index];
-  }
-
-  return stable;
 }
 
 function activateNodeBindings(

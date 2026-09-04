@@ -24,10 +24,12 @@ generate-injection-tokens:
 	$(NODE) tool/generate_injection_tokens.mjs
 
 generate: generate-namespace generate-injection-tokens
+	$(NODE) ../../utils/generate-programmatic-view-tags.mjs --integration gleam
 
 generate-check:
 	$(NODE) tool/generate_ng_namespace.mjs --check
 	$(NODE) tool/generate_injection_tokens.mjs --check
+	$(NODE) ../../utils/generate-programmatic-view-tags.mjs --integration gleam --check
 
 parity:
 	$(MAKE) generate-check

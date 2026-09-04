@@ -1,8 +1,9 @@
 import { _compile, _exceptionHandler } from '../../injection-tokens.js';
-import { getCacheData, addElementDisposer } from '../../shared/dom.js';
+import { getCacheData, addElementDisposer, dealoc } from '../../shared/dom.js';
 import { isFunction, isArray } from '../../shared/utils.js';
-import { observeScopeExpression, createScope } from '../scope/scope.js';
-import { addCompiledFragmentDisposer, getCompiledFragmentRecord } from './incremental-fragment.js';
+import { observeScopeExpression, createScope, getArrayMutationMeta } from '../scope/scope.js';
+import { addCompiledFragmentDisposer, getCompiledFragmentRecord, disposeCompiledFragmentRecords } from './incremental-fragment.js';
+import { planKeyedReconciliation } from './keyed-reconciler.js';
 
 const PROGRAMMATIC_VIEW_MARKER = "ng-programmatic-view";
 const PROGRAMMATIC_VIEW_TEMPLATE = `<!--${PROGRAMMATIC_VIEW_MARKER}-->`;
@@ -59,15 +60,72 @@ function each(read, key, render) {
         _binding: binding,
     });
 }
+function firstKeyedStateNode(state) {
+    for (let index = 0; index < state._children.length; index++) {
+        const nodes = state._children[index]._nodes;
+        if (nodes.length > 0)
+            return nodes[0];
+    }
+    return undefined;
+}
+function lastKeyedStateNode(state) {
+    for (let index = state._children.length - 1; index >= 0; index--) {
+        const nodes = state._children[index]._nodes;
+        if (nodes.length > 0)
+            return nodes[nodes.length - 1];
+    }
+    return undefined;
+}
+function detachKeyedStateRange(states, anchor) {
+    let firstState;
+    let lastState;
+    for (const state of states) {
+        if (!firstState || state._index < firstState._index)
+            firstState = state;
+        if (!lastState || state._index > lastState._index)
+            lastState = state;
+    }
+    if (!firstState || !lastState)
+        return;
+    const firstNode = firstKeyedStateNode(firstState);
+    const lastNode = lastKeyedStateNode(lastState);
+    const parent = firstNode?.parentNode;
+    if (!firstNode || !lastNode || !parent || parent !== lastNode.parentNode) {
+        return;
+    }
+    if (firstNode === parent.firstChild &&
+        lastNode.nextSibling === anchor &&
+        anchor.nextSibling === null) {
+        parent.replaceChildren(anchor);
+        return;
+    }
+    const range = document.createRange();
+    range.setStartBefore(firstNode);
+    range.setEndAfter(lastNode);
+    range.deleteContents();
+}
+function moveKeyedStateBefore(parent, state, before) {
+    for (let childIndex = 0; childIndex < state._children.length; childIndex++) {
+        const nodes = state._children[childIndex]._nodes;
+        for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
+            parent.insertBefore(nodes[nodeIndex], before);
+        }
+    }
+}
 const pendingBindings = new WeakMap();
 const tagProxyCache = new Map();
 function addPendingBinding(node, binding) {
-    let bindings = pendingBindings.get(node);
+    const bindings = pendingBindings.get(node);
     if (!bindings) {
-        bindings = [];
-        pendingBindings.set(node, bindings);
+        pendingBindings.set(node, binding);
+        return;
     }
-    bindings.push(binding);
+    if (isArray(bindings)) {
+        bindings.push(binding);
+    }
+    else {
+        pendingBindings.set(node, [bindings, binding]);
+    }
 }
 function isProperties(value) {
     if (!value || typeof value !== "object" || value instanceof Node) {
@@ -199,7 +257,7 @@ function applyProperty(element, propertyName, propertyValue, target) {
             _kind: "property",
             _name: propertyName,
             _read: propertyValue,
-            _target: target === "auto" ? "property" : target,
+            _target: target === "auto" && propertyName !== "class" ? "property" : target,
         });
     }
     else if (deferredStaticProperties.has(propertyName.toLowerCase())) {
@@ -262,43 +320,49 @@ function materializeProgrammaticView(value) {
     materializeChild(value, nodes);
     return nodes;
 }
-function appendChildren(element, children) {
-    for (let index = 0; index < children.length; index++) {
-        const nodes = materializeProgrammaticView(children[index]);
-        for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
-            element.appendChild(nodes[nodeIndex]);
-        }
+function appendChildren(element, children, startIndex) {
+    const nodes = [];
+    for (let index = startIndex; index < children.length; index++) {
+        materializeChild(children[index], nodes);
+    }
+    for (let index = 0; index < nodes.length; index++) {
+        element.appendChild(nodes[index]);
     }
 }
 function createTag(namespaceUri, name, ...args) {
     const properties = isProperties(args[0]) ? args[0] : undefined;
-    const children = properties ? args.slice(1) : args;
     const customElementName = properties?.is;
     const element = namespaceUri
         ? document.createElementNS(namespaceUri, name, customElementName ? { is: customElementName } : undefined)
         : document.createElement(name, customElementName ? { is: customElementName } : undefined);
     if (properties) {
-        for (const [propertyName, propertyValue] of Object.entries(properties)) {
+        const propertyNames = Object.keys(properties);
+        for (let index = 0; index < propertyNames.length; index++) {
+            const propertyName = propertyNames[index];
             if (propertyName === "is")
                 continue;
-            applyProperty(element, propertyName, propertyValue, "auto");
+            applyProperty(element, propertyName, properties[propertyName], "auto");
         }
         if (isPropertyGroup(properties)) {
             const attributeValues = properties[attributeGroup];
             const propertyValues = properties[propertyGroup];
             if (attributeValues) {
-                for (const [name, value] of Object.entries(attributeValues)) {
-                    applyProperty(element, name, value, "attribute");
+                const names = Object.keys(attributeValues);
+                for (let index = 0; index < names.length; index++) {
+                    const name = names[index];
+                    applyProperty(element, name, attributeValues[name], "attribute");
                 }
             }
             if (propertyValues) {
-                for (const [name, value] of Object.entries(propertyValues)) {
-                    applyProperty(element, name, value, "property");
+                const names = Object.keys(propertyValues);
+                for (let index = 0; index < names.length; index++) {
+                    const name = names[index];
+                    applyProperty(element, name, propertyValues[name], "property");
                 }
             }
         }
     }
-    appendChildren(element, children);
+    appendChildren(element, args, properties ? 1 : 0);
     return element;
 }
 function tag(name, ...args) {
@@ -330,14 +394,158 @@ function getTagProxy(namespaceUri) {
     tagProxyCache.set(cacheKey, proxy);
     return proxy;
 }
-const htmlTags = getTagProxy();
-const tags = new Proxy(((namespaceUri) => getTagProxy(namespaceUri)), {
+const htmlTags = /* @__PURE__ */ getTagProxy();
+const tags = /* @__PURE__ */ new Proxy(((namespaceUri) => getTagProxy(namespaceUri)), {
     get(_target, property) {
         if (property === "then")
             return undefined;
         return Reflect.get(htmlTags, property);
     },
 });
+/** Direct, tree-shakable factories for every supported HTML element. */
+// HTMLElementTagNameMap
+const a = (...args) => createTag(undefined, "a", ...args);
+const abbr = (...args) => createTag(undefined, "abbr", ...args);
+const address = (...args) => createTag(undefined, "address", ...args);
+const area = (...args) => createTag(undefined, "area", ...args);
+const article = (...args) => createTag(undefined, "article", ...args);
+const aside = (...args) => createTag(undefined, "aside", ...args);
+const audio = (...args) => createTag(undefined, "audio", ...args);
+const b = (...args) => createTag(undefined, "b", ...args);
+const base = (...args) => createTag(undefined, "base", ...args);
+const bdi = (...args) => createTag(undefined, "bdi", ...args);
+const bdo = (...args) => createTag(undefined, "bdo", ...args);
+const blockquote = (...args) => createTag(undefined, "blockquote", ...args);
+const body = (...args) => createTag(undefined, "body", ...args);
+const br = (...args) => createTag(undefined, "br", ...args);
+const button = (...args) => createTag(undefined, "button", ...args);
+const canvas = (...args) => createTag(undefined, "canvas", ...args);
+const caption = (...args) => createTag(undefined, "caption", ...args);
+const cite = (...args) => createTag(undefined, "cite", ...args);
+const code = (...args) => createTag(undefined, "code", ...args);
+const col = (...args) => createTag(undefined, "col", ...args);
+const colgroup = (...args) => createTag(undefined, "colgroup", ...args);
+const data = (...args) => createTag(undefined, "data", ...args);
+const datalist = (...args) => createTag(undefined, "datalist", ...args);
+const dd = (...args) => createTag(undefined, "dd", ...args);
+const del = (...args) => createTag(undefined, "del", ...args);
+const details = (...args) => createTag(undefined, "details", ...args);
+const dfn = (...args) => createTag(undefined, "dfn", ...args);
+const dialog = (...args) => createTag(undefined, "dialog", ...args);
+const div = (...args) => createTag(undefined, "div", ...args);
+const dl = (...args) => createTag(undefined, "dl", ...args);
+const dt = (...args) => createTag(undefined, "dt", ...args);
+const em = (...args) => createTag(undefined, "em", ...args);
+const embed = (...args) => createTag(undefined, "embed", ...args);
+const fieldset = (...args) => createTag(undefined, "fieldset", ...args);
+const figcaption = (...args) => createTag(undefined, "figcaption", ...args);
+const figure = (...args) => createTag(undefined, "figure", ...args);
+const footer = (...args) => createTag(undefined, "footer", ...args);
+const form = (...args) => createTag(undefined, "form", ...args);
+const h1 = (...args) => createTag(undefined, "h1", ...args);
+const h2 = (...args) => createTag(undefined, "h2", ...args);
+const h3 = (...args) => createTag(undefined, "h3", ...args);
+const h4 = (...args) => createTag(undefined, "h4", ...args);
+const h5 = (...args) => createTag(undefined, "h5", ...args);
+const h6 = (...args) => createTag(undefined, "h6", ...args);
+const head = (...args) => createTag(undefined, "head", ...args);
+const header = (...args) => createTag(undefined, "header", ...args);
+const hgroup = (...args) => createTag(undefined, "hgroup", ...args);
+const hr = (...args) => createTag(undefined, "hr", ...args);
+const html = (...args) => createTag(undefined, "html", ...args);
+const i = (...args) => createTag(undefined, "i", ...args);
+const iframe = (...args) => createTag(undefined, "iframe", ...args);
+const img = (...args) => createTag(undefined, "img", ...args);
+const input = (...args) => createTag(undefined, "input", ...args);
+const ins = (...args) => createTag(undefined, "ins", ...args);
+const kbd = (...args) => createTag(undefined, "kbd", ...args);
+const label = (...args) => createTag(undefined, "label", ...args);
+const legend = (...args) => createTag(undefined, "legend", ...args);
+const li = (...args) => createTag(undefined, "li", ...args);
+const link = (...args) => createTag(undefined, "link", ...args);
+const main = (...args) => createTag(undefined, "main", ...args);
+const map = (...args) => createTag(undefined, "map", ...args);
+const mark = (...args) => createTag(undefined, "mark", ...args);
+const menu = (...args) => createTag(undefined, "menu", ...args);
+const meta = (...args) => createTag(undefined, "meta", ...args);
+const meter = (...args) => createTag(undefined, "meter", ...args);
+const nav = (...args) => createTag(undefined, "nav", ...args);
+const noscript = (...args) => createTag(undefined, "noscript", ...args);
+const object = (...args) => createTag(undefined, "object", ...args);
+const ol = (...args) => createTag(undefined, "ol", ...args);
+const optgroup = (...args) => createTag(undefined, "optgroup", ...args);
+const option = (...args) => createTag(undefined, "option", ...args);
+const output = (...args) => createTag(undefined, "output", ...args);
+const p = (...args) => createTag(undefined, "p", ...args);
+const picture = (...args) => createTag(undefined, "picture", ...args);
+const pre = (...args) => createTag(undefined, "pre", ...args);
+const progress = (...args) => createTag(undefined, "progress", ...args);
+const q = (...args) => createTag(undefined, "q", ...args);
+const rp = (...args) => createTag(undefined, "rp", ...args);
+const rt = (...args) => createTag(undefined, "rt", ...args);
+const ruby = (...args) => createTag(undefined, "ruby", ...args);
+const s = (...args) => createTag(undefined, "s", ...args);
+const samp = (...args) => createTag(undefined, "samp", ...args);
+const script = (...args) => createTag(undefined, "script", ...args);
+const search = (...args) => createTag(undefined, "search", ...args);
+const section = (...args) => createTag(undefined, "section", ...args);
+const select = (...args) => createTag(undefined, "select", ...args);
+const slot = (...args) => createTag(undefined, "slot", ...args);
+const small = (...args) => createTag(undefined, "small", ...args);
+const source = (...args) => createTag(undefined, "source", ...args);
+const span = (...args) => createTag(undefined, "span", ...args);
+const strong = (...args) => createTag(undefined, "strong", ...args);
+const style = (...args) => createTag(undefined, "style", ...args);
+const sub = (...args) => createTag(undefined, "sub", ...args);
+const summary = (...args) => createTag(undefined, "summary", ...args);
+const sup = (...args) => createTag(undefined, "sup", ...args);
+const table = (...args) => createTag(undefined, "table", ...args);
+const tbody = (...args) => createTag(undefined, "tbody", ...args);
+const td = (...args) => createTag(undefined, "td", ...args);
+const template = (...args) => createTag(undefined, "template", ...args);
+const textarea = (...args) => createTag(undefined, "textarea", ...args);
+const tfoot = (...args) => createTag(undefined, "tfoot", ...args);
+const th = (...args) => createTag(undefined, "th", ...args);
+const thead = (...args) => createTag(undefined, "thead", ...args);
+const time = (...args) => createTag(undefined, "time", ...args);
+const title = (...args) => createTag(undefined, "title", ...args);
+const tr = (...args) => createTag(undefined, "tr", ...args);
+const track = (...args) => createTag(undefined, "track", ...args);
+const u = (...args) => createTag(undefined, "u", ...args);
+const ul = (...args) => createTag(undefined, "ul", ...args);
+const varTag = (...args) => createTag(undefined, "var", ...args);
+const video = (...args) => createTag(undefined, "video", ...args);
+const wbr = (...args) => createTag(undefined, "wbr", ...args);
+// HTMLElementDeprecatedTagNameMap
+const acronym = (...args) => createTag(undefined, "acronym", ...args);
+const applet = (...args) => createTag(undefined, "applet", ...args);
+const basefont = (...args) => createTag(undefined, "basefont", ...args);
+const bgsound = (...args) => createTag(undefined, "bgsound", ...args);
+const big = (...args) => createTag(undefined, "big", ...args);
+const blink = (...args) => createTag(undefined, "blink", ...args);
+const center = (...args) => createTag(undefined, "center", ...args);
+const dir = (...args) => createTag(undefined, "dir", ...args);
+const font = (...args) => createTag(undefined, "font", ...args);
+const frame = (...args) => createTag(undefined, "frame", ...args);
+const frameset = (...args) => createTag(undefined, "frameset", ...args);
+const isindex = (...args) => createTag(undefined, "isindex", ...args);
+const keygen = (...args) => createTag(undefined, "keygen", ...args);
+const listing = (...args) => createTag(undefined, "listing", ...args);
+const marquee = (...args) => createTag(undefined, "marquee", ...args);
+const menuitem = (...args) => createTag(undefined, "menuitem", ...args);
+const multicol = (...args) => createTag(undefined, "multicol", ...args);
+const nextid = (...args) => createTag(undefined, "nextid", ...args);
+const nobr = (...args) => createTag(undefined, "nobr", ...args);
+const noembed = (...args) => createTag(undefined, "noembed", ...args);
+const noframes = (...args) => createTag(undefined, "noframes", ...args);
+const param = (...args) => createTag(undefined, "param", ...args);
+const plaintext = (...args) => createTag(undefined, "plaintext", ...args);
+const rb = (...args) => createTag(undefined, "rb", ...args);
+const rtc = (...args) => createTag(undefined, "rtc", ...args);
+const spacer = (...args) => createTag(undefined, "spacer", ...args);
+const strike = (...args) => createTag(undefined, "strike", ...args);
+const tt = (...args) => createTag(undefined, "tt", ...args);
+const xmp = (...args) => createTag(undefined, "xmp", ...args);
 function uniqueRecords(nodes) {
     const records = [];
     const seen = new Set();
@@ -350,23 +558,40 @@ function uniqueRecords(nodes) {
     }
     return records;
 }
-function disposeLinkedChildren(children) {
+function disposeLinkedChildrenGroups(groups) {
     const disposedRecords = new Set();
-    for (let index = children.length - 1; index >= 0; index--) {
-        const child = children[index];
-        for (let recordIndex = child._records.length - 1; recordIndex >= 0; recordIndex--) {
-            const record = child._records[recordIndex];
-            if (!record.disposed && !disposedRecords.has(record)) {
-                disposedRecords.add(record);
-                record.dispose();
+    const records = [];
+    for (let groupIndex = groups.length - 1; groupIndex >= 0; groupIndex--) {
+        const children = groups[groupIndex];
+        for (let index = children.length - 1; index >= 0; index--) {
+            const child = children[index];
+            child._disposeBindings();
+            for (let recordIndex = child._records.length - 1; recordIndex >= 0; recordIndex--) {
+                const record = child._records[recordIndex];
+                if (!record.disposed && !disposedRecords.has(record)) {
+                    disposedRecords.add(record);
+                    records.push(record);
+                }
             }
         }
-        for (let nodeIndex = child._nodes.length - 1; nodeIndex >= 0; nodeIndex--) {
-            const node = child._nodes[nodeIndex];
-            node.parentNode?.removeChild(node);
-        }
     }
-    children.length = 0;
+    disposeCompiledFragmentRecords(records);
+    for (let groupIndex = groups.length - 1; groupIndex >= 0; groupIndex--) {
+        const children = groups[groupIndex];
+        for (let index = children.length - 1; index >= 0; index--) {
+            const child = children[index];
+            for (let nodeIndex = child._nodes.length - 1; nodeIndex >= 0; nodeIndex--) {
+                const node = child._nodes[nodeIndex];
+                if (node instanceof Element)
+                    dealoc(node);
+                node.parentNode?.removeChild(node);
+            }
+        }
+        children.length = 0;
+    }
+}
+function disposeLinkedChildren(children) {
+    disposeLinkedChildrenGroups([children]);
 }
 function linkChildValue(value, parent, anchor, runtime) {
     return linkMaterializedChildren(materializeProgrammaticView(value), parent, anchor, runtime);
@@ -377,14 +602,26 @@ function linkMaterializedChildren(rawNodes, parent, anchor, runtime) {
         const rawNode = rawNodes[index];
         parent.insertBefore(rawNode, anchor);
         const linkedNodes = runtime._linkNode(rawNode, parent, anchor);
+        let cursor = anchor;
+        let alreadyPlaced = true;
+        for (let nodeIndex = linkedNodes.length - 1; nodeIndex >= 0; nodeIndex--) {
+            const linkedNode = linkedNodes[nodeIndex];
+            if (linkedNode.parentNode !== parent ||
+                linkedNode.nextSibling !== cursor) {
+                alreadyPlaced = false;
+                break;
+            }
+            cursor = linkedNode;
+        }
         for (let nodeIndex = 0; nodeIndex < linkedNodes.length; nodeIndex++) {
             const linkedNode = linkedNodes[nodeIndex];
-            parent.insertBefore(linkedNode, anchor);
-            activateProgrammaticBindings([linkedNode], runtime);
+            if (!alreadyPlaced)
+                parent.insertBefore(linkedNode, anchor);
         }
         children.push({
             _nodes: linkedNodes,
             _records: uniqueRecords(linkedNodes),
+            _disposeBindings: activateProgrammaticBindings(linkedNodes, runtime),
         });
     }
     return children;
@@ -409,7 +646,7 @@ function activateChildBinding(anchor, read, runtime) {
         }
         disposeLinkedChildren(linkedChildren);
         linkedChildren.push(...linkChildValue(value, parent, anchor, runtime));
-    });
+    }, false);
     return () => {
         stop();
         disposeLinkedChildren(linkedChildren);
@@ -417,79 +654,342 @@ function activateChildBinding(anchor, read, runtime) {
 }
 function activateKeyedChildBinding(anchor, binding, runtime) {
     let states = new Map();
-    const stop = observeScopeExpression(runtime._scope, binding._read, (value) => {
+    let observedItems = [];
+    let stablePrefixLength = 0;
+    let removedIndex = -1;
+    let swappedIndexes;
+    let observedArray;
+    let lastSeenArrayMutationVersion = 0;
+    const stop = observeScopeExpression(runtime._scope, () => {
+        const value = binding._read();
+        if (value === null || value === undefined) {
+            stablePrefixLength = 0;
+            removedIndex = -1;
+            swappedIndexes = undefined;
+            observedArray = undefined;
+            if (observedItems.length !== 0)
+                observedItems = [];
+            return observedItems;
+        }
+        if (isArray(value)) {
+            const length = value.length;
+            const mutationMeta = observedArray === value ? getArrayMutationMeta(value) : undefined;
+            if (mutationMeta &&
+                mutationMeta._version > lastSeenArrayMutationVersion &&
+                mutationMeta._previousLength === observedItems.length &&
+                mutationMeta._currentLength === length) {
+                lastSeenArrayMutationVersion = mutationMeta._version;
+                if (mutationMeta._kind === "swap") {
+                    stablePrefixLength = mutationMeta._swapFromIndex;
+                    removedIndex = -1;
+                    swappedIndexes = [
+                        mutationMeta._swapFromIndex,
+                        mutationMeta._swapToIndex,
+                    ];
+                    observedItems = value.slice();
+                    return observedItems;
+                }
+                if (mutationMeta._kind === "splice" &&
+                    mutationMeta._deleteCount === 0 &&
+                    mutationMeta._index === mutationMeta._previousLength) {
+                    stablePrefixLength = mutationMeta._previousLength;
+                    removedIndex = -1;
+                    swappedIndexes = undefined;
+                    observedItems = value.slice();
+                    return observedItems;
+                }
+                if (mutationMeta._kind === "splice" &&
+                    mutationMeta._deleteCount === 1 &&
+                    mutationMeta._insertCount === 0) {
+                    stablePrefixLength = mutationMeta._index;
+                    removedIndex = mutationMeta._index;
+                    swappedIndexes = undefined;
+                    observedItems = value.slice();
+                    return observedItems;
+                }
+            }
+            let index = 0;
+            while (index < length &&
+                index < observedItems.length &&
+                Object.is(observedItems[index], value[index])) {
+                index++;
+            }
+            stablePrefixLength = index;
+            removedIndex = -1;
+            swappedIndexes = undefined;
+            if (index === length && index === observedItems.length) {
+                return observedItems;
+            }
+            if (observedItems.length === length + 1 &&
+                index < observedItems.length) {
+                let suffixIndex = index;
+                while (suffixIndex < length &&
+                    Object.is(observedItems[suffixIndex + 1], value[suffixIndex])) {
+                    suffixIndex++;
+                }
+                if (suffixIndex === length)
+                    removedIndex = index;
+            }
+            else if (observedItems.length === length && index < length) {
+                let secondIndex = index + 1;
+                while (secondIndex < length &&
+                    Object.is(observedItems[secondIndex], value[secondIndex])) {
+                    secondIndex++;
+                }
+                if (secondIndex < length &&
+                    Object.is(observedItems[index], value[secondIndex]) &&
+                    Object.is(observedItems[secondIndex], value[index])) {
+                    let suffixIndex = secondIndex + 1;
+                    while (suffixIndex < length &&
+                        Object.is(observedItems[suffixIndex], value[suffixIndex])) {
+                        suffixIndex++;
+                    }
+                    if (suffixIndex === length) {
+                        swappedIndexes = [index, secondIndex];
+                    }
+                }
+            }
+            observedItems = value.slice();
+            observedArray = value;
+            return observedItems;
+        }
+        let nextItems;
+        let index = 0;
+        stablePrefixLength = 0;
+        removedIndex = -1;
+        swappedIndexes = undefined;
+        observedArray = undefined;
+        for (const item of value) {
+            if (nextItems) {
+                nextItems.push(item);
+            }
+            else if (index >= observedItems.length ||
+                !Object.is(observedItems[index], item)) {
+                nextItems = observedItems.slice(0, index);
+                nextItems.push(item);
+            }
+            index++;
+        }
+        if (nextItems) {
+            observedItems = nextItems;
+        }
+        else if (index !== observedItems.length) {
+            observedItems = observedItems.slice(0, index);
+        }
+        return observedItems;
+    }, (value) => {
         const parent = anchor.parentNode;
         if (!parent)
             return;
-        const items = value === null || value === undefined
-            ? []
-            : Array.from(value);
-        const descriptors = [];
-        const descriptorByKey = new Map();
-        for (let index = 0; index < items.length; index++) {
-            const item = items[index];
-            const key = binding._key(item);
-            if (descriptorByKey.has(key)) {
-                throw new TypeError(`Duplicate programmatic view key '${String(key)}'.`);
+        const items = value;
+        const retainedLength = states.size;
+        const indexToRemove = removedIndex;
+        const indexesToSwap = swappedIndexes;
+        removedIndex = -1;
+        swappedIndexes = undefined;
+        if (indexesToSwap && retainedLength === items.length) {
+            const leftIndex = indexesToSwap[0];
+            const rightIndex = indexesToSwap[1];
+            let leftState;
+            let rightState;
+            for (const state of states.values()) {
+                if (state._index === leftIndex)
+                    leftState = state;
+                else if (state._index === rightIndex)
+                    rightState = state;
+                if (leftState && rightState)
+                    break;
             }
-            descriptorByKey.set(key, item);
-            const previous = states.get(key);
-            const holder = previous
-                ? previous._holder
-                : createScope({ value: item }, runtime._scope._handler);
-            descriptors.push({
-                _key: key,
-                _value: item,
+            const leftStart = leftState && firstKeyedStateNode(leftState);
+            const rightEnd = rightState && lastKeyedStateNode(rightState);
+            if (leftState && rightState && leftStart && rightEnd) {
+                const afterRight = rightEnd.nextSibling;
+                moveKeyedStateBefore(parent, rightState, leftStart);
+                moveKeyedStateBefore(parent, leftState, afterRight);
+                rightState._index = leftIndex;
+                leftState._index = rightIndex;
+                return;
+            }
+        }
+        if (indexToRemove >= 0 && retainedLength === items.length + 1) {
+            let removedState;
+            for (const state of states.values()) {
+                if (state._index === indexToRemove) {
+                    removedState = state;
+                }
+                else if (state._index > indexToRemove) {
+                    state._index--;
+                }
+            }
+            if (removedState) {
+                disposeLinkedChildren(removedState._children);
+                states.delete(removedState._key);
+                return;
+            }
+        }
+        if (stablePrefixLength === 0 && retainedLength > 0 && items.length > 0) {
+            const replacementKeys = new Array(items.length);
+            const seenReplacementKeys = new Set();
+            let isDisjointReplacement = true;
+            for (let index = 0; index < items.length; index++) {
+                const key = binding._key(items[index]);
+                if (seenReplacementKeys.has(key)) {
+                    throw new TypeError(`Duplicate programmatic view key '${String(key)}'.`);
+                }
+                if (states.has(key)) {
+                    isDisjointReplacement = false;
+                    break;
+                }
+                seenReplacementKeys.add(key);
+                replacementKeys[index] = key;
+            }
+            if (isDisjointReplacement) {
+                const replacements = new Array(items.length);
+                for (let index = 0; index < items.length; index++) {
+                    const item = items[index];
+                    const holder = createScope({ value: item }, runtime._scope._handler);
+                    replacements[index] = {
+                        _holder: holder,
+                        _nodes: materializeProgrammaticView(binding._render(() => holder.value)),
+                    };
+                }
+                const removedChildren = new Array(retainedLength);
+                let removedIndex = 0;
+                for (const state of states.values()) {
+                    removedChildren[removedIndex++] = state._children;
+                }
+                detachKeyedStateRange(states.values(), anchor);
+                disposeLinkedChildrenGroups(removedChildren);
+                states = new Map();
+                for (let index = 0; index < items.length; index++) {
+                    const item = items[index];
+                    const key = replacementKeys[index];
+                    const replacement = replacements[index];
+                    const children = linkMaterializedChildren(replacement._nodes, parent, anchor, runtime);
+                    states.set(key, {
+                        _key: key,
+                        _value: item,
+                        _holder: replacement._holder,
+                        _children: children,
+                        _index: index,
+                    });
+                }
+                return;
+            }
+        }
+        if (stablePrefixLength === retainedLength &&
+            items.length > retainedLength) {
+            const appendedLength = items.length - retainedLength;
+            const appendedKeys = new Array(appendedLength);
+            const seenAppendedKeys = new Set();
+            for (let index = retainedLength; index < items.length; index++) {
+                const key = binding._key(items[index]);
+                if (states.has(key) || seenAppendedKeys.has(key)) {
+                    throw new TypeError(`Duplicate programmatic view key '${String(key)}'.`);
+                }
+                seenAppendedKeys.add(key);
+                appendedKeys[index - retainedLength] = key;
+            }
+            for (let index = retainedLength; index < items.length; index++) {
+                const item = items[index];
+                const key = appendedKeys[index - retainedLength];
+                const holder = createScope({ value: item }, runtime._scope._handler);
+                const children = linkMaterializedChildren(materializeProgrammaticView(binding._render(() => holder.value)), parent, anchor, runtime);
+                states.set(key, {
+                    _key: key,
+                    _value: item,
+                    _holder: holder,
+                    _children: children,
+                    _index: index,
+                });
+            }
+            return;
+        }
+        const plan = planKeyedReconciliation(items, states, binding._key, (state) => state._index, (item) => {
+            const holder = createScope({ value: item }, runtime._scope._handler);
+            return {
                 _holder: holder,
-                _nodes: previous
-                    ? []
-                    : materializeProgrammaticView(binding._render(() => holder.value)),
-            });
-        }
+                _nodes: materializeProgrammaticView(binding._render(() => holder.value)),
+            };
+        });
         const nextStates = new Map();
-        for (const [key, state] of states) {
-            if (!descriptorByKey.has(key)) {
-                disposeLinkedChildren(state._children);
-            }
+        const removedChildren = plan.removed.map((state) => state._children);
+        if (plan.entries.length === 0) {
+            detachKeyedStateRange(states.values(), anchor);
         }
-        for (let index = 0; index < descriptors.length; index++) {
-            const descriptor = descriptors[index];
-            const previous = states.get(descriptor._key);
+        disposeLinkedChildrenGroups(removedChildren);
+        for (let index = 0; index < plan.entries.length; index++) {
+            const descriptor = plan.entries[index];
+            const previous = descriptor.previous;
+            const created = descriptor.created;
+            if (!previous && !created) {
+                throw new Error("Keyed reconciliation did not create a new item.");
+            }
             const children = previous
                 ? previous._children
-                : linkMaterializedChildren(descriptor._nodes, parent, anchor, runtime);
-            if (previous && !Object.is(previous._value, descriptor._value)) {
-                descriptor._holder.value = descriptor._value;
+                : linkMaterializedChildren(created?._nodes ?? [], parent, anchor, runtime);
+            if (previous && !Object.is(previous._value, descriptor.value)) {
+                previous._holder.value = descriptor.value;
             }
-            const state = {
-                _key: descriptor._key,
-                _value: descriptor._value,
-                _holder: descriptor._holder,
-                _children: children,
-            };
+            let state;
+            if (previous) {
+                state = previous;
+            }
+            else {
+                if (!created) {
+                    throw new Error("Keyed reconciliation did not create a new item.");
+                }
+                state = {
+                    _key: descriptor.key,
+                    _value: descriptor.value,
+                    _holder: created._holder,
+                    _children: children,
+                    _index: index,
+                };
+            }
+            state._value = descriptor.value;
+            state._index = index;
             nextStates.set(state._key, state);
         }
         states = nextStates;
+        let lastPreviousIndex = -1;
+        let sawNewState = false;
+        let needsPlacement = false;
+        for (let index = 0; index < plan.entries.length; index++) {
+            const indexInPrevious = plan.entries[index].previousIndex;
+            if (indexInPrevious < 0) {
+                sawNewState = true;
+            }
+            else {
+                if (indexInPrevious < lastPreviousIndex || sawNewState) {
+                    needsPlacement = true;
+                }
+                lastPreviousIndex = indexInPrevious;
+            }
+        }
+        if (!needsPlacement)
+            return;
         let cursor = anchor;
         const orderedStates = Array.from(states.values());
+        const stableIndexes = plan.stable;
         for (let stateIndex = orderedStates.length - 1; stateIndex >= 0; stateIndex--) {
             const children = orderedStates[stateIndex]._children;
+            const move = stableIndexes[stateIndex] === 0;
             for (let childIndex = children.length - 1; childIndex >= 0; childIndex--) {
                 const nodes = children[childIndex]._nodes;
                 for (let nodeIndex = nodes.length - 1; nodeIndex >= 0; nodeIndex--) {
                     const node = nodes[nodeIndex];
-                    if (node.nextSibling !== cursor)
+                    if (move && node.nextSibling !== cursor) {
                         parent.insertBefore(node, cursor);
+                    }
                     cursor = node;
                 }
             }
         }
-    });
+    }, false);
     return () => {
         stop();
-        for (const state of states.values()) {
-            disposeLinkedChildren(state._children);
-        }
+        disposeLinkedChildrenGroups(Array.from(states.values(), (state) => state._children));
         states.clear();
     };
 }
@@ -497,8 +997,10 @@ function activateNodeBindings(node, runtime, disposers) {
     const bindings = pendingBindings.get(node);
     if (bindings) {
         pendingBindings.delete(node);
-        for (let index = 0; index < bindings.length; index++) {
-            const binding = bindings[index];
+        const multipleBindings = isArray(bindings);
+        const bindingCount = multipleBindings ? bindings.length : 1;
+        for (let index = 0; index < bindingCount; index++) {
+            const binding = multipleBindings ? bindings[index] : bindings;
             if (binding._kind === "event") {
                 const eventTarget = node;
                 const listener = function (eventValue) {
@@ -538,7 +1040,7 @@ function activateNodeBindings(node, runtime, disposers) {
                     hasValue = true;
                     previousValue = sanitizedValue;
                     setDomValue(node, binding._name, sanitizedValue, binding._target);
-                }));
+                }, false));
             }
             else if (binding._kind === "child") {
                 disposers.push(activateChildBinding(node, binding._read, runtime));
@@ -548,9 +1050,16 @@ function activateNodeBindings(node, runtime, disposers) {
             }
         }
     }
-    const childNodes = Array.from(node.childNodes);
-    for (let index = 0; index < childNodes.length; index++) {
-        activateNodeBindings(childNodes[index], runtime, disposers);
+    const childNodes = node.childNodes;
+    if (childNodes.length === 0)
+        return;
+    if (childNodes.length === 1) {
+        activateNodeBindings(childNodes[0], runtime, disposers);
+        return;
+    }
+    const snapshot = Array.from(childNodes);
+    for (let index = 0; index < snapshot.length; index++) {
+        activateNodeBindings(snapshot[index], runtime, disposers);
     }
 }
 function activateProgrammaticBindings(nodes, runtime) {
@@ -671,11 +1180,16 @@ function createProgrammaticDirectiveCompile(options) {
                 /** @internal Links one generated node against the owning scope. */
                 _linkNode(node, parent) {
                     try {
-                        const linked = $compile(node)(scope, undefined, {
+                        const linkOptions = {
                             _futureParentElement: parent,
                             _ownsNodes: true,
-                        });
-                        return normalizeLinkResult(linked);
+                        };
+                        const directlyLinked = $compile._linkProgrammaticNode
+                            ? $compile._linkProgrammaticNode(node, scope, linkOptions)
+                            : $compile(node)(scope, undefined, linkOptions);
+                        if (directlyLinked === null)
+                            return [node];
+                        return normalizeLinkResult(directlyLinked);
                     }
                     catch (error) {
                         node.parentNode?.removeChild(node);
@@ -713,4 +1227,4 @@ function sanitizeProgrammaticSrcset(value, valueOf, trustMediaUrl) {
         .join(", ");
 }
 
-export { PROGRAMMATIC_VIEW_MARKER, PROGRAMMATIC_VIEW_TEMPLATE, attrs, createProgrammaticComponentCompile, createProgrammaticDirectiveCompile, each, event, materializeProgrammaticView, props, sanitizeProgrammaticSrcset, tag, tagNS, tags };
+export { PROGRAMMATIC_VIEW_MARKER, PROGRAMMATIC_VIEW_TEMPLATE, a, abbr, acronym, address, applet, area, article, aside, attrs, audio, b, base, basefont, bdi, bdo, bgsound, big, blink, blockquote, body, br, button, canvas, caption, center, cite, code, col, colgroup, createProgrammaticComponentCompile, createProgrammaticDirectiveCompile, data, datalist, dd, del, details, dfn, dialog, dir, div, dl, dt, each, em, embed, event, fieldset, figcaption, figure, font, footer, form, frame, frameset, h1, h2, h3, h4, h5, h6, head, header, hgroup, hr, html, i, iframe, img, input, ins, isindex, kbd, keygen, label, legend, li, link, listing, main, map, mark, marquee, materializeProgrammaticView, menu, menuitem, meta, meter, multicol, nav, nextid, nobr, noembed, noframes, noscript, object, ol, optgroup, option, output, p, param, picture, plaintext, pre, progress, props, q, rb, rp, rt, rtc, ruby, s, samp, sanitizeProgrammaticSrcset, script, search, section, select, slot, small, source, spacer, span, strike, strong, style, sub, summary, sup, table, tag, tagNS, tags, tbody, td, template, textarea, tfoot, th, thead, time, title, tr, track, tt, u, ul, varTag, video, wbr, xmp };

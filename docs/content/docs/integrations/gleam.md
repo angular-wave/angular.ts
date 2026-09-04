@@ -29,6 +29,8 @@ make -C integrations/gleam example-build
 ## Best practices
 
 - Keep JavaScript foreign-function declarations inside the integration layer.
+- Import `angular_ts/view_tags` for fixed HTML names and reserve
+  `programmatic_view.tag` for names selected at runtime.
 - Prefer opaque generated types over untyped dynamic values.
 - Use `programmatic_view.host` and the typed view helpers instead of reading
   context properties directly.

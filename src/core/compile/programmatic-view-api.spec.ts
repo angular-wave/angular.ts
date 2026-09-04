@@ -338,6 +338,148 @@ describe("programmatic view API", () => {
     expect(errors.length).toBe(1);
   });
 
+  it("keeps keyed DOM identity and disposes removed items exactly once", async () => {
+    let context;
+    let nextId = 6;
+    let seed = 0x51ced;
+    const disposed = new Map<number, number>();
+
+    bootstrap("<random-keyed-view></random-keyed-view>", (module) => {
+      module.component("randomKeyedView", {
+        view: (value) => {
+          context = value;
+          value.scope.items = Array.from({ length: 6 }, (_, id) => ({
+            id,
+            label: `item-${id}`,
+          }));
+
+          return tags.ul(
+            each(
+              () => value.scope.items,
+              (item) => item.id,
+              (item) => {
+                const id = item().id;
+                const element = tags.li(
+                  attrs({ "data-id": () => item().id }),
+                  () => item().label,
+                );
+
+                addElementDisposer(element, () => {
+                  disposed.set(id, (disposed.get(id) ?? 0) + 1);
+                });
+
+                return element;
+              },
+            ),
+          );
+        },
+      });
+    });
+
+    const nodes = new Map(
+      Array.from(host.querySelectorAll("li"), (node) => [
+        Number(node.dataset.id),
+        node,
+      ]),
+    );
+    const removed = new Set<number>();
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 0x1_0000_0000;
+    };
+
+    for (let step = 0; step < 40; step++) {
+      const items = context.scope.items.slice();
+      const operation = Math.floor(random() * 6);
+
+      if (operation === 0 || items.length === 0) {
+        const id = nextId++;
+        items.splice(Math.floor(random() * (items.length + 1)), 0, {
+          id,
+          label: `item-${id}`,
+        });
+      } else if (operation === 1) {
+        const [item] = items.splice(Math.floor(random() * items.length), 1);
+        removed.add(item.id);
+      } else if (operation === 2) {
+        const left = Math.floor(random() * items.length);
+        const right = Math.floor(random() * items.length);
+        [items[left], items[right]] = [items[right], items[left]];
+      } else if (operation === 3) {
+        items.reverse();
+      } else if (operation === 4) {
+        const index = Math.floor(random() * items.length);
+        items[index] = { ...items[index], label: `changed-${step}` };
+      } else {
+        const index = Math.floor(random() * items.length);
+        removed.add(items[index].id);
+        const id = nextId++;
+        items[index] = { id, label: `item-${id}` };
+      }
+
+      context.scope.items = items;
+      await settle();
+
+      const rendered = Array.from(host.querySelectorAll("li"));
+      expect(rendered.map((node) => Number(node.dataset.id)))
+        .withContext(`step ${step}`)
+        .toEqual(items.map((item) => item.id));
+      expect(rendered.map((node) => node.textContent))
+        .withContext(`step ${step}`)
+        .toEqual(items.map((item) => item.label));
+
+      rendered.forEach((node) => {
+        const id = Number(node.dataset.id);
+        const previous = nodes.get(id);
+
+        if (previous) expect(node).withContext(`key ${id}`).toBe(previous);
+        else nodes.set(id, node);
+      });
+    }
+
+    removed.forEach((id) => {
+      expect(disposed.get(id)).withContext(`key ${id}`).toBe(1);
+    });
+    expect(
+      Array.from(disposed.values()).every((count) => count === 1),
+    ).toBeTrue();
+  });
+
+  it("preserves keyed DOM when key selection fails", async () => {
+    let context;
+    const errors: unknown[] = [];
+
+    bootstrap("<key-error-view></key-error-view>", (module) => {
+      module
+        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .component("keyErrorView", {
+          view: (value) => {
+            context = value;
+            value.scope.items = [{ id: 1 }];
+
+            return tags.div(
+              each(
+                () => value.scope.items,
+                (item) => {
+                  if (item.id === 2) throw new Error("key failed");
+                  return item.id;
+                },
+                (item) => tags.span(() => String(item().id)),
+              ),
+            );
+          },
+        });
+    });
+
+    const original = host.querySelector("span");
+
+    context.scope.items = [{ id: 2 }];
+    await settle();
+
+    expect(host.querySelector("span")).toBe(original);
+    expect(errors[0].message).toBe("key failed");
+  });
+
   it("routes programmatic event errors through the exception handler", () => {
     const errors: unknown[] = [];
     const handled = jasmine.createSpy("handled");

@@ -39,20 +39,14 @@ function geolocationDirective() {
                 ngModelController.setValidity("geolocation", true);
                 ngModelController.setViewValue(snapshotPosition(position), "location");
             };
-            let active = true;
-            let deregisterDestroy = () => undefined;
             const cleanup = () => {
-                if (!active) {
-                    return;
-                }
-                active = false;
                 geolocationElement.removeEventListener("location", publishLocation);
                 geolocationElement.removeEventListener("$destroy", cleanup);
                 deregisterDestroy();
             };
             geolocationElement.addEventListener("location", publishLocation);
             geolocationElement.addEventListener("$destroy", cleanup, { once: true });
-            deregisterDestroy = scope.on("$destroy", cleanup);
+            const deregisterDestroy = scope.on("$destroy", cleanup);
         },
     };
 }

@@ -25,6 +25,7 @@ closure-demo: closure-build
 
 clojurescript-generate: closure-externs
 	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/clojurescript/scripts/generate-cljs-types.mjs
+	@"$(CLOSURE_NODE)" $(CLOSURE_REPO_ROOT)/utils/generate-programmatic-view-tags.mjs --integration clojurescript
 
 clojurescript-format:
 	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \
@@ -40,8 +41,10 @@ clojurescript-lint:
 
 clojurescript-validate: closure-validate clojurescript-format-check clojurescript-lint
 	@"$(CLOSURE_NODE)" $(CLOSURE_INTEGRATION_DIR)/clojurescript/scripts/generate-cljs-types.mjs --check
+	@"$(CLOSURE_NODE)" $(CLOSURE_REPO_ROOT)/utils/generate-programmatic-view-tags.mjs --integration clojurescript --check
 
 generate-check: clojurescript-validate
+	@"$(CLOSURE_NODE)" $(CLOSURE_REPO_ROOT)/utils/generate-programmatic-view-tags.mjs --integration javaTags --check
 
 clojurescript-build: clojurescript-validate
 	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \
@@ -76,6 +79,7 @@ clojurescript-deploy: clojurescript-generate clojurescript-version-check
 			-f integrations/closure/clojurescript/pom.xml -Prelease clean deploy
 
 java-generate: closure-externs
+	@"$(CLOSURE_NODE)" $(CLOSURE_REPO_ROOT)/utils/generate-programmatic-view-tags.mjs --integration javaTags
 	@cd $(CLOSURE_REPO_ROOT) && \
 		mvn -f integrations/closure/java/pom.xml process-sources
 
@@ -104,6 +108,7 @@ java-deploy: java-version-check
 		mvn -f integrations/closure/java/pom.xml -Prelease clean deploy
 
 java-check: java-docs-test java-types-test
+	@"$(CLOSURE_NODE)" $(CLOSURE_REPO_ROOT)/utils/generate-programmatic-view-tags.mjs --integration javaTags --check
 	@cd $(CLOSURE_REPO_ROOT) && \
 		mvn -f integrations/closure/java/pom.xml clean install
 	@cd $(CLOSURE_REPO_ROOT) && \

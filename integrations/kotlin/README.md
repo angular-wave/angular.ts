@@ -21,9 +21,10 @@ tests are tracked in `PLAN.md`.
 
 Components and directives accept a typed `ProgrammaticView`. The callback
 context exposes `controller`, `required`, `scope`, `element`, and `transclude`.
-Use `injector.get(angularToken).tags` to create real DOM, or
-`ProgrammaticTags.namespace(...)` for SVG and MathML. Function-valued children
-remain reactive AngularTS readers.
+Import package-level factories such as `button(...)` and `div(...)` to create
+real DOM. Use `ProgrammaticViewApi.tag(...)` for names selected at runtime and
+`tagNS(...)` for dynamic SVG and MathML elements. Function-valued children
+remain reactive AngularTS readers, and `each(...)` preserves keyed DOM identity.
 
 ## Prerequisites
 

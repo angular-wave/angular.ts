@@ -1,4 +1,15 @@
-import { angular } from '@angular-wave/angular.ts';
+import {
+  angular,
+  button,
+  each,
+  form,
+  h1,
+  input,
+  label,
+  li,
+  main,
+  ul,
+} from '@angular-wave/angular.ts';
 
 interface Task {
   id: number;
@@ -18,36 +29,33 @@ class TaskBoard {
   }
 }
 
-const { each } = angular.view;
-const { tags } = angular;
-
 angular.createModule('taskBoard', []).component<TaskBoard>('taskBoard', {
   controller: TaskBoard,
   view: ({ controller }) =>
-    tags.main(
-      tags.h1('Task board'),
-      tags.form(
+    main(
+      h1('Task board'),
+      form(
         {
           onsubmit: (event) => {
             event.preventDefault();
             controller.add();
           },
         },
-        tags.label({ htmlFor: 'new-task' }, 'Task'),
-        tags.input({
+        label({ htmlFor: 'new-task' }, 'Task'),
+        input({
           id: 'new-task',
           value: () => controller.draft,
           oninput: (event) => {
             controller.draft = (event.currentTarget as HTMLInputElement).value;
           },
         }),
-        tags.button({ disabled: () => !controller.draft.trim() }, 'Add'),
+        button({ disabled: () => !controller.draft.trim() }, 'Add'),
       ),
-      tags.ul(
+      ul(
         each(
           () => controller.tasks,
           (task) => task.id,
-          (task) => tags.li(() => task().title),
+          (task) => li(() => task().title),
         ),
       ),
     ),

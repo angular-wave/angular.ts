@@ -14,6 +14,8 @@ stays frozen at the initial value.
 Pass a reader function for values that can change.
 
 ```ts
+import { button, output } from '@angular-wave/angular.ts';
+
 class CounterController {
   count = 0;
 }
@@ -23,8 +25,6 @@ const app = angular.createModule('counter', []);
 app.component<CounterController>('counter', {
   controller: CounterController,
   view: ({ controller }) => {
-    const { button, output } = angular.tags;
-
     return [
       button(
         {

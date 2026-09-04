@@ -30,6 +30,8 @@ make -C integrations/dart runtime-test
 ## Best practices
 
 - Start with handwritten runtime helpers and typed generated bases.
+- Import named factories such as `button()` for fixed HTML tag names; use
+  `tag()` only when the name is data.
 - Use reactive child helpers only where the DOM must follow changing state.
 - Use namespaced tag factories for SVG and MathML.
 - Use `ProgrammaticViewContext.host` for the component or directive host.

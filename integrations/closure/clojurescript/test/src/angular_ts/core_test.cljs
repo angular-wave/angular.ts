@@ -1,5 +1,6 @@
 (ns angular-ts.core-test
   (:require [angular-ts.core :as ng]
+            [angular-ts.view :as view]
             [cljs.test :refer-macros [deftest is testing]]))
 
 (deftest injectable-converts-dependencies-to-an-annotated-array
@@ -47,3 +48,17 @@
       (is (= "ready" topic))
       (is (= 42 value))
       (is (= "test" (.-source metadata))))))
+
+(deftest programmatic-view-exposes-named-tags-and-keyed-bindings
+  (let [button (view/button #js {:type "button"} "Save")
+        binding (view/each
+                 (fn [] #js [#js {:id 1 :label "one"}])
+                 (fn [item] (.-id item))
+                 (fn [item] (view/li (fn [] (.-label (item))))))]
+    (is (= "BUTTON" (.-tagName button)))
+    (is (= "Save" (.-textContent button)))
+    (is (fn? binding))
+    (is (= "ARTICLE" (.-tagName (view/tag "article" "Content"))))
+    (is (= "circle"
+           (.-localName
+            (view/tag-ns "http://www.w3.org/2000/svg" "circle"))))))

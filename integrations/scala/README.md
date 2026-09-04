@@ -96,8 +96,9 @@ registered elsewhere.
 
 Set `Component.view` or `Directive.view` to a `ProgrammaticView`. Its typed
 context exposes `controller`, `required`, `scope`, `element`, and `transclude`.
-`AngularTS.tags.tag(...)` delegates to `angular.tags`, and
-`AngularTS.tags.namespace(...)` selects SVG or MathML factories.
+Import `angular.ts.tags.*` and call named factories such as `button(...)` and
+`div(...)`. Use `AngularTS.view.tag(...)` for names selected at runtime and
+`tagNS(...)` for dynamic SVG or MathML elements.
 
 ## Unsafe Interop
 

@@ -21,15 +21,14 @@ class TaskBoard {
 Render the collection with stable keys:
 
 ```ts
-const { each } = angular.view;
-const { tags } = angular;
+import { each, li, ul } from '@angular-wave/angular.ts';
 
 view: ({ controller }) =>
-  tags.ul(
+  ul(
     each(
       () => controller.tasks,
       (task) => task.id,
-      (task) => tags.li(() => task().title),
+      (task) => li(() => task().title),
     ),
   ),
 ```
