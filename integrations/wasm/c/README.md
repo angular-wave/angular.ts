@@ -26,10 +26,19 @@ ranges and leaves parsing/serialization to the application.
 
 ## Programmatic Views
 
-Register programmatic component views in the JavaScript host adapter and build
-their DOM with `angular.tags`; C continues to own reactive state through the
-bound `WasmScope`. The pointer/length ABI cannot return JavaScript DOM nodes,
-so the C facade intentionally does not claim a guest-side view callback type.
+Include `angular_ts_view_tags.h` for generated named factories:
+
+```c
+ng_view_handle_t label = ng_view_text(NG_BYTES("Save"));
+ng_view_handle_t button =
+    ng_tags_button(NG_BYTES("{\"type\":\"button\"}"), &label, 1);
+```
+
+Return the final handle from a Wasm export and consume it with
+`guest.takeView(handle)` in a regular component or directive `view` callback.
+Creating a parent consumes its child handles. Release an abandoned root with
+`ng_view_release`. Properties are static JSON; reactive state stays in the
+bound scope.
 
 `examples/todo` is a minimal native-checkable todo proof that keeps C state
 authoritative. It commits `items`, `remainingCount`, and `newTodo` through one

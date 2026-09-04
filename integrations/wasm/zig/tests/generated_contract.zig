@@ -11,4 +11,10 @@ test "generated fields carry paths and Zig value types" {
 
     const scope = angular.Scope.fromHandle(1);
     _ = scope;
+
+    const label = angular.tags.text("Save");
+    const button = angular.tags.button("{\"type\":\"button\"}", &.{label});
+    try std.testing.expectEqual(@as(u32, 42), label);
+    try std.testing.expectEqual(@as(u32, 41), button);
+    try std.testing.expect(angular.tags.release(button));
 }

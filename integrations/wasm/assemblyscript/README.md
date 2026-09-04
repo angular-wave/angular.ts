@@ -42,10 +42,18 @@ Rust/Go namespace parity checklist does not apply to this binding yet.
 
 ## Programmatic Views
 
-Programmatic views are supported in the JavaScript host adapter. Register the
-component `view` in `bootstrap.js`, construct DOM with `angular.tags`, and read
-guest-owned state through the bound `WasmScope`. The raw AssemblyScript ABI
-does not return DOM nodes, so no guest-side DOM facade is implied.
+AssemblyScript exposes generated named factories and opaque view handles:
+
+```ts
+const label = text("Save");
+const view = button('{"type":"button"}', [label]);
+```
+
+Return the final handle from a Wasm export. In the regular AngularTS module
+definition, consume it with `guest.takeView(handle)` from the component or
+directive `view` callback. Child handles are consumed when their parent is
+created. Call `releaseView(handle)` only for a view that will not be returned.
+Properties are static JSON values; keep reactive state in the bound scope.
 
 ## Todo Proof
 

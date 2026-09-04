@@ -11,6 +11,77 @@ namespace AngularTs.Wasm;
 
 public readonly record struct ScopeUpdate(uint ScopeHandle, string Path, string Json);
 
+public readonly record struct ProgrammaticViewChild(uint Handle);
+
+[SupportedOSPlatform("browser")]
+public readonly unsafe struct ProgrammaticViewTags
+{
+    public ProgrammaticViewTags(string namespaceUri)
+    {
+        NamespaceUri = namespaceUri;
+    }
+
+    public string NamespaceUri { get; }
+
+    public ProgrammaticViewTags WithNamespace(string namespaceUri)
+    {
+        return new ProgrammaticViewTags(namespaceUri);
+    }
+
+    public ProgrammaticViewChild Tag(
+        string name,
+        string propertiesJson = "{}",
+        params ProgrammaticViewChild[] children)
+    {
+        var handles = new uint[children.Length];
+
+        for (var index = 0; index < children.Length; index++)
+        {
+            handles[index] = children[index].Handle;
+        }
+
+        fixed (uint* childrenPtr = handles)
+        {
+            var childrenAddress = (IntPtr)childrenPtr;
+
+            return Utf8.With(NamespaceUri, (namespacePtr, namespaceLen) =>
+                Utf8.With(name, (namePtr, nameLen) =>
+                    Utf8.With(propertiesJson, (propertiesPtr, propertiesLen) =>
+                        new ProgrammaticViewChild(Host.ViewTag(
+                            namespacePtr,
+                            namespaceLen,
+                            namePtr,
+                            nameLen,
+                            propertiesPtr,
+                            propertiesLen,
+                            childrenAddress,
+                            handles.Length)))));
+        }
+    }
+}
+
+[SupportedOSPlatform("browser")]
+public static partial class Tags
+{
+    public static ProgrammaticViewTags Elements { get; } = new(string.Empty);
+
+    public static ProgrammaticViewTags Namespace(string namespaceUri)
+    {
+        return Elements.WithNamespace(namespaceUri);
+    }
+
+    public static ProgrammaticViewChild Text(string value)
+    {
+        return Utf8.With(value, (ptr, len) =>
+            new ProgrammaticViewChild(Host.ViewText(ptr, len)));
+    }
+
+    public static bool Release(ProgrammaticViewChild child)
+    {
+        return Host.ViewRelease(child.Handle) != 0;
+    }
+}
+
 public enum AbiError
 {
     None = 0,
@@ -427,6 +498,54 @@ internal static unsafe class Utf8
 
 internal static partial class Host
 {
+    [JSImport("view_tag", "angular_ts")]
+    private static partial int ViewTagRaw(
+        IntPtr namespacePtr,
+        int namespaceLen,
+        IntPtr namePtr,
+        int nameLen,
+        IntPtr propertiesPtr,
+        int propertiesLen,
+        IntPtr childrenPtr,
+        int childrenLen);
+
+    internal static uint ViewTag(
+        IntPtr namespacePtr,
+        int namespaceLen,
+        IntPtr namePtr,
+        int nameLen,
+        IntPtr propertiesPtr,
+        int propertiesLen,
+        IntPtr childrenPtr,
+        int childrenLen)
+    {
+        return (uint)ViewTagRaw(
+            namespacePtr,
+            namespaceLen,
+            namePtr,
+            nameLen,
+            propertiesPtr,
+            propertiesLen,
+            childrenPtr,
+            childrenLen);
+    }
+
+    [JSImport("view_text", "angular_ts")]
+    private static partial int ViewTextRaw(IntPtr valuePtr, int valueLen);
+
+    internal static uint ViewText(IntPtr valuePtr, int valueLen)
+    {
+        return (uint)ViewTextRaw(valuePtr, valueLen);
+    }
+
+    [JSImport("view_release", "angular_ts")]
+    private static partial int ViewReleaseRaw(int viewHandle);
+
+    internal static uint ViewRelease(uint viewHandle)
+    {
+        return (uint)ViewReleaseRaw((int)viewHandle);
+    }
+
     [JSImport("scope_resolve", "angular_ts")]
     private static partial int ScopeResolveRaw(IntPtr namePtr, int nameLen);
 

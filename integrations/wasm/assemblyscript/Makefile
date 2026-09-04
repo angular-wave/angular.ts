@@ -1,11 +1,17 @@
-.PHONY: check build facade-build wasm-build js-check browser-test clean
+.PHONY: check build generate generate-check facade-build wasm-build js-check browser-test clean
 
 ASC ?= asc
 OUT_DIR ?= /tmp/angular-ts-assemblyscript
 NODE ?= node
 PLAYWRIGHT ?= ../../../node_modules/.bin/playwright
 
-check: build js-check
+check: generate-check build js-check
+
+generate:
+	$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration assemblyscript
+
+generate-check:
+	@$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration assemblyscript --check
 
 build: facade-build wasm-build
 

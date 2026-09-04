@@ -33,7 +33,9 @@ change.
 - Retain watch guards for the desired subscription lifetime and then drop them.
 - Keep manifest registration deterministic and review generated JavaScript.
 - Keep app-owned shared state in AngularTS models and synchronize snapshots.
-- Keep views in the host until a real guest-to-DOM object bridge exists.
+- Use named
+  [ProgrammaticViewTags](../../../typedoc/types/ProgrammaticViewTags.html)
+  methods for fixed HTML elements and `tag` only for names selected at runtime.
 
 ## Executable evidence
 

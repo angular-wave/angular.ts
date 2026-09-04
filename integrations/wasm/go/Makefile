@@ -1,6 +1,7 @@
 .PHONY: check root-types test parity generate generate-check example-build browser-test clean
 
 GO ?= go
+NODE ?= node
 PLAYWRIGHT ?= ../../../node_modules/.bin/playwright
 
 check: parity generate test
@@ -16,9 +17,11 @@ parity: root-types
 	node tool/check-ng-namespace-parity.mjs
 
 generate:
+	$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration go
 	$(GO) generate ./examples/basic_app
 
 generate-check:
+	@$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration go --check
 	@before="$$(mktemp)"; \
 	trap 'rm -f "$$before"' EXIT; \
 	sha256sum \

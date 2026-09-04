@@ -32,6 +32,9 @@ test("Go Wasm todo demo updates AngularTS scope through WasmScope", async ({
   const input = page.getByLabel("Go todo title");
 
   await expect(rows).toHaveCount(2);
+  await expect(page.locator("#go-named-tag-probe")).toHaveText(
+    "Go named tag factory",
+  );
   await expect(page.locator("#go-remaining")).toContainText("2 of 2");
   await expect(rows.first()).toContainText("Learn AngularTS");
   await expect(rows.nth(1)).toContainText("Build a Go Wasm app");

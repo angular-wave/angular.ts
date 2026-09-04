@@ -29,7 +29,10 @@ make browser-test
 - Release watches and JavaScript callback wrappers when the scope is destroyed.
 - Batch related scope writes and attach an origin when synchronization needs it.
 - Keep durable shared state in AngularTS models.
-- Keep DOM construction in the JavaScript adapter.
+- Resolve
+  [ProgrammaticViewTags](../../../typedoc/types/ProgrammaticViewTags.html) with
+  `Tags`, use named methods for fixed HTML elements, and reserve `Tag` for names
+  selected at runtime.
 
 ## Executable evidence
 

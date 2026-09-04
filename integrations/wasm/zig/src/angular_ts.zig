@@ -1,6 +1,8 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
+pub const tags = @import("view_tags.zig");
+
 pub const ScopeHandle = u32;
 pub const WatchHandle = u32;
 const BufferHandle = u32;

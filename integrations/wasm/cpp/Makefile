@@ -1,4 +1,4 @@
-.PHONY: check fmt test typecheck wasm-build js-check browser-test clean
+.PHONY: check generate generate-check fmt test typecheck wasm-build js-check browser-test clean
 
 CXX ?= c++
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Werror -Iinclude
@@ -14,11 +14,17 @@ export ZIG_LIB_DIR
 export ZIG_GLOBAL_CACHE_DIR
 export ZIG_LOCAL_CACHE_DIR
 
-check: fmt test example typecheck js-check
+check: generate-check fmt test example typecheck js-check
+
+generate:
+	$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration cpp
+
+generate-check:
+	@$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration cpp --check
 
 fmt:
 	@if command -v clang-format >/dev/null 2>&1; then \
-		clang-format -i include/angular_ts/wasm.hpp tests/wasm_test.cpp; \
+		clang-format -i include/angular_ts/wasm.hpp include/angular_ts/view_tags.hpp tests/wasm_test.cpp; \
 	else \
 		echo "clang-format not available; C++ sources are manually formatted"; \
 	fi
@@ -57,7 +63,7 @@ browser-test: wasm-build
 example: $(BUILD_DIR)/todo_example
 	./$(BUILD_DIR)/todo_example
 
-$(BUILD_DIR)/wasm_test: tests/wasm_test.cpp include/angular_ts/wasm.hpp
+$(BUILD_DIR)/wasm_test: tests/wasm_test.cpp include/angular_ts/wasm.hpp include/angular_ts/view_tags.hpp
 	mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) tests/wasm_test.cpp -o $@
 

@@ -36,7 +36,8 @@ native message/error subscriptions for browser Wasm applications.
 `ComponentMetadata::view(...)` registers a Rust export as a component view.
 Wasm builds expose `ProgrammaticViewContext` and `ProgrammaticViewTags`; the former
 reads the controller, scope, host element, and transclusion callback, while the
-latter delegates real-DOM construction to `angular.view.tags`. View exports return
+latter provides named factories such as `button(...)` and `div(...)`. Use
+`tag(...)` only when the element name is selected at runtime. View exports return
 `JsValue`, allowing DOM nodes and supported reactive children to cross the
 `wasm-bindgen` boundary.
 

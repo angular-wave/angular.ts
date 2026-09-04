@@ -1,3 +1,4 @@
+import { dealoc } from "../../shared/dom.ts";
 import {
   compileWasm,
   deleteProperty,
@@ -6,6 +7,11 @@ import {
   shouldHandleViewRetentionPause,
 } from "../../shared/utils.ts";
 import type { AppContext, Model } from "../../core/app-context/app-context.ts";
+import {
+  tags,
+  type ProgrammaticViewProperties,
+  type ProgrammaticViewTag,
+} from "../../core/compile/programmatic-view.ts";
 import {
   SCOPE_PROXY_BIND,
   type Scope,
@@ -27,6 +33,10 @@ const MAX_WASM_ABI_SCOPES = 1024;
 const MAX_WASM_ABI_WATCHES = 4096;
 
 const MAX_WASM_ABI_RESULT_BUFFERS = 1024;
+
+const MAX_WASM_ABI_VIEWS = 4096;
+
+const MAX_WASM_ABI_VIEW_CHILDREN = 4096;
 
 const MAX_WASM_ABI_BUFFER_BYTES = 64 * 1024 * 1024;
 
@@ -147,8 +157,13 @@ export interface WasmResource<
     target: TTarget,
     options?: WasmBindingOptions,
   ): Promise<WasmBinding<TTarget>>;
+  /** Consumes a guest-created programmatic view handle. */
+  takeView(handle: WasmViewHandle): Node;
   dispose(): void;
 }
+
+/** Opaque handle for a programmatic view node owned by the Wasm host. */
+export type WasmViewHandle = number;
 
 /** WebAssembly exports required by the language-neutral AngularTS ABI. */
 export interface WasmAbiExports {
@@ -307,6 +322,21 @@ export interface WasmScopeAbiImports {
   scope_unwatch(watchHandle: number): number;
   /** Unbinds a scope handle without destroying the AngularTS scope. */
   scope_unbind(scopeHandle: number): number;
+  /** Creates an element and consumes its child view handles. */
+  view_tag(
+    namespacePtr: number,
+    namespaceLen: number,
+    namePtr: number,
+    nameLen: number,
+    propertiesPtr: number,
+    propertiesLen: number,
+    childrenPtr: number,
+    childrenLen: number,
+  ): WasmViewHandle;
+  /** Creates a text-node view handle. */
+  view_text(valuePtr: number, valueLen: number): WasmViewHandle;
+  /** Releases an unconsumed view handle. Returns `1` on success. */
+  view_release(viewHandle: WasmViewHandle): number;
   /** Returns the guest pointer for a host-owned result buffer. */
   buffer_ptr(bufferHandle: number): number;
   /** Returns the byte length for a host-owned result buffer. */
@@ -861,6 +891,8 @@ export interface WasmScopeAbi {
   createScope(scope: ng.Scope, options?: WasmScopeOptions): WasmScope;
   /** Returns a previously registered scope wrapper. */
   getScope(reference: WasmScopeReference): WasmScope | undefined;
+  /** Consumes a guest-created node for a component or directive view. */
+  takeView(handle: WasmViewHandle): Node;
   /** Disposes every scope, watch, and result buffer owned by this ABI. */
   dispose(): void;
 }
@@ -877,6 +909,8 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
   /** @internal */
   private _nextWatchHandle = 1;
   /** @internal */
+  private _nextViewHandle = 1;
+  /** @internal */
   private readonly _scopes = new Map<number, WasmScopeImpl>();
   /** @internal */
   private readonly _scopesByName = new Map<string, WasmScopeImpl>();
@@ -884,6 +918,8 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
   private readonly _buffers = new Map<number, WasmResultBuffer>();
   /** @internal */
   private readonly _watches = new Map<number, WasmWatchRegistration>();
+  /** @internal */
+  private readonly _views = new Map<WasmViewHandle, Node>();
   /** @internal */
   private readonly _pendingGuestTransactions = new Map<
     number,
@@ -1002,6 +1038,48 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
             () => this._scopeUnbind(scopeHandle),
             0,
           ),
+        view_tag: (
+          namespacePtr,
+          namespaceLen,
+          namePtr,
+          nameLen,
+          propertiesPtr,
+          propertiesLen,
+          childrenPtr,
+          childrenLen,
+        ) =>
+          this._guardGuestCall(
+            "view_tag",
+            () =>
+              this._viewTag(
+                namespacePtr,
+                namespaceLen,
+                namePtr,
+                nameLen,
+                propertiesPtr,
+                propertiesLen,
+                childrenPtr,
+                childrenLen,
+              ),
+            0,
+          ),
+        view_text: (valuePtr, valueLen) =>
+          this._guardGuestCall(
+            "view_text",
+            () =>
+              this._storeView(
+                document.createTextNode(
+                  this._readGuestString(valuePtr, valueLen),
+                ),
+              ),
+            0,
+          ),
+        view_release: (viewHandle) =>
+          this._guardGuestCall(
+            "view_release",
+            () => this._releaseView(viewHandle),
+            0,
+          ),
         buffer_ptr: (bufferHandle) =>
           this._guardGuestCall(
             "buffer_ptr",
@@ -1100,6 +1178,19 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
   /** Returns a previously registered scope wrapper. */
   getScope(reference: WasmScopeReference): WasmScopeImpl | undefined {
     return this._resolveScope(reference);
+  }
+
+  /** Consumes a guest-created node for a component or directive view. */
+  takeView(handle: WasmViewHandle): Node {
+    const node = this._views.get(handle);
+
+    if (!node) {
+      throw new Error(`Unknown AngularTS Wasm view handle ${String(handle)}`);
+    }
+
+    this._views.delete(handle);
+
+    return node;
   }
 
   /** @internal */
@@ -1260,6 +1351,9 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
     for (const scope of Array.from(this._scopes.values())) scope.dispose();
     for (const bufferHandle of Array.from(this._buffers.keys())) {
       this._freeBuffer(bufferHandle);
+    }
+    for (const viewHandle of Array.from(this._views.keys())) {
+      this._releaseView(viewHandle);
     }
 
     this._watches.clear();
@@ -1503,6 +1597,109 @@ class WasmScopeAbiImpl implements WasmScopeAbi {
     if (!scope) throw createWasmGuestError("invalidHandle");
 
     scope.dispose();
+
+    return 1;
+  }
+
+  /** @internal */
+  private _viewTag(
+    namespacePtr: number,
+    namespaceLen: number,
+    namePtr: number,
+    nameLen: number,
+    propertiesPtr: number,
+    propertiesLen: number,
+    childrenPtr: number,
+    childrenLen: number,
+  ): WasmViewHandle {
+    const namespace = this._readGuestString(
+      namespacePtr,
+      namespaceLen,
+      MAX_WASM_ABI_PATH_BYTES,
+      "view namespace",
+    );
+    const name = this._readGuestString(
+      namePtr,
+      nameLen,
+      MAX_WASM_ABI_PATH_BYTES,
+      "view tag name",
+    );
+    const properties = this._readGuestJson(propertiesPtr, propertiesLen);
+
+    if (!name || !isPlainWasmRecord(properties)) {
+      throw createWasmGuestError("invalidJson");
+    }
+
+    const childHandles = this._readGuestViewHandles(childrenPtr, childrenLen);
+    const children = childHandles.map((handle) => this._requireView(handle));
+    const factories = namespace ? tags(namespace as never) : tags;
+    const factory = Reflect.get(factories, name) as ProgrammaticViewTag;
+    const element = factory(
+      properties as ProgrammaticViewProperties<HTMLElement>,
+      ...children,
+    );
+
+    for (const handle of childHandles) this._views.delete(handle);
+
+    return this._storeView(element);
+  }
+
+  /** @internal */
+  private _readGuestViewHandles(ptr: number, count: number): number[] {
+    if (
+      !Number.isSafeInteger(count) ||
+      count < 0 ||
+      count > MAX_WASM_ABI_VIEW_CHILDREN
+    ) {
+      throw createWasmGuestError("invalidLength");
+    }
+
+    const width = Uint32Array.BYTES_PER_ELEMENT;
+    const bytes = this._readGuestBytes(
+      ptr,
+      count * width,
+      MAX_WASM_ABI_VIEW_CHILDREN * width,
+      "view children",
+    );
+    const handles: number[] = [];
+    const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+    for (let index = 0; index < count; index++) {
+      handles.push(data.getUint32(index * width, true));
+    }
+
+    return handles;
+  }
+
+  /** @internal */
+  private _storeView(node: Node): WasmViewHandle {
+    if (this._views.size >= MAX_WASM_ABI_VIEWS) {
+      throw createWasmGuestError("limitExceeded");
+    }
+
+    const handle = this._nextViewHandle++;
+
+    this._views.set(handle, node);
+
+    return handle;
+  }
+
+  /** @internal */
+  private _requireView(handle: WasmViewHandle): Node {
+    const node = this._views.get(handle);
+
+    if (!node) throw createWasmGuestError("invalidHandle");
+
+    return node;
+  }
+
+  /** @internal */
+  private _releaseView(handle: WasmViewHandle): number {
+    const node = this._requireView(handle);
+
+    this._views.delete(handle);
+    if (node instanceof Element) dealoc(node);
+    else if (node.parentNode) node.parentNode.removeChild(node);
 
     return 1;
   }
@@ -1848,6 +2045,16 @@ class WasmResourceImpl<TExports extends WebAssembly.Exports>
 
   get disposed(): boolean {
     return this._status === "disposed";
+  }
+
+  takeView(handle: WasmViewHandle): Node {
+    if (this.disposed) {
+      throw this._disposedError(
+        "Cannot take a view from a disposed WebAssembly resource",
+      );
+    }
+
+    return this._abi.takeView(handle);
   }
 
   /** @internal */

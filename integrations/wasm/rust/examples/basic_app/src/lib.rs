@@ -3,13 +3,13 @@ use angular_ts::{
 };
 
 #[cfg(target_arch = "wasm32")]
-use angular_ts::{wasm_bridge, HttpResponse, HttpService};
+use angular_ts::{wasm_bridge, HttpResponse, HttpService, ProgrammaticViewTags};
 #[cfg(target_arch = "wasm32")]
-use js_sys::{Array, JsString, Object, Reflect};
+use js_sys::{Array, Function, JsString, Object, Reflect};
 #[cfg(target_arch = "wasm32")]
 use serde::Deserialize;
 #[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Todo {
@@ -288,6 +288,7 @@ pub struct TodoListController {
 #[wasm_bridge(component = "TodoList")]
 impl TodoListController {
     pub fn new(store: TodoStoreService, http: HttpService) -> Self {
+        append_named_tag_probe().expect("the Rust named tag factory should create a button");
         let items = store.items_array();
 
         let mut controller = Self {
@@ -366,6 +367,31 @@ impl TodoListController {
         self.server_tasks = Array::new();
         self.refresh();
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn append_named_tag_probe() -> Result<(), JsValue> {
+    let properties = Object::new();
+    Reflect::set(
+        &properties,
+        &JsValue::from_str("id"),
+        &JsValue::from_str("rust-named-tag-probe"),
+    )?;
+    Reflect::set(
+        &properties,
+        &JsValue::from_str("type"),
+        &JsValue::from_str("button"),
+    )?;
+
+    let button = ProgrammaticViewTags::global()?
+        .button(&properties, &[JsValue::from_str("Rust named tag factory")])?;
+    let document = Reflect::get(&js_sys::global(), &JsValue::from_str("document"))?;
+    let body = Reflect::get(&document, &JsValue::from_str("body"))?;
+    let append_child =
+        Reflect::get(&body, &JsValue::from_str("appendChild"))?.dyn_into::<Function>()?;
+
+    append_child.call1(&body, &button)?;
+    Ok(())
 }
 
 #[cfg(target_arch = "wasm32")]

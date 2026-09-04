@@ -12,6 +12,7 @@ extern "C" {
 typedef uint32_t ng_scope_handle_t;
 typedef uint32_t ng_watch_handle_t;
 typedef uint32_t ng_buffer_handle_t;
+typedef uint32_t ng_view_handle_t;
 
 #define NG_WASM_ABI_VERSION 3u
 
@@ -37,6 +38,11 @@ typedef struct {
   const uint8_t *ptr;
   uint32_t len;
 } ng_bytes_t;
+
+#define NG_BYTES(value)                                                     \
+  (ng_bytes_t) {                                                            \
+    (const uint8_t *)(value), (uint32_t)(sizeof(value) - 1u)                 \
+  }
 
 typedef struct {
   ng_bytes_t path;
@@ -177,6 +183,16 @@ bool ng_scope_sync_ref(ng_scope_ref_t scope);
 ng_watch_handle_t ng_scope_watch_path(ng_scope_ref_t scope, ng_bytes_t path);
 bool ng_scope_unwatch_handle(ng_watch_handle_t watch_handle);
 bool ng_scope_unbind_ref(ng_scope_ref_t scope);
+
+ng_view_handle_t ng_view_tag(ng_bytes_t name, ng_bytes_t properties_json,
+                             const ng_view_handle_t *children,
+                             uint32_t child_count);
+ng_view_handle_t ng_view_tag_ns(ng_bytes_t namespace_uri, ng_bytes_t name,
+                                ng_bytes_t properties_json,
+                                const ng_view_handle_t *children,
+                                uint32_t child_count);
+ng_view_handle_t ng_view_text(ng_bytes_t value);
+bool ng_view_release(ng_view_handle_t view);
 
 bool ng_update_begin(ng_update_t *update, ng_scope_ref_t scope, void *buffer,
                      uint32_t capacity);

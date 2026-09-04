@@ -47,6 +47,9 @@ test("Rust todo demo runs through the AngularTS bridge", async ({ page }) => {
   const input = page.getByLabel("Todo title");
 
   await expect(controllerTitle).toHaveText("Rust-authored AngularTS Todos");
+  await expect(page.locator("#rust-named-tag-probe")).toHaveText(
+    "Rust named tag factory",
+  );
   await expect(rows).toHaveCount(2);
   await expect(remaining).toContainText("2 of 2");
   await expect(rows.first()).toContainText("Learn AngularTS");

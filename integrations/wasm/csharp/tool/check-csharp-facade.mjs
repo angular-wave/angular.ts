@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("../src/AngularTsWasm.cs", import.meta.url), "utf8");
+const tags = readFileSync(new URL("../src/ProgrammaticViewTags.cs", import.meta.url), "utf8");
 
 const required = [
   "scope_resolve",
@@ -46,13 +47,24 @@ const required = [
   "NgAbiVersionJs",
   "NgScopeOnUnbindJs",
   "NgScopeOnTransactionJs",
+  "public readonly record struct ProgrammaticViewChild",
+  "public readonly unsafe struct ProgrammaticViewTags",
+  "public static partial class Tags",
+  "[JSImport(\"view_tag\", \"angular_ts\")]",
+  "[JSImport(\"view_text\", \"angular_ts\")]",
+  "[JSImport(\"view_release\", \"angular_ts\")]",
 ];
 
 const missing = required.filter((fragment) => !source.includes(fragment));
+const missingTags = ["public static ProgrammaticViewChild Button", "Elements.Tag(\"button\""]
+  .filter((fragment) => !tags.includes(fragment));
 
-if (missing.length > 0) {
+if (missing.length > 0 || missingTags.length > 0) {
   console.error("C# Wasm facade is missing required ABI fragments:");
   for (const fragment of missing) {
+    console.error(`- ${fragment}`);
+  }
+  for (const fragment of missingTags) {
     console.error(`- ${fragment}`);
   }
   process.exit(1);

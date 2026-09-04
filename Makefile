@@ -1,4 +1,4 @@
-.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
+.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go generated-check-wasm-rust generated-check-wasm-assemblyscript generated-check-wasm-c generated-check-wasm-cpp generated-check-wasm-csharp generated-check-wasm-zig public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-notes-test release-notes-check prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -204,14 +204,20 @@ types: ensure-deps
 generated-check: integrations-generated-check
 
 integrations-generated-check: types
-	@$(MAKE) --keep-going --jobs=7 --output-sync=target \
+	@$(MAKE) --keep-going --jobs=8 --output-sync=target \
 		generated-check-closure \
 		generated-check-dart \
 		generated-check-gleam \
 		generated-check-kotlin \
 		generated-check-scala \
 		generated-check-wasm-contracts \
-		generated-check-wasm-go
+		generated-check-wasm-go \
+		generated-check-wasm-rust \
+		generated-check-wasm-assemblyscript \
+		generated-check-wasm-c \
+		generated-check-wasm-cpp \
+		generated-check-wasm-csharp \
+		generated-check-wasm-zig
 
 generated-check-closure:
 	@$(MAKE) -f integrations/closure/Makefile generate-check
@@ -234,6 +240,24 @@ generated-check-wasm-contracts:
 
 generated-check-wasm-go:
 	@$(MAKE) -C integrations/wasm/go generate-check
+
+generated-check-wasm-rust:
+	@$(MAKE) -C integrations/wasm/rust generate-check
+
+generated-check-wasm-assemblyscript:
+	@$(MAKE) -C integrations/wasm/assemblyscript generate-check
+
+generated-check-wasm-c:
+	@$(MAKE) -C integrations/wasm/c generate-check
+
+generated-check-wasm-cpp:
+	@$(MAKE) -C integrations/wasm/cpp generate-check
+
+generated-check-wasm-csharp:
+	@$(MAKE) -C integrations/wasm/csharp generate-check
+
+generated-check-wasm-zig:
+	@$(MAKE) -C integrations/wasm/zig generate-check
 
 public-namespace-api: types
 	@$(MAKE) -f integrations/closure/Makefile closure-generate

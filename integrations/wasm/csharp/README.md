@@ -53,10 +53,18 @@ namespace parity checklist does not apply to this binding yet.
 
 ## Programmatic Views
 
-Programmatic views are registered by the JavaScript host adapter and construct
-real DOM through `angular.tags`; .NET code supplies reactive state through the
-bound `WasmScope`. The unmanaged export ABI cannot return browser DOM objects,
-so the C# facade intentionally does not expose a misleading view type.
+The generated `Tags` class exposes named factories:
+
+```csharp
+var label = Tags.Text("Save");
+var button = Tags.Button("{\"type\":\"button\"}", label);
+```
+
+Return the final handle from a Wasm export and consume it with
+`guest.takeView(handle)` in a regular component or directive `view` callback.
+Creating a parent consumes its child handles. Release an abandoned root with
+`Tags.Release`. Properties are static JSON; reactive state stays in the bound
+scope.
 
 ## Checks
 

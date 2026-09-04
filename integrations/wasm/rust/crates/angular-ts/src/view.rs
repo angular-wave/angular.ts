@@ -68,7 +68,7 @@ impl ProgrammaticViewContext {
     }
 }
 
-/// Wrapper around `angular.view.tags` and namespaced tag collections.
+/// Wrapper around `angular.tags` and namespaced tag collections.
 #[derive(Clone)]
 pub struct ProgrammaticViewTags {
     raw: JsValue,
@@ -78,8 +78,7 @@ impl ProgrammaticViewTags {
     /// Resolves the global AngularTS tag collection.
     pub fn global() -> Result<Self, JsValue> {
         let angular = Reflect::get(&js_sys::global(), &JsValue::from_str("angular"))?;
-        let view = Reflect::get(&angular, &JsValue::from_str("view"))?;
-        let raw = Reflect::get(&view, &JsValue::from_str("tags"))?;
+        let raw = Reflect::get(&angular, &JsValue::from_str("tags"))?;
 
         Ok(Self { raw })
     }
@@ -92,7 +91,7 @@ impl ProgrammaticViewTags {
         Ok(Self { raw })
     }
 
-    /// Creates one real DOM element through `angular.view.tags[name]`.
+    /// Creates one real DOM element through `angular.tags[name]`.
     pub fn tag(
         &self,
         name: &str,

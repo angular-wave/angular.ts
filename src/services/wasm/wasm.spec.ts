@@ -69,6 +69,151 @@ describe("WasmScopeAbi", () => {
     );
   });
 
+  it("constructs, composes, consumes, and releases programmatic view handles", () => {
+    const text = guest.write("Wasm view");
+    const textHandle = imports.view_text(text.ptr, text.len);
+    const namespace = guest.write("");
+    const name = guest.write("button");
+    const properties = guest.writeJson({ class: "primary", type: "button" });
+    const childrenPtr = guest.alloc(Uint32Array.BYTES_PER_ELEMENT);
+
+    new DataView(guest.memory.buffer).setUint32(childrenPtr, textHandle, true);
+
+    const buttonHandle = imports.view_tag(
+      namespace.ptr,
+      namespace.len,
+      name.ptr,
+      name.len,
+      properties.ptr,
+      properties.len,
+      childrenPtr,
+      1,
+    );
+    const button = abi.takeView(buttonHandle) as HTMLButtonElement;
+
+    expect(button.outerHTML).toBe(
+      '<button class="primary" type="button">Wasm view</button>',
+    );
+    expect(() => abi.takeView(buttonHandle)).toThrowError(
+      `Unknown AngularTS Wasm view handle ${String(buttonHandle)}`,
+    );
+
+    const released = imports.view_text(text.ptr, text.len);
+
+    expect(imports.view_release(released)).toBe(1);
+    expect(imports.view_release(released)).toBe(0);
+    expect(imports.error_code()).toBe(WasmAbiError.invalidHandle);
+
+    const attachedText = imports.view_text(text.ptr, text.len);
+    const ownedAbi = abi as any;
+
+    el.appendChild(ownedAbi._views.get(attachedText));
+    expect(imports.view_release(attachedText)).toBe(1);
+
+    const emptyProperties = guest.writeJson({});
+    const disposableElement = imports.view_tag(
+      0,
+      0,
+      name.ptr,
+      name.len,
+      emptyProperties.ptr,
+      emptyProperties.len,
+      0,
+      0,
+    );
+
+    expect(imports.view_release(disposableElement)).toBe(1);
+
+    imports.view_text(text.ptr, text.len);
+    abi.dispose();
+  });
+
+  it("creates namespaced views and rejects malformed view input", () => {
+    const namespace = guest.write("http://www.w3.org/2000/svg");
+    const name = guest.write("circle");
+    const properties = guest.writeJson({ cx: 5 });
+    const handle = imports.view_tag(
+      namespace.ptr,
+      namespace.len,
+      name.ptr,
+      name.len,
+      properties.ptr,
+      properties.len,
+      0,
+      0,
+    );
+
+    expect((abi.takeView(handle) as Element).namespaceURI).toBe(
+      "http://www.w3.org/2000/svg",
+    );
+
+    const invalid = guest.writeJson([]);
+
+    expect(
+      imports.view_tag(
+        0,
+        0,
+        name.ptr,
+        name.len,
+        invalid.ptr,
+        invalid.len,
+        0,
+        0,
+      ),
+    ).toBe(0);
+    expect(imports.error_code()).toBe(WasmAbiError.invalidJson);
+
+    expect(
+      imports.view_tag(0, 0, 0, 0, properties.ptr, properties.len, 0, 0),
+    ).toBe(0);
+    expect(
+      imports.view_tag(
+        0,
+        0,
+        name.ptr,
+        name.len,
+        properties.ptr,
+        properties.len,
+        0,
+        -1,
+      ),
+    ).toBe(0);
+    expect(
+      imports.view_tag(
+        0,
+        0,
+        name.ptr,
+        name.len,
+        properties.ptr,
+        properties.len,
+        0,
+        4097,
+      ),
+    ).toBe(0);
+    expect(
+      imports.view_tag(
+        0,
+        0,
+        name.ptr,
+        name.len,
+        properties.ptr,
+        properties.len,
+        0,
+        0.5,
+      ),
+    ).toBe(0);
+
+    const ownedAbi = abi as any;
+
+    ownedAbi._views.clear();
+    for (let index = 0; index < 4096; index++) {
+      ownedAbi._views.set(index + 1, document.createTextNode("limit"));
+    }
+    expect(imports.view_text(name.ptr, name.len)).toBe(0);
+    expect(imports.error_code()).toBe(WasmAbiError.limitExceeded);
+    ownedAbi._views.clear();
+  });
+
   it("reads and writes scope state through numeric handles", () => {
     const scope = abi.createScope(rootScope, { name: "todoList:main" });
     const path = guest.write("items");
@@ -2338,6 +2483,27 @@ describe("WasmScopeAbi", () => {
     );
     await expectAsync(resource.bind(rootScope)).toBeRejectedWith(
       jasmine.objectContaining({ code: "disposed" }),
+    );
+  });
+
+  it("consumes programmatic views through a loaded Wasm resource", async () => {
+    const resource = wasmService.load({
+      source: "/integrations/wasm/c/examples/todo/main.wasm?resource-view",
+    });
+
+    await resource.ready;
+
+    const ownedAbi = (resource as any)._abi;
+    const handle = ownedAbi._storeView(
+      document.createTextNode("resource view"),
+    );
+
+    expect(resource.takeView(handle).textContent).toBe("resource view");
+
+    resource.dispose();
+
+    expect(() => resource.takeView(handle)).toThrowError(
+      "Cannot take a view from a disposed WebAssembly resource",
     );
   });
 

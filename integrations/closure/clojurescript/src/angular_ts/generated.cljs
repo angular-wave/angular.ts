@@ -667,6 +667,7 @@
     "wasm-binding-dispose"
     "wasm-resource-bind"
     "wasm-resource-dispose"
+    "wasm-resource-take-view"
     "wasm-service-load"
     "wasm-target-broadcast"
     "wasm-target-destroy"
@@ -2244,6 +2245,11 @@
   "Public WasmResource.dispose member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
   [^js/ng.WasmResource target]
   (.dispose target))
+
+(defn wasm-resource-take-view
+  "Consumes a guest-created programmatic view handle.\n\nParams:\n- handle: {number} Value supplied for the handle parameter.\n\nReturns: {!Node}"
+  ^js/Node [^js/ng.WasmResource target ^number handle]
+  (.takeView target handle))
 
 (defn wasm-service-load
   "Loads one module and returns its owned resource.\n\nParams:\n- options: {!ng.WasmLoadOptions} Value supplied for the options parameter.\n\nReturns: {!ng.WasmResource<TExports>}"

@@ -42,10 +42,19 @@ namespace parity checklist does not apply to this binding yet.
 
 ## Programmatic Views
 
-Programmatic views live in the JavaScript host adapter: register `view` in the
-component definition, construct DOM with `angular.tags`, and project C++ state
-through the bound `WasmScope`. The low-level C++ ABI remains free of fictitious
-DOM handles.
+Include `angular_ts/view_tags.hpp` for generated named factories:
+
+```cpp
+auto label = angular_ts::ViewText("Save");
+auto button = angular_ts::tags::button(
+    "{\"type\":\"button\"}", {label});
+```
+
+Return the final handle from a Wasm export and consume it with
+`guest.takeView(handle)` in a regular component or directive `view` callback.
+Creating a parent consumes its child handles. Release an abandoned root with
+`angular_ts::ReleaseView`. Properties are static JSON; reactive state stays in
+the bound scope.
 
 ## Checks
 

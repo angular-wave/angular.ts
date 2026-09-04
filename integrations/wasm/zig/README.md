@@ -89,10 +89,19 @@ namespace parity checklist does not apply to this binding yet.
 
 ## Programmatic Views
 
-Register programmatic views in the JavaScript host adapter, construct real DOM
-with `angular.tags`, and project Zig-owned state through the bound `WasmScope`.
-The numeric/byte ABI cannot return JavaScript DOM nodes, so Zig does not expose
-a guest-side view callback until a real object bridge exists.
+The generated `angular.tags` namespace exposes named factories:
+
+```zig
+const label = angular.tags.text("Save");
+const button = angular.tags.button(
+    "{\"type\":\"button\"}", &.{label});
+```
+
+Return the final handle from a Wasm export and consume it with
+`guest.takeView(handle)` in a regular component or directive `view` callback.
+Creating a parent consumes its child handles. Release an abandoned root with
+`angular.tags.release`. Properties are static JSON; reactive state stays in the
+bound scope.
 
 ## Checks
 

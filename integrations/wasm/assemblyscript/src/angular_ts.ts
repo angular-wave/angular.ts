@@ -361,3 +361,5 @@ function readJsonValue(source: string, start: i32): string {
 function watchKey(scopeHandle: u32, path: string): string {
   return scopeHandle.toString() + ":" + path;
 }
+
+export * from "./view_tags";

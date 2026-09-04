@@ -8556,6 +8556,13 @@ ng.WasmResource.prototype.disposed;
 ng.WasmResource.prototype.bind = function(target, options) {};
 
 /**
+ * Consumes a guest-created programmatic view handle.
+ * @param {number} handle Value supplied for the handle parameter.
+ * @return {!Node}
+ */
+ng.WasmResource.prototype.takeView = function(handle) {};
+
+/**
  * Public WasmResource.dispose member exposed by the AngularTS namespace contract.
  * @return {void}
  */

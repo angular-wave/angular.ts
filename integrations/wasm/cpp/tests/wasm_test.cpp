@@ -1,4 +1,5 @@
 #include "angular_ts/wasm.hpp"
+#include "angular_ts/view_tags.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -53,6 +54,13 @@ int main() {
   assert(allocation != nullptr);
   std::memcpy(allocation, "Angular", 8);
   ng_abi_free(allocation, 8);
+
+  const angular_ts::ViewHandle label = angular_ts::ViewText("Save");
+  assert(label == 42);
+  const angular_ts::ViewHandle button =
+      angular_ts::tags::button("{\"type\":\"button\"}", {label});
+  assert(button == 41);
+  assert(angular_ts::ReleaseView(button));
 
   angular_ts::ResetNativeTestHost();
   angular_ts::SetNativeTestBuffer(77, "{\"title\":\"Todo\"}");

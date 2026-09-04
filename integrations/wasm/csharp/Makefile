@@ -3,12 +3,18 @@ DOTNET_INSTALL_DIR ?= $(CURDIR)/.dotnet
 DOTNET_LOCAL ?= $(DOTNET_INSTALL_DIR)/dotnet
 PLAYWRIGHT ?= ../../../node_modules/.bin/playwright
 
-.PHONY: check local-sdk local-workload facade-build example-build runtime-test ci-check local-ci-check
+.PHONY: check generate generate-check local-sdk local-workload facade-build example-build runtime-test ci-check local-ci-check
 
-check:
+check: generate-check
 	node tool/check-csharp-facade.mjs
 	node tool/check-csharp-project.mjs
 	node tool/check-csharp-todo-example.mjs
+
+generate:
+	node ../../../utils/generate-programmatic-view-tags.mjs --integration csharp
+
+generate-check:
+	@node ../../../utils/generate-programmatic-view-tags.mjs --integration csharp --check
 
 local-sdk:
 	DOTNET_INSTALL_DIR=$(DOTNET_INSTALL_DIR) node tool/install-dotnet-sdk.mjs

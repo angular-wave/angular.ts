@@ -7321,6 +7321,11 @@ public external interface WasmResource<TExports> {
      * The status member of ng.WasmResource.
      */
     public var status: dynamic
+    /**
+     * Consumes a guest-created programmatic view handle.
+     * @param handle Value supplied for the handle parameter.
+     */
+    public fun takeView(handle: Double = definedExternally): org.w3c.dom.Node
 }
 
 /**

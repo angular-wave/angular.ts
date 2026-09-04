@@ -557,6 +557,7 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `WasmBinding.dispose` | Invokes the dispose member of ng.WasmBinding. | None |
 | `WasmResource.bind` | Invokes the bind member of ng.WasmResource. | `target: TTarget` - Value supplied for the target parameter.<br>`options: WasmBindingOptions` - Value supplied for the options parameter. |
 | `WasmResource.dispose` | Invokes the dispose member of ng.WasmResource. | None |
+| `WasmResource.takeView` | Consumes a guest-created programmatic view handle. | `handle: number` - Value supplied for the handle parameter. |
 | `WasmService.load` | Loads one module and returns its owned resource. | `options: WasmLoadOptions` - Value supplied for the options parameter. |
 | `WebComponentContext.dispatch` | Dispatch a composed bubbling DOM event from the host. | `type: string` - Value supplied for the type parameter.<br>`detail: unknown` - Value supplied for the detail parameter.<br>`init: CustomEventInit<any>` - Value supplied for the init parameter. |
 | `WebComponentInputConfig.type` | Attribute/property coercion function. Defaults to \`String\`. | `value: any` - Value supplied for the value parameter. |

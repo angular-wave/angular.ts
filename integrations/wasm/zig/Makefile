@@ -1,4 +1,4 @@
-.PHONY: check test fmt wasm-check example-check example-test wasm-build js-check browser-test clean
+.PHONY: check generate generate-check test fmt wasm-check example-check example-test wasm-build js-check browser-test clean
 
 ZIG ?= $(shell if [ -x /snap/zig/current/zig ]; then printf '/snap/zig/current/zig'; elif command -v zig >/dev/null 2>&1; then command -v zig; else printf zig; fi)
 ZIG_LIB_DIR ?= $(shell if [ -d /snap/zig/current/lib ]; then printf '/snap/zig/current/lib'; fi)
@@ -11,10 +11,16 @@ export ZIG_LIB_DIR
 export ZIG_GLOBAL_CACHE_DIR
 export ZIG_LOCAL_CACHE_DIR
 
-check: fmt test wasm-check example-check example-test js-check
+check: generate-check fmt test wasm-check example-check example-test js-check
+
+generate:
+	$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration zig
+
+generate-check:
+	@$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration zig --check
 
 fmt:
-	$(ZIG) fmt build.zig src/angular_ts.zig tests/generated_contract.zig examples/todo/main.zig
+	$(ZIG) fmt build.zig src/angular_ts.zig src/view_tags.zig tests/generated_contract.zig examples/todo/main.zig
 
 test:
 	$(ZIG) build test

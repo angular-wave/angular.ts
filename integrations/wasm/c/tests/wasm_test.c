@@ -1,4 +1,5 @@
 #include "angular_ts_wasm.h"
+#include "angular_ts_view_tags.h"
 #include "player_contract.h"
 
 #include <assert.h>
@@ -73,6 +74,13 @@ static void test_basics(void) {
   assert(allocation != NULL);
   memcpy(allocation, "Angular", 8);
   ng_abi_free(allocation, 8);
+
+  ng_view_handle_t label = ng_view_text(NG_BYTES("Save"));
+  assert(label == 42);
+  ng_view_handle_t button = ng_tags_button(NG_BYTES("{\"type\":\"button\"}"),
+                                            &label, 1);
+  assert(button == 41);
+  assert(ng_view_release(button));
 }
 
 static void test_owned_results(ng_scope_ref_t scope) {

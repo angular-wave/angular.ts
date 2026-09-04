@@ -1,4 +1,4 @@
-.PHONY: check fmt test typecheck wasm-build js-check browser-test clean
+.PHONY: check generate generate-check fmt test typecheck wasm-build js-check browser-test clean
 
 CC ?= cc
 CFLAGS ?= -std=c11 -Wall -Wextra -Werror -Iinclude -I../contracts/generated
@@ -14,11 +14,17 @@ export ZIG_LIB_DIR
 export ZIG_GLOBAL_CACHE_DIR
 export ZIG_LOCAL_CACHE_DIR
 
-check: fmt test example typecheck js-check
+check: generate-check fmt test example typecheck js-check
+
+generate:
+	$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration c
+
+generate-check:
+	@$(NODE) ../../../utils/generate-programmatic-view-tags.mjs --integration c --check
 
 fmt:
 	@if command -v clang-format >/dev/null 2>&1; then \
-		clang-format -i include/angular_ts_wasm.h src/angular_ts_wasm.c tests/wasm_test.c; \
+		clang-format -i include/angular_ts_wasm.h include/angular_ts_view_tags.h src/angular_ts_wasm.c tests/wasm_test.c; \
 	else \
 		echo "clang-format not available; C sources are manually formatted"; \
 	fi
@@ -57,7 +63,7 @@ browser-test: wasm-build
 example: $(BUILD_DIR)/todo_example
 	./$(BUILD_DIR)/todo_example
 
-$(BUILD_DIR)/wasm_test: src/angular_ts_wasm.c tests/wasm_test.c include/angular_ts_wasm.h ../contracts/generated/player_contract.h
+$(BUILD_DIR)/wasm_test: src/angular_ts_wasm.c tests/wasm_test.c include/angular_ts_wasm.h include/angular_ts_view_tags.h ../contracts/generated/player_contract.h
 	mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) src/angular_ts_wasm.c tests/wasm_test.c -o $@
 

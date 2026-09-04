@@ -142,7 +142,10 @@ const mergeRegistration = (runtime, registration = {}) => {
     bridgeMetadata.scopeUpdateRoutes ||
     [];
 
-  if (merged.template) {
+  if (merged.view) {
+    delete merged.template;
+    delete merged.templateUrl;
+  } else if (merged.template) {
     delete merged.templateUrl;
   }
 
@@ -153,7 +156,7 @@ let nextWasmScopeId = 0;
 
 const createComponent = (controllerName, options) => {
   const controller = requireExport(controllerName);
-  const { inject, syncProperties, methods, controllerAs, kind, name, export: exportName, ...component } = options;
+  const { inject, syncProperties, methods, controllerAs, kind, name, export: exportName, view, ...component } = options;
   const angularController = createController(controllerName, {
     inject,
     syncProperties,
@@ -168,6 +171,7 @@ const createComponent = (controllerName, options) => {
   }
   return {
     ...component,
+    ...(view ? { view: requireExport(view) } : {}),
     ...(controllerAs ? { controllerAs } : {}),
     controller: angularController,
   };

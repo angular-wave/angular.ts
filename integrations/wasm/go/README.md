@@ -63,9 +63,10 @@ parity tracking, and browser tests for Go-owned state flowing through
 
 `ProgrammaticViewSource("exportName")` registers a JavaScript-visible Go export as a
 component view. Browser Wasm builds expose `ProgrammaticViewContext` and
-`ProgrammaticViewTags`; use `Tags()` and `Tag(...)` to delegate real-DOM creation
-to `angular.tags`. Go view callbacks return `syscall/js.Value` DOM nodes or
-other supported AngularTS view children.
+`ProgrammaticViewTags`; resolve it with `Tags()` and use named factories such as
+`Button(...)` and `Div(...)`. Reserve `Tag(...)` for names selected at runtime.
+Go view callbacks return `syscall/js.Value` DOM nodes or other supported
+AngularTS view children.
 
 See `PLAN.md` for the Rust feature parity checklist.
 

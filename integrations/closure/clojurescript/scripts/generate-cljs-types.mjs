@@ -12,7 +12,7 @@ const rootPackagePath = resolve(cljsRoot, "..", "..", "..", "package.json");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
 const expectedTypeTagCount = 227;
-const expectedStrictWrapperCount = 222;
+const expectedStrictWrapperCount = 223;
 const expectedStrictPropertyReaderCount = 457;
 const strictWrapperParamTagOverrides = new Map([
   ["NgModule.machine.config", "js/Object"],

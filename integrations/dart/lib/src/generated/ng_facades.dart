@@ -10778,6 +10778,17 @@ base class GeneratedNgWasmResource extends GeneratedNgFacade {
     return raw.callMethodVarArgs('bind'.toJS, args) as JSPromise<JSAny?>;
   }
 
+  /// Consumes a guest-created programmatic view handle.
+  ///
+  /// Parameters:
+  /// - [handle]: Value supplied for the handle parameter.
+  Node takeView(num handle) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(handle));
+
+    return unsafe.jsToDart<Node>(raw.callMethodVarArgs('takeView'.toJS, args));
+  }
+
   /// The dispose member of ng.WasmResource.
   void rawDispose() {
     unsafe.jsToDart<void>(

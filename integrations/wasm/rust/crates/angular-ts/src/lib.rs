@@ -13,6 +13,8 @@ pub mod token;
 #[cfg(target_arch = "wasm32")]
 pub mod view;
 #[cfg(target_arch = "wasm32")]
+mod view_tags;
+#[cfg(target_arch = "wasm32")]
 pub mod wasm;
 pub mod wasm_types;
 

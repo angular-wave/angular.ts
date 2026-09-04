@@ -82,6 +82,17 @@ NG_WASM_IMPORT(scope_unwatch)
 uint32_t ng_import_scope_unwatch(ng_watch_handle_t watch_handle);
 NG_WASM_IMPORT(scope_unbind)
 uint32_t ng_import_scope_unbind(ng_scope_handle_t scope_handle);
+NG_WASM_IMPORT(view_tag)
+ng_view_handle_t ng_import_view_tag(
+    const uint8_t *namespace_ptr, uint32_t namespace_len,
+    const uint8_t *name_ptr, uint32_t name_len,
+    const uint8_t *properties_ptr, uint32_t properties_len,
+    const ng_view_handle_t *children_ptr, uint32_t children_len);
+NG_WASM_IMPORT(view_text)
+ng_view_handle_t ng_import_view_text(const uint8_t *value_ptr,
+                                     uint32_t value_len);
+NG_WASM_IMPORT(view_release)
+uint32_t ng_import_view_release(ng_view_handle_t view_handle);
 NG_WASM_IMPORT(buffer_ptr)
 const uint8_t *ng_import_buffer_ptr(ng_buffer_handle_t buffer_handle);
 NG_WASM_IMPORT(buffer_len)
@@ -174,6 +185,25 @@ static uint32_t ng_import_scope_unwatch(ng_watch_handle_t watch_handle) {
 static uint32_t ng_import_scope_unbind(ng_scope_handle_t scope_handle) {
   (void)scope_handle;
   return scope_handle != 0;
+}
+static ng_view_handle_t ng_import_view_tag(
+    const uint8_t *namespace_ptr, uint32_t namespace_len,
+    const uint8_t *name_ptr, uint32_t name_len,
+    const uint8_t *properties_ptr, uint32_t properties_len,
+    const ng_view_handle_t *children_ptr, uint32_t children_len) {
+  (void)namespace_ptr;
+  (void)namespace_len;
+  (void)properties_ptr;
+  (void)children_ptr;
+  (void)children_len;
+  return name_ptr != NULL && name_len != 0 && properties_len != 0 ? 41 : 0;
+}
+static ng_view_handle_t ng_import_view_text(const uint8_t *value_ptr,
+                                            uint32_t value_len) {
+  return value_ptr != NULL && value_len != 0 ? 42 : 0;
+}
+static uint32_t ng_import_view_release(ng_view_handle_t view_handle) {
+  return view_handle != 0;
 }
 static const uint8_t *ng_import_buffer_ptr(ng_buffer_handle_t buffer_handle) {
   if (buffer_handle == test_buffer_handle) {
@@ -466,6 +496,36 @@ bool ng_scope_unbind_ref(ng_scope_ref_t scope) {
   }
 
   return ng_status(ng_import_scope_unbind(scope.handle));
+}
+
+ng_view_handle_t ng_view_tag(ng_bytes_t name, ng_bytes_t properties_json,
+                             const ng_view_handle_t *children,
+                             uint32_t child_count) {
+  return ng_view_tag_ns(ng_bytes_view(NULL, 0), name, properties_json, children,
+                        child_count);
+}
+
+ng_view_handle_t ng_view_tag_ns(ng_bytes_t namespace_uri, ng_bytes_t name,
+                                ng_bytes_t properties_json,
+                                const ng_view_handle_t *children,
+                                uint32_t child_count) {
+  if (name.ptr == NULL || name.len == 0 || properties_json.ptr == NULL ||
+      properties_json.len == 0 || (children == NULL && child_count != 0)) {
+    return 0;
+  }
+  return ng_import_view_tag(namespace_uri.ptr, namespace_uri.len, name.ptr,
+                            name.len, properties_json.ptr, properties_json.len,
+                            children, child_count);
+}
+
+ng_view_handle_t ng_view_text(ng_bytes_t value) {
+  return value.ptr == NULL && value.len != 0
+             ? 0
+             : ng_import_view_text(value.ptr, value.len);
+}
+
+bool ng_view_release(ng_view_handle_t view) {
+  return view != 0 && ng_import_view_release(view) != 0;
 }
 
 static bool ng_result_from_handle(ng_buffer_handle_t handle,

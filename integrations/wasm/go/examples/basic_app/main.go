@@ -25,10 +25,27 @@ type TodoApp struct {
 func main() {
 	app := &TodoApp{}
 	registerController(app)
+	renderNamedTagProbe()
 
 	angularwasm.NotifyReady()
 
 	select {}
+}
+
+func renderNamedTagProbe() {
+	tags, err := angularwasm.Tags()
+	if err != nil {
+		panic(err)
+	}
+
+	button := tags.Button(
+		angularwasm.ProgrammaticViewProperties{
+			"id":   "go-named-tag-probe",
+			"type": "button",
+		},
+		js.ValueOf("Go named tag factory"),
+	)
+	js.Global().Get("document").Get("body").Call("appendChild", button)
 }
 
 func (app *TodoApp) bind(_ js.Value, args []js.Value) any {

@@ -23,6 +23,7 @@ namespace angular_ts {
 using ScopeHandle = std::uint32_t;
 using WatchHandle = std::uint32_t;
 using BufferHandle = std::uint32_t;
+using ViewHandle = std::uint32_t;
 
 struct Bytes {
   const std::uint8_t* data = nullptr;
@@ -186,6 +187,17 @@ ANGULAR_TS_WASM_IMPORT(scope_unwatch)
 std::uint32_t angular_ts_scope_unwatch(angular_ts::WatchHandle watch_handle);
 ANGULAR_TS_WASM_IMPORT(scope_unbind)
 std::uint32_t angular_ts_scope_unbind(angular_ts::ScopeHandle scope_handle);
+ANGULAR_TS_WASM_IMPORT(view_tag)
+angular_ts::ViewHandle angular_ts_view_tag(
+    const std::uint8_t* namespace_ptr, std::uint32_t namespace_len,
+    const std::uint8_t* name_ptr, std::uint32_t name_len,
+    const std::uint8_t* properties_ptr, std::uint32_t properties_len,
+    const angular_ts::ViewHandle* children_ptr, std::uint32_t children_len);
+ANGULAR_TS_WASM_IMPORT(view_text)
+angular_ts::ViewHandle angular_ts_view_text(const std::uint8_t* value_ptr,
+                                            std::uint32_t value_len);
+ANGULAR_TS_WASM_IMPORT(view_release)
+std::uint32_t angular_ts_view_release(angular_ts::ViewHandle view_handle);
 ANGULAR_TS_WASM_IMPORT(buffer_ptr)
 const std::uint8_t* angular_ts_buffer_ptr(
     angular_ts::BufferHandle buffer_handle);
@@ -245,6 +257,20 @@ inline std::uint32_t angular_ts_scope_unwatch(angular_ts::WatchHandle) {
 inline std::uint32_t angular_ts_scope_unbind(angular_ts::ScopeHandle) {
   return 0;
 }
+inline angular_ts::ViewHandle angular_ts_view_tag(
+    const std::uint8_t*, std::uint32_t, const std::uint8_t*,
+    std::uint32_t name_len, const std::uint8_t*,
+    std::uint32_t properties_len, const angular_ts::ViewHandle*,
+    std::uint32_t) {
+  return name_len != 0 && properties_len != 0 ? 41 : 0;
+}
+inline angular_ts::ViewHandle angular_ts_view_text(const std::uint8_t*,
+                                                   std::uint32_t value_len) {
+  return value_len != 0 ? 42 : 0;
+}
+inline std::uint32_t angular_ts_view_release(angular_ts::ViewHandle view) {
+  return view != 0;
+}
 inline const std::uint8_t* angular_ts_buffer_ptr(
     angular_ts::BufferHandle buffer_handle) {
   if (buffer_handle == angular_ts::detail::NativeBufferHandleSlot()) {
@@ -272,6 +298,40 @@ inline void angular_ts_error_clear() {}
 }  // extern "C"
 
 namespace angular_ts {
+
+class ProgrammaticViewTags {
+ public:
+  ProgrammaticViewTags() = default;
+  explicit ProgrammaticViewTags(std::string_view namespace_uri)
+      : namespace_uri_(namespace_uri) {}
+
+  ProgrammaticViewTags WithNamespace(std::string_view namespace_uri) const {
+    return ProgrammaticViewTags(namespace_uri);
+  }
+
+  ViewHandle Tag(std::string_view name, std::string_view properties_json = "{}",
+                 const std::vector<ViewHandle>& children = {}) const {
+    const Bytes namespace_bytes = Bytes::FromString(namespace_uri_);
+    const Bytes name_bytes = Bytes::FromString(name);
+    const Bytes properties_bytes = Bytes::FromString(properties_json);
+    return angular_ts_view_tag(
+        namespace_bytes.data, namespace_bytes.size, name_bytes.data,
+        name_bytes.size, properties_bytes.data, properties_bytes.size,
+        children.data(), static_cast<std::uint32_t>(children.size()));
+  }
+
+ private:
+  std::string_view namespace_uri_;
+};
+
+inline ViewHandle ViewText(std::string_view value) {
+  const Bytes bytes = Bytes::FromString(value);
+  return angular_ts_view_text(bytes.data, bytes.size);
+}
+
+inline bool ReleaseView(ViewHandle view) {
+  return detail::Status(angular_ts_view_release(view));
+}
 
 class ResultBuffer {
  public:

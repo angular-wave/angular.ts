@@ -439,6 +439,7 @@ export type {
   WasmScopeUpdate,
   WasmScopeWatchOptions,
   WasmScopeWriteOptions,
+  WasmViewHandle,
   WasmService,
   WasmSource,
   WasmTarget,
