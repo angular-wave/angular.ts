@@ -2,37 +2,31 @@
 title: 'AssemblyScript WebAssembly'
 weight: 100
 description:
-  'Connect an AssemblyScript WebAssembly module to AngularTS through the shared
-  typed scope ABI and a small JavaScript host adapter.'
+  'Connect AssemblyScript logic to an AngularTS scope through the shared Wasm
+  ABI.'
 ---
 
-AssemblyScript compiles domain logic to WebAssembly. A JavaScript host adapter
-loads that module, binds it to an AngularTS scope, and owns DOM views. The guest
-does not receive JavaScript DOM objects.
+AngularTS owns the page while AssemblyScript handles domain logic in a Wasm
+module.
 
-## Set up an application
+## Add the binding
 
-Start from `integrations/wasm/assemblyscript/examples/todo`. Define generated
-typed field contracts, compile the guest module, register the host controller or
-component, and load its WebAssembly output through the adapter.
+The binding is distributed as source. Import
+`integrations/wasm/assemblyscript/src/angular_ts.ts`, compile the guest with
+AssemblyScript's incremental runtime and exported runtime helpers, then load the
+result through `app.wasm(...)`.
 
-```bash
-make -C integrations/wasm/assemblyscript check
-make -C integrations/wasm/assemblyscript browser-test
-```
+The host adapter binds the guest to a scope and releases it when that scope is
+destroyed.
 
-## Best practices
+## Guidance
 
-- Keep the scope ABI focused on one view owner.
-- Keep durable shared state in AngularTS models and exchange plain snapshots.
-- Batch related guest writes into one typed update.
-- Keep DOM construction and programmatic views in the JavaScript host.
-- Treat generated field contracts as read-only.
-- Test both native guest logic and the browser adapter workflow.
+- Use typed fields for values exchanged with AngularTS.
+- Batch related writes into one update.
+- Copy transient data across the ABI instead of retaining host buffers.
+- Keep durable shared state in AngularTS models.
 
-## Executable evidence
+## Complete example
 
-The maintained example or acceptance test is
-\`integrations/wasm/assemblyscript/examples/todo\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+Use `integrations/wasm/assemblyscript/examples/todo`, or browse all
+[integration examples](../examples/).

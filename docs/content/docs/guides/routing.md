@@ -23,8 +23,8 @@ the route HTML from its authoritative model. Do not move the model and rendering
 into the browser merely because navigation no longer reloads the document.
 
 If a route eventually needs a complex browser-owned model, move compilation with
-that model and make a typed programmatic view the primary renderer for the
-client-owned screen.
+that model. A typed programmatic view is available when the screen benefits from
+compile-time checks between the model and DOM; it is not required by the router.
 
 That transition also makes REST services, frontend cache consistency, and
 browser-facing security policy primary concerns. A router using server-rendered

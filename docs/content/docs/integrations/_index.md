@@ -2,24 +2,23 @@
 title: Integrations
 weight: 170
 description:
-  'Use AngularTS from supported JVM, JavaScript-targeting, native, and
-  WebAssembly language ecosystems.'
+  'Use AngularTS from JVM, JavaScript-targeting, native, and WebAssembly
+  languages.'
 ---
 
-AngularTS is one browser runtime with generated or maintained bindings for
-Closure, ClojureScript, Java/J2CL, Kotlin, Scala.js, Dart, Gleam, Rust, and
-WebAssembly-facing environments.
+AngularTS modules, injection, components, directives, and scopes are available
+from several languages. Choose the language that already builds the part of
+your application that runs on the page.
 
-Begin with the [integration
-model]({{< relref "/docs/integrations/choosing" >}}). Each integration should
-expose the same public namespace concepts while using its language's normal
-module, type, and build conventions.
+Begin with the [integration model]({{< relref
+"/docs/integrations/choosing" >}}), then open the setup guide for your language.
 
-Java, ClojureScript, and Scala.js artifacts are published to Maven Central.
-Dart is published to pub.dev and Gleam to Hex. These packages provide language
-bindings; the matching npm package remains the browser runtime.
+Java, ClojureScript, and Scala.js are available from Maven Central. Dart is on
+pub.dev, Gleam is on Hex, and Closure externs ship in the npm package. Kotlin
+and the WebAssembly bindings are currently distributed as source with complete
+examples.
 
-## Browser-language integrations
+## JavaScript and JVM languages
 
 - [ClojureScript]({{< relref "/docs/integrations/clojurescript" >}})
 - [Closure Compiler]({{< relref "/docs/integrations/closure" >}})
@@ -29,7 +28,7 @@ bindings; the matching npm package remains the browser runtime.
 - [Kotlin/JS]({{< relref "/docs/integrations/kotlin" >}})
 - [Scala.js]({{< relref "/docs/integrations/scala" >}})
 
-## WebAssembly integrations
+## WebAssembly languages
 
 - [AssemblyScript]({{< relref "/docs/integrations/wasm-assemblyscript" >}})
 - [C]({{< relref "/docs/integrations/wasm-c" >}})

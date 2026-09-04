@@ -44,6 +44,28 @@ The docs gate checks that the test exists and contains executable test cases.
 
 Do not turn a reference page into a tutorial. Link to the relevant guide.
 
+## Keep optional APIs optional
+
+Document an optional API on its focused concept, guide, or reference page. Do
+not add it to every package README, integration setup page, beginner path, or
+architecture recommendation merely because the integration supports it.
+
+Lead with the simplest default that solves the reader's problem. Mention an
+optional API elsewhere only when it directly solves the task on that page, and
+say that the API is optional before asking the reader to adopt it. Never present
+an optional API as a required application-wide architecture.
+
+## Write for application authors
+
+Public documentation helps people build applications. Do not describe binding
+generation, parity inventories, release procedures, repository CI, publication
+credentials, or internal implementation status. Put contributor instructions
+in `CONTRIBUTING.md`, build scripts, or comments next to the maintained code.
+
+Avoid vague labels based only on where code runs. Name the language or task
+directly, and explain the browser boundary only when the reader must configure
+script loading, compilation, or JavaScript interop.
+
 ## Link public types
 
 Every inline reference to a public type must link to its generated TypeDoc page.

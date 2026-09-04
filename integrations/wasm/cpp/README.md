@@ -1,85 +1,20 @@
-# AngularTS C++ Wasm Binding
+# AngularTS with C++ and WebAssembly
 
-This package is the C++ binding for the shared AngularTS `WasmScope` ABI.
+Run C++ domain logic as WebAssembly with typed scope access and RAII cleanup.
+AngularTS owns the page and connects the guest to a scope.
 
-Generated model contract descriptions are preserved as C++ documentation
-comments from the shared JSON contract manifest.
+## Add the binding
 
-Phase A provides a header-only facade in `include/angular_ts/wasm.hpp`:
+This binding is distributed as source and is header-only. Add `include` to the
+compiler search path, include `angular_ts/wasm.hpp`, and compile the guest for
+`wasm32-wasi` without an entry point.
 
-- `angular_ts` host import declarations with wasm import attributes.
-- `ng_abi_version`, `ng_abi_alloc`, and `ng_abi_free` guest exports.
-- Scope lifecycle exports for bind, unbind, and watched updates.
-- `Bytes`, `ScopeRef`, `ScopeUpdate`, `Scope`, `Watch`, and `ResultBuffer`.
-- RAII ownership for result buffers and watch handles.
+The JavaScript host loads the module with `app.wasm(...)`, binds a scope, and
+calls the exported feature functions. See `examples/todo/bootstrap.js` for the
+complete lifecycle.
 
-The wrapper stays JSON-library agnostic. `Scope::GetJson` returns a
-`std::string`, and `Scope::SetJson` accepts caller-provided JSON.
+Use `Scope`, `Watch`, and owned result wrappers instead of raw handles. Keep
+browser objects out of guest state, group related writes in one transaction,
+and synchronize durable state through AngularTS models.
 
-`examples/todo` is a minimal native-checkable todo proof that keeps C++ state
-authoritative and uses `Scope::SetJson` plus `Scope::WatchPath` as the only
-AngularTS scope boundary. Its `bootstrap.js` file is the browser adapter that
-instantiates the Wasm module, binds an AngularTS `WasmScope`, and routes UI
-commands into the exported C++ functions.
-
-## Scope ABI And App Models
-
-C++ `Scope` wraps the shared `WasmScope` ABI for view-scope integration. It is
-the right boundary for C++ code that owns a controller/component interaction and
-needs to project JSON-compatible values into the DOM.
-
-Do not route app-owned AngularTS model state through C++ scope helpers just to
-make it persistent or shared. Use `app.model(...)` and a host-side
-`model.sync(...)` target around the C++ runtime, passing plain snapshots across
-that boundary. The C++ binding should not add model handles, model path writes,
-or model watch imports unless the shared ABI adds that surface later.
-
-## Parity Scope
-
-C++ currently exposes the shared `WasmScope` ABI surface only. It does not
-publish AngularTS `ng` namespace service or authoring types, so the Rust/Go
-namespace parity checklist does not apply to this binding yet.
-
-## Programmatic Views
-
-Include `angular_ts/view_tags.hpp` for generated named factories:
-
-```cpp
-auto label = angular_ts::ViewText("Save");
-auto button = angular_ts::tags::button(
-    "{\"type\":\"button\"}", {label});
-```
-
-Return the final handle from a Wasm export and consume it with
-`guest.takeView(handle)` in a regular component or directive `view` callback.
-Creating a parent consumes its child handles. Release an abandoned root with
-`angular_ts::ReleaseView`. Properties are static JSON; reactive state stays in
-the bound scope.
-
-## Checks
-
-```sh
-make check
-```
-
-`make check` formats with `clang-format` when available, compiles and runs the
-native test harness, and performs a `-fsyntax-only` typecheck.
-
-```sh
-make wasm-build
-```
-
-`make wasm-build` emits `examples/todo/main.wasm` for the browser todo proof.
-It uses Zig's C++ frontend when available to build a WASI-targeted module with
-the shared `angular_ts` host imports. The browser bootstrap provides the small
-WASI import shim needed by the C++ standard library runtime.
-
-```sh
-make browser-test
-```
-
-`make browser-test` runs the Playwright todo workflow against
-`examples/todo/index.html` after building `examples/todo/main.wasm`.
-
-Set `PW_SKIP_WEB_SERVER=1` when `PW_BASE_URL` points at an already-running
-server and the Playwright target should not start `make serve`.
+See `examples/todo` for the C++ source, linker exports, host adapter, and page.

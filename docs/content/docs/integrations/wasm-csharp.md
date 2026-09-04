@@ -2,41 +2,34 @@
 title: 'C# and .NET WebAssembly'
 weight: 130
 description:
-  'Build the .NET WebAssembly facade and guest application, install the wasm
-  workload, and connect it through an AngularTS JavaScript host.'
+  'Connect C# domain logic to an AngularTS scope with .NET WebAssembly.'
 ---
 
-The C# integration exposes the shared scope ABI through a .NET facade. The .NET
-guest handles domain work while a JavaScript adapter owns AngularTS and DOM
-integration.
+AngularTS owns the page while C# handles domain logic in a .NET Wasm module.
 
-## Set up an application
+## Add the binding
 
-Install a compatible .NET SDK and the `wasm-tools` workload. Build the facade,
-then compile the example and run its browser contract.
+The binding is distributed as source. Install .NET 8 and the `wasm-tools`
+workload, add a project reference to
+`integrations/wasm/csharp/src/AngularTs.Wasm.csproj`, and publish the application
+for `browser-wasm`.
 
 ```bash
 dotnet workload install wasm-tools
-make -C integrations/wasm/csharp facade-build
-make -C integrations/wasm/csharp example-build
-make -C integrations/wasm/csharp runtime-test
+dotnet publish -c Release -r browser-wasm
 ```
 
-Use `make -C integrations/wasm/csharp ci-check` in a prepared CI environment.
+The host adapter initializes .NET with the AngularTS imports and binds the guest
+to a scope.
 
-## Best practices
+## Guidance
 
-- Keep JavaScript interop in the host adapter and facade.
-- Dispose guest wrappers, watches, and decoded values deterministically.
+- Dispose watches and decoded values deterministically.
+- Keep JavaScript interop in the host adapter.
 - Exchange plain snapshots for durable AngularTS model state.
-- Keep programmatic views in JavaScript because the ABI has no DOM object
-  bridge.
-- Pin the SDK and workload used by CI.
-- Test facade compilation, WebAssembly output, and the real browser workflow.
+- Pin the .NET SDK and workload used to build the application.
 
-## Executable evidence
+## Complete example
 
-The maintained example or acceptance test is
-\`integrations/wasm/csharp/examples/todo\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+Use `integrations/wasm/csharp/examples/todo`, or browse all [integration
+examples](../examples/).

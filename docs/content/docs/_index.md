@@ -20,12 +20,13 @@ framework knowledge.
 4. [Keep the application on the
    server]({{< relref "/docs/guides/server-first" >}}) explains when to enhance
    HTML and when a module should own a browser model.
-5. [Choose a view style]({{< relref "/docs/views/choose" >}}) compares HTML
-   templates with typed programmatic views.
 
 If you already know the basics, use the [task
 guides]({{< relref "/docs/guides" >}}) to add a feature or the
 [reference]({{< relref "/docs/reference" >}}) to look up an API.
+
+If a complex browser-owned screen needs stronger model-to-view type checking,
+[compare the optional view styles]({{< relref "/docs/views/choose" >}}).
 
 Use the [cookbook]({{< relref "/docs/cookbook" >}}) when you have a concrete
 problem and need a tested implementation pattern.

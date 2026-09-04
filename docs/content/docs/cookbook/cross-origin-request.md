@@ -6,7 +6,7 @@ weight: 58
 
 ## Problem
 
-The browser application and API use different origins, introducing preflight,
+The page and API use different origins, introducing preflight,
 credential, cookie, caching, and deployment behavior that same-origin requests
 avoid.
 

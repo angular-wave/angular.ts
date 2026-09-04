@@ -86,24 +86,15 @@ the page at the generated `main.js` and serve it over HTTP.
 
 ## Production practices
 
-- Import `angular.ts.tags.*` for fixed HTML names and reserve
-  `AngularTS.view.tag()` for names selected at runtime.
-
 - Prefer typed tokens, builders, and injection helpers over `js.Dynamic`.
 - Keep AngularTS models as the shared reactive boundary rather than mirroring
   state into DOM-root scopes.
 - Replace Scala collections with `js.Array` only where the browser-facing model
   requires JavaScript collection semantics.
 - Use `fullLinkJS` and test the linked output against the release runtime.
-- Run namespace parity and Scaladoc checks whenever facade types change.
+- Keep the Scala.js artifact and AngularTS runtime on the same version.
 
-## Tested project
+## Complete example
 
-The maintained todo is in `integrations/scala/examples/basic_app`. Run:
-
-<!-- tested-by: integrations/scala/test/basic_app.test.ts -->
-```bash
-make -C integrations/scala runtime-test
-```
-
-See [Executable integration examples](../examples/) for the aggregate gate.
+Use `integrations/scala/examples/basic_app` as a complete sbt todo project, or
+browse all [integration examples](../examples/).

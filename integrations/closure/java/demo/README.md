@@ -1,39 +1,27 @@
-# AngularTS J2CL Todo Demo
+# Java/J2CL todo application
 
-This demo mirrors `../../demo` with the application code written in Java and
-compiled by J2CL. It verifies that the generated AngularTS Java bindings
-are usable from handwritten Java source.
+This project shows an AngularTS todo list written in Java and compiled with
+J2CL.
 
-The build runs J2CL with Closure Compiler `ADVANCED_OPTIMIZATIONS`.
-`@AngularEntryPoint` generates the Closure application entry module during
-compilation, so the page does not call an exported Java global.
+It includes:
 
-The Java code does not inject or mutate `$scope`. `App.java` registers the
-Java `TodoController` directly through the generated AngularTS Java
-bindings. AngularTS proxies the controller, so the page can use
-`TodoCtrl as $ctrl`, `ng-model`, and normal event directives without adapters,
-snapshots, or Java-side template synchronization helpers.
+- the `angular-ts-java` Maven dependency;
+- annotation processor configuration;
+- an `@AngularEntryPoint` startup method;
+- template-facing Java types marked with `@AngularTemplateApi`;
+- the J2CL plugin configuration;
+- an HTML page that loads AngularTS and the compiled JavaScript.
 
-Types read by AngularTS templates use `@AngularTemplateApi` together with
-`@JsType`. The annotation processor infers public instance fields and methods,
-then generates their Closure exports and extern declarations under `target`.
-Use `@JsIgnore` to keep a public member outside the template API; explicit
-`@JsProperty` and `@JsMethod` annotations are only needed for custom names.
+## Build
 
-Build the bindings and demo from the repository root:
+Install JDK 21, Maven, and Node.js, then run from this directory:
 
-```bash
-make -f integrations/closure/Makefile java-check
+```sh
+mvn package
 ```
 
-Then serve the repository and open:
+The page output is written under `target/webapp`. Serve that directory over
+HTTP and open the todo page. Do not open the HTML through a `file:` URL.
 
-```text
-http://localhost:4000/integrations/closure/java/demo/index.html
-```
-
-The generated demo script is written to:
-
-```text
-integrations/closure/java/demo/target/webapp/j2cl-todo/j2cl-todo.js
-```
+Use this project as the starting structure for a Java application, then replace
+the todo controller and template API with your own feature.

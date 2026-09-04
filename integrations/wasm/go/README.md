@@ -1,109 +1,24 @@
-# AngularTS Go Wasm ABI
+# AngularTS with Go and WebAssembly
 
-This package is the initial standard Go Wasm facade for the language-neutral
-AngularTS Wasm scope ABI.
+Run Go domain logic as WebAssembly while AngularTS owns the page and connects
+the guest to a scope.
 
-Generated model contract descriptions are preserved as Go documentation
-comments from the shared JSON contract manifest.
+## Add the binding
 
-The package does not define a Go-specific scope protocol. It calls the shared
-`angular_ts` imports documented in `../ABI.md` and exports the standard guest
-allocation and scope callback symbols.
-Every adapter reports ABI version `2` through `ng_abi_version` before binding.
-
-Standard Go Wasm uses `wasm_exec.js` and `syscall/js` for browser startup. The
-browser todo proof uses `GoWasmScopeAbi`, a small adapter over host
-`WasmScope` objects for callbacks and UI-originated updates, while the
-low-level pointer/length facade remains available and build-tested.
-
-The current demo is a proof of concept. The Go feature-complete target is
-parity with the Rust/Wasm integration: generated AngularTS registration,
-metadata-driven component/controller bridges, typed service facades, namespace
-parity tracking, and browser tests for Go-owned state flowing through
-`WasmScope`.
-
-## Current Surface
-
-- `Scope` targets a numeric host scope handle; `ResolveScope` resolves a stable
-  AngularTS name once.
-- `Scope.Get` decodes JSON-compatible scope values.
-- `Scope.Set` encodes JSON-compatible scope values.
-- `Delete`, `Sync`, `Unbind`, `Watch`, and `Watch.Unwatch` map to the shared
-  host ABI.
-- `Update.Decode` decodes watched scope update payloads.
-- `GoWasmScopeAbi` adapts standard Go browser Wasm to host `WasmScope` objects.
-- `NgModule`, `Component`, `Controller`, `Service`, `Factory`, and `Value`
-  capture Go authoring metadata for generated AngularTS glue.
-- `InjectionToken`, `Inject`, and `InjectionMetadata` define typed DI metadata.
-- `WriteManifestFile` lets app-local `go generate` commands emit AngularTS
-  registration metadata.
-- `GenerateBootstrap` and `WriteBootstrapFile` emit the browser bootstrap that
-  loads `wasm_exec.js`, connects `GoWasmScopeAbi`, registers AngularTS module
-  metadata, and starts the Go Wasm app.
-- Controller and component metadata can declare a stable Wasm scope name plus
-  template-visible field and method names, allowing generated bootstrap to
-  carry the scope bridge contract without runtime field or method-list wiring.
-- `SyncScope` and generated app-local sync helpers write Go-owned state to
-  `WasmScope` fields and sync once per refresh.
-- `ScopeWatchRoute`, `TypedWatchRoute`, and `WatchValue` let generated glue
-  route UI-originated scope updates into typed Go handlers.
-- Generated controller wrappers own the JavaScript export object and refresh
-  scope state after bind, template method calls, and watched updates.
-- Typed service facades now cover `$http`, `$log`, `$exceptionHandler`,
-  `$rootScope`, `$eventBus`, template request/cache, storage/cookie,
-  router/state, WebSocket/SSE realtime, core `$rest` resource APIs, and
-  `$machine` state-machine facades.
-- `$worker` exposes managed `WorkerHandle` lifecycle, correlated requests,
-  model synchronization channels, typed restart configuration, and native
-  message/error subscriptions in browser Wasm builds.
-- `NG_NAMESPACE_PARITY.md` tracks every published `ng` namespace type and
-  `make parity` checks it against `@types/namespace.d.ts`.
-
-## Programmatic Views
-
-`ProgrammaticViewSource("exportName")` registers a JavaScript-visible Go export as a
-component view. Browser Wasm builds expose `ProgrammaticViewContext` and
-`ProgrammaticViewTags`; resolve it with `Tags()` and use named factories such as
-`Button(...)` and `Div(...)`. Reserve `Tag(...)` for names selected at runtime.
-Go view callbacks return `syscall/js.Value` DOM nodes or other supported
-AngularTS view children.
-
-See `PLAN.md` for the Rust feature parity checklist.
-
-## Scope ABI And App Models
-
-Go `WasmScope` support is for controller/component view scopes. The todo proof
-keeps Go state authoritative and projects template-visible fields through the
-scope ABI.
-
-Do not use the scope ABI as a substitute for app-owned AngularTS models. Shared
-or durable app state should stay in `app.model(...)` and synchronize with Go
-Wasm through a host-side AngularTS service or `model.sync(...)` target. The Go
-binding should not add model handles, model path writes, or model watch imports
-until the shared ABI explicitly grows that surface.
-
-Current rule:
-
-- `WasmScope`: view-local DOM/controller state;
-- `app.model(...)` plus `sync()`: state that survives root destruction,
-  coordinates multiple roots, or synchronizes with storage, workers, engines,
-  machines, workflows, or network services.
-
-## Validation
+This binding is distributed as source. Point the application's `go.mod` at this
+module, generate its AngularTS metadata, then compile for `js/wasm`:
 
 ```sh
-go generate ./examples/basic_app
-make parity
-go test ./...
-GOOS=js GOARCH=wasm go build ./...
-make browser-test
+go generate ./...
+GOOS=js GOARCH=wasm go build -o main.wasm .
+cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" .
 ```
 
-The browser demo is available at:
+Load `wasm_exec.js`, initialize the guest, and load its generated AngularTS
+bootstrap module from the page.
 
-```text
-http://localhost:4000/integrations/wasm/go/examples/basic_app/
-```
+Keep callback wrappers reachable while AngularTS owns them and release watches
+when their scope is destroyed. Batch related updates and keep durable shared
+state in AngularTS models.
 
-Set `PW_SKIP_WEB_SERVER=1` when `PW_BASE_URL` points at an already-running
-server and the Playwright target should not start `make serve`.
+See `examples/basic_app` for a complete todo project.

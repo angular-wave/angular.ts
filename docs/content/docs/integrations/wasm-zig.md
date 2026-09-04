@@ -2,38 +2,29 @@
 title: 'Zig WebAssembly'
 weight: 160
 description:
-  'Build a Zig WebAssembly guest with generated typed fields, explicit decoded
-  value ownership, atomic updates, and an AngularTS host adapter.'
+  'Connect Zig domain logic to an AngularTS scope with typed fields and explicit
+  ownership.'
 ---
 
-The Zig binding wraps the shared scope ABI with typed fields and owned decode
-results. Zig owns guest memory; JavaScript owns AngularTS components and views.
+AngularTS owns the page while Zig handles domain logic in a Wasm module.
 
-## Set up an application
+## Add the binding
 
-Start from `integrations/wasm/zig/examples/todo`. Import the shared `angular-ts`
-Zig module and generated contract, compile the guest, then load it through the
-example bootstrap adapter.
+The binding is distributed as source. Add
+`integrations/wasm/zig/src/angular_ts.zig` as an `angular-ts` module and compile
+the guest for `wasm32-freestanding` without an entry point.
 
-```bash
-make -C integrations/wasm/zig check
-make -C integrations/wasm/zig wasm-build
-make -C integrations/wasm/zig browser-test
-```
+Load the result through `app.wasm(...)` and bind it to the component scope from
+the host adapter.
 
-## Best practices
+## Guidance
 
 - Call `deinit()` for owned decoded results and watch registrations.
-- Use allocator-aware decode functions only when application ownership requires
-  a custom allocator.
-- Publish related field changes through one atomic update.
-- Use typed generated fields so path and value types cannot diverge.
-- Keep shared durable state in AngularTS models.
-- Keep DOM and programmatic view construction in the JavaScript host.
+- Use allocator-aware decoding only when the application needs custom ownership.
+- Apply related field changes through one update.
+- Keep durable shared state in AngularTS models.
 
-## Executable evidence
+## Complete example
 
-The maintained example or acceptance test is
-\`integrations/wasm/zig/examples/todo\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+Use `integrations/wasm/zig/examples/todo`, or browse all [integration
+examples](../examples/).

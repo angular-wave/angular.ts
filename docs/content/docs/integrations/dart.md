@@ -2,47 +2,40 @@
 title: 'Dart'
 weight: 70
 description:
-  'Use the Dart angular_ts package, generated facade bases, typed runtime
-  helpers, and a compiled JavaScript application with AngularTS.'
+  'Install angular_ts, create a typed Dart component, and load it with the
+  matching AngularTS runtime.'
 ---
 
-The Dart integration wraps the external JavaScript runtime with generated and
-handwritten Dart APIs. Dart compiles the application to JavaScript while
-AngularTS owns modules, injection, reactivity, compilation, and DOM lifecycle.
+The `angular_ts` package gives Dart code typed access to AngularTS modules,
+injection, components, directives, services, and scopes.
 
-## Set up an application
+## Install
 
-Add the published package, compile the Dart entry point to JavaScript, and load
-AngularTS before that output.
+Add the facade and Web API package:
 
 ```bash
-dart pub add angular_ts
+dart pub add angular_ts web
 ```
 
-Use `example/basic_app/pubspec.yaml` when developing against a local checkout.
+Compile the entry point:
 
 ```bash
-make -C integrations/dart check
-make -C integrations/dart example-build
-make -C integrations/dart runtime-test
+dart compile js web/main.dart -o web/main.dart.js
 ```
 
-## Best practices
+Load `@angular-wave/angular.ts` before `main.dart.js`, keep both packages on the
+same version, and serve the page over HTTP. The [package
+page](https://pub.dev/packages/angular_ts) contains a complete first component.
 
-- Start with handwritten runtime helpers and typed generated bases.
-- Import named factories such as `button()` for fixed HTML tag names; use
-  `tag()` only when the name is data.
-- Use reactive child helpers only where the DOM must follow changing state.
-- Use namespaced tag factories for SVG and MathML.
-- Use `ProgrammaticViewContext.host` for the component or directive host.
-- Keep JavaScript interop at the facade boundary rather than throughout
-  features.
-- Never edit generated namespace bases; run generation and parity checks.
-- Run Dart analysis, unit tests, compilation, and the browser runtime test.
+## Guidance
 
-## Executable evidence
+- Use typed tokens and `inject0` through `inject8` for dependencies.
+- Expose template-facing controllers with `@JSExport()` and
+  `createJSInteropWrapper()`.
+- Keep JavaScript conversion at the edge of the application.
+- Test the compiled JavaScript in a real page.
 
-The maintained example or acceptance test is
-\`integrations/dart/example/basic_app\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+## Complete example
+
+Use `integrations/dart/example/basic_app` as a complete todo project, or browse
+all [integration examples](../examples/).

@@ -2,7 +2,7 @@
 title: 'Java and J2CL'
 weight: 40
 description:
-  'Create a Java browser application with the Maven bindings, annotation
+  'Create an AngularTS application in Java with the Maven bindings, annotation
   processor, J2CL compiler, and AngularTS runtime.'
 ---
 
@@ -102,9 +102,6 @@ Build with `mvn package`. Serve the page over HTTP; do not open it through a
 
 ## Production practices
 
-- Statically import `org.angular.ts.view.Tags` for fixed HTML names and use
-  `org.angular.ts.view.View` for bindings and keyed collections.
-
 - Use the published artifact as a dependency; never copy generated bindings
   into the application.
 - Keep Closure ADVANCED optimization enabled and keep template extern
@@ -113,15 +110,9 @@ Build with `mvn package`. Serve the page over HTTP; do not open it through a
   details remain optimizable.
 - Replace Java arrays when their length changes so AngularTS observes the new
   collection identity.
-- Test the optimized J2CL output against the release AngularTS bundle.
+- Test the optimized J2CL output against the matching AngularTS bundle.
 
-## Tested project
+## Complete example
 
-Run the repository consumer and browser test with:
-
-<!-- tested-by: integrations/closure/java/j2cl.test.ts -->
-```bash
-make -f integrations/closure/Makefile java-check
-```
-
-See [Executable integration examples](../examples/) for the aggregate gate.
+Use `integrations/closure/java/demo` as a complete Maven and J2CL todo project,
+or browse all [integration examples](../examples/).

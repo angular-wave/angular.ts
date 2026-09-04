@@ -6,9 +6,9 @@ description:
   explicit injection, and the AngularTS browser runtime.'
 ---
 
-The `angular-ts-cljs` Maven artifact contains the handwritten
-`angular-ts.core` facade, generated namespace bindings, and Closure externs.
-AngularTS remains a separate browser runtime and must use the same version.
+The `angular-ts-cljs` Maven artifact provides the `angular-ts.core` API and the
+Closure externs needed by an optimized ClojureScript build. Keep it on the same
+version as the AngularTS runtime loaded by the page.
 
 ## Before you start
 
@@ -84,9 +84,8 @@ Build with `npx shadow-cljs release app`. Serve `public` over HTTP.
 
 ## Production practices
 
-- Import `angular-ts.view` for named HTML factories and keyed view bindings.
-
-- Prefer the fluent facade; use generated bindings when no facade helper exists.
+- Prefer the fluent facade; use the lower-level namespace only when no helper
+  exists.
 - Keep `*warn-on-infer*` enabled and fix every inference warning.
 - Use explicit injection vectors for controllers, services, directives, and
   configuration blocks.
@@ -94,13 +93,7 @@ Build with `npx shadow-cljs release app`. Serve `public` over HTTP.
   page.
 - Compile and test with Closure ADVANCED optimization before release.
 
-## Tested project
+## Complete example
 
-The maintained todo is in `integrations/closure/clojurescript/demo`. Run:
-
-<!-- tested-by: integrations/closure/clojurescript/clojurescript.test.ts -->
-```bash
-make -f integrations/closure/Makefile clojurescript-test
-```
-
-See [Executable integration examples](../examples/) for the aggregate gate.
+Use `integrations/closure/clojurescript/demo` as a complete Shadow CLJS todo
+project, or browse all [integration examples](../examples/).

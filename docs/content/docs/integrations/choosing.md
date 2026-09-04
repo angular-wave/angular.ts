@@ -1,38 +1,35 @@
 ---
-title: 'Choose and use an integration'
-linkTitle: 'Integration model'
+title: 'Choose an integration'
+linkTitle: 'Choose an integration'
 weight: 10
 description:
-  'Understand the boundary between the shared browser runtime and
-  language-specific bindings before selecting an integration.'
+  'Choose a language binding and understand how it works with the AngularTS
+  runtime.'
 ---
 
-## Goal
+## What stays the same
 
-Choose an integration without learning a second AngularTS architecture.
+An integration changes the language used to register AngularTS features. It
+does not introduce a second module system or component lifecycle. Modules,
+injection, components, directives, scopes, templates, and services behave the
+same way.
 
-## Before you start
+## Choose by language
 
-Complete [how AngularTS
-works]({{< relref "/docs/get-started/how-angular-works" >}}). The integration
-changes language syntax, not modules, injection, components, directives, scopes,
-or view lifecycle.
+Use the binding for the language that produces your client-side code:
 
-## Select by application toolchain
+- Closure JavaScript uses the extern file from the npm package.
+- ClojureScript, Java/J2CL, and Scala.js use Maven Central artifacts.
+- Dart uses pub.dev.
+- Gleam uses Hex.
+- Kotlin and the WebAssembly languages currently use source dependencies.
 
-Use the binding for the language that produces your browser application. Load
-the AngularTS runtime exactly once. Treat generated namespaces and externs as
-build inputs; do not edit generated files by hand.
+Every integration still needs `@angular-wave/angular.ts` on the page. Load it
+once and keep its version equal to the language binding version.
 
-Check the integration directory for its package manager, compiler version, and
-runtime-test command. Public namespace parity checks ensure that newly shipped
-types are either represented by the integration or deliberately classified.
+## Start from a complete project
 
-Typed component views retain the same controller, host, scope, required
-controllers, transclusion, reactive reader, collection, and cleanup concepts.
-Language wrappers may use idiomatic names or helper builders for those values.
-
-## Next step
-
-Open the README and examples under your selected `integrations/<language>`
-directory, then run that integration's `make check` before changing bindings.
+Open the guide for your language, install its required compiler, and begin with
+the linked [todo project]({{< relref "/docs/integrations/examples" >}}). The
+example shows the dependency, entry point, page, build output, and AngularTS
+startup together.

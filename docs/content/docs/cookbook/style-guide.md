@@ -65,16 +65,16 @@ Move the model into the browser only when a complex feature needs independent
 client ownership, such as substantial offline work or a long-lived editing
 workspace.
 
-At that point the browser owns model consistency and compilation. Make typed
-programmatic views the primary renderer instead of expanding HTML template
-bindings around the client model. REST services, explicit cache ownership, and a
+At that point the browser owns model consistency and compilation. Typed
+programmatic views are an optional way to type-check model-to-view bindings;
+HTML templates remain supported. REST services, explicit cache ownership, and a
 browser security policy become primary at the same point. Before that threshold,
 prefer normal HTTP forms and server-rendered fragments.
 
 Make that choice per module. A login form can stay as server-rendered HTML while
-a separate dashboard `ng-app` is a full SPA with typed programmatic views. The
-dashboard does not require the rest of the application to adopt its
-architecture.
+a separate dashboard `ng-app` owns a browser model. The dashboard can choose a
+typed programmatic view without requiring the rest of the application to adopt
+the same view style.
 
 ## Verify
 

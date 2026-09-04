@@ -2,46 +2,35 @@
 title: 'Closure Compiler'
 weight: 20
 description:
-  'Compile a JavaScript AngularTS application with Closure ADVANCED mode while
-  preserving the external browser runtime through generated externs.'
+  'Compile AngularTS code with Closure ADVANCED optimization while preserving
+  runtime API names through the packaged extern file.'
 ---
 
-Closure Compiler optimizes application JavaScript. AngularTS remains a
-separately loaded browser runtime, and its extern file tells Closure which
-public names and shapes must not be renamed.
+Closure Compiler optimizes your JavaScript. AngularTS stays outside that output,
+and its extern file tells Closure which public names must not be renamed.
 
-## Set up an application
+## Install
 
-1. Install `@angular-wave/angular.ts` and Closure Compiler in the application.
-2. Load the AngularTS UMD bundle before the compiled application script.
-3. Pass the package's `externs/angular.js` file to Closure.
-4. Register modules, controllers, components, and services in normal application
-   code.
+Install `@angular-wave/angular.ts` and Closure Compiler in the application.
+Pass `dist/externs/angular.js` from the npm package to Closure, and compile the
+production output with ADVANCED optimization.
+
+Load `dist/angular-ts.umd.min.js` before the compiled application file:
 
 ```html
 <script src="/node_modules/@angular-wave/angular.ts/dist/angular-ts.umd.min.js"></script>
 <script src="/dist/application.js"></script>
 ```
 
-Use the repository integration as an executable reference:
+## Production guidance
 
-```bash
-make -f integrations/closure/Makefile closure-validate
-make -f integrations/closure/Makefile closure-build
-make -f integrations/closure/Makefile closure-test
-```
+- Treat the packaged extern as part of the AngularTS version; do not edit it.
+- Promote Closure warnings to errors.
+- Keep AngularTS external so the page loads only one runtime.
+- Use documented public APIs so Closure can preserve every accessed member.
+- Test the ADVANCED output, not only uncompiled source.
 
-## Best practices
+## Complete example
 
-- Treat `externs/angular.js` as generated input; never patch it manually.
-- Promote Closure warnings to errors and test with ADVANCED mode in CI.
-- Keep AngularTS external instead of bundling a second runtime copy.
-- Access only documented public members so extern generation can protect them.
-- Regenerate and validate externs whenever the public namespace changes.
-
-## Executable evidence
-
-The maintained example or acceptance test is
-\`integrations/closure/demo/index.html\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+Use `integrations/closure/demo` as a complete todo project, or browse all
+[integration examples](../examples/).

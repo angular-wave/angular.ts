@@ -17,7 +17,7 @@ shows how to complete a particular job.
 5. [Dependency injection]({{< relref "/docs/concepts/dependency-injection" >}})
 6. [Change detection]({{< relref "/docs/concepts/change-detection" >}})
 7. [Templates]({{< relref "/docs/concepts/templates-interpolation" >}})
-8. [Programmatic views]({{< relref "/docs/concepts/programmatic-views" >}})
+8. Optional: [Programmatic views]({{< relref "/docs/concepts/programmatic-views" >}})
 
 Use the [glossary]({{< relref "/docs/concepts/glossary" >}}) whenever a term is
 unfamiliar.

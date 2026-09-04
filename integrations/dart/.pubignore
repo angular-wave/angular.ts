@@ -3,6 +3,8 @@ build/
 example/basic_app/web/main.dart.js*
 Makefile
 PLAN.md
+COVERAGE.md
+NG_NAMESPACE_PARITY.md
 playwright.config.ts
 test/
 tool/

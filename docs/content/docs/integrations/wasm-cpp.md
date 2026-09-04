@@ -2,38 +2,29 @@
 title: 'C++ WebAssembly'
 weight: 120
 description:
-  'Build a C++ WebAssembly guest with typed scope wrappers, RAII ownership,
-  transactional updates, and host-owned AngularTS views.'
+  'Connect C++ domain logic to an AngularTS scope with typed access and RAII
+  cleanup.'
 ---
 
-The C++ integration provides typed wrappers over the shared scope ABI. The guest
-owns domain computation; the JavaScript adapter owns framework registration and
-the DOM.
+AngularTS owns the page while C++ handles domain logic in a Wasm module.
 
-## Set up an application
+## Add the binding
 
-Start from `integrations/wasm/cpp/examples/todo`. Compile the native tests and
-WebAssembly target, then load the output through the example's JavaScript
-bootstrap adapter.
+The binding is distributed as source and is header-only. Add
+`integrations/wasm/cpp/include` to the compiler search path, include
+`angular_ts/wasm.hpp`, and compile for `wasm32-wasi` without an entry point.
 
-```bash
-make -C integrations/wasm/cpp check
-make -C integrations/wasm/cpp wasm-build
-make -C integrations/wasm/cpp browser-test
-```
+Load the result through `app.wasm(...)` and bind it to the component scope from
+the host adapter.
 
-## Best practices
+## Guidance
 
-- Use RAII wrappers for watches, decoded values, and guest allocations.
-- Keep generated contracts typed and immutable.
-- Commit related field changes as one update.
-- Keep browser objects and DOM nodes out of guest-owned state.
-- Synchronize durable state through AngularTS models, not new ABI handles.
-- Run native, WebAssembly type, adapter syntax, and browser tests.
+- Use the C++ scope, watch, and owned result wrappers instead of raw handles.
+- Keep browser objects out of guest state.
+- Group related field changes in one transaction.
+- Keep durable shared state in AngularTS models.
 
-## Executable evidence
+## Complete example
 
-The maintained example or acceptance test is
-\`integrations/wasm/cpp/examples/todo\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+Use `integrations/wasm/cpp/examples/todo`, or browse all [integration
+examples](../examples/).

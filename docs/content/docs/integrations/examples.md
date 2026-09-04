@@ -1,20 +1,19 @@
 ---
-title: Executable integration examples
+title: Integration example projects
 description:
-  Locate and validate the maintained example application for every language
-  integration.
+  Find a complete todo project for each AngularTS language integration.
 weight: 15
 ---
 
-Every integration guide is backed by a repository example or browser acceptance
-test. Documentation parity verifies these artifacts remain present; integration
-CI compiles and exercises them.
+Use these projects when starting an application. Each one keeps the dependency,
+compiler configuration, AngularTS registration, page, and build output in one
+place.
 
-| Integration      | Executable evidence                                  |
+| Integration      | Example                                              |
 | ---------------- | ---------------------------------------------------- |
-| Closure Compiler | `integrations/closure/demo/index.html`               |
-| ClojureScript    | `integrations/closure/clojurescript/demo/index.html` |
-| Java/J2CL        | `integrations/closure/java/demo/index.html`          |
+| Closure Compiler | `integrations/closure/demo`                          |
+| ClojureScript    | `integrations/closure/clojurescript/demo`            |
+| Java/J2CL        | `integrations/closure/java/demo`                     |
 | Kotlin/JS        | `integrations/kotlin/examples/basic_app`             |
 | Scala.js         | `integrations/scala/examples/basic_app`              |
 | Dart             | `integrations/dart/example/basic_app`                |
@@ -24,15 +23,8 @@ CI compiles and exercises them.
 | C++              | `integrations/wasm/cpp/examples/todo`                |
 | C#/.NET          | `integrations/wasm/csharp/examples/todo`             |
 | Go               | `integrations/wasm/go/examples/basic_app`            |
-| Rust             | `integrations/wasm/rust/tests/todo_basic.test.ts`    |
+| Rust             | `integrations/wasm/rust/examples/basic_app`          |
 | Zig              | `integrations/wasm/zig/examples/todo`                |
 
-Run all maintained integration checks:
-
-```bash
-make test-integrations
-```
-
-When changing a binding, run its generation and local checks first, then the
-aggregate command. Never copy generated declarations between integrations by
-hand.
+Copy the project structure that matches your language, then replace the todo
+model and markup one feature at a time.

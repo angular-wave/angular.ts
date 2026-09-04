@@ -67,11 +67,11 @@ Once the browser owns the model, it also owns model consistency and view
 compilation. Do not keep a complex client model on one side and loosely typed
 HTML template bindings on the other.
 
-Make [typed programmatic views]({{< relref "/docs/views/typed" >}}) the primary
-view style for client-owned application screens. They keep model access, DOM
-properties, events, and generated structure in the same checked TypeScript code.
-Use HTML templates for server-owned pages, server-rendered fragments, and small
-enhancements where the server model remains authoritative.
+For a client-owned screen, optional [typed programmatic views]({{< relref
+"/docs/views/typed" >}}) can keep model access, DOM properties, events, and
+generated structure in the same checked TypeScript code. HTML templates remain
+available for client-owned screens and are the default for server-owned pages,
+server-rendered fragments, and small enhancements.
 
 ## Move the data boundary with the model
 
@@ -87,7 +87,7 @@ strategy and security policy:
 - Decide which model owns each cached record and how writes invalidate it.
 - Handle stale data, concurrent writes, retries, and offline state deliberately.
 - Define credential handling, authorization failures, CSRF or token policy,
-  cross-origin access, content security, and secret storage for the browser app.
+  cross-origin access, content security, and how client code avoids secrets.
 
 Do not introduce this REST, cache, and security machinery for a page that can
 submit a form or request a server-rendered fragment. It becomes primary only
@@ -105,7 +105,7 @@ For example:
 | ---------------------------- | ------------------------------------------------------------------------------------ |
 | Sign-in and account recovery | Server-rendered HTML forms and normal HTTP                                           |
 | Public content and checkout  | Server pages with focused AngularTS enhancements                                     |
-| Dashboard workspace          | Client router, browser-owned model, REST, cache policy, and typed programmatic views |
+| Dashboard workspace          | Client router, browser-owned model, REST, cache policy, and a chosen view style      |
 | Reports and downloads        | Server-generated files and normal browser navigation                                 |
 
 The login form does not need to become part of the dashboard SPA. The dashboard
@@ -125,7 +125,7 @@ rendering strategy.
 | Normal links and forms          | Server-rendered router fragment                       |
 | Server-owned model              | Small browser interaction model                       |
 | Simple HTTP pages and fragments | REST, cache, and browser security policy              |
-| Server HTML templates           | Typed programmatic view after browser model ownership |
+| Server HTML templates           | Optional typed view when stronger checks are useful    |
 | One server-rendered module      | One client-owned module where justified               |
 
 At every step, stop when the current approach solves the user problem. The last

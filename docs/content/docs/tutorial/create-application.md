@@ -44,4 +44,4 @@ missing-module error. The custom element is empty until the next step.
 
 ## Next step
 
-[Add the typed component view](../typed-view/).
+[Add the optional typed component view used by this tutorial](../typed-view/).

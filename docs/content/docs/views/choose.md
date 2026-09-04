@@ -31,14 +31,15 @@ HTML bindings.
 
 Start with server-rendered HTML, not a client template that recreates the same
 page. Keep using HTML for server-owned pages, route fragments, and focused
-enhancements. If the browser must take ownership of a complex model, use a typed
-programmatic view as the primary renderer from that point. Make REST contracts,
-cache consistency, and browser security policy primary at the same ownership
-threshold; simple HTTP remains preferable before it.
+enhancements. If the browser must take ownership of a complex model, a typed
+programmatic view can add compile-time checks between the model and DOM. It is
+optional; HTML templates remain supported. Make REST contracts, cache
+consistency, and browser security policy primary at the same ownership threshold;
+simple HTTP remains preferable before it.
 
 Choose at the module boundary. A server-rendered login module can use HTML while
-a dashboard module in the same application uses a client-owned model and typed
-programmatic views. Do not convert one merely to make it match the other.
+a dashboard module in the same application uses a client-owned model and its
+preferred view style. Do not convert one merely to make it match the other.
 
 ## Next step
 

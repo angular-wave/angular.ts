@@ -25,9 +25,9 @@ cross-screen, or long-lived workspace behavior requires independent client
 ownership.
 
 When that move happens, the browser becomes responsible for model consistency
-and view compilation. Use typed programmatic views as the primary view style for
-those client-owned screens instead of growing loosely typed HTML bindings around
-a complex frontend model.
+and view compilation. If compile-time checks between that model and its DOM are
+valuable, the module can use optional typed programmatic views. HTML templates
+remain supported.
 
 The same threshold changes server communication. Server-owned pages should use
 normal HTTP navigation, forms, and rendered fragments. A browser-owned model
@@ -42,9 +42,9 @@ or `ng-app` roots for areas with different ownership needs.
 
 A sign-in module can remain a server-rendered HTML form. After authentication, a
 dashboard module can bootstrap a client router, keep a complex model in the
-browser, use REST and caching, and render with typed programmatic views. Public
-pages, reports, and account recovery can continue using server rendering and
-normal navigation.
+browser, and use REST and caching. It can independently choose HTML or typed
+programmatic views. Public pages, reports, and account recovery can continue
+using server rendering and normal navigation.
 
 Keep shared concerns on the server: session identity, authorization, domain
 rules, and durable state. Share frontend services only when two client-owned

@@ -2,37 +2,28 @@
 title: 'C WebAssembly'
 weight: 110
 description:
-  'Build a C WebAssembly guest with typed field descriptors, explicit ownership,
-  batched scope updates, and a JavaScript AngularTS host.'
+  'Connect C domain logic to an AngularTS scope with explicit memory ownership.'
 ---
 
-The C binding wraps the shared numeric and byte scope ABI. C owns guest memory;
-JavaScript owns AngularTS registration, DOM views, and browser objects.
+AngularTS owns the page while C handles domain logic in a Wasm module.
 
-## Set up an application
+## Add the binding
 
-Start from `integrations/wasm/c/examples/todo`. Generate or declare typed field
-descriptors, compile the C source to WebAssembly, and use the example bootstrap
-adapter to bind the module to an AngularTS scope.
+The binding is distributed as source. Add `include/angular_ts_wasm.h` and
+`src/angular_ts_wasm.c` to the guest, include the typed field contract used by
+the feature, and compile for `wasm32-freestanding` without an entry point.
 
-```bash
-make -C integrations/wasm/c check
-make -C integrations/wasm/c wasm-build
-make -C integrations/wasm/c browser-test
-```
+Load the result through `app.wasm(...)` and bind it to the component scope from
+the host adapter.
 
-## Best practices
+## Guidance
 
-- Pair every owned decoded value, watch, and allocation with cleanup.
-- Use typed field descriptors instead of raw string paths in feature code.
-- Apply related changes through one scope update.
-- Copy data across the ABI; never retain temporary host buffers.
-- Keep app-owned state in AngularTS models and synchronize snapshots.
-- Keep DOM and typed-view callbacks in the JavaScript host adapter.
+- Release every owned result and cancel watches before freeing callback state.
+- Never retain temporary host buffers.
+- Apply related field changes through one update.
+- Keep durable shared state in AngularTS models.
 
-## Executable evidence
+## Complete example
 
-The maintained example or acceptance test is
-\`integrations/wasm/c/examples/todo\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+Use `integrations/wasm/c/examples/todo`, or browse all [integration
+examples](../examples/).

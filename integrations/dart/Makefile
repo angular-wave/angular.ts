@@ -1,9 +1,11 @@
-.PHONY: all deps analyze test parity generated-base-check manual-overrides-check generate generate-check format format-check check runtime-build runtime-test example-deps example-build version-check package-check release-check publish demo clean
+.PHONY: all deps analyze test parity generated-base-check manual-overrides-check generate generate-check format format-check check runtime-build runtime-test published-example-check example-deps example-build version-check package-check release-check publish demo clean
 
 DART ?= dart
 PLAYWRIGHT ?= ../../node_modules/.bin/playwright
 EXAMPLE_DIR := example/basic_app
 EXAMPLE_OUT := $(EXAMPLE_DIR)/web/main.dart.js
+PUBLISHED_EXAMPLE := example/example.dart
+PUBLISHED_EXAMPLE_OUT := build/example.dart.js
 
 all: check
 
@@ -43,13 +45,17 @@ format:
 format-check: deps
 	$(DART) format --set-exit-if-changed lib test example tool
 
-check: generate-check format-check analyze test parity generated-base-check runtime-test
+check: generate-check format-check analyze test parity generated-base-check published-example-check runtime-test
 
 runtime-build:
 	$(MAKE) -C ../.. release-build
 
 runtime-test: runtime-build example-build
 	$(PLAYWRIGHT) test --config playwright.config.ts
+
+published-example-check: deps
+	mkdir -p build
+	$(DART) compile js $(PUBLISHED_EXAMPLE) -o $(PUBLISHED_EXAMPLE_OUT)
 
 example-deps:
 	cd $(EXAMPLE_DIR) && $(DART) pub get
@@ -61,7 +67,7 @@ version-check:
 	@test "$$(sed -n 's/^version: //p' pubspec.yaml)" = "$$(node -p 'require("../../package.json").version')" || \
 		(echo "Dart package version must match package.json" >&2; exit 1)
 
-package-check: version-check generate-check format-check analyze
+package-check: version-check generate-check format-check analyze published-example-check
 	$(DART) pub publish --dry-run
 
 release-check: check package-check
@@ -73,4 +79,5 @@ demo: runtime-build example-build
 	@echo "Open http://localhost:4000/integrations/dart/example/basic_app/ after running make serve from the repository root."
 
 clean:
+	rm -rf build
 	rm -f $(EXAMPLE_OUT) $(EXAMPLE_OUT).deps $(EXAMPLE_OUT).map

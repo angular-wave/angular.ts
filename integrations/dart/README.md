@@ -1,122 +1,136 @@
-# AngularTS Dart Integration
+# AngularTS for Dart
 
-This package is the official Dart Web facade for authoring AngularTS
-applications from Dart.
+Use AngularTS from Dart with typed modules, dependency injection, components,
+services, and scopes.
 
-The integration is strict by default:
+`angular_ts` is the Dart facade. The `@angular-wave/angular.ts` package is the
+browser runtime, so an application needs both packages.
 
-- Dependency injection uses typed `Token<T>` values.
-- Factory helpers `inject0` through `inject8` preserve dependency types.
-- Runtime config uses typed Dart objects before crossing into JavaScript.
-- Dynamic interop is isolated under explicit unsafe APIs.
+## Install
 
-The package version follows the AngularTS runtime version and is published
-separately from the npm runtime.
+Add the Dart packages:
 
-## Generated And Handwritten APIs
+```sh
+dart pub add angular_ts web
+```
 
-The package has two Dart API layers:
+Load the AngularTS runtime before the compiled Dart application. This CDN form
+is enough to get started:
 
-- `lib/src/generated/ng_facades.dart` is generated from
-  `@types/namespace.d.ts`. It contains deterministic raw JavaScript facades for
-  public `ng` namespace types and carries their TypeScript API descriptions as
-  Dartdoc on generated types and members. Callable members preserve source
-  parameter names and document every parameter.
-- Handwritten files under `lib/src/` expose the Dart-facing API: typed tokens,
-  value objects, builders, config objects, and curated wrappers that convert
-  Dart values at JavaScript boundaries.
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS Dart app</title>
+    <script src="https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts/dist/angular-ts.umd.min.js"></script>
+    <script defer src="main.dart.js"></script>
+  </head>
+  <body>
+    <counter-button></counter-button>
+  </body>
+</html>
+```
 
-Generated facades are intentionally thin and broad. Handwritten APIs remain the
-place for Dart-native types, ergonomic return values, and runtime conversion.
-When a handwritten wrapper can safely reuse generated raw access, it extends the
-generated facade and keeps only the curated members in handwritten code.
-`make check` enforces this split: wrappers must use generated bases when one is
-available, and every explicit manual override must have a handwritten Dart
-member. Type overrides in `tool/generator-overrides.json` are reserved for
-stable platform mappings such as DOM and stream types from `package:web`; parity
-checks reject stale type overrides.
+For production, install `@angular-wave/angular.ts` through npm and keep its
+version equal to the `angular_ts` version.
 
-## Programmatic Views
+## Create a component
 
-`Component.view` and `Directive.view` receive a typed
-`ProgrammaticViewContext`. Its `controller`, `required`, `scope`, `host`, and
-`transclude` members map directly to the AngularTS runtime context.
-Import named factories for ordinary HTML:
+Create `web/main.dart`:
 
 ```dart
-final save = button(
-  properties: {'type': 'button'},
-  children: [reactiveViewChild(() => controller.label)],
+import 'dart:js_interop';
+
+import 'package:angular_ts/angular_ts.dart' as ng;
+import 'package:web/web.dart';
+
+@JSExport()
+final class CounterController {
+  int count = 0;
+
+  void increment() {
+    count += 1;
+  }
+}
+
+void main() {
+  final app = ng.createModule('counterApp');
+
+  app.component(
+    'counterButton',
+    ng.Component<JSObject>(
+      template: '''
+        <button type="button" ng-click="counter.increment()">
+          Count: {{ counter.count }}
+        </button>
+      ''',
+      controllerAs: 'counter',
+      controller: ng.inject0(
+        () => createJSInteropWrapper(CounterController()),
+      ),
+    ),
+  );
+
+  ng.bootstrap(document.body!, [app.name]);
+}
+```
+
+Compile and serve it:
+
+```sh
+dart compile js web/main.dart -o web/main.dart.js
+python3 -m http.server 8080 --directory web
+```
+
+Open `http://localhost:8080`. Clicking the button updates the Dart controller
+and AngularTS refreshes the rendered value.
+
+The package's [complete example](example/example.dart) contains the same
+application and is compiled by the package checks.
+
+## Use typed dependency injection
+
+Use tokens instead of string dependency names:
+
+```dart
+final todoStore = ng.token<TodoStore>('todoStore');
+
+app.factory(todoStore, ng.inject0(TodoStore.new));
+app.controller(
+  'TodoController',
+  ng.inject1(todoStore, (TodoStore store) => store),
 );
 ```
 
-Use `AngularTsRuntime.global().view.tag(...)` for names selected at runtime and
-`tagNS(...)` for dynamic SVG or MathML elements.
+Helpers from `inject0` through `inject8` preserve the types and order of the
+registered dependencies.
 
-Install the published package with `dart pub add angular_ts`.
+## Start with HTML
 
-## WASM Scope And App Models
+AngularTS can compile HTML rendered by your server. A Dart application does not
+need to own the whole page or become a single-page application. Start with the
+HTML your server already returns, then add Dart controllers and services only
+where the browser needs behavior.
 
-Generated `WasmScope` facades, when enabled, represent the view-scope ABI only.
-They should be used for DOM/root-scoped controller or component state. App-owned
-state belongs to `app.model(...)`; durable or shared state should synchronize
-with external runtimes through host-side AngularTS services or
-`model.sync(...)` targets. Dart wrappers should not add model handles or model
-watch imports unless the shared WASM ABI adds that surface.
+This also lets one page contain several independent AngularTS modules. Bootstrap
+each module at the element it owns instead of making one client application own
+the entire document.
 
-Regenerate raw facades after public namespace type changes:
+## Work with JavaScript safely
 
-```sh
-make generate
-```
+Controllers exposed to AngularTS templates use `@JSExport()` and
+`createJSInteropWrapper()`. Keep application logic in typed Dart objects and
+convert values only where they cross into the JavaScript runtime.
 
-Check generated freshness:
+The facade provides typed wrappers for the public AngularTS API. Explicit
+low-level interop helpers are available when direct JavaScript access is
+necessary.
 
-```sh
-make generate-check
-```
+## More resources
 
-See [COVERAGE.md](COVERAGE.md) for the current AngularTS API coverage and
-[NG_NAMESPACE_PARITY.md](NG_NAMESPACE_PARITY.md) for the public `ng` namespace
-type parity checklist.
-
-## Checks
-
-Run the complete Dart integration contract:
-
-```sh
-make check
-```
-
-That verifies generated bindings are fresh, Dart analysis is clean, Chrome
-tests pass, `ng` namespace type and member parity are current, manual override
-metadata matches handwritten members, wrappers use generated bases when
-available, and the demo compiles and runs against the repository `dist`
-runtime.
-
-## Local Demo
-
-Build the Dart example:
-
-```sh
-make example-build
-```
-
-For a full runtime smoke test, build and test against the repository `dist`
-artifact:
-
-```sh
-make runtime-test
-```
-
-Start the repository static server from the repo root:
-
-```sh
-make serve
-```
-
-Open:
-
-```text
-http://localhost:4000/integrations/dart/example/basic_app/
-```
+- [Dart integration guide](https://angular-wave.github.io/angular.ts/docs/integrations/dart/)
+- [AngularTS documentation](https://angular-wave.github.io/angular.ts/)
+- [Dart API reference](https://pub.dev/documentation/angular_ts/latest/)
+- [Todo application](https://github.com/angular-wave/angular.ts/tree/main/integrations/dart/example/basic_app)
+- [Issue tracker](https://github.com/angular-wave/angular.ts/issues)

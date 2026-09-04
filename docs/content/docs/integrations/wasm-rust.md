@@ -2,44 +2,36 @@
 title: 'Rust WebAssembly'
 weight: 150
 description:
-  'Use typed Rust field contracts, the scope bridge, generated bootstrap
-  manifests, and wasm-bindgen output with AngularTS.'
+  'Connect Rust domain logic and services to AngularTS with wasm-bindgen.'
 ---
 
-The Rust integration covers both typed scope exchange and an authoring tool that
-generates JavaScript registration from a manifest. AngularTS remains the host
-runtime and owner of DOM lifecycle.
+AngularTS owns the page while Rust handles domain logic and services in a Wasm
+module.
 
-## Set up an application
+## Add the binding
 
-Start from `integrations/wasm/rust/examples/basic_app`. Define services and
-components, maintain the bootstrap manifest, build the guest package, and let
-the Rust tool generate the AngularTS registration adapter.
+The binding is distributed as source. Add `integrations/wasm/rust/crates/angular-ts`
+as a path dependency, install the `wasm32-unknown-unknown` target and
+`wasm-bindgen-cli`, then compile the guest and generate its Web loader.
 
 ```bash
-make -C integrations/wasm/rust check
-make -C integrations/wasm/rust example-build
-make -C integrations/wasm/rust browser-test
+cargo build --target wasm32-unknown-unknown
+wasm-bindgen target/wasm32-unknown-unknown/debug/app.wasm \
+  --target web \
+  --out-dir pkg
 ```
 
-Run `make -C integrations/wasm/rust parity` whenever root namespace types
-change.
+Initialize the generated module before bootstrapping AngularTS.
 
-## Best practices
+## Guidance
 
-- Use generated typed fields instead of raw paths.
-- Propagate contract and decode failures instead of replacing them with
-  defaults.
-- Retain watch guards for the desired subscription lifetime and then drop them.
-- Keep manifest registration deterministic and review generated JavaScript.
-- Keep app-owned shared state in AngularTS models and synchronize snapshots.
-- Use named
-  [ProgrammaticViewTags](../../../typedoc/types/ProgrammaticViewTags.html)
-  methods for fixed HTML elements and `tag` only for names selected at runtime.
+- Use typed fields instead of raw paths.
+- Propagate contract and decode failures.
+- Keep watch guards for exactly as long as the subscription is needed.
+- Keep durable shared state in AngularTS models.
 
-## Executable evidence
+## Complete examples
 
-The maintained example or acceptance test is
-\`integrations/wasm/rust/tests/todo_basic.test.ts\`. See
-[Executable integration examples](../examples/) for the aggregate validation
-workflow.
+Use `integrations/wasm/rust/examples/basic_app` for application registration and
+`integrations/wasm/rust/examples/scope_bridge` for direct scope exchange. See
+all [integration examples](../examples/).
