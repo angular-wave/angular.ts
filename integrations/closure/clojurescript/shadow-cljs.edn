@@ -6,7 +6,7 @@
   {:target :node-test
    :output-to "target/cljs-test.js"
    :ns-regexp "-test$"
-   :autorun true
+   :autorun false
    :compiler-options {:warnings-as-errors true}}
   :todo
   {:target :browser

@@ -1,7 +1,8 @@
 (ns angular-ts.core-test
   (:require [angular-ts.core :as ng]
             [angular-ts.view :as view]
-            [cljs.test :refer-macros [deftest is testing]]))
+            [cljs.test :refer-macros [deftest is testing]]
+            [goog.object :as gobj]))
 
 (deftest injectable-converts-dependencies-to-an-annotated-array
   (let [factory (fn [] nil)
@@ -50,15 +51,26 @@
       (is (= "test" (.-source metadata))))))
 
 (deftest programmatic-view-exposes-named-tags-and-keyed-bindings
-  (let [button (view/button #js {:type "button"} "Save")
-        binding (view/each
-                 (fn [] #js [#js {:id 1 :label "one"}])
-                 (fn [item] (.-id item))
-                 (fn [item] (view/li (fn [] (.-label (item))))))]
-    (is (= "BUTTON" (.-tagName button)))
-    (is (= "Save" (.-textContent button)))
-    (is (fn? binding))
-    (is (= "ARTICLE" (.-tagName (view/tag "article" "Content"))))
-    (is (= "circle"
-           (.-localName
-            (view/tag-ns "http://www.w3.org/2000/svg" "circle"))))))
+  (let [element (fn [tag-name text]
+                  #js {:tagName tag-name
+                       :localName (.toLowerCase tag-name)
+                       :textContent text})
+        tags (fn [_namespace-uri]
+               #js {:circle (fn [] (element "circle" ""))})]
+    (gobj/set tags "button" (fn [_properties text] (element "BUTTON" text)))
+    (gobj/set tags "li" (fn [& _children] (element "LI" "")))
+    (gobj/set tags "article" (fn [text] (element "ARTICLE" text)))
+    (gobj/set js/angular "tags" tags)
+    (gobj/set js/angular "view" #js {:each (fn [& _arguments] (fn [] nil))})
+    (let [button (view/button #js {:type "button"} "Save")
+          binding (view/each
+                   (fn [] #js [#js {:id 1 :label "one"}])
+                   (fn [item] (.-id item))
+                   (fn [item] (view/li (fn [] (.-label (item))))))]
+      (is (= "BUTTON" (.-tagName button)))
+      (is (= "Save" (.-textContent button)))
+      (is (fn? binding))
+      (is (= "ARTICLE" (.-tagName (view/tag "article" "Content"))))
+      (is (= "circle"
+             (.-localName
+              (view/tag-ns "http://www.w3.org/2000/svg" "circle")))))))

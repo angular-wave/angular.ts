@@ -1,4 +1,4 @@
-.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go generated-check-wasm-rust generated-check-wasm-assemblyscript generated-check-wasm-c generated-check-wasm-cpp generated-check-wasm-csharp generated-check-wasm-zig public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-version-test release-notes-test release-notes-check prepare-major-release prepare-minor-release prepare-patch-release prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
+.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go generated-check-wasm-rust generated-check-wasm-assemblyscript generated-check-wasm-c generated-check-wasm-cpp generated-check-wasm-csharp generated-check-wasm-zig public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-version-test release-notes-test release-notes-check release-integrations-check release-check prepare-major-release prepare-minor-release prepare-patch-release prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -289,6 +289,22 @@ prepare-release: release-version-test release-notes-check
 	@$(MAKE) release-build
 	@$(MAKE) docs-requirement
 	@$(MAKE) size-html
+	@$(MAKE) release-check
+
+release-integrations-check:
+	@PORT=41100 $(MAKE) -f integrations/closure/Makefile closure-test
+	@PORT=41101 $(MAKE) -f integrations/closure/Makefile clojurescript-test
+	@PORT=41102 $(MAKE) -C integrations/kotlin check
+	@PORT=41103 $(MAKE) -C integrations/scala release-check
+	@PORT=41104 $(MAKE) -C integrations/dart release-check
+	@$(MAKE) -C integrations/gleam release-check
+	@PORT=41105 $(MAKE) -C integrations/wasm/csharp local-ci-check
+	@$(MAKE) -C integrations/wasm/rust parity
+
+release-check: release-version-test release-notes-check
+	@bash .husky/pre-commit
+	@npm pack --dry-run
+	@$(MAKE) release-integrations-check
 
 publish-release:
 	@test -z "$$(git status --porcelain)" || \
@@ -296,6 +312,9 @@ publish-release:
 	@git fetch origin master
 	@test "$$(git rev-parse HEAD)" = "$$(git rev-parse origin/master)" || \
 		(echo "Refusing to release: HEAD does not match origin/master." >&2; exit 1)
+	@$(MAKE) release-check
+	@test -z "$$(git status --porcelain)" || \
+		(echo "Refusing to release: validation changed tracked files." >&2; exit 1)
 	@version="$$(node -p 'require("./package.json").version')"; \
 		tag="v$$version"; \
 		git tag -a "$$tag" -m "Version $$version" && \

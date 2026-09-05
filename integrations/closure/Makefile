@@ -56,7 +56,8 @@ clojurescript-build: clojurescript-validate
 
 clojurescript-unit-test: clojurescript-validate
 	@cd $(CLOSURE_INTEGRATION_DIR)/clojurescript && \
-		NODE_OPTIONS="--require ./test/setup.cjs" npx shadow-cljs compile test
+		npx shadow-cljs compile test && \
+		NODE_OPTIONS="--require ./test/setup.cjs" node target/cljs-test.js
 
 clojurescript-test: clojurescript-build clojurescript-unit-test clojurescript-package-check
 	@cd $(CLOSURE_REPO_ROOT) && npx playwright test --config integrations/closure/playwright.config.ts integrations/closure/clojurescript/clojurescript.test.ts

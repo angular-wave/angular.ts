@@ -3,6 +3,7 @@ const { test } = require("node:test");
 const {
   nextVersion,
   promoteChangelog,
+  promoteIntegrationChangelog,
 } = require("./prepare-release-version.cjs");
 
 test("calculates semantic release versions", () => {
@@ -34,5 +35,19 @@ test("rejects missing or empty Unreleased notes", () => {
         "2026-09-06",
       ),
     /must not be empty/u,
+  );
+});
+
+test("prepends integration package release notes", () => {
+  assert.equal(
+    promoteIntegrationChangelog(
+      "# Changelog\n\n## 0.35.0\n\n- Previous.\n",
+      "0.36.0",
+    ),
+    "# Changelog\n\n## 0.36.0\n\n- Updated bindings for AngularTS 0.36.0.\n\n## 0.35.0\n\n- Previous.\n",
+  );
+  assert.throws(
+    () => promoteIntegrationChangelog("## 0.36.0\n", "0.36.0"),
+    /already contains/u,
   );
 });

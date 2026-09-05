@@ -68,7 +68,15 @@ version-check:
 		(echo "Dart package version must match package.json" >&2; exit 1)
 
 package-check: version-check generate-check format-check analyze published-example-check
-	$(DART) pub publish --dry-run
+	@package_dir="$$(mktemp -d)"; \
+		trap 'rm -rf "$$package_dir"' EXIT; \
+		tar \
+			--exclude=.dart_tool \
+			--exclude=build \
+			--exclude=example/basic_app/.dart_tool \
+			--exclude=example/basic_app/build \
+			-cf - . | tar -xf - -C "$$package_dir"; \
+		cd "$$package_dir" && $(DART) pub publish --dry-run
 
 release-check: check package-check
 

@@ -54,7 +54,7 @@ The selected target:
 4. Synchronizes npm, Maven, Scala.js, Dart, Gleam, integration docs, and tested
    consumer examples.
 5. Regenerates versioned website and distribution files.
-6. Runs the release preflight.
+6. Runs the complete local release gate.
 
 The update is transactional. Missing notes or stale integration metadata stop
 the command before it writes any files.
@@ -77,6 +77,11 @@ git commit -m "Release <version>"
 git push origin master
 ```
 
+The local release gate runs the pre-commit suite, npm package verification, and
+all maintained integration package and runtime tests. This includes Dart tests
+in Chrome, which otherwise run only after a release tag reaches GitHub
+Actions.
+
 The pre-commit hook must pass. Do not bypass it. The release command rejects a
 dirty worktree or a local commit that does not match `origin/master`.
 
@@ -88,8 +93,9 @@ From the clean release commit, run:
 make publish-release
 ```
 
-This creates and pushes `v<version>`. Do not create or move release tags
-manually.
+This reruns the complete release gate against the clean commit, confirms that
+validation did not change tracked files, then creates and pushes `v<version>`.
+Do not create or move release tags manually.
 
 ## Automated publication
 

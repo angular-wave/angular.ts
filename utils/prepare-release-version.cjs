@@ -50,6 +50,17 @@ function promoteChangelog(source, version, date) {
   );
 }
 
+function promoteIntegrationChangelog(source, version) {
+  const heading = `## ${version}`;
+  if (source.includes(heading)) {
+    throw new Error(`Integration changelog already contains ${version}.`);
+  }
+
+  const title = source.startsWith("# Changelog\n") ? "# Changelog\n\n" : "";
+  const history = title ? source.slice(title.length) : source;
+  return `${title}${heading}\n\n- Updated bindings for AngularTS ${version}.\n\n${history}`;
+}
+
 function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
 }
@@ -74,6 +85,15 @@ function prepare(release) {
     "CHANGELOG.md",
     promoteChangelog(read("CHANGELOG.md"), version, date),
   );
+  for (const relativePath of [
+    "integrations/dart/CHANGELOG.md",
+    "integrations/gleam/CHANGELOG.md",
+  ]) {
+    updates.set(
+      relativePath,
+      promoteIntegrationChangelog(read(relativePath), version),
+    );
+  }
 
   for (const relativePath of releaseFiles) {
     const source = read(relativePath);
@@ -90,7 +110,11 @@ function prepare(release) {
   console.log(`Prepared AngularTS ${version} (${release}) across ${updates.size} files.`);
 }
 
-module.exports = { nextVersion, promoteChangelog };
+module.exports = {
+  nextVersion,
+  promoteChangelog,
+  promoteIntegrationChangelog,
+};
 
 if (require.main === module) {
   try {
