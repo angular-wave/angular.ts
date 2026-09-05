@@ -21,13 +21,21 @@ function planKeyedReconciliation(items, previous, keyOf, indexOf, create) {
         const value = items[index];
         const state = previous.get(keys[index]);
         const previousIndex = state ? indexOf(state) : -1;
-        entries[index] = {
-            key: keys[index],
-            value,
-            previous: state,
-            created: state ? undefined : create(value),
-            previousIndex,
-        };
+        entries[index] = state
+            ? {
+                kind: "reused",
+                key: keys[index],
+                value,
+                previous: state,
+                previousIndex,
+            }
+            : {
+                kind: "created",
+                key: keys[index],
+                value,
+                created: create(value),
+                previousIndex,
+            };
         previousIndexes[index] = previousIndex;
     }
     const removed = [];

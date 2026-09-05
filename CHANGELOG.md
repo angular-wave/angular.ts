@@ -2,16 +2,14 @@
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-09-05
+
 - Replaced overloaded `angular.module()` with explicit `angular.createModule()` and `angular.getModule()` APIs.
-
-- Removed argument-dependent getter/setter APIs in SCE, compiler configuration,
-  model options, DOM data, location search parameters, and router state lookup.
-
+- Replaced argument-dependent getter/setter APIs across SCE, compiler configuration, model options, DOM data, location, and router state lookup.
+- Added `ng-model` support for geolocation and typed tag factories across maintained integrations, including WebAssembly.
 - Fixed listener scheduling when a watcher deregisters while its notification task is flushing.
-
-- Removed overloaded `$location` getter/setter aliases; use explicit `getUrl`,
-  `setUrl`, `getPath`, `setPath`, `getSearch`, `setSearch`, `getHash`, `setHash`,
-  `getState`, and `setState` methods.
+- Improved integration setup documentation and published-package examples.
+- Added synchronized major, minor, and patch release preparation across package integrations.
 
 ## [0.34.0] - 2026-08-29
 

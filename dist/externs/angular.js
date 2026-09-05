@@ -1,8 +1,8 @@
 /**
  * @externs
- * Public externs for AngularTS 0.34.0 applications compiled with Google Closure.
+ * Public externs for AngularTS 0.35.0 applications compiled with Google Closure.
  *
- * Version-pinned to @angular-wave/angular.ts 0.34.0; regenerate
+ * Version-pinned to @angular-wave/angular.ts 0.35.0; regenerate
  * this file when updating the public ng namespace.
  *
  * This file is generated from src/namespace.ts by
@@ -8554,6 +8554,13 @@ ng.WasmResource.prototype.disposed;
  * @return {!Promise<!ng.WasmBinding<TTarget>>}
  */
 ng.WasmResource.prototype.bind = function(target, options) {};
+
+/**
+ * Consumes a guest-created programmatic view handle.
+ * @param {number} handle Value supplied for the handle parameter.
+ * @return {!Node}
+ */
+ng.WasmResource.prototype.takeView = function(handle) {};
 
 /**
  * Public WasmResource.dispose member exposed by the AngularTS namespace contract.

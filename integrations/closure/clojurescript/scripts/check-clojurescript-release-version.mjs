@@ -28,9 +28,13 @@ const readme = readFileSync(
   "utf8",
 );
 
-if (!readme.includes(`{:mvn/version "${packageVersion}"}`)) {
+if (
+  !readme.includes(
+    `[io.github.angular-wave/angular-ts-cljs "${packageVersion}"]`,
+  )
+) {
   throw new Error(
-    `ClojureScript README must document {:mvn/version "${packageVersion}"}.`,
+    `ClojureScript README must document dependency version ${packageVersion}.`,
   );
 }
 

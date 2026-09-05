@@ -1,4 +1,4 @@
-/* Version: 0.34.0 */
+/* Version: 0.35.0 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -7015,13 +7015,21 @@ function planKeyedReconciliation(items, previous, keyOf, indexOf, create) {
         const value = items[index];
         const state = previous.get(keys[index]);
         const previousIndex = state ? indexOf(state) : -1;
-        entries[index] = {
-            key: keys[index],
-            value,
-            previous: state,
-            created: state ? undefined : create(value),
-            previousIndex,
-        };
+        entries[index] = state
+            ? {
+                kind: "reused",
+                key: keys[index],
+                value,
+                previous: state,
+                previousIndex,
+            }
+            : {
+                kind: "created",
+                key: keys[index],
+                value,
+                created: create(value),
+                previousIndex,
+            };
         previousIndexes[index] = previousIndex;
     }
     const removed = [];
@@ -7983,30 +7991,19 @@ function activateKeyedChildBinding(anchor, binding, runtime) {
         disposeLinkedChildrenGroups(removedChildren);
         for (let index = 0; index < plan.entries.length; index++) {
             const descriptor = plan.entries[index];
-            const previous = descriptor.previous;
-            const created = descriptor.created;
-            if (!previous && !created) {
-                throw new Error("Keyed reconciliation did not create a new item.");
-            }
-            const children = previous
-                ? previous._children
-                : linkMaterializedChildren(created?._nodes ?? [], parent, anchor, runtime);
-            if (previous && !Object.is(previous._value, descriptor.value)) {
-                previous._holder.value = descriptor.value;
-            }
             let state;
-            if (previous) {
-                state = previous;
+            if (descriptor.kind === "reused") {
+                state = descriptor.previous;
+                if (!Object.is(state._value, descriptor.value)) {
+                    state._holder.value = descriptor.value;
+                }
             }
             else {
-                if (!created) {
-                    throw new Error("Keyed reconciliation did not create a new item.");
-                }
                 state = {
                     _key: descriptor.key,
                     _value: descriptor.value,
-                    _holder: created._holder,
-                    _children: children,
+                    _holder: descriptor.created._holder,
+                    _children: linkMaterializedChildren(descriptor.created._nodes, parent, anchor, runtime),
                     _index: index,
                 };
             }
@@ -14271,7 +14268,7 @@ class AngularRuntime extends EventTarget {
         this._bootsrappedModules = [];
         this._injectorCreated = false;
         /** AngularTS version string replaced at build time. */
-        this.version = "0.34.0";
+        this.version = "0.35.0";
         /** Retrieve the controller instance cached on a compiled DOM element. */
         this.getController = getController;
         /** Retrieve the injector cached on a bootstrapped DOM element. */

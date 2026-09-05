@@ -4,7 +4,11 @@ plugins {
 }
 
 group = "dev.angularwave"
-version = "0.27.0-SNAPSHOT"
+version = Regex("\"version\"\\s*:\\s*\"([^\"]+)\"")
+    .find(file("../../package.json").readText())
+    ?.groupValues
+    ?.get(1)
+    ?: error("Unable to read AngularTS version from package.json")
 
 repositories {
     mavenCentral()

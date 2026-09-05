@@ -25,7 +25,7 @@ Add the version and regular dependency to `pom.xml`:
 <!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/closure/java/j2cl.test.ts -->
 ```text
 <properties>
-  <angular.ts.version>0.34.0</angular.ts.version>
+  <angular.ts.version>0.35.0</angular.ts.version>
 </properties>
 
 <dependencies>

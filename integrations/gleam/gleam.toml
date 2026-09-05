@@ -1,5 +1,5 @@
 name = "angular_ts"
-version = "0.34.0"
+version = "0.35.0"
 target = "javascript"
 description = "Official Gleam facade for authoring AngularTS applications."
 licences = ["MIT"]

@@ -1,4 +1,6 @@
+import { dealoc } from '../../shared/dom.js';
 import { deleteProperty, isNumber, compileWasm, shouldHandleViewRetentionPause, isProxy } from '../../shared/utils.js';
+import { tags } from '../../core/compile/programmatic-view.js';
 import { SCOPE_PROXY_BIND } from '../../core/scope/scope.js';
 
 const WASM_SCOPE_IMPORT_NAMESPACE = "angular_ts";
@@ -9,6 +11,8 @@ const MAX_WASM_ABI_PAYLOAD_BYTES = 16 * 1024 * 1024;
 const MAX_WASM_ABI_SCOPES = 1024;
 const MAX_WASM_ABI_WATCHES = 4096;
 const MAX_WASM_ABI_RESULT_BUFFERS = 1024;
+const MAX_WASM_ABI_VIEWS = 4096;
+const MAX_WASM_ABI_VIEW_CHILDREN = 4096;
 const MAX_WASM_ABI_BUFFER_BYTES = 64 * 1024 * 1024;
 const MAX_WASM_GUEST_CALLBACK_DEPTH = 32;
 const MAX_WASM_MODULE_CACHE_ENTRIES = 64;
@@ -306,6 +310,8 @@ class WasmScopeAbiImpl {
         /** @internal */
         this._nextWatchHandle = 1;
         /** @internal */
+        this._nextViewHandle = 1;
+        /** @internal */
         this._scopes = new Map();
         /** @internal */
         this._scopesByName = new Map();
@@ -313,6 +319,8 @@ class WasmScopeAbiImpl {
         this._buffers = new Map();
         /** @internal */
         this._watches = new Map();
+        /** @internal */
+        this._views = new Map();
         /** @internal */
         this._pendingGuestTransactions = new Map();
         /** @internal */
@@ -341,6 +349,9 @@ class WasmScopeAbiImpl {
                 scope_watch: (scopeHandle, pathPtr, pathLen) => this._guardGuestCall("scope_watch", () => this._scopeWatch(scopeHandle, pathPtr, pathLen), 0),
                 scope_unwatch: (watchHandle) => this._guardGuestCall("scope_unwatch", () => this._scopeUnwatch(watchHandle), 0),
                 scope_unbind: (scopeHandle) => this._guardGuestCall("scope_unbind", () => this._scopeUnbind(scopeHandle), 0),
+                view_tag: (namespacePtr, namespaceLen, namePtr, nameLen, propertiesPtr, propertiesLen, childrenPtr, childrenLen) => this._guardGuestCall("view_tag", () => this._viewTag(namespacePtr, namespaceLen, namePtr, nameLen, propertiesPtr, propertiesLen, childrenPtr, childrenLen), 0),
+                view_text: (valuePtr, valueLen) => this._guardGuestCall("view_text", () => this._storeView(document.createTextNode(this._readGuestString(valuePtr, valueLen))), 0),
+                view_release: (viewHandle) => this._guardGuestCall("view_release", () => this._releaseView(viewHandle), 0),
                 buffer_ptr: (bufferHandle) => this._guardGuestCall("buffer_ptr", () => this._requireBuffer(bufferHandle)._ptr, 0),
                 buffer_len: (bufferHandle) => this._guardGuestCall("buffer_len", () => this._requireBuffer(bufferHandle)._len, 0),
                 buffer_free: (bufferHandle) => {
@@ -406,6 +417,15 @@ class WasmScopeAbiImpl {
     /** Returns a previously registered scope wrapper. */
     getScope(reference) {
         return this._resolveScope(reference);
+    }
+    /** Consumes a guest-created node for a component or directive view. */
+    takeView(handle) {
+        const node = this._views.get(handle);
+        if (!node) {
+            throw new Error(`Unknown AngularTS Wasm view handle ${String(handle)}`);
+        }
+        this._views.delete(handle);
+        return node;
     }
     /** @internal */
     _unregisterScope(handle) {
@@ -537,6 +557,9 @@ class WasmScopeAbiImpl {
         for (const bufferHandle of Array.from(this._buffers.keys())) {
             this._freeBuffer(bufferHandle);
         }
+        for (const viewHandle of Array.from(this._views.keys())) {
+            this._releaseView(viewHandle);
+        }
         this._watches.clear();
         this._pendingGuestTransactions.clear();
         this._scopes.clear();
@@ -660,6 +683,65 @@ class WasmScopeAbiImpl {
         if (!scope)
             throw createWasmGuestError("invalidHandle");
         scope.dispose();
+        return 1;
+    }
+    /** @internal */
+    _viewTag(namespacePtr, namespaceLen, namePtr, nameLen, propertiesPtr, propertiesLen, childrenPtr, childrenLen) {
+        const namespace = this._readGuestString(namespacePtr, namespaceLen, MAX_WASM_ABI_PATH_BYTES, "view namespace");
+        const name = this._readGuestString(namePtr, nameLen, MAX_WASM_ABI_PATH_BYTES, "view tag name");
+        const properties = this._readGuestJson(propertiesPtr, propertiesLen);
+        if (!name || !isPlainWasmRecord(properties)) {
+            throw createWasmGuestError("invalidJson");
+        }
+        const childHandles = this._readGuestViewHandles(childrenPtr, childrenLen);
+        const children = childHandles.map((handle) => this._requireView(handle));
+        const factories = namespace ? tags(namespace) : tags;
+        const factory = Reflect.get(factories, name);
+        const element = factory(properties, ...children);
+        for (const handle of childHandles)
+            this._views.delete(handle);
+        return this._storeView(element);
+    }
+    /** @internal */
+    _readGuestViewHandles(ptr, count) {
+        if (!Number.isSafeInteger(count) ||
+            count < 0 ||
+            count > MAX_WASM_ABI_VIEW_CHILDREN) {
+            throw createWasmGuestError("invalidLength");
+        }
+        const width = Uint32Array.BYTES_PER_ELEMENT;
+        const bytes = this._readGuestBytes(ptr, count * width, MAX_WASM_ABI_VIEW_CHILDREN * width, "view children");
+        const handles = [];
+        const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        for (let index = 0; index < count; index++) {
+            handles.push(data.getUint32(index * width, true));
+        }
+        return handles;
+    }
+    /** @internal */
+    _storeView(node) {
+        if (this._views.size >= MAX_WASM_ABI_VIEWS) {
+            throw createWasmGuestError("limitExceeded");
+        }
+        const handle = this._nextViewHandle++;
+        this._views.set(handle, node);
+        return handle;
+    }
+    /** @internal */
+    _requireView(handle) {
+        const node = this._views.get(handle);
+        if (!node)
+            throw createWasmGuestError("invalidHandle");
+        return node;
+    }
+    /** @internal */
+    _releaseView(handle) {
+        const node = this._requireView(handle);
+        this._views.delete(handle);
+        if (node instanceof Element)
+            dealoc(node);
+        else if (node.parentNode)
+            node.parentNode.removeChild(node);
         return 1;
     }
     /** @internal */
@@ -875,6 +957,12 @@ class WasmResourceImpl {
     }
     get disposed() {
         return this._status === "disposed";
+    }
+    takeView(handle) {
+        if (this.disposed) {
+            throw this._disposedError("Cannot take a view from a disposed WebAssembly resource");
+        }
+        return this._abi.takeView(handle);
     }
     /** @internal */
     [SCOPE_PROXY_BIND](handler) {

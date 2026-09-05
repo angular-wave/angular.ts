@@ -15,7 +15,7 @@ and `@angular-wave/angular.ts` on the same version.
 <dependency>
   <groupId>io.github.angular-wave</groupId>
   <artifactId>angular-ts-java</artifactId>
-  <version>0.34.0</version>
+  <version>0.35.0</version>
 </dependency>
 ```
 
@@ -26,7 +26,7 @@ Use the same artifact in `maven-compiler-plugin` as an annotation processor:
   <path>
     <groupId>io.github.angular-wave</groupId>
     <artifactId>angular-ts-java</artifactId>
-    <version>0.34.0</version>
+    <version>0.35.0</version>
   </path>
 </annotationProcessorPaths>
 <annotationProcessors>
