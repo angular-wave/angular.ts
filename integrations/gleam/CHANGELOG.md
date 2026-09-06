@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.35.2
+
+- Updated bindings for AngularTS 0.35.2.
+
 ## 0.35.1
 
 - Updated bindings for AngularTS 0.35.1.

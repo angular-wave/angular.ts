@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.35.2] - 2026-09-06
+
+- Fixed Dart 3.6 conversion of JavaScript-backed scope state.
+
 ## [0.35.1] - 2026-09-06
 
 - Fixed Dart namespace parity and strengthened cross-integration release validation.
