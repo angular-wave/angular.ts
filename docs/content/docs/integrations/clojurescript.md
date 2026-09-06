@@ -22,7 +22,7 @@ Add the Maven artifact and tell Closure where the packaged extern file is:
 <!-- tested-by: src/docs-examples/integration-setup.test.ts, integrations/closure/clojurescript/clojurescript.test.ts -->
 ```text
 {:source-paths ["src/main"]
- :dependencies [[io.github.angular-wave/angular-ts-cljs "0.35.3"]]
+ :dependencies [[io.github.angular-wave/angular-ts-cljs "0.35.4"]]
  :builds
  {:app {:target :browser
         :output-dir "public/js"

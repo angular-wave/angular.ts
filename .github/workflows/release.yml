@@ -108,7 +108,7 @@ jobs:
         run: make types
 
       - name: Validate Dart release package
-        run: make -C integrations/dart release-check
+        run: make -C integrations/dart package-check
 
       - name: Check for an existing pub.dev release
         id: registry

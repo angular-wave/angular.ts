@@ -18,7 +18,7 @@ scalaVersion := "3.3.3"
 enablePlugins(ScalaJSPlugin)
 
 libraryDependencies +=
-  "io.github.angular-wave" %%% "angular-ts-scala" % "0.35.3"
+  "io.github.angular-wave" %%% "angular-ts-scala" % "0.35.4"
 
 scalaJSUseMainModuleInitializer := true
 ```

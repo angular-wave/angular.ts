@@ -6,7 +6,7 @@
 
   <groupId>io.github.angular-wave</groupId>
   <artifactId>angular-ts-cljs</artifactId>
-  <version>0.35.3</version>
+  <version>0.35.4</version>
   <packaging>jar</packaging>
 
   <name>AngularTS ClojureScript Facade</name>
