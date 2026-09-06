@@ -44,11 +44,18 @@ final class JsValue {
 T jsToDart<T>(JSAny? value) {
   if (value == null) return null as T;
 
-  if (value.isA<JSBoxedDartObject>()) {
-    return (value as JSBoxedDartObject).toDart as T;
+  if (!value.typeofEquals('object') && !value.typeofEquals('function')) {
+    return value.dartify() as T;
   }
 
-  return value.dartify() as T;
+  Object unboxed;
+  try {
+    unboxed = (value as JSBoxedDartObject).toDart;
+  } catch (_) {
+    return value.dartify() as T;
+  }
+
+  return unboxed as T;
 }
 
 /// The js array to dart.

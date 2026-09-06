@@ -139,6 +139,19 @@ void main() {
     expect(factory.tokens.single.name, 'api');
   });
 
+  test('scope wraps JavaScript state without eager conversion', () {
+    final raw = JSObject()..setProperty('ready'.toJS, true.toJS);
+    final cyclic = JSObject();
+    cyclic.setProperty('self'.toJS, cyclic);
+
+    final scope = ng.Scope<Map<Object?, Object?>>.unsafe(raw);
+    final cyclicScope = ng.Scope<Object?>.unsafe(cyclic);
+
+    expect(scope.raw, same(raw));
+    expect(scope.state['ready'], isTrue);
+    expect(cyclicScope.raw, same(cyclic));
+  });
+
   test('public ng namespace parity types are exported', () {
     const date = ng.DateFilterOptions(
       dateStyle: 'medium',

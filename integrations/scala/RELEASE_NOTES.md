@@ -1,8 +1,8 @@
-# AngularTS Scala.js Facades 0.35.2
+# AngularTS Scala.js Facades 0.35.3
 
 Compatible runtime:
 
-- AngularTS npm package: 0.35.2
+- AngularTS npm package: 0.35.3
 - Maven coordinate: io.github.angular-wave:angular-ts-scala_sjs1_3
 
 ## Scope

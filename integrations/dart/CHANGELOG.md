@@ -1,3 +1,7 @@
+## 0.35.3
+
+- Updated bindings for AngularTS 0.35.3.
+
 ## 0.35.2
 
 - Updated bindings for AngularTS 0.35.2.

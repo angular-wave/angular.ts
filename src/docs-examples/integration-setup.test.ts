@@ -16,7 +16,9 @@ test("Java setup uses the published binding as dependency and processor", async 
   ]);
 
   expect(guide).toContain("angular-ts-java");
-  expect(guide).toContain("<angular.ts.version>0.35.2</angular.ts.version>");
+  expect(guide).toMatch(
+    /<angular\.ts\.version>\d+\.\d+\.\d+<\/angular\.ts\.version>/,
+  );
   expect(guide).toContain("Java sources and AngularTS externs required by");
   expect(pom).toContain("<artifactId>angular-ts-java</artifactId>");
   expect(pom).toContain("<annotationProcessorPaths>");
@@ -35,7 +37,9 @@ test("ClojureScript setup uses the facade and packaged Closure externs", async (
     ),
   ]);
 
-  expect(guide).toContain('[io.github.angular-wave/angular-ts-cljs "0.35.2"]');
+  expect(guide).toMatch(
+    /\[io\.github\.angular-wave\/angular-ts-cljs "\d+\.\d+\.\d+"\]/,
+  );
   expect(guide).toContain(':externs ["angular_ts/externs/angular.js"]');
   expect(facade).toContain("(defn model");
   expect(facade).toContain("(defn controller");
@@ -52,8 +56,8 @@ test("Scala setup uses the direct typed model controller workflow", async ({
     ),
   ]);
 
-  expect(guide).toContain(
-    '"io.github.angular-wave" %%% "angular-ts-scala" % "0.35.2"',
+  expect(guide).toMatch(
+    /"io\.github\.angular-wave" %%% "angular-ts-scala" % "\d+\.\d+\.\d+"/,
   );
   expect(guide).toContain("enablePlugins(ScalaJSPlugin)");
   expect(app).toContain('.controller("TodoCtrl", todoModel)');

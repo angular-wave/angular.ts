@@ -188,6 +188,73 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
+  dart:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk:
+          - "3.6"
+          - stable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          package-manager-cache: false
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Restore node_modules and Playwright cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
+
+      - name: Generate TypeScript declarations
+        run: make types
+
+      - name: Run Dart release check
+        run: make -C integrations/dart release-check
+
+  gleam:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          package-manager-cache: false
+
+      - uses: erlef/setup-beam@v1
+        with:
+          gleam-version: "1.17.0"
+          otp-version: "29"
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v5
+        with:
+          path: node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
+
+      - name: Generate TypeScript declarations
+        run: make types
+
+      - name: Run Gleam release check
+        run: make -C integrations/gleam release-check
+
   scala:
     needs: package
     runs-on: ubuntu-latest
@@ -311,6 +378,8 @@ jobs:
       - package
       - playwright
       - kotlin
+      - dart
+      - gleam
       - scala
       - csharp-wasm
     runs-on: ubuntu-latest
@@ -323,6 +392,8 @@ jobs:
           needs.package.result != 'success' ||
           needs.playwright.result != 'success' ||
           needs.kotlin.result != 'success' ||
+          needs.dart.result != 'success' ||
+          needs.gleam.result != 'success' ||
           needs.scala.result != 'success' ||
           needs.csharp-wasm.result != 'success'
         run: exit 1

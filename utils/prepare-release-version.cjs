@@ -18,7 +18,6 @@ const releaseFiles = [
   "docs/content/docs/integrations/java-j2cl.md",
   "docs/content/docs/integrations/scala.md",
   "docs/content/docs/integrations/clojurescript.md",
-  "src/docs-examples/integration-setup.test.ts",
 ];
 
 function nextVersion(current, release) {

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.35.3] - 2026-09-06
+
+- Fixed Dart scope conversion across supported SDK versions and added pre-publication Dart and Gleam CI gates.
+- Improved the Gleam package documentation shown on Hex.
+- Removed release-version literals from integration documentation tests.
+
 ## [0.35.2] - 2026-09-06
 
 - Fixed Dart 3.6 conversion of JavaScript-backed scope state.

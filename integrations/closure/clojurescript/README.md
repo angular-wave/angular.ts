@@ -9,7 +9,7 @@ Add the Maven artifact to `shadow-cljs.edn`:
 
 ```clojure
 {:source-paths ["src/main"]
- :dependencies [[io.github.angular-wave/angular-ts-cljs "0.35.2"]]
+ :dependencies [[io.github.angular-wave/angular-ts-cljs "0.35.3"]]
  :builds
  {:app {:target :browser
         :output-dir "public/js"

@@ -1,8 +1,9 @@
 name = "angular_ts"
-version = "0.35.2"
+version = "0.35.3"
 target = "javascript"
 description = "Official Gleam facade for authoring AngularTS applications."
 licences = ["MIT"]
+internal_modules = ["angular_ts/namespace"]
 repository = { type = "github", user = "angular-wave", repo = "angular.ts", path = "integrations/gleam" }
 links = [
   { title = "AngularTS documentation", href = "https://angular-wave.github.io/angular.ts/" },
