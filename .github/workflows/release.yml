@@ -168,7 +168,7 @@ jobs:
         shell: bash
         run: |
           version="$(node -p 'require("./package.json").version')"
-          url="https://hex.pm/api/packages/angular_ts/releases/$version"
+          url="https://repo.hex.pm/tarballs/angular_ts-$version.tar"
           status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$url")"
 
           case "$status" in
@@ -185,7 +185,21 @@ jobs:
         env:
           HEXPM_API_KEY: ${{ secrets.HEXPM_API_KEY }}
         working-directory: integrations/gleam
-        run: gleam publish --yes
+        shell: bash
+        run: |
+          printf '%s\n' 'I am not using semantic versioning' | gleam publish --yes
+
+          version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' gleam.toml)"
+          url="https://repo.hex.pm/tarballs/angular_ts-$version.tar"
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error "$url" --output /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Hex package was not published: $url" >&2
+          exit 1
 
   publish-java:
     name: Publish Java package to Maven Central
@@ -440,7 +454,7 @@ jobs:
           version="$(node -p 'require("./package.json").version')"
           urls=(
             "https://pub.dev/api/packages/angular_ts/versions/$version"
-            "https://hex.pm/api/packages/angular_ts/releases/$version"
+            "https://repo.hex.pm/tarballs/angular_ts-$version.tar"
           )
 
           for url in "${urls[@]}"; do
@@ -638,7 +652,7 @@ jobs:
             "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-cljs/$PACKAGE_VERSION/angular-ts-cljs-$PACKAGE_VERSION.pom"
             "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-scala_sjs1_3/$PACKAGE_VERSION/angular-ts-scala_sjs1_3-$PACKAGE_VERSION.pom"
             "https://pub.dev/api/packages/angular_ts/versions/$PACKAGE_VERSION"
-            "https://hex.pm/api/packages/angular_ts/releases/$PACKAGE_VERSION"
+            "https://repo.hex.pm/tarballs/angular_ts-$PACKAGE_VERSION.tar"
           )
 
           for url in "${urls[@]}"; do

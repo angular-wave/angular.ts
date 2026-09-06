@@ -1,8 +1,8 @@
 /**
  * @externs
- * Public externs for AngularTS 0.35.4 applications compiled with Google Closure.
+ * Public externs for AngularTS 0.35.5 applications compiled with Google Closure.
  *
- * Version-pinned to @angular-wave/angular.ts 0.35.4; regenerate
+ * Version-pinned to @angular-wave/angular.ts 0.35.5; regenerate
  * this file when updating the public ng namespace.
  *
  * This file is generated from src/namespace.ts by

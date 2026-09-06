@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.35.5] - 2026-09-06
+
+- Fixed pre-1.0 Hex publication and made release checks verify the published tarball.
+
 ## [0.35.4] - 2026-09-06
 
 - Fixed Dart publication validation so it does not depend on a Playwright browser already being installed.
