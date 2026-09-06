@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.35.1] - 2026-09-06
+
+- Fixed Dart namespace parity and strengthened cross-integration release validation.
+
 ## [0.35.0] - 2026-09-05
 
 - Replaced overloaded `angular.module()` with explicit `angular.createModule()` and `angular.getModule()` APIs.

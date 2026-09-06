@@ -92,7 +92,7 @@ make -f integrations/closure/Makefile clojurescript-deploy
 Consumers can depend on the published artifact:
 
 ```clojure
-{:deps {io.github.angular-wave/angular-ts-cljs {:mvn/version "0.35.0"}}}
+{:deps {io.github.angular-wave/angular-ts-cljs {:mvn/version "0.35.1"}}}
 ```
 
 Application code should require the fluent facade:

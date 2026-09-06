@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.35.1
+
+- Updated bindings for AngularTS 0.35.1.
+
 ## 0.35.0
 
 - Added named HTML tag helpers and expanded typed AngularTS namespace coverage.
