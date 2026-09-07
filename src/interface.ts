@@ -26,6 +26,7 @@ import {
   _location,
   _log,
   _machine,
+  _native,
   _parse,
   _rest,
   _rootElement,
@@ -85,6 +86,7 @@ export interface InjectionTokenMap {
   $location: ng.LocationService;
   $log: ng.LogService;
   $machine: ng.MachineService;
+  $native: ng.NativeService;
   $parse: ng.ParseService;
   $rest: ng.RestFactory;
   $rootElement: ng.RootElementService;
@@ -132,6 +134,7 @@ export const PublicInjectionTokens = {
   $location: _location,
   $log: _log,
   $machine: _machine,
+  $native: _native,
   $parse: _parse,
   $rest: _rest,
   $rootScope: _rootScope,

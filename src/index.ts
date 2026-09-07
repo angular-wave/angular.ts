@@ -207,6 +207,28 @@ export {
 export { defineWorkflow } from "./services/workflow/workflow.ts";
 export type { GeolocationValue } from "./directive/geolocation/geolocation.ts";
 export type {
+  NativeBridgeAdapter,
+  NativeCallMessage,
+  NativeCallOptions,
+  NativeConfig,
+  NativeEventHandler,
+  NativeEventMessage,
+  NativeReplyMessage,
+  NativeService,
+} from "./services/native/native.ts";
+export { nativeCapabilities } from "./runtime/native-capabilities.ts";
+export type {
+  NativeCapabilityEventMap,
+  NativeCapabilityEventName,
+  NativeCapabilityEventPayload,
+  NativeCapabilityMethodContract,
+  NativeCapabilityMethodMap,
+  NativeCapabilityMethodName,
+  NativeCapabilityName,
+  NativeCapabilityParameters,
+  NativeCapabilityResult,
+} from "./runtime/native-capabilities.ts";
+export type {
   ProgrammaticViewProperties,
   ProgrammaticViewPropertyValue,
   ProgrammaticViewTag,

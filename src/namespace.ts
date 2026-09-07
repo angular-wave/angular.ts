@@ -241,6 +241,27 @@ import type {
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
 import type { GeolocationValue as TGeolocationValue } from "./directive/geolocation/geolocation.ts";
 import type {
+  NativeBridgeAdapter as TNativeBridgeAdapter,
+  NativeCallMessage as TNativeCallMessage,
+  NativeCallOptions as TNativeCallOptions,
+  NativeConfig as TNativeConfig,
+  NativeEventHandler as TNativeEventHandler,
+  NativeEventMessage as TNativeEventMessage,
+  NativeReplyMessage as TNativeReplyMessage,
+  NativeService as TNativeService,
+} from "./services/native/native.ts";
+import type {
+  NativeCapabilityEventMap as TNativeCapabilityEventMap,
+  NativeCapabilityEventName as TNativeCapabilityEventName,
+  NativeCapabilityEventPayload as TNativeCapabilityEventPayload,
+  NativeCapabilityMethodContract as TNativeCapabilityMethodContract,
+  NativeCapabilityMethodMap as TNativeCapabilityMethodMap,
+  NativeCapabilityMethodName as TNativeCapabilityMethodName,
+  NativeCapabilityName as TNativeCapabilityName,
+  NativeCapabilityParameters as TNativeCapabilityParameters,
+  NativeCapabilityResult as TNativeCapabilityResult,
+} from "./runtime/native-capabilities.ts";
+import type {
   ParamsOf as TParamsOf,
   ResolvesOf as TResolvesOf,
   RouterModuleDeclaration as TRouterModuleDeclaration,
@@ -697,6 +718,42 @@ declare global {
     export type NgModelController = TNgModelController;
 
     export type GeolocationValue = TGeolocationValue;
+
+    export type NativeBridgeAdapter = TNativeBridgeAdapter;
+    export type NativeCallMessage<TParams = unknown> =
+      TNativeCallMessage<TParams>;
+    export type NativeCallOptions = TNativeCallOptions;
+    export type NativeConfig = TNativeConfig;
+    export type NativeEventHandler<TData = unknown> =
+      TNativeEventHandler<TData>;
+    export type NativeEventMessage<TData = unknown> =
+      TNativeEventMessage<TData>;
+    export type NativeReplyMessage<TResult = unknown> =
+      TNativeReplyMessage<TResult>;
+    export type NativeService = TNativeService;
+    export type NativeCapabilityEventMap = TNativeCapabilityEventMap;
+    export type NativeCapabilityEventName<Name extends TNativeCapabilityName> =
+      TNativeCapabilityEventName<Name>;
+    export type NativeCapabilityEventPayload<
+      Name extends TNativeCapabilityName,
+      Event extends TNativeCapabilityEventName<Name>,
+    > = TNativeCapabilityEventPayload<Name, Event>;
+    export type NativeCapabilityMethodContract<
+      Name extends TNativeCapabilityName,
+      Method extends TNativeCapabilityMethodName<Name>,
+    > = TNativeCapabilityMethodContract<Name, Method>;
+    export type NativeCapabilityMethodMap = TNativeCapabilityMethodMap;
+    export type NativeCapabilityMethodName<Name extends TNativeCapabilityName> =
+      TNativeCapabilityMethodName<Name>;
+    export type NativeCapabilityName = TNativeCapabilityName;
+    export type NativeCapabilityParameters<
+      Name extends TNativeCapabilityName,
+      Method extends TNativeCapabilityMethodName<Name>,
+    > = TNativeCapabilityParameters<Name, Method>;
+    export type NativeCapabilityResult<
+      Name extends TNativeCapabilityName,
+      Method extends TNativeCapabilityMethodName<Name>,
+    > = TNativeCapabilityResult<Name, Method>;
 
     export type HttpRequestConfig = THttpRequestConfig;
 

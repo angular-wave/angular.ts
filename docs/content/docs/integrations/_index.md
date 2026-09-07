@@ -7,8 +7,8 @@ description:
 ---
 
 AngularTS modules, injection, components, directives, and scopes are available
-from several languages. Choose the language that already builds the part of
-your application that runs on the page.
+from several languages. Choose the language that already builds the part of your
+application that runs on the page.
 
 Begin with the [integration model]({{< relref
 "/docs/integrations/choosing" >}}), then open the setup guide for your language.
@@ -21,6 +21,7 @@ examples.
 ## JavaScript and JVM languages
 
 - [ClojureScript]({{< relref "/docs/integrations/clojurescript" >}})
+- [Android]({{< relref "/docs/integrations/android" >}})
 - [Closure Compiler]({{< relref "/docs/integrations/closure" >}})
 - [Dart]({{< relref "/docs/integrations/dart" >}})
 - [Gleam]({{< relref "/docs/integrations/gleam" >}})

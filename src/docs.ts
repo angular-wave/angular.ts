@@ -9,6 +9,27 @@ export type {
 export type { ErrorFormattingConfig, Validator } from "./shared/interface.ts";
 export type { GeolocationValue } from "./directive/geolocation/geolocation.ts";
 export type {
+  NativeBridgeAdapter,
+  NativeCallMessage,
+  NativeCallOptions,
+  NativeConfig,
+  NativeEventHandler,
+  NativeEventMessage,
+  NativeReplyMessage,
+  NativeService,
+} from "./services/native/native.ts";
+export type {
+  NativeCapabilityEventMap,
+  NativeCapabilityEventName,
+  NativeCapabilityEventPayload,
+  NativeCapabilityMethodContract,
+  NativeCapabilityMethodMap,
+  NativeCapabilityMethodName,
+  NativeCapabilityName,
+  NativeCapabilityParameters,
+  NativeCapabilityResult,
+} from "./runtime/native-capabilities.ts";
+export type {
   ProgrammaticView,
   ProgrammaticViewChild,
   ProgrammaticViewContext,
@@ -388,6 +409,7 @@ export { serviceWorkerModule } from "./runtime/service-worker.ts";
 export { eventBusModule } from "./runtime/event-bus.ts";
 export { htmlCanvasModule } from "./runtime/html-canvas.ts";
 export { wasmModule } from "./runtime/wasm.ts";
+export { nativeModule } from "./runtime/native.ts";
 export { webComponentModule } from "./runtime/web-component.ts";
 export type {
   WebSocketConnection,
