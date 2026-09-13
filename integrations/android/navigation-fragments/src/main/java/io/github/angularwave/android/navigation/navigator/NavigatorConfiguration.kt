@@ -5,5 +5,5 @@ import androidx.annotation.IdRes
 data class NavigatorConfiguration(
     val name: String,
     val startLocation: String,
-    @IdRes val navigatorHostId: Int,
+    @param:IdRes val navigatorHostId: Int,
 )

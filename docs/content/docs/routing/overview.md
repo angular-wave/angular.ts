@@ -53,24 +53,26 @@ late-bound navigation policies, and runtime diagnostics.
 
 ### Register your states
 
-Call `module.router(declaration)` with a route tree or forest. Every route must
-have a unique name.
+Call `module.router(declaration)` with one
+[`RouterModuleDeclaration`](../../../typedoc/interfaces/RouterModuleDeclaration.html)
+or a readonly forest of declarations. Every route must have a unique name. A
+single typed forest keeps registration and route-name inference in one source
+of truth.
 
-```js
-angular
-  .createModule('app', ['ng.router'])
-  .router({
+```ts
+const routes = [
+  {
     name: 'home',
     url: '/home',
     template: '<h1>Home</h1>',
-  })
-  .router({
+  },
+  {
     name: 'contacts',
     url: '/contacts',
     templateUrl: 'contacts.html',
     controller: 'ContactsCtrl',
-  })
-  .router({
+  },
+  {
     name: 'contacts.detail',
     url: '/:contactId',
     resolve: {
@@ -84,8 +86,17 @@ angular
     },
     templateUrl: 'contact-detail.html',
     controller: 'ContactDetailCtrl',
-  });
+  },
+] as const satisfies readonly ng.RouterModuleDeclaration[];
+
+const app = angular.createModule('app', []).router(routes);
+type AppRoutes = ng.RoutesOf<typeof routes>;
 ```
+
+`router()` has no separate public input or provider type. Its generic
+`TDeclaration` is inferred from the literal above; it is not a type users must
+name. The router is part of the built-in runtime, so the module does not need an
+`ng.router` dependency.
 
 ### Add ng-view to your layout
 
@@ -188,7 +199,15 @@ Executable demo:
 
 ### ng-state
 
-`ng-state` is the router link primitive.
+`ng-state` is the router link primitive. Its value is always an AngularTS
+expression: quote a static route name and use an identifier or property path
+for a dynamic route name. A bare identifier is never treated as an implicit
+route-name string, and `ng-state` does not use interpolation.
+
+```html
+<a ng-state="'home'">Home</a>
+<a ng-state="$ctrl.nextRoute">Next</a>
+```
 
 ```html
 <a

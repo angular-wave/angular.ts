@@ -108,6 +108,11 @@ pub fn machine() -> Token(namespace.MachineService) {
   token.new("$machine")
 }
 
+/// Returns the typed token for the `$native` AngularTS injectable.
+pub fn native() -> Token(js.JsValue) {
+  token.new("$native")
+}
+
 /// Returns the typed token for the `$parse` AngularTS injectable.
 pub fn parse() -> Token(namespace.ParseService) {
   token.new("$parse")

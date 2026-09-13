@@ -13,8 +13,8 @@ import androidx.navigation.fragment.DialogFragmentNavigatorDestinationBuilder
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.FragmentNavigatorDestinationBuilder
 import androidx.navigation.get
-import io.github.angularwave.android.core.turbo.config.PathConfiguration
-import io.github.angularwave.android.core.turbo.config.uri
+import io.github.angularwave.android.core.ng.config.PathConfiguration
+import io.github.angularwave.android.core.ng.config.uri
 import io.github.angularwave.android.navigation.config.AngularNativeNavigation
 import io.github.angularwave.android.navigation.destinations.AngularNativeDestinationDeepLink
 import java.util.UUID
@@ -25,39 +25,37 @@ internal class NavigatorGraphBuilder(
     private val navigatorName: String,
     private val startLocation: String,
     private val navController: NavController,
-    private val pathConfiguration: PathConfiguration
+    private val pathConfiguration: PathConfiguration,
 ) {
     private data class FragmentDestination(
         val route: String,
         val uri: Uri,
-        val kClass: KClass<out Fragment>
+        val kClass: KClass<out Fragment>,
     )
 
-    fun build(
-        registeredFragments: List<KClass<out Fragment>>
-    ): NavGraph {
+    fun build(registeredFragments: List<KClass<out Fragment>>): NavGraph {
         var currentRoute = 1
 
         val fragmentDestinations = registeredFragments.map {
             FragmentDestination(
                 route = currentRoute.also { currentRoute++ }.toString(),
                 uri = AngularNativeDestinationDeepLink.from(it).uri.toUri(),
-                kClass = it
+                kClass = it,
             )
         }
 
         return createGraph(
             fragmentDestinations,
-            fragmentDestinations.startDestination().route
+            fragmentDestinations.startDestination().route,
         )
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun createGraph(
         fragmentDestinations: List<FragmentDestination>,
-        startDestinationRoute: String
-    ): NavGraph {
-        return navController.createGraph(startDestination = startDestinationRoute) {
+        startDestinationRoute: String,
+    ): NavGraph =
+        navController.createGraph(startDestination = startDestinationRoute) {
             fragmentDestinations.withoutDialogs().forEach {
                 fragment(it.route, it.kClass) {
                     deepLink(it.uri.toString())
@@ -87,19 +85,22 @@ internal class NavigatorGraphBuilder(
                 defaultValue = UUID.randomUUID().toString()
             }
         }
+
+    private fun List<FragmentDestination>.dialogs(): List<FragmentDestination> = filter {
+        it.kClass.isSubclassOf(DialogFragment::class)
     }
 
-    private fun List<FragmentDestination>.dialogs(): List<FragmentDestination> {
-        return filter { it.kClass.isSubclassOf(DialogFragment::class) }
-    }
-
-    private fun List<FragmentDestination>.withoutDialogs(): List<FragmentDestination> {
-        return minus(dialogs().toSet())
-    }
+    private fun List<FragmentDestination>.withoutDialogs(): List<FragmentDestination> =
+        minus(dialogs().toSet())
 
     private fun List<FragmentDestination>.startDestination(): FragmentDestination {
-        val startDestinationUri = pathConfiguration.properties(startLocation).uri ?:
-            AngularNativeDestinationDeepLink.from(AngularNativeNavigation.defaultFragmentDestination).uri.toUri()
+        val startDestinationUri =
+            pathConfiguration.properties(startLocation).uri
+                ?: AngularNativeDestinationDeepLink.from(
+                        AngularNativeNavigation.defaultFragmentDestination
+                    )
+                    .uri
+                    .toUri()
 
         return requireNotNull(firstOrNull { it.uri == startDestinationUri }) {
             "A start Fragment destination was not found for uri: $startDestinationUri"
@@ -110,25 +111,29 @@ internal class NavigatorGraphBuilder(
     private inline fun NavGraphBuilder.fragment(
         route: String,
         fragmentClass: KClass<out Fragment>,
-        builder: FragmentNavigatorDestinationBuilder.() -> Unit
-    ) = destination(
-        FragmentNavigatorDestinationBuilder(
-            provider[FragmentNavigator::class],
-            route,
-            fragmentClass
-        ).apply(builder)
-    )
+        builder: FragmentNavigatorDestinationBuilder.() -> Unit,
+    ) =
+        destination(
+            FragmentNavigatorDestinationBuilder(
+                    provider[FragmentNavigator::class],
+                    route,
+                    fragmentClass,
+                )
+                .apply(builder)
+        )
 
     // Modified from AndroidX DialogFragmentNavigatorDestinationBuilder extensions
     private inline fun NavGraphBuilder.dialog(
         route: String,
         fragmentClass: KClass<out DialogFragment>,
-        builder: DialogFragmentNavigatorDestinationBuilder.() -> Unit
-    ) = destination(
-        DialogFragmentNavigatorDestinationBuilder(
-            provider[DialogFragmentNavigator::class],
-            route,
-            fragmentClass
-        ).apply(builder)
-    )
+        builder: DialogFragmentNavigatorDestinationBuilder.() -> Unit,
+    ) =
+        destination(
+            DialogFragmentNavigatorDestinationBuilder(
+                    provider[DialogFragmentNavigator::class],
+                    route,
+                    fragmentClass,
+                )
+                .apply(builder)
+        )
 }

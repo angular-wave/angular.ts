@@ -2,6 +2,7 @@ package io.github.angularwave.android.navigation.fragments
 
 import android.content.Intent
 import android.webkit.HttpAuthHandler
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
@@ -10,62 +11,110 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withStateAtLeast
 import io.github.angularwave.android.core.config.AngularNative
-import io.github.angularwave.android.core.turbo.config.pullToRefreshEnabled
-import io.github.angularwave.android.core.turbo.errors.VisitError
-import io.github.angularwave.android.core.turbo.session.SessionCallback
-import io.github.angularwave.android.core.turbo.visit.Visit
-import io.github.angularwave.android.core.turbo.visit.VisitAction
-import io.github.angularwave.android.core.turbo.visit.VisitDestination
-import io.github.angularwave.android.core.turbo.visit.VisitOptions
-import io.github.angularwave.android.core.turbo.webview.AngularNativeWebView
+import io.github.angularwave.android.core.ng.config.pullToRefreshEnabled
+import io.github.angularwave.android.core.ng.errors.VisitError
+import io.github.angularwave.android.core.ng.session.SessionCallback
+import io.github.angularwave.android.core.ng.visit.Visit
+import io.github.angularwave.android.core.ng.visit.VisitAction
+import io.github.angularwave.android.core.ng.visit.VisitDestination
+import io.github.angularwave.android.core.ng.visit.VisitOptions
+import io.github.angularwave.android.core.ng.webview.AngularNativeWebView
 import io.github.angularwave.android.navigation.destinations.AngularNativeDestination
 import io.github.angularwave.android.navigation.session.SessionModalResult
 import io.github.angularwave.android.navigation.util.AngularNativeViewScreenshotHolder
 import io.github.angularwave.android.navigation.util.dispatcherProvider
 import io.github.angularwave.android.navigation.views.AngularNativeView
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.net.URI
 import java.util.Locale
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-/**
- * Provides all the hooks for a web Fragment to delegate its lifecycle events
- * to this class.
- */
+private const val PULL_TO_REFRESH_TRIGGER_DP = 70
+private const val PULL_TO_REFRESH_START_DP = -12
+private const val PULL_TO_REFRESH_END_DP = 64
+private const val HTTP_DEFAULT_PORT = 80
+private const val HTTPS_DEFAULT_PORT = 443
+
+/** Provides all the hooks for a web Fragment to delegate its lifecycle events to this class. */
 internal class AngularNativeWebFragmentDelegate(
     private val delegate: AngularNativeFragmentDelegate,
     private val navDestination: AngularNativeDestination,
-    private val callback: AngularNativeWebFragmentCallback
+    private val callback: AngularNativeWebFragmentCallback,
 ) : SessionCallback, VisitDestination {
-
     private val location: String
         get() = destinationLocation
+
     private val destinationLocation: String
         get() = navDestination.location
+
     private val visitOptions = currentVisitOptions()
     private val identifier = generateIdentifier()
     private var isWebViewAttachedToNewDestination = false
     private val screenshotHolder = AngularNativeViewScreenshotHolder()
-    private val navigator get() = navDestination.navigator
-    private val session get() = navigator.session
-    private val angularNativeView get() = callback.angularNativeView
-    private val viewTreeLifecycleOwner get() = angularNativeView?.findViewTreeLifecycleOwner()
+    private val navigator
+        get() = navDestination.navigator
 
-    /**
-     * Get the session's WebView instance
-     */
+    private val session
+        get() = navigator.session
+
+    private val angularNativeView
+        get() = callback.angularNativeView
+
+    private val viewTreeLifecycleOwner
+        get() = angularNativeView?.findViewTreeLifecycleOwner()
+
+    /** Get the session's WebView instance */
     val webView: AngularNativeWebView
         get() = session.webView
 
-    /**
-     * The activity result launcher that handles file chooser results.
-     */
+    /** The activity result launcher that handles file chooser results. */
     val fileChooserResultLauncher = registerFileChooserLauncher()
 
-    /**
-     * The activity result launcher that handles geolocation permission results.
-     */
+    /** The activity result launcher that handles geolocation permission results. */
     val geoLocationPermissionResultLauncher = registerGeolocationPermissionLauncher()
+
+    private val nativeActivityResult = PendingNativeResult<ActivityResult>()
+    private val nativePermissionResult = PendingNativeResult<Boolean>()
+    private val nativeActivityResultLauncher = registerNativeActivityLauncher()
+    private val nativePermissionResultLauncher = registerNativePermissionLauncher()
+
+    fun launchNativeActivity(
+        intent: Intent,
+        result: (Int, Intent?) -> Unit,
+    ): Boolean {
+        if (
+            !navDestination.isActive ||
+                !nativeActivityResult.register { result(it.resultCode, it.data) }
+        ) {
+            return false
+        }
+        return runCatching { nativeActivityResultLauncher.launch(intent) }
+            .onFailure { nativeActivityResult.cancel() }
+            .isSuccess
+    }
+
+    fun launchNativePermission(
+        permission: String,
+        result: (Boolean) -> Unit,
+    ): Boolean {
+        if (!navDestination.isActive || !nativePermissionResult.register(result)) return false
+        return runCatching { nativePermissionResultLauncher.launch(permission) }
+            .onFailure { nativePermissionResult.cancel() }
+            .isSuccess
+    }
+
+    fun cancelNativeActivityResults() {
+        nativeActivityResult.cancel()
+        nativePermissionResult.cancel()
+    }
+
+    fun cancelNativeActivity() {
+        nativeActivityResult.cancel()
+    }
+
+    fun cancelNativePermission() {
+        nativePermissionResult.cancel()
+    }
 
     fun prepareNavigation(onReady: () -> Unit) {
         session.removeCallback(this)
@@ -92,8 +141,8 @@ internal class AngularNativeWebFragmentDelegate(
     }
 
     /**
-     * Provides a hook when a fragment has been started again after receiving a
-     * modal result. Will navigate if the result indicates it should.
+     * Provides a hook when a fragment has been started again after receiving a modal result. Will
+     * navigate if the result indicates it should.
      */
     fun onStartAfterModalResult(result: SessionModalResult) {
         if (!navigator.willRouteToNewDestinationWithModalResult(result)) {
@@ -103,9 +152,9 @@ internal class AngularNativeWebFragmentDelegate(
     }
 
     /**
-     * Provides a hook when the fragment has been started again after a dialog has
-     * been dismissed/canceled and no result is passed back. Initializes all necessary views and
-     * executes the visit.
+     * Provides a hook when the fragment has been started again after a dialog has been
+     * dismissed/canceled and no result is passed back. Initializes all necessary views and executes
+     * the visit.
      */
     fun onStartAfterDialogCancel() {
         initNavigationVisit()
@@ -113,8 +162,7 @@ internal class AngularNativeWebFragmentDelegate(
     }
 
     /**
-     * Provides a hook when the dialog has been canceled. Detaches the WebView
-     * before navigation.
+     * Provides a hook when the dialog has been canceled. Detaches the WebView before navigation.
      */
     fun onDialogCancel() {
         session.removeCallback(this)
@@ -122,8 +170,7 @@ internal class AngularNativeWebFragmentDelegate(
     }
 
     /**
-     * Provides a hook when the dialog has been dismissed. Detaches the WebView
-     * before navigation.
+     * Provides a hook when the dialog has been dismissed. Detaches the WebView before navigation.
      */
     fun onDialogDismiss() {
         // The WebView is already detached in most circumstances, but sometimes
@@ -147,9 +194,7 @@ internal class AngularNativeWebFragmentDelegate(
         }
     }
 
-    /**
-     * Should be called by the implementing Fragment during [AngularNativeDestination.refresh].
-     */
+    /** Should be called by the implementing Fragment during [AngularNativeDestination.refresh]. */
     fun refresh(displayProgress: Boolean) {
         val refreshLocation = currentRefreshLocation().takeIf { it.isNotBlank() } ?: return
 
@@ -163,7 +208,7 @@ internal class AngularNativeWebFragmentDelegate(
         angularNativeView?.removeErrorView()
 
         isWebViewAttachedToNewDestination = false
-        if (session.isTurboEnabled()) {
+        if (session.isWebNavigationEnabled()) {
             visit(refreshLocation, restoreWithCachedSnapshot = false, reload = true)
         } else {
             webView.reload()
@@ -171,7 +216,8 @@ internal class AngularNativeWebFragmentDelegate(
     }
 
     /**
-     * Displays the error view that's implemented via [AngularNativeWebFragmentCallback.createErrorView].
+     * Displays the error view that's implemented via
+     * [AngularNativeWebFragmentCallback.createErrorView].
      */
     fun showErrorView(error: VisitError) {
         angularNativeView?.addErrorView(callback.createErrorView(error))
@@ -181,17 +227,15 @@ internal class AngularNativeWebFragmentDelegate(
     // VisitDestination interface
     // -----------------------------------------------------------------------
 
-    override fun isActive(): Boolean {
-        return navDestination.isActive
-    }
+    override fun isActive(): Boolean = navDestination.isActive
 
-    override fun activityResultLauncher(requestCode: Int): ActivityResultLauncher<Intent>? {
-        return navDestination.activityResultLauncher(requestCode)
-    }
+    override fun activityResultLauncher(requestCode: Int): ActivityResultLauncher<Intent>? =
+        navDestination.activityResultLauncher(requestCode)
 
-    override fun activityPermissionResultLauncher(requestCode: Int): ActivityResultLauncher<String>? {
-        return navDestination.activityPermissionResultLauncher(requestCode)
-    }
+    override fun activityPermissionResultLauncher(
+        requestCode: Int
+    ): ActivityResultLauncher<String>? =
+        navDestination.activityPermissionResultLauncher(requestCode)
 
     // -----------------------------------------------------------------------
     // SessionCallback interface
@@ -203,7 +247,7 @@ internal class AngularNativeWebFragmentDelegate(
 
     override fun onPageFinished(location: String) {
         callback.onColdBootPageCompleted(location)
-        if (!session.isTurboEnabled()) {
+        if (!session.isWebNavigationEnabled()) {
             angularNativeView?.webViewRefresh?.isRefreshing = false
             angularNativeView?.removeScreenshot()
             angularNativeView?.removeErrorView()
@@ -253,7 +297,10 @@ internal class AngularNativeWebFragmentDelegate(
         navigator.route(destinationLocation, VisitOptions(action = VisitAction.REPLACE))
     }
 
-    override fun requestFailedWithError(visitHasCachedSnapshot: Boolean, error: VisitError) {
+    override fun requestFailedWithError(
+        visitHasCachedSnapshot: Boolean,
+        error: VisitError,
+    ) {
         if (visitHasCachedSnapshot) {
             callback.onVisitErrorReceivedWithCachedSnapshotAvailable(destinationLocation, error)
         } else {
@@ -261,13 +308,17 @@ internal class AngularNativeWebFragmentDelegate(
         }
     }
 
-    override fun onReceivedHttpAuthRequest(handler: HttpAuthHandler, host: String, realm: String) {
+    override fun onReceivedHttpAuthRequest(
+        handler: HttpAuthHandler,
+        host: String,
+        realm: String,
+    ) {
         callback.onReceivedHttpAuthRequest(handler, host, realm)
     }
 
     override fun visitProposedToLocation(
         location: String,
-        options: VisitOptions
+        options: VisitOptions,
     ) {
         navigator.route(location, options)
     }
@@ -279,9 +330,7 @@ internal class AngularNativeWebFragmentDelegate(
         navigator.route(location)
     }
 
-    override fun visitDestination(): VisitDestination {
-        return this
-    }
+    override fun visitDestination(): VisitDestination = this
 
     override fun formSubmissionStarted(location: String) {
         callback.onFormSubmissionStarted(location)
@@ -330,10 +379,9 @@ internal class AngularNativeWebFragmentDelegate(
 
         view.attachWebView(webView) { attachedToNewDestination ->
             onReady(attachedToNewDestination)
-
-            if (attachedToNewDestination) {
-                callback.onWebViewAttached(webView)
-            }
+            // The shared WebView can already have a parent when a destination is restored from
+            // the back stack. Rebind its bridges even when no view-hierarchy move was required.
+            callback.onWebViewAttached(webView)
         }
     }
 
@@ -363,14 +411,19 @@ internal class AngularNativeWebFragmentDelegate(
             // Visit every time the WebView is reattached to the current Fragment.
             if (isWebViewAttachedToNewDestination) {
                 val shouldRestoreWithCachedSnapshot = session.currentVisit != null
-                val currentSessionVisitRestored = shouldRestoreWithCachedSnapshot &&
-                    session.currentVisit?.destinationIdentifier == identifier &&
-                    webView.url?.isSameLocationAs(destinationLocation) == true &&
-                    session.restoreCurrentVisit(this)
+                val currentSessionVisitRestored =
+                    shouldRestoreWithCachedSnapshot &&
+                        session.currentVisit?.destinationIdentifier == identifier &&
+                        webView.url?.isSameLocationAs(destinationLocation) == true &&
+                        session.restoreCurrentVisit(this)
 
                 if (!currentSessionVisitRestored) {
                     showProgressView(destinationLocation)
-                    visit(destinationLocation, restoreWithCachedSnapshot = shouldRestoreWithCachedSnapshot, reload = false)
+                    visit(
+                        destinationLocation,
+                        restoreWithCachedSnapshot = shouldRestoreWithCachedSnapshot,
+                        reload = false,
+                    )
                 }
             }
         }
@@ -381,35 +434,47 @@ internal class AngularNativeWebFragmentDelegate(
         return angularNativeView?.webViewIsAttached(webView) ?: false
     }
 
-    private fun title(): String {
-        return webView.title ?: ""
-    }
+    private fun title(): String = webView.title ?: ""
 
-    private fun registerFileChooserLauncher(): ActivityResultLauncher<Intent> {
-        return navDestination.fragment.registerForActivityResult(StartActivityForResult()) { result ->
+    private fun registerFileChooserLauncher(): ActivityResultLauncher<Intent> =
+        navDestination.fragment.registerForActivityResult(StartActivityForResult()) { result ->
             session.fileChooserDelegate.onActivityResult(result)
         }
-    }
 
-    private fun registerGeolocationPermissionLauncher(): ActivityResultLauncher<String> {
-        return navDestination.fragment.registerForActivityResult(RequestPermission()) { isGranted ->
+    private fun registerGeolocationPermissionLauncher(): ActivityResultLauncher<String> =
+        navDestination.fragment.registerForActivityResult(RequestPermission()) { isGranted ->
             session.geolocationPermissionDelegate.onActivityResult(isGranted)
         }
-    }
 
-    private fun visit(location: String, restoreWithCachedSnapshot: Boolean, reload: Boolean) {
-        val restore = restoreWithCachedSnapshot && !reload
-        val options = when {
-            restore -> VisitOptions(action = VisitAction.RESTORE)
-            reload -> VisitOptions()
-            else -> visitOptions
+    private fun registerNativeActivityLauncher(): ActivityResultLauncher<Intent> =
+        navDestination.fragment.registerForActivityResult(StartActivityForResult()) { result ->
+            nativeActivityResult.complete(result)
         }
 
-        viewTreeLifecycleOwner?.lifecycleScope?.launch {
-            val snapshot = when (options.action) {
-                VisitAction.ADVANCE -> fetchCachedSnapshot(location)
-                else -> null
+    private fun registerNativePermissionLauncher(): ActivityResultLauncher<String> =
+        navDestination.fragment.registerForActivityResult(RequestPermission()) { granted ->
+            nativePermissionResult.complete(granted)
+        }
+
+    private fun visit(
+        location: String,
+        restoreWithCachedSnapshot: Boolean,
+        reload: Boolean,
+    ) {
+        val restore = restoreWithCachedSnapshot && !reload
+        val options =
+            when {
+                restore -> VisitOptions(action = VisitAction.RESTORE)
+                reload -> VisitOptions()
+                else -> visitOptions
             }
+
+        viewTreeLifecycleOwner?.lifecycleScope?.launch {
+            val snapshot =
+                when (options.action) {
+                    VisitAction.ADVANCE -> fetchCachedSnapshot(location)
+                    else -> null
+                }
 
             viewTreeLifecycleOwner?.lifecycle?.withStateAtLeast(STARTED) {
                 session.visit(
@@ -419,7 +484,7 @@ internal class AngularNativeWebFragmentDelegate(
                         restoreWithCachedSnapshot = restoreWithCachedSnapshot,
                         reload = reload,
                         callback = this@AngularNativeWebFragmentDelegate,
-                        options = options.copy(snapshotHTML = snapshot)
+                        options = options.copy(snapshotHTML = snapshot),
                     )
                 )
             }
@@ -427,26 +492,23 @@ internal class AngularNativeWebFragmentDelegate(
     }
 
     private fun currentRefreshLocation(): String {
-        val sessionLocation = session.currentVisit?.location
-            ?.takeIf { it.isNotBlank() && it != "about:blank" }
+        val sessionLocation =
+            session.currentVisit?.location?.takeIf { it.isNotBlank() && it != "about:blank" }
 
         return sessionLocation
-            ?: webView.url
-            ?.takeIf { it.isNotBlank() && it != "about:blank" }
+            ?: webView.url?.takeIf { it.isNotBlank() && it != "about:blank" }
             ?: destinationLocation
     }
 
-    private suspend fun fetchCachedSnapshot(location: String): String? {
-        return withContext(dispatcherProvider.io) {
-            val response = AngularNative.config.offlineRequestHandler?.getCachedSnapshot(
-                url = location
-            )
+    private suspend fun fetchCachedSnapshot(location: String): String? =
+        withContext(dispatcherProvider.io) {
+            val response =
+                AngularNative.config.offlineRequestHandler?.getCachedSnapshot(url = location)
 
             response?.data?.use {
                 String(it.readBytes())
             }
         }
-    }
 
     private suspend fun screenshotView() {
         angularNativeView?.let {
@@ -462,8 +524,12 @@ internal class AngularNativeWebFragmentDelegate(
     private fun initializePullToRefresh(angularNativeView: AngularNativeView) {
         angularNativeView.webViewRefresh?.apply {
             val density = resources.displayMetrics.density
-            setDistanceToTriggerSync((70 * density).toInt())
-            setProgressViewOffset(false, ( -12 * density).toInt(), (64 * density).toInt())
+            setDistanceToTriggerSync((PULL_TO_REFRESH_TRIGGER_DP * density).toInt())
+            setProgressViewOffset(
+                false,
+                (PULL_TO_REFRESH_START_DP * density).toInt(),
+                (PULL_TO_REFRESH_END_DP * density).toInt(),
+            )
             isEnabled = navDestination.pathProperties.pullToRefreshEnabled
             setOnRefreshListener {
                 refresh(displayProgress = true)
@@ -491,40 +557,39 @@ internal class AngularNativeWebFragmentDelegate(
         angularNativeView?.removeErrorView()
     }
 
-    private fun generateIdentifier(): Int {
-        return destinationLocation.normalizedLocation().hashCode()
-    }
+    private fun generateIdentifier(): Int = destinationLocation.normalizedLocation().hashCode()
 
-    private fun String.normalizedLocation(): String {
-        return try {
+    private fun String.normalizedLocation(): String =
+        try {
             val uri = URI(this)
             val scheme = uri.scheme?.lowercase(Locale.ROOT) ?: ""
             val host = uri.host?.lowercase(Locale.ROOT) ?: ""
-            val port = uri.port
-                .takeIf { it != -1 && it != defaultPortFor(scheme) }
-                ?.let { ":$it" }
-                ?: ""
-            val path = uri.path.orEmpty().ifBlank { "/" }.let { rawPath ->
-                when {
-                    rawPath == "/" -> rawPath
-                    rawPath.endsWith("/") -> rawPath.dropLastWhile { it == '/' }
-                    else -> rawPath
-                }
-            }
+            val port =
+                uri.port.takeIf { it != -1 && it != defaultPortFor(scheme) }?.let { ":$it" } ?: ""
+            val path =
+                uri.path
+                    .orEmpty()
+                    .ifBlank { "/" }
+                    .let { rawPath ->
+                        when {
+                            rawPath == "/" -> rawPath
+                            rawPath.endsWith("/") -> rawPath.dropLastWhile { it == '/' }
+                            else -> rawPath
+                        }
+                    }
             val query = uri.rawQuery.orEmpty().let { if (it.isBlank()) "" else "?$it" }
             "$scheme://$host$port$path$query"
         } catch (_: Throwable) {
             trim()
         }
-    }
 
-    private fun String.isSameLocationAs(location: String): Boolean {
-        return normalizedLocation() == location.normalizedLocation()
-    }
+    private fun String.isSameLocationAs(location: String): Boolean =
+        normalizedLocation() == location.normalizedLocation()
 
-    private fun defaultPortFor(scheme: String): Int = when (scheme.lowercase(Locale.ROOT)) {
-        "http" -> 80
-        "https" -> 443
-        else -> -1
-    }
+    private fun defaultPortFor(scheme: String): Int =
+        when (scheme.lowercase(Locale.ROOT)) {
+            "http" -> HTTP_DEFAULT_PORT
+            "https" -> HTTPS_DEFAULT_PORT
+            else -> -1
+        }
 }

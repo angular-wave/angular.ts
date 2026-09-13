@@ -1,7 +1,7 @@
 package io.github.angularwave.android.core.bridge
 
 import io.github.angularwave.android.core.logging.logError
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -13,19 +13,21 @@ internal inline fun <reified T> T.toJsonElement() = json.encodeToJsonElement(thi
 
 internal inline fun <reified T> T.toJson() = json.encodeToString(this)
 
-internal inline fun <reified T> JsonElement.decode(): T? = try {
-    json.decodeFromJsonElement<T>(this)
-} catch (e: Exception) {
-    logError("jsonElementDecodeException", e)
-    null
-}
+internal inline fun <reified T> JsonElement.decode(): T? =
+    try {
+        json.decodeFromJsonElement<T>(this)
+    } catch (e: SerializationException) {
+        logError("jsonElementDecodeException", e)
+        null
+    }
 
-internal inline fun <reified T> String.decode(): T? = try {
-    json.decodeFromString<T>(this)
-} catch (e: Exception) {
-    logError("jsonStringDecodeException", e)
-    null
-}
+internal inline fun <reified T> String.decode(): T? =
+    try {
+        json.decodeFromString<T>(this)
+    } catch (e: SerializationException) {
+        logError("jsonStringDecodeException", e)
+        null
+    }
 
 internal val json = Json {
     ignoreUnknownKeys = true

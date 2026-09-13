@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://angular-wave.github.io/angular.ts/native/reply.schema.json",
+  "title": "Angular Native reply",
+  "type": "object",
+  "required": ["protocol", "id", "ok"],
+  "properties": {
+    "protocol": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "ok": { "type": "boolean" },
+    "result": {},
+    "error": {
+      "oneOf": [
+        { "type": "string" },
+        { "$ref": "error.schema.json" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "ok": { "const": false } } },
+      "then": { "required": ["error"] }
+    }
+  ],
+  "additionalProperties": false
+}

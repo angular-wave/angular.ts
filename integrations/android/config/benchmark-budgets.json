@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "repeatIterations": 5,
+  "budgets": [
+    {
+      "benchmark": "coldStartupAndFirstFrames",
+      "metric": "metrics.timeToInitialDisplayMs.median",
+      "maximum": 1500,
+      "unit": "ms"
+    },
+    {
+      "benchmark": "coldStartupAndFirstFrames",
+      "metric": "sampledMetrics.frameDurationCpuMs.P95",
+      "maximum": 150,
+      "unit": "ms"
+    },
+    {
+      "benchmark": "keyedCollectionUpdateAndScroll",
+      "metric": "sampledMetrics.frameDurationCpuMs.P95",
+      "maximum": 100,
+      "unit": "ms"
+    },
+    {
+      "benchmark": "keyedCollectionUpdateAndScroll",
+      "metric": "metrics.memoryRssAnonLastKb.median",
+      "maximum": 65536,
+      "unit": "KiB"
+    },
+    {
+      "benchmark": "webViewBridgeRoundTrips",
+      "metric": "sampledMetrics.frameDurationCpuMs.P95",
+      "maximum": 100,
+      "unit": "ms"
+    },
+    {
+      "benchmark": "webViewBridgeRoundTrips",
+      "metric": "metrics.memoryRssAnonLastKb.median",
+      "maximum": 131072,
+      "unit": "KiB"
+    }
+  ]
+}

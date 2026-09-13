@@ -12,10 +12,11 @@ class InternalMessageTest {
         @SerialName("metadata") val metadata: InternalMetadata,
         @SerialName("title") val title: String,
         @SerialName("subtitle") val subtitle: String,
-        @SerialName("actions") val actions: List<String>
+        @SerialName("actions") val actions: List<String>,
     )
 
-    private val json = """{
+    private val json =
+        """{
         "id":"1",
         "component":"page",
         "event":"connect",
@@ -31,17 +32,21 @@ class InternalMessageTest {
                 "three"
             ]
         }
-    }""".replace("\\s".toRegex(), "")
+    }"""
+            .replace("\\s".toRegex(), "")
 
     @Test
     fun toMessage() {
-        val messageJsonData = """{"metadata":{"url":"https://37signals.com"},"title":"Page-title","subtitle":"Page-subtitle","actions":["one","two","three"]}"""
-        val message = InternalMessage(
-            id = "1",
-            component = "page",
-            event = "connect",
-            data = createPage().toJsonElement()
-        ).toMessage()
+        val messageJsonData =
+            """{"metadata":{"url":"https://37signals.com"},"title":"Page-title","subtitle":"Page-subtitle","actions":["one","two","three"]}"""
+        val message =
+            InternalMessage(
+                    id = "1",
+                    component = "page",
+                    event = "connect",
+                    data = createPage().toJsonElement(),
+                )
+                .toMessage()
 
         assertEquals("1", message.id)
         assertEquals("page", message.component)
@@ -52,12 +57,13 @@ class InternalMessageTest {
 
     @Test
     fun toJson() {
-        val message = InternalMessage(
-            id = "1",
-            component = "page",
-            event = "connect",
-            data = createPage().toJsonElement()
-        )
+        val message =
+            InternalMessage(
+                id = "1",
+                component = "page",
+                event = "connect",
+                data = createPage().toJsonElement(),
+            )
 
         assertEquals(json, message.toJson())
     }
@@ -79,7 +85,8 @@ class InternalMessageTest {
 
     @Test
     fun fromJsonNoData() {
-        val noDataJson = """{"id":"1","component":"page","event":"connect","metadata":{"url":"https://37signals.com"}}"""
+        val noDataJson =
+            """{"id":"1","component":"page","event":"connect","metadata":{"url":"https://37signals.com"}}"""
         val message = InternalMessage.fromJson(noDataJson)
 
         assertEquals("1", message?.id)
@@ -91,7 +98,7 @@ class InternalMessageTest {
             metadata = InternalMetadata(url = "https://37signals.com"),
             title = "Page-title",
             subtitle = "Page-subtitle",
-            actions = listOf("one", "two", "three")
+            actions = listOf("one", "two", "three"),
         )
     }
 }

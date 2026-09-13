@@ -4,12 +4,12 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.VisibleForTesting
 import io.github.angularwave.android.core.logging.logEvent
-import kotlinx.serialization.json.JsonElement
 import java.lang.ref.WeakReference
+import kotlinx.serialization.json.JsonElement
 
 // These need to match whatever is set in bridge_components.js
-private const val bridgeGlobal = "window.nativeBridge"
-private const val bridgeJavascriptInterface = "BridgeComponentsNative"
+private const val BRIDGE_GLOBAL = "window.nativeBridge"
+private const val BRIDGE_JAVASCRIPT_INTERFACE = "BridgeComponentsNative"
 
 @Suppress("unused")
 class Bridge internal constructor(webView: WebView) {
@@ -18,14 +18,16 @@ class Bridge internal constructor(webView: WebView) {
     // used by the app, such as when the render process is gone.
     private val webViewRef: WeakReference<WebView> = WeakReference(webView)
 
-    internal val webView: WebView? get() = webViewRef.get()
+    internal val webView: WebView?
+        get() = webViewRef.get()
+
     internal var repository = Repository()
     internal var delegate: BridgeDelegate<*>? = null
 
     init {
 
         // The JavascriptInterface must be added before the page is loaded
-        webView.addJavascriptInterface(this, bridgeJavascriptInterface)
+        webView.addJavascriptInterface(this, BRIDGE_JAVASCRIPT_INTERFACE)
     }
 
     internal fun register(component: String) {
@@ -105,7 +107,7 @@ class Bridge internal constructor(webView: WebView) {
     internal fun generateJavaScript(bridgeFunction: String, vararg arguments: JsonElement): String {
         val functionName = sanitizeFunctionName(bridgeFunction)
         val encodedArguments = encode(arguments.toList())
-        return "$bridgeGlobal.$functionName($encodedArguments)"
+        return "$BRIDGE_GLOBAL.$functionName($encodedArguments)"
     }
 
     internal fun encode(arguments: List<JsonElement>): String {

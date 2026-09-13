@@ -1,0 +1,39 @@
+{
+  "request": {
+    "protocol": 1,
+    "id": "fixture-request",
+    "target": "platform",
+    "method": "status",
+    "params": { "verbose": true },
+    "session": "fixture-session"
+  },
+  "reply": {
+    "protocol": 1,
+    "id": "fixture-request",
+    "ok": true,
+    "result": { "platform": "android" }
+  },
+  "errorReply": {
+    "protocol": 1,
+    "id": "fixture-error",
+    "ok": false,
+    "error": {
+      "code": "unavailable",
+      "message": "Capability is unavailable"
+    }
+  },
+  "event": {
+    "protocol": 1,
+    "target": "component",
+    "event": "change",
+    "data": { "id": "fixture-component", "value": "updated" }
+  },
+  "cancelRequest": {
+    "protocol": 1,
+    "id": "fixture-request:cancel",
+    "target": "bridge",
+    "method": "cancel",
+    "params": { "id": "fixture-request" },
+    "session": "fixture-session"
+  }
+}

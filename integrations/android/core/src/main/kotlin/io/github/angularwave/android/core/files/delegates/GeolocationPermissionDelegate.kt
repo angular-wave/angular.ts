@@ -10,7 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
 import io.github.angularwave.android.core.files.util.ANGULAR_NATIVE_REQUEST_CODE_GEOLOCATION_PERMISSION
 import io.github.angularwave.android.core.logging.logError
-import io.github.angularwave.android.core.turbo.session.Session
+import io.github.angularwave.android.core.ng.session.Session
 
 class GeolocationPermissionDelegate(private val session: Session) {
     private val context: Context = session.context
@@ -21,7 +21,7 @@ class GeolocationPermissionDelegate(private val session: Session) {
 
     fun onRequestPermission(
         origin: String?,
-        callback: GeolocationPermissions.Callback?
+        callback: GeolocationPermissions.Callback?,
     ) {
         requestOrigin = origin
         requestCallback = callback
@@ -45,23 +45,23 @@ class GeolocationPermissionDelegate(private val session: Session) {
 
     private fun startPermissionRequest() {
         val destination = session.currentVisit?.callback?.visitDestination() ?: return
-        val resultLauncher = destination.activityPermissionResultLauncher(
-            ANGULAR_NATIVE_REQUEST_CODE_GEOLOCATION_PERMISSION
-        )
+        val resultLauncher =
+            destination.activityPermissionResultLauncher(
+                ANGULAR_NATIVE_REQUEST_CODE_GEOLOCATION_PERMISSION
+            )
 
         try {
             resultLauncher?.launch(permissionToRequest)
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
             logError("startGeolocationPermissionError", e)
             permissionDenied()
         }
     }
 
-    private fun hasLocationPermission(context: Context): Boolean {
-        return permissionToRequest?.let {
+    private fun hasLocationPermission(context: Context): Boolean =
+        permissionToRequest?.let {
             ContextCompat.checkSelfPermission(context, it) == PermissionChecker.PERMISSION_GRANTED
         } == true
-    }
 
     private fun permissionGranted() {
         requestCallback?.invoke(requestOrigin, true, true)
@@ -76,17 +76,19 @@ class GeolocationPermissionDelegate(private val session: Session) {
     }
 
     private fun preferredLocationPermission(): String? {
-        val declaredPermissions = manifestPermissions().filter {
-            it == ACCESS_COARSE_LOCATION ||
-            it == ACCESS_FINE_LOCATION
-        }
+        val declaredPermissions =
+            manifestPermissions().filter {
+                it == ACCESS_COARSE_LOCATION || it == ACCESS_FINE_LOCATION
+            }
 
         // Prefer fine location if provided in manifest, otherwise coarse location
         return if (declaredPermissions.contains(ACCESS_FINE_LOCATION)) {
             ACCESS_FINE_LOCATION
         } else if (declaredPermissions.contains(ACCESS_COARSE_LOCATION)) {
-            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.S ||
-                Build.VERSION.SDK_INT == Build.VERSION_CODES.S_V2) {
+            if (
+                Build.VERSION.SDK_INT == Build.VERSION_CODES.S ||
+                    Build.VERSION.SDK_INT == Build.VERSION_CODES.S_V2
+            ) {
                 // Android 12 requires the "fine" permission for location
                 // access within the WebView. Granting "coarse" location does not
                 // work. See: https://issues.chromium.org/issues/40205003
@@ -99,18 +101,18 @@ class GeolocationPermissionDelegate(private val session: Session) {
         }
     }
 
-    private fun manifestPermissions(): Array<String> {
-        return try {
+    private fun manifestPermissions(): Array<String> =
+        try {
             val context = session.context
-            val packageInfo = context.packageManager.getPackageInfo(
-                context.packageName,
-                PackageManager.GET_PERMISSIONS
-            )
+            val packageInfo =
+                context.packageManager.getPackageInfo(
+                    context.packageName,
+                    PackageManager.GET_PERMISSIONS,
+                )
 
             packageInfo.requestedPermissions ?: emptyArray()
         } catch (e: PackageManager.NameNotFoundException) {
             logError("manifestPermissionsNotAvailable", e)
             emptyArray()
         }
-    }
 }

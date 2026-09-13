@@ -2,6 +2,7 @@
 /// <reference types="jasmine" />
 import { createElementFromHTML, dealoc } from "./shared/dom.ts";
 import { Angular } from "./angular.ts";
+import { autoBootstrap, scheduleAutoBootstrap } from "./auto-bootstrap.ts";
 import { createInjector } from "./core/di/injector.ts";
 import { wait } from "./shared/test-utils.ts";
 import { NgModule } from "./core/di/ng-module/ng-module.ts";
@@ -25,7 +26,7 @@ describe("angular", () => {
     dealoc(element);
   });
 
-  describe("angular.init", () => {
+  describe("auto-bootstrap", () => {
     let bootstrapSpy;
 
     let element = createElementFromHTML("<div></div>");
@@ -39,7 +40,47 @@ describe("angular", () => {
     });
 
     it("should do nothing when not found", () => {
-      window.angular.init(element);
+      autoBootstrap(angular, element);
+      expect(bootstrapSpy).not.toHaveBeenCalled();
+      expect("init" in angular).toBeFalse();
+    });
+
+    it("should schedule discovery before and after DOMContentLoaded", () => {
+      let readyListener;
+      const loadingDocument = {
+        readyState: "loading",
+        nodeType: Node.DOCUMENT_NODE,
+        querySelectorAll: () => [],
+        addEventListener: jasmine
+          .createSpy("addEventListener")
+          .and.callFake((_event, listener) => {
+            readyListener = listener;
+          }),
+      };
+      const readyDocument = {
+        readyState: "complete",
+        nodeType: Node.DOCUMENT_NODE,
+        querySelectorAll: () => [],
+      };
+      const runtimeWindow = {
+        setTimeout: jasmine
+          .createSpy("setTimeout")
+          .and.callFake((callback) => callback()),
+      };
+
+      scheduleAutoBootstrap(angular, loadingDocument, runtimeWindow);
+      expect(loadingDocument.addEventListener).toHaveBeenCalledWith(
+        "DOMContentLoaded",
+        jasmine.any(Function),
+        { once: true },
+      );
+      readyListener();
+
+      scheduleAutoBootstrap(angular, readyDocument, runtimeWindow);
+      expect(runtimeWindow.setTimeout).toHaveBeenCalledWith(
+        jasmine.any(Function),
+        0,
+      );
       expect(bootstrapSpy).not.toHaveBeenCalled();
     });
 
@@ -47,27 +88,27 @@ describe("angular", () => {
       window.angular.createModule("ABC", []);
       const appElement = createElementFromHTML('<div ng-app="ABC"></div>');
 
-      window.angular.init(appElement);
+      autoBootstrap(angular, appElement);
       expect(bootstrapSpy).toHaveBeenCalled();
     });
 
     it("should look for ngApp directive using querySelectorAll", () => {
       window.angular.createModule("ABC", []);
       element = createElementFromHTML('<div><div ng-app="ABC"></div></div>');
-      window.angular.init(element);
+      autoBootstrap(angular, element);
       expect(bootstrapSpy).toHaveBeenCalled();
     });
 
     it("should bootstrap anonymously", () => {
       element = createElementFromHTML("<div ng-app></div>");
-      window.angular.init(element);
+      autoBootstrap(angular, element);
       expect(bootstrapSpy).toHaveBeenCalled();
     });
 
     it("should bootstrap if the annotation is on the root element", () => {
       const appElement = createElementFromHTML('<div ng-app=""></div>');
 
-      window.angular.init(appElement);
+      autoBootstrap(angular, appElement);
       expect(bootstrapSpy).toHaveBeenCalled();
     });
 
@@ -77,7 +118,7 @@ describe("angular", () => {
       );
 
       expect(() => {
-        window.angular.init(appElement);
+        autoBootstrap(angular, appElement);
       }).toThrowError(/modulerr/);
     });
 
@@ -91,6 +132,18 @@ describe("angular", () => {
       }).toThrowError(/btstrpd/);
 
       dealoc(element);
+    });
+
+    it("should reject manual bootstrap when the root contains ng-app", () => {
+      const root = createElementFromHTML(
+        '<main><section data-ng-app="default"></section></main>',
+      );
+
+      expect(() => angular.bootstrap(root, ["default"])).toThrowError(
+        /Cannot manually bootstrap an element that contains ng-app/,
+      );
+
+      dealoc(root);
     });
 
     it("should complain if manually bootstrapping a document whose <html> element has already been bootstrapped", () => {
@@ -108,7 +161,7 @@ describe("angular", () => {
 
       root.append(appElement);
 
-      window.angular.init(root);
+      autoBootstrap(angular, root);
       expect(bootstrapSpy).toHaveBeenCalled();
 
       const injector = angular.getInjector(appElement);
@@ -122,7 +175,7 @@ describe("angular", () => {
     });
   });
 
-  describe("angular.init with multiple apps", () => {
+  describe("auto-bootstrap with multiple apps", () => {
     let element;
 
     afterEach(() => {
@@ -135,7 +188,7 @@ describe("angular", () => {
              <div ng-app>{{ 3 + 3 }}</div>
         </div>`);
 
-      window.angular.init(element);
+      autoBootstrap(angular, element);
 
       expect(window.angular._subapp).toBeFalse();
       expect(window.angular.subapps.length).toBe(1);
@@ -160,7 +213,7 @@ describe("angular", () => {
              <div ng-app>{{ 3 + 3 }}</div>
         </div>`);
 
-      window.angular.init(element);
+      autoBootstrap(angular, element);
 
       expect(window.angular.subapps[0].eventBus).toBe(window.angular.eventBus);
     });

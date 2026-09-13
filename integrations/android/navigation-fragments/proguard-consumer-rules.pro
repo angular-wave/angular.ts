@@ -1,6 +1,10 @@
-# The Android Gradle plugin allows to define ProGuard rules which get embedded in the AAR.
-# These ProGuard rules are automatically applied when a consumer app sets minifyEnabled to true.
-# The custom rule file must be defined using the 'consumerProguardFiles' property in your
-# build.gradle.kts file.
-
--keep class io.github.angularwave.android.navigation.** { *; }
+# ServiceLoader instantiates application providers by their metadata names.
+-keep,allowoptimization class * implements io.github.angularwave.android.navigation.elements.NativeElementProvider {
+    public <init>();
+}
+-keep,allowoptimization class * implements io.github.angularwave.android.navigation.routing.RouteDecisionHandlerProvider {
+    public <init>();
+}
+-keep,allowoptimization class * implements io.github.angularwave.android.navigation.bridge.NativeCapabilityProvider {
+    public <init>();
+}

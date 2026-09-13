@@ -1,0 +1,102 @@
+config:
+  validation: true
+  warningsAsErrors: true
+
+comments:
+  DocumentationOverPrivateFunction:
+    active: false
+  DocumentationOverPrivateProperty:
+    active: false
+  EndOfSentenceFormat:
+    active: false
+  OutdatedDocumentation:
+    active: false
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+  UndocumentedPublicProperty:
+    active: false
+
+complexity:
+  CognitiveComplexMethod:
+    active: true
+    allowedComplexity: 26
+  ComplexCondition:
+    allowedConditions: 5
+  ComplexInterface:
+    active: false
+  CyclomaticComplexMethod:
+    allowedComplexity: 25
+  LabeledExpression:
+    active: false
+  LargeClass:
+    allowedLines: 2500
+    excludes:
+      - '**/NativeElementCatalog.kt'
+  LongMethod:
+    allowedLines: 300
+  StringLiteralDuplication:
+    active: false
+  TooManyFunctions:
+    allowedFunctionsPerFile: 60
+    allowedFunctionsPerClass: 65
+    allowedFunctionsPerInterface: 25
+    allowedFunctionsPerObject: 60
+    allowedFunctionsPerEnum: 25
+
+empty-blocks:
+  EmptyFunctionBlock:
+    ignoreOverridden: true
+
+naming:
+  FunctionNameMaxLength:
+    active: false
+  FunctionNameMinLength:
+    active: false
+
+potential-bugs:
+  LateinitUsage:
+    active: false
+
+style:
+  AlsoCouldBeApply:
+    active: false
+  BracesOnIfStatements:
+    active: false
+  BracesOnWhenStatements:
+    active: false
+  CascadingCallWrapping:
+    active: false
+  ClassOrdering:
+    active: false
+  DataClassContainsFunctions:
+    active: false
+  DataClassShouldBeImmutable:
+    active: false
+  ExpressionBodySyntax:
+    active: false
+  MultilineRawStringIndentation:
+    active: false
+  RedundantConstructorKeyword:
+    active: false
+  RedundantVisibilityModifier:
+    active: false
+  ReturnCount:
+    max: 8
+    excludeGuardClauses: true
+  StringShouldBeRawString:
+    active: false
+  ThrowsCount:
+    max: 8
+    excludeGuardClauses: true
+  TrimMultilineRawString:
+    active: false
+  UnderscoresInNumericLiterals:
+    active: false
+  UnnecessaryParentheses:
+    active: false
+  UseIfInsteadOfWhen:
+    active: false
+  UseLet:
+    active: false

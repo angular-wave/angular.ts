@@ -20,6 +20,7 @@ export { serviceWorkerModule } from './runtime/service-worker.js';
 export { eventBusModule } from './runtime/event-bus.js';
 export { htmlCanvasModule } from './runtime/html-canvas.js';
 export { wasmModule } from './runtime/wasm.js';
+export { nativeModule } from './runtime/native.js';
 export { webComponentModule } from './runtime/web-component.js';
 export { WorkerError } from './services/worker/worker.js';
 export { WasmAbi, WasmAbiError, WasmError } from './services/wasm/wasm.js';

@@ -1,13 +1,14 @@
 /\*\*
 
-- `ng-state`: dynamic state link directive.
+- `ng-state`: expression-driven state link directive.
 -
 - `ng-state` activates a state transition when the host element is activated.
 -
 - The directive is expression-driven:
 -
-- - `ng-state`: expression that evaluates to a state name.
-- - `ng-state-params`: expression that evaluates to an params object.
+- - `ng-state`: expression that evaluates to a state name. Quote static route
+    names; bare identifiers are scope lookups and interpolation is not used.
+- - `ng-state-params`: expression that evaluates to a params object.
 - - `ng-state-opts`: expression that evaluates to `TransitionOptions`.
 -
 - It accepts normal `click`/form events and supports custom events with

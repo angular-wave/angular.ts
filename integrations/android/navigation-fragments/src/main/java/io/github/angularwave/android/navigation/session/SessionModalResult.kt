@@ -1,7 +1,7 @@
 package io.github.angularwave.android.navigation.session
 
 import android.os.Bundle
-import io.github.angularwave.android.core.turbo.visit.VisitOptions
+import io.github.angularwave.android.core.ng.visit.VisitOptions
 
 /**
  * Wraps all the relevant data returned by the modal after it closes. This allows the fragment
@@ -14,5 +14,5 @@ import io.github.angularwave.android.core.turbo.visit.VisitOptions
 data class SessionModalResult(
     val location: String,
     val options: VisitOptions,
-    val bundle: Bundle?
+    val bundle: Bundle?,
 )

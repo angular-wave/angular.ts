@@ -65,11 +65,6 @@ final class AngularTsRuntime {
     return Injector(value as JSObject);
   }
 
-  /// The init.
-  void init(JSObject root) {
-    unsafe.callMethod(_runtime, 'init', root);
-  }
-
   /// Returns the AngularTS scope associated with an element.
   Scope<TState>? getScope<TState>(Element element) {
     final value = unsafe.callMethod(_runtime, 'getScope', element as JSAny);
@@ -149,11 +144,6 @@ Injector bootstrap(Element root, List<String> modules) {
 /// The injector.
 Injector injector(List<String> modules) {
   return AngularTsRuntime.global().injector(modules);
-}
-
-/// The init.
-void init(JSObject root) {
-  AngularTsRuntime.global().init(root);
 }
 
 /// Returns the AngularTS scope associated with an element.

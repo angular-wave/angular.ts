@@ -1,9 +1,11 @@
+@file:Suppress("DEPRECATION")
+
 package io.github.angularwave.android.navigation.navigator
 
 import android.content.Context
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import androidx.core.net.toUri
 import androidx.core.os.bundleOf
 import androidx.navigation.NavDestinationBuilder
 import androidx.navigation.NavGraphNavigator
@@ -13,12 +15,12 @@ import androidx.navigation.testing.TestNavHostController
 import androidx.navigation.ui.R
 import androidx.test.core.app.ApplicationProvider
 import io.github.angularwave.android.core.config.AngularNative
-import io.github.angularwave.android.core.turbo.config.PathConfiguration.Location
-import io.github.angularwave.android.core.turbo.nav.Presentation
-import io.github.angularwave.android.core.turbo.nav.PresentationContext
-import io.github.angularwave.android.core.turbo.nav.QueryStringPresentation
-import io.github.angularwave.android.core.turbo.visit.VisitAction
-import io.github.angularwave.android.core.turbo.visit.VisitOptions
+import io.github.angularwave.android.core.ng.config.PathConfiguration.Location
+import io.github.angularwave.android.core.ng.nav.Presentation
+import io.github.angularwave.android.core.ng.nav.PresentationContext
+import io.github.angularwave.android.core.ng.nav.QueryStringPresentation
+import io.github.angularwave.android.core.ng.visit.VisitAction
+import io.github.angularwave.android.core.ng.visit.VisitOptions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
@@ -33,7 +35,8 @@ import org.robolectric.annotation.Config
 class NavigatorRuleTest {
     private lateinit var context: Context
     private lateinit var controller: TestNavHostController
-    private val pathConfiguration get() = AngularNative.config.pathConfiguration
+    private val pathConfiguration
+        get() = AngularNative.config.pathConfiguration
 
     private val homeUrl = "https://example.com/home"
     private val newHomeUrl = "https://example.com/new-home"
@@ -53,9 +56,9 @@ class NavigatorRuleTest {
     private val webModalDestinationId = 2
     private val webHomeDestinationId = 3
 
-    private val webUri = Uri.parse("angularNative://fragment/web")
-    private val webModalUri = Uri.parse("angularNative://fragment/web/modal")
-    private val webHomeUri = Uri.parse("angularNative://fragment/web/home")
+    private val webUri = "angularNative://fragment/web".toUri()
+    private val webModalUri = "angularNative://fragment/web/modal".toUri()
+    private val webHomeUri = "angularNative://fragment/web/home".toUri()
 
     private val navigatorName = "test"
     private val extras = null
@@ -74,7 +77,7 @@ class NavigatorRuleTest {
         controller = buildControllerWithGraph()
         AngularNative.loadPathConfiguration(
             context = context,
-            location = Location(assetFilePath = "json/test-configuration.json")
+            location = Location(assetFilePath = "json/test-configuration.json"),
         )
     }
 
@@ -557,9 +560,9 @@ class NavigatorRuleTest {
     private fun getNavigatorRule(
         location: String,
         visitOptions: VisitOptions = VisitOptions(),
-        bundle: Bundle? = null
-    ): NavigatorRule {
-        return NavigatorRule(
+        bundle: Bundle? = null,
+    ): NavigatorRule =
+        NavigatorRule(
             location = location,
             visitOptions = visitOptions,
             bundle = bundle,
@@ -567,46 +570,46 @@ class NavigatorRuleTest {
             extras = extras,
             pathConfiguration = pathConfiguration,
             navigatorName = navigatorName,
-            controller = controller
+            controller = controller,
         )
-    }
 
-    private fun locationArgs(location: String): Bundle {
-        return bundleOf(ARG_LOCATION to location)
-    }
+    private fun locationArgs(location: String): Bundle = bundleOf(ARG_LOCATION to location)
 
-    private fun buildControllerWithGraph(): TestNavHostController {
-        return TestNavHostController(context).apply {
-            graph = createGraph(startDestination = webHomeDestinationId) {
-                destination(
-                    NavDestinationBuilder(
-                        navigator = provider.getNavigator<NavGraphNavigator>("test"),
-                        id = webDestinationId
-                    ).apply {
-                        deepLink(webUri.toString())
-                    }
-                )
+    private fun buildControllerWithGraph(): TestNavHostController =
+        TestNavHostController(context).apply {
+            graph =
+                createGraph(startDestination = webHomeDestinationId) {
+                    destination(
+                        NavDestinationBuilder(
+                                navigator = provider.getNavigator<NavGraphNavigator>("test"),
+                                id = webDestinationId,
+                            )
+                            .apply {
+                                deepLink(webUri.toString())
+                            }
+                    )
 
-                destination(
-                    NavDestinationBuilder(
-                        navigator = provider.getNavigator<NavGraphNavigator>("test"),
-                        id = webModalDestinationId
-                    ).apply {
-                        deepLink(webModalUri.toString())
-                    }
-                )
+                    destination(
+                        NavDestinationBuilder(
+                                navigator = provider.getNavigator<NavGraphNavigator>("test"),
+                                id = webModalDestinationId,
+                            )
+                            .apply {
+                                deepLink(webModalUri.toString())
+                            }
+                    )
 
-                destination(
-                    NavDestinationBuilder(
-                        navigator = provider.getNavigator<NavGraphNavigator>("test"),
-                        id = webHomeDestinationId
-                    ).apply {
-                        argument(ARG_LOCATION) { defaultValue = homeUrl }
-                        argument(ARG_NAVIGATOR_NAME) { defaultValue = navigatorName }
-                        deepLink(webHomeUri.toString())
-                    }
-                )
-            }
+                    destination(
+                        NavDestinationBuilder(
+                                navigator = provider.getNavigator<NavGraphNavigator>("test"),
+                                id = webHomeDestinationId,
+                            )
+                            .apply {
+                                argument(ARG_LOCATION) { defaultValue = homeUrl }
+                                argument(ARG_NAVIGATOR_NAME) { defaultValue = navigatorName }
+                                deepLink(webHomeUri.toString())
+                            }
+                    )
+                }
         }
-    }
 }

@@ -26,23 +26,25 @@ class AngularNativeViewTest {
     private lateinit var view: ViewGroup
     private lateinit var angularNativeView: AngularNativeView
 
-    @Before fun setup() {
+    @Before
+    fun setup() {
         MockitoAnnotations.openMocks(this)
 
         context = ApplicationProvider.getApplicationContext()
         view = LayoutInflater.from(context).inflate(R.layout.angular_native_view, null) as ViewGroup
         angularNativeView = view.findViewById(R.id.angular_native_view)
 
-        whenever(webView.layoutParams).thenReturn(
-            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-        )
+        whenever(webView.layoutParams)
+            .thenReturn(LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
 
-    @Test fun refreshLayoutIsFirstChild() {
+    @Test
+    fun refreshLayoutIsFirstChild() {
         assertThat(angularNativeView.getChildAt(0) is AngularNativeSwipeRefreshLayout).isTrue()
     }
 
-    @Test fun webviewAttachedToRefreshLayout() {
+    @Test
+    fun webviewAttachedToRefreshLayout() {
         angularNativeView.attachWebView(webView) {
             // Child at 0 is CircleImageView
             assertThat(angularNativeView.webViewRefresh?.getChildAt(1)).isEqualTo(webView)

@@ -8,9 +8,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class MessageTest {
-
     @Before
     fun setup() {
         AngularNative.config.jsonConverter = KotlinXJsonConverter()
@@ -19,13 +21,14 @@ class MessageTest {
     @Test
     fun dataDecodesToObject() {
         val metadata = Metadata("https://37signals.com")
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = metadata,
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = metadata,
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         val data = message.data<MessageData>()
 
@@ -36,13 +39,14 @@ class MessageTest {
     @Test
     fun dataDoesNotDecodeToInvalidObject() {
         val metadata = Metadata("https://37signals.com")
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = metadata,
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = metadata,
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         val data = message.data<InvalidMessageData>()
 
@@ -52,13 +56,14 @@ class MessageTest {
     @Test
     fun dataWithNullableFieldsDecodesToObject() {
         val metadata = Metadata("https://37signals.com")
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = metadata,
-            jsonData = """{"title":null}""" // subtitle missing
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = metadata,
+                jsonData = """{"title":null}""", // subtitle missing
+            )
 
         val data = message.data<NullableMessageData>()
 
@@ -70,13 +75,14 @@ class MessageTest {
     @Test
     fun dataWithDefaultValuesDecodesToObject() {
         val metadata = Metadata("https://37signals.com")
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = metadata,
-            jsonData = """{}""" // title and subtitle missing
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = metadata,
+                jsonData = """{}""", // title and subtitle missing
+            )
 
         val data = message.data<DefaultValuesMessageData>()
 
@@ -88,18 +94,20 @@ class MessageTest {
     @Test
     fun replacingJsonData() {
         val metadata = Metadata("https://37signals.com")
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = metadata,
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = metadata,
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
-        val newMessage = message.replacing(
-            event = "disconnect",
-            jsonData = "{}"
-        )
+        val newMessage =
+            message.replacing(
+                event = "disconnect",
+                jsonData = "{}",
+            )
 
         assertEquals("1", newMessage.id)
         assertEquals("page", newMessage.component)
@@ -111,20 +119,22 @@ class MessageTest {
     @Test
     fun replacingData() {
         val metadata = Metadata("https://37signals.com")
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = metadata,
-            jsonData = "{}"
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = metadata,
+                jsonData = "{}",
+            )
 
         val data = MessageData(title = "New-title", subtitle = "New-subtitle")
 
-        val newMessage = message.replacing(
-            event = "disconnect",
-            data = data
-        )
+        val newMessage =
+            message.replacing(
+                event = "disconnect",
+                data = data,
+            )
 
         assertEquals("1", newMessage.id)
         assertEquals("page", newMessage.component)
@@ -137,13 +147,14 @@ class MessageTest {
     fun replacingDataWithNoConverter() {
         AngularNative.config.jsonConverter = null
 
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = Metadata("https://37signals.com"),
-            jsonData = "{}"
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = Metadata("https://37signals.com"),
+                jsonData = "{}",
+            )
 
         val data = MessageData(title = "New-title", subtitle = "New-subtitle")
 
@@ -156,13 +167,14 @@ class MessageTest {
     fun replacingDataWithInvalidConverter() {
         AngularNative.config.jsonConverter = InvalidJsonConverter()
 
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = Metadata("https://37signals.com"),
-            jsonData = "{}"
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = Metadata("https://37signals.com"),
+                jsonData = "{}",
+            )
 
         val data = MessageData(title = "New-title", subtitle = "New-subtitle")
 
@@ -172,18 +184,24 @@ class MessageTest {
     }
 
     @Serializable
-    private class MessageData(val title: String, val subtitle: String)
+    private class MessageData(
+        val title: String,
+        val subtitle: String,
+    )
 
     @Serializable
-    private class NullableMessageData(val title: String?, val subtitle: String? = null)
+    private class NullableMessageData(
+        val title: String?,
+        val subtitle: String? = null,
+    )
 
     @Serializable
     private class DefaultValuesMessageData(
         val title: String? = "Page-title",
-        val subtitle: String? = "Page-subtitle"
+        val subtitle: String? = "Page-subtitle",
     )
 
-    private class InvalidMessageData()
+    private class InvalidMessageData
 
     private class InvalidJsonConverter : BridgeComponentJsonConverter()
 }

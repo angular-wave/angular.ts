@@ -1,4 +1,7 @@
-import { angular } from "../src/index.ts";
+import { Angular } from "../src/angular.ts";
+import { autoBootstrap } from "../src/auto-bootstrap.ts";
+
+const angular = new Angular();
 
 window.angular = angular;
 
@@ -9,4 +12,4 @@ if (entry) {
   await import(/* @vite-ignore */ new URL(entry, document.baseURI).href);
 }
 
-angular.init(document);
+autoBootstrap(angular, document);

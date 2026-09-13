@@ -15,5 +15,8 @@ tsconfig.tsbuildinfo
 angular.ts.iml
 /@types/
 /.build/
+/integrations/android/.gradle/
+/integrations/android/local.properties
+/integrations/android/**/build/
 
 /tools/vscode/.vscode-test/

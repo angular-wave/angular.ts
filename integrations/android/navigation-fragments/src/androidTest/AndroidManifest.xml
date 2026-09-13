@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:enableOnBackInvokedCallback="true"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+        <activity
+            android:name="io.github.angularwave.android.navigation.elements.NativeElementTestActivity"
+            android:exported="false" />
+        <activity
+            android:name="io.github.angularwave.android.navigation.transitions.NativeNavigationTestActivity"
+            android:exported="false" />
+    </application>
+</manifest>

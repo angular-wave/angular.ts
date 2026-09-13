@@ -1,6 +1,7 @@
 package io.github.angularwave.android.core.files.delegates
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,15 +9,15 @@ import android.webkit.ValueCallback
 import android.webkit.WebChromeClient.FileChooserParams
 import androidx.activity.result.ActivityResult
 import io.github.angularwave.android.core.R
-import io.github.angularwave.android.core.logging.logError
-import io.github.angularwave.android.core.turbo.session.Session
 import io.github.angularwave.android.core.files.util.ANGULAR_NATIVE_REQUEST_CODE_FILES
 import io.github.angularwave.android.core.files.util.AngularNativeFileProvider
-import io.github.angularwave.android.core.turbo.util.dispatcherProvider
+import io.github.angularwave.android.core.logging.logError
+import io.github.angularwave.android.core.ng.session.Session
+import io.github.angularwave.android.core.ng.util.dispatcherProvider
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 
 class FileChooserDelegate(val session: Session) : CoroutineScope {
     private val context: Context = session.context
@@ -29,7 +30,7 @@ class FileChooserDelegate(val session: Session) : CoroutineScope {
 
     fun onShowFileChooser(
         filePathCallback: ValueCallback<Array<Uri>>,
-        params: FileChooserParams
+        params: FileChooserParams,
     ): Boolean {
         uploadCallback = filePathCallback
 
@@ -52,15 +53,16 @@ class FileChooserDelegate(val session: Session) : CoroutineScope {
     }
 
     private fun openChooser(params: FileChooserParams): Boolean {
-        val cameraIntent =  cameraCaptureDelegate.buildIntent(params)
+        val cameraIntent = cameraCaptureDelegate.buildIntent(params)
         val chooserIntent = browseFilesDelegate.buildIntent(params)
         val extraIntents = listOfNotNull(cameraIntent).toTypedArray()
 
-        val intent = Intent(Intent.ACTION_CHOOSER).apply {
-            putExtra(Intent.EXTRA_INTENT, chooserIntent)
-            putExtra(Intent.EXTRA_TITLE, params.title())
-            putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents)
-        }
+        val intent =
+            Intent(Intent.ACTION_CHOOSER).apply {
+                putExtra(Intent.EXTRA_INTENT, chooserIntent)
+                putExtra(Intent.EXTRA_TITLE, params.title())
+                putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents)
+            }
 
         return startIntent(intent)
     }
@@ -71,7 +73,7 @@ class FileChooserDelegate(val session: Session) : CoroutineScope {
         return try {
             destination.activityResultLauncher(ANGULAR_NATIVE_REQUEST_CODE_FILES)?.launch(intent)
             true
-        } catch (e: Exception) {
+        } catch (e: ActivityNotFoundException) {
             logError("startIntentError", e)
             false
         }
@@ -96,30 +98,26 @@ class FileChooserDelegate(val session: Session) : CoroutineScope {
         uploadCallback = null
     }
 
-    private fun FileChooserParams.title(): String {
-        return title?.toString() ?: when (allowsMultiple()) {
-            true -> session.context.getString(R.string.angular_native_file_chooser_select_multiple)
-            else -> session.context.getString(R.string.angular_native_file_chooser_select)
-        }
-    }
+    private fun FileChooserParams.title(): String =
+        title?.toString()
+            ?: when (allowsMultiple()) {
+                true ->
+                    session.context.getString(R.string.angular_native_file_chooser_select_multiple)
+                else -> session.context.getString(R.string.angular_native_file_chooser_select)
+            }
 
-    private fun Intent?.containsFileResult(): Boolean {
-        return this?.dataString != null || this?.clipData != null
-    }
+    private fun Intent?.containsFileResult(): Boolean =
+        this?.dataString != null || this?.clipData != null
 }
 
-internal fun FileChooserParams.allowsMultiple(): Boolean {
-    return mode == FileChooserParams.MODE_OPEN_MULTIPLE
-}
+internal fun FileChooserParams.allowsMultiple(): Boolean =
+    mode == FileChooserParams.MODE_OPEN_MULTIPLE
 
-internal fun FileChooserParams.acceptsAny(): Boolean {
-    return defaultAcceptType() == "*/*"
-}
+internal fun FileChooserParams.acceptsAny(): Boolean = defaultAcceptType() == "*/*"
 
-internal fun FileChooserParams.defaultAcceptType(): String {
-    return when {
+internal fun FileChooserParams.defaultAcceptType(): String =
+    when {
         acceptTypes.isEmpty() -> "*/*"
         acceptTypes.first().isBlank() -> "*/*"
         else -> acceptTypes.first()
     }
-}

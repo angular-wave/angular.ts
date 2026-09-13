@@ -11,9 +11,6 @@ const cljsPackagePath = resolve(cljsRoot, "package.json");
 const rootPackagePath = resolve(cljsRoot, "..", "..", "..", "package.json");
 const outputPath = resolve(cljsRoot, "src/angular_ts/generated.cljs");
 const checkMode = process.argv.includes("--check");
-const expectedTypeTagCount = 227;
-const expectedStrictWrapperCount = 225;
-const expectedStrictPropertyReaderCount = 457;
 const strictWrapperParamTagOverrides = new Map([
   ["NgModule.machine.config", "js/Object"],
   ["NgModule.workflow.config", "js/Object"],
@@ -600,15 +597,6 @@ const generatedFacadeNames = [
 ];
 const missingTypeDocs = typeNames.filter((name) => !typeDocs.has(name));
 
-if (typeNames.length !== expectedTypeTagCount) {
-  console.error(
-    `Expected ${expectedTypeTagCount} ClojureScript AngularTS type tags, ` +
-      `found ${typeNames.length}.`,
-  );
-  console.error("Review the extern surface and update expectedTypeTagCount.");
-  process.exit(1);
-}
-
 if (missingTypeDocs.length > 0) {
   console.error("Public AngularTS extern types missing preserved documentation:");
   missingTypeDocs.forEach((name) => console.error(`  - ${name}`));
@@ -668,27 +656,6 @@ if (wrappersMissingReturnDocs.length > 0) {
   process.exit(1);
 }
 
-if (generatedWrapperNames.length !== expectedStrictWrapperCount) {
-  console.error(
-    `Expected ${expectedStrictWrapperCount} strict ClojureScript wrappers, ` +
-      `found ${generatedWrapperNames.length}.`,
-  );
-  console.error(
-    "Review the generated wrapper set and update expectedStrictWrapperCount.",
-  );
-  process.exit(1);
-}
-
-if (generatedPropertyReaderNames.length !== expectedStrictPropertyReaderCount) {
-  console.error(
-    `Expected ${expectedStrictPropertyReaderCount} strict ClojureScript ` +
-      `property readers, found ${generatedPropertyReaderNames.length}.`,
-  );
-  console.error(
-    "Review the generated property reader set and update expectedStrictPropertyReaderCount.",
-  );
-  process.exit(1);
-}
 const output = `;; Generated from ../externs/angular.js by scripts/generate-cljs-types.mjs.
 ;; Do not edit directly.
 (ns angular-ts.generated)

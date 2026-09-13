@@ -1531,6 +1531,10 @@ export class NgModule {
    * Child state names are relative to their parent unless they contain a dot.
    * Each route is queued for the composed router runtime, so module router
    * trees compose with `lazyState(...)` and inherited route policies.
+   * {@link RouterModuleDeclaration} is the only public registration contract.
+   * Pass one declaration or a readonly forest; the route map is inferred from
+   * the exact literal. To declare the route map explicitly, parameterize
+   * `createModule<TRouteMap>(...)` instead of `router(...)`.
    *
    * @param declaration - Router tree root declaration.
    * @returns {NgModule}

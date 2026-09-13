@@ -5,9 +5,10 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import androidx.test.core.app.ApplicationProvider
 import io.github.angularwave.android.core.files.util.AngularNativeFileProvider
-import io.github.angularwave.android.core.turbo.BaseRepositoryTest
-import io.github.angularwave.android.core.turbo.session.Session
-import io.github.angularwave.android.core.turbo.webview.AngularNativeWebView
+import io.github.angularwave.android.core.ng.BaseRepositoryTest
+import io.github.angularwave.android.core.ng.session.Session
+import io.github.angularwave.android.core.ng.webview.AngularNativeWebView
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -19,14 +20,12 @@ import org.mockito.MockitoAnnotations
 import org.robolectric.Robolectric.buildActivity
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.File
 
 @ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.R])
 class FileChooserDelegateTest : BaseRepositoryTest() {
-    @Mock
-    private lateinit var webView: AngularNativeWebView
+    @Mock private lateinit var webView: AngularNativeWebView
     private lateinit var activity: AppCompatActivity
     private lateinit var context: Context
     private lateinit var session: Session
@@ -36,7 +35,7 @@ class FileChooserDelegateTest : BaseRepositoryTest() {
         super.setup()
         MockitoAnnotations.openMocks(this)
 
-        activity = buildActivity(TurboTestActivity::class.java).get()
+        activity = buildActivity(WebTestActivity::class.java).get()
         context = ApplicationProvider.getApplicationContext()
         session = Session("test", activity, webView)
     }
@@ -59,4 +58,4 @@ class FileChooserDelegateTest : BaseRepositoryTest() {
     }
 }
 
-internal class TurboTestActivity : AppCompatActivity()
+internal class WebTestActivity : AppCompatActivity()

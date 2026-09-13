@@ -1,7 +1,4 @@
-import {
-  createNativeService,
-  type NativeEnvironment,
-} from "./native.ts";
+import { createNativeService, type NativeEnvironment } from "./native.ts";
 
 describe("native capability contract", () => {
   it("reports advertised targets and methods", () => {

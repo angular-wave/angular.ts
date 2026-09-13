@@ -6,6 +6,6 @@ object Demo {
 
     enum class Environment(val url: String) {
         Remote("https://angular-native-demo.dev"),
-        Local("http://10.0.2.2:4000")
+        Local("http://10.0.2.2:4000"),
     }
 }

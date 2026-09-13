@@ -32,6 +32,7 @@
     const _location = "$location";
     const _log = "$log";
     const _machine = "$machine";
+    const _native = "$native";
     const _parse = "$parse";
     const _rest = "$rest";
     const _rootScope = "$rootScope";
@@ -82,6 +83,7 @@
         _location,
         _log,
         _machine,
+        _native,
         _parse,
         _rest,
         _rootScope,
@@ -10652,9 +10654,7 @@
                             }
                             if (isFunction(controllerInstance.onInit)) {
                                 try {
-                                    /* istanbul ignore next -- controllers are normalized to scoped instances. */
-                                    const controllerTarget = controllerInstance._target ?? controllerInstance;
-                                    callFunction(controllerTarget.onInit, controllerTarget);
+                                    callFunction(controllerInstance.onInit, controllerInstance);
                                 }
                                 catch (err) {
                                     $exceptionHandler(err);
@@ -13273,6 +13273,7 @@
         _interpolate,
         _location,
         _log,
+        _native,
         _rest,
         routerConfigKey,
         _sce,
@@ -13581,6 +13582,14 @@
                     this._runtimeConfig,
                     "configure",
                     [_log, logConfig],
+                ]);
+            }
+            const nativeConfig = normalized.$native;
+            if (nativeConfig) {
+                this._configBlocks.push([
+                    this._runtimeConfig,
+                    "configure",
+                    [_native, nativeConfig],
                 ]);
             }
             const locationConfig = normalized.$location;
@@ -14236,6 +14245,66 @@
         return `${parentName}.${childName}`;
     }
 
+    const automaticRoots = new WeakSet();
+    /** Returns whether a root contains a declarative application marker. @internal */
+    function hasDeclarativeApp(root) {
+        return ngAttrPrefixes.some((prefix) => {
+            const name = `${prefix}app`;
+            return ((root.nodeType === Node.ELEMENT_NODE &&
+                root.hasAttribute(name)) ||
+                root.querySelector(`[${name}]`) !== null);
+        });
+    }
+    /** Returns whether the internal scanner owns this bootstrap call. @internal */
+    function isAutomaticBootstrapRoot(root) {
+        return automaticRoots.has(root);
+    }
+    function bootstrapApp(angular, root, modules) {
+        automaticRoots.add(root);
+        try {
+            angular.bootstrap(root, modules);
+        }
+        finally {
+            automaticRoots.delete(root);
+        }
+    }
+    /** Finds and bootstraps the declarative application roots in a document. @internal */
+    function autoBootstrap(angular, root) {
+        const apps = [];
+        for (const prefix of ngAttrPrefixes) {
+            const name = `${prefix}app`;
+            const candidates = root.nodeType === Node.ELEMENT_NODE &&
+                root.hasAttribute(name)
+                ? [root]
+                : root.querySelectorAll(`[${name}]`);
+            candidates.forEach((element) => {
+                apps.push({ element, module: element.getAttribute(name) });
+            });
+        }
+        apps.forEach((app, index) => {
+            const modules = app.module ? [app.module] : [];
+            if (index === 0) {
+                bootstrapApp(angular, app.element, modules);
+                return;
+            }
+            const Runtime = angular.constructor;
+            const subapp = new Runtime(true);
+            angular.subapps.push(subapp);
+            bootstrapApp(subapp, app.element, modules);
+        });
+    }
+    /** Schedules declarative application discovery for the default browser entry. @internal */
+    function scheduleAutoBootstrap(angular, root, runtimeWindow) {
+        const bootstrap = () => {
+            autoBootstrap(angular, root);
+        };
+        if (root.readyState === "loading") {
+            root.addEventListener("DOMContentLoaded", bootstrap, { once: true });
+            return;
+        }
+        runtimeWindow.setTimeout(bootstrap, 0);
+    }
+
     const ngError = createErrorFactory("ng");
     const $injectorError = createErrorFactory("$injector");
     const rootScopeCleanupByElement = new WeakMap();
@@ -14459,6 +14528,11 @@
          * @returns The created injector instance for this application.
          */
         bootstrap(element, modules) {
+            if ((isInstanceOf(element, Element) || isInstanceOf(element, Document)) &&
+                hasDeclarativeApp(element) &&
+                !isAutomaticBootstrapRoot(element)) {
+                throw ngError("btstrpd", "Cannot manually bootstrap an element that contains ng-app");
+            }
             if (isInstanceOf(element, Element) || isInstanceOf(element, Document)) {
                 rootScopeCleanupByElement.get(element)?.();
             }
@@ -14527,47 +14601,6 @@
             this.currentInjector = createInjector(modules, undefined, (name) => this.getModule(name));
             this._injectorCreated = true;
             return this.currentInjector;
-        }
-        /**
-         * Find `ng-app` roots under the provided element and bootstrap them.
-         *
-         * The first root uses this instance. Additional roots are bootstrapped as
-         * sub-applications and stored in {@link subapps}.
-         *
-         * @param element - Root element or document to scan.
-         */
-        init(element) {
-            const appElements = [];
-            let multimode = false;
-            ngAttrPrefixes.forEach((prefix) => {
-                const name = `${prefix}app`;
-                let candidates;
-                if (element.nodeType === 1 &&
-                    element.hasAttribute(name)) {
-                    candidates = [element];
-                }
-                else {
-                    candidates = element.querySelectorAll(`[${name}]`);
-                }
-                candidates.forEach((el) => {
-                    appElements.push({
-                        _element: el,
-                        _module: el.getAttribute(name),
-                    });
-                });
-            });
-            appElements.forEach((app) => {
-                if (multimode) {
-                    const RuntimeCtor = this.constructor;
-                    const submodule = new RuntimeCtor(true);
-                    this.subapps.push(submodule);
-                    submodule.bootstrap(app._element, app._module ? [app._module] : []);
-                }
-                else {
-                    this.bootstrap(app._element, app._module ? [app._module] : []);
-                }
-                multimode = true;
-            });
         }
         /**
          * Find a scope by its registered `scopeName`.
@@ -43761,16 +43794,538 @@
         }
     }
 
+    // Generated by integrations/android/scripts/generate-native-capabilities.mjs.
+    // Do not edit directly.
+    const nativeCapabilities = {
+        navigation: {
+            name: "navigation",
+            artifact: "navigation",
+            availability: "required",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "NAVIGATION_STATUS",
+                },
+                {
+                    name: "push",
+                    mode: "sync",
+                    parameters: "NAVIGATION_ROUTE_PARAMETERS",
+                    result: "NAVIGATION_ROUTE_RESULT",
+                },
+                {
+                    name: "replace",
+                    mode: "sync",
+                    parameters: "NAVIGATION_ROUTE_PARAMETERS",
+                    result: "NAVIGATION_ROUTE_RESULT",
+                },
+                {
+                    name: "pop",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "NAVIGATION_POP_RESULT",
+                },
+                {
+                    name: "modal",
+                    mode: "sync",
+                    parameters: "NAVIGATION_ROUTE_PARAMETERS",
+                    result: "NAVIGATION_ROUTE_RESULT",
+                },
+                {
+                    name: "deep-link",
+                    mode: "sync",
+                    parameters: "NAVIGATION_ROUTE_PARAMETERS",
+                    result: "NAVIGATION_ROUTE_RESULT",
+                },
+                {
+                    name: "external",
+                    mode: "sync",
+                    parameters: "INTENT_PARAMETERS",
+                    result: "OPEN_RESULT",
+                },
+            ],
+            events: [
+                {
+                    name: "change",
+                    payload: "NAVIGATION_CHANGE",
+                },
+            ],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        platform: {
+            name: "platform",
+            artifact: "navigation",
+            availability: "required",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "PLATFORM_STATUS",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        permissions: {
+            name: "permissions",
+            artifact: "navigation",
+            availability: "required",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "PERMISSION_PARAMETERS",
+                    result: "PERMISSION_STATUS",
+                },
+                {
+                    name: "request",
+                    mode: "async",
+                    parameters: "PERMISSION_PARAMETERS",
+                    result: "PERMISSION_STATUS",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        clipboard: {
+            name: "clipboard",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "read",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "CLIPBOARD_CONTENT",
+                },
+                {
+                    name: "write",
+                    mode: "sync",
+                    parameters: "CLIPBOARD_WRITE_PARAMETERS",
+                    result: "CLIPBOARD_WRITE_RESULT",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        sharing: {
+            name: "sharing",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "share",
+                    mode: "sync",
+                    parameters: "SHARE_PARAMETERS",
+                    result: "OPEN_RESULT",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        intents: {
+            name: "intents",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "open",
+                    mode: "sync",
+                    parameters: "INTENT_PARAMETERS",
+                    result: "OPEN_RESULT",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        haptics: {
+            name: "haptics",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "perform",
+                    mode: "sync",
+                    parameters: "HAPTIC_PARAMETERS",
+                    result: "HAPTIC_RESULT",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        connectivity: {
+            name: "connectivity",
+            artifact: "navigation",
+            availability: "required",
+            minSdk: 28,
+            permission: "android.permission.ACCESS_NETWORK_STATE",
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "CONNECTIVITY_STATUS",
+                },
+                {
+                    name: "watch",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "CONNECTIVITY_STATUS",
+                },
+                {
+                    name: "unwatch",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "CONNECTIVITY_STATUS",
+                },
+            ],
+            events: [
+                {
+                    name: "change",
+                    payload: "CONNECTIVITY_STATUS",
+                },
+            ],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        lifecycle: {
+            name: "lifecycle",
+            artifact: "navigation",
+            availability: "required",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "LIFECYCLE_STATUS",
+                },
+                {
+                    name: "watch",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "LIFECYCLE_STATUS",
+                },
+                {
+                    name: "unwatch",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "LIFECYCLE_STATUS",
+                },
+            ],
+            events: [
+                {
+                    name: "change",
+                    payload: "LIFECYCLE_STATUS",
+                },
+            ],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        window: {
+            name: "window",
+            artifact: "navigation",
+            availability: "required",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "WINDOW_STATUS",
+                },
+                {
+                    name: "watch",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "WINDOW_STATUS",
+                },
+                {
+                    name: "unwatch",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "WINDOW_STATUS",
+                },
+            ],
+            events: [
+                {
+                    name: "change",
+                    payload: "WINDOW_STATUS",
+                },
+            ],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        notifications: {
+            name: "notifications",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: "android.permission.POST_NOTIFICATIONS",
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "NOTIFICATION_STATUS",
+                },
+                {
+                    name: "open-settings",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "OPEN_RESULT",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        geolocation: {
+            name: "geolocation",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: "android.permission.ACCESS_FINE_LOCATION",
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "GEOLOCATION_STATUS",
+                },
+                {
+                    name: "current",
+                    mode: "async",
+                    parameters: "VOID",
+                    result: "GEOLOCATION_POSITION",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        biometrics: {
+            name: "biometrics",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "BIOMETRIC_STATUS",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        camera: {
+            name: "camera",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: "android.permission.CAMERA",
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "CAMERA_STATUS",
+                },
+                {
+                    name: "capture",
+                    mode: "async",
+                    parameters: "VOID",
+                    result: "CAMERA_CAPTURE_RESULT",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        files: {
+            name: "files",
+            artifact: "navigation",
+            availability: "device",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "FILE_STATUS",
+                },
+                {
+                    name: "open",
+                    mode: "async",
+                    parameters: "FILE_OPEN_PARAMETERS",
+                    result: "FILE_OPEN_RESULT",
+                },
+                {
+                    name: "upload",
+                    mode: "async",
+                    parameters: "FILE_UPLOAD_PARAMETERS",
+                    result: "FILE_UPLOAD_RESULT",
+                },
+            ],
+            events: [
+                {
+                    name: "progress",
+                    payload: "FILE_UPLOAD_PROGRESS",
+                },
+            ],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        credentials: {
+            name: "credentials",
+            artifact: "credentials",
+            availability: "optional",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "CREDENTIAL_STATUS",
+                },
+                {
+                    name: "get",
+                    mode: "async",
+                    parameters: "CREDENTIAL_GET_PARAMETERS",
+                    result: "CREDENTIAL_RESULT",
+                },
+                {
+                    name: "create-password",
+                    mode: "async",
+                    parameters: "CREDENTIAL_CREATE_PASSWORD_PARAMETERS",
+                    result: "CREDENTIAL_CREATE_PASSWORD_RESULT",
+                },
+                {
+                    name: "create-passkey",
+                    mode: "async",
+                    parameters: "CREDENTIAL_CREATE_PASSKEY_PARAMETERS",
+                    result: "CREDENTIAL_CREATE_PASSKEY_RESULT",
+                },
+                {
+                    name: "clear",
+                    mode: "async",
+                    parameters: "VOID",
+                    result: "CREDENTIAL_CLEAR_RESULT",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+        media: {
+            name: "media",
+            artifact: "media",
+            availability: "optional",
+            minSdk: 28,
+            permission: null,
+            methods: [
+                {
+                    name: "status",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "MEDIA_STATUS",
+                },
+                {
+                    name: "load",
+                    mode: "sync",
+                    parameters: "MEDIA_LOAD_PARAMETERS",
+                    result: "MEDIA_STATUS",
+                },
+                {
+                    name: "play",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "MEDIA_STATUS",
+                },
+                {
+                    name: "pause",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "MEDIA_STATUS",
+                },
+                {
+                    name: "stop",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "MEDIA_STATUS",
+                },
+                {
+                    name: "seek",
+                    mode: "sync",
+                    parameters: "MEDIA_SEEK_PARAMETERS",
+                    result: "MEDIA_STATUS",
+                },
+                {
+                    name: "release",
+                    mode: "sync",
+                    parameters: "VOID",
+                    result: "MEDIA_STATUS",
+                },
+            ],
+            events: [],
+            threading: "main",
+            lifecycle: "destination",
+            errorProtocol: "native-bridge-v1",
+        },
+    };
+
     /**
      * Default browser entry point.
      */
     const angular = new Angular();
-
-    document.addEventListener("DOMContentLoaded", () => {
-        angular.init(document);
-    }, {
-        once: true,
-    });
+    scheduleAutoBootstrap(angular, document, window);
 
     exports.AngularRuntime = AngularRuntime;
     exports.a = a;
@@ -43862,6 +44417,7 @@
     exports.meta = meta;
     exports.meter = meter;
     exports.multicol = multicol;
+    exports.nativeCapabilities = nativeCapabilities;
     exports.nav = nav;
     exports.nextid = nextid;
     exports.nobr = nobr;

@@ -8,7 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.textview.MaterialTextView
 import io.github.angularwave.android.demo.R
 
-class NumbersAdapter(val callback: NumbersFragmentCallback) : RecyclerView.Adapter<NumbersAdapter.ViewHolder>() {
+class NumbersAdapter(val callback: NumbersFragmentCallback) :
+    RecyclerView.Adapter<NumbersAdapter.ViewHolder>() {
     private val type = R.layout.adapter_numbers_row
 
     private var items = emptyList<Int>()
@@ -22,19 +23,21 @@ class NumbersAdapter(val callback: NumbersFragmentCallback) : RecyclerView.Adapt
         items = numbers
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         holder.bind(items[position])
     }
 
-    override fun getItemCount(): Int {
-        return items.count()
-    }
+    override fun getItemCount(): Int = items.count()
 
-    override fun getItemViewType(position: Int): Int {
-        return type
-    }
+    override fun getItemViewType(position: Int): Int = type
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(viewType, parent, false)
         return ViewHolder(view)
     }

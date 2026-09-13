@@ -9,17 +9,17 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.navOptions
-import io.github.angularwave.android.core.turbo.config.PathConfiguration
-import io.github.angularwave.android.core.turbo.config.context
-import io.github.angularwave.android.core.turbo.config.fallbackUri
-import io.github.angularwave.android.core.turbo.config.presentation
-import io.github.angularwave.android.core.turbo.config.queryStringPresentation
-import io.github.angularwave.android.core.turbo.config.uri
-import io.github.angularwave.android.core.turbo.nav.Presentation
-import io.github.angularwave.android.core.turbo.nav.PresentationContext
-import io.github.angularwave.android.core.turbo.nav.QueryStringPresentation
-import io.github.angularwave.android.core.turbo.visit.VisitAction
-import io.github.angularwave.android.core.turbo.visit.VisitOptions
+import io.github.angularwave.android.core.ng.config.PathConfiguration
+import io.github.angularwave.android.core.ng.config.context
+import io.github.angularwave.android.core.ng.config.fallbackUri
+import io.github.angularwave.android.core.ng.config.presentation
+import io.github.angularwave.android.core.ng.config.queryStringPresentation
+import io.github.angularwave.android.core.ng.config.uri
+import io.github.angularwave.android.core.ng.nav.Presentation
+import io.github.angularwave.android.core.ng.nav.PresentationContext
+import io.github.angularwave.android.core.ng.nav.QueryStringPresentation
+import io.github.angularwave.android.core.ng.visit.VisitAction
+import io.github.angularwave.android.core.ng.visit.VisitOptions
 import io.github.angularwave.android.navigation.config.AngularNativeNavigation
 import io.github.angularwave.android.navigation.destinations.AngularNativeDestinationDeepLink
 import io.github.angularwave.android.navigation.session.SessionModalResult
@@ -34,9 +34,12 @@ internal class NavigatorRule(
     extras: FragmentNavigator.Extras?,
     pathConfiguration: PathConfiguration,
     navigatorName: String,
-    val controller: NavController
+    val controller: NavController,
 ) {
-    val defaultUri = AngularNativeDestinationDeepLink.from(AngularNativeNavigation.defaultFragmentDestination).uri.toUri()
+    val defaultUri =
+        AngularNativeDestinationDeepLink.from(AngularNativeNavigation.defaultFragmentDestination)
+            .uri
+            .toUri()
 
     // Current destination
     val previousLocation = controller.previousBackStackEntry.location
@@ -73,7 +76,9 @@ internal class NavigatorRule(
             return if (isAtStartDestination && newProperties.presentation == Presentation.POP) {
                 // You cannot pop from the start destination, prevent visit
                 Presentation.NONE
-            } else if (isAtStartDestination && newProperties.presentation == Presentation.CLEAR_ALL) {
+            } else if (
+                isAtStartDestination && newProperties.presentation == Presentation.CLEAR_ALL
+            ) {
                 // You cannot clear all from the start destination, prevent visit
                 Presentation.NONE
             } else {
@@ -85,7 +90,8 @@ internal class NavigatorRule(
         val locationIsCurrent = locationsAreSame(newLocation, currentLocation)
         val locationIsPrevious = locationsAreSame(newLocation, previousLocation)
         val replace = newVisitOptions.action == VisitAction.REPLACE
-        val dismissModalContext = currentPresentationContext == PresentationContext.MODAL &&
+        val dismissModalContext =
+            currentPresentationContext == PresentationContext.MODAL &&
                 newPresentationContext == PresentationContext.DEFAULT
 
         return when {
@@ -117,11 +123,13 @@ internal class NavigatorRule(
         val presentationNone = newPresentation == Presentation.NONE
         val presentationRefresh = newPresentation == Presentation.REFRESH
 
-        val dismissModalContext = currentPresentationContext == PresentationContext.MODAL &&
+        val dismissModalContext =
+            currentPresentationContext == PresentationContext.MODAL &&
                 newPresentationContext == PresentationContext.DEFAULT &&
                 newPresentation != Presentation.REPLACE_ROOT
 
-        val navigateToModalContext = currentPresentationContext == PresentationContext.DEFAULT &&
+        val navigateToModalContext =
+            currentPresentationContext == PresentationContext.DEFAULT &&
                 newPresentationContext == PresentationContext.MODAL &&
                 newPresentation != Presentation.REPLACE_ROOT
 
@@ -149,13 +157,14 @@ internal class NavigatorRule(
         return SessionModalResult(
             location = newLocation,
             options = newVisitOptions.copy(action = action),
-            bundle = newBundle
+            bundle = newBundle,
         )
     }
 
     private fun verifyNavRules() {
-        if (newPresentationContext == PresentationContext.MODAL &&
-            newPresentation == Presentation.REPLACE_ROOT
+        if (
+            newPresentationContext == PresentationContext.MODAL &&
+                newPresentation == Presentation.REPLACE_ROOT
         ) {
             throw NavigatorException("A `modal` destination cannot use presentation `REPLACE_ROOT`")
         }
@@ -175,7 +184,10 @@ internal class NavigatorRule(
         }
     }
 
-    private fun locationsAreSame(first: String?, second: String?): Boolean {
+    private fun locationsAreSame(
+        first: String?,
+        second: String?,
+    ): Boolean {
         if (first == null || second == null) {
             return false
         }
@@ -187,6 +199,7 @@ internal class NavigatorRule(
             QueryStringPresentation.REPLACE -> {
                 firstUri.path == secondUri.path
             }
+
             QueryStringPresentation.DEFAULT -> {
                 firstUri.path == secondUri.path && firstUri.query == secondUri.query
             }

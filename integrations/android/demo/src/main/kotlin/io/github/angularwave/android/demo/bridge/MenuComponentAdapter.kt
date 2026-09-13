@@ -27,19 +27,21 @@ class MenuComponentAdapter : RecyclerView.Adapter<MenuComponentAdapter.ViewHolde
         this.action = action
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         holder.bind(items[position])
     }
 
-    override fun getItemCount(): Int {
-        return items.count()
-    }
+    override fun getItemCount(): Int = items.count()
 
-    override fun getItemViewType(position: Int): Int {
-        return type
-    }
+    override fun getItemViewType(position: Int): Int = type
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(viewType, parent, false)
         return ViewHolder(view)
     }

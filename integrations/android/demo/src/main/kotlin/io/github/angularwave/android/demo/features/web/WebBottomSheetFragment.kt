@@ -9,7 +9,10 @@ import io.github.angularwave.android.navigation.fragments.AngularNativeWebBottom
 
 @AngularNativeDestinationDeepLink(uri = "angularNative://fragment/web/modal/sheet")
 class WebBottomSheetFragment : AngularNativeWebBottomSheetFragment() {
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         setupMenu()
     }

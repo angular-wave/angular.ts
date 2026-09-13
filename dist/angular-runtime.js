@@ -1,10 +1,11 @@
 import { _parse, _rootScope, _rootElement, _compile, _injector, _scope } from './injection-tokens.js';
-import { errorFormattingConfig, values, validateNotHasOwnPropertyName, hasOwn, isString, isPromiseLike, isInstanceOf, isArray, ngAttrPrefixes, createErrorFactory, isObject } from './shared/utils.js';
+import { errorFormattingConfig, values, validateNotHasOwnPropertyName, hasOwn, isString, isPromiseLike, isInstanceOf, isArray, createErrorFactory, isObject } from './shared/utils.js';
 import { getController, getInjector, getScope, getNormalizedAttr, getNormalizedAttrName, hasNormalizedAttr, getInheritedData, setCacheData } from './shared/dom.js';
 import { createInjector } from './core/di/injector.js';
 import { NgModule } from './core/di/ng-module/ng-module.js';
 import { validateIsString } from './shared/validate.js';
 import { createCoreRuntime } from './core/composition/runtime-composition.js';
+import { hasDeclarativeApp, isAutomaticBootstrapRoot } from './auto-bootstrap.js';
 
 const ngError = createErrorFactory("ng");
 const $injectorError = createErrorFactory("$injector");
@@ -229,6 +230,11 @@ class AngularRuntime extends EventTarget {
      * @returns The created injector instance for this application.
      */
     bootstrap(element, modules) {
+        if ((isInstanceOf(element, Element) || isInstanceOf(element, Document)) &&
+            hasDeclarativeApp(element) &&
+            !isAutomaticBootstrapRoot(element)) {
+            throw ngError("btstrpd", "Cannot manually bootstrap an element that contains ng-app");
+        }
         if (isInstanceOf(element, Element) || isInstanceOf(element, Document)) {
             rootScopeCleanupByElement.get(element)?.();
         }
@@ -297,47 +303,6 @@ class AngularRuntime extends EventTarget {
         this.currentInjector = createInjector(modules, undefined, (name) => this.getModule(name));
         this._injectorCreated = true;
         return this.currentInjector;
-    }
-    /**
-     * Find `ng-app` roots under the provided element and bootstrap them.
-     *
-     * The first root uses this instance. Additional roots are bootstrapped as
-     * sub-applications and stored in {@link subapps}.
-     *
-     * @param element - Root element or document to scan.
-     */
-    init(element) {
-        const appElements = [];
-        let multimode = false;
-        ngAttrPrefixes.forEach((prefix) => {
-            const name = `${prefix}app`;
-            let candidates;
-            if (element.nodeType === 1 &&
-                element.hasAttribute(name)) {
-                candidates = [element];
-            }
-            else {
-                candidates = element.querySelectorAll(`[${name}]`);
-            }
-            candidates.forEach((el) => {
-                appElements.push({
-                    _element: el,
-                    _module: el.getAttribute(name),
-                });
-            });
-        });
-        appElements.forEach((app) => {
-            if (multimode) {
-                const RuntimeCtor = this.constructor;
-                const submodule = new RuntimeCtor(true);
-                this.subapps.push(submodule);
-                submodule.bootstrap(app._element, app._module ? [app._module] : []);
-            }
-            else {
-                this.bootstrap(app._element, app._module ? [app._module] : []);
-            }
-            multimode = true;
-        });
     }
     /**
      * Find a scope by its registered `scopeName`.

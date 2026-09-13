@@ -12,7 +12,7 @@ class NativeNavigationTransitionTest {
             assertEquals(transition, NativeNavigationTransition.from(transition.value))
             assertEquals(
                 transition,
-                NativeNavigationTransition.from(" ${transition.value.uppercase()} ")
+                NativeNavigationTransition.from(" ${transition.value.uppercase()} "),
             )
         }
     }
@@ -21,11 +21,11 @@ class NativeNavigationTransitionTest {
     fun `uses the default transition for missing and unsupported values`() {
         assertEquals(
             NativeNavigationTransition.DEFAULT,
-            NativeNavigationTransition.from(null)
+            NativeNavigationTransition.from(null),
         )
         assertEquals(
             NativeNavigationTransition.DEFAULT,
-            NativeNavigationTransition.from("zoom")
+            NativeNavigationTransition.from("zoom"),
         )
         assertNull(NativeNavigationTransition.DEFAULT.navigationOptions())
     }
@@ -35,39 +35,53 @@ class NativeNavigationTransitionTest {
         assertAnimations(NativeNavigationTransition.NONE, 0, 0, 0, 0)
         assertAnimations(
             NativeNavigationTransition.SLIDE,
-            R.anim.enter_slide_in_right,
-            R.anim.exit_slide_out_left,
-            R.anim.enter_slide_in_left,
-            R.anim.exit_slide_out_right
+            R.animator.enter_slide_in_right,
+            R.animator.exit_slide_out_left,
+            R.animator.enter_slide_in_left,
+            R.animator.exit_slide_out_right,
         )
         assertAnimations(
             NativeNavigationTransition.FADE,
-            android.R.anim.fade_in,
-            android.R.anim.fade_out,
-            android.R.anim.fade_in,
-            android.R.anim.fade_out
+            R.animator.fade_in,
+            R.animator.fade_out,
+            R.animator.fade_in,
+            R.animator.fade_out,
         )
         assertAnimations(
             NativeNavigationTransition.COVER,
-            R.anim.enter_slide_in_bottom,
+            R.animator.enter_slide_in_bottom,
             0,
             0,
-            R.anim.exit_slide_out_bottom
+            R.animator.exit_slide_out_bottom,
         )
         assertAnimations(
             NativeNavigationTransition.DIVE,
-            R.anim.enter_dive,
-            R.anim.exit_dive,
-            R.anim.pop_enter_dive,
-            R.anim.pop_exit_dive
+            R.animator.enter_dive,
+            R.animator.exit_dive,
+            R.animator.pop_enter_dive,
+            R.animator.pop_exit_dive,
         )
         assertAnimations(
             NativeNavigationTransition.FLIP,
-            R.anim.enter_flip,
-            R.anim.exit_flip,
-            R.anim.pop_enter_flip,
-            R.anim.pop_exit_flip
+            R.animator.enter_flip,
+            R.animator.exit_flip,
+            R.animator.pop_enter_flip,
+            R.animator.pop_exit_flip,
         )
+    }
+
+    @Test
+    fun `reduced motion disables every explicit transition`() {
+        NativeNavigationTransition.entries
+            .filterNot { it == NativeNavigationTransition.DEFAULT }
+            .forEach { transition ->
+                val options = checkNotNull(transition.navigationOptions(reduceMotion = true))
+                assertEquals(0, options.enterAnim)
+                assertEquals(0, options.exitAnim)
+                assertEquals(0, options.popEnterAnim)
+                assertEquals(0, options.popExitAnim)
+            }
+        assertNull(NativeNavigationTransition.DEFAULT.navigationOptions(reduceMotion = true))
     }
 
     private fun assertAnimations(
@@ -75,7 +89,7 @@ class NativeNavigationTransitionTest {
         enter: Int,
         exit: Int,
         popEnter: Int,
-        popExit: Int
+        popExit: Int,
     ) {
         val options = checkNotNull(transition.navigationOptions())
         assertEquals(enter, options.enterAnim)

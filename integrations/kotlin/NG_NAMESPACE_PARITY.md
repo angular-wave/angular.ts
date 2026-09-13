@@ -294,6 +294,80 @@ part of the Kotlin public facade.
 | `WebComponentInputConfig` | generated |
 | `WebComponentInputs` | generated |
 
+## Native Applications
+
+| ng type | Kotlin status |
+| --- | --- |
+| `NativeBridgeAdapter` | alias |
+| `NativeBiometricStatus` | alias |
+| `NativeCameraCaptureResult` | alias |
+| `NativeCameraStatus` | alias |
+| `NativeCapabilityEventMap` | alias |
+| `NativeCapabilityEventName` | alias |
+| `NativeCapabilityEventPayload` | alias |
+| `NativeCapabilityMethodContract` | alias |
+| `NativeCapabilityMethodMap` | alias |
+| `NativeCapabilityMethodName` | alias |
+| `NativeCapabilityName` | alias |
+| `NativeCapabilityParameters` | alias |
+| `NativeCapabilityResult` | alias |
+| `NativeCallMessage` | alias |
+| `NativeCallOptions` | alias |
+| `NativeClipboardContent` | alias |
+| `NativeClipboardWriteParameters` | alias |
+| `NativeClipboardWriteResult` | alias |
+| `NativeConfig` | alias |
+| `NativeConnectivityStatus` | alias |
+| `NativeCredentialClearResult` | alias |
+| `NativeCredentialCreatePasskeyParameters` | alias |
+| `NativeCredentialCreatePasskeyResult` | alias |
+| `NativeCredentialCreatePasswordParameters` | alias |
+| `NativeCredentialCreatePasswordResult` | alias |
+| `NativeCredentialGetParameters` | alias |
+| `NativeCredentialResult` | alias |
+| `NativeCredentialStatus` | alias |
+| `NativeEventHandler` | alias |
+| `NativeEventMessage` | alias |
+| `NativeFileDescriptor` | alias |
+| `NativeFileOpenParameters` | alias |
+| `NativeFileOpenResult` | alias |
+| `NativeFileStatus` | alias |
+| `NativeFileUploadParameters` | alias |
+| `NativeFileUploadProgress` | alias |
+| `NativeFileUploadResult` | alias |
+| `NativeGeolocationPosition` | alias |
+| `NativeGeolocationStatus` | alias |
+| `NativeHapticParameters` | alias |
+| `NativeHapticResult` | alias |
+| `NativeIntentParameters` | alias |
+| `NativeJsonObject` | alias |
+| `NativeJsonPrimitive` | alias |
+| `NativeJsonValue` | alias |
+| `NativeLifecycleStatus` | alias |
+| `NativeMediaLoadParameters` | alias |
+| `NativeMediaSeekParameters` | alias |
+| `NativeMediaStatus` | alias |
+| `NativeNavigationAndroidChange` | alias |
+| `NativeNavigationBridgeChange` | alias |
+| `NativeNavigationChange` | alias |
+| `NativeNavigationPopResult` | alias |
+| `NativeNavigationRouteParameters` | alias |
+| `NativeNavigationRouteResult` | alias |
+| `NativeNavigationStatus` | alias |
+| `NativeNavigationTransition` | alias |
+| `NativeNotificationStatus` | alias |
+| `NativeOpenResult` | alias |
+| `NativePermissionParameters` | alias |
+| `NativePermissionStatus` | alias |
+| `NativePlatformStatus` | alias |
+| `NativeReplyMessage` | alias |
+| `NativeService` | alias |
+| `NativeShareParameters` | alias |
+| `NativeWindowBounds` | alias |
+| `NativeWindowDisplayFeature` | alias |
+| `NativeWindowInsets` | alias |
+| `NativeWindowStatus` | alias |
+
 ## Storage, Workers, And Misc
 
 | ng type | Kotlin status |

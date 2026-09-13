@@ -3,5 +3,5 @@ package io.github.angularwave.android.core.files.util
 data class UriAttributes(
     val fileName: String,
     val mimeType: String,
-    val fileSize: Long
+    val fileSize: Long,
 )

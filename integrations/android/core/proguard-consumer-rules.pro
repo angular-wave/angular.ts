@@ -3,7 +3,7 @@
 # The custom rule file must be defined using the 'consumerProguardFiles' property in your
 # build.gradle.kts file.
 
--keepclassmembers class io.github.angularwave.android.core.turbo.session.Session {
+-keepclassmembers class io.github.angularwave.android.core.ng.session.Session {
     @android.webkit.JavascriptInterface <methods>;
 }
 -keepclassmembers class io.github.angularwave.android.core.bridge.Bridge {

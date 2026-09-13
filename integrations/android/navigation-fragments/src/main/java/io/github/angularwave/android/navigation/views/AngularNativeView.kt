@@ -9,24 +9,39 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.ImageView
-import androidx.core.view.*
+import androidx.core.view.ScrollingView
+import androidx.core.view.contains
+import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import io.github.angularwave.android.navigation.R
 
 /**
- * Turbo view that hosts the shared WebView, a progress view, an error view, and allows
+ * WebNavigation view that hosts the shared WebView, a progress view, an error view, and allows
  * pull-to-refresh behavior.
  */
-class AngularNativeView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
+class AngularNativeView
+@JvmOverloads
+constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
     FrameLayout(context, attrs, defStyleAttr) {
 
-    private val webViewContainer: ViewGroup get() = findViewById(R.id.angular_native_web_view_container)
-    private val progressContainer: ViewGroup get() = findViewById(R.id.angular_native_progress_container)
-    private val errorContainer: ViewGroup get() = findViewById(R.id.angular_native_error_container)
-    private val screenshotView: ImageView get() = findViewById(R.id.angular_native_screenshot)
+    private val webViewContainer: ViewGroup
+        get() = findViewById(R.id.angular_native_web_view_container)
 
-    internal val webViewRefresh: SwipeRefreshLayout? get() = webViewContainer as? SwipeRefreshLayout
-    internal val errorRefresh: SwipeRefreshLayout? get() = findViewById(R.id.angular_native_error_refresh)
+    private val progressContainer: ViewGroup
+        get() = findViewById(R.id.angular_native_progress_container)
+
+    private val errorContainer: ViewGroup
+        get() = findViewById(R.id.angular_native_error_container)
+
+    private val screenshotView: ImageView
+        get() = findViewById(R.id.angular_native_screenshot)
+
+    internal val webViewRefresh: SwipeRefreshLayout?
+        get() = webViewContainer as? SwipeRefreshLayout
+
+    internal val errorRefresh: SwipeRefreshLayout?
+        get() = findViewById(R.id.angular_native_error_refresh)
 
     internal fun attachWebView(webView: WebView, onAttachedToNewDestination: (Boolean) -> Unit) {
         if (webView.parent != null) {
@@ -46,10 +61,11 @@ class AngularNativeView @JvmOverloads constructor(context: Context, attrs: Attri
             // over the message queue.
             if (isAttachedToWindow && webView.parent == null) {
                 webView.updateLayoutParams {
-                    height = when (webViewContainer) {
-                        is ScrollingView -> LayoutParams.WRAP_CONTENT
-                        else -> LayoutParams.MATCH_PARENT
-                    }
+                    height =
+                        when (webViewContainer) {
+                            is ScrollingView -> LayoutParams.WRAP_CONTENT
+                            else -> LayoutParams.MATCH_PARENT
+                        }
                 }
 
                 webViewContainer.addView(webView)

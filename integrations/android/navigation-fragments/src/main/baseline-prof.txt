@@ -1,0 +1,4 @@
+Lio/github/angularwave/android/navigation/activities/**;
+Lio/github/angularwave/android/navigation/navigator/**;
+Lio/github/angularwave/android/navigation/fragments/**;
+Lio/github/angularwave/android/navigation/bridge/**;

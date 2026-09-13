@@ -16,11 +16,12 @@ class SystemNavigationRouteDecisionHandlerTest {
     private lateinit var activity: AngularNativeActivity
 
     private val route = SystemNavigationRouteDecisionHandler()
-    private val config = NavigatorConfiguration(
-        name = "test",
-        startLocation = "https://my.app.com",
-        navigatorHostId = 0
-    )
+    private val config =
+        NavigatorConfiguration(
+            name = "test",
+            startLocation = "https://my.app.com",
+            navigatorHostId = 0,
+        )
 
     @Before
     fun setup() {

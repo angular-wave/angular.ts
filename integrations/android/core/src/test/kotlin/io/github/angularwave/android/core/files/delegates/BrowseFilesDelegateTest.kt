@@ -7,7 +7,7 @@ import android.webkit.WebChromeClient.FileChooserParams
 import android.webkit.WebChromeClient.FileChooserParams.MODE_OPEN
 import android.webkit.WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE
 import androidx.test.core.app.ApplicationProvider
-import io.github.angularwave.android.core.turbo.BaseUnitTest
+import io.github.angularwave.android.core.ng.BaseUnitTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -67,15 +67,19 @@ class BrowseFilesDelegateTest : BaseUnitTest() {
 
     private fun params(
         mode: Int = MODE_OPEN,
-        acceptTypes: Array<String> = arrayOf("*/*")
-    ): FileChooserParams {
-        return object : FileChooserParams() {
+        acceptTypes: Array<String> = arrayOf("*/*"),
+    ): FileChooserParams =
+        object : FileChooserParams() {
             override fun getMode() = mode
+
             override fun getAcceptTypes() = acceptTypes
+
             override fun isCaptureEnabled() = false
+
             override fun getTitle() = "title"
+
             override fun getFilenameHint() = "hint"
+
             override fun createIntent() = Intent()
         }
-    }
 }

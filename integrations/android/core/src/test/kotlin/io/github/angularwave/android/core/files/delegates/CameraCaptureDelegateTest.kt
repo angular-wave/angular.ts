@@ -6,8 +6,9 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.webkit.WebChromeClient.FileChooserParams
+import androidx.core.content.IntentCompat
 import androidx.test.core.app.ApplicationProvider
-import io.github.angularwave.android.core.turbo.BaseUnitTest
+import io.github.angularwave.android.core.ng.BaseUnitTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -30,23 +31,36 @@ class CameraCaptureDelegateTest : BaseUnitTest() {
 
     @Test
     fun buildIntentAcceptTypesValid() {
-        val params = listOf(
-            params(arrayOf("*/*"), captureEnabled = true),
-            params(arrayOf("image/*"), captureEnabled = true),
-            params(arrayOf("image/*"), captureEnabled = false),
-            params(arrayOf("image/jpg"), captureEnabled = true),
-            params(arrayOf("image/jpg"), captureEnabled = false),
-            params(arrayOf("image/jpeg"), captureEnabled = true),
-            params(arrayOf("image/jpeg"), captureEnabled = false)
-        )
+        val params =
+            listOf(
+                params(arrayOf("*/*"), captureEnabled = true),
+                params(arrayOf("image/*"), captureEnabled = true),
+                params(arrayOf("image/*"), captureEnabled = false),
+                params(arrayOf("image/jpg"), captureEnabled = true),
+                params(arrayOf("image/jpg"), captureEnabled = false),
+                params(arrayOf("image/jpeg"), captureEnabled = true),
+                params(arrayOf("image/jpeg"), captureEnabled = false),
+            )
 
         params.forEach {
             val intent = delegate.buildIntent(it)
-            val uri = intent?.getParcelableExtra<Uri>(MediaStore.EXTRA_OUTPUT).toString()
+            val uri =
+                intent
+                    ?.let {
+                        IntentCompat.getParcelableExtra(
+                            it,
+                            MediaStore.EXTRA_OUTPUT,
+                            Uri::class.java,
+                        )
+                    }
+                    .toString()
 
             assertThat(intent).isNotNull()
             assertThat(intent?.action).isEqualTo(MediaStore.ACTION_IMAGE_CAPTURE)
-            assertThat(uri).startsWith("content://io.github.angularwave.android.core.test.angularNative.fileprovider/shared")
+            assertThat(uri)
+                .startsWith(
+                    "content://io.github.angularwave.android.core.test.angularNative.fileprovider/shared"
+                )
             assertThat(uri).contains("/Capture_")
             assertThat(uri).endsWith(".jpg")
         }
@@ -54,15 +68,16 @@ class CameraCaptureDelegateTest : BaseUnitTest() {
 
     @Test
     fun buildIntentAcceptTypesInvalid() {
-        val params = listOf(
-            params(arrayOf("*/*"), captureEnabled = false),
-            params(arrayOf("image/png"), captureEnabled = true),
-            params(arrayOf("image/png"), captureEnabled = false),
-            params(arrayOf("image/webp"), captureEnabled = true),
-            params(arrayOf("image/webp"), captureEnabled = false),
-            params(arrayOf("video/*"), captureEnabled = true),
-            params(arrayOf("video/*"), captureEnabled = false),
-        )
+        val params =
+            listOf(
+                params(arrayOf("*/*"), captureEnabled = false),
+                params(arrayOf("image/png"), captureEnabled = true),
+                params(arrayOf("image/png"), captureEnabled = false),
+                params(arrayOf("image/webp"), captureEnabled = true),
+                params(arrayOf("image/webp"), captureEnabled = false),
+                params(arrayOf("video/*"), captureEnabled = true),
+                params(arrayOf("video/*"), captureEnabled = false),
+            )
 
         params.forEach {
             val intent = delegate.buildIntent(it)
@@ -78,15 +93,19 @@ class CameraCaptureDelegateTest : BaseUnitTest() {
 
     private fun params(
         acceptTypes: Array<String> = arrayOf("*/*"),
-        captureEnabled: Boolean = true
-    ): FileChooserParams {
-        return object : FileChooserParams() {
+        captureEnabled: Boolean = true,
+    ): FileChooserParams =
+        object : FileChooserParams() {
             override fun getMode() = MODE_OPEN
+
             override fun getAcceptTypes() = acceptTypes
+
             override fun isCaptureEnabled() = captureEnabled
+
             override fun getTitle() = "title"
+
             override fun getFilenameHint() = "hint"
+
             override fun createIntent() = Intent()
         }
-    }
 }

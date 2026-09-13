@@ -3,9 +3,11 @@ package io.github.angularwave.android.core.files.util
 import android.content.Context
 import android.net.Uri
 import android.os.Build
+import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
-import io.github.angularwave.android.core.turbo.BaseUnitTest
-import io.github.angularwave.android.core.turbo.util.dispatcherProvider
+import io.github.angularwave.android.core.ng.BaseUnitTest
+import io.github.angularwave.android.core.ng.util.dispatcherProvider
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -20,13 +22,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
-import java.io.File
 
 @ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.R])
 class UriHelperTest : BaseUnitTest() {
-
     private val testDispatcher = UnconfinedTestDispatcher(TestCoroutineScheduler())
 
     private lateinit var context: Context
@@ -51,29 +51,37 @@ class UriHelperTest : BaseUnitTest() {
     fun validUriIsWrittenToFileSuccessfully() = runTest {
         val inputFile = File("/tmp/file.txt")
         val inputFileUri = Uri.fromFile(inputFile)
-        Shadows.shadowOf(context.contentResolver).registerInputStream(inputFileUri, "fileContent".byteInputStream())
+        Shadows.shadowOf(context.contentResolver)
+            .registerInputStream(inputFileUri, "fileContent".byteInputStream())
 
-        val destFile = uriHelper.writeFileTo(inputFileUri, AngularNativeFileProvider.directory(context))
+        val destFile =
+            uriHelper.writeFileTo(inputFileUri, AngularNativeFileProvider.directory(context))
 
         assertThat(destFile).isNotNull()
     }
 
     @Test
     fun pathTraversingUriWithRelativePathFailsToWriteToFile() = runTest {
-        val inputFileUri = Uri.parse("../../tmp/file.txt")
-        Shadows.shadowOf(context.contentResolver).registerInputStream(inputFileUri, "fileContent".byteInputStream())
+        val inputFileUri = "../../tmp/file.txt".toUri()
+        Shadows.shadowOf(context.contentResolver)
+            .registerInputStream(inputFileUri, "fileContent".byteInputStream())
 
-        val destFile = uriHelper.writeFileTo(inputFileUri, AngularNativeFileProvider.directory(context))
+        val destFile =
+            uriHelper.writeFileTo(inputFileUri, AngularNativeFileProvider.directory(context))
 
         assertThat(destFile).isNull()
     }
 
     @Test
     fun pathTraversingUriWithNameArgFailsToWriteToFile() = runTest {
-        val inputFileUri = Uri.parse("content://malicious.app?path=/data/data/malicious.app/files/file.txt&name=../../file.txt")
-        Shadows.shadowOf(context.contentResolver).registerInputStream(inputFileUri, "fileContent".byteInputStream())
+        val inputFileUri =
+            "content://malicious.app?path=/data/data/malicious.app/files/file.txt&name=../../file.txt"
+                .toUri()
+        Shadows.shadowOf(context.contentResolver)
+            .registerInputStream(inputFileUri, "fileContent".byteInputStream())
 
-        val destFile = uriHelper.writeFileTo(inputFileUri, AngularNativeFileProvider.directory(context))
+        val destFile =
+            uriHelper.writeFileTo(inputFileUri, AngularNativeFileProvider.directory(context))
 
         assertThat(destFile).isNull()
     }

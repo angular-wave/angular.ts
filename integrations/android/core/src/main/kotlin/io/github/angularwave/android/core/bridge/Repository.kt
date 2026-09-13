@@ -3,9 +3,8 @@ package io.github.angularwave.android.core.bridge
 import android.content.Context
 
 internal class Repository {
-    fun getUserScript(context: Context): String {
-        return context.assets.open("js/bridge_components.js").use {
+    fun getUserScript(context: Context): String =
+        context.assets.open("js/bridge_components.js").use {
             String(it.readBytes())
         }
-    }
 }

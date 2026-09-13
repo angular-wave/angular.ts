@@ -57,7 +57,9 @@ angular
   .createModule('counterApp', [])
   .controller('CounterController', CounterController);
 
-angular.init(document);
+const root = document.querySelector('#counter-app');
+if (!root) throw new Error('Missing counter application root');
+angular.bootstrap(root, ['counterApp']);
 
 export { angular };
 ```
@@ -68,7 +70,7 @@ discover `ng-click` from a template and add it automatically.
 <!-- tested-by: src/docs-examples/optimized-runtime-cookbook.test.ts, src/runtime/custom-counter.test.ts -->
 
 ```html
-<section ng-app="counterApp" ng-controller="CounterController as counter">
+<section id="counter-app" ng-controller="CounterController as counter">
   <strong>{{ counter.count }}</strong>
   <button type="button" ng-click="counter.increase()">Increase</button>
 </section>
@@ -80,9 +82,8 @@ routing. Import `sseModule`, `websocketModule`, or `webTransportModule` from
 `@angular-wave/angular.ts/runtime/realtime` when only one live transport is
 needed. Use `machineModule` or `workflowModule` from
 `@angular-wave/angular.ts/runtime/orchestration` instead of their aggregate when
-only one orchestration feature is needed. Do not import the package root or
-`auto` from this entry; either import restores the general runtime you are
-trying not to ship.
+only one orchestration feature is needed. Do not import the package root from
+this entry; it restores the general runtime and its auto-bootstrap behavior.
 
 ## Build it with Vite
 

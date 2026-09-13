@@ -54,7 +54,8 @@ internal class CameraCaptureDelegate(val context: Context) {
     }
 
     private fun FileChooserParams.allowsCameraCapture(): Boolean {
-        val acceptsImages = defaultAcceptType() == "image/*" ||
+        val acceptsImages =
+            defaultAcceptType() == "image/*" ||
                 acceptTypes.contains("image/jpeg") ||
                 acceptTypes.contains("image/jpg")
 

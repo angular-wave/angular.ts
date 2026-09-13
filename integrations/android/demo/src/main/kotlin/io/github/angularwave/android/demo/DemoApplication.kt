@@ -1,10 +1,11 @@
 package io.github.angularwave.android.demo
 
 import android.app.Application
+import android.os.StrictMode
 import io.github.angularwave.android.core.bridge.BridgeComponentFactory
 import io.github.angularwave.android.core.bridge.KotlinXJsonConverter
 import io.github.angularwave.android.core.config.AngularNative
-import io.github.angularwave.android.core.turbo.config.PathConfiguration
+import io.github.angularwave.android.core.ng.config.PathConfiguration
 import io.github.angularwave.android.demo.bridge.FormComponent
 import io.github.angularwave.android.demo.bridge.MenuComponent
 import io.github.angularwave.android.demo.bridge.OverflowMenuComponent
@@ -19,7 +20,23 @@ import io.github.angularwave.android.navigation.config.registerFragmentDestinati
 class DemoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        if (BuildConfig.DEBUG) configureStrictMode()
         configureApp()
+    }
+
+    private fun configureStrictMode() {
+        StrictMode.setThreadPolicy(
+            StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build()
+        )
+        StrictMode.setVmPolicy(
+            StrictMode.VmPolicy.Builder()
+                .detectActivityLeaks()
+                .detectLeakedClosableObjects()
+                .detectLeakedRegistrationObjects()
+                .detectFileUriExposure()
+                .penaltyLog()
+                .build()
+        )
     }
 
     private fun configureApp() {
@@ -31,14 +48,14 @@ class DemoApplication : Application() {
             WebFragment::class,
             WebBottomSheetFragment::class,
             NumbersFragment::class,
-            ImageViewerFragment::class
+            ImageViewerFragment::class,
         )
 
         // Register bridge components
         AngularNative.registerBridgeComponents(
             BridgeComponentFactory("form", ::FormComponent),
             BridgeComponentFactory("menu", ::MenuComponent),
-            BridgeComponentFactory("overflow-menu", ::OverflowMenuComponent)
+            BridgeComponentFactory("overflow-menu", ::OverflowMenuComponent),
         )
 
         // Set configuration options
@@ -50,10 +67,11 @@ class DemoApplication : Application() {
         // Loads the path configuration
         AngularNative.loadPathConfiguration(
             context = this,
-            location = PathConfiguration.Location(
-                assetFilePath = "json/path-configuration.json",
-                remoteFileUrl = "${Demo.current.url}/configurations/android_v1.json"
-            )
+            location =
+                PathConfiguration.Location(
+                    assetFilePath = "json/path-configuration.json",
+                    remoteFileUrl = "${Demo.current.url}/configurations/android_v1.json",
+                ),
         )
     }
 }

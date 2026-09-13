@@ -6,7 +6,10 @@ package io.github.angularwave.android.navigation.session
  * @param T
  * @property content Content of the event.
  */
-internal class SessionEvent<out T>(private val content: T) {
+internal class SessionEvent<out T>(
+    private val content: T,
+    private val onHandled: () -> Unit = {},
+) {
     var hasBeenHandled = false
         private set // Allow external read but not write
 
@@ -15,15 +18,14 @@ internal class SessionEvent<out T>(private val content: T) {
      *
      * @return
      */
-    fun getContentIfNotHandled(): T? {
-        return if (hasBeenHandled) {
+    fun getContentIfNotHandled(): T? =
+        if (hasBeenHandled) {
             null
         } else {
             hasBeenHandled = true
+            onHandled()
             content
         }
-    }
-
 
     /**
      * Returns the content, even if it's already been handled.

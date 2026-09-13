@@ -13,6 +13,15 @@ const sourceText = sourceFiles
   .map((file) => readFileSync(file, "utf8"))
   .join("\n");
 const supportedDirectives = collectSupportedDirectives(sourceText);
+const nativeElementCatalog = JSON.parse(
+  readFileSync(join("integrations", "android", "native-elements.json"), "utf8"),
+);
+for (const element of nativeElementCatalog.elements) {
+  supportedDirectives.add(nativeElementName(element.name));
+  for (const alias of element.aliases) {
+    supportedDirectives.add(nativeElementName(alias));
+  }
+}
 supportedDirectives.add("ng-app");
 for (const name of collectEventDirectives(
   join(sourceRoot, "directive", "events", "events.ts"),
@@ -208,6 +217,10 @@ function collectEventDirectives(file) {
   return [...list.matchAll(/["']([a-z][a-z0-9]*)["']/gu)].map(
     (match) => `ng-${match[1]}`,
   );
+}
+
+function nativeElementName(name) {
+  return name.startsWith("native-") ? `ng-${name}` : `ng-native-${name}`;
 }
 
 function collectSupportedDirectives(text) {

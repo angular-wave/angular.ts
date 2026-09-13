@@ -806,6 +806,31 @@ export const nativeElements = {
         type: "STRING",
         default: "crop",
       },
+      width: {
+        name: "width",
+        type: "FLOAT",
+        nullable: true,
+      },
+      height: {
+        name: "height",
+        type: "FLOAT",
+        nullable: true,
+      },
+      minWidth: {
+        name: "minWidth",
+        type: "FLOAT",
+        default: 0,
+      },
+      minHeight: {
+        name: "minHeight",
+        type: "FLOAT",
+        default: 0,
+      },
+      enabled: {
+        name: "enabled",
+        type: "BOOLEAN",
+        default: true,
+      },
       placeholderColor: {
         name: "placeholderColor",
         type: "COLOR",
@@ -824,6 +849,18 @@ export const nativeElements = {
       },
       error: {
         name: "error",
+      },
+      click: {
+        name: "click",
+      },
+      longClick: {
+        name: "longClick",
+      },
+      focus: {
+        name: "focus",
+      },
+      blur: {
+        name: "blur",
       },
     },
   },
@@ -1226,7 +1263,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "row",
+        default: "",
       },
       children: {
         name: "children",
@@ -1278,16 +1315,27 @@ export const nativeElements = {
         type: "BOOLEAN",
         default: true,
       },
+      swipeEnabled: {
+        name: "swipeEnabled",
+        type: "BOOLEAN",
+        default: false,
+      },
+      reorderEnabled: {
+        name: "reorderEnabled",
+        type: "BOOLEAN",
+        default: false,
+      },
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {},
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
     },
   },
@@ -1307,7 +1355,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "column",
+        default: "",
       },
       children: {
         name: "children",
@@ -1359,16 +1407,27 @@ export const nativeElements = {
         type: "BOOLEAN",
         default: true,
       },
+      swipeEnabled: {
+        name: "swipeEnabled",
+        type: "BOOLEAN",
+        default: false,
+      },
+      reorderEnabled: {
+        name: "reorderEnabled",
+        type: "BOOLEAN",
+        default: false,
+      },
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {},
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
     },
   },
@@ -1388,7 +1447,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "box",
+        default: "",
       },
       children: {
         name: "children",
@@ -1438,13 +1497,14 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {},
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
     },
   },
@@ -1464,7 +1524,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "surface",
+        default: "",
       },
       children: {
         name: "children",
@@ -1519,13 +1579,14 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {},
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
     },
   },
@@ -1545,7 +1606,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "scroll",
+        default: "",
       },
       children: {
         name: "children",
@@ -1600,7 +1661,7 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {
@@ -1618,6 +1679,7 @@ export const nativeElements = {
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
       scroll: {
         name: "scroll",
@@ -1641,7 +1703,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "scaffold",
+        default: "",
       },
       children: {
         name: "children",
@@ -1703,6 +1765,7 @@ export const nativeElements = {
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
     },
   },
@@ -1722,7 +1785,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "app-bar",
+        default: "",
       },
       children: {
         name: "children",
@@ -1777,13 +1840,14 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {},
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
     },
   },
@@ -1803,17 +1867,17 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "bottom-bar",
+        default: "",
       },
-      children: {
-        name: "children",
+      items: {
+        name: "items",
         type: "JSON",
         nullable: false,
       },
-      padding: {
-        name: "padding",
-        type: "FLOAT",
-        default: 0,
+      selectedKey: {
+        name: "selectedKey",
+        type: "STRING",
+        default: "",
       },
       width: {
         name: "width",
@@ -1835,21 +1899,6 @@ export const nativeElements = {
         type: "FLOAT",
         default: 0,
       },
-      spacing: {
-        name: "spacing",
-        type: "FLOAT",
-        default: 0,
-      },
-      horizontalAlignment: {
-        name: "horizontalAlignment",
-        type: "STRING",
-        default: "stretch",
-      },
-      verticalAlignment: {
-        name: "verticalAlignment",
-        type: "STRING",
-        default: "stretch",
-      },
       enabled: {
         name: "enabled",
         type: "BOOLEAN",
@@ -1858,13 +1907,18 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {},
     events: {
-      childEvent: {
-        name: "childEvent",
+      select: {
+        name: "select",
+        payload: "JSON",
+      },
+      reselect: {
+        name: "reselect",
+        payload: "JSON",
       },
     },
   },
@@ -1884,7 +1938,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "navigation-rail",
+        default: "",
       },
       children: {
         name: "children",
@@ -1939,13 +1993,14 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {},
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
     },
   },
@@ -1965,7 +2020,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "tabs",
+        default: "",
       },
       children: {
         name: "children",
@@ -2010,7 +2065,7 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {
@@ -2022,6 +2077,7 @@ export const nativeElements = {
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
       change: {
         name: "change",
@@ -2044,7 +2100,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "pager",
+        default: "",
       },
       children: {
         name: "children",
@@ -2089,7 +2145,7 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {
@@ -2101,6 +2157,7 @@ export const nativeElements = {
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
       change: {
         name: "change",
@@ -2123,7 +2180,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "list",
+        default: "",
       },
       children: {
         name: "children",
@@ -2143,7 +2200,7 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {
@@ -2161,6 +2218,7 @@ export const nativeElements = {
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
       scroll: {
         name: "scroll",
@@ -2168,6 +2226,15 @@ export const nativeElements = {
       },
       loadMore: {
         name: "loadMore",
+        payload: "JSON",
+      },
+      swipe: {
+        name: "swipe",
+        payload: "JSON",
+      },
+      move: {
+        name: "move",
+        payload: "JSON",
       },
     },
   },
@@ -2187,7 +2254,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "grid",
+        default: "",
       },
       children: {
         name: "children",
@@ -2209,10 +2276,20 @@ export const nativeElements = {
         type: "INTEGER",
         default: 2,
       },
+      swipeEnabled: {
+        name: "swipeEnabled",
+        type: "BOOLEAN",
+        default: false,
+      },
+      reorderEnabled: {
+        name: "reorderEnabled",
+        type: "BOOLEAN",
+        default: false,
+      },
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {
@@ -2230,6 +2307,7 @@ export const nativeElements = {
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
       scroll: {
         name: "scroll",
@@ -2237,6 +2315,15 @@ export const nativeElements = {
       },
       loadMore: {
         name: "loadMore",
+        payload: "JSON",
+      },
+      swipe: {
+        name: "swipe",
+        payload: "JSON",
+      },
+      move: {
+        name: "move",
+        payload: "JSON",
       },
     },
   },
@@ -2341,7 +2428,7 @@ export const nativeElements = {
       label: {
         name: "label",
         type: "STRING",
-        default: "pull-to-refresh",
+        default: "",
       },
       children: {
         name: "children",
@@ -2366,13 +2453,14 @@ export const nativeElements = {
       safeArea: {
         name: "safeArea",
         type: "BOOLEAN",
-        default: true,
+        default: false,
       },
     },
     methods: {},
     events: {
       childEvent: {
         name: "childEvent",
+        payload: "JSON",
       },
       refresh: {
         name: "refresh",
@@ -2498,6 +2586,9 @@ export const nativeElements = {
       show: {
         name: "show",
       },
+      cancel: {
+        name: "cancel",
+      },
       dismiss: {
         name: "dismiss",
       },
@@ -2509,7 +2600,7 @@ export const nativeElements = {
     category: "overlay",
     maturity: "preview",
     minSdk: 28,
-    stateOwnership: "destination",
+    stateOwnership: "none",
     accessibility: {
       role: "menu",
       labelProperty: "title",
@@ -2572,7 +2663,7 @@ export const nativeElements = {
     category: "overlay",
     maturity: "preview",
     minSdk: 28,
-    stateOwnership: "destination",
+    stateOwnership: "none",
     accessibility: {
       role: "snackbar",
       labelProperty: "title",
@@ -2639,7 +2730,7 @@ export const nativeElements = {
     category: "overlay",
     maturity: "preview",
     minSdk: 28,
-    stateOwnership: "destination",
+    stateOwnership: "none",
     accessibility: {
       role: "tooltip",
       labelProperty: "label",
@@ -2662,8 +2753,25 @@ export const nativeElements = {
         default: "",
       },
     },
-    methods: {},
-    events: {},
+    methods: {
+      show: {
+        name: "show",
+      },
+      hide: {
+        name: "hide",
+      },
+      dismiss: {
+        name: "dismiss",
+      },
+    },
+    events: {
+      show: {
+        name: "show",
+      },
+      dismiss: {
+        name: "dismiss",
+      },
+    },
   },
   map: {
     name: "map",
@@ -2864,6 +2972,11 @@ export interface NativeElementPropertiesMap {
     readonly src?: string;
     readonly contentDescription?: string;
     readonly contentScale?: string;
+    readonly width?: number | null;
+    readonly height?: number | null;
+    readonly minWidth?: number;
+    readonly minHeight?: number;
+    readonly enabled?: boolean;
     readonly placeholderColor?: string;
     readonly errorColor?: string;
   };
@@ -2930,6 +3043,8 @@ export interface NativeElementPropertiesMap {
     readonly horizontalAlignment?: string;
     readonly verticalAlignment?: string;
     readonly enabled?: boolean;
+    readonly swipeEnabled?: boolean;
+    readonly reorderEnabled?: boolean;
     readonly safeArea?: boolean;
   };
   readonly column: {
@@ -2944,6 +3059,8 @@ export interface NativeElementPropertiesMap {
     readonly horizontalAlignment?: string;
     readonly verticalAlignment?: string;
     readonly enabled?: boolean;
+    readonly swipeEnabled?: boolean;
+    readonly reorderEnabled?: boolean;
     readonly safeArea?: boolean;
   };
   readonly box: {
@@ -3017,15 +3134,12 @@ export interface NativeElementPropertiesMap {
   };
   readonly "bottom-bar": {
     readonly label?: string;
-    readonly children?: unknown;
-    readonly padding?: number;
+    readonly items?: unknown;
+    readonly selectedKey?: string;
     readonly width?: number | null;
     readonly height?: number | null;
     readonly minWidth?: number;
     readonly minHeight?: number;
-    readonly spacing?: number;
-    readonly horizontalAlignment?: string;
-    readonly verticalAlignment?: string;
     readonly enabled?: boolean;
     readonly safeArea?: boolean;
   };
@@ -3080,6 +3194,8 @@ export interface NativeElementPropertiesMap {
     readonly padding?: number;
     readonly enabled?: boolean;
     readonly columns?: number;
+    readonly swipeEnabled?: boolean;
+    readonly reorderEnabled?: boolean;
     readonly safeArea?: boolean;
   };
   readonly "list-item": {
@@ -3209,6 +3325,10 @@ export interface NativeElementEventMap {
   readonly image: {
     readonly load: unknown;
     readonly error: unknown;
+    readonly click: unknown;
+    readonly longClick: unknown;
+    readonly focus: unknown;
+    readonly blur: unknown;
   };
   readonly drawer: {
     readonly open: unknown;
@@ -3265,7 +3385,8 @@ export interface NativeElementEventMap {
     readonly childEvent: unknown;
   };
   readonly "bottom-bar": {
-    readonly childEvent: unknown;
+    readonly select: unknown;
+    readonly reselect: unknown;
   };
   readonly "navigation-rail": {
     readonly childEvent: unknown;
@@ -3282,11 +3403,15 @@ export interface NativeElementEventMap {
     readonly childEvent: unknown;
     readonly scroll: unknown;
     readonly loadMore: unknown;
+    readonly swipe: unknown;
+    readonly move: unknown;
   };
   readonly grid: {
     readonly childEvent: unknown;
     readonly scroll: unknown;
     readonly loadMore: unknown;
+    readonly swipe: unknown;
+    readonly move: unknown;
   };
   readonly "list-item": {
     readonly click: unknown;
@@ -3307,6 +3432,7 @@ export interface NativeElementEventMap {
   };
   readonly "bottom-sheet": {
     readonly show: unknown;
+    readonly cancel: unknown;
     readonly dismiss: unknown;
   };
   readonly menu: {
@@ -3319,7 +3445,10 @@ export interface NativeElementEventMap {
     readonly action: unknown;
     readonly dismiss: unknown;
   };
-  readonly tooltip: Readonly<Record<never, never>>;
+  readonly tooltip: {
+    readonly show: unknown;
+    readonly dismiss: unknown;
+  };
   readonly map: {
     readonly ready: unknown;
     readonly cameraChange: unknown;
@@ -3463,7 +3592,14 @@ export interface NativeElementMethodMap {
       readonly result: unknown;
     };
   };
-  readonly tooltip: Readonly<Record<never, never>>;
+  readonly tooltip: {
+    readonly show: { readonly parameters: unknown; readonly result: unknown };
+    readonly hide: { readonly parameters: unknown; readonly result: unknown };
+    readonly dismiss: {
+      readonly parameters: unknown;
+      readonly result: unknown;
+    };
+  };
   readonly map: {
     readonly move: { readonly parameters: unknown; readonly result: unknown };
     readonly animate: {

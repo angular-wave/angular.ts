@@ -1,7 +1,6 @@
 package io.github.angularwave.android.navigation.util
 
 import android.content.Context
-import android.util.TypedValue
 import android.view.View
 import androidx.annotation.AttrRes
 import androidx.appcompat.widget.Toolbar
@@ -32,15 +31,11 @@ fun View.applyDefaultImeWindowInsets() {
 internal val NavBackStackEntry?.location: String?
     get() = this?.arguments?.location
 
-internal fun Context.colorFromThemeAttr(
-    @AttrRes attrColor: Int,
-    typedValue: TypedValue = TypedValue(),
-    resolveRefs: Boolean = true
-): Int {
-    theme.resolveAttribute(attrColor, typedValue, resolveRefs)
-    val attr = obtainStyledAttributes(typedValue.data, intArrayOf(attrColor))
-    val attrValue = attr.getColor(0, -1)
-    attr.recycle()
-
-    return attrValue
+internal fun Context.colorFromThemeAttr(@AttrRes attrColor: Int): Int {
+    val attributes = obtainStyledAttributes(intArrayOf(attrColor))
+    return try {
+        attributes.getColor(0, -1)
+    } finally {
+        attributes.recycle()
+    }
 }

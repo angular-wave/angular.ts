@@ -262,18 +262,6 @@ base class GeneratedNgAngular extends GeneratedNgFacade {
         .jsToDart<Object?>(raw.callMethodVarArgs('injector'.toJS, args));
   }
 
-  /// Find `ng-app` roots under the provided element and bootstrap them. The first root uses this
-  /// instance. Additional roots are bootstrapped as sub-applications and stored in subapps.
-  ///
-  /// Parameters:
-  /// - [element]: Root element or document to scan.
-  void init(Object? element) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(element));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('init'.toJS, args));
-  }
-
   /// Find a scope by its registered `scopeName`.
   ///
   /// Parameters:
@@ -589,18 +577,6 @@ base class GeneratedNgAngularService extends GeneratedNgFacade {
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('injector'.toJS, args));
-  }
-
-  /// Find `ng-app` roots under the provided element and bootstrap them. The first root uses this
-  /// instance. Additional roots are bootstrapped as sub-applications and stored in subapps.
-  ///
-  /// Parameters:
-  /// - [element]: Root element or document to scan.
-  void init(Object? element) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(element));
-
-    unsafe.jsToDart<void>(raw.callMethodVarArgs('init'.toJS, args));
   }
 
   /// Find a scope by its registered `scopeName`.
@@ -3335,6 +3311,10 @@ base class GeneratedNgInjectionTokenMap extends GeneratedNgFacade {
   Object? get $machine =>
       unsafe.jsToDart<Object?>(raw.getProperty('\$machine'.toJS));
 
+  /// The $native member of ng.InjectionTokenMap.
+  Object? get $native =>
+      unsafe.jsToDart<Object?>(raw.getProperty('\$native'.toJS));
+
   /// The $parse member of ng.InjectionTokenMap.
   Object? get $parse =>
       unsafe.jsToDart<Object?>(raw.getProperty('\$parse'.toJS));
@@ -4770,6 +4750,1373 @@ base class GeneratedNgModelSyncTarget extends GeneratedNgFacade {
   }
 }
 
+/// Availability and enrollment state for native biometric authentication.
+///
+/// Raw JavaScript facade for `ng.NativeBiometricStatus`.
+base class GeneratedNgNativeBiometricStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeBiometricStatus.
+  const GeneratedNgNativeBiometricStatus(super.raw);
+
+  /// The available member of ng.NativeBiometricStatus.
+  bool get available => _toDartBool(raw.getProperty('available'.toJS))!;
+
+  /// The enrolled member of ng.NativeBiometricStatus.
+  bool get enrolled => _toDartBool(raw.getProperty('enrolled'.toJS))!;
+
+  /// The permission member of ng.NativeBiometricStatus.
+  String? get permission => _toDartString(raw.getProperty('permission'.toJS));
+}
+
+/// Host object exposed by Android, iOS, or a test adapter.
+///
+/// Raw JavaScript facade for `ng.NativeBridgeAdapter`.
+base class GeneratedNgNativeBridgeAdapter extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeBridgeAdapter.
+  const GeneratedNgNativeBridgeAdapter(super.raw);
+
+  /// The postMessage member of ng.NativeBridgeAdapter.
+  ///
+  /// Parameters:
+  /// - [message]: Value supplied for the message parameter.
+  void postMessage(String message) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(message));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('postMessage'.toJS, args));
+  }
+
+  /// The receive member of ng.NativeBridgeAdapter.
+  ///
+  /// Parameters:
+  /// - [message]: Value supplied for the message parameter.
+  void receive(String message) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(message));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('receive'.toJS, args));
+  }
+}
+
+/// JSON-compatible request sent to a native application shell.
+///
+/// Raw JavaScript facade for `ng.NativeCallMessage`.
+base class GeneratedNgNativeCallMessage extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCallMessage.
+  const GeneratedNgNativeCallMessage(super.raw);
+
+  /// The protocol member of ng.NativeCallMessage.
+  num get protocol => _toDartNumber(raw.getProperty('protocol'.toJS))!;
+
+  /// The id member of ng.NativeCallMessage.
+  String get id => _toDartString(raw.getProperty('id'.toJS))!;
+
+  /// The target member of ng.NativeCallMessage.
+  String get target => _toDartString(raw.getProperty('target'.toJS))!;
+
+  /// The method member of ng.NativeCallMessage.
+  String get method => _toDartString(raw.getProperty('method'.toJS))!;
+
+  /// The params member of ng.NativeCallMessage.
+  Object? get params =>
+      unsafe.jsToDart<Object?>(raw.getProperty('params'.toJS));
+
+  /// The session member of ng.NativeCallMessage.
+  String? get session => _toDartString(raw.getProperty('session'.toJS));
+
+  /// The scopeId member of ng.NativeCallMessage.
+  Object? get scopeId =>
+      unsafe.jsToDart<Object?>(raw.getProperty('scopeId'.toJS));
+
+  /// The elementId member of ng.NativeCallMessage.
+  String? get elementId => _toDartString(raw.getProperty('elementId'.toJS));
+}
+
+/// Options for one request to the native shell.
+///
+/// Raw JavaScript facade for `ng.NativeCallOptions`.
+base class GeneratedNgNativeCallOptions extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCallOptions.
+  const GeneratedNgNativeCallOptions(super.raw);
+
+  /// The id member of ng.NativeCallOptions.
+  String? get id => _toDartString(raw.getProperty('id'.toJS));
+
+  /// The scopeId member of ng.NativeCallOptions.
+  Object? get scopeId =>
+      unsafe.jsToDart<Object?>(raw.getProperty('scopeId'.toJS));
+
+  /// The elementId member of ng.NativeCallOptions.
+  String? get elementId => _toDartString(raw.getProperty('elementId'.toJS));
+
+  /// The timeout member of ng.NativeCallOptions.
+  num? get timeout => _toDartNumber(raw.getProperty('timeout'.toJS));
+
+  /// The signal member of ng.NativeCallOptions.
+  AbortSignal? get signal =>
+      unsafe.jsToDart<AbortSignal?>(raw.getProperty('signal'.toJS));
+}
+
+/// Image captured by the native camera.
+///
+/// Raw JavaScript facade for `ng.NativeCameraCaptureResult`.
+base class GeneratedNgNativeCameraCaptureResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCameraCaptureResult.
+  const GeneratedNgNativeCameraCaptureResult(super.raw);
+
+  /// The uri member of ng.NativeCameraCaptureResult.
+  String get uri => _toDartString(raw.getProperty('uri'.toJS))!;
+
+  /// The name member of ng.NativeCameraCaptureResult.
+  String get name => _toDartString(raw.getProperty('name'.toJS))!;
+
+  /// The size member of ng.NativeCameraCaptureResult.
+  num get size => _toDartNumber(raw.getProperty('size'.toJS))!;
+
+  /// The type member of ng.NativeCameraCaptureResult.
+  String get typeMember => _toDartString(raw.getProperty('type'.toJS))!;
+}
+
+/// Availability and permission state for the native camera.
+///
+/// Raw JavaScript facade for `ng.NativeCameraStatus`.
+base class GeneratedNgNativeCameraStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCameraStatus.
+  const GeneratedNgNativeCameraStatus(super.raw);
+
+  /// The available member of ng.NativeCameraStatus.
+  bool get available => _toDartBool(raw.getProperty('available'.toJS))!;
+
+  /// The granted member of ng.NativeCameraStatus.
+  bool get granted => _toDartBool(raw.getProperty('granted'.toJS))!;
+
+  /// The permission member of ng.NativeCameraStatus.
+  String? get permission => _toDartString(raw.getProperty('permission'.toJS));
+}
+
+/// Public AngularTS NativeCapabilityEventMap contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityEventMap`.
+base class GeneratedNgNativeCapabilityEventMap extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityEventMap.
+  const GeneratedNgNativeCapabilityEventMap(super.raw);
+
+  /// The navigation member of ng.NativeCapabilityEventMap.
+  Object? get navigation =>
+      unsafe.jsToDart<Object?>(raw.getProperty('navigation'.toJS));
+
+  /// The platform member of ng.NativeCapabilityEventMap.
+  Object? get platform =>
+      unsafe.jsToDart<Object?>(raw.getProperty('platform'.toJS));
+
+  /// The permissions member of ng.NativeCapabilityEventMap.
+  Object? get permissions =>
+      unsafe.jsToDart<Object?>(raw.getProperty('permissions'.toJS));
+
+  /// The clipboard member of ng.NativeCapabilityEventMap.
+  Object? get clipboard =>
+      unsafe.jsToDart<Object?>(raw.getProperty('clipboard'.toJS));
+
+  /// The sharing member of ng.NativeCapabilityEventMap.
+  Object? get sharing =>
+      unsafe.jsToDart<Object?>(raw.getProperty('sharing'.toJS));
+
+  /// The intents member of ng.NativeCapabilityEventMap.
+  Object? get intents =>
+      unsafe.jsToDart<Object?>(raw.getProperty('intents'.toJS));
+
+  /// The haptics member of ng.NativeCapabilityEventMap.
+  Object? get haptics =>
+      unsafe.jsToDart<Object?>(raw.getProperty('haptics'.toJS));
+
+  /// The connectivity member of ng.NativeCapabilityEventMap.
+  Object? get connectivity =>
+      unsafe.jsToDart<Object?>(raw.getProperty('connectivity'.toJS));
+
+  /// The lifecycle member of ng.NativeCapabilityEventMap.
+  Object? get lifecycle =>
+      unsafe.jsToDart<Object?>(raw.getProperty('lifecycle'.toJS));
+
+  /// The window member of ng.NativeCapabilityEventMap.
+  Object? get window =>
+      unsafe.jsToDart<Object?>(raw.getProperty('window'.toJS));
+
+  /// The notifications member of ng.NativeCapabilityEventMap.
+  Object? get notifications =>
+      unsafe.jsToDart<Object?>(raw.getProperty('notifications'.toJS));
+
+  /// The geolocation member of ng.NativeCapabilityEventMap.
+  Object? get geolocation =>
+      unsafe.jsToDart<Object?>(raw.getProperty('geolocation'.toJS));
+
+  /// The biometrics member of ng.NativeCapabilityEventMap.
+  Object? get biometrics =>
+      unsafe.jsToDart<Object?>(raw.getProperty('biometrics'.toJS));
+
+  /// The camera member of ng.NativeCapabilityEventMap.
+  Object? get camera =>
+      unsafe.jsToDart<Object?>(raw.getProperty('camera'.toJS));
+
+  /// The files member of ng.NativeCapabilityEventMap.
+  Object? get files => unsafe.jsToDart<Object?>(raw.getProperty('files'.toJS));
+
+  /// The credentials member of ng.NativeCapabilityEventMap.
+  Object? get credentials =>
+      unsafe.jsToDart<Object?>(raw.getProperty('credentials'.toJS));
+
+  /// The media member of ng.NativeCapabilityEventMap.
+  Object? get media => unsafe.jsToDart<Object?>(raw.getProperty('media'.toJS));
+}
+
+/// Public AngularTS NativeCapabilityEventName contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityEventName`.
+base class GeneratedNgNativeCapabilityEventName extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityEventName.
+  const GeneratedNgNativeCapabilityEventName(super.raw);
+}
+
+/// Public AngularTS NativeCapabilityEventPayload contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityEventPayload`.
+base class GeneratedNgNativeCapabilityEventPayload extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityEventPayload.
+  const GeneratedNgNativeCapabilityEventPayload(super.raw);
+}
+
+/// Public AngularTS NativeCapabilityMethodContract contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityMethodContract`.
+base class GeneratedNgNativeCapabilityMethodContract extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityMethodContract.
+  const GeneratedNgNativeCapabilityMethodContract(super.raw);
+}
+
+/// Public AngularTS NativeCapabilityMethodMap contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityMethodMap`.
+base class GeneratedNgNativeCapabilityMethodMap extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityMethodMap.
+  const GeneratedNgNativeCapabilityMethodMap(super.raw);
+
+  /// The navigation member of ng.NativeCapabilityMethodMap.
+  Object? get navigation =>
+      unsafe.jsToDart<Object?>(raw.getProperty('navigation'.toJS));
+
+  /// The platform member of ng.NativeCapabilityMethodMap.
+  Object? get platform =>
+      unsafe.jsToDart<Object?>(raw.getProperty('platform'.toJS));
+
+  /// The permissions member of ng.NativeCapabilityMethodMap.
+  Object? get permissions =>
+      unsafe.jsToDart<Object?>(raw.getProperty('permissions'.toJS));
+
+  /// The clipboard member of ng.NativeCapabilityMethodMap.
+  Object? get clipboard =>
+      unsafe.jsToDart<Object?>(raw.getProperty('clipboard'.toJS));
+
+  /// The sharing member of ng.NativeCapabilityMethodMap.
+  Object? get sharing =>
+      unsafe.jsToDart<Object?>(raw.getProperty('sharing'.toJS));
+
+  /// The intents member of ng.NativeCapabilityMethodMap.
+  Object? get intents =>
+      unsafe.jsToDart<Object?>(raw.getProperty('intents'.toJS));
+
+  /// The haptics member of ng.NativeCapabilityMethodMap.
+  Object? get haptics =>
+      unsafe.jsToDart<Object?>(raw.getProperty('haptics'.toJS));
+
+  /// The connectivity member of ng.NativeCapabilityMethodMap.
+  Object? get connectivity =>
+      unsafe.jsToDart<Object?>(raw.getProperty('connectivity'.toJS));
+
+  /// The lifecycle member of ng.NativeCapabilityMethodMap.
+  Object? get lifecycle =>
+      unsafe.jsToDart<Object?>(raw.getProperty('lifecycle'.toJS));
+
+  /// The window member of ng.NativeCapabilityMethodMap.
+  Object? get window =>
+      unsafe.jsToDart<Object?>(raw.getProperty('window'.toJS));
+
+  /// The notifications member of ng.NativeCapabilityMethodMap.
+  Object? get notifications =>
+      unsafe.jsToDart<Object?>(raw.getProperty('notifications'.toJS));
+
+  /// The geolocation member of ng.NativeCapabilityMethodMap.
+  Object? get geolocation =>
+      unsafe.jsToDart<Object?>(raw.getProperty('geolocation'.toJS));
+
+  /// The biometrics member of ng.NativeCapabilityMethodMap.
+  Object? get biometrics =>
+      unsafe.jsToDart<Object?>(raw.getProperty('biometrics'.toJS));
+
+  /// The camera member of ng.NativeCapabilityMethodMap.
+  Object? get camera =>
+      unsafe.jsToDart<Object?>(raw.getProperty('camera'.toJS));
+
+  /// The files member of ng.NativeCapabilityMethodMap.
+  Object? get files => unsafe.jsToDart<Object?>(raw.getProperty('files'.toJS));
+
+  /// The credentials member of ng.NativeCapabilityMethodMap.
+  Object? get credentials =>
+      unsafe.jsToDart<Object?>(raw.getProperty('credentials'.toJS));
+
+  /// The media member of ng.NativeCapabilityMethodMap.
+  Object? get media => unsafe.jsToDart<Object?>(raw.getProperty('media'.toJS));
+}
+
+/// Public AngularTS NativeCapabilityMethodName contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityMethodName`.
+base class GeneratedNgNativeCapabilityMethodName extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityMethodName.
+  const GeneratedNgNativeCapabilityMethodName(super.raw);
+}
+
+/// Public AngularTS NativeCapabilityName contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityName`.
+base class GeneratedNgNativeCapabilityName extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityName.
+  const GeneratedNgNativeCapabilityName(super.raw);
+}
+
+/// Public AngularTS NativeCapabilityParameters contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityParameters`.
+base class GeneratedNgNativeCapabilityParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityParameters.
+  const GeneratedNgNativeCapabilityParameters(super.raw);
+}
+
+/// Public AngularTS NativeCapabilityResult contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeCapabilityResult`.
+base class GeneratedNgNativeCapabilityResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCapabilityResult.
+  const GeneratedNgNativeCapabilityResult(super.raw);
+}
+
+/// Text currently available from the native clipboard.
+///
+/// Raw JavaScript facade for `ng.NativeClipboardContent`.
+base class GeneratedNgNativeClipboardContent extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeClipboardContent.
+  const GeneratedNgNativeClipboardContent(super.raw);
+
+  /// The text member of ng.NativeClipboardContent.
+  String? get text => _toDartString(raw.getProperty('text'.toJS));
+}
+
+/// Text and optional label written to the native clipboard.
+///
+/// Raw JavaScript facade for `ng.NativeClipboardWriteParameters`.
+base class GeneratedNgNativeClipboardWriteParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeClipboardWriteParameters.
+  const GeneratedNgNativeClipboardWriteParameters(super.raw);
+
+  /// The text member of ng.NativeClipboardWriteParameters.
+  String get text => _toDartString(raw.getProperty('text'.toJS))!;
+
+  /// The label member of ng.NativeClipboardWriteParameters.
+  String? get label => _toDartString(raw.getProperty('label'.toJS));
+}
+
+/// Result of writing text to the native clipboard.
+///
+/// Raw JavaScript facade for `ng.NativeClipboardWriteResult`.
+base class GeneratedNgNativeClipboardWriteResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeClipboardWriteResult.
+  const GeneratedNgNativeClipboardWriteResult(super.raw);
+
+  /// The written member of ng.NativeClipboardWriteResult.
+  bool get written => _toDartBool(raw.getProperty('written'.toJS))!;
+}
+
+/// Configuration accepted by the optional native runtime module.
+///
+/// Raw JavaScript facade for `ng.NativeConfig`.
+base class GeneratedNgNativeConfig extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeConfig.
+  const GeneratedNgNativeConfig(super.raw);
+
+  /// Explicit bridge adapter. The global Android bridge is used by default.
+  Object? get bridge =>
+      unsafe.jsToDart<Object?>(raw.getProperty('bridge'.toJS));
+
+  /// Global bridge property. Defaults to `AngularNative`.
+  String? get globalName => _toDartString(raw.getProperty('globalName'.toJS));
+
+  /// Global bridge property. Defaults to `AngularNative`.
+  set globalName(String? value) {
+    raw.setProperty('globalName'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Request timeout in milliseconds. Defaults to 30 seconds.
+  num? get timeout => _toDartNumber(raw.getProperty('timeout'.toJS));
+
+  /// Request timeout in milliseconds. Defaults to 30 seconds.
+  set timeout(num? value) {
+    raw.setProperty('timeout'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Session token injected by a native shell.
+  String? get session => _toDartString(raw.getProperty('session'.toJS));
+
+  /// Session token injected by a native shell.
+  set session(String? value) {
+    raw.setProperty('session'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Maximum serialized request size. Defaults to 256 KiB.
+  num? get maxMessageBytes =>
+      _toDartNumber(raw.getProperty('maxMessageBytes'.toJS));
+
+  /// Maximum serialized request size. Defaults to 256 KiB.
+  set maxMessageBytes(num? value) {
+    raw.setProperty('maxMessageBytes'.toJS, unsafe.dartToJs(value));
+  }
+}
+
+/// Current native network reachability and cost state.
+///
+/// Raw JavaScript facade for `ng.NativeConnectivityStatus`.
+base class GeneratedNgNativeConnectivityStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeConnectivityStatus.
+  const GeneratedNgNativeConnectivityStatus(super.raw);
+
+  /// The connected member of ng.NativeConnectivityStatus.
+  bool get connected => _toDartBool(raw.getProperty('connected'.toJS))!;
+
+  /// The validated member of ng.NativeConnectivityStatus.
+  bool get validated => _toDartBool(raw.getProperty('validated'.toJS))!;
+
+  /// The metered member of ng.NativeConnectivityStatus.
+  bool get metered => _toDartBool(raw.getProperty('metered'.toJS))!;
+}
+
+/// Result of clearing native credential state.
+///
+/// Raw JavaScript facade for `ng.NativeCredentialClearResult`.
+base class GeneratedNgNativeCredentialClearResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCredentialClearResult.
+  const GeneratedNgNativeCredentialClearResult(super.raw);
+
+  /// The cleared member of ng.NativeCredentialClearResult.
+  bool get cleared => _toDartBool(raw.getProperty('cleared'.toJS))!;
+}
+
+/// Passkey creation request passed to the native credential manager.
+///
+/// Raw JavaScript facade for `ng.NativeCredentialCreatePasskeyParameters`.
+base class GeneratedNgNativeCredentialCreatePasskeyParameters
+    extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCredentialCreatePasskeyParameters.
+  const GeneratedNgNativeCredentialCreatePasskeyParameters(super.raw);
+
+  /// The requestJson member of ng.NativeCredentialCreatePasskeyParameters.
+  String get requestJson => _toDartString(raw.getProperty('requestJson'.toJS))!;
+}
+
+/// Result of creating a passkey through the native credential manager.
+///
+/// Raw JavaScript facade for `ng.NativeCredentialCreatePasskeyResult`.
+base class GeneratedNgNativeCredentialCreatePasskeyResult
+    extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCredentialCreatePasskeyResult.
+  const GeneratedNgNativeCredentialCreatePasskeyResult(super.raw);
+
+  /// The created member of ng.NativeCredentialCreatePasskeyResult.
+  bool get created => _toDartBool(raw.getProperty('created'.toJS))!;
+
+  /// The type member of ng.NativeCredentialCreatePasskeyResult.
+  String get typeMember => _toDartString(raw.getProperty('type'.toJS))!;
+}
+
+/// Password saved through the native credential manager.
+///
+/// Raw JavaScript facade for `ng.NativeCredentialCreatePasswordParameters`.
+base class GeneratedNgNativeCredentialCreatePasswordParameters
+    extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCredentialCreatePasswordParameters.
+  const GeneratedNgNativeCredentialCreatePasswordParameters(super.raw);
+
+  /// The id member of ng.NativeCredentialCreatePasswordParameters.
+  String get id => _toDartString(raw.getProperty('id'.toJS))!;
+
+  /// The password member of ng.NativeCredentialCreatePasswordParameters.
+  String get password => _toDartString(raw.getProperty('password'.toJS))!;
+}
+
+/// Result of saving a password through the native credential manager.
+///
+/// Raw JavaScript facade for `ng.NativeCredentialCreatePasswordResult`.
+base class GeneratedNgNativeCredentialCreatePasswordResult
+    extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCredentialCreatePasswordResult.
+  const GeneratedNgNativeCredentialCreatePasswordResult(super.raw);
+
+  /// The created member of ng.NativeCredentialCreatePasswordResult.
+  bool get created => _toDartBool(raw.getProperty('created'.toJS))!;
+
+  /// The type member of ng.NativeCredentialCreatePasswordResult.
+  String get typeMember => _toDartString(raw.getProperty('type'.toJS))!;
+}
+
+/// Credential kinds requested from the native credential manager.
+///
+/// Raw JavaScript facade for `ng.NativeCredentialGetParameters`.
+base class GeneratedNgNativeCredentialGetParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCredentialGetParameters.
+  const GeneratedNgNativeCredentialGetParameters(super.raw);
+
+  /// The passwords member of ng.NativeCredentialGetParameters.
+  bool? get passwords => _toDartBool(raw.getProperty('passwords'.toJS));
+
+  /// The passkeyRequestJson member of ng.NativeCredentialGetParameters.
+  String? get passkeyRequestJson =>
+      _toDartString(raw.getProperty('passkeyRequestJson'.toJS));
+}
+
+/// Credential returned by the native credential manager.
+///
+/// Raw JavaScript facade for `ng.NativeCredentialResult`.
+base class GeneratedNgNativeCredentialResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCredentialResult.
+  const GeneratedNgNativeCredentialResult(super.raw);
+
+  /// The type member of ng.NativeCredentialResult.
+  String get typeMember => _toDartString(raw.getProperty('type'.toJS))!;
+}
+
+/// Native password and passkey provider support.
+///
+/// Raw JavaScript facade for `ng.NativeCredentialStatus`.
+base class GeneratedNgNativeCredentialStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeCredentialStatus.
+  const GeneratedNgNativeCredentialStatus(super.raw);
+
+  /// The available member of ng.NativeCredentialStatus.
+  bool get available => _toDartBool(raw.getProperty('available'.toJS))!;
+
+  /// The passwords member of ng.NativeCredentialStatus.
+  bool get passwords => _toDartBool(raw.getProperty('passwords'.toJS))!;
+
+  /// The passkeys member of ng.NativeCredentialStatus.
+  bool get passkeys => _toDartBool(raw.getProperty('passkeys'.toJS))!;
+}
+
+/// Public AngularTS NativeEventHandler contract exposed through the ng namespace.
+///
+/// Raw JavaScript facade for `ng.NativeEventHandler`.
+base class GeneratedNgNativeEventHandler extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeEventHandler.
+  const GeneratedNgNativeEventHandler(super.raw);
+
+  /// Calls the ng.NativeEventHandler function.
+  ///
+  /// Parameters:
+  /// - [event]: Value supplied for the event parameter.
+  void call(Object? event) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(event));
+
+    unsafe.jsToDart<void>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// Event pushed by a native application shell.
+///
+/// Raw JavaScript facade for `ng.NativeEventMessage`.
+base class GeneratedNgNativeEventMessage extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeEventMessage.
+  const GeneratedNgNativeEventMessage(super.raw);
+
+  /// The protocol member of ng.NativeEventMessage.
+  num? get protocol => _toDartNumber(raw.getProperty('protocol'.toJS));
+
+  /// The target member of ng.NativeEventMessage.
+  String get target => _toDartString(raw.getProperty('target'.toJS))!;
+
+  /// The event member of ng.NativeEventMessage.
+  String get event => _toDartString(raw.getProperty('event'.toJS))!;
+
+  /// The data member of ng.NativeEventMessage.
+  Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
+}
+
+/// File returned by the native file picker.
+///
+/// Raw JavaScript facade for `ng.NativeFileDescriptor`.
+base class GeneratedNgNativeFileDescriptor extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeFileDescriptor.
+  const GeneratedNgNativeFileDescriptor(super.raw);
+
+  /// The uri member of ng.NativeFileDescriptor.
+  String get uri => _toDartString(raw.getProperty('uri'.toJS))!;
+
+  /// The name member of ng.NativeFileDescriptor.
+  String? get name => _toDartString(raw.getProperty('name'.toJS));
+
+  /// The size member of ng.NativeFileDescriptor.
+  num? get size => _toDartNumber(raw.getProperty('size'.toJS));
+
+  /// The type member of ng.NativeFileDescriptor.
+  String? get typeMember => _toDartString(raw.getProperty('type'.toJS));
+
+  /// The persisted member of ng.NativeFileDescriptor.
+  bool get persisted => _toDartBool(raw.getProperty('persisted'.toJS))!;
+}
+
+/// File types and selection mode passed to the native file picker.
+///
+/// Raw JavaScript facade for `ng.NativeFileOpenParameters`.
+base class GeneratedNgNativeFileOpenParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeFileOpenParameters.
+  const GeneratedNgNativeFileOpenParameters(super.raw);
+
+  /// The accept member of ng.NativeFileOpenParameters.
+  Object? get accept =>
+      unsafe.jsToDart<Object?>(raw.getProperty('accept'.toJS));
+
+  /// The multiple member of ng.NativeFileOpenParameters.
+  bool? get multiple => _toDartBool(raw.getProperty('multiple'.toJS));
+}
+
+/// Files selected through the native file picker.
+///
+/// Raw JavaScript facade for `ng.NativeFileOpenResult`.
+base class GeneratedNgNativeFileOpenResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeFileOpenResult.
+  const GeneratedNgNativeFileOpenResult(super.raw);
+
+  /// The files member of ng.NativeFileOpenResult.
+  Object? get files => unsafe.jsToDart<Object?>(raw.getProperty('files'.toJS));
+}
+
+/// Native file selection and upload support.
+///
+/// Raw JavaScript facade for `ng.NativeFileStatus`.
+base class GeneratedNgNativeFileStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeFileStatus.
+  const GeneratedNgNativeFileStatus(super.raw);
+
+  /// The available member of ng.NativeFileStatus.
+  bool get available => _toDartBool(raw.getProperty('available'.toJS))!;
+
+  /// The contentUris member of ng.NativeFileStatus.
+  bool get contentUris => _toDartBool(raw.getProperty('contentUris'.toJS))!;
+
+  /// The upload member of ng.NativeFileStatus.
+  bool get upload => _toDartBool(raw.getProperty('upload'.toJS))!;
+}
+
+/// Multipart upload sent by the native shell.
+///
+/// Raw JavaScript facade for `ng.NativeFileUploadParameters`.
+base class GeneratedNgNativeFileUploadParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeFileUploadParameters.
+  const GeneratedNgNativeFileUploadParameters(super.raw);
+
+  /// The uri member of ng.NativeFileUploadParameters.
+  String get uri => _toDartString(raw.getProperty('uri'.toJS))!;
+
+  /// The url member of ng.NativeFileUploadParameters.
+  String get url => _toDartString(raw.getProperty('url'.toJS))!;
+
+  /// The uploadId member of ng.NativeFileUploadParameters.
+  String? get uploadId => _toDartString(raw.getProperty('uploadId'.toJS));
+
+  /// The field member of ng.NativeFileUploadParameters.
+  String? get field => _toDartString(raw.getProperty('field'.toJS));
+
+  /// The name member of ng.NativeFileUploadParameters.
+  String? get name => _toDartString(raw.getProperty('name'.toJS));
+
+  /// The type member of ng.NativeFileUploadParameters.
+  String? get typeMember => _toDartString(raw.getProperty('type'.toJS));
+
+  /// The fields member of ng.NativeFileUploadParameters.
+  Object? get fields =>
+      unsafe.jsToDart<Object?>(raw.getProperty('fields'.toJS));
+
+  /// The headers member of ng.NativeFileUploadParameters.
+  Object? get headers =>
+      unsafe.jsToDart<Object?>(raw.getProperty('headers'.toJS));
+}
+
+/// Progress emitted while the native shell uploads a file.
+///
+/// Raw JavaScript facade for `ng.NativeFileUploadProgress`.
+base class GeneratedNgNativeFileUploadProgress extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeFileUploadProgress.
+  const GeneratedNgNativeFileUploadProgress(super.raw);
+
+  /// The uploadId member of ng.NativeFileUploadProgress.
+  String get uploadId => _toDartString(raw.getProperty('uploadId'.toJS))!;
+
+  /// The sent member of ng.NativeFileUploadProgress.
+  num get sent => _toDartNumber(raw.getProperty('sent'.toJS))!;
+
+  /// The total member of ng.NativeFileUploadProgress.
+  num? get total => _toDartNumber(raw.getProperty('total'.toJS));
+}
+
+/// Successful native multipart upload response.
+///
+/// Raw JavaScript facade for `ng.NativeFileUploadResult`.
+base class GeneratedNgNativeFileUploadResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeFileUploadResult.
+  const GeneratedNgNativeFileUploadResult(super.raw);
+
+  /// The status member of ng.NativeFileUploadResult.
+  num get status => _toDartNumber(raw.getProperty('status'.toJS))!;
+
+  /// The body member of ng.NativeFileUploadResult.
+  Object? get body => unsafe.jsToDart<Object?>(raw.getProperty('body'.toJS));
+
+  /// The name member of ng.NativeFileUploadResult.
+  String get name => _toDartString(raw.getProperty('name'.toJS))!;
+
+  /// The type member of ng.NativeFileUploadResult.
+  String get typeMember => _toDartString(raw.getProperty('type'.toJS))!;
+}
+
+/// Serializable current device location.
+///
+/// Raw JavaScript facade for `ng.NativeGeolocationPosition`.
+base class GeneratedNgNativeGeolocationPosition extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeGeolocationPosition.
+  const GeneratedNgNativeGeolocationPosition(super.raw);
+
+  /// The latitude member of ng.NativeGeolocationPosition.
+  num get latitude => _toDartNumber(raw.getProperty('latitude'.toJS))!;
+
+  /// The longitude member of ng.NativeGeolocationPosition.
+  num get longitude => _toDartNumber(raw.getProperty('longitude'.toJS))!;
+
+  /// The accuracy member of ng.NativeGeolocationPosition.
+  num get accuracy => _toDartNumber(raw.getProperty('accuracy'.toJS))!;
+
+  /// The altitude member of ng.NativeGeolocationPosition.
+  num? get altitude => _toDartNumber(raw.getProperty('altitude'.toJS));
+
+  /// The altitudeAccuracy member of ng.NativeGeolocationPosition.
+  num? get altitudeAccuracy =>
+      _toDartNumber(raw.getProperty('altitudeAccuracy'.toJS));
+
+  /// The heading member of ng.NativeGeolocationPosition.
+  num? get heading => _toDartNumber(raw.getProperty('heading'.toJS));
+
+  /// The speed member of ng.NativeGeolocationPosition.
+  num? get speed => _toDartNumber(raw.getProperty('speed'.toJS));
+
+  /// The timestamp member of ng.NativeGeolocationPosition.
+  num get timestamp => _toDartNumber(raw.getProperty('timestamp'.toJS))!;
+}
+
+/// Current availability and granted accuracy for device location.
+///
+/// Raw JavaScript facade for `ng.NativeGeolocationStatus`.
+base class GeneratedNgNativeGeolocationStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeGeolocationStatus.
+  const GeneratedNgNativeGeolocationStatus(super.raw);
+
+  /// The available member of ng.NativeGeolocationStatus.
+  bool get available => _toDartBool(raw.getProperty('available'.toJS))!;
+
+  /// The granted member of ng.NativeGeolocationStatus.
+  bool get granted => _toDartBool(raw.getProperty('granted'.toJS))!;
+
+  /// The accuracy member of ng.NativeGeolocationStatus.
+  String? get accuracy => _toDartString(raw.getProperty('accuracy'.toJS));
+
+  /// The permission member of ng.NativeGeolocationStatus.
+  String get permission => _toDartString(raw.getProperty('permission'.toJS))!;
+}
+
+/// Parameters for native haptic feedback.
+///
+/// Raw JavaScript facade for `ng.NativeHapticParameters`.
+base class GeneratedNgNativeHapticParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeHapticParameters.
+  const GeneratedNgNativeHapticParameters(super.raw);
+
+  /// The style member of ng.NativeHapticParameters.
+  String? get style => _toDartString(raw.getProperty('style'.toJS));
+}
+
+/// Result of a native haptic feedback request.
+///
+/// Raw JavaScript facade for `ng.NativeHapticResult`.
+base class GeneratedNgNativeHapticResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeHapticResult.
+  const GeneratedNgNativeHapticResult(super.raw);
+
+  /// The performed member of ng.NativeHapticResult.
+  bool get performed => _toDartBool(raw.getProperty('performed'.toJS))!;
+}
+
+/// URL passed to a native application through an intent.
+///
+/// Raw JavaScript facade for `ng.NativeIntentParameters`.
+base class GeneratedNgNativeIntentParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeIntentParameters.
+  const GeneratedNgNativeIntentParameters(super.raw);
+
+  /// The url member of ng.NativeIntentParameters.
+  String get url => _toDartString(raw.getProperty('url'.toJS))!;
+}
+
+/// JSON-compatible object accepted across a native bridge.
+///
+/// Raw JavaScript facade for `ng.NativeJsonObject`.
+base class GeneratedNgNativeJsonObject extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeJsonObject.
+  const GeneratedNgNativeJsonObject(super.raw);
+}
+
+/// JSON scalar accepted across a native bridge.
+///
+/// Raw JavaScript facade for `ng.NativeJsonPrimitive`.
+base class GeneratedNgNativeJsonPrimitive extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeJsonPrimitive.
+  const GeneratedNgNativeJsonPrimitive(super.raw);
+}
+
+/// JSON-compatible value accepted across a native bridge.
+///
+/// Raw JavaScript facade for `ng.NativeJsonValue`.
+base class GeneratedNgNativeJsonValue extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeJsonValue.
+  const GeneratedNgNativeJsonValue(super.raw);
+}
+
+/// Current lifecycle state of the native destination.
+///
+/// Raw JavaScript facade for `ng.NativeLifecycleStatus`.
+base class GeneratedNgNativeLifecycleStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeLifecycleStatus.
+  const GeneratedNgNativeLifecycleStatus(super.raw);
+
+  /// The state member of ng.NativeLifecycleStatus.
+  String get state => _toDartString(raw.getProperty('state'.toJS))!;
+
+  /// The active member of ng.NativeLifecycleStatus.
+  bool get active => _toDartBool(raw.getProperty('active'.toJS))!;
+}
+
+/// Media source loaded by the native player.
+///
+/// Raw JavaScript facade for `ng.NativeMediaLoadParameters`.
+base class GeneratedNgNativeMediaLoadParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeMediaLoadParameters.
+  const GeneratedNgNativeMediaLoadParameters(super.raw);
+
+  /// The url member of ng.NativeMediaLoadParameters.
+  String get url => _toDartString(raw.getProperty('url'.toJS))!;
+
+  /// The autoplay member of ng.NativeMediaLoadParameters.
+  bool? get autoplay => _toDartBool(raw.getProperty('autoplay'.toJS));
+}
+
+/// Position, in milliseconds, passed to the native media player.
+///
+/// Raw JavaScript facade for `ng.NativeMediaSeekParameters`.
+base class GeneratedNgNativeMediaSeekParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeMediaSeekParameters.
+  const GeneratedNgNativeMediaSeekParameters(super.raw);
+
+  /// The position member of ng.NativeMediaSeekParameters.
+  num get position => _toDartNumber(raw.getProperty('position'.toJS))!;
+}
+
+/// Current state of the native media player.
+///
+/// Raw JavaScript facade for `ng.NativeMediaStatus`.
+base class GeneratedNgNativeMediaStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeMediaStatus.
+  const GeneratedNgNativeMediaStatus(super.raw);
+
+  /// The available member of ng.NativeMediaStatus.
+  bool get available => _toDartBool(raw.getProperty('available'.toJS))!;
+
+  /// The loaded member of ng.NativeMediaStatus.
+  bool get loaded => _toDartBool(raw.getProperty('loaded'.toJS))!;
+
+  /// The playing member of ng.NativeMediaStatus.
+  bool get playing => _toDartBool(raw.getProperty('playing'.toJS))!;
+
+  /// The position member of ng.NativeMediaStatus.
+  num get position => _toDartNumber(raw.getProperty('position'.toJS))!;
+
+  /// The duration member of ng.NativeMediaStatus.
+  num? get duration => _toDartNumber(raw.getProperty('duration'.toJS));
+
+  /// The state member of ng.NativeMediaStatus.
+  String get state => _toDartString(raw.getProperty('state'.toJS))!;
+}
+
+/// Navigation committed directly by Android rather than requested through the bridge.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationAndroidChange`.
+base class GeneratedNgNativeNavigationAndroidChange extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationAndroidChange.
+  const GeneratedNgNativeNavigationAndroidChange(super.raw);
+
+  /// The method member of ng.NativeNavigationAndroidChange.
+  String get method => _toDartString(raw.getProperty('method'.toJS))!;
+
+  /// The phase member of ng.NativeNavigationAndroidChange.
+  String get phase => _toDartString(raw.getProperty('phase'.toJS))!;
+
+  /// The source member of ng.NativeNavigationAndroidChange.
+  String get source => _toDartString(raw.getProperty('source'.toJS))!;
+
+  /// The from member of ng.NativeNavigationAndroidChange.
+  String? get from => _toDartString(raw.getProperty('from'.toJS));
+
+  /// The url member of ng.NativeNavigationAndroidChange.
+  String? get url => _toDartString(raw.getProperty('url'.toJS));
+}
+
+/// Completion or cancellation of navigation requested through the bridge.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationBridgeChange`.
+base class GeneratedNgNativeNavigationBridgeChange extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationBridgeChange.
+  const GeneratedNgNativeNavigationBridgeChange(super.raw);
+
+  /// The transaction member of ng.NativeNavigationBridgeChange.
+  num get transaction => _toDartNumber(raw.getProperty('transaction'.toJS))!;
+
+  /// The method member of ng.NativeNavigationBridgeChange.
+  String get method => _toDartString(raw.getProperty('method'.toJS))!;
+
+  /// The phase member of ng.NativeNavigationBridgeChange.
+  String get phase => _toDartString(raw.getProperty('phase'.toJS))!;
+
+  /// The source member of ng.NativeNavigationBridgeChange.
+  String get source => _toDartString(raw.getProperty('source'.toJS))!;
+
+  /// The from member of ng.NativeNavigationBridgeChange.
+  String? get from => _toDartString(raw.getProperty('from'.toJS));
+
+  /// The url member of ng.NativeNavigationBridgeChange.
+  String? get url => _toDartString(raw.getProperty('url'.toJS));
+}
+
+/// Committed or cancelled native navigation event.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationChange`.
+base class GeneratedNgNativeNavigationChange extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationChange.
+  const GeneratedNgNativeNavigationChange(super.raw);
+
+  /// The method member of ng.NativeNavigationChange.
+  String get method => _toDartString(raw.getProperty('method'.toJS))!;
+
+  /// The phase member of ng.NativeNavigationChange.
+  String get phase => _toDartString(raw.getProperty('phase'.toJS))!;
+
+  /// The source member of ng.NativeNavigationChange.
+  String get source => _toDartString(raw.getProperty('source'.toJS))!;
+
+  /// The from member of ng.NativeNavigationChange.
+  String? get from => _toDartString(raw.getProperty('from'.toJS));
+
+  /// The url member of ng.NativeNavigationChange.
+  String? get url => _toDartString(raw.getProperty('url'.toJS));
+}
+
+/// Result of requesting native back navigation.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationPopResult`.
+base class GeneratedNgNativeNavigationPopResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationPopResult.
+  const GeneratedNgNativeNavigationPopResult(super.raw);
+
+  /// The routed member of ng.NativeNavigationPopResult.
+  bool get routed => _toDartBool(raw.getProperty('routed'.toJS))!;
+
+  /// The method member of ng.NativeNavigationPopResult.
+  String get method => _toDartString(raw.getProperty('method'.toJS))!;
+}
+
+/// URL and optional transition passed to a native route operation.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationRouteParameters`.
+base class GeneratedNgNativeNavigationRouteParameters
+    extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationRouteParameters.
+  const GeneratedNgNativeNavigationRouteParameters(super.raw);
+
+  /// The url member of ng.NativeNavigationRouteParameters.
+  String get url => _toDartString(raw.getProperty('url'.toJS))!;
+
+  /// The transition member of ng.NativeNavigationRouteParameters.
+  String? get transition => _toDartString(raw.getProperty('transition'.toJS));
+}
+
+/// Accepted push, replace, modal, or deep-link operation.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationRouteResult`.
+base class GeneratedNgNativeNavigationRouteResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationRouteResult.
+  const GeneratedNgNativeNavigationRouteResult(super.raw);
+
+  /// The routed member of ng.NativeNavigationRouteResult.
+  bool get routed => _toDartBool(raw.getProperty('routed'.toJS))!;
+
+  /// The method member of ng.NativeNavigationRouteResult.
+  String get method => _toDartString(raw.getProperty('method'.toJS))!;
+
+  /// The phase member of ng.NativeNavigationRouteResult.
+  String get phase => _toDartString(raw.getProperty('phase'.toJS))!;
+
+  /// The transaction member of ng.NativeNavigationRouteResult.
+  num get transaction => _toDartNumber(raw.getProperty('transaction'.toJS))!;
+
+  /// The url member of ng.NativeNavigationRouteResult.
+  String get url => _toDartString(raw.getProperty('url'.toJS))!;
+
+  /// The action member of ng.NativeNavigationRouteResult.
+  String get action => _toDartString(raw.getProperty('action'.toJS))!;
+
+  /// The transition member of ng.NativeNavigationRouteResult.
+  String get transition => _toDartString(raw.getProperty('transition'.toJS))!;
+}
+
+/// Current native navigation stack state.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationStatus`.
+base class GeneratedNgNativeNavigationStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationStatus.
+  const GeneratedNgNativeNavigationStatus(super.raw);
+
+  /// The location member of ng.NativeNavigationStatus.
+  String? get location => _toDartString(raw.getProperty('location'.toJS));
+
+  /// The previousLocation member of ng.NativeNavigationStatus.
+  String? get previousLocation =>
+      _toDartString(raw.getProperty('previousLocation'.toJS));
+
+  /// The canPop member of ng.NativeNavigationStatus.
+  bool get canPop => _toDartBool(raw.getProperty('canPop'.toJS))!;
+
+  /// The modal member of ng.NativeNavigationStatus.
+  bool get modal => _toDartBool(raw.getProperty('modal'.toJS))!;
+}
+
+/// Named transition applied by native navigation when motion is enabled.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationTransition`.
+base class GeneratedNgNativeNavigationTransition extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationTransition.
+  const GeneratedNgNativeNavigationTransition(super.raw);
+}
+
+/// Current availability and permission state for native notifications.
+///
+/// Raw JavaScript facade for `ng.NativeNotificationStatus`.
+base class GeneratedNgNativeNotificationStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNotificationStatus.
+  const GeneratedNgNativeNotificationStatus(super.raw);
+
+  /// The available member of ng.NativeNotificationStatus.
+  bool get available => _toDartBool(raw.getProperty('available'.toJS))!;
+
+  /// The granted member of ng.NativeNotificationStatus.
+  bool get granted => _toDartBool(raw.getProperty('granted'.toJS))!;
+
+  /// The permission member of ng.NativeNotificationStatus.
+  String? get permission => _toDartString(raw.getProperty('permission'.toJS));
+}
+
+/// Result of opening native UI or another application.
+///
+/// Raw JavaScript facade for `ng.NativeOpenResult`.
+base class GeneratedNgNativeOpenResult extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeOpenResult.
+  const GeneratedNgNativeOpenResult(super.raw);
+
+  /// The opened member of ng.NativeOpenResult.
+  bool get opened => _toDartBool(raw.getProperty('opened'.toJS))!;
+}
+
+/// Parameters for permission status and request calls.
+///
+/// Raw JavaScript facade for `ng.NativePermissionParameters`.
+base class GeneratedNgNativePermissionParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativePermissionParameters.
+  const GeneratedNgNativePermissionParameters(super.raw);
+
+  /// The permission member of ng.NativePermissionParameters.
+  String get permission => _toDartString(raw.getProperty('permission'.toJS))!;
+}
+
+/// Current state of one Android runtime permission.
+///
+/// Raw JavaScript facade for `ng.NativePermissionStatus`.
+base class GeneratedNgNativePermissionStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativePermissionStatus.
+  const GeneratedNgNativePermissionStatus(super.raw);
+
+  /// The permission member of ng.NativePermissionStatus.
+  String get permission => _toDartString(raw.getProperty('permission'.toJS))!;
+
+  /// The granted member of ng.NativePermissionStatus.
+  bool get granted => _toDartBool(raw.getProperty('granted'.toJS))!;
+
+  /// The canRequest member of ng.NativePermissionStatus.
+  bool get canRequest => _toDartBool(raw.getProperty('canRequest'.toJS))!;
+}
+
+/// Runtime and application metadata reported by a native shell.
+///
+/// Raw JavaScript facade for `ng.NativePlatformStatus`.
+base class GeneratedNgNativePlatformStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativePlatformStatus.
+  const GeneratedNgNativePlatformStatus(super.raw);
+
+  /// The platform member of ng.NativePlatformStatus.
+  String get platform => _toDartString(raw.getProperty('platform'.toJS))!;
+
+  /// The sdk member of ng.NativePlatformStatus.
+  num get sdk => _toDartNumber(raw.getProperty('sdk'.toJS))!;
+
+  /// The package member of ng.NativePlatformStatus.
+  String get package => _toDartString(raw.getProperty('package'.toJS))!;
+
+  /// The darkMode member of ng.NativePlatformStatus.
+  bool get darkMode => _toDartBool(raw.getProperty('darkMode'.toJS))!;
+}
+
+/// Reply returned by a native application shell.
+///
+/// Raw JavaScript facade for `ng.NativeReplyMessage`.
+base class GeneratedNgNativeReplyMessage extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeReplyMessage.
+  const GeneratedNgNativeReplyMessage(super.raw);
+
+  /// The protocol member of ng.NativeReplyMessage.
+  num? get protocol => _toDartNumber(raw.getProperty('protocol'.toJS));
+
+  /// The id member of ng.NativeReplyMessage.
+  String get id => _toDartString(raw.getProperty('id'.toJS))!;
+
+  /// The ok member of ng.NativeReplyMessage.
+  bool get ok => _toDartBool(raw.getProperty('ok'.toJS))!;
+
+  /// The result member of ng.NativeReplyMessage.
+  Object? get result =>
+      unsafe.jsToDart<Object?>(raw.getProperty('result'.toJS));
+
+  /// The error member of ng.NativeReplyMessage.
+  Object? get error => unsafe.jsToDart<Object?>(raw.getProperty('error'.toJS));
+}
+
+/// Typed request, reply, and event API shared by native application shells.
+///
+/// Raw JavaScript facade for `ng.NativeService`.
+base class GeneratedNgNativeService extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeService.
+  const GeneratedNgNativeService(super.raw);
+
+  /// The available member of ng.NativeService.
+  bool get available => _toDartBool(raw.getProperty('available'.toJS))!;
+
+  /// The capabilities member of ng.NativeService.
+  Object? get capabilities =>
+      unsafe.jsToDart<Object?>(raw.getProperty('capabilities'.toJS));
+
+  /// The protocolVersion member of ng.NativeService.
+  num get protocolVersion =>
+      _toDartNumber(raw.getProperty('protocolVersion'.toJS))!;
+
+  /// The call member of ng.NativeService.
+  ///
+  /// Parameters:
+  /// - [target]: Value supplied for the target parameter.
+  /// - [method]: Value supplied for the method parameter.
+  /// - [params]: Value supplied for the params parameter.
+  /// - [options]: Value supplied for the options parameter.
+  JSPromise<JSAny?> call(Object? target, Object? method,
+      [Object? params = _undefinedArgument,
+      Object? options = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(target));
+    args.add(unsafe.dartToJs(method));
+    if (!identical(params, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(params));
+    }
+    if (!identical(options, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(options));
+    }
+
+    return raw.callMethodVarArgs('call'.toJS, args) as JSPromise<JSAny?>;
+  }
+
+  /// The receive member of ng.NativeService.
+  ///
+  /// Parameters:
+  /// - [message]: Value supplied for the message parameter.
+  void receive(Object? message) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(message));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('receive'.toJS, args));
+  }
+
+  /// The on member of ng.NativeService.
+  ///
+  /// Parameters:
+  /// - [target]: Value supplied for the target parameter.
+  /// - [event]: Value supplied for the event parameter.
+  /// - [handler]: Value supplied for the handler parameter.
+  Object? onMember(Object? target, Object? event, JSFunction handler) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(target));
+    args.add(unsafe.dartToJs(event));
+    args.add(unsafe.dartToJs(handler));
+
+    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('on'.toJS, args));
+  }
+
+  /// The supports member of ng.NativeService.
+  ///
+  /// Parameters:
+  /// - [target]: Value supplied for the target parameter.
+  /// - [method]: Value supplied for the method parameter.
+  bool supports(String target, [Object? method = _undefinedArgument]) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(target));
+    if (!identical(method, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(method));
+    }
+
+    return _toDartBool(raw.callMethodVarArgs('supports'.toJS, args))!;
+  }
+
+  /// The dispose member of ng.NativeService.
+  void dispose() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('dispose'.toJS, const <JSAny?>[]));
+  }
+}
+
+/// Content passed to the native system share sheet.
+///
+/// Raw JavaScript facade for `ng.NativeShareParameters`.
+base class GeneratedNgNativeShareParameters extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeShareParameters.
+  const GeneratedNgNativeShareParameters(super.raw);
+
+  /// The text member of ng.NativeShareParameters.
+  String get text => _toDartString(raw.getProperty('text'.toJS))!;
+
+  /// The type member of ng.NativeShareParameters.
+  String? get typeMember => _toDartString(raw.getProperty('type'.toJS));
+
+  /// The title member of ng.NativeShareParameters.
+  String? get title => _toDartString(raw.getProperty('title'.toJS));
+}
+
+/// Bounds, in density-independent pixels, of a native display feature.
+///
+/// Raw JavaScript facade for `ng.NativeWindowBounds`.
+base class GeneratedNgNativeWindowBounds extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeWindowBounds.
+  const GeneratedNgNativeWindowBounds(super.raw);
+
+  /// The left member of ng.NativeWindowBounds.
+  num get left => _toDartNumber(raw.getProperty('left'.toJS))!;
+
+  /// The top member of ng.NativeWindowBounds.
+  num get top => _toDartNumber(raw.getProperty('top'.toJS))!;
+
+  /// The right member of ng.NativeWindowBounds.
+  num get right => _toDartNumber(raw.getProperty('right'.toJS))!;
+
+  /// The bottom member of ng.NativeWindowBounds.
+  num get bottom => _toDartNumber(raw.getProperty('bottom'.toJS))!;
+}
+
+/// Fold or hinge reported by a foldable native display.
+///
+/// Raw JavaScript facade for `ng.NativeWindowDisplayFeature`.
+base class GeneratedNgNativeWindowDisplayFeature extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeWindowDisplayFeature.
+  const GeneratedNgNativeWindowDisplayFeature(super.raw);
+
+  /// The type member of ng.NativeWindowDisplayFeature.
+  String get typeMember => _toDartString(raw.getProperty('type'.toJS))!;
+
+  /// The state member of ng.NativeWindowDisplayFeature.
+  String get state => _toDartString(raw.getProperty('state'.toJS))!;
+
+  /// The orientation member of ng.NativeWindowDisplayFeature.
+  String get orientation => _toDartString(raw.getProperty('orientation'.toJS))!;
+
+  /// The separating member of ng.NativeWindowDisplayFeature.
+  bool get separating => _toDartBool(raw.getProperty('separating'.toJS))!;
+
+  /// The bounds member of ng.NativeWindowDisplayFeature.
+  Object? get bounds =>
+      unsafe.jsToDart<Object?>(raw.getProperty('bounds'.toJS));
+}
+
+/// Insets, in density-independent pixels, that native content should avoid.
+///
+/// Raw JavaScript facade for `ng.NativeWindowInsets`.
+base class GeneratedNgNativeWindowInsets extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeWindowInsets.
+  const GeneratedNgNativeWindowInsets(super.raw);
+
+  /// The left member of ng.NativeWindowInsets.
+  num get left => _toDartNumber(raw.getProperty('left'.toJS))!;
+
+  /// The top member of ng.NativeWindowInsets.
+  num get top => _toDartNumber(raw.getProperty('top'.toJS))!;
+
+  /// The right member of ng.NativeWindowInsets.
+  num get right => _toDartNumber(raw.getProperty('right'.toJS))!;
+
+  /// The bottom member of ng.NativeWindowInsets.
+  num get bottom => _toDartNumber(raw.getProperty('bottom'.toJS))!;
+}
+
+/// Current native window metrics, adaptive classes, safe area, and display features.
+///
+/// Raw JavaScript facade for `ng.NativeWindowStatus`.
+base class GeneratedNgNativeWindowStatus extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeWindowStatus.
+  const GeneratedNgNativeWindowStatus(super.raw);
+
+  /// The width member of ng.NativeWindowStatus.
+  num get width => _toDartNumber(raw.getProperty('width'.toJS))!;
+
+  /// The height member of ng.NativeWindowStatus.
+  num get height => _toDartNumber(raw.getProperty('height'.toJS))!;
+
+  /// The widthClass member of ng.NativeWindowStatus.
+  String get widthClass => _toDartString(raw.getProperty('widthClass'.toJS))!;
+
+  /// The heightClass member of ng.NativeWindowStatus.
+  String get heightClass => _toDartString(raw.getProperty('heightClass'.toJS))!;
+
+  /// The orientation member of ng.NativeWindowStatus.
+  String get orientation => _toDartString(raw.getProperty('orientation'.toJS))!;
+
+  /// The safeArea member of ng.NativeWindowStatus.
+  Object? get safeArea =>
+      unsafe.jsToDart<Object?>(raw.getProperty('safeArea'.toJS));
+
+  /// The displayFeatures member of ng.NativeWindowStatus.
+  Object? get displayFeatures =>
+      unsafe.jsToDart<Object?>(raw.getProperty('displayFeatures'.toJS));
+}
+
 /// Public AngularTS NgModelController contract exposed through the ng namespace.
 ///
 /// Raw JavaScript facade for `ng.NgModelController`.
@@ -5369,6 +6716,9 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
   /// Register a module-owned router state tree during module configuration. Child state names are
   /// relative to their parent unless they contain a dot. Each route is queued for the composed router
   /// runtime, so module router trees compose with `lazyState(...)` and inherited route policies.
+  /// RouterModuleDeclaration is the only public registration contract. Pass one declaration or a
+  /// readonly forest; the route map is inferred from the exact literal. To declare the route map
+  /// explicitly, parameterize `createModule&lt;TRouteMap&gt;(...)` instead of `router(...)`.
   ///
   /// Parameters:
   /// - [declaration]: Router tree root declaration.

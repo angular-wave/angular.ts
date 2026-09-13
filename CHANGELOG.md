@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- Added Angular Native Android navigation, components, platform capabilities, and optional UI artifacts.
+- Added Android Maven publication, isolated staged R8 consumers, reproducibility checks, and device CI.
+- Added predictive-back transitions, portable emulator coverage, and optional physical-device evidence.
+- Added signed public-artifact verification, device StrictMode and memory-pressure checks, and reliable offline fallback.
+- Updated Android dependencies, Maven publishing, and Java 21 test isolation for strict warning-free release checks.
+- Made Android Maven archives deterministic, restored the complete CI gate, and rejected stale release preparation.
+
 ## [0.35.5] - 2026-09-06
 
 - Fixed pre-1.0 Hex publication and made release checks verify the published tarball.

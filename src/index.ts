@@ -1,4 +1,5 @@
 import { Angular } from "./angular.ts";
+import { scheduleAutoBootstrap } from "./auto-bootstrap.ts";
 import type {
   AngularRuntimeConstructorInput,
   AngularRuntimeOptions,
@@ -51,6 +52,8 @@ import type {
  * Default browser entry point.
  */
 export const angular = new Angular();
+
+scheduleAutoBootstrap(angular, document, window);
 
 export { AngularRuntime, createAngular } from "./runtime/index.ts";
 export { afterRender, queueAfterRender } from "./core/render/after-render.ts";
@@ -217,6 +220,60 @@ export type {
   NativeService,
 } from "./services/native/native.ts";
 export { nativeCapabilities } from "./runtime/native-capabilities.ts";
+export type {
+  NativeBiometricStatus,
+  NativeCameraCaptureResult,
+  NativeCameraStatus,
+  NativeClipboardContent,
+  NativeClipboardWriteParameters,
+  NativeClipboardWriteResult,
+  NativeConnectivityStatus,
+  NativeCredentialClearResult,
+  NativeCredentialCreatePasskeyParameters,
+  NativeCredentialCreatePasskeyResult,
+  NativeCredentialCreatePasswordParameters,
+  NativeCredentialCreatePasswordResult,
+  NativeCredentialGetParameters,
+  NativeCredentialResult,
+  NativeCredentialStatus,
+  NativeFileDescriptor,
+  NativeFileOpenParameters,
+  NativeFileOpenResult,
+  NativeFileStatus,
+  NativeFileUploadParameters,
+  NativeFileUploadProgress,
+  NativeFileUploadResult,
+  NativeGeolocationPosition,
+  NativeGeolocationStatus,
+  NativeHapticParameters,
+  NativeHapticResult,
+  NativeIntentParameters,
+  NativeJsonObject,
+  NativeJsonPrimitive,
+  NativeJsonValue,
+  NativeLifecycleStatus,
+  NativeMediaLoadParameters,
+  NativeMediaSeekParameters,
+  NativeMediaStatus,
+  NativeNavigationAndroidChange,
+  NativeNavigationBridgeChange,
+  NativeNavigationChange,
+  NativeNavigationPopResult,
+  NativeNavigationRouteParameters,
+  NativeNavigationRouteResult,
+  NativeNavigationStatus,
+  NativeNavigationTransition,
+  NativeNotificationStatus,
+  NativeOpenResult,
+  NativePermissionParameters,
+  NativePermissionStatus,
+  NativePlatformStatus,
+  NativeShareParameters,
+  NativeWindowBounds,
+  NativeWindowDisplayFeature,
+  NativeWindowInsets,
+  NativeWindowStatus,
+} from "./runtime/native-capability-contracts.ts";
 export type {
   NativeCapabilityEventMap,
   NativeCapabilityEventName,

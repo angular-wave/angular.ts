@@ -14,10 +14,6 @@
       "import": "./dist/angular-ts.esm.js",
       "default": "./dist/angular-ts.esm.js"
     },
-    "./auto": {
-      "types": "./@types/auto.d.ts",
-      "import": "./dist/auto.js"
-    },
     "./directive/*": {
       "types": "./@types/directive/*/*.d.ts",
       "import": "./dist/directive/*/*.js"
@@ -66,6 +62,10 @@
     "./runtime/wasm": {
       "types": "./@types/runtime/wasm.d.ts",
       "import": "./dist/runtime/wasm.js"
+    },
+    "./runtime/native": {
+      "types": "./@types/runtime/native.d.ts",
+      "import": "./dist/runtime/native.js"
     },
     "./runtime/web-component": {
       "types": "./@types/runtime/web-component.d.ts",

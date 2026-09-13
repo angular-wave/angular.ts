@@ -1,0 +1,2982 @@
+{
+  "schemaVersion": 3,
+  "elements": [
+    {
+      "name": "text-field",
+      "aliases": [
+        "native-input"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "textbox",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "value",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "placeholder",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "keyboardType",
+          "type": "STRING",
+          "default": "text"
+        },
+        {
+          "name": "imeAction",
+          "type": "STRING",
+          "default": "done"
+        },
+        {
+          "name": "autofillHints",
+          "type": "STRING_LIST"
+        },
+        {
+          "name": "selectionStart",
+          "type": "INTEGER"
+        },
+        {
+          "name": "selectionEnd",
+          "type": "INTEGER"
+        },
+        {
+          "name": "readOnly",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        },
+        {
+          "name": "submit",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "search-field",
+      "aliases": [
+        "native-search"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "searchbox",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Search"
+        },
+        {
+          "name": "value",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "placeholder",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "keyboardType",
+          "type": "STRING",
+          "default": "search"
+        },
+        {
+          "name": "imeAction",
+          "type": "STRING",
+          "default": "search"
+        },
+        {
+          "name": "autofillHints",
+          "type": "STRING_LIST"
+        },
+        {
+          "name": "selectionStart",
+          "type": "INTEGER"
+        },
+        {
+          "name": "selectionEnd",
+          "type": "INTEGER"
+        },
+        {
+          "name": "readOnly",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        },
+        {
+          "name": "submit",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "checkbox",
+      "aliases": [
+        "native-checkbox"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "checkbox",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "value",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "switch",
+      "aliases": [
+        "native-switch"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "switch",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "value",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "slider",
+      "aliases": [
+        "native-slider"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "slider",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "value",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "min",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "max",
+          "type": "FLOAT",
+          "default": 100
+        },
+        {
+          "name": "step",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "text",
+      "aliases": [],
+      "category": "display",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "text",
+        "labelProperty": "text",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "color",
+          "type": "COLOR"
+        },
+        {
+          "name": "textSize",
+          "type": "FLOAT",
+          "default": 16
+        },
+        {
+          "name": "maxLines",
+          "type": "INTEGER",
+          "default": 2147483647
+        }
+      ],
+      "methods": [],
+      "events": [],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "button",
+      "aliases": [
+        "native-button"
+      ],
+      "category": "action",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "button",
+        "labelProperty": "text",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": "Button"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "loading",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "loadingText",
+          "type": "STRING",
+          "default": "Loading"
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "click"
+        },
+        {
+          "name": "longClick"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "icon",
+      "aliases": [
+        "native-icon"
+      ],
+      "category": "display",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "image",
+        "labelProperty": "contentDescription",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "resource",
+          "type": "STRING",
+          "default": "ic_menu_help"
+        },
+        {
+          "name": "contentDescription",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "tint",
+          "type": "COLOR"
+        }
+      ],
+      "methods": [],
+      "events": [],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "divider",
+      "aliases": [],
+      "category": "display",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "separator",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "color",
+          "type": "COLOR",
+          "default": "#1f000000"
+        },
+        {
+          "name": "thickness",
+          "type": "FLOAT",
+          "default": 1
+        }
+      ],
+      "methods": [],
+      "events": [],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "badge",
+      "aliases": [],
+      "category": "display",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "text",
+        "labelProperty": "text",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "backgroundColor",
+          "type": "COLOR",
+          "default": "#b3261e"
+        },
+        {
+          "name": "textColor",
+          "type": "COLOR",
+          "default": "#ffffff"
+        }
+      ],
+      "methods": [],
+      "events": [],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "chip",
+      "aliases": [],
+      "category": "action",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "button",
+        "labelProperty": "text",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": "Chip"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "checkable",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "checked",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "click"
+        },
+        {
+          "name": "change"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "progress",
+      "aliases": [
+        "progress-bar"
+      ],
+      "category": "display",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "progressbar",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Progress"
+        },
+        {
+          "name": "value",
+          "type": "INTEGER",
+          "default": 0
+        },
+        {
+          "name": "max",
+          "type": "INTEGER",
+          "default": 100
+        },
+        {
+          "name": "indeterminate",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "loading-indicator",
+      "aliases": [
+        "spinner"
+      ],
+      "category": "display",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "progressbar",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Loading"
+        },
+        {
+          "name": "visible",
+          "type": "BOOLEAN",
+          "default": true
+        }
+      ],
+      "methods": [],
+      "events": [],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "floating-action-button",
+      "aliases": [
+        "fab"
+      ],
+      "category": "action",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "button",
+        "labelProperty": "contentDescription",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "resource",
+          "type": "STRING",
+          "default": "ic_input_add"
+        },
+        {
+          "name": "contentDescription",
+          "type": "STRING",
+          "default": "Action"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "click"
+        },
+        {
+          "name": "longClick"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "card",
+      "aliases": [
+        "native-card"
+      ],
+      "category": "display",
+      "maturity": "experimental",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "button",
+        "labelProperty": "title",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "title",
+          "type": "STRING",
+          "default": "Native card"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "click"
+        },
+        {
+          "name": "longClick"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "image",
+      "aliases": [
+        "native-image",
+        "img"
+      ],
+      "category": "display",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "image",
+        "labelProperty": "contentDescription",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "src",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "contentDescription",
+          "type": "STRING",
+          "default": "Native image"
+        },
+        {
+          "name": "contentScale",
+          "type": "STRING",
+          "default": "crop"
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "placeholderColor",
+          "type": "COLOR",
+          "default": "#607d8b"
+        },
+        {
+          "name": "errorColor",
+          "type": "COLOR",
+          "default": "#b3261e"
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "load"
+        },
+        {
+          "name": "error"
+        },
+        {
+          "name": "click"
+        },
+        {
+          "name": "longClick"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "drawer",
+      "aliases": [
+        "compose-drawer",
+        "native-drawer"
+      ],
+      "category": "overlay",
+      "maturity": "experimental",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "button",
+        "labelProperty": "text",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": "Open drawer"
+        },
+        {
+          "name": "items",
+          "type": "JSON",
+          "nullable": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "hide"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "events": [
+        {
+          "name": "open"
+        },
+        {
+          "name": "close"
+        },
+        {
+          "name": "select"
+        }
+      ],
+      "stateOwnership": "destination",
+      "artifact": "navigation"
+    },
+    {
+      "name": "radio-group",
+      "aliases": [
+        "native-radio-group"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "radiogroup",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "value",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "options",
+          "type": "JSON",
+          "required": true,
+          "nullable": false
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "range-slider",
+      "aliases": [
+        "native-range"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "slider",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Range"
+        },
+        {
+          "name": "value",
+          "type": "JSON",
+          "required": true,
+          "nullable": false
+        },
+        {
+          "name": "min",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "max",
+          "type": "FLOAT",
+          "default": 100
+        },
+        {
+          "name": "step",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "date-picker",
+      "aliases": [
+        "native-date"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "date",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Date"
+        },
+        {
+          "name": "value",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "time-picker",
+      "aliases": [
+        "native-time"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "time",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Time"
+        },
+        {
+          "name": "value",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "file-picker",
+      "aliases": [
+        "native-file"
+      ],
+      "category": "input",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "button",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Choose file"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": "Choose file"
+        },
+        {
+          "name": "value",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "accept",
+          "type": "STRING_LIST"
+        },
+        {
+          "name": "multiple",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "required",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "error",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "pending",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "open"
+        }
+      ],
+      "events": [
+        {
+          "name": "request"
+        },
+        {
+          "name": "change",
+          "payload": "JSON"
+        },
+        {
+          "name": "cancel"
+        },
+        {
+          "name": "focus"
+        },
+        {
+          "name": "blur"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "row",
+      "aliases": [
+        "native-row"
+      ],
+      "category": "layout",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "spacing",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "horizontalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "verticalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "swipeEnabled",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "reorderEnabled",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "column",
+      "aliases": [
+        "native-column"
+      ],
+      "category": "layout",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "spacing",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "horizontalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "verticalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "swipeEnabled",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "reorderEnabled",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "box",
+      "aliases": [
+        "native-box"
+      ],
+      "category": "layout",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "horizontalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "verticalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "surface",
+      "aliases": [
+        "native-surface"
+      ],
+      "category": "layout",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "horizontalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "verticalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "backgroundColor",
+          "type": "COLOR",
+          "default": "#00000000"
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "scroll",
+      "aliases": [
+        "native-scroll"
+      ],
+      "category": "layout",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "spacing",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "horizontalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "verticalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "scrollTo",
+          "parameters": "JSON"
+        },
+        {
+          "name": "scrollToStart"
+        },
+        {
+          "name": "scrollToEnd"
+        }
+      ],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        },
+        {
+          "name": "scroll",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "scaffold",
+      "aliases": [
+        "native-scaffold"
+      ],
+      "category": "layout",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "spacing",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "horizontalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "verticalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": true
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "app-bar",
+      "aliases": [
+        "native-app-bar"
+      ],
+      "category": "navigation",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "spacing",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "horizontalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "verticalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "bottom-bar",
+      "aliases": [
+        "native-bottom-bar"
+      ],
+      "category": "navigation",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "items",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "selectedKey",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "select",
+          "payload": "JSON"
+        },
+        {
+          "name": "reselect",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "navigation-rail",
+      "aliases": [
+        "native-navigation-rail"
+      ],
+      "category": "navigation",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "spacing",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "horizontalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "verticalAlignment",
+          "type": "STRING",
+          "default": "stretch"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "tabs",
+      "aliases": [
+        "native-tabs"
+      ],
+      "category": "navigation",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "value",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "scrollTo",
+          "parameters": "JSON"
+        }
+      ],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        },
+        {
+          "name": "change"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "pager",
+      "aliases": [
+        "native-pager"
+      ],
+      "category": "navigation",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "group",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "width",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "name": "minWidth",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "minHeight",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "value",
+          "type": "INTEGER",
+          "default": 0
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "scrollTo",
+          "parameters": "JSON"
+        }
+      ],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        },
+        {
+          "name": "change"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "list",
+      "aliases": [
+        "native-list"
+      ],
+      "category": "collection",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "list",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "scrollTo",
+          "parameters": "JSON"
+        },
+        {
+          "name": "scrollToStart"
+        },
+        {
+          "name": "scrollToEnd"
+        }
+      ],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        },
+        {
+          "name": "scroll",
+          "payload": "JSON"
+        },
+        {
+          "name": "loadMore",
+          "payload": "JSON"
+        },
+        {
+          "name": "swipe",
+          "payload": "JSON"
+        },
+        {
+          "name": "move",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "grid",
+      "aliases": [
+        "native-grid"
+      ],
+      "category": "collection",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "list",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "columns",
+          "type": "INTEGER",
+          "default": 2
+        },
+        {
+          "name": "swipeEnabled",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "reorderEnabled",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "scrollTo",
+          "parameters": "JSON"
+        },
+        {
+          "name": "scrollToStart"
+        },
+        {
+          "name": "scrollToEnd"
+        }
+      ],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        },
+        {
+          "name": "scroll",
+          "payload": "JSON"
+        },
+        {
+          "name": "loadMore",
+          "payload": "JSON"
+        },
+        {
+          "name": "swipe",
+          "payload": "JSON"
+        },
+        {
+          "name": "move",
+          "payload": "JSON"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "list-item",
+      "aliases": [
+        "native-list-item"
+      ],
+      "category": "collection",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "listitem",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "supportingText",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "selected",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "click"
+        },
+        {
+          "name": "longClick"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "swipe-action",
+      "aliases": [
+        "native-swipe-action"
+      ],
+      "category": "collection",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "button",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Action"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": "Action"
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "action"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "pull-to-refresh",
+      "aliases": [
+        "native-pull-to-refresh"
+      ],
+      "category": "collection",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "list",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "children",
+          "type": "JSON",
+          "nullable": false
+        },
+        {
+          "name": "padding",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "refreshing",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "safeArea",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [],
+      "events": [
+        {
+          "name": "childEvent",
+          "payload": "JSON"
+        },
+        {
+          "name": "refresh"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "navigation"
+    },
+    {
+      "name": "dialog",
+      "aliases": [
+        "native-dialog"
+      ],
+      "category": "overlay",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "dialog",
+        "labelProperty": "title",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "title",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "message",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "confirmText",
+          "type": "STRING",
+          "default": "OK"
+        },
+        {
+          "name": "cancelText",
+          "type": "STRING",
+          "default": "Cancel"
+        }
+      ],
+      "methods": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "hide"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "events": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "confirm"
+        },
+        {
+          "name": "cancel"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "stateOwnership": "destination",
+      "artifact": "navigation"
+    },
+    {
+      "name": "bottom-sheet",
+      "aliases": [
+        "native-bottom-sheet"
+      ],
+      "category": "overlay",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "bottom-sheet",
+        "labelProperty": "title",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "title",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "message",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "hide"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "events": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "cancel"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "stateOwnership": "destination",
+      "artifact": "navigation"
+    },
+    {
+      "name": "menu",
+      "aliases": [
+        "native-menu"
+      ],
+      "category": "overlay",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "menu",
+        "labelProperty": "title",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "title",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "message",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "items",
+          "type": "JSON",
+          "required": true,
+          "nullable": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "hide"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "events": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "select"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "snackbar",
+      "aliases": [
+        "native-snackbar"
+      ],
+      "category": "overlay",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "snackbar",
+        "labelProperty": "title",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "title",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "message",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "default": true
+        },
+        {
+          "name": "actionText",
+          "type": "STRING",
+          "default": ""
+        },
+        {
+          "name": "indefinite",
+          "type": "BOOLEAN",
+          "default": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "hide"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "events": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "action"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "tooltip",
+      "aliases": [
+        "native-tooltip"
+      ],
+      "category": "overlay",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "tooltip",
+        "labelProperty": "label",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "label",
+          "type": "STRING",
+          "default": "Help"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "default": "Help"
+        },
+        {
+          "name": "message",
+          "type": "STRING",
+          "default": ""
+        }
+      ],
+      "methods": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "hide"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "events": [
+        {
+          "name": "show"
+        },
+        {
+          "name": "dismiss"
+        }
+      ],
+      "stateOwnership": "none",
+      "artifact": "navigation"
+    },
+    {
+      "name": "map",
+      "aliases": [
+        "native-map"
+      ],
+      "category": "media",
+      "maturity": "preview",
+      "minSdk": 28,
+      "accessibility": {
+        "role": "map",
+        "labelProperty": "contentDescription",
+        "required": true
+      },
+      "properties": [
+        {
+          "name": "latitude",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "longitude",
+          "type": "FLOAT",
+          "default": 0
+        },
+        {
+          "name": "zoom",
+          "type": "FLOAT",
+          "default": 12
+        },
+        {
+          "name": "mapType",
+          "type": "STRING",
+          "default": "normal"
+        },
+        {
+          "name": "traffic",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "userLocation",
+          "type": "BOOLEAN",
+          "default": false
+        },
+        {
+          "name": "markers",
+          "type": "JSON",
+          "nullable": true
+        },
+        {
+          "name": "contentDescription",
+          "type": "STRING",
+          "default": "Map"
+        }
+      ],
+      "methods": [
+        {
+          "name": "move"
+        },
+        {
+          "name": "animate"
+        },
+        {
+          "name": "fitMarkers"
+        }
+      ],
+      "events": [
+        {
+          "name": "ready"
+        },
+        {
+          "name": "cameraChange"
+        },
+        {
+          "name": "markerClick"
+        },
+        {
+          "name": "mapClick"
+        }
+      ],
+      "stateOwnership": "element",
+      "artifact": "maps"
+    }
+  ]
+}

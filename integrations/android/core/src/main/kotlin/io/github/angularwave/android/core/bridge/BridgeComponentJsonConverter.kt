@@ -2,10 +2,10 @@ package io.github.angularwave.android.core.bridge
 
 import io.github.angularwave.android.core.config.AngularNative
 import io.github.angularwave.android.core.logging.logError
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
-abstract class BridgeComponentJsonConverter {
+abstract class BridgeComponentJsonConverter protected constructor() {
     companion object {
         const val NO_CONVERTER =
             "A AngularNative.config.jsonConverter must be set to encode or decode json"
@@ -37,26 +37,28 @@ abstract class BridgeComponentJsonConverter {
 }
 
 abstract class BridgeComponentJsonTypeConverter : BridgeComponentJsonConverter() {
-    abstract fun <T> toObject(jsonData: String, type: Class<T>): T?
-    abstract fun <T> toJson(data: T, type: Class<T>): String
+    abstract fun <T> toObject(
+        jsonData: String,
+        type: Class<T>,
+    ): T?
+
+    abstract fun <T> toJson(
+        data: T,
+        type: Class<T>,
+    ): String
 }
 
-class KotlinXJsonConverter(
-    val json: Json = io.github.angularwave.android.core.bridge.json
-) : BridgeComponentJsonConverter() {
-
-    inline fun <reified T> toObject(jsonData: String): T? {
-        return try {
+class KotlinXJsonConverter(val json: Json = io.github.angularwave.android.core.bridge.json) :
+    BridgeComponentJsonConverter() {
+    inline fun <reified T> toObject(jsonData: String): T? =
+        try {
             json.decodeFromString(jsonData)
-        } catch(e: Exception) {
+        } catch (e: SerializationException) {
             logException(e)
             null
         }
-    }
 
-    inline fun <reified T> toJson(data: T): String {
-        return json.encodeToString(data)
-    }
+    inline fun <reified T> toJson(data: T): String = json.encodeToString(data)
 
     fun logException(e: Exception) {
         logError("kotlinXJsonConverterFailedWithError", e)

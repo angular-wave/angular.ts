@@ -150,7 +150,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - name: Restore node_modules and Playwright cache
         uses: actions/cache@v5
@@ -368,6 +368,108 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
+  android:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-37" "build-tools;37.0.0"
+
+      - name: Cache Gradle
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            integrations/android/.gradle
+          key: android-${{ runner.os }}-${{ hashFiles('integrations/android/**/*.gradle.kts', 'integrations/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            android-${{ runner.os }}-
+
+      - name: Run Android integration check
+        run: make -C integrations/android release-check
+
+  android-connected:
+    name: Android device ${{ matrix.device }}
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: phone-api-28
+            api-level: 28
+            profile: pixel_2
+            form_factor: phone
+            disable_animations: true
+            benchmark: false
+            checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
+          - device: phone-api-37
+            api-level: 37
+            profile: pixel_6
+            form_factor: phone
+            disable_animations: false
+            benchmark: true
+            checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
+          - device: tablet-api-37
+            api-level: 37
+            profile: pixel_tablet
+            form_factor: tablet
+            disable_animations: false
+            benchmark: false
+            checks: navigation-fragments:connectedCheck
+          - device: foldable-api-37
+            api-level: 37
+            profile: pixel_fold
+            form_factor: foldable
+            disable_animations: true
+            benchmark: false
+            checks: navigation-fragments:connectedCheck
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Run Android device checks
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          profile: ${{ matrix.profile }}
+          disable-animations: ${{ matrix.disable_animations }}
+          script: |
+            ./integrations/android/gradlew -p integrations/android \
+              -Pandroid.testInstrumentationRunnerArguments.formFactor=${{ matrix.form_factor }} \
+              ${{ matrix.checks }}
+            if [ "${{ matrix.benchmark }}" = "true" ]; then
+              make -C integrations/android benchmark-emulator-smoke-check
+            fi
+            ./integrations/android/scripts/capture-device-evidence.sh \
+              integrations/android/build/connected-device-evidence \
+              ${{ matrix.api-level }} \
+              ${{ matrix.device }}
+
+      - name: Upload Android device evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-native-device-evidence-${{ matrix.device }}
+          path: integrations/android/build/connected-device-evidence
+          if-no-files-found: error
+
   ci-gate:
     name: CI Gate
     if: always()
@@ -382,6 +484,8 @@ jobs:
       - gleam
       - scala
       - csharp-wasm
+      - android
+      - android-connected
     runs-on: ubuntu-latest
     steps:
       - name: Require every CI job to pass
@@ -395,7 +499,9 @@ jobs:
           needs.dart.result != 'success' ||
           needs.gleam.result != 'success' ||
           needs.scala.result != 'success' ||
-          needs.csharp-wasm.result != 'success'
+          needs.csharp-wasm.result != 'success' ||
+          needs.android.result != 'success'
+          || needs.android-connected.result != 'success'
         run: exit 1
 
       - name: Confirm CI completion

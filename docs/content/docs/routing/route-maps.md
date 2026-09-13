@@ -11,6 +11,14 @@ names, params, and resolves checked at author time. They do not change the
 runtime router; they describe the route contract that the runtime already
 enforces.
 
+[`RouterModuleDeclaration`](../../../typedoc/interfaces/RouterModuleDeclaration.html)
+is the only public route-registration shape. `router()` accepts either one
+declaration or a readonly array of declarations. `TDeclaration` in its generated
+signature captures the exact argument literal for inference; it is not another
+public type. There is no `router<TRouteMap>(...)` assertion overload and no
+public state provider. Put an explicit route map on
+`createModule<TRouteMap>(...)` when inference is not the desired boundary.
+
 Use [`StateService<TRoutes>`](../../../typedoc/types/StateService.html) at
 injection boundaries where code calls `$state.go(...)` or `$state.href(...)`.
 
@@ -84,7 +92,7 @@ const adminTree = {
       resolve: { users: () => [{ id: '1' }] },
     },
   ],
-} as const;
+} as const satisfies ng.RouterModuleDeclaration;
 
 angular.createModule('admin', []).router(adminTree);
 type AdminRoutes = ng.RoutesOf<typeof adminTree>;
@@ -109,7 +117,7 @@ APIs.
 type AdminRoutes = ng.RoutesOf<typeof adminTree>;
 
 angular
-  .module<AdminRoutes>('admin', [])
+  .createModule<AdminRoutes>('admin', [])
   .router(adminTree)
   .lazyState('admin.**', () => import('./admin.routes'));
 ```
@@ -126,6 +134,29 @@ If a route map is supplied with `angular.createModule<Routes>(...)`, that explic
 module contract is preserved after `router(...)`. This lets a feature module
 declare one route tree while the route map also includes lazy boundaries or
 states registered later in the same module.
+
+Use that explicit module contract when states must be registered individually:
+
+```ts
+type AppRoutes = {
+  home: {};
+  settings: {};
+};
+
+angular
+  .createModule<AppRoutes>('app', [])
+  .router({ name: 'home', url: '/', component: 'homePage' })
+  .router({
+    name: 'settings',
+    url: '/settings',
+    component: 'settingsPage',
+  });
+```
+
+The route map is declared once on `createModule()`. Each `router()` call is then
+checked against it. Prefer a single inferred tree or forest when the states are
+available together, because that avoids repeating route names in a handwritten
+map.
 
 Typed lazy prefixes accept known route names, parent route prefixes, and the
 explicit `".**"` lazy namespace form. Unknown lazy namespaces are rejected when
@@ -288,9 +319,11 @@ service records. If a route map needs to include a lazy-loaded module, compose
 the public route-map types at the TypeScript boundary rather than importing
 router internals.
 
-For templates, `ng-state` remains HTML-first. Use quoted literal route names
-when the target route is static; this keeps examples and editor tooling aligned
-with the same route-map contract.
+`ng-state` always evaluates its value as an expression. Use a quoted literal
+route name when the target is static; this keeps examples and editor tooling
+aligned with the same route-map contract. An unquoted identifier is a scope
+lookup, not an implicit route-name string. Do not wrap `ng-state` expressions in
+interpolation braces.
 
 ```html
 <a ng-state="'admin.profile'" ng-state-params="{ userId: user.id }">
@@ -317,10 +350,10 @@ const profileLink: StaticNgStateLiteral<AdminRoutes, 'admin.profile'> = {
 };
 ```
 
-Use expression-based `ng-state` only when the route name is genuinely dynamic.
-The AngularTS VS Code tooling checks simple TypeScript literal unions such as
-`$ctrl.route: 'admin.profile' | 'admin.users'`. A broad `string` cannot prove a
-finite target set, so use
+Use an identifier or property-path expression only when the route name is
+genuinely dynamic. The AngularTS VS Code tooling checks simple TypeScript
+literal unions such as `$ctrl.route: 'admin.profile' | 'admin.users'`. A broad
+`string` cannot prove a finite target set, so use
 [`StateService<TRoutes>`](../../../typedoc/types/StateService.html) in the code
 that computes that value when it needs author-time validation.
 

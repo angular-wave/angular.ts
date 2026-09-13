@@ -14,9 +14,9 @@ import io.github.angularwave.android.core.bridge.BridgeComponentFragmentLifecycl
 import io.github.angularwave.android.core.bridge.BridgeDelegate
 import io.github.angularwave.android.core.files.util.ANGULAR_NATIVE_REQUEST_CODE_FILES
 import io.github.angularwave.android.core.files.util.ANGULAR_NATIVE_REQUEST_CODE_GEOLOCATION_PERMISSION
-import io.github.angularwave.android.core.turbo.errors.VisitError
-import io.github.angularwave.android.core.turbo.webview.AngularNativeWebChromeClient
-import io.github.angularwave.android.core.turbo.webview.AngularNativeWebView
+import io.github.angularwave.android.core.ng.errors.VisitError
+import io.github.angularwave.android.core.ng.webview.AngularNativeWebChromeClient
+import io.github.angularwave.android.core.ng.webview.AngularNativeWebView
 import io.github.angularwave.android.navigation.R
 import io.github.angularwave.android.navigation.bridge.AngularNativeBridge
 import io.github.angularwave.android.navigation.config.AngularNativeNavigation
@@ -24,13 +24,14 @@ import io.github.angularwave.android.navigation.destinations.AngularNativeDestin
 import io.github.angularwave.android.navigation.views.AngularNativeView
 
 /**
- * The base class from which all bottom sheet web fragments in a
- * AngularNative app should extend from.
+ * The base class from which all bottom sheet web fragments in a AngularNative app should extend
+ * from.
  *
  * For native bottom sheet fragments, refer to [AngularNativeBottomSheetFragment].
  */
 @AngularNativeDestinationDeepLink(uri = "angularNative://fragment/web/modal/sheet")
-open class AngularNativeWebBottomSheetFragment : AngularNativeBottomSheetFragment(), AngularNativeWebFragmentCallback {
+open class AngularNativeWebBottomSheetFragment :
+    AngularNativeBottomSheetFragment(), AngularNativeWebFragmentCallback {
     private lateinit var webDelegate: AngularNativeWebFragmentDelegate
 
     private val angularNativeBridge by lazy {
@@ -41,7 +42,7 @@ open class AngularNativeWebBottomSheetFragment : AngularNativeBottomSheetFragmen
         BridgeDelegate(
             location = location,
             destination = this,
-            componentFactories = AngularNativeNavigation.registeredBridgeComponentFactories
+            componentFactories = AngularNativeNavigation.registeredBridgeComponentFactories,
         )
     }
 
@@ -50,11 +51,16 @@ open class AngularNativeWebBottomSheetFragment : AngularNativeBottomSheetFragmen
         webDelegate = AngularNativeWebFragmentDelegate(delegate, this, this)
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.angular_native_fragment_web_bottom_sheet, container, false)
-    }
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View? = inflater.inflate(R.layout.angular_native_fragment_web_bottom_sheet, container, false)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         webDelegate.onViewCreated()
         bridgeDelegate.forEachInitializedComponent<BridgeComponentFragmentLifecycle> {
@@ -64,6 +70,7 @@ open class AngularNativeWebBottomSheetFragment : AngularNativeBottomSheetFragmen
     }
 
     override fun onDestroyView() {
+        webDelegate.cancelNativeActivityResults()
         super.onDestroyView()
         webDelegate.onDestroyView()
         bridgeDelegate.forEachInitializedComponent<BridgeComponentFragmentLifecycle> {
@@ -72,19 +79,34 @@ open class AngularNativeWebBottomSheetFragment : AngularNativeBottomSheetFragmen
         viewLifecycleOwner.lifecycle.removeObserver(bridgeDelegate)
     }
 
-    override fun activityResultLauncher(requestCode: Int): ActivityResultLauncher<Intent>? {
-        return when (requestCode) {
+    override fun activityResultLauncher(requestCode: Int): ActivityResultLauncher<Intent>? =
+        when (requestCode) {
             ANGULAR_NATIVE_REQUEST_CODE_FILES -> webDelegate.fileChooserResultLauncher
             else -> null
         }
-    }
 
-    override fun activityPermissionResultLauncher(requestCode: Int): ActivityResultLauncher<String>? {
-        return when (requestCode) {
-            ANGULAR_NATIVE_REQUEST_CODE_GEOLOCATION_PERMISSION -> webDelegate.geoLocationPermissionResultLauncher
+    override fun activityPermissionResultLauncher(
+        requestCode: Int
+    ): ActivityResultLauncher<String>? =
+        when (requestCode) {
+            ANGULAR_NATIVE_REQUEST_CODE_GEOLOCATION_PERMISSION ->
+                webDelegate.geoLocationPermissionResultLauncher
             else -> null
         }
-    }
+
+    override fun launchNativeActivity(
+        intent: Intent,
+        result: (Int, Intent?) -> Unit,
+    ): Boolean = webDelegate.launchNativeActivity(intent, result)
+
+    override fun launchNativePermission(
+        permission: String,
+        result: (Boolean) -> Unit,
+    ): Boolean = webDelegate.launchNativePermission(permission, result)
+
+    override fun cancelNativeActivity() = webDelegate.cancelNativeActivity()
+
+    override fun cancelNativePermission() = webDelegate.cancelNativePermission()
 
     override fun onBridgeComponentInitialized(component: BridgeComponent<*>) {
         super.onBridgeComponentInitialized(component)
@@ -96,6 +118,7 @@ open class AngularNativeWebBottomSheetFragment : AngularNativeBottomSheetFragmen
 
     override fun onStart() {
         super.onStart()
+        angularNativeBridge.attachTo(navigator.session.webView)
         webDelegate.onStart()
     }
 
@@ -127,7 +150,8 @@ open class AngularNativeWebBottomSheetFragment : AngularNativeBottomSheetFragmen
     }
 
     override fun onWebViewAttached(webView: AngularNativeWebView) {
-        webView.addJavascriptInterface(angularNativeBridge, "AngularNative")
+        if (!isActive) return
+        angularNativeBridge.attachTo(webView)
         angularNativeBridge.injectEnvironment()
         bridgeDelegate.onWebViewAttached(webView)
     }
@@ -142,29 +166,29 @@ open class AngularNativeWebBottomSheetFragment : AngularNativeBottomSheetFragmen
     // ----------------------------------------------------------------------------
 
     /**
-     * Gets the AngularNativeView instance in the Fragment's view
-     * with resource ID R.id.angular_native_view.
+     * Gets the AngularNativeView instance in the Fragment's view with resource ID
+     * R.id.angular_native_view.
      */
     final override val angularNativeView: AngularNativeView?
         get() = view?.findViewById(R.id.angular_native_view)
 
     @SuppressLint("InflateParams")
-    override fun createProgressView(location: String): View {
-        return layoutInflater.inflate(R.layout.angular_native_progress_bottom_sheet, null)
-    }
+    override fun createProgressView(location: String): View =
+        layoutInflater.inflate(R.layout.angular_native_progress_bottom_sheet, null)
 
     @SuppressLint("InflateParams")
-    override fun createErrorView(error: VisitError): View {
-        return layoutInflater.inflate(R.layout.angular_native_error, null).apply {
+    override fun createErrorView(error: VisitError): View =
+        layoutInflater.inflate(R.layout.angular_native_error, null).apply {
             findViewById<TextView>(R.id.angular_native_error_description).text = error.description()
         }
-    }
 
-    override fun createWebChromeClient(): AngularNativeWebChromeClient {
-        return AngularNativeWebChromeClient(navigator.session)
-    }
+    override fun createWebChromeClient(): AngularNativeWebChromeClient =
+        AngularNativeWebChromeClient(navigator.session)
 
-    override fun onVisitErrorReceived(location: String, error: VisitError) {
+    override fun onVisitErrorReceived(
+        location: String,
+        error: VisitError,
+    ) {
         webDelegate.showErrorView(error)
     }
 }

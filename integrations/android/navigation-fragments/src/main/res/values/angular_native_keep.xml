@@ -1,0 +1,2 @@
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/angular_native_ic_add,@drawable/angular_native_ic_explore,@drawable/angular_native_ic_home,@drawable/angular_native_ic_notifications,@drawable/angular_native_ic_person" />

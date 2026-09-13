@@ -16,18 +16,18 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Bridge component to display a submit button in the native toolbar,
- * which will submit the form on the page when tapped.
+ * Bridge component to display a submit button in the native toolbar, which will submit the form on
+ * the page when tapped.
  */
 class FormComponent(
     name: String,
-    private val delegate: BridgeDelegate<AngularNativeDestination>
+    private val delegate: BridgeDelegate<AngularNativeDestination>,
 ) : BridgeComponent<AngularNativeDestination>(name, delegate) {
-
     private val submitButtonItemId = 37
     private var submitMenuItem: MenuItem? = null
     private val fragment: Fragment
         get() = delegate.destination.fragment
+
     private val toolbar: Toolbar?
         get() = fragment.view?.findViewById(R.id.toolbar)
 
@@ -67,10 +67,11 @@ class FormComponent(
         }
 
         menu.removeItem(submitButtonItemId)
-        submitMenuItem = menu.add(Menu.NONE, submitButtonItemId, order, data.title).apply {
-            actionView = binding.root
-            setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
-        }
+        submitMenuItem =
+            menu.add(Menu.NONE, submitButtonItemId, order, data.title).apply {
+                actionView = binding.root
+                setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+            }
     }
 
     private fun toggleSubmitButton(enable: Boolean) {
@@ -81,12 +82,7 @@ class FormComponent(
         }
     }
 
-    private fun performSubmit(): Boolean {
-        return replyTo("connect")
-    }
+    private fun performSubmit(): Boolean = replyTo("connect")
 
-    @Serializable
-    data class MessageData(
-        @SerialName("submitTitle") val title: String
-    )
+    @Serializable data class MessageData(@SerialName("submitTitle") val title: String)
 }

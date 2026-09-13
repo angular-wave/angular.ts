@@ -15,7 +15,6 @@ import {
   isObject,
   isPromiseLike,
   createErrorFactory,
-  ngAttrPrefixes,
   values,
   isString,
 } from "./shared/utils.ts";
@@ -43,6 +42,10 @@ import {
   createCoreRuntime,
   type RuntimeComposition,
 } from "./core/composition/runtime-composition.ts";
+import {
+  hasDeclarativeApp,
+  isAutomaticBootstrapRoot,
+} from "./auto-bootstrap.ts";
 
 const ngError = createErrorFactory("ng");
 
@@ -51,12 +54,6 @@ const $injectorError = createErrorFactory("$injector");
 const rootScopeCleanupByElement = new WeakMap<Element | Document, () => void>();
 
 type ModuleRegistry = Record<string, NgModule | null>;
-
-/** @internal */
-interface AppElement {
-  _element: HTMLElement;
-  _module: string | null;
-}
 
 type AngularWindow = { angular?: AngularRuntime };
 type AngularRuntimeHost = {
@@ -421,6 +418,17 @@ export class AngularRuntime extends EventTarget {
     element: string | HTMLElement | HTMLDocument,
     modules?: ModuleLike[],
   ): ng.InjectorService {
+    if (
+      (isInstanceOf(element, Element) || isInstanceOf(element, Document)) &&
+      hasDeclarativeApp(element) &&
+      !isAutomaticBootstrapRoot(element)
+    ) {
+      throw ngError(
+        "btstrpd",
+        "Cannot manually bootstrap an element that contains ng-app",
+      );
+    }
+
     if (isInstanceOf(element, Element) || isInstanceOf(element, Document)) {
       rootScopeCleanupByElement.get(element)?.();
     }
@@ -522,59 +530,6 @@ export class AngularRuntime extends EventTarget {
     this._injectorCreated = true;
 
     return this.currentInjector;
-  }
-
-  /**
-   * Find `ng-app` roots under the provided element and bootstrap them.
-   *
-   * The first root uses this instance. Additional roots are bootstrapped as
-   * sub-applications and stored in {@link subapps}.
-   *
-   * @param element - Root element or document to scan.
-   */
-  init(element: HTMLElement | HTMLDocument): void {
-    const appElements: AppElement[] = [];
-
-    let multimode = false;
-
-    ngAttrPrefixes.forEach((prefix) => {
-      const name = `${prefix}app`;
-
-      let candidates: HTMLElement[] | NodeListOf<Element>;
-
-      if (
-        element.nodeType === 1 &&
-        (element as HTMLElement).hasAttribute(name)
-      ) {
-        candidates = [element as HTMLElement];
-      } else {
-        candidates = element.querySelectorAll(`[${name}]`);
-      }
-
-      candidates.forEach((el) => {
-        appElements.push({
-          _element: el as HTMLElement,
-          _module: (el as HTMLElement).getAttribute(name),
-        });
-      });
-    });
-
-    appElements.forEach((app) => {
-      if (multimode) {
-        const RuntimeCtor = this.constructor as new (
-          options: AngularRuntimeConstructorInput,
-        ) => AngularRuntime;
-
-        const submodule = new RuntimeCtor(true);
-
-        this.subapps.push(submodule);
-        submodule.bootstrap(app._element, app._module ? [app._module] : []);
-      } else {
-        this.bootstrap(app._element, app._module ? [app._module] : []);
-      }
-
-      multimode = true;
-    });
   }
 
   /**

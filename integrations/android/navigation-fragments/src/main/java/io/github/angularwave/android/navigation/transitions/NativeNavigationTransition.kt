@@ -1,6 +1,6 @@
 package io.github.angularwave.android.navigation.transitions
 
-import androidx.annotation.AnimRes
+import androidx.annotation.AnimatorRes
 import androidx.navigation.NavOptions
 import androidx.navigation.navOptions
 import io.github.angularwave.android.navigation.R
@@ -14,39 +14,62 @@ enum class NativeNavigationTransition(val value: String) {
     DIVE("dive"),
     FLIP("flip");
 
-    fun navigationOptions(): NavOptions? = when (this) {
-        DEFAULT -> null
-        NONE -> options(0, 0, 0, 0)
-        SLIDE -> options(
-            R.anim.enter_slide_in_right,
-            R.anim.exit_slide_out_left,
-            R.anim.enter_slide_in_left,
-            R.anim.exit_slide_out_right
-        )
-        FADE -> options(
-            android.R.anim.fade_in,
-            android.R.anim.fade_out,
-            android.R.anim.fade_in,
-            android.R.anim.fade_out
-        )
-        COVER -> options(
-            R.anim.enter_slide_in_bottom,
-            0,
-            0,
-            R.anim.exit_slide_out_bottom
-        )
-        DIVE -> options(
-            R.anim.enter_dive,
-            R.anim.exit_dive,
-            R.anim.pop_enter_dive,
-            R.anim.pop_exit_dive
-        )
-        FLIP -> options(
-            R.anim.enter_flip,
-            R.anim.exit_flip,
-            R.anim.pop_enter_flip,
-            R.anim.pop_exit_flip
-        )
+    fun navigationOptions(reduceMotion: Boolean = false): NavOptions? {
+        if (reduceMotion && this != DEFAULT) return NONE.navigationOptions()
+        return when (this) {
+            DEFAULT -> {
+                null
+            }
+
+            NONE -> {
+                options(0, 0, 0, 0)
+            }
+
+            SLIDE -> {
+                options(
+                    R.animator.enter_slide_in_right,
+                    R.animator.exit_slide_out_left,
+                    R.animator.enter_slide_in_left,
+                    R.animator.exit_slide_out_right,
+                )
+            }
+
+            FADE -> {
+                options(
+                    R.animator.fade_in,
+                    R.animator.fade_out,
+                    R.animator.fade_in,
+                    R.animator.fade_out,
+                )
+            }
+
+            COVER -> {
+                options(
+                    R.animator.enter_slide_in_bottom,
+                    0,
+                    0,
+                    R.animator.exit_slide_out_bottom,
+                )
+            }
+
+            DIVE -> {
+                options(
+                    R.animator.enter_dive,
+                    R.animator.exit_dive,
+                    R.animator.pop_enter_dive,
+                    R.animator.pop_exit_dive,
+                )
+            }
+
+            FLIP -> {
+                options(
+                    R.animator.enter_flip,
+                    R.animator.exit_flip,
+                    R.animator.pop_enter_flip,
+                    R.animator.pop_exit_flip,
+                )
+            }
+        }
     }
 
     companion object {
@@ -55,11 +78,11 @@ enum class NativeNavigationTransition(val value: String) {
             return entries.firstOrNull { it.value == normalized } ?: DEFAULT
         }
 
-        private fun options(
-            @AnimRes enter: Int,
-            @AnimRes exit: Int,
-            @AnimRes popEnter: Int,
-            @AnimRes popExit: Int
+        internal fun options(
+            @AnimatorRes enter: Int,
+            @AnimatorRes exit: Int,
+            @AnimatorRes popEnter: Int,
+            @AnimatorRes popExit: Int,
         ): NavOptions = navOptions {
             anim {
                 this.enter = enter

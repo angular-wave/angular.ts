@@ -4,16 +4,15 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
 class AngularNativeBridgeSecurityTest {
-    private val security = AngularNativeBridgeSecurity(
-        destinationLocation = "https://example.com/dashboard",
-        sessionToken = "session-1"
-    )
+    private val security =
+        AngularNativeBridgeSecurity(
+            destinationLocation = "https://example.com/dashboard",
+            sessionToken = "session-1",
+        )
 
     @Test
     fun `accepts matching sessions from the destination origin`() {
-        assertThat(
-            security.accepts("session-1", "https://EXAMPLE.com:443/settings?q=1")
-        ).isTrue()
+        assertThat(security.accepts("session-1", "https://EXAMPLE.com:443/settings?q=1")).isTrue()
     }
 
     @Test

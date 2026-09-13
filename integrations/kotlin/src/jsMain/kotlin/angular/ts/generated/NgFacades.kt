@@ -116,13 +116,6 @@ public external interface Angular {
      */
     public fun hasNormalizedAttr(element: dynamic = definedExternally, normalizedName: String = definedExternally): Boolean
     /**
-     * Find `ng-app` roots under the provided element and bootstrap them. The first root uses
-     * this instance. Additional roots are bootstrapped as sub-applications and stored in
-     * subapps.
-     * @param element Root element or document to scan.
-     */
-    public fun init(element: dynamic = definedExternally): Unit
-    /**
      * Create a standalone injector without bootstrapping the DOM.
      * @param modules Module names or config functions to load.
      */
@@ -715,7 +708,10 @@ public external interface NgModule {
      * Register a module-owned router state tree during module configuration. Child state names
      * are relative to their parent unless they contain a dot. Each route is queued for the
      * composed router runtime, so module router trees compose with `lazyState(...)` and
-     * inherited route policies.
+     * inherited route policies. RouterModuleDeclaration is the only public registration
+     * contract. Pass one declaration or a readonly forest; the route map is inferred from the
+     * exact literal. To declare the route map explicitly, parameterize
+     * `createModule<TRouteMap>(...)` instead of `router(...)`.
      * @param declaration Router tree root declaration.
      */
     public fun router(declaration: dynamic = definedExternally): dynamic
@@ -1381,13 +1377,6 @@ public external interface AngularService {
      * @param normalizedName Value supplied for the normalizedName parameter.
      */
     public fun hasNormalizedAttr(element: dynamic = definedExternally, normalizedName: String = definedExternally): Boolean
-    /**
-     * Find `ng-app` roots under the provided element and bootstrap them. The first root uses
-     * this instance. Additional roots are bootstrapped as sub-applications and stored in
-     * subapps.
-     * @param element Root element or document to scan.
-     */
-    public fun init(element: dynamic = definedExternally): Unit
     /**
      * Create a standalone injector without bootstrapping the DOM.
      * @param modules Module names or config functions to load.
@@ -2422,6 +2411,10 @@ public external interface InjectionTokenMap {
      * @param config Value supplied for the config parameter.
      */
     public fun `$machine`(config: dynamic = definedExternally): dynamic
+    /**
+     * The $native member of ng.InjectionTokenMap.
+     */
+    public var `$native`: dynamic
     /**
      * The $parse member of ng.InjectionTokenMap.
      * @param expression Value supplied for the expression parameter.
@@ -4985,6 +4978,1307 @@ public external interface GeolocationValue {
      * Time when the position was acquired, in milliseconds since the epoch.
      */
     public var timestamp: Double
+}
+
+/**
+ * Host object exposed by Android, iOS, or a test adapter.
+ */
+public external interface NativeBridgeAdapter {
+    /**
+     * The postMessage member of ng.NativeBridgeAdapter.
+     * @param message Value supplied for the message parameter.
+     */
+    public fun postMessage(message: String = definedExternally): Unit
+    /**
+     * The receive member of ng.NativeBridgeAdapter.
+     * @param message Value supplied for the message parameter.
+     */
+    public fun receive(message: String = definedExternally): Unit
+}
+
+/**
+ * JSON-compatible request sent to a native application shell.
+ */
+public external interface NativeCallMessage<TParams> {
+    /**
+     * The elementId member of ng.NativeCallMessage.
+     */
+    public var elementId: String
+    /**
+     * The id member of ng.NativeCallMessage.
+     */
+    public var id: String
+    /**
+     * The method member of ng.NativeCallMessage.
+     */
+    public var method: String
+    /**
+     * The params member of ng.NativeCallMessage.
+     */
+    public var params: dynamic
+    /**
+     * The protocol member of ng.NativeCallMessage.
+     */
+    public var protocol: Double
+    /**
+     * The scopeId member of ng.NativeCallMessage.
+     */
+    public var scopeId: dynamic
+    /**
+     * The session member of ng.NativeCallMessage.
+     */
+    public var session: String
+    /**
+     * The target member of ng.NativeCallMessage.
+     */
+    public var target: String
+}
+
+/**
+ * Options for one request to the native shell.
+ */
+public external interface NativeCallOptions {
+    /**
+     * The elementId member of ng.NativeCallOptions.
+     */
+    public var elementId: String
+    /**
+     * The id member of ng.NativeCallOptions.
+     */
+    public var id: String
+    /**
+     * The scopeId member of ng.NativeCallOptions.
+     */
+    public var scopeId: dynamic
+    /**
+     * The signal member of ng.NativeCallOptions.
+     */
+    public var signal: dynamic
+    /**
+     * The timeout member of ng.NativeCallOptions.
+     */
+    public var timeout: Double
+}
+
+/**
+ * Configuration accepted by the optional native runtime module.
+ */
+public external interface NativeConfig {
+    /**
+     * Explicit bridge adapter. The global Android bridge is used by default.
+     */
+    public var bridge: dynamic
+    /**
+     * Global bridge property. Defaults to `AngularNative`.
+     */
+    public var globalName: String
+    /**
+     * Maximum serialized request size. Defaults to 256 KiB.
+     */
+    public var maxMessageBytes: Double
+    /**
+     * Session token injected by a native shell.
+     */
+    public var session: String
+    /**
+     * Request timeout in milliseconds. Defaults to 30 seconds.
+     */
+    public var timeout: Double
+}
+
+/**
+ * Public AngularTS NativeEventHandler contract exposed through the ng namespace.
+ */
+public external interface NativeEventHandler<TData> {
+    /**
+     * Calls the ng.NativeEventHandler function.
+     * @param event Value supplied for the event parameter.
+     */
+    public operator fun invoke(event: dynamic = definedExternally): Unit
+}
+
+/**
+ * Event pushed by a native application shell.
+ */
+public external interface NativeEventMessage<TData> {
+    /**
+     * The data member of ng.NativeEventMessage.
+     */
+    public var data: dynamic
+    /**
+     * The event member of ng.NativeEventMessage.
+     */
+    public var event: String
+    /**
+     * The protocol member of ng.NativeEventMessage.
+     */
+    public var protocol: Double
+    /**
+     * The target member of ng.NativeEventMessage.
+     */
+    public var target: String
+}
+
+/**
+ * Reply returned by a native application shell.
+ */
+public external interface NativeReplyMessage<TResult> {
+    /**
+     * The error member of ng.NativeReplyMessage.
+     */
+    public var error: dynamic
+    /**
+     * The id member of ng.NativeReplyMessage.
+     */
+    public var id: String
+    /**
+     * The ok member of ng.NativeReplyMessage.
+     */
+    public var ok: Boolean
+    /**
+     * The protocol member of ng.NativeReplyMessage.
+     */
+    public var protocol: Double
+    /**
+     * The result member of ng.NativeReplyMessage.
+     */
+    public var result: dynamic
+}
+
+/**
+ * Typed request, reply, and event API shared by native application shells.
+ */
+public external interface NativeService {
+    /**
+     * The available member of ng.NativeService.
+     */
+    public var available: Boolean
+    /**
+     * The call member of ng.NativeService.
+     * @param target Value supplied for the target parameter.
+     * @param method Value supplied for the method parameter.
+     * @param params Value supplied for the params parameter.
+     * @param options Value supplied for the options parameter.
+     */
+    public fun call(target: dynamic = definedExternally, method: dynamic = definedExternally, params: dynamic = definedExternally, options: dynamic = definedExternally): dynamic
+    /**
+     * The capabilities member of ng.NativeService.
+     */
+    public var capabilities: dynamic
+    /**
+     * The dispose member of ng.NativeService.
+     */
+    public fun dispose(): Unit
+    /**
+     * The on member of ng.NativeService.
+     * @param target Value supplied for the target parameter.
+     * @param event Value supplied for the event parameter.
+     * @param handler Value supplied for the handler parameter.
+     */
+    public fun on(target: dynamic = definedExternally, event: org.w3c.dom.events.Event = definedExternally, handler: (dynamic) -> Unit = definedExternally): () -> Unit
+    /**
+     * The protocolVersion member of ng.NativeService.
+     */
+    public var protocolVersion: Double
+    /**
+     * The receive member of ng.NativeService.
+     * @param message Value supplied for the message parameter.
+     */
+    public fun receive(message: dynamic = definedExternally): Unit
+    /**
+     * The supports member of ng.NativeService.
+     * @param target Value supplied for the target parameter.
+     * @param method Value supplied for the method parameter.
+     */
+    public fun supports(target: String = definedExternally, method: String = definedExternally): Boolean
+}
+
+/**
+ * Public AngularTS NativeCapabilityEventMap contract exposed through the ng namespace.
+ */
+public external interface NativeCapabilityEventMap {
+    /**
+     * The biometrics member of ng.NativeCapabilityEventMap.
+     */
+    public var biometrics: dynamic
+    /**
+     * The camera member of ng.NativeCapabilityEventMap.
+     */
+    public var camera: dynamic
+    /**
+     * The clipboard member of ng.NativeCapabilityEventMap.
+     */
+    public var clipboard: dynamic
+    /**
+     * The connectivity member of ng.NativeCapabilityEventMap.
+     */
+    public var connectivity: dynamic
+    /**
+     * The credentials member of ng.NativeCapabilityEventMap.
+     */
+    public var credentials: dynamic
+    /**
+     * The files member of ng.NativeCapabilityEventMap.
+     */
+    public var files: dynamic
+    /**
+     * The geolocation member of ng.NativeCapabilityEventMap.
+     */
+    public var geolocation: dynamic
+    /**
+     * The haptics member of ng.NativeCapabilityEventMap.
+     */
+    public var haptics: dynamic
+    /**
+     * The intents member of ng.NativeCapabilityEventMap.
+     */
+    public var intents: dynamic
+    /**
+     * The lifecycle member of ng.NativeCapabilityEventMap.
+     */
+    public var lifecycle: dynamic
+    /**
+     * The media member of ng.NativeCapabilityEventMap.
+     */
+    public var media: dynamic
+    /**
+     * The navigation member of ng.NativeCapabilityEventMap.
+     */
+    public var navigation: dynamic
+    /**
+     * The notifications member of ng.NativeCapabilityEventMap.
+     */
+    public var notifications: dynamic
+    /**
+     * The permissions member of ng.NativeCapabilityEventMap.
+     */
+    public var permissions: dynamic
+    /**
+     * The platform member of ng.NativeCapabilityEventMap.
+     */
+    public var platform: dynamic
+    /**
+     * The sharing member of ng.NativeCapabilityEventMap.
+     */
+    public var sharing: dynamic
+    /**
+     * The window member of ng.NativeCapabilityEventMap.
+     */
+    public var window: dynamic
+}
+
+/**
+ * Public AngularTS NativeCapabilityEventName contract exposed through the ng namespace.
+ */
+public external interface NativeCapabilityEventName<Name>
+
+/**
+ * Public AngularTS NativeCapabilityEventPayload contract exposed through the ng namespace.
+ */
+public external interface NativeCapabilityEventPayload<Name, Event>
+
+/**
+ * Public AngularTS NativeCapabilityMethodContract contract exposed through the ng
+ * namespace.
+ */
+public external interface NativeCapabilityMethodContract<Name, Method>
+
+/**
+ * Public AngularTS NativeCapabilityMethodMap contract exposed through the ng namespace.
+ */
+public external interface NativeCapabilityMethodMap {
+    /**
+     * The biometrics member of ng.NativeCapabilityMethodMap.
+     */
+    public var biometrics: dynamic
+    /**
+     * The camera member of ng.NativeCapabilityMethodMap.
+     */
+    public var camera: dynamic
+    /**
+     * The clipboard member of ng.NativeCapabilityMethodMap.
+     */
+    public var clipboard: dynamic
+    /**
+     * The connectivity member of ng.NativeCapabilityMethodMap.
+     */
+    public var connectivity: dynamic
+    /**
+     * The credentials member of ng.NativeCapabilityMethodMap.
+     */
+    public var credentials: dynamic
+    /**
+     * The files member of ng.NativeCapabilityMethodMap.
+     */
+    public var files: dynamic
+    /**
+     * The geolocation member of ng.NativeCapabilityMethodMap.
+     */
+    public var geolocation: dynamic
+    /**
+     * The haptics member of ng.NativeCapabilityMethodMap.
+     */
+    public var haptics: dynamic
+    /**
+     * The intents member of ng.NativeCapabilityMethodMap.
+     */
+    public var intents: dynamic
+    /**
+     * The lifecycle member of ng.NativeCapabilityMethodMap.
+     */
+    public var lifecycle: dynamic
+    /**
+     * The media member of ng.NativeCapabilityMethodMap.
+     */
+    public var media: dynamic
+    /**
+     * The navigation member of ng.NativeCapabilityMethodMap.
+     */
+    public var navigation: dynamic
+    /**
+     * The notifications member of ng.NativeCapabilityMethodMap.
+     */
+    public var notifications: dynamic
+    /**
+     * The permissions member of ng.NativeCapabilityMethodMap.
+     */
+    public var permissions: dynamic
+    /**
+     * The platform member of ng.NativeCapabilityMethodMap.
+     */
+    public var platform: dynamic
+    /**
+     * The sharing member of ng.NativeCapabilityMethodMap.
+     */
+    public var sharing: dynamic
+    /**
+     * The window member of ng.NativeCapabilityMethodMap.
+     */
+    public var window: dynamic
+}
+
+/**
+ * Public AngularTS NativeCapabilityMethodName contract exposed through the ng namespace.
+ */
+public external interface NativeCapabilityMethodName<Name>
+
+/**
+ * Public AngularTS NativeCapabilityName contract exposed through the ng namespace.
+ */
+public external interface NativeCapabilityName
+
+/**
+ * Public AngularTS NativeCapabilityParameters contract exposed through the ng namespace.
+ */
+public external interface NativeCapabilityParameters<Name, Method>
+
+/**
+ * Public AngularTS NativeCapabilityResult contract exposed through the ng namespace.
+ */
+public external interface NativeCapabilityResult<Name, Method>
+
+/**
+ * Availability and enrollment state for native biometric authentication.
+ */
+public external interface NativeBiometricStatus {
+    /**
+     * The available member of ng.NativeBiometricStatus.
+     */
+    public var available: Boolean
+    /**
+     * The enrolled member of ng.NativeBiometricStatus.
+     */
+    public var enrolled: Boolean
+    /**
+     * The permission member of ng.NativeBiometricStatus.
+     */
+    public var permission: String
+}
+
+/**
+ * Image captured by the native camera.
+ */
+public external interface NativeCameraCaptureResult {
+    /**
+     * The name member of ng.NativeCameraCaptureResult.
+     */
+    public var name: String
+    /**
+     * The size member of ng.NativeCameraCaptureResult.
+     */
+    public var size: Double
+    /**
+     * The type member of ng.NativeCameraCaptureResult.
+     */
+    public var type: String
+    /**
+     * The uri member of ng.NativeCameraCaptureResult.
+     */
+    public var uri: String
+}
+
+/**
+ * Availability and permission state for the native camera.
+ */
+public external interface NativeCameraStatus {
+    /**
+     * The available member of ng.NativeCameraStatus.
+     */
+    public var available: Boolean
+    /**
+     * The granted member of ng.NativeCameraStatus.
+     */
+    public var granted: Boolean
+    /**
+     * The permission member of ng.NativeCameraStatus.
+     */
+    public var permission: String
+}
+
+/**
+ * Text currently available from the native clipboard.
+ */
+public external interface NativeClipboardContent {
+    /**
+     * The text member of ng.NativeClipboardContent.
+     */
+    public var text: String
+}
+
+/**
+ * Text and optional label written to the native clipboard.
+ */
+public external interface NativeClipboardWriteParameters {
+    /**
+     * The label member of ng.NativeClipboardWriteParameters.
+     */
+    public var label: String
+    /**
+     * The text member of ng.NativeClipboardWriteParameters.
+     */
+    public var text: String
+}
+
+/**
+ * Result of writing text to the native clipboard.
+ */
+public external interface NativeClipboardWriteResult {
+    /**
+     * The written member of ng.NativeClipboardWriteResult.
+     */
+    public var written: Boolean
+}
+
+/**
+ * Current native network reachability and cost state.
+ */
+public external interface NativeConnectivityStatus {
+    /**
+     * The connected member of ng.NativeConnectivityStatus.
+     */
+    public var connected: Boolean
+    /**
+     * The metered member of ng.NativeConnectivityStatus.
+     */
+    public var metered: Boolean
+    /**
+     * The validated member of ng.NativeConnectivityStatus.
+     */
+    public var validated: Boolean
+}
+
+/**
+ * Result of clearing native credential state.
+ */
+public external interface NativeCredentialClearResult {
+    /**
+     * The cleared member of ng.NativeCredentialClearResult.
+     */
+    public var cleared: Boolean
+}
+
+/**
+ * Passkey creation request passed to the native credential manager.
+ */
+public external interface NativeCredentialCreatePasskeyParameters {
+    /**
+     * The requestJson member of ng.NativeCredentialCreatePasskeyParameters.
+     */
+    public var requestJson: String
+}
+
+/**
+ * Result of creating a passkey through the native credential manager.
+ */
+public external interface NativeCredentialCreatePasskeyResult {
+    /**
+     * The created member of ng.NativeCredentialCreatePasskeyResult.
+     */
+    public var created: Boolean
+    /**
+     * The type member of ng.NativeCredentialCreatePasskeyResult.
+     */
+    public var type: String
+}
+
+/**
+ * Password saved through the native credential manager.
+ */
+public external interface NativeCredentialCreatePasswordParameters {
+    /**
+     * The id member of ng.NativeCredentialCreatePasswordParameters.
+     */
+    public var id: String
+    /**
+     * The password member of ng.NativeCredentialCreatePasswordParameters.
+     */
+    public var password: String
+}
+
+/**
+ * Result of saving a password through the native credential manager.
+ */
+public external interface NativeCredentialCreatePasswordResult {
+    /**
+     * The created member of ng.NativeCredentialCreatePasswordResult.
+     */
+    public var created: Boolean
+    /**
+     * The type member of ng.NativeCredentialCreatePasswordResult.
+     */
+    public var type: String
+}
+
+/**
+ * Credential kinds requested from the native credential manager.
+ */
+public external interface NativeCredentialGetParameters {
+    /**
+     * The passkeyRequestJson member of ng.NativeCredentialGetParameters.
+     */
+    public var passkeyRequestJson: String
+    /**
+     * The passwords member of ng.NativeCredentialGetParameters.
+     */
+    public var passwords: Boolean
+}
+
+/**
+ * Credential returned by the native credential manager.
+ */
+public external interface NativeCredentialResult {
+    /**
+     * The type member of ng.NativeCredentialResult.
+     */
+    public var type: String
+}
+
+/**
+ * Native password and passkey provider support.
+ */
+public external interface NativeCredentialStatus {
+    /**
+     * The available member of ng.NativeCredentialStatus.
+     */
+    public var available: Boolean
+    /**
+     * The passkeys member of ng.NativeCredentialStatus.
+     */
+    public var passkeys: Boolean
+    /**
+     * The passwords member of ng.NativeCredentialStatus.
+     */
+    public var passwords: Boolean
+}
+
+/**
+ * File returned by the native file picker.
+ */
+public external interface NativeFileDescriptor {
+    /**
+     * The name member of ng.NativeFileDescriptor.
+     */
+    public var name: String
+    /**
+     * The persisted member of ng.NativeFileDescriptor.
+     */
+    public var persisted: Boolean
+    /**
+     * The size member of ng.NativeFileDescriptor.
+     */
+    public var size: Double
+    /**
+     * The type member of ng.NativeFileDescriptor.
+     */
+    public var type: String
+    /**
+     * The uri member of ng.NativeFileDescriptor.
+     */
+    public var uri: String
+}
+
+/**
+ * File types and selection mode passed to the native file picker.
+ */
+public external interface NativeFileOpenParameters {
+    /**
+     * The accept member of ng.NativeFileOpenParameters.
+     */
+    public var accept: Array<String>
+    /**
+     * The multiple member of ng.NativeFileOpenParameters.
+     */
+    public var multiple: Boolean
+}
+
+/**
+ * Files selected through the native file picker.
+ */
+public external interface NativeFileOpenResult {
+    /**
+     * The files member of ng.NativeFileOpenResult.
+     */
+    public var files: Array<dynamic>
+}
+
+/**
+ * Native file selection and upload support.
+ */
+public external interface NativeFileStatus {
+    /**
+     * The available member of ng.NativeFileStatus.
+     */
+    public var available: Boolean
+    /**
+     * The contentUris member of ng.NativeFileStatus.
+     */
+    public var contentUris: Boolean
+    /**
+     * The upload member of ng.NativeFileStatus.
+     */
+    public var upload: Boolean
+}
+
+/**
+ * Multipart upload sent by the native shell.
+ */
+public external interface NativeFileUploadParameters {
+    /**
+     * The field member of ng.NativeFileUploadParameters.
+     */
+    public var field: String
+    /**
+     * The fields member of ng.NativeFileUploadParameters.
+     */
+    public var fields: dynamic
+    /**
+     * The headers member of ng.NativeFileUploadParameters.
+     */
+    public var headers: dynamic
+    /**
+     * The name member of ng.NativeFileUploadParameters.
+     */
+    public var name: String
+    /**
+     * The type member of ng.NativeFileUploadParameters.
+     */
+    public var type: String
+    /**
+     * The uploadId member of ng.NativeFileUploadParameters.
+     */
+    public var uploadId: String
+    /**
+     * The uri member of ng.NativeFileUploadParameters.
+     */
+    public var uri: String
+    /**
+     * The url member of ng.NativeFileUploadParameters.
+     */
+    public var url: String
+}
+
+/**
+ * Progress emitted while the native shell uploads a file.
+ */
+public external interface NativeFileUploadProgress {
+    /**
+     * The sent member of ng.NativeFileUploadProgress.
+     */
+    public var sent: Double
+    /**
+     * The total member of ng.NativeFileUploadProgress.
+     */
+    public var total: Double
+    /**
+     * The uploadId member of ng.NativeFileUploadProgress.
+     */
+    public var uploadId: String
+}
+
+/**
+ * Successful native multipart upload response.
+ */
+public external interface NativeFileUploadResult {
+    /**
+     * The body member of ng.NativeFileUploadResult.
+     */
+    public var body: dynamic
+    /**
+     * The name member of ng.NativeFileUploadResult.
+     */
+    public var name: String
+    /**
+     * The status member of ng.NativeFileUploadResult.
+     */
+    public var status: Double
+    /**
+     * The type member of ng.NativeFileUploadResult.
+     */
+    public var type: String
+}
+
+/**
+ * Serializable current device location.
+ */
+public external interface NativeGeolocationPosition {
+    /**
+     * The accuracy member of ng.NativeGeolocationPosition.
+     */
+    public var accuracy: Double
+    /**
+     * The altitude member of ng.NativeGeolocationPosition.
+     */
+    public var altitude: Double
+    /**
+     * The altitudeAccuracy member of ng.NativeGeolocationPosition.
+     */
+    public var altitudeAccuracy: Double
+    /**
+     * The heading member of ng.NativeGeolocationPosition.
+     */
+    public var heading: Double
+    /**
+     * The latitude member of ng.NativeGeolocationPosition.
+     */
+    public var latitude: Double
+    /**
+     * The longitude member of ng.NativeGeolocationPosition.
+     */
+    public var longitude: Double
+    /**
+     * The speed member of ng.NativeGeolocationPosition.
+     */
+    public var speed: Double
+    /**
+     * The timestamp member of ng.NativeGeolocationPosition.
+     */
+    public var timestamp: Double
+}
+
+/**
+ * Current availability and granted accuracy for device location.
+ */
+public external interface NativeGeolocationStatus {
+    /**
+     * The accuracy member of ng.NativeGeolocationStatus.
+     */
+    public var accuracy: dynamic
+    /**
+     * The available member of ng.NativeGeolocationStatus.
+     */
+    public var available: Boolean
+    /**
+     * The granted member of ng.NativeGeolocationStatus.
+     */
+    public var granted: Boolean
+    /**
+     * The permission member of ng.NativeGeolocationStatus.
+     */
+    public var permission: String
+}
+
+/**
+ * Parameters for native haptic feedback.
+ */
+public external interface NativeHapticParameters {
+    /**
+     * The style member of ng.NativeHapticParameters.
+     */
+    public var style: dynamic
+}
+
+/**
+ * Result of a native haptic feedback request.
+ */
+public external interface NativeHapticResult {
+    /**
+     * The performed member of ng.NativeHapticResult.
+     */
+    public var performed: Boolean
+}
+
+/**
+ * URL passed to a native application through an intent.
+ */
+public external interface NativeIntentParameters {
+    /**
+     * The url member of ng.NativeIntentParameters.
+     */
+    public var url: String
+}
+
+/**
+ * JSON-compatible object accepted across a native bridge.
+ */
+public external interface NativeJsonObject
+
+/**
+ * JSON scalar accepted across a native bridge.
+ */
+public external interface NativeJsonPrimitive
+
+/**
+ * JSON-compatible value accepted across a native bridge.
+ */
+public external interface NativeJsonValue
+
+/**
+ * Current lifecycle state of the native destination.
+ */
+public external interface NativeLifecycleStatus {
+    /**
+     * The active member of ng.NativeLifecycleStatus.
+     */
+    public var active: Boolean
+    /**
+     * The state member of ng.NativeLifecycleStatus.
+     */
+    public var state: dynamic
+}
+
+/**
+ * Media source loaded by the native player.
+ */
+public external interface NativeMediaLoadParameters {
+    /**
+     * The autoplay member of ng.NativeMediaLoadParameters.
+     */
+    public var autoplay: Boolean
+    /**
+     * The url member of ng.NativeMediaLoadParameters.
+     */
+    public var url: String
+}
+
+/**
+ * Position, in milliseconds, passed to the native media player.
+ */
+public external interface NativeMediaSeekParameters {
+    /**
+     * The position member of ng.NativeMediaSeekParameters.
+     */
+    public var position: Double
+}
+
+/**
+ * Current state of the native media player.
+ */
+public external interface NativeMediaStatus {
+    /**
+     * The available member of ng.NativeMediaStatus.
+     */
+    public var available: Boolean
+    /**
+     * The duration member of ng.NativeMediaStatus.
+     */
+    public var duration: Double
+    /**
+     * The loaded member of ng.NativeMediaStatus.
+     */
+    public var loaded: Boolean
+    /**
+     * The playing member of ng.NativeMediaStatus.
+     */
+    public var playing: Boolean
+    /**
+     * The position member of ng.NativeMediaStatus.
+     */
+    public var position: Double
+    /**
+     * The state member of ng.NativeMediaStatus.
+     */
+    public var state: dynamic
+}
+
+/**
+ * Navigation committed directly by Android rather than requested through the bridge.
+ */
+public external interface NativeNavigationAndroidChange {
+    /**
+     * The from member of ng.NativeNavigationAndroidChange.
+     */
+    public var from: String
+    /**
+     * The method member of ng.NativeNavigationAndroidChange.
+     */
+    public var method: dynamic
+    /**
+     * The phase member of ng.NativeNavigationAndroidChange.
+     */
+    public var phase: String
+    /**
+     * The source member of ng.NativeNavigationAndroidChange.
+     */
+    public var source: String
+    /**
+     * The url member of ng.NativeNavigationAndroidChange.
+     */
+    public var url: String
+}
+
+/**
+ * Completion or cancellation of navigation requested through the bridge.
+ */
+public external interface NativeNavigationBridgeChange {
+    /**
+     * The from member of ng.NativeNavigationBridgeChange.
+     */
+    public var from: String
+    /**
+     * The method member of ng.NativeNavigationBridgeChange.
+     */
+    public var method: dynamic
+    /**
+     * The phase member of ng.NativeNavigationBridgeChange.
+     */
+    public var phase: dynamic
+    /**
+     * The source member of ng.NativeNavigationBridgeChange.
+     */
+    public var source: String
+    /**
+     * The transaction member of ng.NativeNavigationBridgeChange.
+     */
+    public var transaction: Double
+    /**
+     * The url member of ng.NativeNavigationBridgeChange.
+     */
+    public var url: String
+}
+
+/**
+ * Committed or cancelled native navigation event.
+ */
+public external interface NativeNavigationChange {
+    /**
+     * The from member of ng.NativeNavigationChange.
+     */
+    public var from: String
+    /**
+     * The method member of ng.NativeNavigationChange.
+     */
+    public var method: dynamic
+    /**
+     * The phase member of ng.NativeNavigationChange.
+     */
+    public var phase: dynamic
+    /**
+     * The source member of ng.NativeNavigationChange.
+     */
+    public var source: dynamic
+    /**
+     * The url member of ng.NativeNavigationChange.
+     */
+    public var url: String
+}
+
+/**
+ * Result of requesting native back navigation.
+ */
+public external interface NativeNavigationPopResult {
+    /**
+     * The method member of ng.NativeNavigationPopResult.
+     */
+    public var method: String
+    /**
+     * The routed member of ng.NativeNavigationPopResult.
+     */
+    public var routed: Boolean
+}
+
+/**
+ * URL and optional transition passed to a native route operation.
+ */
+public external interface NativeNavigationRouteParameters {
+    /**
+     * The transition member of ng.NativeNavigationRouteParameters.
+     */
+    public var transition: dynamic
+    /**
+     * The url member of ng.NativeNavigationRouteParameters.
+     */
+    public var url: String
+}
+
+/**
+ * Accepted push, replace, modal, or deep-link operation.
+ */
+public external interface NativeNavigationRouteResult {
+    /**
+     * The action member of ng.NativeNavigationRouteResult.
+     */
+    public var action: dynamic
+    /**
+     * The method member of ng.NativeNavigationRouteResult.
+     */
+    public var method: dynamic
+    /**
+     * The phase member of ng.NativeNavigationRouteResult.
+     */
+    public var phase: String
+    /**
+     * The routed member of ng.NativeNavigationRouteResult.
+     */
+    public var routed: Boolean
+    /**
+     * The transaction member of ng.NativeNavigationRouteResult.
+     */
+    public var transaction: Double
+    /**
+     * The transition member of ng.NativeNavigationRouteResult.
+     */
+    public var transition: dynamic
+    /**
+     * The url member of ng.NativeNavigationRouteResult.
+     */
+    public var url: String
+}
+
+/**
+ * Current native navigation stack state.
+ */
+public external interface NativeNavigationStatus {
+    /**
+     * The canPop member of ng.NativeNavigationStatus.
+     */
+    public var canPop: Boolean
+    /**
+     * The location member of ng.NativeNavigationStatus.
+     */
+    public var location: String
+    /**
+     * The modal member of ng.NativeNavigationStatus.
+     */
+    public var modal: Boolean
+    /**
+     * The previousLocation member of ng.NativeNavigationStatus.
+     */
+    public var previousLocation: String
+}
+
+/**
+ * Named transition applied by native navigation when motion is enabled.
+ */
+public external interface NativeNavigationTransition
+
+/**
+ * Current availability and permission state for native notifications.
+ */
+public external interface NativeNotificationStatus {
+    /**
+     * The available member of ng.NativeNotificationStatus.
+     */
+    public var available: Boolean
+    /**
+     * The granted member of ng.NativeNotificationStatus.
+     */
+    public var granted: Boolean
+    /**
+     * The permission member of ng.NativeNotificationStatus.
+     */
+    public var permission: String
+}
+
+/**
+ * Result of opening native UI or another application.
+ */
+public external interface NativeOpenResult {
+    /**
+     * The opened member of ng.NativeOpenResult.
+     */
+    public var opened: Boolean
+}
+
+/**
+ * Parameters for permission status and request calls.
+ */
+public external interface NativePermissionParameters {
+    /**
+     * The permission member of ng.NativePermissionParameters.
+     */
+    public var permission: String
+}
+
+/**
+ * Current state of one Android runtime permission.
+ */
+public external interface NativePermissionStatus {
+    /**
+     * The canRequest member of ng.NativePermissionStatus.
+     */
+    public var canRequest: Boolean
+    /**
+     * The granted member of ng.NativePermissionStatus.
+     */
+    public var granted: Boolean
+    /**
+     * The permission member of ng.NativePermissionStatus.
+     */
+    public var permission: String
+}
+
+/**
+ * Runtime and application metadata reported by a native shell.
+ */
+public external interface NativePlatformStatus {
+    /**
+     * The darkMode member of ng.NativePlatformStatus.
+     */
+    public var darkMode: Boolean
+    /**
+     * The package member of ng.NativePlatformStatus.
+     */
+    public var `package`: String
+    /**
+     * The platform member of ng.NativePlatformStatus.
+     */
+    public var platform: String
+    /**
+     * The sdk member of ng.NativePlatformStatus.
+     */
+    public var sdk: Double
+}
+
+/**
+ * Content passed to the native system share sheet.
+ */
+public external interface NativeShareParameters {
+    /**
+     * The text member of ng.NativeShareParameters.
+     */
+    public var text: String
+    /**
+     * The title member of ng.NativeShareParameters.
+     */
+    public var title: String
+    /**
+     * The type member of ng.NativeShareParameters.
+     */
+    public var type: String
+}
+
+/**
+ * Bounds, in density-independent pixels, of a native display feature.
+ */
+public external interface NativeWindowBounds {
+    /**
+     * The bottom member of ng.NativeWindowBounds.
+     */
+    public var bottom: Double
+    /**
+     * The left member of ng.NativeWindowBounds.
+     */
+    public var left: Double
+    /**
+     * The right member of ng.NativeWindowBounds.
+     */
+    public var right: Double
+    /**
+     * The top member of ng.NativeWindowBounds.
+     */
+    public var top: Double
+}
+
+/**
+ * Fold or hinge reported by a foldable native display.
+ */
+public external interface NativeWindowDisplayFeature {
+    /**
+     * The bounds member of ng.NativeWindowDisplayFeature.
+     */
+    public var bounds: dynamic
+    /**
+     * The orientation member of ng.NativeWindowDisplayFeature.
+     */
+    public var orientation: dynamic
+    /**
+     * The separating member of ng.NativeWindowDisplayFeature.
+     */
+    public var separating: Boolean
+    /**
+     * The state member of ng.NativeWindowDisplayFeature.
+     */
+    public var state: dynamic
+    /**
+     * The type member of ng.NativeWindowDisplayFeature.
+     */
+    public var type: dynamic
+}
+
+/**
+ * Insets, in density-independent pixels, that native content should avoid.
+ */
+public external interface NativeWindowInsets {
+    /**
+     * The bottom member of ng.NativeWindowInsets.
+     */
+    public var bottom: Double
+    /**
+     * The left member of ng.NativeWindowInsets.
+     */
+    public var left: Double
+    /**
+     * The right member of ng.NativeWindowInsets.
+     */
+    public var right: Double
+    /**
+     * The top member of ng.NativeWindowInsets.
+     */
+    public var top: Double
+}
+
+/**
+ * Current native window metrics, adaptive classes, safe area, and display features.
+ */
+public external interface NativeWindowStatus {
+    /**
+     * The displayFeatures member of ng.NativeWindowStatus.
+     */
+    public var displayFeatures: Array<dynamic>
+    /**
+     * The height member of ng.NativeWindowStatus.
+     */
+    public var height: Double
+    /**
+     * The heightClass member of ng.NativeWindowStatus.
+     */
+    public var heightClass: dynamic
+    /**
+     * The orientation member of ng.NativeWindowStatus.
+     */
+    public var orientation: dynamic
+    /**
+     * The safeArea member of ng.NativeWindowStatus.
+     */
+    public var safeArea: dynamic
+    /**
+     * The width member of ng.NativeWindowStatus.
+     */
+    public var width: Double
+    /**
+     * The widthClass member of ng.NativeWindowStatus.
+     */
+    public var widthClass: dynamic
 }
 
 /**

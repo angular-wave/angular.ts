@@ -9,8 +9,11 @@ import com.nhaarman.mockito_kotlin.whenever
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.mockito.Mockito.verify
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class BridgeTest {
     private lateinit var bridge: Bridge
     private val webView: WebView = mock()
@@ -48,15 +51,18 @@ class BridgeTest {
 
     @Test
     fun replyWith() {
-        val json = """{\"id\":\"1\",\"component\":\"page\",\"event\":\"connect\",\"data\":{\"title\":\"Page title\",\"subtitle\":\"Page subtitle\",\"html\":\"<span class='android'>content</span>\"}}"""
-        val data = """{"title":"Page title","subtitle":"Page subtitle","html":"<span class='android'>content</span>"}"""
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = Metadata("https://37signals.com"),
-            jsonData = data
-        )
+        val json =
+            """{\"id\":\"1\",\"component\":\"page\",\"event\":\"connect\",\"data\":{\"title\":\"Page title\",\"subtitle\":\"Page subtitle\",\"html\":\"<span class='android'>content</span>\"}}"""
+        val data =
+            """{"title":"Page title","subtitle":"Page subtitle","html":"<span class='android'>content</span>"}"""
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = Metadata("https://37signals.com"),
+                jsonData = data,
+            )
 
         val javascript = """window.nativeBridge.replyWith("$json")"""
         bridge.replyWith(message)
@@ -69,7 +75,7 @@ class BridgeTest {
         whenever(repository.getUserScript(context)).thenReturn("")
 
         bridge.load()
-        verify(webView).addJavascriptInterface(eq(bridge), any())
+        verify(webView).addJavascriptInterface(bridge, "BridgeComponentsNative")
     }
 
     @Test
@@ -80,15 +86,18 @@ class BridgeTest {
 
     @Test
     fun bridgeDidReceiveMessage() {
-        val json = """{"id":"1","component":"page","event":"connect","data":{"metadata":{"url":"https://37signals.com"},"title":"Page title","subtitle":"Page subtitle"}}"""
-        val data = """{"metadata":{"url":"https://37signals.com"},"title":"Page title","subtitle":"Page subtitle"}"""
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = Metadata("https://37signals.com"),
-            jsonData = data
-        )
+        val json =
+            """{"id":"1","component":"page","event":"connect","data":{"metadata":{"url":"https://37signals.com"},"title":"Page title","subtitle":"Page subtitle"}}"""
+        val data =
+            """{"metadata":{"url":"https://37signals.com"},"title":"Page title","subtitle":"Page subtitle"}"""
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = Metadata("https://37signals.com"),
+                jsonData = data,
+            )
 
         bridge.bridgeDidReceiveMessage(json)
         verify(delegate).bridgeDidReceiveMessage(message)
@@ -117,7 +126,8 @@ class BridgeTest {
 
     @Test
     fun generateJavascriptArguments() {
-        val javascript = bridge.generateJavaScript("register", listOf("page", "alert").toJsonElement())
+        val javascript =
+            bridge.generateJavaScript("register", listOf("page", "alert").toJsonElement())
         assertEquals("""window.nativeBridge.register(["page","alert"])""", javascript)
     }
 

@@ -9,7 +9,7 @@ description:
 ## Find the first failed boundary
 
 1. Confirm the JavaScript module loaded.
-2. Confirm registration completed before `angular.init()` or `bootstrap()`.
+2. Confirm registration completed before automatic or manual bootstrap.
 3. Confirm `ng-app` names the created module.
 4. Read the first AngularTS error, not the cascade.
 5. Confirm injected token order matches function parameters.

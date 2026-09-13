@@ -1,0 +1,65 @@
+[
+  {
+    "module": "core",
+    "artifact": "angular-native-core",
+    "extension": "aar",
+    "maximumBytes": 409600,
+    "sourceEntry": "io/github/angularwave/android/core/bridge/Bridge.kt"
+  },
+  {
+    "module": "navigation-fragments",
+    "artifact": "angular-native-navigation",
+    "extension": "aar",
+    "maximumBytes": 614400,
+    "sourceEntry": "io/github/angularwave/android/navigation/activities/AngularNativeActivity.kt"
+  },
+  {
+    "module": "browser",
+    "artifact": "angular-native-browser",
+    "extension": "aar",
+    "maximumBytes": 131072,
+    "sourceEntry": "io/github/angularwave/android/browser/BrowserTabRouteDecisionHandler.kt"
+  },
+  {
+    "module": "credentials",
+    "artifact": "angular-native-credentials",
+    "extension": "aar",
+    "maximumBytes": 196608,
+    "sourceEntry": "io/github/angularwave/android/credentials/CredentialCapabilityProvider.kt"
+  },
+  {
+    "module": "custom-elements-sample",
+    "artifact": "angular-native-custom-elements-sample",
+    "extension": "aar",
+    "maximumBytes": 65536,
+    "sourceEntry": "io/github/angularwave/android/sample/elements/TaskCardProvider.kt"
+  },
+  {
+    "module": "maps",
+    "artifact": "angular-native-maps",
+    "extension": "aar",
+    "maximumBytes": 196608,
+    "sourceEntry": "io/github/angularwave/android/maps/MapElementProvider.kt"
+  },
+  {
+    "module": "media",
+    "artifact": "angular-native-media",
+    "extension": "aar",
+    "maximumBytes": 196608,
+    "sourceEntry": "io/github/angularwave/android/media/MediaCapabilityProvider.kt"
+  },
+  {
+    "module": "paging",
+    "artifact": "angular-native-paging",
+    "extension": "aar",
+    "maximumBytes": 163840,
+    "sourceEntry": "io/github/angularwave/android/paging/NativePagingAdapter.kt"
+  },
+  {
+    "module": "native-elements-compiler",
+    "artifact": "angular-native-elements-compiler",
+    "extension": "jar",
+    "maximumBytes": 65536,
+    "sourceEntry": "io/github/angularwave/android/compiler/NativeElementProviderProcessor.java"
+  }
+]

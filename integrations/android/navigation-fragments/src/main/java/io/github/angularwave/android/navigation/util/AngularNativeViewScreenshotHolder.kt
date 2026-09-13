@@ -9,12 +9,14 @@ import android.os.Handler
 import android.os.Looper
 import android.view.PixelCopy
 import android.view.View
+import androidx.core.graphics.createBitmap
 import io.github.angularwave.android.navigation.logging.logError
 import io.github.angularwave.android.navigation.logging.logEvent
 import io.github.angularwave.android.navigation.views.AngularNativeView
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
+
+private const val MINIMUM_FREE_MEMORY_RATIO = 0.2f
 
 internal class AngularNativeViewScreenshotHolder {
     private var bitmap: Bitmap? = null
@@ -29,8 +31,9 @@ internal class AngularNativeViewScreenshotHolder {
     }
 
     fun showScreenshotIfAvailable(angularNativeView: AngularNativeView) {
-        if (screenshotOrientation == angularNativeView.currentOrientation() &&
-            screenshotZoomed == currentlyZoomed
+        if (
+            screenshotOrientation == angularNativeView.currentOrientation() &&
+                screenshotZoomed == currentlyZoomed
         ) {
             bitmap?.let { angularNativeView.addScreenshot(it) }
         }
@@ -47,8 +50,12 @@ internal class AngularNativeViewScreenshotHolder {
             val start = System.currentTimeMillis()
             val window = angularNativeView.getActivity()?.window
 
-            if (window == null || !angularNativeView.isLaidOut || !hasEnoughMemoryForScreenshot() ||
-                angularNativeView.width <= 0 || angularNativeView.height <= 0
+            if (
+                window == null ||
+                    !angularNativeView.isLaidOut ||
+                    !hasEnoughMemoryForScreenshot() ||
+                    angularNativeView.width <= 0 ||
+                    angularNativeView.height <= 0
             ) {
                 if (continuation.isActive) {
                     continuation.resume(null)
@@ -59,32 +66,38 @@ internal class AngularNativeViewScreenshotHolder {
             val rect = Rect()
             angularNativeView.getGlobalVisibleRect(rect)
 
-            val bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888)
+            val bitmap = createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888)
 
             try {
                 PixelCopy.request(
-                    window, rect, bitmap,
+                    window,
+                    rect,
+                    bitmap,
                     { result ->
                         if (result == PixelCopy.SUCCESS) {
                             logEvent(
-                                "viewScreenshotCreated", listOf(
+                                "viewScreenshotCreated",
+                                listOf(
                                     "size" to "${bitmap.width}x${bitmap.height}",
                                     "duration" to "${System.currentTimeMillis() - start}ms",
-                                )
+                                ),
                             )
                             if (continuation.isActive) {
                                 continuation.resume(bitmap)
                             }
                         } else {
-                            logError("viewScreenshotFailed", Exception("PixelCopy failed with result $result"))
+                            logError(
+                                "viewScreenshotFailed",
+                                Exception("PixelCopy failed with result $result"),
+                            )
                             if (continuation.isActive) {
                                 continuation.resume(null)
                             }
                         }
                     },
-                    Handler(Looper.getMainLooper())
+                    Handler(Looper.getMainLooper()),
                 )
-            } catch (exception: Exception) {
+            } catch (exception: IllegalArgumentException) {
                 logError("viewScreenshotFailed", exception)
                 if (continuation.isActive) {
                     continuation.resume(null)
@@ -99,10 +112,11 @@ internal class AngularNativeViewScreenshotHolder {
         val max = runtime.maxMemory().toFloat()
         val remaining = 1f - (used / max)
 
-        return remaining > .20
+        return remaining > MINIMUM_FREE_MEMORY_RATIO
     }
 
-    // Inspired by https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/app/MediaRouteButton.java#163
+    // Inspired by
+    // https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/app/MediaRouteButton.java#163
     private fun View.getActivity(): Activity? {
         var context: Context? = context
         while (context is ContextWrapper) {

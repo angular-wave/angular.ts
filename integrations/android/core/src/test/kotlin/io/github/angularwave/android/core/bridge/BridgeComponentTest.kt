@@ -1,6 +1,10 @@
 package io.github.angularwave.android.core.bridge
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.eq
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.never
+import com.nhaarman.mockito_kotlin.verify
 import io.github.angularwave.android.core.config.AngularNative
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -8,18 +12,22 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class BridgeComponentTest {
     private lateinit var component: TestData.OneBridgeComponent
     private val delegate: BridgeDelegate<TestData.AppBridgeDestination> = mock()
 
-    private val message = Message(
-        id = "1",
-        component = "one",
-        event = "connect",
-        metadata = Metadata("https://37signals.com"),
-        jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-    )
+    private val message =
+        Message(
+            id = "1",
+            component = "one",
+            event = "connect",
+            metadata = Metadata("https://37signals.com"),
+            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+        )
 
     @Before
     fun setup() {
@@ -127,6 +135,5 @@ class BridgeComponentTest {
         verify(delegate, never()).replyWith(any())
     }
 
-    @Serializable
-    private class MessageData(val title: String)
+    @Serializable private class MessageData(val title: String)
 }

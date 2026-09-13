@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Angular Native</string>
     <string name="menu_progress">Loading…</string>
+    <string name="benchmark_update_collection">Update 10,000 items</string>
+    <string name="benchmark_run_bridge">Run bridge benchmark</string>
+    <string name="benchmark_web_view">WebView benchmark</string>
 </resources>

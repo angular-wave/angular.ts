@@ -6,6 +6,17 @@ import { nativeModule } from "../../runtime/native.ts";
 import { createAngular } from "../../runtime/index.ts";
 import { createNativeService } from "../../services/native/native.ts";
 import { ngModelDirective } from "../model/model.ts";
+import {
+  coerceNativeAttribute,
+  nativeElementDirective,
+  nativeElementDirectiveName,
+  readNativeStyle,
+} from "./native-element.ts";
+import {
+  ngNativeComponentDirective,
+  ngNativeDirective,
+  ngNativeEventDirective,
+} from "./native.ts";
 
 describe("native bridge", () => {
   let angular;
@@ -33,6 +44,9 @@ describe("native bridge", () => {
     window.angularNativeEnvironment = {
       platform: "android",
       session: "session-1",
+      capabilities: {
+        component: ["mount", "update", "invoke", "unmount"],
+      },
     };
     angular = createAngular({
       modules: [nativeModule],
@@ -64,17 +78,17 @@ describe("native bridge", () => {
   it("sends typed calls and resolves replies", async () => {
     const result = service.call(
       "navigation",
-      "visit",
+      "push",
       { url: "/dashboard" },
-      { id: "visit-1", scopeId: 4, elementId: "open" },
+      { id: "push-1", scopeId: 4, elementId: "open" },
     );
 
     expect(calls).toEqual([
       {
         protocol: 1,
-        id: "visit-1",
+        id: "push-1",
         target: "navigation",
-        method: "visit",
+        method: "push",
         params: { url: "/dashboard" },
         session: "session-1",
         scopeId: 4,
@@ -82,7 +96,7 @@ describe("native bridge", () => {
       },
     ]);
 
-    window.angularNative.receive({ id: "visit-1", ok: true, result: 42 });
+    window.angularNative.receive({ id: "push-1", ok: true, result: 42 });
     expect(await result).toBe(42);
   });
 
@@ -143,7 +157,7 @@ describe("native bridge", () => {
       timeout: 0,
     });
 
-    const result = local.call("navigation", "back");
+    const result = local.call("navigation", "pop");
 
     expect(messages[0].session).toBe("custom-session");
     local.receive({ id: messages[0].id, ok: true });
@@ -258,7 +272,7 @@ describe("native bridge", () => {
     scope.params = { url: "/dashboard" };
     scope.capture = jasmine.createSpy("capture");
     const element = compile(
-      '<button id="open" ng-native="navigation.visit" data-params="params" data-on-result="capture($result)"></button>',
+      '<button id="open" ng-native="navigation.push" data-params="params" data-on-result="capture($result)"></button>',
     )(scope);
 
     root.append(element);
@@ -321,6 +335,116 @@ describe("native bridge", () => {
     scope.destroy();
     expect(calls[2].method).toBe("unmount");
     service.receive({ id: calls[2].id, ok: true, result: {} });
+  });
+
+  it("projects computed CSS into native component properties", async () => {
+    const styles = document.createElement("style");
+    styles.textContent = `
+      .native-style-test {
+        color: var(--native-test-color);
+        background-color: color-mix(in srgb, rgb(250 245 235) 96%, white);
+        width: 120px;
+        min-height: 44px;
+        padding: 8px;
+        border: 2px solid rgb(80 70 60);
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+        font: italic 700 24px/30px Georgia, serif;
+        letter-spacing: 1px;
+        text-align: center;
+        opacity: 0.75;
+        accent-color: rgb(184 58 36);
+      }
+    `;
+    document.head.append(styles);
+    document.documentElement.style.setProperty(
+      "--native-test-color",
+      "rgb(32 32 29)",
+    );
+    const element = compile(
+      '<section class="native-style-test" ng-native-component="text" data-props="{ text: \'Pulse\' }"></section>',
+    )(scope);
+
+    root.append(element);
+    await wait(50);
+    expect(calls[0].params.props.style).toEqual(
+      jasmine.objectContaining({
+        accentColor: "#b83a24",
+        backgroundColor: "#faf5ec",
+        borderColor: "#50463c",
+        borderRadius: 12,
+        borderWidth: 2,
+        color: "#20201d",
+        elevation: 3,
+        fontSize: 24,
+        fontStyle: "italic",
+        fontWeight: "700",
+        height: 44,
+        letterSpacing: 1,
+        lineHeight: 30,
+        minHeight: 44,
+        opacity: 0.75,
+        paddingBottom: 8,
+        paddingLeft: 8,
+        paddingRight: 8,
+        paddingTop: 8,
+        textAlign: "center",
+        width: 120,
+      }),
+    );
+    expect(calls[0].params.props.style.fontFamily).toContain("Georgia");
+    service.receive({ id: calls[0].id, ok: true, result: {} });
+    await wait();
+
+    document.documentElement.style.setProperty(
+      "--native-test-color",
+      "rgb(184 58 36)",
+    );
+    await wait(50);
+    expect(calls.at(-1).method).toBe("update");
+    expect(calls.at(-1).params.props.style.color).toBe("#b83a24");
+
+    styles.remove();
+    document.documentElement.style.removeProperty("--native-test-color");
+  });
+
+  it("projects CSS into generated native element trees", async () => {
+    const styles = document.createElement("style");
+    styles.textContent = `
+      .native-row-style { gap: 8px; background-color: rgb(247 242 232); }
+      .native-image-style {
+        width: 48px;
+        height: 48px;
+        border-radius: 24px;
+        object-fit: contain;
+      }
+    `;
+    document.head.append(styles);
+    const element = compile(`
+      <ng-native-row class="native-row-style" label="Styled row">
+        <ng-native-image
+          class="native-image-style"
+          key="photo"
+          src="/photo.jpg"
+          content-description="Photo"
+        ></ng-native-image>
+      </ng-native-row>
+    `)(scope);
+
+    root.append(element);
+    await wait(50);
+    expect(calls[0].params.props.spacing).toBe(8);
+    expect(calls[0].params.props.style.backgroundColor).toBe("#f7f2e8");
+    expect(calls[0].params.props.children[0].props.style).toEqual(
+      jasmine.objectContaining({
+        borderRadius: 24,
+        height: 48,
+        objectFit: "contain",
+        width: 48,
+      }),
+    );
+
+    styles.remove();
   });
 
   it("connects native component values to ng-model", async () => {
@@ -483,5 +607,568 @@ describe("native bridge", () => {
     scope.destroy();
     service.receive({ target: "component", event: "click", data: {} });
     expect(scope.capture).toHaveBeenCalledTimes(1);
+  });
+
+  it("normalizes generated names and every native attribute value type", () => {
+    expect(nativeElementDirectiveName("bottom-bar")).toBe("ngNativeBottomBar");
+    expect(coerceNativeAttribute("", "BOOLEAN")).toBeTrue();
+    expect(coerceNativeAttribute("false", "BOOLEAN")).toBeFalse();
+    expect(coerceNativeAttribute("2.75", "FLOAT")).toBe(2.75);
+    expect(coerceNativeAttribute("2.75", "INTEGER")).toBe(2);
+    expect(coerceNativeAttribute('["one","two"]', "STRING_LIST")).toEqual([
+      "one",
+      "two",
+    ]);
+    expect(coerceNativeAttribute('{"ready":true}', "JSON")).toEqual({
+      ready: true,
+    });
+    expect(coerceNativeAttribute("plain", "STRING")).toBe("plain");
+    expect(() => coerceNativeAttribute("NaN", "FLOAT")).toThrowError(
+      TypeError,
+      "Expected a finite float",
+    );
+  });
+
+  it("handles detached documents and uncommon computed style values", () => {
+    const detachedDocument = document.implementation.createHTMLDocument();
+    expect(
+      readNativeStyle(detachedDocument.createElement("div"), "text"),
+    ).toEqual({});
+
+    const computed = {
+      color: "#010203",
+      backgroundColor: "color(srgb invalid 0 0)",
+      borderTopColor: "not-a-color",
+      opacity: "invalid",
+      boxShadow: "0px 0px -4px rgb(0 0 0)",
+      fontFamily: "serif",
+      fontStyle: "normal",
+      fontWeight: "400",
+      textAlign: "start",
+      objectFit: "fill",
+      accentColor: "color(srgb 100% 0% 0% / 50%)",
+      getPropertyValue(property) {
+        if (property === "width") return "NaNpx";
+        if (property === "height") return "auto";
+        if (property === "border-top-width") return "-2px";
+        if (property === "row-gap") return "-1px";
+        return "0px";
+      },
+    };
+    spyOn(window, "getComputedStyle").and.returnValue(computed);
+
+    expect(readNativeStyle(document.createElement("div"), "image")).toEqual({
+      accentColor: "#80ff0000",
+      color: "#010203",
+    });
+
+    computed.boxShadow = "0px 2px";
+    readNativeStyle(document.createElement("div"), "image");
+  });
+
+  it("projects bottom bar buttons and nested generated child events", async () => {
+    scope.capture = jasmine.createSpy("capture");
+    const element = compile(`
+      <ng-native-column props="{ label: 'Root' }">
+        <ng-native-bottom-bar key="tabs">
+          <button key="home" icon="house">Home</button>
+          <button id="saved" disabled>Saved</button>
+        </ng-native-bottom-bar>
+        <div>
+          <ng-native-row key="group">
+            <ng-native-button
+              key="open"
+              retain
+              on-click="capture($data)"
+            >Open</ng-native-button>
+            <ng-native-text-field
+              key="query"
+              ng-model="query"
+            ></ng-native-text-field>
+            <ng-native-text>Fallback key</ng-native-text>
+          </ng-native-row>
+        </div>
+      </ng-native-column>
+    `)(scope);
+
+    root.append(element);
+    await wait(50);
+    const mount = calls.at(-1);
+    const tabs = mount.params.props.children[0];
+    expect(tabs.props.items).toEqual([
+      { key: "home", label: "Home", icon: "house", enabled: true },
+      { key: "saved", label: "Saved", icon: "", enabled: false },
+    ]);
+    expect(mount.params.props.children[1].props.children[0].retain).toBeTrue();
+    service.receive({ id: mount.id, ok: true, result: {} });
+    await wait();
+
+    service.receive({
+      target: "component",
+      event: "childEvent",
+      data: {
+        id: element.id,
+        key: "group",
+        event: "childEvent",
+        data: { key: "open", event: "click", data: { postId: 7 } },
+      },
+    });
+    expect(scope.capture).toHaveBeenCalledWith({ postId: 7 });
+
+    const textField = element.querySelector("ng-native-text-field");
+    getController(textField, "ngModel").render();
+    await wait();
+
+    service.receive({
+      target: "component",
+      event: "childEvent",
+      data: { id: element.id, key: "missing", event: "click" },
+    });
+    service.receive({
+      target: "component",
+      event: "childEvent",
+      data: { id: "another-root", key: "group", event: "click" },
+    });
+    service.receive({
+      target: "component",
+      event: "childEvent",
+      data: { id: element.id, key: 7, event: "click" },
+    });
+    service.receive({
+      target: "component",
+      event: "childEvent",
+      data: { id: element.id, key: "group", event: 7 },
+    });
+    service.receive({
+      target: "component",
+      event: "childEvent",
+      data: {
+        id: element.id,
+        key: "group",
+        event: "childEvent",
+        data: { key: "open", event: "click", data: "primitive" },
+      },
+    });
+    service.receive({
+      target: "component",
+      event: "childEvent",
+      data: {
+        id: element.id,
+        key: "group",
+        event: "childEvent",
+        data: { key: "open", event: "blur", data: {} },
+      },
+    });
+    expect(scope.capture).toHaveBeenCalledTimes(2);
+  });
+
+  it("updates a native root when an existing nested element finishes linking", async () => {
+    const native = {
+      available: true,
+      supports: () => true,
+      call: jasmine.createSpy("call").and.resolveTo({}),
+      on: () => () => undefined,
+    };
+    const localScope = { id: 94, on: () => () => undefined };
+    const localWindow = {
+      document,
+      scrollX: 0,
+      scrollY: 0,
+      queueMicrotask(callback) {
+        queueMicrotask(callback);
+      },
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    };
+    const parent = document.createElement("ng-native-column");
+    const child = document.createElement("ng-native-text");
+    child.setAttribute("key", "late-child");
+    child.setAttribute("text", "Ready");
+    parent.append(child);
+    root.append(parent);
+
+    nativeElementDirective(
+      "column",
+      native,
+      () => undefined,
+      fail,
+      localWindow,
+    ).link(localScope, parent);
+    await wait();
+
+    expect(native.call.calls.count()).toBe(1);
+    expect(native.call.calls.mostRecent().args[2].props.children).toEqual([]);
+
+    nativeElementDirective(
+      "text",
+      native,
+      () => undefined,
+      fail,
+      localWindow,
+    ).link(localScope, child);
+    await wait();
+
+    expect(native.call.calls.count()).toBe(2);
+    expect(native.call.calls.mostRecent().args[1]).toBe("update");
+    expect(native.call.calls.mostRecent().args[2].props.children[0]).toEqual(
+      jasmine.objectContaining({
+        key: "late-child",
+        name: "text",
+        props: jasmine.objectContaining({ text: "Ready" }),
+      }),
+    );
+  });
+
+  it("does not mount a native element removed before its mount microtask", async () => {
+    const native = {
+      available: true,
+      supports: () => true,
+      call: jasmine.createSpy("call").and.resolveTo({}),
+      on: () => () => undefined,
+    };
+    const element = document.createElement("ng-native-text");
+    root.append(element);
+
+    nativeElementDirective("text", native, () => undefined, fail, window).link(
+      scope,
+      element,
+    );
+    element.remove();
+    await wait();
+
+    expect(native.call).not.toHaveBeenCalled();
+  });
+
+  it("connects generated native tags to ng-model and schedules root updates", async () => {
+    scope.accepted = false;
+    const element = compile(
+      '<ng-native-checkbox ng-model="accepted" on-change="accepted = $data.value"></ng-native-checkbox>',
+    )(scope);
+
+    root.append(element);
+    await wait(50);
+    const mount = calls.at(-1);
+    service.receive({ id: mount.id, ok: true, result: {} });
+    await wait();
+
+    service.receive({
+      target: "component",
+      event: "change",
+      data: { id: element.id, value: true },
+    });
+    await wait(50);
+    expect(scope.accepted).toBeTrue();
+    expect(calls.at(-1).method).toBe("update");
+
+    scope.destroy();
+    const unmount = calls.at(-1);
+    expect(unmount.method).toBe("unmount");
+    service.receive({ id: unmount.id, ok: false, error: "already removed" });
+    await wait();
+  });
+
+  it("guards and disposes generated tag shell adapters deterministically", async () => {
+    const destroyers = [];
+    const listeners = {};
+    const eventHandlers = {};
+    const unsubscribers = [];
+    const exceptionHandler = jasmine.createSpy("exceptionHandler");
+    const capture = jasmine.createSpy("capture");
+    let supported = false;
+    const native = {
+      available: true,
+      supports: jasmine.createSpy("supports").and.callFake(() => supported),
+      call: jasmine
+        .createSpy("call")
+        .and.callFake((_target, method) =>
+          method === "unmount"
+            ? Promise.reject(new Error("gone"))
+            : Promise.resolve({}),
+        ),
+      on(_target, event, handler) {
+        eventHandlers[event] = handler;
+        const unsubscribe = jasmine.createSpy(`unsubscribe-${event}`);
+        unsubscribers.push(unsubscribe);
+        return unsubscribe;
+      },
+    };
+    const localScope = {
+      id: 91,
+      props: { text: "Ready" },
+      on(event, handler) {
+        if (event === "$destroy") destroyers.push(handler);
+        return () => undefined;
+      },
+    };
+    const parse = (expression) => {
+      if (expression === "props") return (context) => context.props;
+      if (expression === "capture($data)") {
+        return (_context, locals) => capture(locals.$data);
+      }
+      return () => {
+        throw new Error("expression failed");
+      };
+    };
+    const localWindow = {
+      document,
+      scrollX: 0,
+      scrollY: 0,
+      queueMicrotask(callback) {
+        queueMicrotask(callback);
+      },
+      addEventListener(event, handler) {
+        listeners[event] = handler;
+      },
+      removeEventListener(event) {
+        delete listeners[event];
+      },
+    };
+    const element = document.createElement("ng-native-button");
+    element.setAttribute("props", "props");
+    element.setAttribute("on-click", "capture($data)");
+    root.append(element);
+    nativeElementDirective(
+      "button",
+      native,
+      parse,
+      exceptionHandler,
+      localWindow,
+    ).link(localScope, element);
+
+    await wait();
+    expect(native.call).not.toHaveBeenCalled();
+    supported = true;
+    listeners["ng:native:environment"]();
+    listeners["ng:native:environment"]();
+    await wait();
+    expect(native.call).toHaveBeenCalledWith(
+      "component",
+      "mount",
+      jasmine.objectContaining({ name: "button" }),
+    );
+
+    listeners.resize();
+    await wait();
+    expect(native.call).toHaveBeenCalledTimes(1);
+    eventHandlers.click({ event: "click", data: { id: "other" } });
+    eventHandlers.click({ event: "click", data: { id: element.id, value: 3 } });
+    expect(capture).toHaveBeenCalledWith({ id: element.id, value: 3 });
+
+    element.setAttribute("on-click", "explode($data)");
+    eventHandlers.click({ event: "click", data: { id: element.id } });
+    expect(exceptionHandler).toHaveBeenCalledWith(
+      jasmine.objectContaining({ message: "expression failed" }),
+    );
+
+    destroyers.forEach((destroy) => destroy());
+    destroyers.forEach((destroy) => destroy());
+    await wait();
+    expect(
+      unsubscribers.every((unsubscribe) => unsubscribe.calls.count() === 1),
+    ).toBeTrue();
+  });
+
+  it("reports generated root failures only while the shell remains active", async () => {
+    const destroyers = [];
+    const listeners = {};
+    const exceptionHandler = jasmine.createSpy("exceptionHandler");
+    const pending = [];
+    let available = true;
+    const native = {
+      get available() {
+        return available;
+      },
+      supports: () => true,
+      call: () =>
+        new Promise((_resolve, reject) => {
+          pending.push(reject);
+        }),
+      on: () => () => undefined,
+    };
+    const localScope = {
+      id: 92,
+      on(event, handler) {
+        if (event === "$destroy") destroyers.push(handler);
+        return () => undefined;
+      },
+    };
+    const localWindow = {
+      document,
+      scrollX: 0,
+      scrollY: 0,
+      queueMicrotask(callback) {
+        queueMicrotask(callback);
+      },
+      addEventListener(event, handler) {
+        listeners[event] = handler;
+      },
+      removeEventListener(event) {
+        delete listeners[event];
+      },
+    };
+    const element = document.createElement("ng-native-text");
+    root.append(element);
+    nativeElementDirective(
+      "text",
+      native,
+      () => undefined,
+      exceptionHandler,
+      localWindow,
+    ).link(localScope, element);
+
+    await wait();
+    pending.shift()(new Error("active failure"));
+    await wait();
+    expect(exceptionHandler).toHaveBeenCalledTimes(1);
+
+    listeners.resize();
+    await wait();
+    available = false;
+    pending.shift()(new Error("unavailable failure"));
+    await wait();
+    expect(exceptionHandler).toHaveBeenCalledTimes(1);
+
+    available = true;
+    listeners["ng:native:environment"]();
+    await wait();
+    destroyers.forEach((destroy) => destroy());
+    pending.shift()(new Error("disposed failure"));
+    await wait();
+    expect(exceptionHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it("mounts custom generic components without observer globals", async () => {
+    const detachedDocument = document.implementation.createHTMLDocument();
+    const frames = [];
+    const destroyers = [];
+    const native = {
+      available: true,
+      call: jasmine.createSpy("call").and.resolveTo({}),
+      on: () => () => undefined,
+    };
+    const localScope = {
+      id: 93,
+      on(event, handler) {
+        if (event === "$destroy") destroyers.push(handler);
+        return () => undefined;
+      },
+      watch: () => () => undefined,
+    };
+    const localWindow = {
+      document: detachedDocument,
+      scrollX: 0,
+      scrollY: 0,
+      requestAnimationFrame(callback) {
+        frames.push(callback);
+        return frames.length;
+      },
+      cancelAnimationFrame: jasmine.createSpy("cancelAnimationFrame"),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    };
+    const element = detachedDocument.createElement("section");
+    element.setAttribute("ng-native-component", "custom-card");
+    detachedDocument.body.append(element);
+
+    ngNativeComponentDirective(native, () => undefined, fail, localWindow).link(
+      localScope,
+      element,
+    );
+    frames.shift()(0);
+    await wait();
+
+    expect(native.call).toHaveBeenCalledWith(
+      "component",
+      "mount",
+      jasmine.objectContaining({ name: "custom-card" }),
+    );
+    destroyers.forEach((destroy) => destroy());
+  });
+
+  it("retries disconnected generic components and coalesces reentrant updates", async () => {
+    const detached = compile(
+      '<section ng-native-component="text" data-props="{ text: \'Detached\' }"></section>',
+    )(scope);
+    await wait(120);
+    expect(calls).toEqual([]);
+
+    scope.row = { label: "First" };
+    const styles = document.createElement("style");
+    styles.textContent = ".generic-row { display: flex; gap: 9px; }";
+    document.head.append(styles);
+    const element = compile(
+      '<section class="generic-row" ng-native-component="row" data-props="row"></section>',
+    )(scope);
+    root.append(element);
+    await wait(50);
+    const mount = calls.at(-1);
+    expect(mount.params.props.spacing).toBe(9);
+
+    scope.row = { label: "Second" };
+    await wait(50);
+    expect(calls.length).toBe(1);
+    service.receive({ id: mount.id, ok: true, result: {} });
+    await wait(50);
+    expect(calls.at(-1).method).toBe("update");
+    expect(calls.at(-1).params.props.label).toBe("Second");
+    service.receive({ id: calls.at(-1).id, ok: true, result: {} });
+    styles.remove();
+  });
+
+  it("reports capability and pushed-event expression errors", async () => {
+    const exceptionHandler = jasmine.createSpy("exceptionHandler");
+    const destroyers = [];
+    const localScope = {
+      id: 12,
+      on(event, handler) {
+        if (event === "$destroy") destroyers.push(handler);
+        return handler;
+      },
+    };
+    const failedNative = {
+      call: () => Promise.reject(new Error("native failed")),
+      on(_target, _event, handler) {
+        this.handler = handler;
+        return jasmine.createSpy("unsubscribe");
+      },
+    };
+    const parse = () => () => {
+      throw new Error("handler failed");
+    };
+
+    for (const value of ["", ".open", "camera."]) {
+      const invalid = document.createElement("button");
+      invalid.setAttribute("ng-native", value);
+      ngNativeDirective(failedNative, parse, exceptionHandler).link(
+        localScope,
+        invalid,
+      );
+      invalid.click();
+    }
+
+    const button = document.createElement("button");
+    button.setAttribute("ng-native", "camera.open");
+    ngNativeDirective(failedNative, () => undefined, exceptionHandler).link(
+      localScope,
+      button,
+    );
+    button.click();
+    await wait();
+    expect(exceptionHandler).toHaveBeenCalledWith(
+      jasmine.objectContaining({ message: "native failed" }),
+    );
+
+    const pushed = document.createElement("div");
+    pushed.setAttribute("ng-native-event", "component.click");
+    pushed.setAttribute("on-event", "explode()");
+    ngNativeEventDirective(failedNative, parse, exceptionHandler).link(
+      localScope,
+      pushed,
+    );
+    failedNative.handler({ data: { id: 1 } });
+    expect(exceptionHandler).toHaveBeenCalledWith(
+      jasmine.objectContaining({ message: "handler failed" }),
+    );
+    destroyers.forEach((destroy) => destroy());
   });
 });

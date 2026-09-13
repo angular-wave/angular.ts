@@ -5,19 +5,20 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.webkit.WebChromeClient.FileChooserParams
+import androidx.core.net.toUri
 import io.github.angularwave.android.core.files.util.AngularNativeFileProvider
-import io.github.angularwave.android.core.turbo.util.dispatcherProvider
+import io.github.angularwave.android.core.ng.util.dispatcherProvider
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 
 internal class BrowseFilesDelegate(val context: Context) : CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = dispatcherProvider.io + Job()
 
-    fun buildIntent(params: FileChooserParams): Intent {
-        return Intent(Intent.ACTION_GET_CONTENT).apply {
+    fun buildIntent(params: FileChooserParams): Intent =
+        Intent(Intent.ACTION_GET_CONTENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.allowsMultiple())
             type = params.defaultAcceptType()
@@ -26,9 +27,11 @@ internal class BrowseFilesDelegate(val context: Context) : CoroutineScope {
                 putExtra(Intent.EXTRA_MIME_TYPES, params.acceptTypes)
             }
         }
-    }
 
-    fun handleResult(intent: Intent?, onResult: (Array<Uri>?) -> Unit) {
+    fun handleResult(
+        intent: Intent?,
+        onResult: (Array<Uri>?) -> Unit,
+    ) {
         if (intent == null) {
             onResult(null)
             return
@@ -37,11 +40,12 @@ internal class BrowseFilesDelegate(val context: Context) : CoroutineScope {
         launch {
             val clipData = intent.clipData
             val dataString = intent.dataString
-            val results = when {
-                clipData != null -> buildMultipleFilesResult(clipData)
-                dataString != null -> buildSingleFileResult(dataString)
-                else -> null
-            }
+            val results =
+                when {
+                    clipData != null -> buildMultipleFilesResult(clipData)
+                    dataString != null -> buildSingleFileResult(dataString)
+                    else -> null
+                }
 
             onResult(results)
         }
@@ -58,7 +62,7 @@ internal class BrowseFilesDelegate(val context: Context) : CoroutineScope {
     }
 
     private suspend fun buildSingleFileResult(dataString: String): Array<Uri>? {
-        val uri = Uri.parse(dataString)
+        val uri = dataString.toUri()
         return buildResult(listOf(uri))
     }
 
@@ -73,9 +77,8 @@ internal class BrowseFilesDelegate(val context: Context) : CoroutineScope {
         }
     }
 
-    private suspend fun writeToCachedFile(uri: Uri): Uri? {
-        return AngularNativeFileProvider.writeUriToFile(context, uri)?.let {
+    private suspend fun writeToCachedFile(uri: Uri): Uri? =
+        AngularNativeFileProvider.writeUriToFile(context, uri)?.let {
             AngularNativeFileProvider.contentUriForFile(context, it)
         }
-    }
 }

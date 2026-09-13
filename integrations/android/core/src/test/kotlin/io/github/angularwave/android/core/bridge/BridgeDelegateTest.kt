@@ -15,8 +15,11 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.mockito.Mockito.verify
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class BridgeDelegateTest {
     private lateinit var delegate: BridgeDelegate<TestData.AppBridgeDestination>
     private lateinit var lifecycleOwner: TestLifecycleOwner
@@ -24,14 +27,13 @@ class BridgeDelegateTest {
     private val bridge: Bridge = mock()
     private val webView: WebView = mock()
 
-    private val factories = listOf(
-        BridgeComponentFactory("one", TestData::OneBridgeComponent),
-        BridgeComponentFactory("two", TestData::TwoBridgeComponent)
-    )
+    private val factories =
+        listOf(
+            BridgeComponentFactory("one", TestData::OneBridgeComponent),
+            BridgeComponentFactory("two", TestData::TwoBridgeComponent),
+        )
 
-    @Rule
-    @JvmField
-    var coroutinesTestRule = CoroutinesTestRule()
+    @Rule @JvmField var coroutinesTestRule = CoroutinesTestRule()
 
     @Before
     fun setup() {
@@ -39,11 +41,12 @@ class BridgeDelegateTest {
         whenever(bridge.webView).thenReturn(webView)
         Bridge.initialize(bridge)
 
-        delegate = BridgeDelegate(
-            location = "https://37signals.com",
-            destination = destination,
-            componentFactories = factories
-        )
+        delegate =
+            BridgeDelegate(
+                location = "https://37signals.com",
+                destination = destination,
+                componentFactories = factories,
+            )
         delegate.bridge = bridge
 
         lifecycleOwner = TestLifecycleOwner(Lifecycle.State.STARTED)
@@ -70,13 +73,14 @@ class BridgeDelegateTest {
 
     @Test
     fun bridgeDidReceiveMessage() {
-        val message = Message(
-            id = "1",
-            component = "one",
-            event = "connect",
-            metadata = Metadata("https://37signals.com"),
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "one",
+                event = "connect",
+                metadata = Metadata("https://37signals.com"),
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         assertNull(delegate.component<TestData.OneBridgeComponent>())
         assertEquals(true, delegate.bridgeDidReceiveMessage(message))
@@ -85,13 +89,14 @@ class BridgeDelegateTest {
 
     @Test
     fun bridgeNotifiesWhenComponentIsInitialized() {
-        val message = Message(
-            id = "1",
-            component = "one",
-            event = "connect",
-            metadata = Metadata("https://37signals.com"),
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "one",
+                event = "connect",
+                metadata = Metadata("https://37signals.com"),
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         delegate.bridgeDidReceiveMessage(message)
         delegate.bridgeDidReceiveMessage(message)
@@ -102,13 +107,14 @@ class BridgeDelegateTest {
     fun bridgeDidReceiveMessageForLocationWithTrailingSlash() {
         whenever(webView.url).thenReturn("https://37signals.com/")
 
-        val message = Message(
-            id = "1",
-            component = "one",
-            event = "connect",
-            metadata = Metadata("https://37signals.com/"),
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "one",
+                event = "connect",
+                metadata = Metadata("https://37signals.com/"),
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         assertNull(delegate.component<TestData.OneBridgeComponent>())
         assertEquals(true, delegate.bridgeDidReceiveMessage(message))
@@ -119,13 +125,14 @@ class BridgeDelegateTest {
     fun bridgeDidReceiveMessageForResolvedLocation() {
         whenever(webView.url).thenReturn("https://37signals.com/new_url")
 
-        val message = Message(
-            id = "1",
-            component = "one",
-            event = "connect",
-            metadata = Metadata("https://37signals.com/new_url"),
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "one",
+                event = "connect",
+                metadata = Metadata("https://37signals.com/new_url"),
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         assertNull(delegate.component<TestData.OneBridgeComponent>())
         assertEquals(true, delegate.bridgeDidReceiveMessage(message))
@@ -134,39 +141,42 @@ class BridgeDelegateTest {
 
     @Test
     fun bridgeDidReceiveMessageIgnored() {
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = Metadata("https://37signals.com/another_url"),
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = Metadata("https://37signals.com/another_url"),
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         assertEquals(false, delegate.bridgeDidReceiveMessage(message))
     }
 
     @Test
     fun replyWith() {
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = Metadata("https://37signals.com/another_url"),
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = Metadata("https://37signals.com/another_url"),
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         assertEquals(true, delegate.replyWith(message))
     }
 
     @Test
     fun replyWithFailsWithoutBridge() {
-        val message = Message(
-            id = "1",
-            component = "page",
-            event = "connect",
-            metadata = Metadata("https://37signals.com/another_url"),
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "page",
+                event = "connect",
+                metadata = Metadata("https://37signals.com/another_url"),
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         delegate.bridge = null
         assertEquals(false, delegate.replyWith(message))
@@ -206,13 +216,14 @@ class BridgeDelegateTest {
 
     @Test
     fun destinationIsInactive() {
-        val message = Message(
-            id = "1",
-            component = "one",
-            event = "connect",
-            metadata = Metadata("https://37signals.com"),
-            jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}"""
-        )
+        val message =
+            Message(
+                id = "1",
+                component = "one",
+                event = "connect",
+                metadata = Metadata("https://37signals.com"),
+                jsonData = """{"title":"Page-title","subtitle":"Page-subtitle"}""",
+            )
 
         assertEquals(true, delegate.bridgeDidReceiveMessage(message))
         assertNotNull(delegate.component<TestData.OneBridgeComponent>())

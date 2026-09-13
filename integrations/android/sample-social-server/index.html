@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" class="platform-web">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f2e8" />
+    <title>Pulse</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="pulse-app route-{{ vm.route.kind }}" ng-controller="PulseController as vm">
+      <ng-native-scaffold id="pulse-shell" class="pulse-shell" label="Pulse">
+        <ng-native-app-bar key="app-bar" class="pulse-app-bar" label="Pulse app bar" vertical-alignment="center" safe-area="false">
+          <ng-native-button ng-if="vm.showsBack" key="back" class="pulse-back" text="Back" on-click="vm.back()"></ng-native-button>
+          <ng-native-text key="title" class="pulse-title" text="{{ vm.title }}"></ng-native-text>
+          <ng-native-chip ng-if="vm.route.kind === 'feed'" key="following" class="pulse-feed-switch" text="Following" checkable="true" checked="true"></ng-native-chip>
+          <ng-native-chip ng-if="vm.route.kind === 'feed'" key="for-you" class="pulse-feed-switch" text="For you" checkable="true"></ng-native-chip>
+        </ng-native-app-bar>
+
+        <ng-native-list ng-if="vm.route.kind === 'feed' || vm.route.kind === 'post' || vm.route.kind === 'profile'" class="pulse-content" key="content:{{ vm.route.kind }}" retain label="{{ vm.contentLabel }}" on-load-more="vm.loadMore()">
+          <ng-native-column ng-if="vm.route.kind === 'profile' && vm.profile" key="profile-header" class="pulse-profile-header" horizontal-alignment="center">
+            <ng-native-image key="profile-avatar" class="pulse-profile-avatar" src="{{ vm.profile.avatar }}" content-description="{{ vm.profile.name }}"></ng-native-image>
+            <ng-native-text key="profile-name" class="pulse-profile-name" text="{{ vm.profile.name }}"></ng-native-text>
+            <ng-native-text key="profile-handle" class="pulse-secondary" text="@{{ vm.profile.handle }}"></ng-native-text>
+            <ng-native-text key="profile-bio" class="pulse-body" text="{{ vm.profile.bio }}"></ng-native-text>
+            <ng-native-row key="profile-counts" class="pulse-profile-counts">
+              <ng-native-text key="posts-count" text="{{ vm.profile.posts.length }} posts"></ng-native-text>
+              <ng-native-text key="followers-count" text="{{ vm.formatCount(vm.profile.followers) }} followers"></ng-native-text>
+              <ng-native-text key="following-count" text="{{ vm.formatCount(vm.profile.following) }} following"></ng-native-text>
+            </ng-native-row>
+          </ng-native-column>
+
+          <ng-native-row ng-repeat="row in vm.profileRows" key="profile-row:{{ $index }}" class="pulse-profile-grid-row">
+            <ng-native-image
+              ng-repeat="post in row"
+              key="profile-photo:{{ post.id }}"
+              class="pulse-profile-photo"
+              src="{{ post.image }}"
+              content-description="{{ post.title }}. Open post"
+              placeholder-color="#e9e2d7"
+              error-color="#ead8d2"
+              on-click="vm.openPost(post.id)"
+            ></ng-native-image>
+          </ng-native-row>
+
+          <ng-native-loading-indicator ng-if="vm.loading" key="loading" label="Loading feed" visible="true"></ng-native-loading-indicator>
+          <ng-native-column ng-repeat="post in vm.posts" key="post:{{ post.id }}" class="pulse-post">
+            <ng-native-row key="author:{{ post.id }}" class="pulse-author">
+              <ng-native-image key="avatar:{{ post.id }}" class="pulse-avatar" src="{{ post.author.avatar }}" content-description="{{ post.author.name }}" on-click="vm.openProfile(post.author.handle)"></ng-native-image>
+              <ng-native-column key="author-copy:{{ post.id }}" class="pulse-author-copy">
+                <ng-native-text key="author-name:{{ post.id }}" class="pulse-author-name" text="{{ post.author.name }}"></ng-native-text>
+                <ng-native-text key="location:{{ post.id }}" class="pulse-secondary" text="{{ post.location }}"></ng-native-text>
+              </ng-native-column>
+            </ng-native-row>
+            <ng-native-image key="image:{{ post.id }}" class="pulse-photo" src="{{ post.image }}" content-description="{{ post.description }}" placeholder-color="#e9e2d7" error-color="#ead8d2" on-click="vm.openPost(post.id)"></ng-native-image>
+            <ng-native-text key="title:{{ post.id }}" class="pulse-post-title" text="{{ post.title }}"></ng-native-text>
+            <ng-native-row key="actions:{{ post.id }}" class="pulse-actions">
+              <ng-native-button key="like:{{ post.id }}" class="pulse-action" text="{{ post.liked ? 'Unlike' : 'Like' }}  {{ post.likes }}" on-click="vm.toggleLike(post)"></ng-native-button>
+              <ng-native-button key="comments:{{ post.id }}" class="pulse-action" text="Comment  {{ post.comments.length }}" on-click="vm.showComments(post)"></ng-native-button>
+              <ng-native-button key="share:{{ post.id }}" class="pulse-action" text="Share" on-click="vm.share(post)"></ng-native-button>
+            </ng-native-row>
+            <ng-native-text key="caption:{{ post.id }}" class="pulse-caption" text="{{ post.caption }}"></ng-native-text>
+            <ng-native-text ng-if="vm.detailedPost" ng-repeat="comment in post.comments" key="comment:{{ $index }}" class="pulse-comment" text="{{ comment.author }}: {{ comment.text }}"></ng-native-text>
+            <ng-native-divider key="divider:{{ post.id }}" label="Post divider"></ng-native-divider>
+          </ng-native-column>
+        </ng-native-list>
+
+        <ng-native-grid ng-if="vm.route.kind === 'explore'" key="content:explore" class="pulse-explore" retain label="Explore photos" columns="{{ vm.columns }}">
+          <ng-native-image ng-repeat="post in vm.posts" key="open:{{ post.id }}" class="pulse-explore-photo" src="{{ post.image }}" content-description="{{ post.title }}. Open post" on-click="vm.openPost(post.id)"></ng-native-image>
+        </ng-native-grid>
+
+        <ng-native-list ng-if="vm.route.kind === 'activity'" key="content:activity" class="pulse-activity" retain label="Pulse activity">
+          <ng-native-column ng-repeat="item in vm.activity" key="activity:{{ item.id }}" class="pulse-activity-item" label="{{ item.title }}. {{ item.detail }}">
+            <ng-native-text key="activity-title:{{ item.id }}" class="pulse-activity-title" text="{{ item.title }}"></ng-native-text>
+            <ng-native-text key="activity-detail:{{ item.id }}" class="pulse-activity-detail" text="{{ item.detail }}"></ng-native-text>
+          </ng-native-column>
+        </ng-native-list>
+
+        <ng-native-list ng-if="vm.route.kind === 'create'" key="content" class="pulse-create" label="Create a post">
+          <ng-native-image ng-if="vm.draft.file" key="draft-preview" class="pulse-draft-preview" src="{{ vm.draft.file.uri }}" content-description="Selected photo preview"></ng-native-image>
+          <ng-native-file-picker key="pick-photo" class="pulse-file-picker" label="Choose a photo" text="{{ vm.draft.file ? vm.draft.file.name : 'Choose a photo' }}" accept='["image/jpeg","image/png","image/webp"]' pending="{{ vm.draft.uploading }}" ng-model="vm.draft.file"></ng-native-file-picker>
+          <ng-native-text-field key="caption" label="Caption" placeholder="What is the story behind this photo?" enabled="{{ !vm.draft.uploading }}" error="{{ vm.draft.error }}" ng-model="vm.draft.caption"></ng-native-text-field>
+          <ng-native-progress ng-if="vm.draft.uploading" key="upload-progress" label="Uploading" value="{{ vm.draft.progress }}" max="100"></ng-native-progress>
+          <ng-native-button key="publish" class="pulse-primary-action" text="Post" enabled="{{ !!vm.draft.file && !vm.draft.uploading }}" loading="{{ vm.draft.uploading }}" loading-text="Uploading" on-click="vm.publish()"></ng-native-button>
+          <ng-native-button ng-if="vm.draft.error" key="retry-upload" text="Try again" on-click="vm.publish()"></ng-native-button>
+        </ng-native-list>
+
+        <ng-native-list ng-if="vm.route.kind === 'login'" key="content" label="Sign in to Pulse" padding="20">
+          <ng-native-text key="login-title" text="Welcome to Pulse" color="#d94a32" text-size="30"></ng-native-text>
+          <ng-native-text-field key="email" label="Email" keyboard-type="email" error="{{ vm.login.errors.email || '' }}" ng-model="vm.login.email"></ng-native-text-field>
+          <ng-native-text-field key="password" label="Password" keyboard-type="password" error="{{ vm.login.errors.password || '' }}" ng-model="vm.login.password"></ng-native-text-field>
+          <ng-native-button key="sign-in" text="Sign in" loading="{{ vm.login.pending }}" loading-text="Signing in" on-click="vm.signIn()"></ng-native-button>
+          <ng-native-text key="demo-account" text="Demo account: maya@pulse.local / pulse" color="#6f6b63" text-size="13"></ng-native-text>
+        </ng-native-list>
+
+        <ng-native-bottom-bar key="bottom-bar" class="pulse-bottom-bar" label="Pulse navigation" selected-key="{{ vm.selectedTab }}" safe-area="false" on-select="vm.selectTab($data.key)">
+          <button key="tab:feed" icon="angular_native_ic_home">Home</button>
+          <button key="tab:explore" icon="angular_native_ic_explore">Explore</button>
+          <button key="tab:create" icon="angular_native_ic_add">Create</button>
+          <button key="tab:activity" icon="angular_native_ic_notifications">Activity</button>
+          <button key="tab:profile" icon="angular_native_ic_person">Profile</button>
+        </ng-native-bottom-bar>
+      </ng-native-scaffold>
+
+      <ng-native-bottom-sheet id="pulse-comments" title="{{ vm.sheet.title }}" message="{{ vm.sheet.message }}"></ng-native-bottom-sheet>
+      <ng-native-snackbar id="pulse-snackbar" message="{{ vm.snackbar.message }}" action-text="{{ vm.snackbar.actionText }}"></ng-native-snackbar>
+
+      <section class="browser-fallback">
+        <strong>Pulse</strong>
+        <p>This page becomes a native interface inside Angular Native.</p>
+      </section>
+    </div>
+    <script type="module" src="/live-reload.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

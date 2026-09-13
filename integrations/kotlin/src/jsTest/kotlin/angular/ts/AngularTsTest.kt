@@ -19,6 +19,15 @@ import kotlin.test.assertNotNull
 
 class AngularTsTest {
     @Test
+    fun exposesNativeCapabilityContract() {
+        assertEquals("connectivity", NativeCapabilities.Connectivity.name)
+        assertEquals("main", NativeCapabilities.Connectivity.threading)
+        assertEquals("destination", NativeCapabilities.Connectivity.lifecycle)
+        assertEquals("native-bridge-v1", NativeCapabilities.Connectivity.errorProtocol)
+        assertEquals("watch", NativeCapabilities.Connectivity.Methods.watch)
+    }
+
+    @Test
     fun exposesProgrammaticViewContextAndTags() {
         val host = js("document.createElement('section')").unsafeCast<HTMLElement>()
         val rawContext = js("({})")

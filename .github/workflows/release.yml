@@ -388,6 +388,65 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
         run: make -C integrations/scala publish-central
 
+  publish-android:
+    name: Publish Android packages to Maven Central
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-37" "build-tools;37.0.0"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reject existing Android Maven versions
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          mapfile -t artifacts < <(node integrations/android/scripts/android-artifacts.mjs artifact)
+          for artifact in "${artifacts[@]}"; do
+            url="https://repo1.maven.org/maven2/io/github/angular-wave/$artifact/$version/$artifact-$version.pom"
+            status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$url")"
+            case "$status" in
+              404) ;;
+              200)
+                echo "io.github.angular-wave:$artifact:$version is already published" >&2
+                exit 1
+                ;;
+              *)
+                echo "Maven Central lookup failed with HTTP $status" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+      - name: Validate and publish Android packages
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: make -C integrations/android publish
+
   validate-maven:
     name: Validate published Maven artifacts
     if: github.event_name == 'push'
@@ -395,6 +454,7 @@ jobs:
       - publish-java
       - publish-clojurescript
       - publish-scala
+      - publish-android
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -414,11 +474,31 @@ jobs:
           java-version: "21"
 
       - name: Validate Maven Central copies
-        run: >-
-          node tool/check-published-maven-artifacts.mjs
-          --version "$(node -p 'require("./package.json").version')"
-          --artifacts java,clojurescript,scala
-          --wait-seconds 900
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          node tool/check-published-maven-artifacts.mjs \
+            --version "$version" \
+            --artifacts java,clojurescript,scala,android \
+            --wait-seconds 900
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-37" "build-tools;37.0.0"
+
+      - name: Compile a clean Maven consumer
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          ./integrations/android/gradlew \
+            -p integrations/android/maven-consumer \
+            -PangularTsVersion="$version" \
+            --refresh-dependencies \
+            clean \
+            assembleDebug \
+            assembleRelease \
+            testDebugUnitTest \
+            lint
 
   validate-language-packages:
     name: Validate published Dart and Gleam packages
@@ -539,6 +619,7 @@ jobs:
       - publish-java
       - publish-clojurescript
       - publish-scala
+      - publish-android
       - validate-maven
       - publish-dart
       - publish-gleam
@@ -550,6 +631,7 @@ jobs:
         needs.publish-java.result == 'success' &&
         needs.publish-clojurescript.result == 'success' &&
         needs.publish-scala.result == 'success' &&
+        needs.publish-android.result == 'success' &&
         needs.validate-maven.result == 'success' &&
         needs.publish-dart.result == 'success' &&
         needs.publish-gleam.result == 'success' &&
@@ -654,6 +736,10 @@ jobs:
             "https://pub.dev/api/packages/angular_ts/versions/$PACKAGE_VERSION"
             "https://repo.hex.pm/tarballs/angular_ts-$PACKAGE_VERSION.tar"
           )
+
+          while IFS= read -r artifact; do
+            urls+=("https://repo1.maven.org/maven2/io/github/angular-wave/$artifact/$PACKAGE_VERSION/$artifact-$PACKAGE_VERSION.pom")
+          done < <(node integrations/android/scripts/android-artifacts.mjs artifact)
 
           for url in "${urls[@]}"; do
             curl --fail --silent --show-error "$url" --output /dev/null

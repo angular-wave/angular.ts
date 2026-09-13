@@ -1,3 +1,5 @@
+@file:Suppress("OVERRIDE_DEPRECATION")
+
 package io.github.angularwave.android.navigation.fragments
 
 import android.content.Intent
@@ -5,9 +7,9 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
-import io.github.angularwave.android.core.turbo.config.context
-import io.github.angularwave.android.core.turbo.config.title
-import io.github.angularwave.android.core.turbo.nav.PresentationContext
+import io.github.angularwave.android.core.ng.config.context
+import io.github.angularwave.android.core.ng.config.title
+import io.github.angularwave.android.core.ng.nav.PresentationContext
 import io.github.angularwave.android.navigation.R
 import io.github.angularwave.android.navigation.destinations.AngularNativeDestination
 import io.github.angularwave.android.navigation.navigator.Navigator
@@ -15,8 +17,8 @@ import io.github.angularwave.android.navigation.navigator.NavigatorHost
 import io.github.angularwave.android.navigation.session.SessionModalResult
 
 /**
- * The base class from which all "standard" native Fragments (non-dialogs) in a
- * Turbo-driven app should extend from.
+ * The base class from which all "standard" native Fragments (non-dialogs) in a WebNavigation-driven
+ * app should extend from.
  *
  * For web fragments, refer to [AngularNativeWebFragment].
  */
@@ -31,7 +33,10 @@ abstract class AngularNativeFragment : Fragment(), AngularNativeDestination {
         delegate = AngularNativeFragmentDelegate(this)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         delegate.onViewCreated()
 
@@ -47,11 +52,11 @@ abstract class AngularNativeFragment : Fragment(), AngularNativeDestination {
     }
 
     /**
-     * This is marked `final` to prevent further use, as it's now deprecated in
-     * AndroidX's Fragment implementation.
+     * This is marked `final` to prevent further use, as it's now deprecated in AndroidX's Fragment
+     * implementation.
      *
-     * Use [onViewCreated] for code touching
-     * the Fragment's view and [onCreate] for other initialization.
+     * Use [onViewCreated] for code touching the Fragment's view and [onCreate] for other
+     * initialization.
      */
     @Suppress("DEPRECATION", "OverrideDeprecatedMigration")
     final override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -59,17 +64,21 @@ abstract class AngularNativeFragment : Fragment(), AngularNativeDestination {
     }
 
     /**
-     * This is marked `final` to prevent further use, as it's now deprecated in
-     * AndroidX's Fragment implementation.
+     * This is marked `final` to prevent further use, as it's now deprecated in AndroidX's Fragment
+     * implementation.
      *
      * Use [registerForActivityResult] with the appropriate
      * [androidx.activity.result.contract.ActivityResultContract] and its callback.
      *
-     * Turbo provides the [AngularNativeDestination.activityResultLauncher] interface
-     * to obtain registered result launchers from any destination.
+     * WebNavigation provides the [AngularNativeDestination.activityResultLauncher] interface to
+     * obtain registered result launchers from any destination.
      */
     @Suppress("DEPRECATION", "OverrideDeprecatedMigration")
-    final override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+    final override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        intent: Intent?,
+    ) {
         super.onActivityResult(requestCode, resultCode, intent)
     }
 
@@ -91,16 +100,16 @@ abstract class AngularNativeFragment : Fragment(), AngularNativeDestination {
     }
 
     /**
-     * Called when the Fragment has been started again after receiving a
-     * modal result. Will navigate if the result indicates it should.
+     * Called when the Fragment has been started again after receiving a modal result. Will navigate
+     * if the result indicates it should.
      */
     open fun onStartAfterModalResult(result: SessionModalResult) {
         delegate.onStartAfterModalResult(result)
     }
 
     /**
-     * Called when the Fragment has been started again after a dialog has
-     * been dismissed/canceled and no result is passed back.
+     * Called when the Fragment has been started again after a dialog has been dismissed/canceled
+     * and no result is passed back.
      */
     open fun onStartAfterDialogCancel() {
         if (!delegate.sessionViewModel.modalResultExists) {
@@ -113,19 +122,14 @@ abstract class AngularNativeFragment : Fragment(), AngularNativeDestination {
     override fun refresh(displayProgress: Boolean) {}
 
     /**
-     * Gets the Toolbar instance in your Fragment's view for use with
-     * navigation. The title in the Toolbar will automatically be
-     * updated if a title is available. By default, Turbo will look
-     * for a Toolbar with resource ID `R.id.toolbar`. Override to
-     * provide a Toolbar instance with a different ID.
+     * Gets the Toolbar instance in your Fragment's view for use with navigation. The title in the
+     * Toolbar will automatically be updated if a title is available. By default, WebNavigation will
+     * look for a Toolbar with resource ID `R.id.toolbar`. Override to provide a Toolbar instance
+     * with a different ID.
      */
-    override fun toolbarForNavigation(): Toolbar? {
-        return view?.findViewById(R.id.toolbar)
-    }
+    override fun toolbarForNavigation(): Toolbar? = view?.findViewById(R.id.toolbar)
 
-    final override fun delegate(): AngularNativeFragmentDelegate {
-        return delegate
-    }
+    final override fun delegate(): AngularNativeFragmentDelegate = delegate
 
     private fun observeModalResult() {
         if (shouldHandleModalResults()) {

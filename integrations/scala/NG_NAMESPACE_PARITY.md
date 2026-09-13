@@ -157,6 +157,75 @@ Statuses:
 | `WorkflowSupervisorSnapshot` | Public AngularTS WorkflowSupervisorSnapshot contract exposed through the ng namespace. | manual |
 | `NgModelController` | Public AngularTS NgModelController contract exposed through the ng namespace. | manual |
 | `GeolocationValue` | Plain, serializable location data written by the `geolocation` directive. | manual |
+| `NativeBridgeAdapter` | Host object exposed by Android, iOS, or a test adapter. | planned |
+| `NativeCallMessage` | JSON-compatible request sent to a native application shell. | planned |
+| `NativeCallOptions` | Options for one request to the native shell. | planned |
+| `NativeConfig` | Configuration accepted by the optional native runtime module. | planned |
+| `NativeEventHandler` | Public AngularTS NativeEventHandler contract exposed through the ng namespace. | planned |
+| `NativeEventMessage` | Event pushed by a native application shell. | planned |
+| `NativeReplyMessage` | Reply returned by a native application shell. | planned |
+| `NativeService` | Typed request, reply, and event API shared by native application shells. | planned |
+| `NativeCapabilityEventMap` | Public AngularTS NativeCapabilityEventMap contract exposed through the ng namespace. | planned |
+| `NativeCapabilityEventName` | Public AngularTS NativeCapabilityEventName contract exposed through the ng namespace. | planned |
+| `NativeCapabilityEventPayload` | Public AngularTS NativeCapabilityEventPayload contract exposed through the ng namespace. | planned |
+| `NativeCapabilityMethodContract` | Public AngularTS NativeCapabilityMethodContract contract exposed through the ng namespace. | planned |
+| `NativeCapabilityMethodMap` | Public AngularTS NativeCapabilityMethodMap contract exposed through the ng namespace. | planned |
+| `NativeCapabilityMethodName` | Public AngularTS NativeCapabilityMethodName contract exposed through the ng namespace. | planned |
+| `NativeCapabilityName` | Public AngularTS NativeCapabilityName contract exposed through the ng namespace. | planned |
+| `NativeCapabilityParameters` | Public AngularTS NativeCapabilityParameters contract exposed through the ng namespace. | planned |
+| `NativeCapabilityResult` | Public AngularTS NativeCapabilityResult contract exposed through the ng namespace. | planned |
+| `NativeBiometricStatus` | Availability and enrollment state for native biometric authentication. | planned |
+| `NativeCameraCaptureResult` | Image captured by the native camera. | planned |
+| `NativeCameraStatus` | Availability and permission state for the native camera. | planned |
+| `NativeClipboardContent` | Text currently available from the native clipboard. | planned |
+| `NativeClipboardWriteParameters` | Text and optional label written to the native clipboard. | planned |
+| `NativeClipboardWriteResult` | Result of writing text to the native clipboard. | planned |
+| `NativeConnectivityStatus` | Current native network reachability and cost state. | planned |
+| `NativeCredentialClearResult` | Result of clearing native credential state. | planned |
+| `NativeCredentialCreatePasskeyParameters` | Passkey creation request passed to the native credential manager. | planned |
+| `NativeCredentialCreatePasskeyResult` | Result of creating a passkey through the native credential manager. | planned |
+| `NativeCredentialCreatePasswordParameters` | Password saved through the native credential manager. | planned |
+| `NativeCredentialCreatePasswordResult` | Result of saving a password through the native credential manager. | planned |
+| `NativeCredentialGetParameters` | Credential kinds requested from the native credential manager. | planned |
+| `NativeCredentialResult` | Credential returned by the native credential manager. | planned |
+| `NativeCredentialStatus` | Native password and passkey provider support. | planned |
+| `NativeFileDescriptor` | File returned by the native file picker. | planned |
+| `NativeFileOpenParameters` | File types and selection mode passed to the native file picker. | planned |
+| `NativeFileOpenResult` | Files selected through the native file picker. | planned |
+| `NativeFileStatus` | Native file selection and upload support. | planned |
+| `NativeFileUploadParameters` | Multipart upload sent by the native shell. | planned |
+| `NativeFileUploadProgress` | Progress emitted while the native shell uploads a file. | planned |
+| `NativeFileUploadResult` | Successful native multipart upload response. | planned |
+| `NativeGeolocationPosition` | Serializable current device location. | planned |
+| `NativeGeolocationStatus` | Current availability and granted accuracy for device location. | planned |
+| `NativeHapticParameters` | Parameters for native haptic feedback. | planned |
+| `NativeHapticResult` | Result of a native haptic feedback request. | planned |
+| `NativeIntentParameters` | URL passed to a native application through an intent. | planned |
+| `NativeJsonObject` | JSON-compatible object accepted across a native bridge. | planned |
+| `NativeJsonPrimitive` | JSON scalar accepted across a native bridge. | planned |
+| `NativeJsonValue` | JSON-compatible value accepted across a native bridge. | planned |
+| `NativeLifecycleStatus` | Current lifecycle state of the native destination. | planned |
+| `NativeMediaLoadParameters` | Media source loaded by the native player. | planned |
+| `NativeMediaSeekParameters` | Position, in milliseconds, passed to the native media player. | planned |
+| `NativeMediaStatus` | Current state of the native media player. | planned |
+| `NativeNavigationAndroidChange` | Navigation committed directly by Android rather than requested through the bridge. | planned |
+| `NativeNavigationBridgeChange` | Completion or cancellation of navigation requested through the bridge. | planned |
+| `NativeNavigationChange` | Committed or cancelled native navigation event. | planned |
+| `NativeNavigationPopResult` | Result of requesting native back navigation. | planned |
+| `NativeNavigationRouteParameters` | URL and optional transition passed to a native route operation. | planned |
+| `NativeNavigationRouteResult` | Accepted push, replace, modal, or deep-link operation. | planned |
+| `NativeNavigationStatus` | Current native navigation stack state. | planned |
+| `NativeNavigationTransition` | Named transition applied by native navigation when motion is enabled. | planned |
+| `NativeNotificationStatus` | Current availability and permission state for native notifications. | planned |
+| `NativeOpenResult` | Result of opening native UI or another application. | planned |
+| `NativePermissionParameters` | Parameters for permission status and request calls. | planned |
+| `NativePermissionStatus` | Current state of one Android runtime permission. | planned |
+| `NativePlatformStatus` | Runtime and application metadata reported by a native shell. | planned |
+| `NativeShareParameters` | Content passed to the native system share sheet. | planned |
+| `NativeWindowBounds` | Bounds, in density-independent pixels, of a native display feature. | planned |
+| `NativeWindowDisplayFeature` | Fold or hinge reported by a foldable native display. | planned |
+| `NativeWindowInsets` | Insets, in density-independent pixels, that native content should avoid. | planned |
+| `NativeWindowStatus` | Current native window metrics, adaptive classes, safe area, and display features. | planned |
 | `HttpRequestConfig` | Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage | manual |
 | `HttpRequestOptions` | Request options shared by the `$http` shortcut methods. See http://docs.angularjs.org/api/ng/service/$http#usage | manual |
 | `RestFactory` | Factory service exposed as `$rest`. Creates a typed RestService for a base URL, optional entity mapper, and optional backend request defaults. | manual |
@@ -260,7 +329,6 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `Angular.getScope` | Retrieve the scope cached on a compiled DOM element. | `element: Element` - The DOM element to get data from. |
 | `Angular.getScopeByName` | Find a scope by its registered \`scopeName\`. | `name: string` - Scope name to search for. |
 | `Angular.hasNormalizedAttr` | Return whether an element has an attribute matching a normalized name. | `element: Element \| Node` - Value supplied for the element parameter.<br>`normalizedName: string` - Value supplied for the normalizedName parameter. |
-| `Angular.init` | Find \`ng-app\` roots under the provided element and bootstrap them. The first root uses this instance. Additional roots are bootstrapped as sub-applications and stored in subapps. | `element: HTMLElement \| HTMLDocument` - Root element or document to scan. |
 | `Angular.injector` | Create a standalone injector without bootstrapping the DOM. | `modules: ModuleLike[]` - Module names or config functions to load. |
 | `Angular.registerNgModule` | Registers the configured built-in \`ng\` module for this runtime instance. | None |
 | `Angular.tags` | JSX-free real-DOM tag factories for programmatic component views. | `namespaceUri: "http://www.w3.org/2000/svg"` - Value supplied for the namespaceUri parameter. |
@@ -390,6 +458,13 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `ModelSyncTarget.receive` | Invokes the receive member of ng.ModelSyncTarget. | `apply: (snapshot: T, options?: ModelRestoreOptions) => void` - Value supplied for the apply parameter. |
 | `ModelSyncTarget.restore` | Invokes the restore member of ng.ModelSyncTarget. | None |
 | `ModelSyncTarget.write` | Invokes the write member of ng.ModelSyncTarget. | `snapshot: T` - Value supplied for the snapshot parameter.<br>`change: ModelChange` - Value supplied for the change parameter. |
+| `NativeBridgeAdapter.postMessage` | Invokes the postMessage member of ng.NativeBridgeAdapter. | `message: string` - Value supplied for the message parameter. |
+| `NativeBridgeAdapter.receive` | Invokes the receive member of ng.NativeBridgeAdapter. | `message: string` - Value supplied for the message parameter. |
+| `NativeService.call` | Invokes the call member of ng.NativeService. | `target: Name` - Value supplied for the target parameter.<br>`method: Method` - Value supplied for the method parameter.<br>`params: NativeCapabilityParameters<Name, Method>` - Value supplied for the params parameter.<br>`options: NativeCallOptions` - Value supplied for the options parameter. |
+| `NativeService.dispose` | Invokes the dispose member of ng.NativeService. | None |
+| `NativeService.on` | Invokes the on member of ng.NativeService. | `target: Name` - Value supplied for the target parameter.<br>`event: Event` - Value supplied for the event parameter.<br>`handler: NativeEventHandler<NativeCapabilityEventPayload<Name, Event>>` - Value supplied for the handler parameter. |
+| `NativeService.receive` | Invokes the receive member of ng.NativeService. | `message: string \| object` - Value supplied for the message parameter. |
+| `NativeService.supports` | Invokes the supports member of ng.NativeService. | `target: string` - Value supplied for the target parameter.<br>`method: string` - Value supplied for the method parameter. |
 | `NgModelController.commitViewValue` | Commit a pending update to the \`modelValue\`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in \`ng-model-options\`. this method is rarely needed as \`NgModelController\` usually handles calling this in response to input events. | None |
 | `NgModelController.isEmpty` | This is called when we need to determine if the value of an input is empty. For instance, the required directive does this to work out if the input has data or not. The default \`isEmpty\` function checks whether the value is \`undefined\`, \`''\`, \`null\` or \`NaN\`. You can override this for input directives whose concept of being empty is different from the default. The \`checkboxInputType\` directive does this because in its case a value of \`false\` implies empty. | `value: unknown` - The value of the input to check for emptiness. |
 | `NgModelController.overrideModelOptions` | Override the current model options settings programmatically. The previous \`ModelOptions\` value will not be modified. Instead, a new \`ModelOptions\` object will inherit from the previous one overriding or inheriting settings that are defined in the given parameter. See \`ngModelOptions\` for information about what options can be specified and how model option inheritance works. <div class="alert alert-warning"> **Note:** this function only affects the options set on the \`ngModelController\`, and not the options on the \`ngModelOptions\` directive from which they might have been obtained initially. </div> | `options: ModelOptionsConfig` - a hash of settings to override the previous options |
@@ -420,7 +495,7 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `NgModule.model` | Register a named reactive model as an injectable app-owned service. The model is created lazily by the owning \`AppContext\` when the service is first injected. Models are shared across every root scope managed by the same \`AppContext\`; they are not children of \`$rootScope\`. Assign an injected model to a controller or scope property to bind it in a template. DOM interpolation, \`ng-bind\`, directive expressions, nested object reads, and array length reads update when the app model changes. Mutating the model proxy schedules every affected observer. The injected \`Model<T>\` value is proxy-backed. It exposes scope-proxy methods such as \`watch\`, \`batch\`, \`merge\`, \`on\`, \`emit\`, \`broadcast\`, and \`destroy\`, plus \`snapshot\`, \`restore\`, and \`sync\` for model lifecycle and synchronization. Prefer the factory form for nontrivial initial state: \`\`\`ts app.model("user", () => ({ name: "John", authenticated: false })); \`\`\` | `name: string` - Injectable model name.<br>`initial: ModelInitializer<T>` - Plain object state or an injectable factory that returns plain object state. |
 | `NgModule.provider` | Invokes the provider member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`providerType: ProviderDefinition` - Value supplied for the providerType parameter. |
 | `NgModule.rest` | Register a REST resource as an injectable service. The resource factory is delegated to the injected \`$rest\` service, keeping REST support configurable by custom runtimes. | `name: string` - Service name.<br>`url: string` - Base URL or URI template.<br>`entityClass: EntityClass<T>` - Optional constructor for mapping JSON.<br>`options: DynamicConfig<RestOptions>` - Optional RestService options, optionally produced by DI. |
-| `NgModule.router` | Register a module-owned router state tree during module configuration. Child state names are relative to their parent unless they contain a dot. Each route is queued for the composed router runtime, so module router trees compose with \`lazyState(...)\` and inherited route policies. | `declaration: TDeclaration` - Router tree root declaration. |
+| `NgModule.router` | Register a module-owned router state tree during module configuration. Child state names are relative to their parent unless they contain a dot. Each route is queued for the composed router runtime, so module router trees compose with \`lazyState(...)\` and inherited route policies. RouterModuleDeclaration is the only public registration contract. Pass one declaration or a readonly forest; the route map is inferred from the exact literal. To declare the route map explicitly, parameterize \`createModule<TRouteMap>(...)\` instead of \`router(...)\`. | `declaration: TDeclaration` - Router tree root declaration. |
 | `NgModule.run` | Invokes the run member of ng.NgModule. | `block: ModuleConfigFn` - Value supplied for the block parameter. |
 | `NgModule.service` | Invokes the service member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`serviceFunction: NamedServiceInjectable` - Value supplied for the serviceFunction parameter. |
 | `NgModule.serviceWorker` | Configure the singleton \`$serviceWorker\` for this application. | `scriptUrl: string \| URL` - Value supplied for the scriptUrl parameter.<br>`config: ServiceWorkerConfig` - Value supplied for the config parameter. |

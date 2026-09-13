@@ -63,7 +63,6 @@
     "src/core/di/ng-module/ng-module.ts:NamedWorkflowConfig",
     "src/core/di/ng-module/ng-module.ts:NamedWorkflowDefinition",
     "src/core/di/ng-module/ng-module.ts:RouterDeclarationFor",
-    "src/core/di/ng-module/ng-module.ts:RouterModuleInput",
     "src/router/state/state-service.ts:RouteParamArgs"
   ]
 }

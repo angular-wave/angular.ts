@@ -8,11 +8,11 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.FragmentNavigator
 import io.github.angularwave.android.core.bridge.Bridge
 import io.github.angularwave.android.core.config.AngularNative
-import io.github.angularwave.android.core.turbo.nav.Presentation
-import io.github.angularwave.android.core.turbo.nav.PresentationContext
-import io.github.angularwave.android.core.turbo.session.Session
-import io.github.angularwave.android.core.turbo.visit.VisitAction
-import io.github.angularwave.android.core.turbo.visit.VisitOptions
+import io.github.angularwave.android.core.ng.nav.Presentation
+import io.github.angularwave.android.core.ng.nav.PresentationContext
+import io.github.angularwave.android.core.ng.session.Session
+import io.github.angularwave.android.core.ng.visit.VisitAction
+import io.github.angularwave.android.core.ng.visit.VisitOptions
 import io.github.angularwave.android.navigation.activities.AngularNativeActivity
 import io.github.angularwave.android.navigation.config.AngularNativeNavigation
 import io.github.angularwave.android.navigation.destinations.AngularNativeDestination
@@ -27,57 +27,54 @@ import io.github.angularwave.android.navigation.util.location
 class Navigator(
     val host: NavigatorHost,
     val configuration: NavigatorConfiguration,
-    val activity: AngularNativeActivity
+    val activity: AngularNativeActivity,
 ) {
     private val navController = host.navController
 
     /**
-     * The currently active dialog destination on the backstack if present, otherwise null.
-     * Dialog fragments are added to the Activity window and are not added directly to the
-     * [NavigatorHost] childFragmentManager.
+     * The currently active dialog destination on the backstack if present, otherwise null. Dialog
+     * fragments are added to the Activity window and are not added directly to the [NavigatorHost]
+     * childFragmentManager.
      */
     internal var currentDialogDestination: AngularNativeDialogDestination? = null
 
-    /**
-     * Retrieves the currently active [AngularNativeDestination] on the backstack.
-     */
+    /** Retrieves the currently active [AngularNativeDestination] on the backstack. */
     val currentDestination: AngularNativeDestination?
-        get() = currentDialogDestination as? AngularNativeDestination
-            ?: if (isReady()) {
-                host.childFragmentManager.primaryNavigationFragment as? AngularNativeDestination
-            } else {
-                null
-            }
+        get() =
+            currentDialogDestination as? AngularNativeDestination
+                ?: if (isReady()) {
+                    host.childFragmentManager.primaryNavigationFragment as? AngularNativeDestination
+                } else {
+                    null
+                }
 
-    /**
-     * Gets the location for the current destination.
-     */
+    /** Gets the location for the current destination. */
     val location: String?
         get() = navController.currentBackStackEntry?.location
 
-    /**
-     * Gets the location for the previous destination on the backstack.
-     */
+    /** Gets the location for the previous destination on the backstack. */
     val previousLocation: String?
         get() = navController.previousBackStackEntry?.location
 
     /**
-     * The [Session] instance that is shared with all destinations that are
-     * hosted inside this [NavigatorHost].
+     * The [Session] instance that is shared with all destinations that are hosted inside this
+     * [NavigatorHost].
      */
     var session = createNewSession()
         private set
 
-    internal fun createNewSession() = Session(
-        sessionName = configuration.name,
-        activity = activity,
-        webView = AngularNative.config.makeCustomWebView(activity)
-    ).also {
-        // Initialize bridge with new WebView instance
-        if (AngularNativeNavigation.registeredBridgeComponentFactories.isNotEmpty()) {
-            Bridge.initialize(it.webView)
-        }
-    }
+    internal fun createNewSession() =
+        Session(
+                sessionName = configuration.name,
+                activity = activity,
+                webView = AngularNative.config.makeCustomWebView(activity),
+            )
+            .also {
+                // Initialize bridge with new WebView instance
+                if (AngularNativeNavigation.registeredBridgeComponentFactories.isNotEmpty()) {
+                    Bridge.initialize(it.webView)
+                }
+            }
 
     internal fun shouldRouteToModalResult(result: SessionModalResult): Boolean {
         val rule = navigatorRuleFromModalResult(result)
@@ -89,28 +86,32 @@ class Navigator(
         val rule = navigatorRuleFromModalResult(result)
 
         return rule.newNavigationMode != NavigatorMode.NONE &&
-                rule.newNavigationMode != NavigatorMode.REFRESH
+            rule.newNavigationMode != NavigatorMode.REFRESH
     }
 
     /**
-     * Returns whether the navigator and its host are ready for navigation. It is not
-     * ready for navigation if the host view is not attached or the start destination
-     * has not been created yet.
+     * Returns whether the navigator and its host are ready for navigation. It is not ready for
+     * navigation if the host view is not attached or the start destination has not been created
+     * yet.
      */
-    fun isReady(): Boolean {
-        return host.isReady()
-    }
+    fun isReady(): Boolean = host.isReady()
+
+    /** Returns whether the current destination is the only backstack entry. */
+    fun isAtStartDestination(): Boolean = navController.previousBackStackEntry == null
 
     /**
-     * Returns whether the current destination is the only backstack entry.
+     * Observes committed AndroidX destinations. The returned function removes the observer. Command
+     * callers must use this signal instead of assuming that [route] completed.
      */
-    fun isAtStartDestination(): Boolean {
-        return navController.previousBackStackEntry == null
+    internal fun observeNavigation(observer: (String?) -> Unit): () -> Unit {
+        val listener = NavController.OnDestinationChangedListener { controller, _, _ ->
+            observer(controller.currentBackStackEntry?.location)
+        }
+        navController.addOnDestinationChangedListener(listener)
+        return { navController.removeOnDestinationChangedListener(listener) }
     }
 
-    /**
-     * Pops the backstack to the previous destination.
-     */
+    /** Pops the backstack to the previous destination. */
     fun pop() {
         navigateWhenReady {
             val dialogDestination = currentDialogDestination
@@ -123,8 +124,8 @@ class Navigator(
     }
 
     /**
-     * Routes to the specified location. The resulting destination and its presentation
-     * will be determined using the path configuration rules.
+     * Routes to the specified location. The resulting destination and its presentation will be
+     * determined using the path configuration rules.
      *
      * @param location The location to navigate to.
      * @param options Visit options to apply to the visit. (optional)
@@ -136,54 +137,57 @@ class Navigator(
         options: VisitOptions = VisitOptions(),
         bundle: Bundle? = null,
         extras: FragmentNavigator.Extras? = null,
-        navigationOptions: NavOptions? = null
+        navigationOptions: NavOptions? = null,
     ) {
-
         if (getRouteDecision(location) == Router.Decision.CANCEL) {
             return
         }
 
-        val rule = NavigatorRule(
-            location = location,
-            visitOptions = options,
-            bundle = bundle,
-            navOptions = navigationOptions ?: navOptions(location, options.action),
-            extras = extras,
-            pathConfiguration = AngularNative.config.pathConfiguration,
-            navigatorName = configuration.name,
-            controller = currentControllerForLocation(location)
-        )
+        val rule =
+            NavigatorRule(
+                location = location,
+                visitOptions = options,
+                bundle = bundle,
+                navOptions = navigationOptions ?: navOptions(location, options.action),
+                extras = extras,
+                pathConfiguration = AngularNative.config.pathConfiguration,
+                navigatorName = configuration.name,
+                controller = currentControllerForLocation(location),
+            )
 
         logEvent(
-            "navigate", "location" to rule.newLocation,
+            "navigate",
+            "location" to rule.newLocation,
             "options" to options,
             "currentContext" to rule.currentPresentationContext,
             "newContext" to rule.newPresentationContext,
-            "presentation" to rule.newPresentation
+            "presentation" to rule.newPresentation,
         )
 
         when (rule.newNavigationMode) {
             NavigatorMode.DISMISS_MODAL -> {
                 dismissModalContextWithResult(rule)
             }
+
             NavigatorMode.TO_MODAL -> {
                 navigateToModalContext(rule)
             }
+
             NavigatorMode.IN_CONTEXT -> {
                 navigateWithinContext(rule)
             }
+
             NavigatorMode.REFRESH -> {
                 currentDestination?.refresh(displayProgress = false)
             }
+
             NavigatorMode.NONE -> {
                 // Do nothing
             }
         }
     }
 
-    /**
-     * Clears the navigation backstack to the start destination.
-     */
+    /** Clears the navigation backstack to the start destination. */
     fun clearAll(onCleared: () -> Unit = {}) {
         if (isAtStartDestination()) {
             onCleared()
@@ -196,17 +200,15 @@ class Navigator(
 
             do {
                 navController.popBackStack()
-            } while(
-                !isAtStartDestination()
-            )
+            } while (!isAtStartDestination())
 
             onCleared()
         }
     }
 
     /**
-     * Resets the [Navigator] along with its [NavigatorHost] and [Session] instance.
-     * The entire navigation graph is reset to its original starting point.
+     * Resets the [Navigator] along with its [NavigatorHost] and [Session] instance. The entire
+     * navigation graph is reset to its original starting point.
      */
     fun reset(onReset: () -> Unit = {}) {
         navigateWhenReady {
@@ -227,12 +229,11 @@ class Navigator(
      * Finds the registered navigator host associated with the provided resource ID.
      *
      * @param navigatorHostId
-     * @return The [NavigatorHost] instance if it's view has been created and it has
-     *  been registered with the Activity, otherwise `null`.
+     * @return The [NavigatorHost] instance if it's view has been created and it has been registered
+     *   with the Activity, otherwise `null`.
      */
-    fun findNavigatorHost(@IdRes navigatorHostId: Int): NavigatorHost? {
-        return activity.delegate.findNavigatorHost(navigatorHostId)
-    }
+    fun findNavigatorHost(@IdRes navigatorHostId: Int): NavigatorHost? =
+        activity.delegate.findNavigatorHost(navigatorHostId)
 
     private fun navigateWhenReady(onReady: () -> Unit) {
         val destination = currentDestination
@@ -249,31 +250,46 @@ class Navigator(
         logEvent(
             "navigateWithinContext",
             "location" to rule.newLocation,
-            "presentation" to rule.newPresentation
+            "presentation" to rule.newPresentation,
         )
 
         when (rule.newPresentation) {
-            Presentation.POP -> navigateWhenReady {
-                popBackStack(rule)
-            }
-            Presentation.REPLACE -> navigateWhenReady {
-                popBackStack(rule)
-                navigateToLocation(rule)
-            }
-            Presentation.PUSH -> navigateWhenReady {
-                // Only permit one dialog instance on top of the stack
-                if (currentDialogDestination != null) {
+            Presentation.POP -> {
+                navigateWhenReady {
                     popBackStack(rule)
                 }
+            }
 
-                navigateToLocation(rule)
+            Presentation.REPLACE -> {
+                navigateWhenReady {
+                    popBackStack(rule)
+                    navigateToLocation(rule)
+                }
             }
-            Presentation.REPLACE_ROOT -> navigateWhenReady {
-                replaceRootLocation(rule)
+
+            Presentation.PUSH -> {
+                navigateWhenReady {
+                    // Only permit one dialog instance on top of the stack
+                    if (currentDialogDestination != null) {
+                        popBackStack(rule)
+                    }
+
+                    navigateToLocation(rule)
+                }
             }
-            Presentation.CLEAR_ALL -> navigateWhenReady {
-                clearAll()
+
+            Presentation.REPLACE_ROOT -> {
+                navigateWhenReady {
+                    replaceRootLocation(rule)
+                }
             }
+
+            Presentation.CLEAR_ALL -> {
+                navigateWhenReady {
+                    clearAll()
+                }
+            }
+
             else -> {
                 throw IllegalStateException("Unexpected Presentation for navigating within context")
             }
@@ -283,16 +299,21 @@ class Navigator(
     private fun navigateToModalContext(rule: NavigatorRule) {
         logEvent(
             "navigateToModalContext",
-            "location" to rule.newLocation
+            "location" to rule.newLocation,
         )
 
         when (rule.newPresentation) {
-            Presentation.REPLACE -> navigateWhenReady {
-                popBackStack(rule)
-                navigateToLocation(rule)
+            Presentation.REPLACE -> {
+                navigateWhenReady {
+                    popBackStack(rule)
+                    navigateToLocation(rule)
+                }
             }
-            else -> navigateWhenReady {
-                navigateToLocation(rule)
+
+            else -> {
+                navigateWhenReady {
+                    navigateToLocation(rule)
+                }
             }
         }
     }
@@ -302,7 +323,7 @@ class Navigator(
             "dismissModalContextWithResult",
             "location" to rule.newLocation,
             "uri" to rule.newDestinationUri,
-            "presentation" to rule.newPresentation
+            "presentation" to rule.newPresentation,
         )
 
         navigateWhenReady {
@@ -324,15 +345,13 @@ class Navigator(
     private fun popModalsFromBackStack(rule: NavigatorRule) {
         do {
             popBackStack(rule)
-        } while (
-            rule.controller.currentBackStackEntry.isModalContext
-        )
+        } while (rule.controller.currentBackStackEntry.isModalContext)
     }
 
     private fun popBackStack(rule: NavigatorRule) {
         logEvent(
             "popFromBackStack",
-            "location" to rule.controller.currentBackStackEntry.location.orEmpty()
+            "location" to rule.controller.currentBackStackEntry.location.orEmpty(),
         )
 
         currentDialogDestination = null
@@ -342,13 +361,11 @@ class Navigator(
     private fun sendModalResult(rule: NavigatorRule) {
         // Save the modal result with VisitOptions so it can be retrieved
         // by the previous destination when the backstack is popped.
-        sessionViewModel().sendModalResult(
-            checkNotNull(rule.newModalResult)
-        )
+        sessionViewModel().sendModalResult(checkNotNull(rule.newModalResult))
     }
 
-    private fun navigatorRuleFromModalResult(result: SessionModalResult): NavigatorRule {
-        return NavigatorRule(
+    private fun navigatorRuleFromModalResult(result: SessionModalResult): NavigatorRule =
+        NavigatorRule(
             location = result.location,
             visitOptions = result.options,
             bundle = result.bundle,
@@ -356,9 +373,8 @@ class Navigator(
             extras = null,
             pathConfiguration = AngularNative.config.pathConfiguration,
             navigatorName = configuration.name,
-            controller = currentControllerForLocation(result.location)
+            controller = currentControllerForLocation(result.location),
         )
-    }
 
     private fun replaceRootLocation(rule: NavigatorRule) {
         if (rule.newDestination == null) {
@@ -366,7 +382,7 @@ class Navigator(
                 "replaceRootLocation",
                 "location" to rule.newLocation,
                 "error" to "No destination found",
-                "uri" to rule.newDestinationUri
+                "uri" to rule.newDestinationUri,
             )
             return
         }
@@ -374,7 +390,7 @@ class Navigator(
         logEvent(
             "replaceRootLocation",
             "location" to rule.newLocation,
-            "uri" to rule.newDestinationUri
+            "uri" to rule.newDestinationUri,
         )
         rule.controller.navigate(rule.newDestination.id, rule.newBundle, rule.newNavOptions)
     }
@@ -389,7 +405,7 @@ class Navigator(
             logEvent(
                 "navigateToLocation",
                 "location" to rule.newLocation,
-                "uri" to rule.newDestinationUri
+                "uri" to rule.newDestinationUri,
             )
             rule.controller.navigate(it.id, rule.newBundle, rule.newNavOptions, rule.newExtras)
             return
@@ -399,14 +415,14 @@ class Navigator(
             "navigateToLocation",
             "location" to rule.newLocation,
             "warning" to "No destination found",
-            "uri" to rule.newDestinationUri
+            "uri" to rule.newDestinationUri,
         )
 
         rule.newFallbackDestination?.let {
             logEvent(
                 "navigateToLocation",
                 "location" to rule.newLocation,
-                "fallbackUri" to "${rule.newFallbackUri}"
+                "fallbackUri" to "${rule.newFallbackUri}",
             )
             rule.controller.navigate(it.id, rule.newBundle, rule.newNavOptions, rule.newExtras)
             return
@@ -415,7 +431,7 @@ class Navigator(
         logEvent(
             "navigateToLocation",
             "location" to rule.newLocation,
-            "error" to "No fallback destination found"
+            "error" to "No fallback destination found",
         )
     }
 
@@ -427,51 +443,63 @@ class Navigator(
     private fun getRouteDecision(location: String): Router.Decision {
         val customDecision = currentDestination?.customRouteDecision(location)
 
-        val decision = customDecision ?: AngularNativeNavigation.router.decideRoute(
-            location = location,
-            configuration = configuration,
-            activity = activity
-        )
+        val decision =
+            customDecision
+                ?: AngularNativeNavigation.router.decideRoute(
+                    location = location,
+                    configuration = configuration,
+                    activity = activity,
+                )
 
         logEvent(
             "routeDecision",
             "location" to location,
-            "decision" to decision
+            "decision" to decision,
         )
         return decision
     }
 
-    private fun navOptions(newLocation: String, action: VisitAction): NavOptions {
+    private fun navOptions(
+        newLocation: String,
+        action: VisitAction,
+    ): NavOptions {
         val newPathProperties = AngularNative.config.pathConfiguration.properties(newLocation)
         val location = currentDestination?.location ?: ""
 
-        val customOptions = currentDestination?.customNavigationOptions(
-            newLocation = newLocation,
-            newPathProperties = newPathProperties,
-            action = action
-        )
+        val customOptions =
+            currentDestination?.customNavigationOptions(
+                newLocation = newLocation,
+                newPathProperties = newPathProperties,
+                action = action,
+            )
 
-        return customOptions ?: AngularNativeDestinationAnimations.defaultNavOptions(
-            currentPathProperties = AngularNative.config.pathConfiguration.properties(location),
-            newPathProperties = newPathProperties,
-            action = action
-        )
+        return customOptions
+            ?: AngularNativeDestinationAnimations.defaultNavOptions(
+                currentPathProperties = AngularNative.config.pathConfiguration.properties(location),
+                newPathProperties = newPathProperties,
+                action = action,
+            )
     }
 
-    private fun sessionViewModel() = SessionViewModel.get(
-        sessionName = configuration.name,
-        activity = activity
-    )
+    private fun sessionViewModel() =
+        SessionViewModel.get(
+            sessionName = configuration.name,
+            activity = activity,
+        )
 
     private val NavBackStackEntry?.isModalContext: Boolean
         get() = this?.arguments?.presentationContext == PresentationContext.MODAL
 
-    private fun logEvent(event: String, vararg params: Pair<String, Any>) {
+    private fun logEvent(
+        event: String,
+        vararg params: Pair<String, Any>,
+    ) {
         val destinationName = currentDestination?.fragment?.javaClass?.simpleName
-        val attributes = params.toMutableList().apply {
-            add(0, "navigator" to configuration.name)
-            add("currentFragment" to (destinationName ?: "NONE"))
-        }
+        val attributes =
+            params.toMutableList().apply {
+                add(0, "navigator" to configuration.name)
+                add("currentFragment" to (destinationName ?: "NONE"))
+            }
         logEvent(event, attributes)
     }
 }

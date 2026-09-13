@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.core.view.WindowCompat
 import coil.load
-import io.github.angularwave.android.core.turbo.util.isNightModeEnabled
+import io.github.angularwave.android.core.ng.util.isNightModeEnabled
 import io.github.angularwave.android.demo.R
 import io.github.angularwave.android.navigation.destinations.AngularNativeDestinationDeepLink
 import io.github.angularwave.android.navigation.fragments.AngularNativeFragment
@@ -18,12 +18,13 @@ class ImageViewerFragment : AngularNativeFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_image_viewer, container, false)
-    }
+        savedInstanceState: Bundle?,
+    ): View? = inflater.inflate(R.layout.fragment_image_viewer, container, false)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         initToolbar()
         loadImage(view)
@@ -41,15 +42,15 @@ class ImageViewerFragment : AngularNativeFragment() {
         super.onStart()
 
         val window = requireActivity().window
-        WindowCompat.getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = false
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars =
+            false
     }
 
     override fun onStop() {
         super.onStop()
 
         val window = requireActivity().window
-        WindowCompat.getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = !requireContext().isNightModeEnabled
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars =
+            !requireContext().isNightModeEnabled
     }
 }

@@ -1,1 +1,1 @@
-export * from "./auto.ts";
+export * from "./index.ts";

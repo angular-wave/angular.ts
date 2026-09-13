@@ -20,30 +20,32 @@ Register states on the module:
 
 <!-- tested-by: src/router/directives/state-directives.spec.ts, src/router/directives/view-directive.spec.ts, src/router/router.test.ts -->
 
-```js
-angular
-  .createModule('account', [])
-  .router({
+```ts
+const accountRoutes = [
+  {
     name: 'account',
     url: '/account',
     component: 'accountHome',
-  })
-  .router({
+  },
+  {
     name: 'account.orders',
     url: '/orders',
     component: 'orderList',
     policy: {
       navigation: { authenticated: true, redirectTo: 'login' },
     },
-  })
-  .router({
+  },
+  {
     name: 'account.order',
     url: '/orders/:id',
     component: 'orderDetail',
     policy: {
       navigation: { authenticated: true, redirectTo: 'login' },
     },
-  });
+  },
+] as const satisfies readonly ng.RouterModuleDeclaration[];
+
+angular.createModule('account', []).router(accountRoutes);
 ```
 
 Render the active state and create links:

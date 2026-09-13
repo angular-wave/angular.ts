@@ -10,7 +10,7 @@ import io.github.angularwave.android.core.logging.logWarning
 class BridgeDelegate<D : BridgeDestination>(
     val location: String,
     val destination: D,
-    private val componentFactories: List<BridgeComponentFactory<D, BridgeComponent<D>>>
+    private val componentFactories: List<BridgeComponentFactory<D, BridgeComponent<D>>>,
 ) : DefaultLifecycleObserver {
     internal var bridge: Bridge? = null
     private var destinationIsActive: Boolean = false
@@ -30,9 +30,10 @@ class BridgeDelegate<D : BridgeDestination>(
     }
 
     fun onWebViewAttached(webView: WebView) {
-        bridge = Bridge.getBridgeFor(webView)?.apply {
-            delegate = this@BridgeDelegate
-        }
+        bridge =
+            Bridge.getBridgeFor(webView)?.apply {
+                delegate = this@BridgeDelegate
+            }
 
         if (bridge != null) {
             if (shouldReloadBridge()) {
@@ -49,10 +50,11 @@ class BridgeDelegate<D : BridgeDestination>(
     }
 
     fun replyWith(message: Message): Boolean {
-        bridge?.replyWith(message) ?: run {
-            logWarning("bridgeMessageFailedToReply", "bridge is not available")
-            return false
-        }
+        bridge?.replyWith(message)
+            ?: run {
+                logWarning("bridgeMessageFailedToReply", "bridge is not available")
+                return false
+            }
 
         return true
     }
@@ -61,8 +63,8 @@ class BridgeDelegate<D : BridgeDestination>(
         bridge?.register(componentFactories.map { it.name })
     }
 
-    internal fun bridgeDidReceiveMessage(message: Message): Boolean {
-        return if (destinationIsActive && resolvedLocation == message.metadata?.url) {
+    internal fun bridgeDidReceiveMessage(message: Message): Boolean =
+        if (destinationIsActive && resolvedLocation == message.metadata?.url) {
             logEvent("bridgeDidReceiveMessage", message.toString())
             getOrCreateComponent(message.component)?.didReceive(message)
             true
@@ -70,11 +72,9 @@ class BridgeDelegate<D : BridgeDestination>(
             logWarning("bridgeDidIgnoreMessage", message.toString())
             false
         }
-    }
 
-    private fun shouldReloadBridge(): Boolean {
-        return destination.bridgeWebViewIsReady() && bridge?.isReady() == false
-    }
+    private fun shouldReloadBridge(): Boolean =
+        destination.bridgeWebViewIsReady() && bridge?.isReady() == false
 
     // Lifecycle events
 
@@ -97,9 +97,7 @@ class BridgeDelegate<D : BridgeDestination>(
 
     // Retrieve component(s) by type
 
-    inline fun <reified C> component(): C? {
-        return activeComponents.filterIsInstance<C>().firstOrNull()
-    }
+    inline fun <reified C> component(): C? = activeComponents.filterIsInstance<C>().firstOrNull()
 
     inline fun <reified C> forEachInitializedComponent(action: (C) -> Unit) {
         initializedComponents.forEach { (_, component) ->

@@ -2,9 +2,10 @@ package io.github.angularwave.android.core.bridge
 
 import android.content.Context
 import android.os.Build
+import android.webkit.WebSettings
 import androidx.test.core.app.ApplicationProvider
 import io.github.angularwave.android.core.config.AngularNative
-import io.github.angularwave.android.core.turbo.BaseUnitTest
+import io.github.angularwave.android.core.ng.BaseUnitTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -30,7 +31,7 @@ class UserAgentTest : BaseUnitTest() {
 
         val userAgent = AngularNative.config.userAgent
         val expectedUserAgent =
-                "AngularNative Native Android; Turbo Native Android; " +
+            "AngularNative Native Android; WebNavigation Native Android; " +
                 "bridge-components: [one two];"
 
         assertEquals(expectedUserAgent, userAgent)
@@ -43,8 +44,8 @@ class UserAgentTest : BaseUnitTest() {
 
         val userAgent = AngularNative.config.userAgent
         val expectedUserAgent =
-                "My Application Prefix; " +
-                "AngularNative Native Android; Turbo Native Android; " +
+            "My Application Prefix; " +
+                "AngularNative Native Android; WebNavigation Native Android; " +
                 "bridge-components: [one two];"
 
         assertEquals(expectedUserAgent, userAgent)
@@ -57,15 +58,8 @@ class UserAgentTest : BaseUnitTest() {
 
         val userAgent = AngularNative.config.userAgentWithWebViewDefault(context)
         val expectedUserAgent =
-            "My Application Prefix; " +
-                    "AngularNative Native Android; Turbo Native Android; " +
-                    "bridge-components: [one two]; " +
-                    TEST_USER_AGENT
+            "${AngularNative.config.userAgent} ${WebSettings.getDefaultUserAgent(context)}"
 
         assertEquals(expectedUserAgent, userAgent)
-    }
-
-    companion object {
-        private const val TEST_USER_AGENT = "user"
     }
 }

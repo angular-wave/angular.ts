@@ -8,7 +8,7 @@
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
 # class:
--keepclassmembers class io.github.angularwave.android.core.turbo.session.Session {
+-keepclassmembers class io.github.angularwave.android.core.ng.session.Session {
     @android.webkit.JavascriptInterface <methods>;
 }
 

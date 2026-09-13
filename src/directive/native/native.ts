@@ -13,6 +13,7 @@ import type {
 } from "../../services/native/native.ts";
 import { getEventNameForElement } from "../events/event-name.ts";
 import { nativeElements } from "../../runtime/native-elements.ts";
+import { readNativeStyle } from "./native-element.ts";
 
 type NativeExpression = (
   context?: ng.Scope,
@@ -182,6 +183,11 @@ export function ngNativeComponentDirective(
               nativeProperties.autofillHints = autocomplete.split(/\s+/u);
             }
           }
+          const style = readNativeStyle(element, definition?.name ?? name);
+          nativeProperties.style = style;
+          if (typeof style.gap === "number" && supportsProperty("spacing")) {
+            nativeProperties.spacing = style.gap;
+          }
 
           const payload = {
             id,
@@ -225,10 +231,9 @@ export function ngNativeComponentDirective(
           MutationObserver?: typeof MutationObserver;
         }
       ).MutationObserver;
-      const attributeObserver =
-        model && MutationObserverType
-          ? new MutationObserverType(() => void update())
-          : undefined;
+      const attributeObserver = MutationObserverType
+        ? new MutationObserverType(scheduleUpdate)
+        : undefined;
       const unwatch = propsExpression
         ? scope.watch(propsExpression, scheduleUpdate, true)
         : undefined;
@@ -298,15 +303,11 @@ export function ngNativeComponentDirective(
       resizeObserver?.observe(element);
       attributeObserver?.observe(element, {
         attributes: true,
-        attributeFilter: [
-          "autocomplete",
-          "disabled",
-          "enterkeyhint",
-          "inputmode",
-          "readonly",
-          "required",
-          "type",
-        ],
+        childList: true,
+        subtree: true,
+      });
+      attributeObserver?.observe(view.document.documentElement, {
+        attributes: true,
       });
       view.addEventListener("resize", scheduleUpdate);
       view.addEventListener("scroll", scheduleUpdate, true);

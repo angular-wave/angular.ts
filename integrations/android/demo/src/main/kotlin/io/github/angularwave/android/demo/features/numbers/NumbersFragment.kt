@@ -15,11 +15,16 @@ import io.github.angularwave.android.navigation.fragments.AngularNativeFragment
 class NumbersFragment : AngularNativeFragment(), NumbersFragmentCallback {
     private val numbersAdapter = NumbersAdapter(this)
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_numbers, container, false)
-    }
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View? = inflater.inflate(R.layout.fragment_numbers, container, false)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         initView(view)
     }
@@ -28,7 +33,8 @@ class NumbersFragment : AngularNativeFragment(), NumbersFragmentCallback {
         view.findViewById<RecyclerView>(R.id.recycler_view).apply {
             layoutManager = LinearLayoutManager(view.context)
             adapter = numbersAdapter.apply {
-                setData((1..100).toList())
+                val itemCount = 100
+                setData((1..itemCount).toList())
             }
         }
     }

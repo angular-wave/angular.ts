@@ -3,7 +3,7 @@ package io.github.angularwave.android.core.files.util
 import android.content.Context
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
-import io.github.angularwave.android.core.turbo.BaseUnitTest
+import io.github.angularwave.android.core.ng.BaseUnitTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -25,12 +25,14 @@ class AngularNativeFileProviderTest : BaseUnitTest() {
     @Test
     fun authority() {
         val authority = AngularNativeFileProvider.authority(context)
-        assertThat(authority).isEqualTo("io.github.angularwave.android.core.test.angularNative.fileprovider")
+        assertThat(authority)
+            .isEqualTo("io.github.angularwave.android.core.test.angularNative.fileprovider")
     }
 
     @Test
     fun directory() {
         val directory = AngularNativeFileProvider.directory(context)
-        assertThat(directory.path).endsWith("io.github.angularwave.android.core.test-dataDir/files/shared")
+        assertThat(directory.path)
+            .endsWith("io.github.angularwave.android.core.test-dataDir/files/shared")
     }
 }

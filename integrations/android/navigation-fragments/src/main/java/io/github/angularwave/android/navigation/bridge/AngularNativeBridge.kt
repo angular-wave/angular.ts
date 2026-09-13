@@ -1,80 +1,75 @@
 package io.github.angularwave.android.navigation.bridge
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
-import android.graphics.Paint
-import android.graphics.Shader
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
-import android.view.Gravity
 import android.view.View
-import android.widget.FrameLayout
-import android.widget.TextView
 import android.webkit.JavascriptInterface
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import android.webkit.WebView
+import android.widget.FrameLayout
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.unit.dp
-import io.github.angularwave.android.core.turbo.visit.VisitAction
-import io.github.angularwave.android.core.turbo.visit.VisitOptions
-import io.github.angularwave.android.navigation.transitions.NativeNavigationTransition
+import com.google.android.material.R as MaterialR
 import io.github.angularwave.android.navigation.R
 import io.github.angularwave.android.navigation.destinations.AngularNativeDestination
+import io.github.angularwave.android.navigation.elements.AndroidNativeElements
+import io.github.angularwave.android.navigation.elements.JSONObjectProperties
+import io.github.angularwave.android.navigation.elements.NativeElementActivityLauncher
+import io.github.angularwave.android.navigation.elements.NativeElementContext
+import io.github.angularwave.android.navigation.elements.NativeElementException
 import io.github.angularwave.android.navigation.util.colorFromThemeAttr
-import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.launch
-import org.json.JSONObject
-import java.net.URI
+import io.github.angularwave.android.navigation.views.AngularNativeView
+import java.lang.ref.WeakReference
+import java.util.WeakHashMap
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
-import kotlin.random.Random
-import com.google.android.material.R as MaterialR
+import org.json.JSONObject
 
 /**
  * JavaScript bridge used by AngularTS micro-apps running inside an Angular Native WebView.
  *
- * AngularTS calls `window.AngularNative.receive(serializedMessage)`. Navigation
- * calls are translated into Android Navigation routes so the native shell can
- * apply Activity/Fragment transitions while the page keeps using AngularTS
- * scopes, directives, and backend-rendered fragments.
+ * AngularTS calls `window.AngularNative.receive(serializedMessage)`. Navigation calls are
+ * translated into Android Navigation routes so the native shell can apply Activity/Fragment
+ * transitions while the page keeps using AngularTS scopes, directives, and backend-rendered
+ * fragments.
  */
-class AngularNativeBridge(
-    private val destination: AngularNativeDestination
-) {
+class AngularNativeBridge(private val destination: AngularNativeDestination) {
+    private val activeReplies = ConcurrentHashMap<String, BridgeReply>()
     private val mountedComponents = mutableMapOf<String, View>()
-    private val security by lazy { AngularNativeBridgeSecurity(destination.location) }
-    private var composeDrawerOverlay: ComposeView? = null
+    @Volatile private var documentLocation: String? = destination.location
+    private val restoredComponentStates by lazy {
+        destination.fragment.savedStateRegistry.consumeRestoredStateForKey(COMPONENT_STATE_KEY)
+            ?: android.os.Bundle()
+    }
+    private var componentStateRegistered = false
+    private val nativeElementRegistry = AndroidNativeElements.registry
+    private val capabilitiesLock = Any()
+    @Volatile private var capabilitiesDelegate: AndroidNativeCapabilities? = null
+    private val capabilities: AndroidNativeCapabilities
+        get() =
+            capabilitiesDelegate
+                ?: synchronized(capabilitiesLock) {
+                    capabilitiesDelegate
+                        ?: AndroidNativeCapabilities(
+                                destination,
+                                eventSink = NativeCapabilityEventSink(::emitNativeCapabilityEvent),
+                            )
+                            .also { capabilitiesDelegate = it }
+                }
 
-    /**
-     * Injects native platform classes and theme tokens into the current WebView document.
-     */
+    private val security by lazy { AngularNativeBridgeSecurity(destination.location) }
+
+    /** Binds this destination to the stable JavaScript interface retained by the shared WebView. */
+    internal fun attachTo(webView: WebView) {
+        synchronized(activeBridges) {
+            activeBridges[webView] = WeakReference(this)
+        }
+        webView.addJavascriptInterface(this, JAVASCRIPT_INTERFACE)
+    }
+
+    /** Injects native platform classes and theme tokens into the current WebView document. */
     fun injectEnvironment() {
         val environment = createEnvironmentPayload()
-        val javascript = """
+        val javascript =
+            """
             (function() {
               var environment = $environment;
               var root = document.documentElement;
@@ -89,180 +84,310 @@ class AngularNativeBridge(
                 detail: environment
               }));
             })();
-        """.trimIndent()
+        """
+                .trimIndent()
 
-        destination.navigator.session.webView.post {
-            destination.navigator.session.webView.evaluateJavascript(javascript, null)
+        val webView = destination.navigator.session.webView
+        webView.post {
+            documentLocation = webView.url
+            webView.evaluateJavascript(javascript, null)
         }
     }
 
-    /**
-     * Receives a serialized AngularTS native call from JavaScript.
-     */
+    /** Receives a serialized AngularTS native call from JavaScript. */
     @JavascriptInterface
     fun receive(message: String?) {
-        if (message.isNullOrBlank()) return
+        val webView = destination.navigator.session.webView
+        val activeBridge =
+            synchronized(activeBridges) { activeBridges[webView]?.get() }
+                ?.takeIf { it.destination.isActive }
+        if (activeBridge != null && activeBridge !== this) {
+            activeBridge.receiveCurrent(message)
+            return
+        }
+        receiveCurrent(message)
+    }
 
-        val call = try {
-            JSONObject(message)
-        } catch (_: Exception) {
+    private fun receiveCurrent(message: String?) {
+        when (val parsed = NativeBridgeProtocol.parse(message)) {
+            is NativeBridgeProtocol.ParseResult.Failure -> {
+                parsed.id?.let { replyError(it, parsed.code, parsed.message) }
+                return
+            }
+            is NativeBridgeProtocol.ParseResult.Success -> dispatch(parsed.request)
+        }
+    }
+
+    // This protocol boundary must turn every recoverable guest/runtime exception into a reply.
+    @Suppress("TooGenericExceptionCaught")
+    private fun dispatch(call: NativeBridgeProtocol.Request) {
+        val reply = BridgeReply(call.id)
+        if (activeReplies.putIfAbsent(call.id, reply) != null) {
+            replyError(
+                call.id,
+                NativeBridgeProtocol.ErrorCode.INVALID_MESSAGE,
+                "Native request id is already active",
+            )
+            return
+        }
+        if (
+            !security.accepts(
+                call.session,
+                documentLocation,
+            )
+        ) {
+            reply.error(
+                NativeBridgeProtocol.ErrorCode.UNAUTHORIZED,
+                "Native session or origin is invalid",
+            )
             return
         }
 
-        if (!security.accepts(
-                call.optString("session").takeIf { it.isNotBlank() },
-                destination.navigator.session.webView.url
-            )
-        ) return
-
-        val id = call.optString("id").takeIf { it.isNotBlank() }
-        val target = call.optString("target")
-        val method = call.optString("method")
-
-        when (target) {
-            "component" -> handleComponentCall(id, method, call.optJSONObject("params"))
-            "navigation" -> handleNavigationCall(id, method, call.optJSONObject("params"))
-            else -> replyError(id, "Unsupported native target: $target")
+        try {
+            when (call.target) {
+                "bridge" -> handleBridgeCall(reply, call.method, call.params)
+                "component" -> handleComponentCall(reply, call.method, call.params)
+                in capabilities.targets ->
+                    runOnUiThread(reply) {
+                        if (
+                            !capabilities.invokeAsync(
+                                call.target,
+                                call.method,
+                                call.params,
+                                reply::ok,
+                                reply::failure,
+                                reply::cancelWith,
+                            )
+                        ) {
+                            reply.ok(capabilities.invoke(call.target, call.method, call.params))
+                        }
+                    }
+                else ->
+                    reply.error(
+                        NativeBridgeProtocol.ErrorCode.UNKNOWN_TARGET,
+                        "Unsupported native target: ${call.target}",
+                    )
+            }
+        } catch (error: Exception) {
+            reply.failure(error)
         }
     }
 
-    /**
-     * Removes native views mounted for the current WebView destination.
-     */
+    /** Removes native views mounted for the current WebView destination. */
     fun unmountAll() {
+        activeReplies.values.toList().forEach {
+            it.error(NativeBridgeProtocol.ErrorCode.INTERRUPTED, "Native destination was removed")
+        }
+        synchronized(capabilitiesLock) {
+                capabilitiesDelegate.also { capabilitiesDelegate = null }
+            }
+            ?.close()
         runOnUiThread {
             mountedComponents.values.forEach { view ->
+                nativeElementRegistry.dispose(view)
                 (view.parent as? FrameLayout)?.removeView(view)
             }
             mountedComponents.clear()
-            dismissComposeDrawer()
-        }
-    }
-
-    private fun handleComponentCall(id: String?, method: String, params: JSONObject?) {
-        val safeParams = params ?: run {
-            replyError(id, "component calls require params.id")
-
-            return
-        }
-
-        val componentId = safeParams.optString("id")
-
-        if (componentId.isBlank()) {
-            replyError(id, "component calls require params.id")
-
-            return
-        }
-
-        when (method) {
-            "mount", "update" -> runOnUiThread {
-                val container = nativeComponentContainer()
-
-                if (container == null) {
-                    replyError(id, "Native component container is unavailable")
-
-                    return@runOnUiThread
-                }
-
-                val view = mountedComponents[componentId]
-                    ?: createNativeComponentView(safeParams).also {
-                        mountedComponents[componentId] = it
-                        container.addView(it)
-                    }
-
-                updateNativeComponentView(view, safeParams)
-                applyComponentRect(view, safeParams.optJSONObject("rect"))
-                composeDrawerOverlay?.bringToFront()
-                replyOk(
-                    id,
-                    JSONObject()
-                        .put("mounted", true)
-                        .put("id", componentId)
-                        .put("name", safeParams.optString("name"))
+            if (componentStateRegistered) {
+                destination.fragment.savedStateRegistry.unregisterSavedStateProvider(
+                    COMPONENT_STATE_KEY
                 )
+                componentStateRegistered = false
             }
-            "unmount" -> runOnUiThread {
-                mountedComponents.remove(componentId)?.let { view ->
-                    (view.parent as? FrameLayout)?.removeView(view)
-                }
-                replyOk(id, JSONObject().put("mounted", false).put("id", componentId))
-            }
-            else -> replyError(id, "Unsupported component method: $method")
         }
     }
 
-    private fun handleNavigationCall(id: String?, method: String, params: JSONObject?) {
-        when (method) {
-            "back" -> runOnUiThread {
-                destination.navigator.pop()
-                replyOk(id, JSONObject().put("routed", true).put("action", "back"))
-            }
-            "visit", "open", "call" -> {
-                val url = params?.optString("url").orEmpty()
+    private fun handleBridgeCall(reply: BridgeReply, method: String, params: JSONObject?) {
+        if (method != "cancel") {
+            reply.error(
+                NativeBridgeProtocol.ErrorCode.UNKNOWN_METHOD,
+                "Unsupported bridge method: $method",
+            )
+            return
+        }
 
-                if (url.isBlank()) {
-                    replyError(id, "navigation.visit requires params.url")
+        val requestId = params?.optString("id").orEmpty()
+        if (requestId.isBlank()) {
+            reply.error(
+                NativeBridgeProtocol.ErrorCode.INVALID_PARAMS,
+                "bridge.cancel requires params.id",
+            )
+            return
+        }
+
+        val cancelled = activeReplies[requestId]
+        cancelled?.error(NativeBridgeProtocol.ErrorCode.CANCELLED, "Native request was cancelled")
+        reply.ok(JSONObject().put("id", requestId).put("cancelled", cancelled != null))
+    }
+
+    private fun handleComponentCall(reply: BridgeReply, method: String, params: JSONObject?) {
+        val safeParams =
+            params
+                ?: run {
+                    reply.error(
+                        NativeBridgeProtocol.ErrorCode.INVALID_PARAMS,
+                        "component calls require params.id",
+                    )
 
                     return
                 }
 
-                val resolvedUrl = resolveUrl(url)
-                val action = visitAction(params?.optString("action"))
-                val transition = NativeNavigationTransition.from(params?.optString("transition"))
+        val componentId = safeParams.optString("id")
 
-                runOnUiThread {
-                    destination.navigator.route(
-                        resolvedUrl,
-                        VisitOptions(action = action),
-                        navigationOptions = transition.navigationOptions()
-                    )
-                    replyOk(
-                        id,
+        if (componentId.isBlank()) {
+            reply.error(
+                NativeBridgeProtocol.ErrorCode.INVALID_PARAMS,
+                "component calls require params.id",
+            )
+
+            return
+        }
+
+        when (method) {
+            "mount" ->
+                runOnUiThread(reply) {
+                    registerComponentStateProvider()
+                    val container = nativeComponentContainer()
+
+                    if (container == null) {
+                        reply.error(
+                            NativeBridgeProtocol.ErrorCode.INTERNAL,
+                            "Native component container is unavailable",
+                        )
+
+                        return@runOnUiThread
+                    }
+
+                    val view =
+                        mountedComponents[componentId]
+                            ?: createNativeComponentView(safeParams).also {
+                                mountedComponents[componentId] = it
+                                mountCloaked(container, it) {
+                                    destination.fragment.view
+                                        ?.findViewById<AngularNativeView>(R.id.angular_native_view)
+                                        ?.apply {
+                                            removeProgressView()
+                                            removeScreenshot()
+                                        }
+                                }
+                                restoredComponentStates.getBundle(componentId)?.let { state ->
+                                    nativeElementRegistry.restoreState(it, state)
+                                }
+                            }
+
+                    updateNativeComponentView(view, safeParams)
+                    applyComponentRect(view, safeParams.optJSONObject("rect"))
+                    reply.ok(
                         JSONObject()
-                            .put("routed", true)
-                            .put("url", resolvedUrl)
-                            .put("action", action.name.lowercase())
-                            .put("transition", transition.value)
+                            .put("mounted", true)
+                            .put("id", componentId)
+                            .put("name", safeParams.optString("name"))
                     )
                 }
-            }
-            else -> replyError(id, "Unsupported navigation method: $method")
-        }
-    }
-
-    private fun visitAction(action: String?): VisitAction {
-        return when (action?.lowercase()) {
-            "replace" -> VisitAction.REPLACE
-            "restore" -> VisitAction.RESTORE
-            else -> VisitAction.ADVANCE
-        }
-    }
-
-    private fun resolveUrl(url: String): String {
-        return try {
-            URI(destination.location).resolve(url).toString()
-        } catch (_: Exception) {
-            url
+            "update" ->
+                runOnUiThread(reply) {
+                    val view =
+                        mountedComponents[componentId]
+                            ?: run {
+                                reply.error(
+                                    NativeBridgeProtocol.ErrorCode.UNKNOWN_INSTANCE,
+                                    "Unknown native component instance: $componentId",
+                                )
+                                return@runOnUiThread
+                            }
+                    updateNativeComponentView(view, safeParams)
+                    applyComponentRect(view, safeParams.optJSONObject("rect"))
+                    reply.ok(JSONObject().put("mounted", true).put("id", componentId))
+                }
+            "invoke" ->
+                runOnUiThread(reply) {
+                    val view =
+                        mountedComponents[componentId]
+                            ?: run {
+                                reply.error(
+                                    NativeBridgeProtocol.ErrorCode.UNKNOWN_INSTANCE,
+                                    "Unknown native component instance: $componentId",
+                                )
+                                return@runOnUiThread
+                            }
+                    val operation = safeParams.optString("method")
+                    if (operation.isBlank()) {
+                        reply.error(
+                            NativeBridgeProtocol.ErrorCode.INVALID_PARAMS,
+                            "component.invoke requires params.method",
+                        )
+                        return@runOnUiThread
+                    }
+                    val result =
+                        nativeElementRegistry.invoke(
+                            view,
+                            operation,
+                            JSONObjectProperties(safeParams.optJSONObject("args") ?: JSONObject()),
+                        )
+                    reply.ok(JSONObject().put("id", componentId).put("result", result))
+                }
+            "unmount" ->
+                runOnUiThread(reply) {
+                    restoredComponentStates.remove(componentId)
+                    mountedComponents.remove(componentId)?.let { view ->
+                        nativeElementRegistry.dispose(view)
+                        (view.parent as? FrameLayout)?.removeView(view)
+                    }
+                    reply.ok(JSONObject().put("mounted", false).put("id", componentId))
+                }
+            else ->
+                reply.error(
+                    NativeBridgeProtocol.ErrorCode.UNKNOWN_METHOD,
+                    "Unsupported component method: $method",
+                )
         }
     }
 
     private fun createEnvironmentPayload(): JSONObject {
         val context = destination.fragment.requireContext()
-        val cssVariables = JSONObject()
-            .put("--native-platform", "android")
-            .put("--native-bg", colorToCss(context.colorFromThemeAttr(android.R.attr.colorBackground)))
-            .put("--native-surface", colorToCss(context.colorFromThemeAttr(MaterialR.attr.colorSurface)))
-            .put("--native-ink", colorToCss(context.colorFromThemeAttr(MaterialR.attr.colorOnSurface)))
-            .put("--native-accent", colorToCss(context.primaryThemeColor()))
-            .put("--native-toolbar-height", "56px")
-            .put("--native-safe-area-top", "0px")
-            .put("--native-safe-area-bottom", "0px")
+        val cssVariables =
+            JSONObject()
+                .put("--native-platform", "android")
+                .put(
+                    "--native-bg",
+                    colorToCss(context.colorFromThemeAttr(android.R.attr.colorBackground)),
+                )
+                .put(
+                    "--native-surface",
+                    colorToCss(context.colorFromThemeAttr(MaterialR.attr.colorSurface)),
+                )
+                .put(
+                    "--native-ink",
+                    colorToCss(context.colorFromThemeAttr(MaterialR.attr.colorOnSurface)),
+                )
+                .put("--native-accent", colorToCss(context.primaryThemeColor()))
+                .put("--native-toolbar-height", "56px")
+                .put("--native-safe-area-top", "0px")
+                .put("--native-safe-area-bottom", "0px")
 
         return JSONObject()
             .put("platform", "android")
             .put("location", destination.location)
             .put("session", security.sessionToken)
+            .put("protocolVersion", NativeBridgeProtocol.VERSION)
+            .put("maxMessageBytes", NativeBridgeProtocol.MAX_MESSAGE_BYTES)
+            .put("capabilities", createCapabilitiesPayload())
             .put("cssVariables", cssVariables)
+    }
+
+    private fun createCapabilitiesPayload(): JSONObject {
+        val platformCapabilities = capabilities.describe()
+        return JSONObject()
+            .put("component", org.json.JSONArray(listOf("mount", "update", "invoke", "unmount")))
+            .apply {
+                platformCapabilities.keys().forEach { target ->
+                    put(target, platformCapabilities.getJSONArray(target))
+                }
+            }
+            .put(
+                "elements",
+                org.json.JSONArray(nativeElementRegistry.definitions.map { it.name }),
+            )
     }
 
     private fun colorToCss(color: Int): String {
@@ -270,413 +395,97 @@ class AngularNativeBridge(
     }
 
     private fun android.content.Context.primaryThemeColor(): Int {
-        val colorPrimary = resources.getIdentifier("colorPrimary", "attr", packageName)
-        val attr = if (colorPrimary != 0) colorPrimary else MaterialR.attr.colorSecondary
-
-        return colorFromThemeAttr(attr)
+        return colorFromThemeAttr(androidx.appcompat.R.attr.colorPrimary)
     }
 
     private fun nativeComponentContainer(): FrameLayout? {
         return destination.fragment.view?.findViewById(R.id.angular_native_view)
     }
 
-    private fun createNativeComponentView(params: JSONObject): View {
-        val context = destination.fragment.requireContext()
-        val name = params.optString("name")
-
-        if (name == "compose-drawer" || name == "native-card" || name == "native-image") {
-            return ComposeView(context).apply {
-                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-            }
-        }
-
-        if (name.contains("button", ignoreCase = true)) {
-            return MaterialButton(context).apply {
-                gravity = Gravity.CENTER
-                isAllCaps = false
-                minHeight = 0
-                minimumHeight = 0
-                insetTop = 0
-                insetBottom = 0
-                setOnClickListener {
-                    emitComponentClick(params)
+    private fun registerComponentStateProvider() {
+        if (componentStateRegistered) return
+        destination.fragment.savedStateRegistry.registerSavedStateProvider(COMPONENT_STATE_KEY) {
+            android.os.Bundle().apply {
+                mountedComponents.forEach { (id, view) ->
+                    nativeElementRegistry.saveState(view)?.let { putBundle(id, it) }
                 }
             }
         }
+        componentStateRegistered = true
+    }
 
-        val radius = 12 * context.resources.displayMetrics.density
-        var background = GradientDrawable().apply {
-            setColor(context.primaryThemeColor())
-            cornerRadius = radius
-        }
+    private fun createNativeComponentView(params: JSONObject): View {
+        val fragment = destination.fragment
+        val properties = params.optJSONObject("props") ?: JSONObject()
+        return nativeElementRegistry.create(
+            params.optString("name"),
+            NativeElementContext(
+                context = fragment.requireContext(),
+                container = nativeComponentContainer(),
+                lifecycleOwner = fragment,
+                savedStateOwner = fragment,
+                events = { event, data -> emitNativeElementEvent(params, event, data) },
+                activityLauncher =
+                    object : NativeElementActivityLauncher {
+                        override fun launch(
+                            intent: android.content.Intent,
+                            result: (Int, android.content.Intent?) -> Unit,
+                        ): Boolean = destination.launchNativeActivity(intent, result)
 
-        return TextView(context).apply {
-            gravity = Gravity.CENTER
-            setPadding(16, 10, 16, 10)
-            setTextColor(context.colorFromThemeAttr(MaterialR.attr.colorOnPrimary))
-            textSize = 16f
-            typeface = Typeface.DEFAULT_BOLD
-            contentDescription = params.optString("name", "Native component")
-            elevation = 6 * context.resources.displayMetrics.density
-        }
+                        override fun cancel() = destination.cancelNativeActivity()
+                    },
+            ),
+            JSONObjectProperties(properties),
+        )
     }
 
     private fun updateNativeComponentView(view: View, params: JSONObject) {
-        val props = params.optJSONObject("props")
-        val text = props?.optString("text")?.takeIf { it.isNotBlank() }
-            ?: "Hello from native Android"
-
-        when (view) {
-            is ComposeView -> {
-                view.setContent {
-                    when (params.optString("name")) {
-                        "compose-drawer" -> AngularNativeDrawerTrigger(params)
-                        "native-image" -> AngularNativeImage(params)
-                        else -> AngularNativeElevatedCard(params)
-                    }
-                }
-            }
-            is MaterialButton -> {
-                view.text = text
-                view.setOnClickListener {
-                    emitComponentClick(params)
-                }
-            }
-            is TextView -> view.text = text
-        }
-    }
-
-    private fun showComposeDrawer(params: JSONObject) {
-        val container = nativeComponentContainer() ?: return
-
-        dismissComposeDrawer()
-
-        composeDrawerOverlay = ComposeView(destination.fragment.requireContext()).apply {
-            val overlayElevation = 64 * resources.displayMetrics.density
-
-            isClickable = true
-            isFocusable = true
-            elevation = overlayElevation
-            translationZ = overlayElevation
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-            setContent {
-                AngularNativeDrawerOverlay(params)
-            }
-        }
-
-        container.addView(
-            composeDrawerOverlay,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        )
-        composeDrawerOverlay?.bringToFront()
-        container.invalidate()
-    }
-
-    private fun openComposeDrawer(params: JSONObject) {
-        nativeComponentContainer()?.post {
-            showComposeDrawer(params)
-        }
-    }
-
-    private fun dismissComposeDrawer() {
-        composeDrawerOverlay?.let { overlay ->
-            (overlay.parent as? FrameLayout)?.removeView(overlay)
-        }
-        composeDrawerOverlay = null
-    }
-
-    private fun emitComponentClick(params: JSONObject) {
-        val payload = JSONObject()
-            .put("target", "component")
-            .put("event", "click")
-            .put(
-                "data",
-                JSONObject()
-                    .put("id", params.optString("id"))
-                    .put("name", params.optString("name"))
-                    .put("props", params.optJSONObject("props") ?: JSONObject())
-            )
-
-        val javascript = "window.angularNative && window.angularNative.dispatch($payload);"
-
-        destination.navigator.session.webView.post {
-            destination.navigator.session.webView.evaluateJavascript(javascript, null)
-        }
-    }
-
-    private fun emitComponentSelect(params: JSONObject, item: NativeDrawerItem) {
-        val payload = JSONObject()
-            .put("target", "component")
-            .put("event", "select")
-            .put(
-                "data",
-                JSONObject()
-                    .put("id", params.optString("id"))
-                    .put("name", params.optString("name"))
-                    .put(
-                        "item",
-                        JSONObject()
-                            .put("label", item.label)
-                            .put("route", item.route)
-                    )
-                    .put("props", params.optJSONObject("props") ?: JSONObject())
-            )
-
-        val javascript = "window.angularNative && window.angularNative.dispatch($payload);"
-
-        destination.navigator.session.webView.post {
-            destination.navigator.session.webView.evaluateJavascript(javascript, null)
-        }
-    }
-
-    @Composable
-    private fun AngularNativeDrawerTrigger(params: JSONObject) {
-        val props = params.optJSONObject("props") ?: JSONObject()
-        val label = props.optString("text").takeIf { it.isNotBlank() } ?: "Open drawer"
-
-        MaterialTheme {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp)
-            ) {
-                Button(
-                    onClick = { openComposeDrawer(params) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(label)
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun AngularNativeDrawerOverlay(params: JSONObject) {
-        val props = params.optJSONObject("props") ?: JSONObject()
-        val items = drawerItems(props)
-        val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
-        val scope = rememberCoroutineScope()
-
-        LaunchedEffect(Unit) {
-            drawerState.open()
-        }
-
-        LaunchedEffect(drawerState) {
-            snapshotFlow { drawerState.currentValue }.collect { value ->
-                if (value == DrawerValue.Closed) dismissComposeDrawer()
-            }
-        }
-
-        MaterialTheme {
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                gesturesEnabled = true,
-                drawerContent = {
-                    ModalDrawerSheet {
-                        Text(
-                            text = props.optString("title").takeIf { it.isNotBlank() }
-                                ?: "Native drawer",
-                            modifier = Modifier.padding(16.dp)
-                        )
-                        items.forEach { item ->
-                            NavigationDrawerItem(
-                                label = { Text(item.label) },
-                                selected = false,
-                                onClick = {
-                                    scope.launch {
-                                        drawerState.close()
-                                        dismissComposeDrawer()
-                                        emitComponentSelect(params, item)
-                                    }
-                                },
-                                modifier = Modifier.padding(horizontal = 12.dp)
-                            )
-                        }
-                    }
-                }
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {}
-            }
-        }
-    }
-
-    @Composable
-    private fun AngularNativeElevatedCard(params: JSONObject) {
-        val props = params.optJSONObject("props") ?: JSONObject()
-        val title = props.optString("title").takeIf { it.isNotBlank() }
-            ?: "Native card"
-        val subtitle = props.optString("subtitle").takeIf { it.isNotBlank() }
-            ?: "Rendered by Jetpack Compose from AngularTS markup."
-        val imageProps = props.optJSONObject("image")
-        val seed = params.optString("id", title)
-        val image = remember(seed) {
-            randomCardBitmap(seed).asImageBitmap()
-        }
-
-        MaterialTheme {
-            ElevatedCard(
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp)
-            ) {
-                imageProps?.let {
-                    val imageHeight = it.optDouble("height", 132.0)
-                        .takeIf { height -> height > 0.0 }
-                        ?: 132.0
-
-                    Image(
-                        bitmap = image,
-                        contentDescription = it.optString("contentDescription")
-                            .takeIf { description -> description.isNotBlank() }
-                            ?: title,
-                        contentScale = contentScale(it.optString("contentScale")),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(imageHeight.toFloat().dp)
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = subtitle,
-                        modifier = Modifier.padding(top = 6.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun AngularNativeImage(params: JSONObject) {
-        val props = params.optJSONObject("props") ?: JSONObject()
-        val seed = params.optString("id", "native-image")
-        val image = remember(seed) {
-            randomCardBitmap(seed).asImageBitmap()
-        }
-
-        Image(
-            bitmap = image,
-            contentDescription = props.optString("contentDescription")
-                .takeIf { it.isNotBlank() }
-                ?: "Native image",
-            contentScale = contentScale(props.optString("contentScale")),
-            modifier = Modifier
-                .fillMaxSize()
-                .height(props.optDouble("height", 160.0).toFloat().dp)
+        nativeElementRegistry.update(
+            view,
+            JSONObjectProperties(params.optJSONObject("props") ?: JSONObject()),
         )
     }
 
-    private fun contentScale(value: String): ContentScale {
-        return when (value.lowercase()) {
-            "fit" -> ContentScale.Fit
-            "fillbounds", "fill-bounds" -> ContentScale.FillBounds
-            "fillheight", "fill-height" -> ContentScale.FillHeight
-            "fillwidth", "fill-width" -> ContentScale.FillWidth
-            "inside" -> ContentScale.Inside
-            "none" -> ContentScale.None
-            else -> ContentScale.Crop
-        }
+    private fun emitNativeElementEvent(
+        params: JSONObject,
+        event: String,
+        data: JSONObject?,
+    ) {
+        val eventData =
+            JSONObject().put("id", params.optString("id")).put("name", params.optString("name"))
+
+        data?.keys()?.forEach { key -> eventData.put(key, data.opt(key)) }
+
+        emitNativeEvent("component", event, eventData)
     }
 
-    private fun drawerItems(props: JSONObject): List<NativeDrawerItem> {
-        val values = props.optJSONArray("items") ?: return listOf("Refresh from server")
-            .map { NativeDrawerItem(label = it) }
+    private fun emitNativeCapabilityEvent(target: String, event: String, data: JSONObject?) {
+        emitNativeEvent(target, event, data)
+    }
 
-        return buildList {
-            for (index in 0 until values.length()) {
-                val value = values.opt(index)
+    private fun emitNativeEvent(target: String, event: String, data: JSONObject?) {
+        if (!destination.isActive) return
 
-                when (value) {
-                    is JSONObject -> {
-                        val label = value.optString("label")
-                            .takeIf { it.isNotBlank() }
-                            ?: value.optString("title")
-                                .takeIf { it.isNotBlank() }
+        val payload =
+            JSONObject()
+                .put("protocol", NativeBridgeProtocol.VERSION)
+                .put("target", target)
+                .put("event", event)
+                .put("data", data ?: JSONObject.NULL)
+        val javascript = "window.angularNative && window.angularNative.receive($payload);"
+        val webView = destination.navigator.session.webView
 
-                        if (label != null) {
-                            add(
-                                NativeDrawerItem(
-                                    label = label,
-                                    route = value.optString("route")
-                                        .takeIf { it.isNotBlank() }
-                                        ?: value.optString("path")
-                                            .takeIf { it.isNotBlank() }
-                                )
-                            )
-                        }
-                    }
-                    else -> values.optString(index).takeIf { it.isNotBlank() }?.let {
-                        add(NativeDrawerItem(label = it))
-                    }
-                }
+        webView.post {
+            if (destination.isActive) {
+                webView.evaluateJavascript(javascript, null)
             }
-        }.ifEmpty { listOf(NativeDrawerItem(label = "Refresh from server")) }
-    }
-
-    private fun randomCardBitmap(seed: String): Bitmap {
-        val width = 720
-        val height = 420
-        val random = Random(seed.hashCode())
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val startColor = Color.rgb(
-            random.nextInt(32, 220),
-            random.nextInt(64, 230),
-            random.nextInt(80, 240)
-        )
-        val endColor = Color.rgb(
-            random.nextInt(32, 220),
-            random.nextInt(64, 230),
-            random.nextInt(80, 240)
-        )
-
-        paint.shader = LinearGradient(
-            0f,
-            0f,
-            width.toFloat(),
-            height.toFloat(),
-            startColor,
-            endColor,
-            Shader.TileMode.CLAMP
-        )
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
-        paint.shader = null
-
-        repeat(7) {
-            paint.color = Color.argb(
-                random.nextInt(80, 170),
-                random.nextInt(20, 255),
-                random.nextInt(20, 255),
-                random.nextInt(20, 255)
-            )
-            canvas.drawCircle(
-                random.nextInt(width).toFloat(),
-                random.nextInt(height).toFloat(),
-                random.nextInt(56, 150).toFloat(),
-                paint
-            )
         }
-
-        return bitmap
     }
 
     private fun applyComponentRect(view: View, rect: JSONObject?) {
         if (rect == null) return
 
-        val scale = destination.navigator.session.webView.scale
+        val scale = destination.navigator.session.webView.resources.displayMetrics.density
         val width = (rect.optDouble("width") * scale).roundToInt().coerceAtLeast(1)
         val height = (rect.optDouble("height") * scale).roundToInt().coerceAtLeast(1)
         val left = (rect.optDouble("x") * scale).roundToInt()
@@ -687,21 +496,34 @@ class AngularNativeBridge(
         view.y = top.toFloat()
     }
 
+    // This asynchronous protocol boundary must not strand an active request without a reply.
+    @Suppress("TooGenericExceptionCaught")
+    private fun runOnUiThread(reply: BridgeReply, block: () -> Unit) {
+        destination.fragment.requireActivity().runOnUiThread {
+            if (reply.isCompleted) return@runOnUiThread
+            try {
+                block()
+            } catch (error: Exception) {
+                reply.failure(error)
+            }
+        }
+    }
+
     private fun runOnUiThread(block: () -> Unit) {
         destination.fragment.requireActivity().runOnUiThread(block)
     }
 
-    private fun replyOk(id: String?, result: JSONObject) {
-        reply(id, JSONObject().put("id", id).put("ok", true).put("result", result))
+    internal fun replyError(id: String, code: NativeBridgeProtocol.ErrorCode, message: String) {
+        reply(
+            JSONObject()
+                .put("protocol", NativeBridgeProtocol.VERSION)
+                .put("id", id)
+                .put("ok", false)
+                .put("error", JSONObject().put("code", code.value).put("message", message))
+        )
     }
 
-    private fun replyError(id: String?, message: String) {
-        reply(id, JSONObject().put("id", id).put("ok", false).put("error", message))
-    }
-
-    private fun reply(id: String?, payload: JSONObject) {
-        if (id.isNullOrBlank()) return
-
+    internal fun reply(payload: JSONObject) {
         val javascript = "window.angularNative && window.angularNative.receive($payload);"
 
         destination.navigator.session.webView.post {
@@ -709,8 +531,75 @@ class AngularNativeBridge(
         }
     }
 
-    private data class NativeDrawerItem(
-        val label: String,
-        val route: String? = null
-    )
+    private inner class BridgeReply(private val id: String) {
+        private val completed = AtomicBoolean(false)
+        private var cancellation: (() -> Unit)? = null
+
+        val isCompleted: Boolean
+            get() = completed.get()
+
+        private fun complete(block: () -> Unit) {
+            if (!completed.compareAndSet(false, true)) return
+            activeReplies.remove(id, this)
+            cancellation = null
+            block()
+        }
+
+        fun cancelWith(action: () -> Unit) {
+            if (!isCompleted) cancellation = action
+        }
+
+        fun ok(result: Any?) {
+            complete {
+                reply(
+                    JSONObject()
+                        .put("protocol", NativeBridgeProtocol.VERSION)
+                        .put("id", id)
+                        .put("ok", true)
+                        .put("result", result)
+                )
+            }
+        }
+
+        fun error(code: NativeBridgeProtocol.ErrorCode, message: String) {
+            if (
+                !isCompleted &&
+                    code in
+                        setOf(
+                            NativeBridgeProtocol.ErrorCode.CANCELLED,
+                            NativeBridgeProtocol.ErrorCode.INTERRUPTED,
+                        )
+            ) {
+                cancellation?.invoke()
+            }
+            complete { replyError(id, code, message) }
+        }
+
+        fun failure(error: Exception) {
+            if (error is NativeElementException) {
+                val code =
+                    when (error.code) {
+                        NativeElementException.Code.INVALID_PROPERTY ->
+                            NativeBridgeProtocol.ErrorCode.INVALID_PROPERTY
+                        NativeElementException.Code.UNKNOWN_ELEMENT ->
+                            NativeBridgeProtocol.ErrorCode.UNKNOWN_ELEMENT
+                        NativeElementException.Code.UNKNOWN_INSTANCE ->
+                            NativeBridgeProtocol.ErrorCode.UNKNOWN_INSTANCE
+                        NativeElementException.Code.UNKNOWN_METHOD ->
+                            NativeBridgeProtocol.ErrorCode.UNKNOWN_METHOD
+                    }
+                error(code, error.message ?: "Native element operation failed")
+            } else if (error is NativeCapabilityException) {
+                error(error.code, error.message ?: "Native capability operation failed")
+            } else {
+                error(NativeBridgeProtocol.ErrorCode.INTERNAL, "Native operation failed")
+            }
+        }
+    }
+
+    private companion object {
+        const val COMPONENT_STATE_KEY = "angular-native-components"
+        const val JAVASCRIPT_INTERFACE = "AngularNative"
+        val activeBridges = WeakHashMap<WebView, WeakReference<AngularNativeBridge>>()
+    }
 }

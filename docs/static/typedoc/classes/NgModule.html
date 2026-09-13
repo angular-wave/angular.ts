@@ -2473,6 +2473,17 @@
                         composed router runtime, so module router trees compose
                         with <code>lazyState(...)</code> and inherited route
                         policies.
+                        <a
+                          href="../interfaces/RouterModuleDeclaration.html"
+                          class="tsd-kind-interface"
+                          >RouterModuleDeclaration</a
+                        >
+                        is the only public registration contract. Pass one
+                        declaration or a readonly forest; the route map is
+                        inferred from the exact literal. To declare the route
+                        map explicitly, parameterize
+                        <code>createModule&lt;TRouteMap&gt;(...)</code> instead
+                        of <code>router(...)</code>.
                       </p>
                     </div>
                     <section class="tsd-panel">

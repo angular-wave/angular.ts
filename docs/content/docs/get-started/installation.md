@@ -63,8 +63,9 @@ Import the library in your entry file:
 import { angular } from '@angular-wave/angular.ts';
 ```
 
-When loaded in a browser environment, the `angular` singleton is also assigned
-to `window.angular` automatically.
+The default ESM import and UMD script both scan for `ng-app` once the DOM is
+ready. The `angular` singleton is also assigned to `window.angular`
+automatically.
 
 ## TypeScript setup
 
@@ -93,7 +94,8 @@ myModule.controller('MyController', [
 
 The simplest way to start an AngularTS application is the `ng-app` attribute.
 Place it on any HTML element and AngularTS will bootstrap that element as the
-application root when the DOM is ready:
+application root when the DOM is ready. Importing the default package entry is
+enough; no startup call is needed for a static `ng-app` root.
 
 ```html
 <div ng-app>{{ 1 + 1 }}</div>
