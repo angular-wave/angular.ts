@@ -25,6 +25,7 @@ signing_key="$(gpg --batch --homedir "$key_home" --armor --export-secret-keys)"
 mapfile -t modules < <(node "$android_root/scripts/android-artifacts.mjs" module)
 tasks=()
 for module in "${modules[@]}"; do
+  find "$android_root/$module/build" -type f -name '*.asc' -delete
   tasks+=("${module}:signMavenPublication")
 done
 

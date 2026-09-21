@@ -35,10 +35,7 @@ class AngularNativeFragmentDelegate(private val navDestination: AngularNativeDes
         onReady()
     }
 
-    /**
-     * Should be called by the implementing Fragment during
-     * [androidx.fragment.app.Fragment.onViewCreated].
-     */
+    /** Should be called by the implementing Fragment during `Fragment.onViewCreated`. */
     fun onViewCreated() {
         initToolbar()
         logEvent("fragment.onViewCreated", "location" to location)

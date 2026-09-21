@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-09-13
+
 - Added Angular Native Android navigation, components, platform capabilities, and optional UI artifacts.
 - Added Android Maven publication, isolated staged R8 consumers, reproducibility checks, and device CI.
 - Added predictive-back transitions, portable emulator coverage, and optional physical-device evidence.

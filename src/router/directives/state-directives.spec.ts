@@ -4,6 +4,22 @@ import { Angular } from "../../angular.ts";
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { browserTrigger, wait, waitUntil } from "../../shared/test-utils.ts";
 
+document.addEventListener("click", (event) => {
+  const target = event.target;
+  const anchor = target instanceof Element ? target.closest("a") : null;
+
+  if (
+    anchor?.hasAttribute("target") ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey ||
+    event.altKey ||
+    (typeof event.button === "number" && event.button !== 0)
+  ) {
+    event.preventDefault();
+  }
+});
+
 function registerStates(module, ...states) {
   states.forEach((state) => module.router(state));
 }

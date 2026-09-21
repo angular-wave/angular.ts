@@ -121,10 +121,7 @@ internal class AngularNativeWebFragmentDelegate(
         detachWebView(onReady)
     }
 
-    /**
-     * Should be called by the implementing Fragment during
-     * [androidx.fragment.app.Fragment.onViewCreated].
-     */
+    /** Should be called by the implementing Fragment during `Fragment.onViewCreated`. */
     fun onViewCreated() {
         if (session.isRenderProcessGone) {
             navigator.createNewSession()
