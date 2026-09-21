@@ -382,7 +382,7 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - name: Install Android SDK
-        run: sdkmanager "platforms;android-37" "build-tools;37.0.0"
+        run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Cache Gradle
         uses: actions/cache@v5
@@ -408,28 +408,32 @@ jobs:
       matrix:
         include:
           - device: phone-api-28
-            api-level: 28
+            api-level: "28"
+            evidence-api-level: 28
             profile: pixel_2
             form_factor: phone
             disable_animations: true
             benchmark: false
             checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
           - device: phone-api-37
-            api-level: 37
+            api-level: "37.0"
+            evidence-api-level: 37
             profile: pixel_6
             form_factor: phone
             disable_animations: false
             benchmark: true
             checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
           - device: tablet-api-37
-            api-level: 37
+            api-level: "37.0"
+            evidence-api-level: 37
             profile: pixel_tablet
             form_factor: tablet
             disable_animations: false
             benchmark: false
             checks: navigation-fragments:connectedCheck
           - device: foldable-api-37
-            api-level: 37
+            api-level: "37.0"
+            evidence-api-level: 37
             profile: pixel_fold
             form_factor: foldable
             disable_animations: true
@@ -459,7 +463,7 @@ jobs:
             fi
             ./integrations/android/scripts/capture-device-evidence.sh \
               integrations/android/build/connected-device-evidence \
-              ${{ matrix.api-level }} \
+              ${{ matrix.evidence-api-level }} \
               ${{ matrix.device }}
 
       - name: Upload Android device evidence
