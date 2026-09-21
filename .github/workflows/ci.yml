@@ -379,7 +379,7 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
 
       - name: Install Android SDK
         run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
@@ -452,6 +452,7 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
+          target: google_apis
           profile: ${{ matrix.profile }}
           disable-animations: ${{ matrix.disable_animations }}
           script: |
