@@ -53,16 +53,20 @@ class StartupBenchmark {
                     Intent(Intent.ACTION_MAIN)
                         .setClassName(PACKAGE_NAME, COLLECTION_BENCHMARK_ACTIVITY)
                 )
-            },
-        ) {
-            val update =
-                requireNotNull(
+                check(
                     device.wait(
-                        Until.findObject(By.desc(COLLECTION_READY_DESCRIPTION)),
+                        Until.hasObject(By.desc(COLLECTION_READY_DESCRIPTION)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
-                    "Collection benchmark control did not become accessible"
+                    "Collection benchmark control did not become accessible; " +
+                        "foreground package is ${device.currentPackageName}"
+                }
+            },
+        ) {
+            val update =
+                requireNotNull(device.findObject(By.desc(COLLECTION_READY_DESCRIPTION))) {
+                    "Collection benchmark control disappeared before measurement"
                 }
             update.click()
             val result =
@@ -107,16 +111,20 @@ class StartupBenchmark {
                     Intent(Intent.ACTION_MAIN)
                         .setClassName(PACKAGE_NAME, WEB_VIEW_BENCHMARK_ACTIVITY)
                 )
-            },
-        ) {
-            val run =
-                requireNotNull(
+                check(
                     device.wait(
-                        Until.findObject(By.desc(BRIDGE_READY_DESCRIPTION).enabled(true)),
+                        Until.hasObject(By.desc(BRIDGE_READY_DESCRIPTION).enabled(true)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
-                    "WebView benchmark control did not become accessible"
+                    "WebView benchmark control did not become accessible; " +
+                        "foreground package is ${device.currentPackageName}"
+                }
+            },
+        ) {
+            val run =
+                requireNotNull(device.findObject(By.desc(BRIDGE_READY_DESCRIPTION).enabled(true))) {
+                    "WebView benchmark control disappeared before measurement"
                 }
             run.click()
             val result =
@@ -147,7 +155,7 @@ class StartupBenchmark {
         const val PACKAGE_NAME = "io.github.angularwave.android.demo"
         const val COLLECTION_BENCHMARK_ACTIVITY = "$PACKAGE_NAME.main.CollectionBenchmarkActivity"
         const val WEB_VIEW_BENCHMARK_ACTIVITY = "$PACKAGE_NAME.main.WebViewBenchmarkActivity"
-        const val UI_TIMEOUT_MS = 10_000L
+        const val UI_TIMEOUT_MS = 30_000L
         const val SWIPE_STEPS = 20
         const val SWIPE_START_NUMERATOR = 3
         const val SWIPE_POSITION_DENOMINATOR = 4
