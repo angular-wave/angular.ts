@@ -81,6 +81,7 @@ format:
 
 format-check:
 	@npx prettier ./src --check --cache --log-level=silent
+	@$(MAKE) -C integrations/android format-check
 	
 lint:
 	@$(MAKE) lint-check

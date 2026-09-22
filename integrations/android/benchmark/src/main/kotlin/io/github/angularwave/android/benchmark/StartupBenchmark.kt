@@ -62,7 +62,9 @@ class StartupBenchmark {
                         Until.findObject(By.res(PACKAGE_NAME, COLLECTION_UPDATE_RESOURCE)),
                         UI_TIMEOUT_MS,
                     )
-                ) { "Collection benchmark control did not become accessible" }
+                ) {
+                    "Collection benchmark control did not become accessible"
+                }
             update.click()
             device.waitForIdle()
             val allocatedBytes =
@@ -105,12 +107,13 @@ class StartupBenchmark {
                 requireNotNull(
                     device.wait(
                         Until.findObject(
-                            By.res(PACKAGE_NAME, BRIDGE_RUN_RESOURCE)
-                                .desc(BRIDGE_READY_DESCRIPTION)
+                            By.res(PACKAGE_NAME, BRIDGE_RUN_RESOURCE).desc(BRIDGE_READY_DESCRIPTION)
                         ),
                         UI_TIMEOUT_MS,
                     )
-                ) { "WebView benchmark control did not become ready" }
+                ) {
+                    "WebView benchmark control did not become ready"
+                }
             run.click()
             val result =
                 requireNotNull(
@@ -120,7 +123,9 @@ class StartupBenchmark {
                         ),
                         UI_TIMEOUT_MS,
                     )
-                ) { "WebView benchmark result was not reported" }
+                ) {
+                    "WebView benchmark result was not reported"
+                }
             val description = result.contentDescription.toString()
             val latencyMilliseconds =
                 description.substringAfter(BRIDGE_LATENCY_PREFIX).substringBefore(';').toDouble()
