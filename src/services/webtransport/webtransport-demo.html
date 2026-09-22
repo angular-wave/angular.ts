@@ -82,17 +82,17 @@
       if (document.readyState === "loading") {
         document.addEventListener(
           "DOMContentLoaded",
-          () => angular.init(document),
+          () => angular.bootstrap(document.body, ["webTransportDemo"]),
           {
             once: true,
           },
         );
       } else {
-        angular.init(document);
+        angular.bootstrap(document.body, ["webTransportDemo"]);
       }
     </script>
   </head>
-  <body ng-app="webTransportDemo">
+  <body>
     <main ng-controller="WebTransportDemo">
       <section class="workspace">
         <header class="toolbar">

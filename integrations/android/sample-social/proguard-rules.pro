@@ -1,0 +1,1 @@
+-keep class io.github.angularwave.android.navigation.activities.AngularNativeHostActivity { *; }

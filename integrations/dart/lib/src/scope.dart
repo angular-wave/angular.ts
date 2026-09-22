@@ -5,11 +5,11 @@ import 'unsafe.dart' as interop;
 
 /// Typed wrapper around an AngularTS scope.
 final class Scope<TState> implements interop.JsConvertible {
-  const Scope._(this._scope, this.state);
+  Scope._(this._scope);
 
   /// Wraps a raw AngularTS scope value.
   factory Scope.unsafe(JSAny? value) {
-    return Scope<TState>._(value, interop.jsToDart<TState>(value));
+    return Scope<TState>._(value);
   }
 
   final JSAny? _scope;
@@ -21,7 +21,7 @@ final class Scope<TState> implements interop.JsConvertible {
   JSAny? toJsValue() => raw;
 
   /// Typed state view for authoring code.
-  final TState state;
+  late final TState state = interop.jsToDart<TState>(_scope);
 
   /// Explicit dynamic escape hatch for migration and advanced interop.
   ScopeUnsafe get unsafe => ScopeUnsafe(_scope);

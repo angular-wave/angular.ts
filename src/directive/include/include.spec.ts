@@ -277,7 +277,7 @@ describe("ngInclude", () => {
 
       const $templateCache = injector.get("$templateCache");
 
-      $rootScope.url = "https://angular-wave.github.io/angular.ts/";
+      $rootScope.url = new URL("/mock/interpolation", location.href).href;
 
       await waitUntil(() => $templateCache.get($rootScope.url) !== undefined);
       expect($templateCache.get($rootScope.url)).toBeDefined();

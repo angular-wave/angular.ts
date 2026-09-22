@@ -6,13 +6,15 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { androidArtifacts } from "../integrations/android/scripts/android-artifacts.mjs";
+import { validateAndroidPom } from "../integrations/android/scripts/pom-contract.mjs";
 
 const GROUP = "io.github.angular-wave";
 const GROUP_PATH = GROUP.replaceAll(".", "/");
 const CENTRAL = "https://repo.maven.apache.org/maven2";
 const SIGNING_FINGERPRINT = "305D365B22401CC5A42B22D07BEBA053B3890C4A";
 
-export const artifactSpecs = {
+const standaloneArtifactSpecs = {
   java: {
     artifact: "angular-ts-java",
     checksums: ["sha256", "sha512"],
@@ -54,6 +56,38 @@ export const artifactSpecs = {
   },
 };
 
+const androidArtifactNames = androidArtifacts.map(
+  ({ artifact }) => `android:${artifact}`,
+);
+
+export const artifactSpecs = Object.freeze({
+  ...standaloneArtifactSpecs,
+  ...Object.fromEntries(
+    androidArtifacts.map(({ artifact, extension, module, sourceEntry }) => [
+      `android:${artifact}`,
+      {
+        artifact,
+        androidModule: module,
+        binaryExtension: extension,
+        checksums: ["sha256", "sha512"],
+        binary:
+          extension === "aar"
+            ? ["AndroidManifest.xml", "classes.jar"]
+            : [
+                "io/github/angularwave/android/compiler/NativeElementProviderProcessor.class",
+              ],
+        sources: [sourceEntry],
+        javadoc: [
+          extension === "aar" ? "allclasses.html" : "allclasses-index.html",
+        ],
+        gradleModule: true,
+      },
+    ]),
+  ),
+});
+
+const artifactGroups = Object.freeze({ android: androidArtifactNames });
+
 export function parseArguments(argv) {
   const values = { artifacts: [], version: "", waitSeconds: 0 };
 
@@ -65,7 +99,10 @@ export function parseArguments(argv) {
       values.version = value;
       index++;
     } else if (argument === "--artifacts" && value) {
-      values.artifacts = value.split(",").filter(Boolean);
+      values.artifacts = value
+        .split(",")
+        .filter(Boolean)
+        .flatMap((artifact) => artifactGroups[artifact] ?? artifact);
       index++;
     } else if (argument === "--wait-seconds" && value) {
       values.waitSeconds = Number(value);
@@ -102,7 +139,7 @@ export function validateChecksum(bytes, expected, algorithm, name) {
   }
 }
 
-export function validatePom(source, artifact, version) {
+export function validatePom(source, artifact, version, androidModule) {
   const required = [
     `<groupId>${GROUP}</groupId>`,
     `<artifactId>${artifact}</artifactId>`,
@@ -112,6 +149,28 @@ export function validatePom(source, artifact, version) {
   for (const value of required) {
     if (!source.includes(value)) {
       throw new Error(`${artifact}-${version}.pom is missing '${value}'.`);
+    }
+  }
+
+  if (androidModule) {
+    validateAndroidPom(source, { artifact, module: androidModule, version });
+  }
+}
+
+export function validateGradleModule(source, artifact, version) {
+  let metadata;
+  try {
+    metadata = JSON.parse(source);
+  } catch {
+    throw new Error(`${artifact}-${version}.module is not valid JSON.`);
+  }
+
+  const expected = { group: GROUP, module: artifact, version };
+  for (const [name, value] of Object.entries(expected)) {
+    if (metadata.component?.[name] !== value) {
+      throw new Error(
+        `${artifact}-${version}.module has invalid component ${name}.`,
+      );
     }
   }
 }
@@ -201,7 +260,10 @@ async function validateArtifact(name, version, deadline, directory, gpgHome) {
   const baseName = `${spec.artifact}-${version}`;
   const baseUrl = `${CENTRAL}/${GROUP_PATH}/${spec.artifact}/${version}`;
   const files = [
-    { file: `${baseName}.jar`, entries: spec.binary },
+    {
+      file: `${baseName}.${spec.binaryExtension ?? "jar"}`,
+      entries: spec.binary,
+    },
     { file: `${baseName}-sources.jar`, entries: spec.sources },
     { file: `${baseName}-javadoc.jar`, entries: spec.javadoc },
   ];
@@ -214,7 +276,28 @@ async function validateArtifact(name, version, deadline, directory, gpgHome) {
     deadline,
     gpgHome,
   );
-  validatePom(pom.bytes.toString("utf8"), spec.artifact, version);
+  validatePom(
+    pom.bytes.toString("utf8"),
+    spec.artifact,
+    version,
+    spec.androidModule,
+  );
+
+  if (spec.gradleModule) {
+    const metadata = await validateFile(
+      baseUrl,
+      `${baseName}.module`,
+      spec.checksums,
+      directory,
+      deadline,
+      gpgHome,
+    );
+    validateGradleModule(
+      metadata.bytes.toString("utf8"),
+      spec.artifact,
+      version,
+    );
+  }
 
   for (const item of files) {
     const artifact = await validateFile(

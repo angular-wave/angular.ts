@@ -200,4 +200,3 @@ removes it from `_controls`, and sets the child's parent form back to
   pending validators, and parent form version changes.
 - Changes to submit handling should test `ngSubmit`, `ngClick` submit
   controls, action attributes, and pending `ngModelOptions` commits.
-- Modernization work should follow `modernization-plan.md`.

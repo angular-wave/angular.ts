@@ -1,0 +1,69 @@
+package io.github.angularwave.android.core.ng.http
+
+import android.webkit.CookieManager
+import io.github.angularwave.android.core.logging.logError
+import io.github.angularwave.android.core.ng.util.dispatcherProvider
+import java.io.IOException
+import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Request
+import okhttp3.Response
+
+internal class HttpRepository {
+    private val cookieManager = CookieManager.getInstance()
+
+    data class HttpRequestResult(
+        val response: Response,
+        val redirect: HttpRedirect?,
+    )
+
+    data class HttpRedirect(
+        val location: String,
+        val isCrossOrigin: Boolean,
+    )
+
+    suspend fun fetch(location: String): HttpRequestResult? =
+        withContext(dispatcherProvider.io) {
+            val response = issueRequest(location)
+
+            if (response != null) {
+                // Determine if there was a redirect, based on the final response's request url
+                val responseUrl = response.request.url
+                val isRedirect = location != responseUrl.toString()
+
+                HttpRequestResult(
+                    response = response,
+                    redirect =
+                        if (!isRedirect) {
+                            null
+                        } else {
+                            HttpRedirect(
+                                location = responseUrl.toString(),
+                                isCrossOrigin = location.toHttpUrl().host != responseUrl.host,
+                            )
+                        },
+                )
+            } else {
+                null
+            }
+        }
+
+    private fun issueRequest(location: String): Response? =
+        try {
+            val request = buildRequest(location)
+            AngularNativeHttpClient.instance.newCall(request).execute()
+        } catch (e: IOException) {
+            logError("httpRequestError", e)
+            null
+        }
+
+    private fun buildRequest(location: String): Request {
+        val builder = Request.Builder().url(location)
+
+        cookieManager.getCookie(location)?.let {
+            builder.header("Cookie", it)
+        }
+
+        return builder.build()
+    }
+}

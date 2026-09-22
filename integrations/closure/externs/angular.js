@@ -205,13 +205,6 @@ ng.Angular.prototype.bootstrap = function(element, modules) {};
 ng.Angular.prototype.injector = function(modules) {};
 
 /**
- * Find `ng-app` roots under the provided element and bootstrap them. The first root uses this instance. Additional roots are bootstrapped as sub-applications and stored in {@link subapps}.
- * @param {(!Document|!HTMLElement)} element Root element or document to scan.
- * @return {void}
- */
-ng.Angular.prototype.init = function(element) {};
-
-/**
  * Find a scope by its registered `scopeName`.
  * @param {string} name Scope name to search for.
  * @return {(!ng.Scope|undefined)}
@@ -825,7 +818,7 @@ ng.NgModule.prototype.workflow = function(name, config) {};
 ng.NgModule.prototype.workflowSupervisor = function(name, config) {};
 
 /**
- * Register a module-owned router state tree during module configuration. Child state names are relative to their parent unless they contain a dot. Each route is queued for the composed router runtime, so module router trees compose with `lazyState(...)` and inherited route policies.
+ * Register a module-owned router state tree during module configuration. Child state names are relative to their parent unless they contain a dot. Each route is queued for the composed router runtime, so module router trees compose with `lazyState(...)` and inherited route policies. {@link RouterModuleDeclaration} is the only public registration contract. Pass one declaration or a readonly forest; the route map is inferred from the exact literal. To declare the route map explicitly, parameterize `createModule<TRouteMap>(...)` instead of `router(...)`.
  * @template TDeclaration
  * @param {TDeclaration} declaration Router tree root declaration.
  * @return {!Object}
@@ -1664,13 +1657,6 @@ ng.AngularService.prototype.bootstrap = function(element, modules) {};
  * @return {!ng.InjectorService<?>}
  */
 ng.AngularService.prototype.injector = function(modules) {};
-
-/**
- * Find `ng-app` roots under the provided element and bootstrap them. The first root uses this instance. Additional roots are bootstrapped as sub-applications and stored in {@link subapps}.
- * @param {(!Document|!HTMLElement)} element Root element or document to scan.
- * @return {void}
- */
-ng.AngularService.prototype.init = function(element) {};
 
 /**
  * Find a scope by its registered `scopeName`.
@@ -2889,6 +2875,12 @@ ng.InjectionTokenMap.prototype.$log;
  * @return {!ng.Machine<!Object>}
  */
 ng.InjectionTokenMap.prototype.$machine = function(config) {};
+
+/**
+ * Public InjectionTokenMap.$native member exposed by the AngularTS namespace contract.
+ * @type {!ng.NativeService}
+ */
+ng.InjectionTokenMap.prototype.$native;
 
 /**
  * Public InjectionTokenMap.$parse member exposed by the AngularTS namespace contract.
@@ -5907,6 +5899,1761 @@ ng.GeolocationValue.prototype.speed;
  * @type {number}
  */
 ng.GeolocationValue.prototype.timestamp;
+
+/**
+ * Host object exposed by Android, iOS, or a test adapter.
+ * @record
+ */
+ng.NativeBridgeAdapter = function() {};
+
+/**
+ * Public NativeBridgeAdapter.postMessage member exposed by the AngularTS namespace contract.
+ * @type {(function(string): void|undefined)}
+ */
+ng.NativeBridgeAdapter.prototype.postMessage;
+
+/**
+ * Public NativeBridgeAdapter.receive member exposed by the AngularTS namespace contract.
+ * @type {(function(string): void|undefined)}
+ */
+ng.NativeBridgeAdapter.prototype.receive;
+
+/**
+ * Public AngularTS NativeCallMessage contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TParams
+ * @record
+ */
+ng.NativeCallMessage = function() {};
+
+/**
+ * Public NativeCallMessage.protocol member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeCallMessage.prototype.protocol;
+
+/**
+ * Public NativeCallMessage.id member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCallMessage.prototype.id;
+
+/**
+ * Public NativeCallMessage.target member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCallMessage.prototype.target;
+
+/**
+ * Public NativeCallMessage.method member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCallMessage.prototype.method;
+
+/**
+ * Public NativeCallMessage.params member exposed by the AngularTS namespace contract.
+ * @type {(TParams|undefined)}
+ */
+ng.NativeCallMessage.prototype.params;
+
+/**
+ * Public NativeCallMessage.session member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeCallMessage.prototype.session;
+
+/**
+ * Public NativeCallMessage.scopeId member exposed by the AngularTS namespace contract.
+ * @type {(number|string|undefined)}
+ */
+ng.NativeCallMessage.prototype.scopeId;
+
+/**
+ * Public NativeCallMessage.elementId member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeCallMessage.prototype.elementId;
+
+/**
+ * Options for one request to the native shell.
+ * @record
+ */
+ng.NativeCallOptions = function() {};
+
+/**
+ * Public NativeCallOptions.id member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeCallOptions.prototype.id;
+
+/**
+ * Public NativeCallOptions.scopeId member exposed by the AngularTS namespace contract.
+ * @type {(number|string|undefined)}
+ */
+ng.NativeCallOptions.prototype.scopeId;
+
+/**
+ * Public NativeCallOptions.elementId member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeCallOptions.prototype.elementId;
+
+/**
+ * Public NativeCallOptions.timeout member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.NativeCallOptions.prototype.timeout;
+
+/**
+ * Public NativeCallOptions.signal member exposed by the AngularTS namespace contract.
+ * @type {(!AbortSignal|undefined)}
+ */
+ng.NativeCallOptions.prototype.signal;
+
+/**
+ * Configuration accepted by the optional native runtime module.
+ * @record
+ */
+ng.NativeConfig = function() {};
+
+/**
+ * Explicit bridge adapter. The global Android bridge is used by default.
+ * @type {(!ng.NativeBridgeAdapter|undefined)}
+ */
+ng.NativeConfig.prototype.bridge;
+
+/**
+ * Global bridge property. Defaults to `AngularNative`.
+ * @type {(string|undefined)}
+ */
+ng.NativeConfig.prototype.globalName;
+
+/**
+ * Request timeout in milliseconds. Defaults to 30 seconds.
+ * @type {(number|undefined)}
+ */
+ng.NativeConfig.prototype.timeout;
+
+/**
+ * Session token injected by a native shell.
+ * @type {(string|undefined)}
+ */
+ng.NativeConfig.prototype.session;
+
+/**
+ * Maximum serialized request size. Defaults to 256 KiB.
+ * @type {(number|undefined)}
+ */
+ng.NativeConfig.prototype.maxMessageBytes;
+
+/**
+ * Public AngularTS NativeEventHandler contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(!ng.NativeEventMessage<?>): void}
+ */
+ng.NativeEventHandler;
+
+/**
+ * Public AngularTS NativeEventMessage contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TData
+ * @record
+ */
+ng.NativeEventMessage = function() {};
+
+/**
+ * Public NativeEventMessage.protocol member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.NativeEventMessage.prototype.protocol;
+
+/**
+ * Public NativeEventMessage.target member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeEventMessage.prototype.target;
+
+/**
+ * Public NativeEventMessage.event member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeEventMessage.prototype.event;
+
+/**
+ * Public NativeEventMessage.data member exposed by the AngularTS namespace contract.
+ * @type {(TData|undefined)}
+ */
+ng.NativeEventMessage.prototype.data;
+
+/**
+ * Public AngularTS NativeReplyMessage contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TResult
+ * @record
+ */
+ng.NativeReplyMessage = function() {};
+
+/**
+ * Public NativeReplyMessage.protocol member exposed by the AngularTS namespace contract.
+ * @type {(number|undefined)}
+ */
+ng.NativeReplyMessage.prototype.protocol;
+
+/**
+ * Public NativeReplyMessage.id member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeReplyMessage.prototype.id;
+
+/**
+ * Public NativeReplyMessage.ok member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeReplyMessage.prototype.ok;
+
+/**
+ * Public NativeReplyMessage.result member exposed by the AngularTS namespace contract.
+ * @type {(TResult|undefined)}
+ */
+ng.NativeReplyMessage.prototype.result;
+
+/**
+ * Public NativeReplyMessage.error member exposed by the AngularTS namespace contract.
+ * @type {(!Object|string|undefined)}
+ */
+ng.NativeReplyMessage.prototype.error;
+
+/**
+ * Native bridge service used to call host-platform methods, receive replies, subscribe to native events, and access the active adapter.
+ * @constructor
+ */
+ng.NativeService = function() {};
+
+/**
+ * Public NativeService.available member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeService.prototype.available;
+
+/**
+ * Public NativeService.capabilities member exposed by the AngularTS namespace contract.
+ * @type {!Object<string, !Array<string>>}
+ */
+ng.NativeService.prototype.capabilities;
+
+/**
+ * Public NativeService.protocolVersion member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeService.prototype.protocolVersion;
+
+/**
+ * Public NativeService.call member exposed by the AngularTS namespace contract.
+ * @template Name, Method
+ * @param {Name} target Value supplied for the target parameter.
+ * @param {Method} method Value supplied for the method parameter.
+ * @param {(?|undefined)} params Value supplied for the params parameter.
+ * @param {(!ng.NativeCallOptions|undefined)} options Value supplied for the options parameter.
+ * @return {!Promise<?>}
+ */
+ng.NativeService.prototype.call = function(target, method, params, options) {};
+
+/**
+ * Public NativeService.receive member exposed by the AngularTS namespace contract.
+ * @param {(string|!Object)} message Value supplied for the message parameter.
+ * @return {void}
+ */
+ng.NativeService.prototype.receive = function(message) {};
+
+/**
+ * Public NativeService.on member exposed by the AngularTS namespace contract.
+ * @template Name, Event
+ * @param {Name} target Value supplied for the target parameter.
+ * @param {Event} event Value supplied for the event parameter.
+ * @param {function(!ng.NativeEventMessage<?>): void} handler Value supplied for the handler parameter.
+ * @return {function(): void}
+ */
+ng.NativeService.prototype.on = function(target, event, handler) {};
+
+/**
+ * Public NativeService.supports member exposed by the AngularTS namespace contract.
+ * @param {string} target Value supplied for the target parameter.
+ * @param {(string|undefined)} method Value supplied for the method parameter.
+ * @return {boolean}
+ */
+ng.NativeService.prototype.supports = function(target, method) {};
+
+/**
+ * Public NativeService.dispose member exposed by the AngularTS namespace contract.
+ * @return {void}
+ */
+ng.NativeService.prototype.dispose = function() {};
+
+/**
+ * Public AngularTS NativeCapabilityEventMap contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.NativeCapabilityEventMap = function() {};
+
+/**
+ * Public NativeCapabilityEventMap.navigation member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.navigation;
+
+/**
+ * Public NativeCapabilityEventMap.platform member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.platform;
+
+/**
+ * Public NativeCapabilityEventMap.permissions member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.permissions;
+
+/**
+ * Public NativeCapabilityEventMap.clipboard member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.clipboard;
+
+/**
+ * Public NativeCapabilityEventMap.sharing member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.sharing;
+
+/**
+ * Public NativeCapabilityEventMap.intents member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.intents;
+
+/**
+ * Public NativeCapabilityEventMap.haptics member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.haptics;
+
+/**
+ * Public NativeCapabilityEventMap.connectivity member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.connectivity;
+
+/**
+ * Public NativeCapabilityEventMap.lifecycle member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.lifecycle;
+
+/**
+ * Public NativeCapabilityEventMap.window member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.window;
+
+/**
+ * Public NativeCapabilityEventMap.notifications member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.notifications;
+
+/**
+ * Public NativeCapabilityEventMap.geolocation member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.geolocation;
+
+/**
+ * Public NativeCapabilityEventMap.biometrics member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.biometrics;
+
+/**
+ * Public NativeCapabilityEventMap.camera member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.camera;
+
+/**
+ * Public NativeCapabilityEventMap.files member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.files;
+
+/**
+ * Public NativeCapabilityEventMap.credentials member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.credentials;
+
+/**
+ * Public NativeCapabilityEventMap.media member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityEventMap.prototype.media;
+
+/**
+ * Public AngularTS NativeCapabilityEventName contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template Name
+ * @record
+ */
+ng.NativeCapabilityEventName = function() {};
+
+/**
+ * Public AngularTS NativeCapabilityEventPayload contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template Name, Event
+ * @record
+ */
+ng.NativeCapabilityEventPayload = function() {};
+
+/**
+ * Public AngularTS NativeCapabilityMethodContract contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template Name, Method
+ * @record
+ */
+ng.NativeCapabilityMethodContract = function() {};
+
+/**
+ * Public AngularTS NativeCapabilityMethodMap contract exposed through the global ng namespace for Closure-annotated applications.
+ * @record
+ */
+ng.NativeCapabilityMethodMap = function() {};
+
+/**
+ * Public NativeCapabilityMethodMap.navigation member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.navigation;
+
+/**
+ * Public NativeCapabilityMethodMap.platform member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.platform;
+
+/**
+ * Public NativeCapabilityMethodMap.permissions member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.permissions;
+
+/**
+ * Public NativeCapabilityMethodMap.clipboard member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.clipboard;
+
+/**
+ * Public NativeCapabilityMethodMap.sharing member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.sharing;
+
+/**
+ * Public NativeCapabilityMethodMap.intents member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.intents;
+
+/**
+ * Public NativeCapabilityMethodMap.haptics member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.haptics;
+
+/**
+ * Public NativeCapabilityMethodMap.connectivity member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.connectivity;
+
+/**
+ * Public NativeCapabilityMethodMap.lifecycle member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.lifecycle;
+
+/**
+ * Public NativeCapabilityMethodMap.window member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.window;
+
+/**
+ * Public NativeCapabilityMethodMap.notifications member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.notifications;
+
+/**
+ * Public NativeCapabilityMethodMap.geolocation member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.geolocation;
+
+/**
+ * Public NativeCapabilityMethodMap.biometrics member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.biometrics;
+
+/**
+ * Public NativeCapabilityMethodMap.camera member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.camera;
+
+/**
+ * Public NativeCapabilityMethodMap.files member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.files;
+
+/**
+ * Public NativeCapabilityMethodMap.credentials member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.credentials;
+
+/**
+ * Public NativeCapabilityMethodMap.media member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.NativeCapabilityMethodMap.prototype.media;
+
+/**
+ * Public AngularTS NativeCapabilityMethodName contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template Name
+ * @record
+ */
+ng.NativeCapabilityMethodName = function() {};
+
+/**
+ * Public AngularTS NativeCapabilityName contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {string}
+ */
+ng.NativeCapabilityName;
+
+/**
+ * Public AngularTS NativeCapabilityParameters contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template Name, Method
+ * @record
+ */
+ng.NativeCapabilityParameters = function() {};
+
+/**
+ * Public AngularTS NativeCapabilityResult contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template Name, Method
+ * @record
+ */
+ng.NativeCapabilityResult = function() {};
+
+/**
+ * Availability and enrollment state for native biometric authentication.
+ * @record
+ */
+ng.NativeBiometricStatus = function() {};
+
+/**
+ * Public NativeBiometricStatus.available member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeBiometricStatus.prototype.available;
+
+/**
+ * Public NativeBiometricStatus.enrolled member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeBiometricStatus.prototype.enrolled;
+
+/**
+ * Public NativeBiometricStatus.permission member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeBiometricStatus.prototype.permission;
+
+/**
+ * Image captured by the native camera.
+ * @record
+ */
+ng.NativeCameraCaptureResult = function() {};
+
+/**
+ * Public NativeCameraCaptureResult.uri member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCameraCaptureResult.prototype.uri;
+
+/**
+ * Public NativeCameraCaptureResult.name member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCameraCaptureResult.prototype.name;
+
+/**
+ * Public NativeCameraCaptureResult.size member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeCameraCaptureResult.prototype.size;
+
+/**
+ * Public NativeCameraCaptureResult.type member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCameraCaptureResult.prototype.type;
+
+/**
+ * Availability and permission state for the native camera.
+ * @record
+ */
+ng.NativeCameraStatus = function() {};
+
+/**
+ * Public NativeCameraStatus.available member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeCameraStatus.prototype.available;
+
+/**
+ * Public NativeCameraStatus.granted member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeCameraStatus.prototype.granted;
+
+/**
+ * Public NativeCameraStatus.permission member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeCameraStatus.prototype.permission;
+
+/**
+ * Text currently available from the native clipboard.
+ * @record
+ */
+ng.NativeClipboardContent = function() {};
+
+/**
+ * Public NativeClipboardContent.text member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeClipboardContent.prototype.text;
+
+/**
+ * Text and optional label written to the native clipboard.
+ * @record
+ */
+ng.NativeClipboardWriteParameters = function() {};
+
+/**
+ * Public NativeClipboardWriteParameters.text member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeClipboardWriteParameters.prototype.text;
+
+/**
+ * Public NativeClipboardWriteParameters.label member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeClipboardWriteParameters.prototype.label;
+
+/**
+ * Result of writing text to the native clipboard.
+ * @record
+ */
+ng.NativeClipboardWriteResult = function() {};
+
+/**
+ * Public NativeClipboardWriteResult.written member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeClipboardWriteResult.prototype.written;
+
+/**
+ * Current native network reachability and cost state.
+ * @record
+ */
+ng.NativeConnectivityStatus = function() {};
+
+/**
+ * Public NativeConnectivityStatus.connected member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeConnectivityStatus.prototype.connected;
+
+/**
+ * Public NativeConnectivityStatus.validated member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeConnectivityStatus.prototype.validated;
+
+/**
+ * Public NativeConnectivityStatus.metered member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeConnectivityStatus.prototype.metered;
+
+/**
+ * Result of clearing native credential state.
+ * @record
+ */
+ng.NativeCredentialClearResult = function() {};
+
+/**
+ * Public NativeCredentialClearResult.cleared member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeCredentialClearResult.prototype.cleared;
+
+/**
+ * Passkey creation request passed to the native credential manager.
+ * @record
+ */
+ng.NativeCredentialCreatePasskeyParameters = function() {};
+
+/**
+ * Public NativeCredentialCreatePasskeyParameters.requestJson member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCredentialCreatePasskeyParameters.prototype.requestJson;
+
+/**
+ * Result of creating a passkey through the native credential manager.
+ * @record
+ */
+ng.NativeCredentialCreatePasskeyResult = function() {};
+
+/**
+ * Public NativeCredentialCreatePasskeyResult.created member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeCredentialCreatePasskeyResult.prototype.created;
+
+/**
+ * Public NativeCredentialCreatePasskeyResult.type member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCredentialCreatePasskeyResult.prototype.type;
+
+/**
+ * Password saved through the native credential manager.
+ * @record
+ */
+ng.NativeCredentialCreatePasswordParameters = function() {};
+
+/**
+ * Public NativeCredentialCreatePasswordParameters.id member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCredentialCreatePasswordParameters.prototype.id;
+
+/**
+ * Public NativeCredentialCreatePasswordParameters.password member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCredentialCreatePasswordParameters.prototype.password;
+
+/**
+ * Result of saving a password through the native credential manager.
+ * @record
+ */
+ng.NativeCredentialCreatePasswordResult = function() {};
+
+/**
+ * Public NativeCredentialCreatePasswordResult.created member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeCredentialCreatePasswordResult.prototype.created;
+
+/**
+ * Public NativeCredentialCreatePasswordResult.type member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCredentialCreatePasswordResult.prototype.type;
+
+/**
+ * Credential kinds requested from the native credential manager.
+ * @record
+ */
+ng.NativeCredentialGetParameters = function() {};
+
+/**
+ * Public NativeCredentialGetParameters.passwords member exposed by the AngularTS namespace contract.
+ * @type {(boolean|undefined)}
+ */
+ng.NativeCredentialGetParameters.prototype.passwords;
+
+/**
+ * Public NativeCredentialGetParameters.passkeyRequestJson member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeCredentialGetParameters.prototype.passkeyRequestJson;
+
+/**
+ * Credential returned by the native credential manager.
+ * @record
+ */
+ng.NativeCredentialResult = function() {};
+
+/**
+ * Public NativeCredentialResult.type member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeCredentialResult.prototype.type;
+
+/**
+ * Native password and passkey provider support.
+ * @record
+ */
+ng.NativeCredentialStatus = function() {};
+
+/**
+ * Public NativeCredentialStatus.available member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeCredentialStatus.prototype.available;
+
+/**
+ * Public NativeCredentialStatus.passwords member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeCredentialStatus.prototype.passwords;
+
+/**
+ * Public NativeCredentialStatus.passkeys member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeCredentialStatus.prototype.passkeys;
+
+/**
+ * File returned by the native file picker.
+ * @record
+ */
+ng.NativeFileDescriptor = function() {};
+
+/**
+ * Public NativeFileDescriptor.uri member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeFileDescriptor.prototype.uri;
+
+/**
+ * Public NativeFileDescriptor.name member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeFileDescriptor.prototype.name;
+
+/**
+ * Public NativeFileDescriptor.size member exposed by the AngularTS namespace contract.
+ * @type {(null|number)}
+ */
+ng.NativeFileDescriptor.prototype.size;
+
+/**
+ * Public NativeFileDescriptor.type member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeFileDescriptor.prototype.type;
+
+/**
+ * Public NativeFileDescriptor.persisted member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeFileDescriptor.prototype.persisted;
+
+/**
+ * File types and selection mode passed to the native file picker.
+ * @record
+ */
+ng.NativeFileOpenParameters = function() {};
+
+/**
+ * Public NativeFileOpenParameters.accept member exposed by the AngularTS namespace contract.
+ * @type {(!Array<string>|undefined)}
+ */
+ng.NativeFileOpenParameters.prototype.accept;
+
+/**
+ * Public NativeFileOpenParameters.multiple member exposed by the AngularTS namespace contract.
+ * @type {(boolean|undefined)}
+ */
+ng.NativeFileOpenParameters.prototype.multiple;
+
+/**
+ * Files selected through the native file picker.
+ * @record
+ */
+ng.NativeFileOpenResult = function() {};
+
+/**
+ * Public NativeFileOpenResult.files member exposed by the AngularTS namespace contract.
+ * @type {!Array<!ng.NativeFileDescriptor>}
+ */
+ng.NativeFileOpenResult.prototype.files;
+
+/**
+ * Native file selection and upload support.
+ * @record
+ */
+ng.NativeFileStatus = function() {};
+
+/**
+ * Public NativeFileStatus.available member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeFileStatus.prototype.available;
+
+/**
+ * Public NativeFileStatus.contentUris member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeFileStatus.prototype.contentUris;
+
+/**
+ * Public NativeFileStatus.upload member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeFileStatus.prototype.upload;
+
+/**
+ * Multipart upload sent by the native shell.
+ * @record
+ */
+ng.NativeFileUploadParameters = function() {};
+
+/**
+ * Public NativeFileUploadParameters.uri member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeFileUploadParameters.prototype.uri;
+
+/**
+ * Public NativeFileUploadParameters.url member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeFileUploadParameters.prototype.url;
+
+/**
+ * Public NativeFileUploadParameters.uploadId member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeFileUploadParameters.prototype.uploadId;
+
+/**
+ * Public NativeFileUploadParameters.field member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeFileUploadParameters.prototype.field;
+
+/**
+ * Public NativeFileUploadParameters.name member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeFileUploadParameters.prototype.name;
+
+/**
+ * Public NativeFileUploadParameters.type member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeFileUploadParameters.prototype.type;
+
+/**
+ * Public NativeFileUploadParameters.fields member exposed by the AngularTS namespace contract.
+ * @type {(!Object<string, string>|undefined)}
+ */
+ng.NativeFileUploadParameters.prototype.fields;
+
+/**
+ * Public NativeFileUploadParameters.headers member exposed by the AngularTS namespace contract.
+ * @type {(!Object<string, string>|undefined)}
+ */
+ng.NativeFileUploadParameters.prototype.headers;
+
+/**
+ * Progress emitted while the native shell uploads a file.
+ * @record
+ */
+ng.NativeFileUploadProgress = function() {};
+
+/**
+ * Public NativeFileUploadProgress.uploadId member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeFileUploadProgress.prototype.uploadId;
+
+/**
+ * Public NativeFileUploadProgress.sent member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeFileUploadProgress.prototype.sent;
+
+/**
+ * Public NativeFileUploadProgress.total member exposed by the AngularTS namespace contract.
+ * @type {(null|number)}
+ */
+ng.NativeFileUploadProgress.prototype.total;
+
+/**
+ * Successful native multipart upload response.
+ * @record
+ */
+ng.NativeFileUploadResult = function() {};
+
+/**
+ * Public NativeFileUploadResult.status member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeFileUploadResult.prototype.status;
+
+/**
+ * Public NativeFileUploadResult.body member exposed by the AngularTS namespace contract.
+ * @type {(!Array<?>|!ng.NativeJsonObject|boolean|null|number|string)}
+ */
+ng.NativeFileUploadResult.prototype.body;
+
+/**
+ * Public NativeFileUploadResult.name member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeFileUploadResult.prototype.name;
+
+/**
+ * Public NativeFileUploadResult.type member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeFileUploadResult.prototype.type;
+
+/**
+ * Serializable current device location.
+ * @record
+ */
+ng.NativeGeolocationPosition = function() {};
+
+/**
+ * Public NativeGeolocationPosition.latitude member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeGeolocationPosition.prototype.latitude;
+
+/**
+ * Public NativeGeolocationPosition.longitude member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeGeolocationPosition.prototype.longitude;
+
+/**
+ * Public NativeGeolocationPosition.accuracy member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeGeolocationPosition.prototype.accuracy;
+
+/**
+ * Public NativeGeolocationPosition.altitude member exposed by the AngularTS namespace contract.
+ * @type {(null|number)}
+ */
+ng.NativeGeolocationPosition.prototype.altitude;
+
+/**
+ * Public NativeGeolocationPosition.altitudeAccuracy member exposed by the AngularTS namespace contract.
+ * @type {(null|number)}
+ */
+ng.NativeGeolocationPosition.prototype.altitudeAccuracy;
+
+/**
+ * Public NativeGeolocationPosition.heading member exposed by the AngularTS namespace contract.
+ * @type {(null|number)}
+ */
+ng.NativeGeolocationPosition.prototype.heading;
+
+/**
+ * Public NativeGeolocationPosition.speed member exposed by the AngularTS namespace contract.
+ * @type {(null|number)}
+ */
+ng.NativeGeolocationPosition.prototype.speed;
+
+/**
+ * Public NativeGeolocationPosition.timestamp member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeGeolocationPosition.prototype.timestamp;
+
+/**
+ * Current availability and granted accuracy for device location.
+ * @record
+ */
+ng.NativeGeolocationStatus = function() {};
+
+/**
+ * Public NativeGeolocationStatus.available member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeGeolocationStatus.prototype.available;
+
+/**
+ * Public NativeGeolocationStatus.granted member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeGeolocationStatus.prototype.granted;
+
+/**
+ * Public NativeGeolocationStatus.accuracy member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeGeolocationStatus.prototype.accuracy;
+
+/**
+ * Public NativeGeolocationStatus.permission member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeGeolocationStatus.prototype.permission;
+
+/**
+ * Parameters for native haptic feedback.
+ * @record
+ */
+ng.NativeHapticParameters = function() {};
+
+/**
+ * Public NativeHapticParameters.style member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeHapticParameters.prototype.style;
+
+/**
+ * Result of a native haptic feedback request.
+ * @record
+ */
+ng.NativeHapticResult = function() {};
+
+/**
+ * Public NativeHapticResult.performed member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeHapticResult.prototype.performed;
+
+/**
+ * URL passed to a native application through an intent.
+ * @record
+ */
+ng.NativeIntentParameters = function() {};
+
+/**
+ * Public NativeIntentParameters.url member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeIntentParameters.prototype.url;
+
+/**
+ * JSON-compatible object accepted across a native bridge.
+ * @record
+ */
+ng.NativeJsonObject = function() {};
+
+/**
+ * JSON scalar accepted across a native bridge.
+ * @typedef {(boolean|null|number|string)}
+ */
+ng.NativeJsonPrimitive;
+
+/**
+ * JSON-compatible value accepted across a native bridge.
+ * @typedef {(!Array<?>|!ng.NativeJsonObject|boolean|null|number|string)}
+ */
+ng.NativeJsonValue;
+
+/**
+ * Current lifecycle state of the native destination.
+ * @record
+ */
+ng.NativeLifecycleStatus = function() {};
+
+/**
+ * Public NativeLifecycleStatus.state member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeLifecycleStatus.prototype.state;
+
+/**
+ * Public NativeLifecycleStatus.active member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeLifecycleStatus.prototype.active;
+
+/**
+ * Media source loaded by the native player.
+ * @record
+ */
+ng.NativeMediaLoadParameters = function() {};
+
+/**
+ * Public NativeMediaLoadParameters.url member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeMediaLoadParameters.prototype.url;
+
+/**
+ * Public NativeMediaLoadParameters.autoplay member exposed by the AngularTS namespace contract.
+ * @type {(boolean|undefined)}
+ */
+ng.NativeMediaLoadParameters.prototype.autoplay;
+
+/**
+ * Position, in milliseconds, passed to the native media player.
+ * @record
+ */
+ng.NativeMediaSeekParameters = function() {};
+
+/**
+ * Public NativeMediaSeekParameters.position member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeMediaSeekParameters.prototype.position;
+
+/**
+ * Current state of the native media player.
+ * @record
+ */
+ng.NativeMediaStatus = function() {};
+
+/**
+ * Public NativeMediaStatus.available member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeMediaStatus.prototype.available;
+
+/**
+ * Public NativeMediaStatus.loaded member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeMediaStatus.prototype.loaded;
+
+/**
+ * Public NativeMediaStatus.playing member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeMediaStatus.prototype.playing;
+
+/**
+ * Public NativeMediaStatus.position member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeMediaStatus.prototype.position;
+
+/**
+ * Public NativeMediaStatus.duration member exposed by the AngularTS namespace contract.
+ * @type {(null|number)}
+ */
+ng.NativeMediaStatus.prototype.duration;
+
+/**
+ * Public NativeMediaStatus.state member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeMediaStatus.prototype.state;
+
+/**
+ * Navigation committed directly by Android rather than requested through the bridge.
+ * @record
+ */
+ng.NativeNavigationAndroidChange = function() {};
+
+/**
+ * Public NativeNavigationAndroidChange.method member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationAndroidChange.prototype.method;
+
+/**
+ * Public NativeNavigationAndroidChange.phase member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationAndroidChange.prototype.phase;
+
+/**
+ * Public NativeNavigationAndroidChange.source member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationAndroidChange.prototype.source;
+
+/**
+ * Public NativeNavigationAndroidChange.from member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNavigationAndroidChange.prototype.from;
+
+/**
+ * Public NativeNavigationAndroidChange.url member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNavigationAndroidChange.prototype.url;
+
+/**
+ * Completion or cancellation of navigation requested through the bridge.
+ * @record
+ */
+ng.NativeNavigationBridgeChange = function() {};
+
+/**
+ * Public NativeNavigationBridgeChange.transaction member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeNavigationBridgeChange.prototype.transaction;
+
+/**
+ * Public NativeNavigationBridgeChange.method member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationBridgeChange.prototype.method;
+
+/**
+ * Public NativeNavigationBridgeChange.phase member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationBridgeChange.prototype.phase;
+
+/**
+ * Public NativeNavigationBridgeChange.source member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationBridgeChange.prototype.source;
+
+/**
+ * Public NativeNavigationBridgeChange.from member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNavigationBridgeChange.prototype.from;
+
+/**
+ * Public NativeNavigationBridgeChange.url member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNavigationBridgeChange.prototype.url;
+
+/**
+ * Committed or cancelled native navigation event.
+ * @record
+ */
+ng.NativeNavigationChange = function() {};
+
+/**
+ * Public NativeNavigationChange.method member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationChange.prototype.method;
+
+/**
+ * Public NativeNavigationChange.phase member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationChange.prototype.phase;
+
+/**
+ * Public NativeNavigationChange.source member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationChange.prototype.source;
+
+/**
+ * Public NativeNavigationChange.from member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNavigationChange.prototype.from;
+
+/**
+ * Public NativeNavigationChange.url member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNavigationChange.prototype.url;
+
+/**
+ * Result of requesting native back navigation.
+ * @record
+ */
+ng.NativeNavigationPopResult = function() {};
+
+/**
+ * Public NativeNavigationPopResult.routed member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeNavigationPopResult.prototype.routed;
+
+/**
+ * Public NativeNavigationPopResult.method member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationPopResult.prototype.method;
+
+/**
+ * URL and optional transition passed to a native route operation.
+ * @record
+ */
+ng.NativeNavigationRouteParameters = function() {};
+
+/**
+ * Public NativeNavigationRouteParameters.url member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationRouteParameters.prototype.url;
+
+/**
+ * Public NativeNavigationRouteParameters.transition member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeNavigationRouteParameters.prototype.transition;
+
+/**
+ * Accepted push, replace, modal, or deep-link operation.
+ * @record
+ */
+ng.NativeNavigationRouteResult = function() {};
+
+/**
+ * Public NativeNavigationRouteResult.routed member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeNavigationRouteResult.prototype.routed;
+
+/**
+ * Public NativeNavigationRouteResult.method member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationRouteResult.prototype.method;
+
+/**
+ * Public NativeNavigationRouteResult.phase member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationRouteResult.prototype.phase;
+
+/**
+ * Public NativeNavigationRouteResult.transaction member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeNavigationRouteResult.prototype.transaction;
+
+/**
+ * Public NativeNavigationRouteResult.url member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationRouteResult.prototype.url;
+
+/**
+ * Public NativeNavigationRouteResult.action member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationRouteResult.prototype.action;
+
+/**
+ * Public NativeNavigationRouteResult.transition member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeNavigationRouteResult.prototype.transition;
+
+/**
+ * Current native navigation stack state.
+ * @record
+ */
+ng.NativeNavigationStatus = function() {};
+
+/**
+ * Public NativeNavigationStatus.location member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNavigationStatus.prototype.location;
+
+/**
+ * Public NativeNavigationStatus.previousLocation member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNavigationStatus.prototype.previousLocation;
+
+/**
+ * Public NativeNavigationStatus.canPop member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeNavigationStatus.prototype.canPop;
+
+/**
+ * Public NativeNavigationStatus.modal member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeNavigationStatus.prototype.modal;
+
+/**
+ * Named transition applied by native navigation when motion is enabled.
+ * @typedef {string}
+ */
+ng.NativeNavigationTransition;
+
+/**
+ * Current availability and permission state for native notifications.
+ * @record
+ */
+ng.NativeNotificationStatus = function() {};
+
+/**
+ * Public NativeNotificationStatus.available member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeNotificationStatus.prototype.available;
+
+/**
+ * Public NativeNotificationStatus.granted member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeNotificationStatus.prototype.granted;
+
+/**
+ * Public NativeNotificationStatus.permission member exposed by the AngularTS namespace contract.
+ * @type {(null|string)}
+ */
+ng.NativeNotificationStatus.prototype.permission;
+
+/**
+ * Result of opening native UI or another application.
+ * @record
+ */
+ng.NativeOpenResult = function() {};
+
+/**
+ * Public NativeOpenResult.opened member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeOpenResult.prototype.opened;
+
+/**
+ * Parameters for permission status and request calls.
+ * @record
+ */
+ng.NativePermissionParameters = function() {};
+
+/**
+ * Public NativePermissionParameters.permission member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativePermissionParameters.prototype.permission;
+
+/**
+ * Current state of one Android runtime permission.
+ * @record
+ */
+ng.NativePermissionStatus = function() {};
+
+/**
+ * Public NativePermissionStatus.permission member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativePermissionStatus.prototype.permission;
+
+/**
+ * Public NativePermissionStatus.granted member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativePermissionStatus.prototype.granted;
+
+/**
+ * Public NativePermissionStatus.canRequest member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativePermissionStatus.prototype.canRequest;
+
+/**
+ * Runtime and application metadata reported by a native shell.
+ * @record
+ */
+ng.NativePlatformStatus = function() {};
+
+/**
+ * Public NativePlatformStatus.platform member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativePlatformStatus.prototype.platform;
+
+/**
+ * Public NativePlatformStatus.sdk member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativePlatformStatus.prototype.sdk;
+
+/**
+ * Public NativePlatformStatus.package member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativePlatformStatus.prototype.package;
+
+/**
+ * Public NativePlatformStatus.darkMode member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativePlatformStatus.prototype.darkMode;
+
+/**
+ * Content passed to the native system share sheet.
+ * @record
+ */
+ng.NativeShareParameters = function() {};
+
+/**
+ * Public NativeShareParameters.text member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeShareParameters.prototype.text;
+
+/**
+ * Public NativeShareParameters.type member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeShareParameters.prototype.type;
+
+/**
+ * Public NativeShareParameters.title member exposed by the AngularTS namespace contract.
+ * @type {(string|undefined)}
+ */
+ng.NativeShareParameters.prototype.title;
+
+/**
+ * Bounds, in density-independent pixels, of a native display feature.
+ * @record
+ */
+ng.NativeWindowBounds = function() {};
+
+/**
+ * Public NativeWindowBounds.left member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowBounds.prototype.left;
+
+/**
+ * Public NativeWindowBounds.top member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowBounds.prototype.top;
+
+/**
+ * Public NativeWindowBounds.right member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowBounds.prototype.right;
+
+/**
+ * Public NativeWindowBounds.bottom member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowBounds.prototype.bottom;
+
+/**
+ * Fold or hinge reported by a foldable native display.
+ * @record
+ */
+ng.NativeWindowDisplayFeature = function() {};
+
+/**
+ * Public NativeWindowDisplayFeature.type member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeWindowDisplayFeature.prototype.type;
+
+/**
+ * Public NativeWindowDisplayFeature.state member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeWindowDisplayFeature.prototype.state;
+
+/**
+ * Public NativeWindowDisplayFeature.orientation member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeWindowDisplayFeature.prototype.orientation;
+
+/**
+ * Public NativeWindowDisplayFeature.separating member exposed by the AngularTS namespace contract.
+ * @type {boolean}
+ */
+ng.NativeWindowDisplayFeature.prototype.separating;
+
+/**
+ * Public NativeWindowDisplayFeature.bounds member exposed by the AngularTS namespace contract.
+ * @type {!ng.NativeWindowBounds}
+ */
+ng.NativeWindowDisplayFeature.prototype.bounds;
+
+/**
+ * Insets, in density-independent pixels, that native content should avoid.
+ * @record
+ */
+ng.NativeWindowInsets = function() {};
+
+/**
+ * Public NativeWindowInsets.left member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowInsets.prototype.left;
+
+/**
+ * Public NativeWindowInsets.top member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowInsets.prototype.top;
+
+/**
+ * Public NativeWindowInsets.right member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowInsets.prototype.right;
+
+/**
+ * Public NativeWindowInsets.bottom member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowInsets.prototype.bottom;
+
+/**
+ * Current native window metrics, adaptive classes, safe area, and display features.
+ * @record
+ */
+ng.NativeWindowStatus = function() {};
+
+/**
+ * Public NativeWindowStatus.width member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowStatus.prototype.width;
+
+/**
+ * Public NativeWindowStatus.height member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.NativeWindowStatus.prototype.height;
+
+/**
+ * Public NativeWindowStatus.widthClass member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeWindowStatus.prototype.widthClass;
+
+/**
+ * Public NativeWindowStatus.heightClass member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeWindowStatus.prototype.heightClass;
+
+/**
+ * Public NativeWindowStatus.orientation member exposed by the AngularTS namespace contract.
+ * @type {string}
+ */
+ng.NativeWindowStatus.prototype.orientation;
+
+/**
+ * Public NativeWindowStatus.safeArea member exposed by the AngularTS namespace contract.
+ * @type {!ng.NativeWindowInsets}
+ */
+ng.NativeWindowStatus.prototype.safeArea;
+
+/**
+ * Public NativeWindowStatus.displayFeatures member exposed by the AngularTS namespace contract.
+ * @type {!Array<!ng.NativeWindowDisplayFeature>}
+ */
+ng.NativeWindowStatus.prototype.displayFeatures;
 
 /**
  * Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage

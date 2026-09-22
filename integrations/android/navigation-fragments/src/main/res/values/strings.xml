@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="angular_native_error">Error: %1$s</string>
+    <string name="angular_native_required">Required</string>
+    <string name="angular_native_validation_pending">Validation pending</string>
+</resources>

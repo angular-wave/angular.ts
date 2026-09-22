@@ -2392,6 +2392,186 @@ mod host {
     pub struct HttpService;
 
     #[derive(Debug, Clone, Copy)]
+    pub struct NativeBridgeAdapter;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCallMessage;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCallOptions;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeBiometricStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCameraCaptureResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCameraStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeClipboardContent;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeClipboardWriteParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeClipboardWriteResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeConfig;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeConnectivityStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCredentialClearResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCredentialCreatePasskeyParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCredentialCreatePasskeyResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCredentialCreatePasswordParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCredentialCreatePasswordResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCredentialGetParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCredentialResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeCredentialStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeEventHandler;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeEventMessage;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeFileDescriptor;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeFileOpenParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeFileOpenResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeFileStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeFileUploadParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeFileUploadProgress;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeFileUploadResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeGeolocationPosition;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeGeolocationStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeHapticParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeHapticResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeIntentParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeJsonObject;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeJsonPrimitive;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeJsonValue;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeLifecycleStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeMediaLoadParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeMediaSeekParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeMediaStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNavigationAndroidChange;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNavigationBridgeChange;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNavigationChange;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNavigationPopResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNavigationRouteParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNavigationRouteResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNavigationStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNavigationTransition;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeNotificationStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeOpenResult;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativePermissionParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativePermissionStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativePlatformStatus;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeShareParameters;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeReplyMessage;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeService;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeWindowBounds;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeWindowDisplayFeature;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeWindowInsets;
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct NativeWindowStatus;
+
+    #[derive(Debug, Clone, Copy)]
     pub struct LogService;
 
     #[derive(Debug, Clone, Copy)]
@@ -2528,6 +2708,11 @@ mod host {
     impl Service for HttpService {
         const TOKEN_NAME: &'static str = "$http";
         const EXPORT_NAME: &'static str = "__ng_service_HttpService";
+    }
+
+    impl Service for NativeService {
+        const TOKEN_NAME: &'static str = "$native";
+        const EXPORT_NAME: &'static str = "__ng_service_NativeService";
     }
 
     impl Service for LogService {
@@ -2681,6 +2866,271 @@ mod browser {
             data: &JsValue,
             config: &JsValue,
         ) -> Promise;
+
+        /// Host object exposed by a native application shell.
+        #[wasm_bindgen(typescript_type = "ng.NativeBridgeAdapter")]
+        pub type NativeBridgeAdapter;
+
+        /// Request sent to a native application shell.
+        #[wasm_bindgen(typescript_type = "ng.NativeCallMessage")]
+        pub type NativeCallMessage;
+
+        /// Options for one native request.
+        #[wasm_bindgen(typescript_type = "ng.NativeCallOptions")]
+        pub type NativeCallOptions;
+
+        /// Availability and enrollment state for native biometric authentication.
+        #[wasm_bindgen(typescript_type = "ng.NativeBiometricStatus")]
+        pub type NativeBiometricStatus;
+
+        /// Image captured by the native camera.
+        #[wasm_bindgen(typescript_type = "ng.NativeCameraCaptureResult")]
+        pub type NativeCameraCaptureResult;
+
+        /// Availability and permission state for the native camera.
+        #[wasm_bindgen(typescript_type = "ng.NativeCameraStatus")]
+        pub type NativeCameraStatus;
+
+        /// Text currently available from the native clipboard.
+        #[wasm_bindgen(typescript_type = "ng.NativeClipboardContent")]
+        pub type NativeClipboardContent;
+
+        /// Text and optional label written to the native clipboard.
+        #[wasm_bindgen(typescript_type = "ng.NativeClipboardWriteParameters")]
+        pub type NativeClipboardWriteParameters;
+
+        /// Result of writing text to the native clipboard.
+        #[wasm_bindgen(typescript_type = "ng.NativeClipboardWriteResult")]
+        pub type NativeClipboardWriteResult;
+
+        /// Optional native runtime configuration.
+        #[wasm_bindgen(typescript_type = "ng.NativeConfig")]
+        pub type NativeConfig;
+
+        /// Current native network reachability and cost state.
+        #[wasm_bindgen(typescript_type = "ng.NativeConnectivityStatus")]
+        pub type NativeConnectivityStatus;
+
+        /// Result of clearing native credential state.
+        #[wasm_bindgen(typescript_type = "ng.NativeCredentialClearResult")]
+        pub type NativeCredentialClearResult;
+
+        /// Passkey creation request passed to the native credential manager.
+        #[wasm_bindgen(typescript_type = "ng.NativeCredentialCreatePasskeyParameters")]
+        pub type NativeCredentialCreatePasskeyParameters;
+
+        /// Result of creating a passkey through the native credential manager.
+        #[wasm_bindgen(typescript_type = "ng.NativeCredentialCreatePasskeyResult")]
+        pub type NativeCredentialCreatePasskeyResult;
+
+        /// Password saved through the native credential manager.
+        #[wasm_bindgen(typescript_type = "ng.NativeCredentialCreatePasswordParameters")]
+        pub type NativeCredentialCreatePasswordParameters;
+
+        /// Result of saving a password through the native credential manager.
+        #[wasm_bindgen(typescript_type = "ng.NativeCredentialCreatePasswordResult")]
+        pub type NativeCredentialCreatePasswordResult;
+
+        /// Credential kinds requested from the native credential manager.
+        #[wasm_bindgen(typescript_type = "ng.NativeCredentialGetParameters")]
+        pub type NativeCredentialGetParameters;
+
+        /// Credential returned by the native credential manager.
+        #[wasm_bindgen(typescript_type = "ng.NativeCredentialResult")]
+        pub type NativeCredentialResult;
+
+        /// Native password and passkey provider support.
+        #[wasm_bindgen(typescript_type = "ng.NativeCredentialStatus")]
+        pub type NativeCredentialStatus;
+
+        /// Event pushed by a native application shell.
+        #[wasm_bindgen(typescript_type = "ng.NativeEventMessage")]
+        pub type NativeEventMessage;
+
+        /// File returned by the native file picker.
+        #[wasm_bindgen(typescript_type = "ng.NativeFileDescriptor")]
+        pub type NativeFileDescriptor;
+
+        /// File types and selection mode passed to the native file picker.
+        #[wasm_bindgen(typescript_type = "ng.NativeFileOpenParameters")]
+        pub type NativeFileOpenParameters;
+
+        /// Files selected through the native file picker.
+        #[wasm_bindgen(typescript_type = "ng.NativeFileOpenResult")]
+        pub type NativeFileOpenResult;
+
+        /// Native file selection and upload support.
+        #[wasm_bindgen(typescript_type = "ng.NativeFileStatus")]
+        pub type NativeFileStatus;
+
+        /// Multipart upload sent by the native shell.
+        #[wasm_bindgen(typescript_type = "ng.NativeFileUploadParameters")]
+        pub type NativeFileUploadParameters;
+
+        /// Progress emitted while the native shell uploads a file.
+        #[wasm_bindgen(typescript_type = "ng.NativeFileUploadProgress")]
+        pub type NativeFileUploadProgress;
+
+        /// Successful native multipart upload response.
+        #[wasm_bindgen(typescript_type = "ng.NativeFileUploadResult")]
+        pub type NativeFileUploadResult;
+
+        /// Current native geolocation coordinates.
+        #[wasm_bindgen(typescript_type = "ng.NativeGeolocationPosition")]
+        pub type NativeGeolocationPosition;
+
+        /// Current native geolocation availability and accuracy.
+        #[wasm_bindgen(typescript_type = "ng.NativeGeolocationStatus")]
+        pub type NativeGeolocationStatus;
+
+        /// Parameters for native haptic feedback.
+        #[wasm_bindgen(typescript_type = "ng.NativeHapticParameters")]
+        pub type NativeHapticParameters;
+
+        /// Result of a native haptic feedback request.
+        #[wasm_bindgen(typescript_type = "ng.NativeHapticResult")]
+        pub type NativeHapticResult;
+
+        /// URL passed to a native application through an intent.
+        #[wasm_bindgen(typescript_type = "ng.NativeIntentParameters")]
+        pub type NativeIntentParameters;
+
+        /// JSON-compatible object accepted across a native bridge.
+        #[wasm_bindgen(typescript_type = "ng.NativeJsonObject")]
+        pub type NativeJsonObject;
+
+        /// JSON scalar accepted across a native bridge.
+        #[wasm_bindgen(typescript_type = "ng.NativeJsonPrimitive")]
+        pub type NativeJsonPrimitive;
+
+        /// JSON-compatible value accepted across a native bridge.
+        #[wasm_bindgen(typescript_type = "ng.NativeJsonValue")]
+        pub type NativeJsonValue;
+
+        /// Current lifecycle state of the native destination.
+        #[wasm_bindgen(typescript_type = "ng.NativeLifecycleStatus")]
+        pub type NativeLifecycleStatus;
+
+        /// Media source loaded by the native player.
+        #[wasm_bindgen(typescript_type = "ng.NativeMediaLoadParameters")]
+        pub type NativeMediaLoadParameters;
+
+        /// Position, in milliseconds, passed to the native media player.
+        #[wasm_bindgen(typescript_type = "ng.NativeMediaSeekParameters")]
+        pub type NativeMediaSeekParameters;
+
+        /// Current state of the native media player.
+        #[wasm_bindgen(typescript_type = "ng.NativeMediaStatus")]
+        pub type NativeMediaStatus;
+
+        /// Navigation committed directly by Android rather than requested through the bridge.
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationAndroidChange")]
+        pub type NativeNavigationAndroidChange;
+
+        /// Completion or cancellation of navigation requested through the bridge.
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationBridgeChange")]
+        pub type NativeNavigationBridgeChange;
+
+        /// Committed or cancelled native navigation event.
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationChange")]
+        pub type NativeNavigationChange;
+
+        /// Result of requesting native back navigation.
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationPopResult")]
+        pub type NativeNavigationPopResult;
+
+        /// URL and optional transition passed to a native route operation.
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationRouteParameters")]
+        pub type NativeNavigationRouteParameters;
+
+        /// Accepted push, replace, modal, or deep-link operation.
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationRouteResult")]
+        pub type NativeNavigationRouteResult;
+
+        /// Current native navigation stack state.
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationStatus")]
+        pub type NativeNavigationStatus;
+
+        /// Named transition applied by native navigation when motion is enabled.
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationTransition")]
+        pub type NativeNavigationTransition;
+
+        /// Current availability and permission state for native notifications.
+        #[wasm_bindgen(typescript_type = "ng.NativeNotificationStatus")]
+        pub type NativeNotificationStatus;
+
+        /// Result of opening native UI or another application.
+        #[wasm_bindgen(typescript_type = "ng.NativeOpenResult")]
+        pub type NativeOpenResult;
+
+        /// Parameters for native permission calls.
+        #[wasm_bindgen(typescript_type = "ng.NativePermissionParameters")]
+        pub type NativePermissionParameters;
+
+        /// Current state of one native runtime permission.
+        #[wasm_bindgen(typescript_type = "ng.NativePermissionStatus")]
+        pub type NativePermissionStatus;
+
+        /// Runtime and application metadata reported by a native shell.
+        #[wasm_bindgen(typescript_type = "ng.NativePlatformStatus")]
+        pub type NativePlatformStatus;
+
+        /// Content passed to the native system share sheet.
+        #[wasm_bindgen(typescript_type = "ng.NativeShareParameters")]
+        pub type NativeShareParameters;
+
+        /// Reply returned by a native application shell.
+        #[wasm_bindgen(typescript_type = "ng.NativeReplyMessage")]
+        pub type NativeReplyMessage;
+
+        /// Browser `$native` bridge service facade.
+        #[wasm_bindgen(typescript_type = "ng.NativeService")]
+        pub type NativeService;
+
+        /// Bounds of a native display feature.
+        #[wasm_bindgen(typescript_type = "ng.NativeWindowBounds")]
+        pub type NativeWindowBounds;
+
+        /// Fold or hinge reported by a foldable native display.
+        #[wasm_bindgen(typescript_type = "ng.NativeWindowDisplayFeature")]
+        pub type NativeWindowDisplayFeature;
+
+        /// Native content safe-area insets.
+        #[wasm_bindgen(typescript_type = "ng.NativeWindowInsets")]
+        pub type NativeWindowInsets;
+
+        /// Current native window metrics and display features.
+        #[wasm_bindgen(typescript_type = "ng.NativeWindowStatus")]
+        pub type NativeWindowStatus;
+
+        #[wasm_bindgen(method, getter, js_name = available)]
+        pub fn native_available(this: &NativeService) -> bool;
+
+        #[wasm_bindgen(method, getter, js_name = protocolVersion)]
+        pub fn native_protocol_version(this: &NativeService) -> u32;
+
+        #[wasm_bindgen(method, js_name = call)]
+        pub fn native_call(
+            this: &NativeService,
+            target: &str,
+            method: &str,
+            params: &JsValue,
+            options: &JsValue,
+        ) -> Promise;
+
+        #[wasm_bindgen(method, js_name = receive)]
+        pub fn native_receive(this: &NativeService, message: &JsValue);
+
+        #[wasm_bindgen(method, js_name = on)]
+        pub fn native_on(
+            this: &NativeService,
+            target: &str,
+            event: &str,
+            handler: &Function,
+        ) -> Function;
+
+        #[wasm_bindgen(method, js_name = dispose)]
+        pub fn native_dispose(this: &NativeService);
 
         /// Browser `$log` service facade.
         #[wasm_bindgen(typescript_type = "ng.LogService")]
@@ -2960,6 +3410,9 @@ mod browser {
 
     /// Browser `$exceptionHandler` service facade.
     pub type ExceptionHandlerService = Function;
+
+    /// Browser native event callback.
+    pub type NativeEventHandler = Function;
 
     /// Ergonomic async helpers for injected AngularTS `$templateRequest` values.
     pub trait TemplateRequestServiceExt {
@@ -3451,6 +3904,11 @@ mod browser {
         const EXPORT_NAME: &'static str = "__ng_service_HttpService";
     }
 
+    impl Service for NativeService {
+        const TOKEN_NAME: &'static str = "$native";
+        const EXPORT_NAME: &'static str = "__ng_service_NativeService";
+    }
+
     impl Service for LogService {
         const TOKEN_NAME: &'static str = "$log";
         const EXPORT_NAME: &'static str = "__ng_service_LogService";
@@ -3525,17 +3983,52 @@ mod browser {
 #[cfg(target_arch = "wasm32")]
 pub use browser::{
     CookieService, EventBusService, ExceptionHandlerService, HttpService, HttpServiceExt,
-    LogService, MachineService, RestFactory, RestService, RootScopeService, SseConnection,
-    SseService, StateRegistryService, StateService, TemplateCacheService, TemplateRequestService,
-    TemplateRequestServiceExt, Transition, WebSocketConnection, WebSocketService, WorkerHandle,
-    WorkerService,
+    LogService, MachineService, NativeBiometricStatus, NativeBridgeAdapter, NativeCallMessage,
+    NativeCallOptions, NativeCameraCaptureResult, NativeCameraStatus, NativeClipboardContent,
+    NativeClipboardWriteParameters, NativeClipboardWriteResult, NativeConfig,
+    NativeConnectivityStatus, NativeCredentialClearResult, NativeCredentialCreatePasskeyParameters,
+    NativeCredentialCreatePasskeyResult, NativeCredentialCreatePasswordParameters,
+    NativeCredentialCreatePasswordResult, NativeCredentialGetParameters, NativeCredentialResult,
+    NativeCredentialStatus, NativeEventHandler, NativeEventMessage, NativeFileDescriptor,
+    NativeFileOpenParameters, NativeFileOpenResult, NativeFileStatus, NativeFileUploadParameters,
+    NativeFileUploadProgress, NativeFileUploadResult, NativeGeolocationPosition,
+    NativeGeolocationStatus, NativeHapticParameters, NativeHapticResult, NativeIntentParameters,
+    NativeJsonObject, NativeJsonPrimitive, NativeJsonValue, NativeLifecycleStatus,
+    NativeMediaLoadParameters, NativeMediaSeekParameters, NativeMediaStatus,
+    NativeNavigationAndroidChange, NativeNavigationBridgeChange, NativeNavigationChange,
+    NativeNavigationPopResult, NativeNavigationRouteParameters, NativeNavigationRouteResult,
+    NativeNavigationStatus, NativeNavigationTransition, NativeNotificationStatus, NativeOpenResult,
+    NativePermissionParameters, NativePermissionStatus, NativePlatformStatus, NativeReplyMessage,
+    NativeService, NativeShareParameters, NativeWindowBounds, NativeWindowDisplayFeature,
+    NativeWindowInsets, NativeWindowStatus, RestFactory, RestService, RootScopeService,
+    SseConnection, SseService, StateRegistryService, StateService, TemplateCacheService,
+    TemplateRequestService, TemplateRequestServiceExt, Transition, WebSocketConnection,
+    WebSocketService, WorkerHandle, WorkerService,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use host::{
     CookieService, EventBusService, ExceptionHandlerService, HttpService, LogService,
-    MachineService, RestFactory, RestService, RootScopeService, SseConnection, SseService,
-    StateRegistryService, StateService, TemplateCacheService, TemplateRequestService, Transition,
-    WebSocketConnection, WebSocketService, WorkerHandle, WorkerService,
+    MachineService, NativeBiometricStatus, NativeBridgeAdapter, NativeCallMessage,
+    NativeCallOptions, NativeCameraCaptureResult, NativeCameraStatus, NativeClipboardContent,
+    NativeClipboardWriteParameters, NativeClipboardWriteResult, NativeConfig,
+    NativeConnectivityStatus, NativeCredentialClearResult, NativeCredentialCreatePasskeyParameters,
+    NativeCredentialCreatePasskeyResult, NativeCredentialCreatePasswordParameters,
+    NativeCredentialCreatePasswordResult, NativeCredentialGetParameters, NativeCredentialResult,
+    NativeCredentialStatus, NativeEventHandler, NativeEventMessage, NativeFileDescriptor,
+    NativeFileOpenParameters, NativeFileOpenResult, NativeFileStatus, NativeFileUploadParameters,
+    NativeFileUploadProgress, NativeFileUploadResult, NativeGeolocationPosition,
+    NativeGeolocationStatus, NativeHapticParameters, NativeHapticResult, NativeIntentParameters,
+    NativeJsonObject, NativeJsonPrimitive, NativeJsonValue, NativeLifecycleStatus,
+    NativeMediaLoadParameters, NativeMediaSeekParameters, NativeMediaStatus,
+    NativeNavigationAndroidChange, NativeNavigationBridgeChange, NativeNavigationChange,
+    NativeNavigationPopResult, NativeNavigationRouteParameters, NativeNavigationRouteResult,
+    NativeNavigationStatus, NativeNavigationTransition, NativeNotificationStatus, NativeOpenResult,
+    NativePermissionParameters, NativePermissionStatus, NativePlatformStatus, NativeReplyMessage,
+    NativeService, NativeShareParameters, NativeWindowBounds, NativeWindowDisplayFeature,
+    NativeWindowInsets, NativeWindowStatus, RestFactory, RestService, RootScopeService,
+    SseConnection, SseService, StateRegistryService, StateService, TemplateCacheService,
+    TemplateRequestService, Transition, WebSocketConnection, WebSocketService, WorkerHandle,
+    WorkerService,
 };
 
 #[cfg(test)]

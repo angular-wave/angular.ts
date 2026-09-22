@@ -1,0 +1,226 @@
+[
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/bridge/Bridge.kt",
+    "kind": "Suppress",
+    "rules": ["unused"],
+    "occurrences": 1,
+    "rationale": "JavaScript invokes this public bridge surface reflectively."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/bridge/BridgeDelegate.kt",
+    "kind": "Suppress",
+    "rules": ["unused"],
+    "occurrences": 1,
+    "rationale": "JavaScript invokes this public delegate surface reflectively."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/files/util/AngularNativeFileProvider.kt",
+    "kind": "Suppress",
+    "rules": ["unused"],
+    "occurrences": 1,
+    "rationale": "Android constructs this manifest provider rather than Kotlin callers."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/files/util/UriHelper.kt",
+    "kind": "Suppress",
+    "rules": ["BlockingMethodInNonBlockingContext"],
+    "occurrences": 1,
+    "rationale": "The warning is a documented Kotlin false positive for this call site."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/ng/config/PathConfiguration.kt",
+    "kind": "SuppressLint",
+    "rules": ["DefaultLocale"],
+    "occurrences": 3,
+    "rationale": "These URI scheme and host comparisons use protocol-defined casing."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/ng/http/AngularNativeHttpClient.kt",
+    "kind": "Suppress",
+    "rules": ["unused"],
+    "occurrences": 2,
+    "rationale": "The JavaScript bridge calls these response methods reflectively."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/ng/session/Session.kt",
+    "kind": "Suppress",
+    "rules": ["unused"],
+    "occurrences": 1,
+    "rationale": "The session is a public host API consumed outside this module."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/ng/session/Session.kt",
+    "kind": "SuppressLint",
+    "rules": ["MissingOnRenderProcessGone"],
+    "occurrences": 1,
+    "rationale": "Render-process recovery is owned by the session client boundary."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/ng/session/Session.kt",
+    "kind": "SuppressLint",
+    "rules": ["SetJavaScriptEnabled"],
+    "occurrences": 1,
+    "rationale": "AngularTS execution requires JavaScript in the isolated managed WebView."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/ng/visit/VisitActionAdapter.kt",
+    "kind": "SuppressLint",
+    "rules": ["DefaultLocale"],
+    "occurrences": 1,
+    "rationale": "Visit action names are fixed protocol tokens, not natural language."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/ng/webview/AngularNativeWebView.kt",
+    "kind": "Suppress",
+    "rules": ["DEPRECATION"],
+    "occurrences": 1,
+    "rationale": "The compatibility callback is required on the supported Android range."
+  },
+  {
+    "path": "core/src/main/kotlin/io/github/angularwave/android/core/ng/webview/AngularNativeWebView.kt",
+    "kind": "SuppressLint",
+    "rules": ["SetJavaScriptEnabled"],
+    "occurrences": 1,
+    "rationale": "AngularTS execution requires JavaScript in the isolated managed WebView."
+  },
+  {
+    "path": "demo/src/main/kotlin/io/github/angularwave/android/demo/bridge/MenuComponentAdapter.kt",
+    "kind": "SuppressLint",
+    "rules": ["NotifyDataSetChanged"],
+    "occurrences": 1,
+    "rationale": "The demo replaces the complete server-owned menu data set."
+  },
+  {
+    "path": "demo/src/main/kotlin/io/github/angularwave/android/demo/features/numbers/NumbersAdapter.kt",
+    "kind": "SuppressLint",
+    "rules": ["NotifyDataSetChanged"],
+    "occurrences": 1,
+    "rationale": "The demo replaces the complete generated number data set."
+  },
+  {
+    "path": "demo/src/main/kotlin/io/github/angularwave/android/demo/main/MainActivity.kt",
+    "kind": "SuppressLint",
+    "rules": ["MissingOnRenderProcessGone"],
+    "occurrences": 1,
+    "rationale": "The benchmark client explicitly detaches and destroys its terminated WebView."
+  },
+  {
+    "path": "maps/src/main/kotlin/io/github/angularwave/android/maps/MapElementProvider.kt",
+    "kind": "SuppressLint",
+    "rules": ["MissingPermission"],
+    "occurrences": 1,
+    "rationale": "The provider checks location permission before enabling this operation."
+  },
+  {
+    "path": "navigation-fragments/src/androidTest/kotlin/io/github/angularwave/android/navigation/elements/NativeProductionQualityInstrumentedTest.kt",
+    "kind": "Suppress",
+    "rules": ["DEPRECATION"],
+    "occurrences": 1,
+    "rationale": "The device test exercises memory-pressure callbacks across the supported API range."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/activities/AngularNativeActivityDelegate.kt",
+    "kind": "Suppress",
+    "rules": ["unused", "MemberVisibilityCanBePrivate"],
+    "occurrences": 1,
+    "rationale": "Host applications consume the complete public activity delegate API."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/bridge/AndroidNativeCapabilities.kt",
+    "kind": "SuppressLint",
+    "rules": ["MissingPermission"],
+    "occurrences": 1,
+    "rationale": "Capability dispatch verifies runtime permission before location access."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/bridge/AngularNativeBridge.kt",
+    "kind": "Suppress",
+    "rules": ["TooGenericExceptionCaught"],
+    "occurrences": 2,
+    "rationale": "The bridge boundary converts every host failure into a protocol error."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/config/AngularNativeNavigation.kt",
+    "kind": "Suppress",
+    "rules": ["UNCHECKED_CAST"],
+    "occurrences": 1,
+    "rationale": "Provider registration erases the runtime generic component type."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/elements/AndroidNativeElements.kt",
+    "kind": "SuppressLint",
+    "rules": ["DiscouragedApi"],
+    "occurrences": 1,
+    "rationale": "Dynamic server-defined icons require runtime resource-name lookup."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/fragments/AngularNativeBottomSheetFragment.kt",
+    "kind": "Suppress",
+    "rules": ["DEPRECATION", "OverrideDeprecatedMigration"],
+    "occurrences": 2,
+    "rationale": "Fragment compatibility requires overriding the legacy animation hooks."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/fragments/AngularNativeFragment.kt",
+    "kind": "Suppress",
+    "rules": ["DEPRECATION", "OverrideDeprecatedMigration"],
+    "occurrences": 2,
+    "rationale": "Fragment compatibility requires overriding the legacy animation hooks."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/fragments/AngularNativeWebBottomSheetFragment.kt",
+    "kind": "SuppressLint",
+    "rules": ["InflateParams"],
+    "occurrences": 2,
+    "rationale": "Fragment root inflation has no parent until Android attaches the view."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/fragments/AngularNativeWebFragment.kt",
+    "kind": "SuppressLint",
+    "rules": ["InflateParams"],
+    "occurrences": 2,
+    "rationale": "Fragment root inflation has no parent until Android attaches the view."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/navigator/NavigatorArguments.kt",
+    "kind": "SuppressLint",
+    "rules": ["DefaultLocale"],
+    "occurrences": 1,
+    "rationale": "Navigator argument names are fixed protocol keys, not natural language."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/navigator/NavigatorGraphBuilder.kt",
+    "kind": "Suppress",
+    "rules": ["UNCHECKED_CAST"],
+    "occurrences": 1,
+    "rationale": "Android Navigation erases registered Fragment destination types."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/navigator/NavigatorRule.kt",
+    "kind": "Suppress",
+    "rules": ["MemberVisibilityCanBePrivate"],
+    "occurrences": 1,
+    "rationale": "Host applications construct and inspect the complete navigation rule."
+  },
+  {
+    "path": "navigation-fragments/src/main/java/io/github/angularwave/android/navigation/navigator/NestedNavigatorHostDelegate.kt",
+    "kind": "Suppress",
+    "rules": ["unused", "MemberVisibilityCanBePrivate"],
+    "occurrences": 1,
+    "rationale": "Host applications consume the complete nested navigator delegate API."
+  },
+  {
+    "path": "navigation-fragments/src/main/kotlin/io/github/angularwave/android/navigation/activities/AngularNativeHostActivity.kt",
+    "kind": "Suppress",
+    "rules": ["DEPRECATION"],
+    "occurrences": 1,
+    "rationale": "Manifest metadata loading requires the legacy PackageManager overload below API 33."
+  },
+  {
+    "path": "navigation-fragments/src/test/kotlin/io/github/angularwave/android/navigation/navigator/NavigatorRuleTest.kt",
+    "kind": "Suppress",
+    "rules": ["UsePropertyAccessSyntax"],
+    "occurrences": 1,
+    "rationale": "The test intentionally verifies the callable Java-facing accessor."
+  }
+]

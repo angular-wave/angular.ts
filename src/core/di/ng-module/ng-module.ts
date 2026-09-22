@@ -24,6 +24,7 @@ import {
   _location,
   _log,
   _machine,
+  _native,
   _rest,
   _rootElement,
   _rootScope,
@@ -80,6 +81,7 @@ import type {
   WasmResource,
   WasmService,
 } from "../../../services/wasm/wasm.ts";
+import type { NativeConfig } from "../../../services/native/native.ts";
 import type {
   LazyStateLoader,
   ParamsOf,
@@ -313,6 +315,7 @@ export interface AngularConfigMap {
   [_interpolate]?: InterpolateConfig;
   [_location]?: LocationConfig;
   [_log]?: LogConfig;
+  [_native]?: NativeConfig;
   [_rest]?: RestConfig;
   [routerConfigKey]?: RouterConfig;
   [_sce]?: SceConfig;
@@ -348,6 +351,7 @@ const angularConfigKeys = new Set<string>([
   _interpolate,
   _location,
   _log,
+  _native,
   _rest,
   routerConfigKey,
   _sce,
@@ -714,7 +718,11 @@ export type RouterModule<TRouteMap extends RouteMap = RouteMap> = Omit<
   /**
    * Register a router tree while preserving this module's route map.
    */
-  router<const TDeclaration extends RouterModuleInput>(
+  router<
+    const TDeclaration extends
+      | RouterModuleDeclaration
+      | readonly RouterModuleDeclaration[],
+  >(
     declaration: TDeclaration & RouterDeclarationFor<TRouteMap, TDeclaration>,
   ): RouterModule<TRouteMap>;
 
@@ -977,6 +985,16 @@ export class NgModule {
         this._runtimeConfig,
         "configure",
         [_log, logConfig],
+      ]);
+    }
+
+    const nativeConfig = normalized.$native;
+
+    if (nativeConfig) {
+      this._configBlocks.push([
+        this._runtimeConfig,
+        "configure",
+        [_native, nativeConfig],
       ]);
     }
 
@@ -1513,16 +1531,19 @@ export class NgModule {
    * Child state names are relative to their parent unless they contain a dot.
    * Each route is queued for the composed router runtime, so module router
    * trees compose with `lazyState(...)` and inherited route policies.
+   * {@link RouterModuleDeclaration} is the only public registration contract.
+   * Pass one declaration or a readonly forest; the route map is inferred from
+   * the exact literal. To declare the route map explicitly, parameterize
+   * `createModule<TRouteMap>(...)` instead of `router(...)`.
    *
    * @param declaration - Router tree root declaration.
    * @returns {NgModule}
    */
-  router<TDeclaration extends RouterModuleInput>(
-    declaration: TDeclaration,
-  ): RouterModule<RoutesOf<TDeclaration>>;
-  router<TRouteMap extends RouteMap>(
-    declaration: RouterModuleInput,
-  ): RouterModule<TRouteMap>;
+  router<
+    const TDeclaration extends
+      | RouterModuleDeclaration
+      | readonly RouterModuleDeclaration[],
+  >(declaration: TDeclaration): RouterModule<RoutesOf<TDeclaration>>;
   router(declaration: RouterModuleInput): RouterModule {
     const states = flattenRouterModuleDeclaration(declaration);
 

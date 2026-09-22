@@ -1,0 +1,75 @@
+name: Android Physical Device
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_api:
+        description: Expected Android API level, or empty to accept the attached device
+        required: false
+        type: string
+      device_name:
+        default: reference-device
+        description: Short name included in the evidence artifact
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-physical-device
+  cancel-in-progress: false
+
+jobs:
+  physical-device:
+    name: Android physical device
+    runs-on: [self-hosted, linux, android, physical]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Validate physical-device inputs
+        env:
+          DEVICE_NAME: ${{ inputs.device_name }}
+        run: |
+          if [[ ! "$DEVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]]; then
+            echo "Device name must be 1-64 artifact-safe characters." >&2
+            exit 1
+          fi
+
+      - name: Run physical-device release gates
+        env:
+          EXPECTED_ANDROID_API: ${{ inputs.expected_api }}
+        run: make -C integrations/android physical-check
+
+      - name: Capture physical-device evidence
+        run: |
+          ./integrations/android/scripts/capture-device-evidence.sh \
+            integrations/android/build/physical-device-evidence \
+            "${{ inputs.expected_api }}" \
+            "${{ inputs.device_name }}"
+
+      - name: Upload physical-device evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-native-physical-${{ inputs.device_name }}-${{ github.run_id }}
+          path: |
+            integrations/android/build/physical-device-evidence
+            integrations/android/**/build/reports/androidTests
+            integrations/android/**/build/outputs/androidTest-results
+            integrations/android/benchmark/build/outputs/connected_android_test_additional_output
+          if-no-files-found: error
+          retention-days: 90

@@ -28,10 +28,12 @@ should count as current. AngularTS writes `data-state-current="true"` or
 Authored `role`, `tabindex`, and `aria-current` values are preserved, and
 `ng-aria-disable` opts an element out locally.
 
-The quoted literal route name (`'orders.detail'`) is still an expression, but it
-is static enough for TypeScript examples and documentation checks to map it back
-to a known route. Use `ng-state="link.state"` when the route name itself is
-dynamic.
+The `ng-state` value is always an expression. The quoted literal route name
+(`'orders.detail'`) is static enough for TypeScript examples and documentation
+checks to map it back to a known route. Use `ng-state="link.state"` when the
+route name itself is dynamic. An unquoted `ng-state="orders"` reads the
+`orders` scope property; it does not name the `orders` route. Interpolation is
+not part of the `ng-state` contract.
 
 Executable sample: [`state-links.html`](/examples/routing/state-links.html)
 
@@ -40,8 +42,9 @@ Executable sample: [`state-links.html`](/examples/routing/state-links.html)
 - **Type:** `expression`
 - **Required:** yes
 
-Expression that evaluates to a state name string. Prefer a quoted literal route
-name when the template always targets one route.
+Expression that evaluates to a state name string. Use a quoted string literal
+when the template always targets one route and a direct scope expression when
+the target is dynamic.
 
 #### `ng-state-params`
 

@@ -89,8 +89,8 @@ for (const [section, expectedTitle, expectedWeight] of sectionNavigation) {
 }
 
 const hugoConfig = readFileSync(join("docs", "hugo.yaml"), "utf8");
-if (!hugoConfig.includes("name: 'TypeScript API'")) {
-  failures.push("docs/hugo.yaml: main API menu must be named 'TypeScript API'");
+if (!hugoConfig.includes("name: 'API'")) {
+  failures.push("docs/hugo.yaml: main API menu must be named 'API'");
 }
 
 const alphabeticalMenuSections = new Set(["directive", "service", "values"]);

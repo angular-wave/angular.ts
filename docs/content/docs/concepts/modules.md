@@ -90,10 +90,11 @@ Registers a directive factory for the `$compile` provider.
 
 Registers a filter function for use in templates and `$filter`.
 
-#### .config(fn)
+#### .config(settings)
 
-Runs during the config phase, before any services are instantiated. Only
-providers and constants can be injected.
+Declares typed configuration for built-in services before they are instantiated.
+Configuration keys use the same names as their runtime injectables. Application
+code does not inject or configure provider objects directly.
 
 #### .run(fn)
 
@@ -102,11 +103,12 @@ one-time initialization logic.
 
 #### .router(definition)
 
-Registers a router tree or forest in the module declaration queue. This keeps
-route declarations in the same fluent module chain as components and services.
-The method records only a provider-token invocation; it does not import router
-implementation code into custom runtimes unless that runtime actually includes
-the router provider and loads a module that calls `.router()`.
+Registers one
+[`RouterModuleDeclaration`](../../../typedoc/interfaces/RouterModuleDeclaration.html)
+or a readonly forest. Literal route names, parameters, children, and resolves
+are inferred into the returned typed router module. Custom runtimes include
+router implementation code only when the router runtime is composed into the
+build.
 
 ## A complete module example
 
@@ -139,7 +141,6 @@ const app = angular.createModule('myApp', ['ng', 'util']);
 app.service('userService', UserService);
 app.component('userList', { controller: UserListController });
 app.router({ name: 'users', url: '/users', component: 'userList' });
-app.config({ $location: { html5Mode: true } });
 ```
 
 ## Module dependencies

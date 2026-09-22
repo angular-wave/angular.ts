@@ -241,6 +241,81 @@ import type {
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
 import type { GeolocationValue as TGeolocationValue } from "./directive/geolocation/geolocation.ts";
 import type {
+  NativeBridgeAdapter as TNativeBridgeAdapter,
+  NativeCallMessage as TNativeCallMessage,
+  NativeCallOptions as TNativeCallOptions,
+  NativeConfig as TNativeConfig,
+  NativeEventHandler as TNativeEventHandler,
+  NativeEventMessage as TNativeEventMessage,
+  NativeReplyMessage as TNativeReplyMessage,
+  NativeService as TNativeService,
+} from "./services/native/native.ts";
+import type {
+  NativeCapabilityEventMap as TNativeCapabilityEventMap,
+  NativeCapabilityEventName as TNativeCapabilityEventName,
+  NativeCapabilityEventPayload as TNativeCapabilityEventPayload,
+  NativeCapabilityMethodContract as TNativeCapabilityMethodContract,
+  NativeCapabilityMethodMap as TNativeCapabilityMethodMap,
+  NativeCapabilityMethodName as TNativeCapabilityMethodName,
+  NativeCapabilityName as TNativeCapabilityName,
+  NativeCapabilityParameters as TNativeCapabilityParameters,
+  NativeCapabilityResult as TNativeCapabilityResult,
+} from "./runtime/native-capabilities.ts";
+import type {
+  NativeBiometricStatus as TNativeBiometricStatus,
+  NativeCameraCaptureResult as TNativeCameraCaptureResult,
+  NativeCameraStatus as TNativeCameraStatus,
+  NativeClipboardContent as TNativeClipboardContent,
+  NativeClipboardWriteParameters as TNativeClipboardWriteParameters,
+  NativeClipboardWriteResult as TNativeClipboardWriteResult,
+  NativeConnectivityStatus as TNativeConnectivityStatus,
+  NativeCredentialClearResult as TNativeCredentialClearResult,
+  NativeCredentialCreatePasskeyParameters as TNativeCredentialCreatePasskeyParameters,
+  NativeCredentialCreatePasskeyResult as TNativeCredentialCreatePasskeyResult,
+  NativeCredentialCreatePasswordParameters as TNativeCredentialCreatePasswordParameters,
+  NativeCredentialCreatePasswordResult as TNativeCredentialCreatePasswordResult,
+  NativeCredentialGetParameters as TNativeCredentialGetParameters,
+  NativeCredentialResult as TNativeCredentialResult,
+  NativeCredentialStatus as TNativeCredentialStatus,
+  NativeFileDescriptor as TNativeFileDescriptor,
+  NativeFileOpenParameters as TNativeFileOpenParameters,
+  NativeFileOpenResult as TNativeFileOpenResult,
+  NativeFileStatus as TNativeFileStatus,
+  NativeFileUploadParameters as TNativeFileUploadParameters,
+  NativeFileUploadProgress as TNativeFileUploadProgress,
+  NativeFileUploadResult as TNativeFileUploadResult,
+  NativeGeolocationPosition as TNativeGeolocationPosition,
+  NativeGeolocationStatus as TNativeGeolocationStatus,
+  NativeHapticParameters as TNativeHapticParameters,
+  NativeHapticResult as TNativeHapticResult,
+  NativeIntentParameters as TNativeIntentParameters,
+  NativeJsonObject as TNativeJsonObject,
+  NativeJsonPrimitive as TNativeJsonPrimitive,
+  NativeJsonValue as TNativeJsonValue,
+  NativeLifecycleStatus as TNativeLifecycleStatus,
+  NativeMediaLoadParameters as TNativeMediaLoadParameters,
+  NativeMediaSeekParameters as TNativeMediaSeekParameters,
+  NativeMediaStatus as TNativeMediaStatus,
+  NativeNavigationAndroidChange as TNativeNavigationAndroidChange,
+  NativeNavigationBridgeChange as TNativeNavigationBridgeChange,
+  NativeNavigationChange as TNativeNavigationChange,
+  NativeNavigationPopResult as TNativeNavigationPopResult,
+  NativeNavigationRouteParameters as TNativeNavigationRouteParameters,
+  NativeNavigationRouteResult as TNativeNavigationRouteResult,
+  NativeNavigationStatus as TNativeNavigationStatus,
+  NativeNavigationTransition as TNativeNavigationTransition,
+  NativeNotificationStatus as TNativeNotificationStatus,
+  NativeOpenResult as TNativeOpenResult,
+  NativePermissionParameters as TNativePermissionParameters,
+  NativePermissionStatus as TNativePermissionStatus,
+  NativePlatformStatus as TNativePlatformStatus,
+  NativeShareParameters as TNativeShareParameters,
+  NativeWindowBounds as TNativeWindowBounds,
+  NativeWindowDisplayFeature as TNativeWindowDisplayFeature,
+  NativeWindowInsets as TNativeWindowInsets,
+  NativeWindowStatus as TNativeWindowStatus,
+} from "./runtime/native-capability-contracts.ts";
+import type {
   ParamsOf as TParamsOf,
   ResolvesOf as TResolvesOf,
   RouterModuleDeclaration as TRouterModuleDeclaration,
@@ -697,6 +772,100 @@ declare global {
     export type NgModelController = TNgModelController;
 
     export type GeolocationValue = TGeolocationValue;
+
+    export type NativeBridgeAdapter = TNativeBridgeAdapter;
+    export type NativeCallMessage<TParams = unknown> =
+      TNativeCallMessage<TParams>;
+    export type NativeCallOptions = TNativeCallOptions;
+    export type NativeConfig = TNativeConfig;
+    export type NativeEventHandler<TData = unknown> =
+      TNativeEventHandler<TData>;
+    export type NativeEventMessage<TData = unknown> =
+      TNativeEventMessage<TData>;
+    export type NativeReplyMessage<TResult = unknown> =
+      TNativeReplyMessage<TResult>;
+    export type NativeService = TNativeService;
+    export type NativeCapabilityEventMap = TNativeCapabilityEventMap;
+    export type NativeCapabilityEventName<Name extends TNativeCapabilityName> =
+      TNativeCapabilityEventName<Name>;
+    export type NativeCapabilityEventPayload<
+      Name extends TNativeCapabilityName,
+      Event extends TNativeCapabilityEventName<Name>,
+    > = TNativeCapabilityEventPayload<Name, Event>;
+    export type NativeCapabilityMethodContract<
+      Name extends TNativeCapabilityName,
+      Method extends TNativeCapabilityMethodName<Name>,
+    > = TNativeCapabilityMethodContract<Name, Method>;
+    export type NativeCapabilityMethodMap = TNativeCapabilityMethodMap;
+    export type NativeCapabilityMethodName<Name extends TNativeCapabilityName> =
+      TNativeCapabilityMethodName<Name>;
+    export type NativeCapabilityName = TNativeCapabilityName;
+    export type NativeCapabilityParameters<
+      Name extends TNativeCapabilityName,
+      Method extends TNativeCapabilityMethodName<Name>,
+    > = TNativeCapabilityParameters<Name, Method>;
+    export type NativeCapabilityResult<
+      Name extends TNativeCapabilityName,
+      Method extends TNativeCapabilityMethodName<Name>,
+    > = TNativeCapabilityResult<Name, Method>;
+    export type NativeBiometricStatus = TNativeBiometricStatus;
+    export type NativeCameraCaptureResult = TNativeCameraCaptureResult;
+    export type NativeCameraStatus = TNativeCameraStatus;
+    export type NativeClipboardContent = TNativeClipboardContent;
+    export type NativeClipboardWriteParameters =
+      TNativeClipboardWriteParameters;
+    export type NativeClipboardWriteResult = TNativeClipboardWriteResult;
+    export type NativeConnectivityStatus = TNativeConnectivityStatus;
+    export type NativeCredentialClearResult = TNativeCredentialClearResult;
+    export type NativeCredentialCreatePasskeyParameters =
+      TNativeCredentialCreatePasskeyParameters;
+    export type NativeCredentialCreatePasskeyResult =
+      TNativeCredentialCreatePasskeyResult;
+    export type NativeCredentialCreatePasswordParameters =
+      TNativeCredentialCreatePasswordParameters;
+    export type NativeCredentialCreatePasswordResult =
+      TNativeCredentialCreatePasswordResult;
+    export type NativeCredentialGetParameters = TNativeCredentialGetParameters;
+    export type NativeCredentialResult = TNativeCredentialResult;
+    export type NativeCredentialStatus = TNativeCredentialStatus;
+    export type NativeFileDescriptor = TNativeFileDescriptor;
+    export type NativeFileOpenParameters = TNativeFileOpenParameters;
+    export type NativeFileOpenResult = TNativeFileOpenResult;
+    export type NativeFileStatus = TNativeFileStatus;
+    export type NativeFileUploadParameters = TNativeFileUploadParameters;
+    export type NativeFileUploadProgress = TNativeFileUploadProgress;
+    export type NativeFileUploadResult = TNativeFileUploadResult;
+    export type NativeGeolocationPosition = TNativeGeolocationPosition;
+    export type NativeGeolocationStatus = TNativeGeolocationStatus;
+    export type NativeHapticParameters = TNativeHapticParameters;
+    export type NativeHapticResult = TNativeHapticResult;
+    export type NativeIntentParameters = TNativeIntentParameters;
+    export type NativeJsonObject = TNativeJsonObject;
+    export type NativeJsonPrimitive = TNativeJsonPrimitive;
+    export type NativeJsonValue = TNativeJsonValue;
+    export type NativeLifecycleStatus = TNativeLifecycleStatus;
+    export type NativeMediaLoadParameters = TNativeMediaLoadParameters;
+    export type NativeMediaSeekParameters = TNativeMediaSeekParameters;
+    export type NativeMediaStatus = TNativeMediaStatus;
+    export type NativeNavigationAndroidChange = TNativeNavigationAndroidChange;
+    export type NativeNavigationBridgeChange = TNativeNavigationBridgeChange;
+    export type NativeNavigationChange = TNativeNavigationChange;
+    export type NativeNavigationPopResult = TNativeNavigationPopResult;
+    export type NativeNavigationRouteParameters =
+      TNativeNavigationRouteParameters;
+    export type NativeNavigationRouteResult = TNativeNavigationRouteResult;
+    export type NativeNavigationStatus = TNativeNavigationStatus;
+    export type NativeNavigationTransition = TNativeNavigationTransition;
+    export type NativeNotificationStatus = TNativeNotificationStatus;
+    export type NativeOpenResult = TNativeOpenResult;
+    export type NativePermissionParameters = TNativePermissionParameters;
+    export type NativePermissionStatus = TNativePermissionStatus;
+    export type NativePlatformStatus = TNativePlatformStatus;
+    export type NativeShareParameters = TNativeShareParameters;
+    export type NativeWindowBounds = TNativeWindowBounds;
+    export type NativeWindowDisplayFeature = TNativeWindowDisplayFeature;
+    export type NativeWindowInsets = TNativeWindowInsets;
+    export type NativeWindowStatus = TNativeWindowStatus;
 
     export type HttpRequestConfig = THttpRequestConfig;
 

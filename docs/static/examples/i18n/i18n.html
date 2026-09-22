@@ -40,33 +40,48 @@
         }
         window.angular
           .createModule('i18n', [])
-          .directive('ngTranslate', ["$rootScope", ($rootScope) => {
-            return {
-              link(scope, el) {
-                const translation = getKeyFromTranslation(
-                  el.innerText.toLocaleLowerCase(),
-                );
-                $rootScope.watch('lang', (lang) => {
-                  i18next.changeLanguage(lang);
-                  el.innerText = i18next.t(translation);
-                });
-              },
-            };
-          }])
+          .directive('ngTranslate', [
+            '$rootScope',
+            ($rootScope) => {
+              return {
+                link(scope, el) {
+                  const translation = getKeyFromTranslation(
+                    el.innerText.toLocaleLowerCase(),
+                  );
+                  $rootScope.watch('lang', (lang) => {
+                    i18next.changeLanguage(lang);
+                    el.innerText = i18next.t(translation);
+                  });
+                },
+              };
+            },
+          ])
           .filter('translate', () => {
             return (x, y) => {
               i18next.changeLanguage(y);
               return i18next.t(x);
             };
           })
-          .filter('translatesimple', ["$rootScope", ($rootScope) => {
-            return (x) => {
-              i18next.changeLanguage($rootScope.lang);
-              return i18next.t(x);
-            };
-          }]);
+          .filter('translatesimple', [
+            '$rootScope',
+            ($rootScope) => {
+              return (x) => {
+                i18next.changeLanguage($rootScope.lang);
+                return i18next.t(x);
+              };
+            },
+          ]);
 
-        window.angular.init(document);
+        const bootstrap = () => {
+          window.angular.bootstrap(document.body, ['i18n']);
+        };
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootstrap, {
+            once: true,
+          });
+        } else {
+          bootstrap();
+        }
       });
     </script>
     <style>
@@ -75,7 +90,7 @@
       }
     </style>
   </head>
-  <body ng-app="i18n" ng-init="lang = 'en'">
+  <body ng-init="lang = 'en'">
     <div>Current lang: {{ lang }}</div>
     <input type="radio" ng-model="lang" value="en" /> English
     <input type="radio" ng-model="lang" value="ru" /> Russian

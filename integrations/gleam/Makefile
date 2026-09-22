@@ -30,10 +30,10 @@ generate-check:
 	$(NODE) tool/generate_ng_namespace.mjs --check
 	$(NODE) tool/generate_injection_tokens.mjs --check
 	$(NODE) ../../utils/generate-programmatic-view-tags.mjs --integration gleam --check
+	$(NODE) tool/check_ng_namespace_parity.mjs
 
 parity:
 	$(MAKE) generate-check
-	$(NODE) tool/check_ng_namespace_parity.mjs
 
 check: format-check test parity
 

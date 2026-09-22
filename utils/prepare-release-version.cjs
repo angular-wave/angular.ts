@@ -1,3 +1,4 @@
+const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -18,7 +19,6 @@ const releaseFiles = [
   "docs/content/docs/integrations/java-j2cl.md",
   "docs/content/docs/integrations/scala.md",
   "docs/content/docs/integrations/clojurescript.md",
-  "src/docs-examples/integration-setup.test.ts",
 ];
 
 function nextVersion(current, release) {
@@ -33,16 +33,67 @@ function nextVersion(current, release) {
   if (release === "major") return `${major + 1}.0.0`;
   if (release === "minor") return `${major}.${minor + 1}.0`;
   if (release === "patch") return `${major}.${minor}.${patch + 1}`;
-  throw new Error(`Release must be major, minor, or patch; received '${release}'.`);
+  throw new Error(
+    `Release must be major, minor, or patch; received '${release}'.`,
+  );
+}
+
+function latestReleaseVersion(refs) {
+  const versions = [...refs.matchAll(/refs\/tags\/v(\d+\.\d+\.\d+)$/gmu)].map(
+    ([, version]) => version,
+  );
+  versions.sort((left, right) => {
+    const leftParts = left.split(".").map(Number);
+    const rightParts = right.split(".").map(Number);
+    for (let index = 0; index < leftParts.length; index += 1) {
+      const difference = leftParts[index] - rightParts[index];
+      if (difference !== 0) return difference;
+    }
+    return 0;
+  });
+  return versions.at(-1);
+}
+
+function assertReleaseBaseVersion(current, refs) {
+  const latest = latestReleaseVersion(refs);
+  if (latest !== undefined && current !== latest) {
+    throw new Error(
+      `Current version ${current} does not match latest release tag v${latest}. ` +
+        "Synchronize with the release repository before preparing a release.",
+    );
+  }
+}
+
+function readRemoteReleaseTags(repository, run = execFileSync) {
+  if (typeof repository !== "string" || repository.length === 0) {
+    throw new Error("package.json must declare a release repository URL.");
+  }
+  try {
+    return run("git", ["ls-remote", "--tags", "--refs", repository, "v*"], {
+      cwd: root,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: "0",
+      },
+      timeout: 15_000,
+    });
+  } catch {
+    throw new Error(
+      "Unable to read tags from the release repository. Check network access and package.json.",
+    );
+  }
 }
 
 function promoteChangelog(source, version, date) {
   const pattern = /^## \[Unreleased\]\s*\n([\s\S]*?)(?=^## \[)/m;
   const match = pattern.exec(source);
-  if (!match) throw new Error("CHANGELOG.md must contain an Unreleased section.");
+  if (!match)
+    throw new Error("CHANGELOG.md must contain an Unreleased section.");
 
   const notes = match[1].trim();
-  if (!notes) throw new Error("CHANGELOG.md Unreleased section must not be empty.");
+  if (!notes)
+    throw new Error("CHANGELOG.md Unreleased section must not be empty.");
 
   return source.replace(
     pattern,
@@ -69,6 +120,8 @@ function prepare(release) {
   const packageJson = JSON.parse(read("package.json"));
   const packageLock = JSON.parse(read("package-lock.json"));
   const current = packageJson.version;
+  const remoteTags = readRemoteReleaseTags(packageJson.repository?.url);
+  assertReleaseBaseVersion(current, remoteTags);
   const version = nextVersion(current, release);
   const date = new Date().toISOString().slice(0, 10);
   const updates = new Map();
@@ -98,7 +151,9 @@ function prepare(release) {
   for (const relativePath of releaseFiles) {
     const source = read(relativePath);
     if (!source.includes(current)) {
-      throw new Error(`${relativePath} does not contain current version ${current}.`);
+      throw new Error(
+        `${relativePath} does not contain current version ${current}.`,
+      );
     }
     updates.set(relativePath, source.replaceAll(current, version));
   }
@@ -107,13 +162,18 @@ function prepare(release) {
     fs.writeFileSync(path.join(root, relativePath), source);
   }
 
-  console.log(`Prepared AngularTS ${version} (${release}) across ${updates.size} files.`);
+  console.log(
+    `Prepared AngularTS ${version} (${release}) across ${updates.size} files.`,
+  );
 }
 
 module.exports = {
+  assertReleaseBaseVersion,
+  latestReleaseVersion,
   nextVersion,
   promoteChangelog,
   promoteIntegrationChangelog,
+  readRemoteReleaseTags,
 };
 
 if (require.main === module) {

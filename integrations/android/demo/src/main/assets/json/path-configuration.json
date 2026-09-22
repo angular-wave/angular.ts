@@ -1,0 +1,78 @@
+{
+  "settings": {},
+  "rules": [
+    {
+      "patterns": [".*"],
+      "properties": {
+        "context": "default",
+        "uri": "angularNative://fragment/web",
+        "fallback_uri": "angularNative://fragment/web",
+        "pull_to_refresh_enabled": true
+      }
+    },
+    {
+      "patterns": [
+        "^$",
+        "^/$",
+        "/src/services/native/native-demo\\.html$",
+        "/src/services/native/native-demo\\.html\\?view=/native/demo$"
+      ],
+      "properties": {
+        "presentation": "clear_all",
+        "pull_to_refresh_enabled": true,
+        "comment": "Clear navigation stack when visiting root page."
+      }
+    },
+    {
+      "patterns": [
+        "/src/services/native/native-demo\\.html\\?view=/native/demo/new",
+        "/src/services/native/native-demo\\.html\\?view=/native/demo/strada-form"
+      ],
+      "properties": {
+        "context": "modal",
+        "pull_to_refresh_enabled": false,
+        "comment": "AngularTS demo modal routes are still presented by native Fragment transitions."
+      }
+    },
+    {
+      "patterns": [
+        "/src/services/native/native-demo\\.html\\?view=/native/demo/numbers"
+      ],
+      "properties": {
+        "uri": "angularNative://fragment/numbers",
+        "title": "Numbers",
+        "comment": "AngularTS can propose a route that the native shell upgrades to a native Fragment."
+      }
+    },
+    {
+      "patterns": ["/new$", "/edit$", "/modal"],
+      "properties": {
+        "context": "modal",
+        "pull_to_refresh_enabled": false
+      }
+    },
+    {
+      "patterns": ["/numbers$"],
+      "properties": {
+        "uri": "angularNative://fragment/numbers",
+        "title": "Numbers",
+        "comment": "Intercept with a native view."
+      }
+    },
+    {
+      "patterns": ["/numbers/[0-9]+$"],
+      "properties": {
+        "context": "modal",
+        "uri": "angularNative://fragment/web/modal/sheet",
+        "pull_to_refresh_enabled": false
+      }
+    },
+    {
+      "patterns": [".+\\.(?:bmp|gif|heic|jpg|jpeg|png|svg|webp)"],
+      "properties": {
+        "context": "modal",
+        "uri": "angularNative://fragment/image_viewer"
+      }
+    }
+  ]
+}

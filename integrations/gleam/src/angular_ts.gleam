@@ -1,3 +1,35 @@
+//// Build AngularTS interfaces in Gleam while keeping the page in HTML.
+////
+//// Add both packages:
+////
+//// ```sh
+//// npm install @angular-wave/angular.ts
+//// gleam add angular_ts
+//// ```
+////
+//// Register a module, then bootstrap it after the page has loaded:
+////
+//// ```gleam
+//// import angular_ts as ng
+//// import angular_ts/component
+//// import angular_ts/module
+////
+//// fn controller() { Nil }
+////
+//// pub fn main() {
+////   ng.create_module("app")
+////   |> module.component(
+////     "welcomeCard",
+////     component.new("<p>Welcome</p>", ng.inject0(controller)),
+////   )
+////   |> ng.bootstrap_body
+//// }
+//// ```
+////
+//// Start with server-rendered HTML and add components only where the page
+//// needs client-side behavior. See the package README and `examples/basic_app`
+//// for the complete build and script-loading setup.
+
 import angular_ts/cookie
 import angular_ts/filters
 import angular_ts/http

@@ -93,7 +93,6 @@ These runtime APIs now have Dart facade coverage and still need browser
 integration tests:
 
 - `angular.injector(...)`.
-- `angular.init(...)`.
 - `angular.getScope(...)`, `getInjector(...)`, `getController(...)`.
 - `angular.emit(...)` and `angular.call(...)`.
 

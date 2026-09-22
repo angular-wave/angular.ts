@@ -44,6 +44,10 @@
           "page": "directive/model-options.md",
           "coverage": "dedicated"
         },
+        "native": {
+          "page": "integrations/android.md",
+          "coverage": "canonical"
+        },
         "non-bindable": {
           "page": "directive/non-bindable.md",
           "coverage": "dedicated"
@@ -131,6 +135,10 @@
         "location": { "page": "service/location.md", "coverage": "dedicated" },
         "log": { "page": "service/log.md", "coverage": "dedicated" },
         "machine": { "page": "service/machine.md", "coverage": "dedicated" },
+        "native": {
+          "page": "integrations/android.md",
+          "coverage": "canonical"
+        },
         "realtime": { "page": "services/realtime.md", "coverage": "canonical" },
         "rest": { "page": "service/rest.md", "coverage": "dedicated" },
         "sce": { "page": "service/sce.md", "coverage": "dedicated" },
@@ -221,6 +229,7 @@
     "$location": "service/location.md",
     "$log": "service/log.md",
     "$machine": "service/machine.md",
+    "$native": "integrations/android.md",
     "$parse": "service/parse.md",
     "$rest": "service/rest.md",
     "$rootElement": "service/rootElement.md",
@@ -258,6 +267,7 @@
     "$interpolate": "service/interpolation.md",
     "$location": "service/location.md",
     "$log": "service/log.md",
+    "$native": "integrations/android.md",
     "$rest": "service/rest.md",
     "$router": "guides/routing.md",
     "$sce": "service/sce.md",

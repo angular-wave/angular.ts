@@ -1,0 +1,3 @@
+Lio/github/angularwave/android/core/ng/session/**;
+Lio/github/angularwave/android/core/ng/webview/**;
+Lio/github/angularwave/android/core/ng/http/**;

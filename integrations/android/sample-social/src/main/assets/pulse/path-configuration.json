@@ -1,0 +1,53 @@
+{
+  "settings": {},
+  "rules": [
+    {
+      "patterns": [".*"],
+      "properties": {
+        "context": "default",
+        "uri": "angularNative://fragment/web",
+        "fallback_uri": "angularNative://fragment/web",
+        "pull_to_refresh_enabled": false,
+        "toolbar_enabled": false
+      }
+    },
+    {
+      "patterns": ["^/$", "^/feed$"],
+      "properties": {
+        "presentation": "replace_root",
+        "transition": "fade"
+      }
+    },
+    {
+      "patterns": ["^/create$"],
+      "properties": {
+        "transition": "cover"
+      }
+    },
+    {
+      "patterns": ["^/comments/"],
+      "properties": {
+        "context": "modal",
+        "transition": "cover"
+      }
+    },
+    {
+      "patterns": ["^/posts/"],
+      "properties": {
+        "transition": "dive"
+      }
+    },
+    {
+      "patterns": ["^/activity$"],
+      "properties": {
+        "transition": "slide"
+      }
+    },
+    {
+      "patterns": ["^/profiles/"],
+      "properties": {
+        "transition": "flip"
+      }
+    }
+  ]
+}

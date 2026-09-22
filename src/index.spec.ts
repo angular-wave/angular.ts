@@ -5,6 +5,7 @@ import { angular } from "./index.ts";
 import { _security, _serviceWorker, _workflow } from "./injection-tokens.ts";
 import { PublicInjectionTokens } from "./interface.ts";
 import * as namespaceApi from "./namespace.ts";
+import { waitUntil } from "./shared/test-utils.ts";
 
 const exports = publicApi as Record<string, unknown>;
 const docsExports = docsApi as Record<string, unknown>;
@@ -24,10 +25,6 @@ describe("index", () => {
     expect(namespaceExports.angular).toBe(angular);
     expect(namespaceExports.afterRender).toBe(exports.afterRender);
     expect(namespaceExports.queueAfterRender).toBe(exports.queueAfterRender);
-  });
-
-  it("does not auto-bootstrap ESM imports", () => {
-    expect(angular._bootsrappedModules).toEqual([]);
   });
 
   it("keeps the root runtime API narrow", () => {

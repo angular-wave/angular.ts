@@ -1,6 +1,6 @@
 import { isString, isArray, isDefined, isFunction, isObject } from '../../../shared/utils.js';
 import { ControllerRegistry } from '../../controller/controller.js';
-import { _injector, _anchorScroll, _aria, _cookie, _exceptionHandler, _eventBus, _htmlCanvas, _http, _interpolate, _log, _location, _sce, _sceDelegate, _templateCache, _templateRequest, _webComponent, _rest, _security, _sse, _websocket, _webTransport, _serviceWorker, _compile, _animate, _controller, _element, _rootElement, _rootScope, _scope, _state, _stateRegistry, _transitions, _machine, _workflow, _workflowSupervisor, _wasm, _worker } from '../../../injection-tokens.js';
+import { _injector, _anchorScroll, _aria, _cookie, _exceptionHandler, _eventBus, _htmlCanvas, _http, _interpolate, _log, _native, _location, _sce, _sceDelegate, _templateCache, _templateRequest, _webComponent, _rest, _security, _sse, _websocket, _webTransport, _serviceWorker, _compile, _animate, _controller, _element, _rootElement, _rootScope, _scope, _state, _stateRegistry, _transitions, _machine, _workflow, _workflowSupervisor, _wasm, _worker } from '../../../injection-tokens.js';
 import { isInjectable } from '../injectable.js';
 import { FilterRegistry } from '../../filter/filter.js';
 import { validate, validateRequired } from '../../../shared/validate.js';
@@ -37,6 +37,7 @@ const angularConfigKeys = new Set([
     _interpolate,
     _location,
     _log,
+    _native,
     _rest,
     routerConfigKey,
     _sce,
@@ -345,6 +346,14 @@ class NgModule {
                 this._runtimeConfig,
                 "configure",
                 [_log, logConfig],
+            ]);
+        }
+        const nativeConfig = normalized.$native;
+        if (nativeConfig) {
+            this._configBlocks.push([
+                this._runtimeConfig,
+                "configure",
+                [_native, nativeConfig],
             ]);
         }
         const locationConfig = normalized.$location;

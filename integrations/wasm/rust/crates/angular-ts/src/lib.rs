@@ -7,6 +7,7 @@ pub mod component;
 pub mod geolocation;
 pub mod injector;
 pub mod module;
+pub mod native_capabilities;
 pub mod scope;
 pub mod services;
 pub mod token;
@@ -25,6 +26,9 @@ pub use injector::{InjectionError, Injector, ServiceRef, UnsafeValue};
 pub use module::{
     module_manifest_json, Controller, Factory, NgModule, Registration, RegistrationKind, Value,
 };
+pub use native_capabilities::{
+    NativeCapabilityDescriptor, NativeCapabilityName, NATIVE_CAPABILITIES,
+};
 pub use scope::{InvocationDetail, ListenerFn, ScopeEvent};
 pub use scope::{Scope, ScopePath};
 #[cfg(not(target_arch = "wasm32"))]
@@ -37,14 +41,31 @@ pub use services::{
     MachineEventTransitionContext, MachineEventTransitionGuard, MachineEventTransitionHook,
     MachineEventTransitionUpdate, MachineHooks, MachineService, MachineSnapshot, MachineState,
     MachineStateConfig, MachineStateDefinition, MachineStateHooks, MachineStateMap,
-    MachineStateTransitionMap, RealtimeProtocolEventDetail, RealtimeProtocolMessage, RestBackend,
-    RestFactory, RestOptions, RestRequest, RestResponse, RestService, RootScopeService, Service,
-    SseConfig, SseConnection, SseService, StateDeclaration, StateRegistryService,
-    StateResolveArray, StateResolveObject, StateService, StorageBackend, StorageType, SwapMode,
-    TemplateCacheService, TemplateRequestService, Transition, WebSocketConfig, WebSocketConnection,
-    WebSocketService, WorkerConfig, WorkerCredentials, WorkerError, WorkerErrorCode, WorkerHandle,
-    WorkerModelMessage, WorkerRequest, WorkerRequestOptions, WorkerResponse, WorkerService,
-    WorkerStatus, WorkerType,
+    MachineStateTransitionMap, NativeBiometricStatus, NativeBridgeAdapter, NativeCallMessage,
+    NativeCallOptions, NativeCameraCaptureResult, NativeCameraStatus, NativeClipboardContent,
+    NativeClipboardWriteParameters, NativeClipboardWriteResult, NativeConfig,
+    NativeConnectivityStatus, NativeCredentialClearResult, NativeCredentialCreatePasskeyParameters,
+    NativeCredentialCreatePasskeyResult, NativeCredentialCreatePasswordParameters,
+    NativeCredentialCreatePasswordResult, NativeCredentialGetParameters, NativeCredentialResult,
+    NativeCredentialStatus, NativeEventHandler, NativeEventMessage, NativeFileDescriptor,
+    NativeFileOpenParameters, NativeFileOpenResult, NativeFileStatus, NativeFileUploadParameters,
+    NativeFileUploadProgress, NativeFileUploadResult, NativeGeolocationPosition,
+    NativeGeolocationStatus, NativeHapticParameters, NativeHapticResult, NativeIntentParameters,
+    NativeJsonObject, NativeJsonPrimitive, NativeJsonValue, NativeLifecycleStatus,
+    NativeMediaLoadParameters, NativeMediaSeekParameters, NativeMediaStatus,
+    NativeNavigationAndroidChange, NativeNavigationBridgeChange, NativeNavigationChange,
+    NativeNavigationPopResult, NativeNavigationRouteParameters, NativeNavigationRouteResult,
+    NativeNavigationStatus, NativeNavigationTransition, NativeNotificationStatus, NativeOpenResult,
+    NativePermissionParameters, NativePermissionStatus, NativePlatformStatus, NativeReplyMessage,
+    NativeService, NativeShareParameters, NativeWindowBounds, NativeWindowDisplayFeature,
+    NativeWindowInsets, NativeWindowStatus, RealtimeProtocolEventDetail, RealtimeProtocolMessage,
+    RestBackend, RestFactory, RestOptions, RestRequest, RestResponse, RestService,
+    RootScopeService, Service, SseConfig, SseConnection, SseService, StateDeclaration,
+    StateRegistryService, StateResolveArray, StateResolveObject, StateService, StorageBackend,
+    StorageType, SwapMode, TemplateCacheService, TemplateRequestService, Transition,
+    WebSocketConfig, WebSocketConnection, WebSocketService, WorkerConfig, WorkerCredentials,
+    WorkerError, WorkerErrorCode, WorkerHandle, WorkerModelMessage, WorkerRequest,
+    WorkerRequestOptions, WorkerResponse, WorkerService, WorkerStatus, WorkerType,
 };
 #[cfg(target_arch = "wasm32")]
 pub use services::{HttpServiceExt, TemplateRequestServiceExt};

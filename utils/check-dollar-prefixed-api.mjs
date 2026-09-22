@@ -24,6 +24,7 @@ const allowedProperties = new Set([
   "$element",
   "$entry",
   "$entries",
+  "$error",
   "$event",
   "$eventBus",
   "$exceptionHandler",
@@ -77,6 +78,10 @@ const allowedProperties = new Set([
   "$workflow",
   "$workflowSupervisor",
 ]);
+
+for (const token of interfaceProperties("src/interface.ts", "InjectionTokenMap")) {
+  allowedProperties.add(token);
+}
 
 const failures = [];
 
@@ -179,4 +184,36 @@ function readMember(node) {
   }
 
   return undefined;
+}
+
+function interfaceProperties(file, interfaceName) {
+  const sourceText = fs.readFileSync(file, "utf8");
+  const sourceFile = ts.createSourceFile(
+    file,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const properties = [];
+
+  sourceFile.forEachChild((node) => {
+    if (
+      !ts.isInterfaceDeclaration(node) ||
+      node.name.text !== interfaceName
+    ) {
+      return;
+    }
+
+    for (const member of node.members) {
+      if (
+        ts.isPropertySignature(member) &&
+        member.name &&
+        (ts.isIdentifier(member.name) || ts.isStringLiteralLike(member.name))
+      ) {
+        properties.push(member.name.text);
+      }
+    }
+  });
+
+  return properties;
 }

@@ -491,6 +491,213 @@ pub type NgModelController
 /// Plain, serializable location data written by the `geolocation` directive.
 pub type GeolocationValue
 
+/// Host object exposed by Android, iOS, or a test adapter.
+pub type NativeBridgeAdapter
+
+/// JSON-compatible request sent to a native application shell.
+pub type NativeCallMessage(a)
+
+/// Options for one request to the native shell.
+pub type NativeCallOptions
+
+/// Configuration accepted by the optional native runtime module.
+pub type NativeConfig
+
+/// Public AngularTS NativeEventHandler contract exposed through the ng namespace.
+pub type NativeEventHandler(a)
+
+/// Event pushed by a native application shell.
+pub type NativeEventMessage(a)
+
+/// Reply returned by a native application shell.
+pub type NativeReplyMessage(a)
+
+/// Typed request, reply, and event API shared by native application shells.
+pub type NativeService
+
+/// Public AngularTS NativeCapabilityEventMap contract exposed through the ng namespace.
+pub type NativeCapabilityEventMap
+
+/// Public AngularTS NativeCapabilityEventName contract exposed through the ng namespace.
+pub type NativeCapabilityEventName(a)
+
+/// Public AngularTS NativeCapabilityEventPayload contract exposed through the ng namespace.
+pub type NativeCapabilityEventPayload(a, b)
+
+/// Public AngularTS NativeCapabilityMethodContract contract exposed through the ng namespace.
+pub type NativeCapabilityMethodContract(a, b)
+
+/// Public AngularTS NativeCapabilityMethodMap contract exposed through the ng namespace.
+pub type NativeCapabilityMethodMap
+
+/// Public AngularTS NativeCapabilityMethodName contract exposed through the ng namespace.
+pub type NativeCapabilityMethodName(a)
+
+/// Public AngularTS NativeCapabilityName contract exposed through the ng namespace.
+pub type NativeCapabilityName
+
+/// Public AngularTS NativeCapabilityParameters contract exposed through the ng namespace.
+pub type NativeCapabilityParameters(a, b)
+
+/// Public AngularTS NativeCapabilityResult contract exposed through the ng namespace.
+pub type NativeCapabilityResult(a, b)
+
+/// Availability and enrollment state for native biometric authentication.
+pub type NativeBiometricStatus
+
+/// Image captured by the native camera.
+pub type NativeCameraCaptureResult
+
+/// Availability and permission state for the native camera.
+pub type NativeCameraStatus
+
+/// Text currently available from the native clipboard.
+pub type NativeClipboardContent
+
+/// Text and optional label written to the native clipboard.
+pub type NativeClipboardWriteParameters
+
+/// Result of writing text to the native clipboard.
+pub type NativeClipboardWriteResult
+
+/// Current native network reachability and cost state.
+pub type NativeConnectivityStatus
+
+/// Result of clearing native credential state.
+pub type NativeCredentialClearResult
+
+/// Passkey creation request passed to the native credential manager.
+pub type NativeCredentialCreatePasskeyParameters
+
+/// Result of creating a passkey through the native credential manager.
+pub type NativeCredentialCreatePasskeyResult
+
+/// Password saved through the native credential manager.
+pub type NativeCredentialCreatePasswordParameters
+
+/// Result of saving a password through the native credential manager.
+pub type NativeCredentialCreatePasswordResult
+
+/// Credential kinds requested from the native credential manager.
+pub type NativeCredentialGetParameters
+
+/// Credential returned by the native credential manager.
+pub type NativeCredentialResult
+
+/// Native password and passkey provider support.
+pub type NativeCredentialStatus
+
+/// File returned by the native file picker.
+pub type NativeFileDescriptor
+
+/// File types and selection mode passed to the native file picker.
+pub type NativeFileOpenParameters
+
+/// Files selected through the native file picker.
+pub type NativeFileOpenResult
+
+/// Native file selection and upload support.
+pub type NativeFileStatus
+
+/// Multipart upload sent by the native shell.
+pub type NativeFileUploadParameters
+
+/// Progress emitted while the native shell uploads a file.
+pub type NativeFileUploadProgress
+
+/// Successful native multipart upload response.
+pub type NativeFileUploadResult
+
+/// Serializable current device location.
+pub type NativeGeolocationPosition
+
+/// Current availability and granted accuracy for device location.
+pub type NativeGeolocationStatus
+
+/// Parameters for native haptic feedback.
+pub type NativeHapticParameters
+
+/// Result of a native haptic feedback request.
+pub type NativeHapticResult
+
+/// URL passed to a native application through an intent.
+pub type NativeIntentParameters
+
+/// JSON-compatible object accepted across a native bridge.
+pub type NativeJsonObject
+
+/// JSON scalar accepted across a native bridge.
+pub type NativeJsonPrimitive
+
+/// JSON-compatible value accepted across a native bridge.
+pub type NativeJsonValue
+
+/// Current lifecycle state of the native destination.
+pub type NativeLifecycleStatus
+
+/// Media source loaded by the native player.
+pub type NativeMediaLoadParameters
+
+/// Position, in milliseconds, passed to the native media player.
+pub type NativeMediaSeekParameters
+
+/// Current state of the native media player.
+pub type NativeMediaStatus
+
+/// Navigation committed directly by Android rather than requested through the bridge.
+pub type NativeNavigationAndroidChange
+
+/// Completion or cancellation of navigation requested through the bridge.
+pub type NativeNavigationBridgeChange
+
+/// Committed or cancelled native navigation event.
+pub type NativeNavigationChange
+
+/// Result of requesting native back navigation.
+pub type NativeNavigationPopResult
+
+/// URL and optional transition passed to a native route operation.
+pub type NativeNavigationRouteParameters
+
+/// Accepted push, replace, modal, or deep-link operation.
+pub type NativeNavigationRouteResult
+
+/// Current native navigation stack state.
+pub type NativeNavigationStatus
+
+/// Named transition applied by native navigation when motion is enabled.
+pub type NativeNavigationTransition
+
+/// Current availability and permission state for native notifications.
+pub type NativeNotificationStatus
+
+/// Result of opening native UI or another application.
+pub type NativeOpenResult
+
+/// Parameters for permission status and request calls.
+pub type NativePermissionParameters
+
+/// Current state of one Android runtime permission.
+pub type NativePermissionStatus
+
+/// Runtime and application metadata reported by a native shell.
+pub type NativePlatformStatus
+
+/// Content passed to the native system share sheet.
+pub type NativeShareParameters
+
+/// Bounds, in density-independent pixels, of a native display feature.
+pub type NativeWindowBounds
+
+/// Fold or hinge reported by a foldable native display.
+pub type NativeWindowDisplayFeature
+
+/// Insets, in density-independent pixels, that native content should avoid.
+pub type NativeWindowInsets
+
+/// Current native window metrics, adaptive classes, safe area, and display features.
+pub type NativeWindowStatus
+
 /// Full request configuration accepted by `$http(...)`. See
 /// http://docs.angularjs.org/api/ng/service/$http#usage
 pub type HttpRequestConfig

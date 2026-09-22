@@ -49,5 +49,8 @@
   "prettier": {
     "proseWrap": "always",
     "singleQuote": true
+  },
+  "overrides": {
+    "adm-zip": "0.6.1"
   }
 }

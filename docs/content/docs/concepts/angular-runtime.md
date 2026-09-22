@@ -36,8 +36,8 @@ app.config({
 const existing = angular.getModule('myApp');
 ```
 
-Calling `angular.getModule("name")` without first creating that module throws the
-same `nomod` error as AngularJS.
+Calling `angular.getModule("name")` without first creating that module throws
+the same `nomod` error as AngularJS.
 
 ## Bootstrap Manually
 
@@ -58,20 +58,19 @@ already has an injector throws `ng:btstrpd`.
 
 ## Auto-Bootstrap
 
-`angular.init()` scans an element or document for `ng-app` roots. The first root
-uses the current [`Angular`](../../../typedoc/classes/Angular.html) instance.
-Additional roots are bootstrapped as sub-applications and stored in
-`angular.subapps`.
+The default package entry and UMD build scan for `ng-app` when the DOM is ready.
+The first root uses the global
+[`Angular`](../../../typedoc/classes/Angular.html) instance; additional roots
+become sub-applications in `angular.subapps`. No startup call is required.
+
+Custom runtimes do not scan the document. Bootstrap their root explicitly:
 
 ```ts
-window.addEventListener('DOMContentLoaded', () => {
-  angular.init(document);
-});
+angular.bootstrap(document.querySelector('#app'), ['myApp']);
 ```
 
-You usually do not need to call this yourself for static pages because AngularTS
-runs auto-bootstrap when the script loads. Call it manually when dynamically
-adding new `ng-app` roots.
+Use the same explicit call for an application root inserted after the initial
+document load.
 
 ## Create A Standalone Injector
 

@@ -38,6 +38,7 @@ generate:
 generate-check:
 	node tool/check_generated_bindings.mjs
 	node ../../utils/generate-programmatic-view-tags.mjs --integration dart --check
+	$(DART) run tool/check_ng_namespace_parity.dart
 
 format:
 	$(DART) format lib test example tool

@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-09-13
+
+- Added Angular Native Android navigation, components, platform capabilities, and optional UI artifacts.
+- Added Android Maven publication, isolated staged R8 consumers, reproducibility checks, and device CI.
+- Added predictive-back transitions, portable emulator coverage, and optional physical-device evidence.
+- Added signed public-artifact verification, device StrictMode and memory-pressure checks, and reliable offline fallback.
+- Updated Android dependencies, Maven publishing, and Java 21 test isolation for strict warning-free release checks.
+- Made Android Maven archives deterministic, restored the complete CI gate, and rejected stale release preparation.
+
+## [0.35.5] - 2026-09-06
+
+- Fixed pre-1.0 Hex publication and made release checks verify the published tarball.
+
+## [0.35.4] - 2026-09-06
+
+- Fixed Dart publication validation so it does not depend on a Playwright browser already being installed.
+
+## [0.35.3] - 2026-09-06
+
+- Fixed Dart scope conversion across supported SDK versions and added pre-publication Dart and Gleam CI gates.
+- Improved the Gleam package documentation shown on Hex.
+- Removed release-version literals from integration documentation tests.
+
+## [0.35.2] - 2026-09-06
+
+- Fixed Dart 3.6 conversion of JavaScript-backed scope state.
+
 ## [0.35.1] - 2026-09-06
 
 - Fixed Dart namespace parity and strengthened cross-integration release validation.

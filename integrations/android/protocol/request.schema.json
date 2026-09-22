@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://angular-wave.github.io/angular.ts/native/request.schema.json",
+  "title": "Angular Native request",
+  "type": "object",
+  "required": ["protocol", "id", "target", "method"],
+  "properties": {
+    "protocol": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "target": { "type": "string", "minLength": 1 },
+    "method": { "type": "string", "minLength": 1 },
+    "params": { "type": ["object", "null"] },
+    "session": { "type": "string", "minLength": 1 },
+    "scopeId": { "type": ["string", "number"] },
+    "elementId": { "type": "string" }
+  },
+  "additionalProperties": false
+}

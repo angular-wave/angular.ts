@@ -76,6 +76,8 @@ app.config({
   },
 });
 
-document.addEventListener('DOMContentLoaded', () => angular.init(document), {
-  once: true,
-});
+document.addEventListener(
+  'DOMContentLoaded',
+  () => angular.bootstrap(document.body, ['htmlCanvasDemo']),
+  { once: true },
+);

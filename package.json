@@ -2,7 +2,7 @@
   "name": "@angular-wave/angular.ts",
   "description": "A modern, optimized and type-safe version of AngularJS",
   "license": "MIT",
-  "version": "0.35.1",
+  "version": "0.36.0",
   "type": "module",
   "main": "dist/angular-ts.esm.js",
   "module": "dist/angular-ts.esm.js",
@@ -13,10 +13,6 @@
       "types": "./@types/namespace.d.ts",
       "import": "./dist/angular-ts.esm.js",
       "default": "./dist/angular-ts.esm.js"
-    },
-    "./auto": {
-      "types": "./@types/auto.d.ts",
-      "import": "./dist/auto.js"
     },
     "./directive/*": {
       "types": "./@types/directive/*/*.d.ts",
@@ -66,6 +62,10 @@
     "./runtime/wasm": {
       "types": "./@types/runtime/wasm.d.ts",
       "import": "./dist/runtime/wasm.js"
+    },
+    "./runtime/native": {
+      "types": "./@types/runtime/native.d.ts",
+      "import": "./dist/runtime/native.js"
     },
     "./runtime/web-component": {
       "types": "./@types/runtime/web-component.d.ts",

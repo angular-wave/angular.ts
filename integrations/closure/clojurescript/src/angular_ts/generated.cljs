@@ -103,6 +103,75 @@
     "js/ng.ModelSyncFailureMode"
     "js/ng.ModelSyncOptions"
     "js/ng.ModelSyncTarget"
+    "js/ng.NativeBiometricStatus"
+    "js/ng.NativeBridgeAdapter"
+    "js/ng.NativeCallMessage"
+    "js/ng.NativeCallOptions"
+    "js/ng.NativeCameraCaptureResult"
+    "js/ng.NativeCameraStatus"
+    "js/ng.NativeCapabilityEventMap"
+    "js/ng.NativeCapabilityEventName"
+    "js/ng.NativeCapabilityEventPayload"
+    "js/ng.NativeCapabilityMethodContract"
+    "js/ng.NativeCapabilityMethodMap"
+    "js/ng.NativeCapabilityMethodName"
+    "js/ng.NativeCapabilityName"
+    "js/ng.NativeCapabilityParameters"
+    "js/ng.NativeCapabilityResult"
+    "js/ng.NativeClipboardContent"
+    "js/ng.NativeClipboardWriteParameters"
+    "js/ng.NativeClipboardWriteResult"
+    "js/ng.NativeConfig"
+    "js/ng.NativeConnectivityStatus"
+    "js/ng.NativeCredentialClearResult"
+    "js/ng.NativeCredentialCreatePasskeyParameters"
+    "js/ng.NativeCredentialCreatePasskeyResult"
+    "js/ng.NativeCredentialCreatePasswordParameters"
+    "js/ng.NativeCredentialCreatePasswordResult"
+    "js/ng.NativeCredentialGetParameters"
+    "js/ng.NativeCredentialResult"
+    "js/ng.NativeCredentialStatus"
+    "js/ng.NativeEventHandler"
+    "js/ng.NativeEventMessage"
+    "js/ng.NativeFileDescriptor"
+    "js/ng.NativeFileOpenParameters"
+    "js/ng.NativeFileOpenResult"
+    "js/ng.NativeFileStatus"
+    "js/ng.NativeFileUploadParameters"
+    "js/ng.NativeFileUploadProgress"
+    "js/ng.NativeFileUploadResult"
+    "js/ng.NativeGeolocationPosition"
+    "js/ng.NativeGeolocationStatus"
+    "js/ng.NativeHapticParameters"
+    "js/ng.NativeHapticResult"
+    "js/ng.NativeIntentParameters"
+    "js/ng.NativeJsonObject"
+    "js/ng.NativeJsonPrimitive"
+    "js/ng.NativeJsonValue"
+    "js/ng.NativeLifecycleStatus"
+    "js/ng.NativeMediaLoadParameters"
+    "js/ng.NativeMediaSeekParameters"
+    "js/ng.NativeMediaStatus"
+    "js/ng.NativeNavigationAndroidChange"
+    "js/ng.NativeNavigationBridgeChange"
+    "js/ng.NativeNavigationChange"
+    "js/ng.NativeNavigationPopResult"
+    "js/ng.NativeNavigationRouteParameters"
+    "js/ng.NativeNavigationRouteResult"
+    "js/ng.NativeNavigationStatus"
+    "js/ng.NativeNavigationTransition"
+    "js/ng.NativeNotificationStatus"
+    "js/ng.NativeOpenResult"
+    "js/ng.NativePermissionParameters"
+    "js/ng.NativePermissionStatus"
+    "js/ng.NativePlatformStatus"
+    "js/ng.NativeReplyMessage"
+    "js/ng.NativeService"
+    "js/ng.NativeShareParameters"
+    "js/ng.NativeWindowBounds"
+    "js/ng.NativeWindowDisplayFeature"
+    "js/ng.NativeWindowInsets"
+    "js/ng.NativeWindowStatus"
     "js/ng.NgModelController"
     "js/ng.NgModule"
     "js/ng.ParamsOf"
@@ -334,6 +403,75 @@
      "js/ng.ModelSyncFailureMode" "Public AngularTS ModelSyncFailureMode contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ModelSyncOptions" "Public AngularTS ModelSyncOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ModelSyncTarget" "Public AngularTS ModelSyncTarget contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeBiometricStatus" "Availability and enrollment state for native biometric authentication."
+     "js/ng.NativeBridgeAdapter" "Host object exposed by Android, iOS, or a test adapter."
+     "js/ng.NativeCallMessage" "Public AngularTS NativeCallMessage contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCallOptions" "Options for one request to the native shell."
+     "js/ng.NativeCameraCaptureResult" "Image captured by the native camera."
+     "js/ng.NativeCameraStatus" "Availability and permission state for the native camera."
+     "js/ng.NativeCapabilityEventMap" "Public AngularTS NativeCapabilityEventMap contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCapabilityEventName" "Public AngularTS NativeCapabilityEventName contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCapabilityEventPayload" "Public AngularTS NativeCapabilityEventPayload contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCapabilityMethodContract" "Public AngularTS NativeCapabilityMethodContract contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCapabilityMethodMap" "Public AngularTS NativeCapabilityMethodMap contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCapabilityMethodName" "Public AngularTS NativeCapabilityMethodName contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCapabilityName" "Public AngularTS NativeCapabilityName contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCapabilityParameters" "Public AngularTS NativeCapabilityParameters contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeCapabilityResult" "Public AngularTS NativeCapabilityResult contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeClipboardContent" "Text currently available from the native clipboard."
+     "js/ng.NativeClipboardWriteParameters" "Text and optional label written to the native clipboard."
+     "js/ng.NativeClipboardWriteResult" "Result of writing text to the native clipboard."
+     "js/ng.NativeConfig" "Configuration accepted by the optional native runtime module."
+     "js/ng.NativeConnectivityStatus" "Current native network reachability and cost state."
+     "js/ng.NativeCredentialClearResult" "Result of clearing native credential state."
+     "js/ng.NativeCredentialCreatePasskeyParameters" "Passkey creation request passed to the native credential manager."
+     "js/ng.NativeCredentialCreatePasskeyResult" "Result of creating a passkey through the native credential manager."
+     "js/ng.NativeCredentialCreatePasswordParameters" "Password saved through the native credential manager."
+     "js/ng.NativeCredentialCreatePasswordResult" "Result of saving a password through the native credential manager."
+     "js/ng.NativeCredentialGetParameters" "Credential kinds requested from the native credential manager."
+     "js/ng.NativeCredentialResult" "Credential returned by the native credential manager."
+     "js/ng.NativeCredentialStatus" "Native password and passkey provider support."
+     "js/ng.NativeEventHandler" "Public AngularTS NativeEventHandler contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeEventMessage" "Public AngularTS NativeEventMessage contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeFileDescriptor" "File returned by the native file picker."
+     "js/ng.NativeFileOpenParameters" "File types and selection mode passed to the native file picker."
+     "js/ng.NativeFileOpenResult" "Files selected through the native file picker."
+     "js/ng.NativeFileStatus" "Native file selection and upload support."
+     "js/ng.NativeFileUploadParameters" "Multipart upload sent by the native shell."
+     "js/ng.NativeFileUploadProgress" "Progress emitted while the native shell uploads a file."
+     "js/ng.NativeFileUploadResult" "Successful native multipart upload response."
+     "js/ng.NativeGeolocationPosition" "Serializable current device location."
+     "js/ng.NativeGeolocationStatus" "Current availability and granted accuracy for device location."
+     "js/ng.NativeHapticParameters" "Parameters for native haptic feedback."
+     "js/ng.NativeHapticResult" "Result of a native haptic feedback request."
+     "js/ng.NativeIntentParameters" "URL passed to a native application through an intent."
+     "js/ng.NativeJsonObject" "JSON-compatible object accepted across a native bridge."
+     "js/ng.NativeJsonPrimitive" "JSON scalar accepted across a native bridge."
+     "js/ng.NativeJsonValue" "JSON-compatible value accepted across a native bridge."
+     "js/ng.NativeLifecycleStatus" "Current lifecycle state of the native destination."
+     "js/ng.NativeMediaLoadParameters" "Media source loaded by the native player."
+     "js/ng.NativeMediaSeekParameters" "Position, in milliseconds, passed to the native media player."
+     "js/ng.NativeMediaStatus" "Current state of the native media player."
+     "js/ng.NativeNavigationAndroidChange" "Navigation committed directly by Android rather than requested through the bridge."
+     "js/ng.NativeNavigationBridgeChange" "Completion or cancellation of navigation requested through the bridge."
+     "js/ng.NativeNavigationChange" "Committed or cancelled native navigation event."
+     "js/ng.NativeNavigationPopResult" "Result of requesting native back navigation."
+     "js/ng.NativeNavigationRouteParameters" "URL and optional transition passed to a native route operation."
+     "js/ng.NativeNavigationRouteResult" "Accepted push, replace, modal, or deep-link operation."
+     "js/ng.NativeNavigationStatus" "Current native navigation stack state."
+     "js/ng.NativeNavigationTransition" "Named transition applied by native navigation when motion is enabled."
+     "js/ng.NativeNotificationStatus" "Current availability and permission state for native notifications."
+     "js/ng.NativeOpenResult" "Result of opening native UI or another application."
+     "js/ng.NativePermissionParameters" "Parameters for permission status and request calls."
+     "js/ng.NativePermissionStatus" "Current state of one Android runtime permission."
+     "js/ng.NativePlatformStatus" "Runtime and application metadata reported by a native shell."
+     "js/ng.NativeReplyMessage" "Public AngularTS NativeReplyMessage contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.NativeService" "Native bridge service used to call host-platform methods, receive replies, subscribe to native events, and access the active adapter."
+     "js/ng.NativeShareParameters" "Content passed to the native system share sheet."
+     "js/ng.NativeWindowBounds" "Bounds, in density-independent pixels, of a native display feature."
+     "js/ng.NativeWindowDisplayFeature" "Fold or hinge reported by a foldable native display."
+     "js/ng.NativeWindowInsets" "Insets, in density-independent pixels, that native content should avoid."
+     "js/ng.NativeWindowStatus" "Current native window metrics, adaptive classes, safe area, and display features."
      "js/ng.NgModelController" "Public AngularTS NgModelController contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NgModule" "AngularTS module registration surface for controllers, directives, services, factories, providers, filters, run blocks, and config blocks."
      "js/ng.ParamsOf" "Public AngularTS ParamsOf contract exposed through the global ng namespace for Closure-annotated applications."
@@ -559,6 +697,8 @@
     "model-new-isolate"
     "model-search-by-name"
     "model-transcluded"
+    "native-service-dispose"
+    "native-service-supports"
     "ng-model-controller-commit-view-value"
     "ng-model-controller-override-model-options"
     "ng-model-controller-process-model-value"
@@ -858,6 +998,7 @@
     "injection-token-map-injector"
     "injection-token-map-location"
     "injection-token-map-log"
+    "injection-token-map-native"
     "injection-token-map-root-element"
     "injection-token-map-root-scope"
     "injection-token-map-sce"
@@ -908,6 +1049,212 @@
     "model-root"
     "model-scope-name"
     "model-sync-options-failure"
+    "native-biometric-status-available"
+    "native-biometric-status-enrolled"
+    "native-biometric-status-permission"
+    "native-call-message-element-id"
+    "native-call-message-id"
+    "native-call-message-method"
+    "native-call-message-protocol"
+    "native-call-message-session"
+    "native-call-message-target"
+    "native-call-options-element-id"
+    "native-call-options-id"
+    "native-call-options-signal"
+    "native-call-options-timeout"
+    "native-camera-capture-result-name"
+    "native-camera-capture-result-size"
+    "native-camera-capture-result-type"
+    "native-camera-capture-result-uri"
+    "native-camera-status-available"
+    "native-camera-status-granted"
+    "native-camera-status-permission"
+    "native-capability-event-map-biometrics"
+    "native-capability-event-map-camera"
+    "native-capability-event-map-clipboard"
+    "native-capability-event-map-connectivity"
+    "native-capability-event-map-credentials"
+    "native-capability-event-map-files"
+    "native-capability-event-map-geolocation"
+    "native-capability-event-map-haptics"
+    "native-capability-event-map-intents"
+    "native-capability-event-map-lifecycle"
+    "native-capability-event-map-media"
+    "native-capability-event-map-navigation"
+    "native-capability-event-map-notifications"
+    "native-capability-event-map-permissions"
+    "native-capability-event-map-platform"
+    "native-capability-event-map-sharing"
+    "native-capability-event-map-window"
+    "native-capability-method-map-biometrics"
+    "native-capability-method-map-camera"
+    "native-capability-method-map-clipboard"
+    "native-capability-method-map-connectivity"
+    "native-capability-method-map-credentials"
+    "native-capability-method-map-files"
+    "native-capability-method-map-geolocation"
+    "native-capability-method-map-haptics"
+    "native-capability-method-map-intents"
+    "native-capability-method-map-lifecycle"
+    "native-capability-method-map-media"
+    "native-capability-method-map-navigation"
+    "native-capability-method-map-notifications"
+    "native-capability-method-map-permissions"
+    "native-capability-method-map-platform"
+    "native-capability-method-map-sharing"
+    "native-capability-method-map-window"
+    "native-clipboard-content-text"
+    "native-clipboard-write-parameters-label"
+    "native-clipboard-write-parameters-text"
+    "native-clipboard-write-result-written"
+    "native-config-bridge"
+    "native-config-global-name"
+    "native-config-max-message-bytes"
+    "native-config-session"
+    "native-config-timeout"
+    "native-connectivity-status-connected"
+    "native-connectivity-status-metered"
+    "native-connectivity-status-validated"
+    "native-credential-clear-result-cleared"
+    "native-credential-create-passkey-parameters-request-json"
+    "native-credential-create-passkey-result-created"
+    "native-credential-create-passkey-result-type"
+    "native-credential-create-password-parameters-id"
+    "native-credential-create-password-parameters-password"
+    "native-credential-create-password-result-created"
+    "native-credential-create-password-result-type"
+    "native-credential-get-parameters-passkey-request-json"
+    "native-credential-get-parameters-passwords"
+    "native-credential-result-type"
+    "native-credential-status-available"
+    "native-credential-status-passkeys"
+    "native-credential-status-passwords"
+    "native-event-message-event"
+    "native-event-message-protocol"
+    "native-event-message-target"
+    "native-file-descriptor-name"
+    "native-file-descriptor-persisted"
+    "native-file-descriptor-size"
+    "native-file-descriptor-type"
+    "native-file-descriptor-uri"
+    "native-file-open-parameters-accept"
+    "native-file-open-parameters-multiple"
+    "native-file-open-result-files"
+    "native-file-status-available"
+    "native-file-status-content-uris"
+    "native-file-status-upload"
+    "native-file-upload-parameters-field"
+    "native-file-upload-parameters-fields"
+    "native-file-upload-parameters-headers"
+    "native-file-upload-parameters-name"
+    "native-file-upload-parameters-type"
+    "native-file-upload-parameters-upload-id"
+    "native-file-upload-parameters-uri"
+    "native-file-upload-parameters-url"
+    "native-file-upload-progress-sent"
+    "native-file-upload-progress-total"
+    "native-file-upload-progress-upload-id"
+    "native-file-upload-result-name"
+    "native-file-upload-result-status"
+    "native-file-upload-result-type"
+    "native-geolocation-position-accuracy"
+    "native-geolocation-position-altitude"
+    "native-geolocation-position-altitude-accuracy"
+    "native-geolocation-position-heading"
+    "native-geolocation-position-latitude"
+    "native-geolocation-position-longitude"
+    "native-geolocation-position-speed"
+    "native-geolocation-position-timestamp"
+    "native-geolocation-status-accuracy"
+    "native-geolocation-status-available"
+    "native-geolocation-status-granted"
+    "native-geolocation-status-permission"
+    "native-haptic-parameters-style"
+    "native-haptic-result-performed"
+    "native-intent-parameters-url"
+    "native-lifecycle-status-active"
+    "native-lifecycle-status-state"
+    "native-media-load-parameters-autoplay"
+    "native-media-load-parameters-url"
+    "native-media-seek-parameters-position"
+    "native-media-status-available"
+    "native-media-status-duration"
+    "native-media-status-loaded"
+    "native-media-status-playing"
+    "native-media-status-position"
+    "native-media-status-state"
+    "native-navigation-android-change-from"
+    "native-navigation-android-change-method"
+    "native-navigation-android-change-phase"
+    "native-navigation-android-change-source"
+    "native-navigation-android-change-url"
+    "native-navigation-bridge-change-from"
+    "native-navigation-bridge-change-method"
+    "native-navigation-bridge-change-phase"
+    "native-navigation-bridge-change-source"
+    "native-navigation-bridge-change-transaction"
+    "native-navigation-bridge-change-url"
+    "native-navigation-change-from"
+    "native-navigation-change-method"
+    "native-navigation-change-phase"
+    "native-navigation-change-source"
+    "native-navigation-change-url"
+    "native-navigation-pop-result-method"
+    "native-navigation-pop-result-routed"
+    "native-navigation-route-parameters-transition"
+    "native-navigation-route-parameters-url"
+    "native-navigation-route-result-action"
+    "native-navigation-route-result-method"
+    "native-navigation-route-result-phase"
+    "native-navigation-route-result-routed"
+    "native-navigation-route-result-transaction"
+    "native-navigation-route-result-transition"
+    "native-navigation-route-result-url"
+    "native-navigation-status-can-pop"
+    "native-navigation-status-location"
+    "native-navigation-status-modal"
+    "native-navigation-status-previous-location"
+    "native-notification-status-available"
+    "native-notification-status-granted"
+    "native-notification-status-permission"
+    "native-open-result-opened"
+    "native-permission-parameters-permission"
+    "native-permission-status-can-request"
+    "native-permission-status-granted"
+    "native-permission-status-permission"
+    "native-platform-status-dark-mode"
+    "native-platform-status-package"
+    "native-platform-status-platform"
+    "native-platform-status-sdk"
+    "native-reply-message-id"
+    "native-reply-message-ok"
+    "native-reply-message-protocol"
+    "native-service-available"
+    "native-service-capabilities"
+    "native-service-protocol-version"
+    "native-share-parameters-text"
+    "native-share-parameters-title"
+    "native-share-parameters-type"
+    "native-window-bounds-bottom"
+    "native-window-bounds-left"
+    "native-window-bounds-right"
+    "native-window-bounds-top"
+    "native-window-display-feature-bounds"
+    "native-window-display-feature-orientation"
+    "native-window-display-feature-separating"
+    "native-window-display-feature-state"
+    "native-window-display-feature-type"
+    "native-window-insets-bottom"
+    "native-window-insets-left"
+    "native-window-insets-right"
+    "native-window-insets-top"
+    "native-window-status-display-features"
+    "native-window-status-height"
+    "native-window-status-height-class"
+    "native-window-status-orientation"
+    "native-window-status-safe-area"
+    "native-window-status-width"
+    "native-window-status-width-class"
     "ng-model-controller-async-validators"
     "ng-model-controller-dirty"
     "ng-model-controller-error"
@@ -1669,6 +2016,16 @@
   "Creates a transcluded child scope linked to this scope and an optional parent instance.\n\nParams:\n- parentInstance: {(!ng.Scope|undefined)} Value supplied for the parentInstance parameter.\n\nReturns: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.Model target ^js/ng.Scope parentInstance]
   (.transcluded target parentInstance))
+
+(defn native-service-dispose
+  "Public NativeService.dispose member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+  [^js/ng.NativeService target]
+  (.dispose target))
+
+(defn native-service-supports
+  "Public NativeService.supports member exposed by the AngularTS namespace contract.\n\nParams:\n- target: {string} Value supplied for the target parameter.\n- method: {(string|undefined)} Value supplied for the method parameter.\n\nReturns: {boolean}"
+  ^boolean [^js/ng.NativeService _target ^string target ^string method]
+  (.supports _target target method))
 
 (defn ng-model-controller-commit-view-value
   "Commit a pending update to the `modelValue`. Updates may be pending by a debounced event or because the input is waiting for a some future event defined in `ng-model-options`. this method is rarely needed as `NgModelController` usually handles calling this in response to input events.\n\nReturns: {void}"
@@ -3198,6 +3555,11 @@
   ^js/ng.LogService [^js/ng.InjectionTokenMap target]
   (.-$log target))
 
+(defn injection-token-map-native
+  "Public InjectionTokenMap.$native member exposed by the AngularTS namespace contract.\n\nType: {!ng.NativeService}"
+  ^js/ng.NativeService [^js/ng.InjectionTokenMap target]
+  (.-$native target))
+
 (defn injection-token-map-root-element
   "Public InjectionTokenMap.$rootElement member exposed by the AngularTS namespace contract.\n\nType: {!HTMLElement}"
   ^js/HTMLElement [^js/ng.InjectionTokenMap target]
@@ -3447,6 +3809,1036 @@
   "Public ModelSyncOptions.failure member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
   ^string [^js/ng.ModelSyncOptions target]
   (.-failure target))
+
+(defn native-biometric-status-available
+  "Public NativeBiometricStatus.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeBiometricStatus target]
+  (.-available target))
+
+(defn native-biometric-status-enrolled
+  "Public NativeBiometricStatus.enrolled member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeBiometricStatus target]
+  (.-enrolled target))
+
+(defn native-biometric-status-permission
+  "Public NativeBiometricStatus.permission member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeBiometricStatus target]
+  (.-permission target))
+
+(defn native-call-message-element-id
+  "Public NativeCallMessage.elementId member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeCallMessage target]
+  (.-elementId target))
+
+(defn native-call-message-id
+  "Public NativeCallMessage.id member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCallMessage target]
+  (.-id target))
+
+(defn native-call-message-method
+  "Public NativeCallMessage.method member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCallMessage target]
+  (.-method target))
+
+(defn native-call-message-protocol
+  "Public NativeCallMessage.protocol member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeCallMessage target]
+  (.-protocol target))
+
+(defn native-call-message-session
+  "Public NativeCallMessage.session member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeCallMessage target]
+  (.-session target))
+
+(defn native-call-message-target
+  "Public NativeCallMessage.target member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCallMessage target]
+  (.-target target))
+
+(defn native-call-options-element-id
+  "Public NativeCallOptions.elementId member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeCallOptions target]
+  (.-elementId target))
+
+(defn native-call-options-id
+  "Public NativeCallOptions.id member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeCallOptions target]
+  (.-id target))
+
+(defn native-call-options-signal
+  "Public NativeCallOptions.signal member exposed by the AngularTS namespace contract.\n\nType: {(!AbortSignal|undefined)}"
+  ^js/AbortSignal [^js/ng.NativeCallOptions target]
+  (.-signal target))
+
+(defn native-call-options-timeout
+  "Public NativeCallOptions.timeout member exposed by the AngularTS namespace contract.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.NativeCallOptions target]
+  (.-timeout target))
+
+(defn native-camera-capture-result-name
+  "Public NativeCameraCaptureResult.name member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCameraCaptureResult target]
+  (.-name target))
+
+(defn native-camera-capture-result-size
+  "Public NativeCameraCaptureResult.size member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeCameraCaptureResult target]
+  (.-size target))
+
+(defn native-camera-capture-result-type
+  "Public NativeCameraCaptureResult.type member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCameraCaptureResult target]
+  (.-type target))
+
+(defn native-camera-capture-result-uri
+  "Public NativeCameraCaptureResult.uri member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCameraCaptureResult target]
+  (.-uri target))
+
+(defn native-camera-status-available
+  "Public NativeCameraStatus.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeCameraStatus target]
+  (.-available target))
+
+(defn native-camera-status-granted
+  "Public NativeCameraStatus.granted member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeCameraStatus target]
+  (.-granted target))
+
+(defn native-camera-status-permission
+  "Public NativeCameraStatus.permission member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeCameraStatus target]
+  (.-permission target))
+
+(defn native-capability-event-map-biometrics
+  "Public NativeCapabilityEventMap.biometrics member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-biometrics target))
+
+(defn native-capability-event-map-camera
+  "Public NativeCapabilityEventMap.camera member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-camera target))
+
+(defn native-capability-event-map-clipboard
+  "Public NativeCapabilityEventMap.clipboard member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-clipboard target))
+
+(defn native-capability-event-map-connectivity
+  "Public NativeCapabilityEventMap.connectivity member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-connectivity target))
+
+(defn native-capability-event-map-credentials
+  "Public NativeCapabilityEventMap.credentials member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-credentials target))
+
+(defn native-capability-event-map-files
+  "Public NativeCapabilityEventMap.files member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-files target))
+
+(defn native-capability-event-map-geolocation
+  "Public NativeCapabilityEventMap.geolocation member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-geolocation target))
+
+(defn native-capability-event-map-haptics
+  "Public NativeCapabilityEventMap.haptics member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-haptics target))
+
+(defn native-capability-event-map-intents
+  "Public NativeCapabilityEventMap.intents member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-intents target))
+
+(defn native-capability-event-map-lifecycle
+  "Public NativeCapabilityEventMap.lifecycle member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-lifecycle target))
+
+(defn native-capability-event-map-media
+  "Public NativeCapabilityEventMap.media member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-media target))
+
+(defn native-capability-event-map-navigation
+  "Public NativeCapabilityEventMap.navigation member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-navigation target))
+
+(defn native-capability-event-map-notifications
+  "Public NativeCapabilityEventMap.notifications member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-notifications target))
+
+(defn native-capability-event-map-permissions
+  "Public NativeCapabilityEventMap.permissions member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-permissions target))
+
+(defn native-capability-event-map-platform
+  "Public NativeCapabilityEventMap.platform member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-platform target))
+
+(defn native-capability-event-map-sharing
+  "Public NativeCapabilityEventMap.sharing member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-sharing target))
+
+(defn native-capability-event-map-window
+  "Public NativeCapabilityEventMap.window member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityEventMap target]
+  (.-window target))
+
+(defn native-capability-method-map-biometrics
+  "Public NativeCapabilityMethodMap.biometrics member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-biometrics target))
+
+(defn native-capability-method-map-camera
+  "Public NativeCapabilityMethodMap.camera member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-camera target))
+
+(defn native-capability-method-map-clipboard
+  "Public NativeCapabilityMethodMap.clipboard member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-clipboard target))
+
+(defn native-capability-method-map-connectivity
+  "Public NativeCapabilityMethodMap.connectivity member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-connectivity target))
+
+(defn native-capability-method-map-credentials
+  "Public NativeCapabilityMethodMap.credentials member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-credentials target))
+
+(defn native-capability-method-map-files
+  "Public NativeCapabilityMethodMap.files member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-files target))
+
+(defn native-capability-method-map-geolocation
+  "Public NativeCapabilityMethodMap.geolocation member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-geolocation target))
+
+(defn native-capability-method-map-haptics
+  "Public NativeCapabilityMethodMap.haptics member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-haptics target))
+
+(defn native-capability-method-map-intents
+  "Public NativeCapabilityMethodMap.intents member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-intents target))
+
+(defn native-capability-method-map-lifecycle
+  "Public NativeCapabilityMethodMap.lifecycle member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-lifecycle target))
+
+(defn native-capability-method-map-media
+  "Public NativeCapabilityMethodMap.media member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-media target))
+
+(defn native-capability-method-map-navigation
+  "Public NativeCapabilityMethodMap.navigation member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-navigation target))
+
+(defn native-capability-method-map-notifications
+  "Public NativeCapabilityMethodMap.notifications member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-notifications target))
+
+(defn native-capability-method-map-permissions
+  "Public NativeCapabilityMethodMap.permissions member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-permissions target))
+
+(defn native-capability-method-map-platform
+  "Public NativeCapabilityMethodMap.platform member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-platform target))
+
+(defn native-capability-method-map-sharing
+  "Public NativeCapabilityMethodMap.sharing member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-sharing target))
+
+(defn native-capability-method-map-window
+  "Public NativeCapabilityMethodMap.window member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.NativeCapabilityMethodMap target]
+  (.-window target))
+
+(defn native-clipboard-content-text
+  "Public NativeClipboardContent.text member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeClipboardContent target]
+  (.-text target))
+
+(defn native-clipboard-write-parameters-label
+  "Public NativeClipboardWriteParameters.label member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeClipboardWriteParameters target]
+  (.-label target))
+
+(defn native-clipboard-write-parameters-text
+  "Public NativeClipboardWriteParameters.text member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeClipboardWriteParameters target]
+  (.-text target))
+
+(defn native-clipboard-write-result-written
+  "Public NativeClipboardWriteResult.written member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeClipboardWriteResult target]
+  (.-written target))
+
+(defn native-config-bridge
+  "Explicit bridge adapter. The global Android bridge is used by default.\n\nType: {(!ng.NativeBridgeAdapter|undefined)}"
+  ^js/ng.NativeBridgeAdapter [^js/ng.NativeConfig target]
+  (.-bridge target))
+
+(defn native-config-global-name
+  "Global bridge property. Defaults to `AngularNative`.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeConfig target]
+  (.-globalName target))
+
+(defn native-config-max-message-bytes
+  "Maximum serialized request size. Defaults to 256 KiB.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.NativeConfig target]
+  (.-maxMessageBytes target))
+
+(defn native-config-session
+  "Session token injected by a native shell.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeConfig target]
+  (.-session target))
+
+(defn native-config-timeout
+  "Request timeout in milliseconds. Defaults to 30 seconds.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.NativeConfig target]
+  (.-timeout target))
+
+(defn native-connectivity-status-connected
+  "Public NativeConnectivityStatus.connected member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeConnectivityStatus target]
+  (.-connected target))
+
+(defn native-connectivity-status-metered
+  "Public NativeConnectivityStatus.metered member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeConnectivityStatus target]
+  (.-metered target))
+
+(defn native-connectivity-status-validated
+  "Public NativeConnectivityStatus.validated member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeConnectivityStatus target]
+  (.-validated target))
+
+(defn native-credential-clear-result-cleared
+  "Public NativeCredentialClearResult.cleared member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeCredentialClearResult target]
+  (.-cleared target))
+
+(defn native-credential-create-passkey-parameters-request-json
+  "Public NativeCredentialCreatePasskeyParameters.requestJson member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCredentialCreatePasskeyParameters target]
+  (.-requestJson target))
+
+(defn native-credential-create-passkey-result-created
+  "Public NativeCredentialCreatePasskeyResult.created member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeCredentialCreatePasskeyResult target]
+  (.-created target))
+
+(defn native-credential-create-passkey-result-type
+  "Public NativeCredentialCreatePasskeyResult.type member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCredentialCreatePasskeyResult target]
+  (.-type target))
+
+(defn native-credential-create-password-parameters-id
+  "Public NativeCredentialCreatePasswordParameters.id member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCredentialCreatePasswordParameters target]
+  (.-id target))
+
+(defn native-credential-create-password-parameters-password
+  "Public NativeCredentialCreatePasswordParameters.password member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCredentialCreatePasswordParameters target]
+  (.-password target))
+
+(defn native-credential-create-password-result-created
+  "Public NativeCredentialCreatePasswordResult.created member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeCredentialCreatePasswordResult target]
+  (.-created target))
+
+(defn native-credential-create-password-result-type
+  "Public NativeCredentialCreatePasswordResult.type member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCredentialCreatePasswordResult target]
+  (.-type target))
+
+(defn native-credential-get-parameters-passkey-request-json
+  "Public NativeCredentialGetParameters.passkeyRequestJson member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeCredentialGetParameters target]
+  (.-passkeyRequestJson target))
+
+(defn native-credential-get-parameters-passwords
+  "Public NativeCredentialGetParameters.passwords member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.NativeCredentialGetParameters target]
+  (.-passwords target))
+
+(defn native-credential-result-type
+  "Public NativeCredentialResult.type member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeCredentialResult target]
+  (.-type target))
+
+(defn native-credential-status-available
+  "Public NativeCredentialStatus.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeCredentialStatus target]
+  (.-available target))
+
+(defn native-credential-status-passkeys
+  "Public NativeCredentialStatus.passkeys member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeCredentialStatus target]
+  (.-passkeys target))
+
+(defn native-credential-status-passwords
+  "Public NativeCredentialStatus.passwords member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeCredentialStatus target]
+  (.-passwords target))
+
+(defn native-event-message-event
+  "Public NativeEventMessage.event member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeEventMessage target]
+  (.-event target))
+
+(defn native-event-message-protocol
+  "Public NativeEventMessage.protocol member exposed by the AngularTS namespace contract.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.NativeEventMessage target]
+  (.-protocol target))
+
+(defn native-event-message-target
+  "Public NativeEventMessage.target member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeEventMessage target]
+  (.-target target))
+
+(defn native-file-descriptor-name
+  "Public NativeFileDescriptor.name member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeFileDescriptor target]
+  (.-name target))
+
+(defn native-file-descriptor-persisted
+  "Public NativeFileDescriptor.persisted member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeFileDescriptor target]
+  (.-persisted target))
+
+(defn native-file-descriptor-size
+  "Public NativeFileDescriptor.size member exposed by the AngularTS namespace contract.\n\nType: {(null|number)}"
+  ^number [^js/ng.NativeFileDescriptor target]
+  (.-size target))
+
+(defn native-file-descriptor-type
+  "Public NativeFileDescriptor.type member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeFileDescriptor target]
+  (.-type target))
+
+(defn native-file-descriptor-uri
+  "Public NativeFileDescriptor.uri member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeFileDescriptor target]
+  (.-uri target))
+
+(defn native-file-open-parameters-accept
+  "Public NativeFileOpenParameters.accept member exposed by the AngularTS namespace contract.\n\nType: {(!Array<string>|undefined)}"
+  ^js/Array [^js/ng.NativeFileOpenParameters target]
+  (.-accept target))
+
+(defn native-file-open-parameters-multiple
+  "Public NativeFileOpenParameters.multiple member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.NativeFileOpenParameters target]
+  (.-multiple target))
+
+(defn native-file-open-result-files
+  "Public NativeFileOpenResult.files member exposed by the AngularTS namespace contract.\n\nType: {!Array<!ng.NativeFileDescriptor>}"
+  ^js/Array [^js/ng.NativeFileOpenResult target]
+  (.-files target))
+
+(defn native-file-status-available
+  "Public NativeFileStatus.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeFileStatus target]
+  (.-available target))
+
+(defn native-file-status-content-uris
+  "Public NativeFileStatus.contentUris member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeFileStatus target]
+  (.-contentUris target))
+
+(defn native-file-status-upload
+  "Public NativeFileStatus.upload member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeFileStatus target]
+  (.-upload target))
+
+(defn native-file-upload-parameters-field
+  "Public NativeFileUploadParameters.field member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeFileUploadParameters target]
+  (.-field target))
+
+(defn native-file-upload-parameters-fields
+  "Public NativeFileUploadParameters.fields member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, string>|undefined)}"
+  ^js/Object [^js/ng.NativeFileUploadParameters target]
+  (.-fields target))
+
+(defn native-file-upload-parameters-headers
+  "Public NativeFileUploadParameters.headers member exposed by the AngularTS namespace contract.\n\nType: {(!Object<string, string>|undefined)}"
+  ^js/Object [^js/ng.NativeFileUploadParameters target]
+  (.-headers target))
+
+(defn native-file-upload-parameters-name
+  "Public NativeFileUploadParameters.name member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeFileUploadParameters target]
+  (.-name target))
+
+(defn native-file-upload-parameters-type
+  "Public NativeFileUploadParameters.type member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeFileUploadParameters target]
+  (.-type target))
+
+(defn native-file-upload-parameters-upload-id
+  "Public NativeFileUploadParameters.uploadId member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeFileUploadParameters target]
+  (.-uploadId target))
+
+(defn native-file-upload-parameters-uri
+  "Public NativeFileUploadParameters.uri member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeFileUploadParameters target]
+  (.-uri target))
+
+(defn native-file-upload-parameters-url
+  "Public NativeFileUploadParameters.url member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeFileUploadParameters target]
+  (.-url target))
+
+(defn native-file-upload-progress-sent
+  "Public NativeFileUploadProgress.sent member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeFileUploadProgress target]
+  (.-sent target))
+
+(defn native-file-upload-progress-total
+  "Public NativeFileUploadProgress.total member exposed by the AngularTS namespace contract.\n\nType: {(null|number)}"
+  ^number [^js/ng.NativeFileUploadProgress target]
+  (.-total target))
+
+(defn native-file-upload-progress-upload-id
+  "Public NativeFileUploadProgress.uploadId member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeFileUploadProgress target]
+  (.-uploadId target))
+
+(defn native-file-upload-result-name
+  "Public NativeFileUploadResult.name member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeFileUploadResult target]
+  (.-name target))
+
+(defn native-file-upload-result-status
+  "Public NativeFileUploadResult.status member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeFileUploadResult target]
+  (.-status target))
+
+(defn native-file-upload-result-type
+  "Public NativeFileUploadResult.type member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeFileUploadResult target]
+  (.-type target))
+
+(defn native-geolocation-position-accuracy
+  "Public NativeGeolocationPosition.accuracy member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeGeolocationPosition target]
+  (.-accuracy target))
+
+(defn native-geolocation-position-altitude
+  "Public NativeGeolocationPosition.altitude member exposed by the AngularTS namespace contract.\n\nType: {(null|number)}"
+  ^number [^js/ng.NativeGeolocationPosition target]
+  (.-altitude target))
+
+(defn native-geolocation-position-altitude-accuracy
+  "Public NativeGeolocationPosition.altitudeAccuracy member exposed by the AngularTS namespace contract.\n\nType: {(null|number)}"
+  ^number [^js/ng.NativeGeolocationPosition target]
+  (.-altitudeAccuracy target))
+
+(defn native-geolocation-position-heading
+  "Public NativeGeolocationPosition.heading member exposed by the AngularTS namespace contract.\n\nType: {(null|number)}"
+  ^number [^js/ng.NativeGeolocationPosition target]
+  (.-heading target))
+
+(defn native-geolocation-position-latitude
+  "Public NativeGeolocationPosition.latitude member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeGeolocationPosition target]
+  (.-latitude target))
+
+(defn native-geolocation-position-longitude
+  "Public NativeGeolocationPosition.longitude member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeGeolocationPosition target]
+  (.-longitude target))
+
+(defn native-geolocation-position-speed
+  "Public NativeGeolocationPosition.speed member exposed by the AngularTS namespace contract.\n\nType: {(null|number)}"
+  ^number [^js/ng.NativeGeolocationPosition target]
+  (.-speed target))
+
+(defn native-geolocation-position-timestamp
+  "Public NativeGeolocationPosition.timestamp member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeGeolocationPosition target]
+  (.-timestamp target))
+
+(defn native-geolocation-status-accuracy
+  "Public NativeGeolocationStatus.accuracy member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeGeolocationStatus target]
+  (.-accuracy target))
+
+(defn native-geolocation-status-available
+  "Public NativeGeolocationStatus.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeGeolocationStatus target]
+  (.-available target))
+
+(defn native-geolocation-status-granted
+  "Public NativeGeolocationStatus.granted member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeGeolocationStatus target]
+  (.-granted target))
+
+(defn native-geolocation-status-permission
+  "Public NativeGeolocationStatus.permission member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeGeolocationStatus target]
+  (.-permission target))
+
+(defn native-haptic-parameters-style
+  "Public NativeHapticParameters.style member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeHapticParameters target]
+  (.-style target))
+
+(defn native-haptic-result-performed
+  "Public NativeHapticResult.performed member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeHapticResult target]
+  (.-performed target))
+
+(defn native-intent-parameters-url
+  "Public NativeIntentParameters.url member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeIntentParameters target]
+  (.-url target))
+
+(defn native-lifecycle-status-active
+  "Public NativeLifecycleStatus.active member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeLifecycleStatus target]
+  (.-active target))
+
+(defn native-lifecycle-status-state
+  "Public NativeLifecycleStatus.state member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeLifecycleStatus target]
+  (.-state target))
+
+(defn native-media-load-parameters-autoplay
+  "Public NativeMediaLoadParameters.autoplay member exposed by the AngularTS namespace contract.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.NativeMediaLoadParameters target]
+  (.-autoplay target))
+
+(defn native-media-load-parameters-url
+  "Public NativeMediaLoadParameters.url member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeMediaLoadParameters target]
+  (.-url target))
+
+(defn native-media-seek-parameters-position
+  "Public NativeMediaSeekParameters.position member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeMediaSeekParameters target]
+  (.-position target))
+
+(defn native-media-status-available
+  "Public NativeMediaStatus.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeMediaStatus target]
+  (.-available target))
+
+(defn native-media-status-duration
+  "Public NativeMediaStatus.duration member exposed by the AngularTS namespace contract.\n\nType: {(null|number)}"
+  ^number [^js/ng.NativeMediaStatus target]
+  (.-duration target))
+
+(defn native-media-status-loaded
+  "Public NativeMediaStatus.loaded member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeMediaStatus target]
+  (.-loaded target))
+
+(defn native-media-status-playing
+  "Public NativeMediaStatus.playing member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeMediaStatus target]
+  (.-playing target))
+
+(defn native-media-status-position
+  "Public NativeMediaStatus.position member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeMediaStatus target]
+  (.-position target))
+
+(defn native-media-status-state
+  "Public NativeMediaStatus.state member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeMediaStatus target]
+  (.-state target))
+
+(defn native-navigation-android-change-from
+  "Public NativeNavigationAndroidChange.from member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationAndroidChange target]
+  (.-from target))
+
+(defn native-navigation-android-change-method
+  "Public NativeNavigationAndroidChange.method member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationAndroidChange target]
+  (.-method target))
+
+(defn native-navigation-android-change-phase
+  "Public NativeNavigationAndroidChange.phase member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationAndroidChange target]
+  (.-phase target))
+
+(defn native-navigation-android-change-source
+  "Public NativeNavigationAndroidChange.source member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationAndroidChange target]
+  (.-source target))
+
+(defn native-navigation-android-change-url
+  "Public NativeNavigationAndroidChange.url member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationAndroidChange target]
+  (.-url target))
+
+(defn native-navigation-bridge-change-from
+  "Public NativeNavigationBridgeChange.from member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationBridgeChange target]
+  (.-from target))
+
+(defn native-navigation-bridge-change-method
+  "Public NativeNavigationBridgeChange.method member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationBridgeChange target]
+  (.-method target))
+
+(defn native-navigation-bridge-change-phase
+  "Public NativeNavigationBridgeChange.phase member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationBridgeChange target]
+  (.-phase target))
+
+(defn native-navigation-bridge-change-source
+  "Public NativeNavigationBridgeChange.source member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationBridgeChange target]
+  (.-source target))
+
+(defn native-navigation-bridge-change-transaction
+  "Public NativeNavigationBridgeChange.transaction member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeNavigationBridgeChange target]
+  (.-transaction target))
+
+(defn native-navigation-bridge-change-url
+  "Public NativeNavigationBridgeChange.url member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationBridgeChange target]
+  (.-url target))
+
+(defn native-navigation-change-from
+  "Public NativeNavigationChange.from member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationChange target]
+  (.-from target))
+
+(defn native-navigation-change-method
+  "Public NativeNavigationChange.method member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationChange target]
+  (.-method target))
+
+(defn native-navigation-change-phase
+  "Public NativeNavigationChange.phase member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationChange target]
+  (.-phase target))
+
+(defn native-navigation-change-source
+  "Public NativeNavigationChange.source member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationChange target]
+  (.-source target))
+
+(defn native-navigation-change-url
+  "Public NativeNavigationChange.url member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationChange target]
+  (.-url target))
+
+(defn native-navigation-pop-result-method
+  "Public NativeNavigationPopResult.method member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationPopResult target]
+  (.-method target))
+
+(defn native-navigation-pop-result-routed
+  "Public NativeNavigationPopResult.routed member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeNavigationPopResult target]
+  (.-routed target))
+
+(defn native-navigation-route-parameters-transition
+  "Public NativeNavigationRouteParameters.transition member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeNavigationRouteParameters target]
+  (.-transition target))
+
+(defn native-navigation-route-parameters-url
+  "Public NativeNavigationRouteParameters.url member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationRouteParameters target]
+  (.-url target))
+
+(defn native-navigation-route-result-action
+  "Public NativeNavigationRouteResult.action member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationRouteResult target]
+  (.-action target))
+
+(defn native-navigation-route-result-method
+  "Public NativeNavigationRouteResult.method member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationRouteResult target]
+  (.-method target))
+
+(defn native-navigation-route-result-phase
+  "Public NativeNavigationRouteResult.phase member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationRouteResult target]
+  (.-phase target))
+
+(defn native-navigation-route-result-routed
+  "Public NativeNavigationRouteResult.routed member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeNavigationRouteResult target]
+  (.-routed target))
+
+(defn native-navigation-route-result-transaction
+  "Public NativeNavigationRouteResult.transaction member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeNavigationRouteResult target]
+  (.-transaction target))
+
+(defn native-navigation-route-result-transition
+  "Public NativeNavigationRouteResult.transition member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationRouteResult target]
+  (.-transition target))
+
+(defn native-navigation-route-result-url
+  "Public NativeNavigationRouteResult.url member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationRouteResult target]
+  (.-url target))
+
+(defn native-navigation-status-can-pop
+  "Public NativeNavigationStatus.canPop member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeNavigationStatus target]
+  (.-canPop target))
+
+(defn native-navigation-status-location
+  "Public NativeNavigationStatus.location member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationStatus target]
+  (.-location target))
+
+(defn native-navigation-status-modal
+  "Public NativeNavigationStatus.modal member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeNavigationStatus target]
+  (.-modal target))
+
+(defn native-navigation-status-previous-location
+  "Public NativeNavigationStatus.previousLocation member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationStatus target]
+  (.-previousLocation target))
+
+(defn native-notification-status-available
+  "Public NativeNotificationStatus.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeNotificationStatus target]
+  (.-available target))
+
+(defn native-notification-status-granted
+  "Public NativeNotificationStatus.granted member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeNotificationStatus target]
+  (.-granted target))
+
+(defn native-notification-status-permission
+  "Public NativeNotificationStatus.permission member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNotificationStatus target]
+  (.-permission target))
+
+(defn native-open-result-opened
+  "Public NativeOpenResult.opened member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeOpenResult target]
+  (.-opened target))
+
+(defn native-permission-parameters-permission
+  "Public NativePermissionParameters.permission member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativePermissionParameters target]
+  (.-permission target))
+
+(defn native-permission-status-can-request
+  "Public NativePermissionStatus.canRequest member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativePermissionStatus target]
+  (.-canRequest target))
+
+(defn native-permission-status-granted
+  "Public NativePermissionStatus.granted member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativePermissionStatus target]
+  (.-granted target))
+
+(defn native-permission-status-permission
+  "Public NativePermissionStatus.permission member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativePermissionStatus target]
+  (.-permission target))
+
+(defn native-platform-status-dark-mode
+  "Public NativePlatformStatus.darkMode member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativePlatformStatus target]
+  (.-darkMode target))
+
+(defn native-platform-status-package
+  "Public NativePlatformStatus.package member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativePlatformStatus target]
+  (.-package target))
+
+(defn native-platform-status-platform
+  "Public NativePlatformStatus.platform member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativePlatformStatus target]
+  (.-platform target))
+
+(defn native-platform-status-sdk
+  "Public NativePlatformStatus.sdk member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativePlatformStatus target]
+  (.-sdk target))
+
+(defn native-reply-message-id
+  "Public NativeReplyMessage.id member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeReplyMessage target]
+  (.-id target))
+
+(defn native-reply-message-ok
+  "Public NativeReplyMessage.ok member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeReplyMessage target]
+  (.-ok target))
+
+(defn native-reply-message-protocol
+  "Public NativeReplyMessage.protocol member exposed by the AngularTS namespace contract.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.NativeReplyMessage target]
+  (.-protocol target))
+
+(defn native-service-available
+  "Public NativeService.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeService target]
+  (.-available target))
+
+(defn native-service-capabilities
+  "Public NativeService.capabilities member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, !Array<string>>}"
+  ^js/Object [^js/ng.NativeService target]
+  (.-capabilities target))
+
+(defn native-service-protocol-version
+  "Public NativeService.protocolVersion member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeService target]
+  (.-protocolVersion target))
+
+(defn native-share-parameters-text
+  "Public NativeShareParameters.text member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeShareParameters target]
+  (.-text target))
+
+(defn native-share-parameters-title
+  "Public NativeShareParameters.title member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeShareParameters target]
+  (.-title target))
+
+(defn native-share-parameters-type
+  "Public NativeShareParameters.type member exposed by the AngularTS namespace contract.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.NativeShareParameters target]
+  (.-type target))
+
+(defn native-window-bounds-bottom
+  "Public NativeWindowBounds.bottom member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowBounds target]
+  (.-bottom target))
+
+(defn native-window-bounds-left
+  "Public NativeWindowBounds.left member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowBounds target]
+  (.-left target))
+
+(defn native-window-bounds-right
+  "Public NativeWindowBounds.right member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowBounds target]
+  (.-right target))
+
+(defn native-window-bounds-top
+  "Public NativeWindowBounds.top member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowBounds target]
+  (.-top target))
+
+(defn native-window-display-feature-bounds
+  "Public NativeWindowDisplayFeature.bounds member exposed by the AngularTS namespace contract.\n\nType: {!ng.NativeWindowBounds}"
+  ^js/ng.NativeWindowBounds [^js/ng.NativeWindowDisplayFeature target]
+  (.-bounds target))
+
+(defn native-window-display-feature-orientation
+  "Public NativeWindowDisplayFeature.orientation member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeWindowDisplayFeature target]
+  (.-orientation target))
+
+(defn native-window-display-feature-separating
+  "Public NativeWindowDisplayFeature.separating member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
+  ^boolean [^js/ng.NativeWindowDisplayFeature target]
+  (.-separating target))
+
+(defn native-window-display-feature-state
+  "Public NativeWindowDisplayFeature.state member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeWindowDisplayFeature target]
+  (.-state target))
+
+(defn native-window-display-feature-type
+  "Public NativeWindowDisplayFeature.type member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeWindowDisplayFeature target]
+  (.-type target))
+
+(defn native-window-insets-bottom
+  "Public NativeWindowInsets.bottom member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowInsets target]
+  (.-bottom target))
+
+(defn native-window-insets-left
+  "Public NativeWindowInsets.left member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowInsets target]
+  (.-left target))
+
+(defn native-window-insets-right
+  "Public NativeWindowInsets.right member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowInsets target]
+  (.-right target))
+
+(defn native-window-insets-top
+  "Public NativeWindowInsets.top member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowInsets target]
+  (.-top target))
+
+(defn native-window-status-display-features
+  "Public NativeWindowStatus.displayFeatures member exposed by the AngularTS namespace contract.\n\nType: {!Array<!ng.NativeWindowDisplayFeature>}"
+  ^js/Array [^js/ng.NativeWindowStatus target]
+  (.-displayFeatures target))
+
+(defn native-window-status-height
+  "Public NativeWindowStatus.height member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowStatus target]
+  (.-height target))
+
+(defn native-window-status-height-class
+  "Public NativeWindowStatus.heightClass member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeWindowStatus target]
+  (.-heightClass target))
+
+(defn native-window-status-orientation
+  "Public NativeWindowStatus.orientation member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeWindowStatus target]
+  (.-orientation target))
+
+(defn native-window-status-safe-area
+  "Public NativeWindowStatus.safeArea member exposed by the AngularTS namespace contract.\n\nType: {!ng.NativeWindowInsets}"
+  ^js/ng.NativeWindowInsets [^js/ng.NativeWindowStatus target]
+  (.-safeArea target))
+
+(defn native-window-status-width
+  "Public NativeWindowStatus.width member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.NativeWindowStatus target]
+  (.-width target))
+
+(defn native-window-status-width-class
+  "Public NativeWindowStatus.widthClass member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeWindowStatus target]
+  (.-widthClass target))
 
 (defn ng-model-controller-async-validators
   "Public NgModelController.asyncValidators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function(?, ?): !Promise<?>>}"

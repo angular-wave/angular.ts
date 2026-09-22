@@ -42,11 +42,20 @@ final class JsValue {
 
 /// Converts a JavaScript value into a Dart value.
 T jsToDart<T>(JSAny? value) {
-  if (value != null && value.isA<JSBoxedDartObject>()) {
-    return (value as JSBoxedDartObject).toDart as T;
+  if (value == null) return null as T;
+
+  if (!value.typeofEquals('object') && !value.typeofEquals('function')) {
+    return value.dartify() as T;
   }
 
-  return (value as Object?) as T;
+  Object unboxed;
+  try {
+    unboxed = (value as JSBoxedDartObject).toDart;
+  } catch (_) {
+    return value.dartify() as T;
+  }
+
+  return unboxed as T;
 }
 
 /// The js array to dart.

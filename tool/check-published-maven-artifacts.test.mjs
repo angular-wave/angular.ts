@@ -5,6 +5,7 @@ import {
   parseArguments,
   validateChecksum,
   validateEntries,
+  validateGradleModule,
   validatePom,
 } from "./check-published-maven-artifacts.mjs";
 
@@ -33,6 +34,24 @@ test("parses selected Maven artifacts and publication wait", () => {
   );
 });
 
+test("expands the Android publication catalog", () => {
+  const parsed = parseArguments([
+    "--version",
+    "0.35.1",
+    "--artifacts",
+    "android",
+  ]);
+
+  assert.equal(parsed.artifacts.length, 9);
+  assert.equal(
+    artifactSpecs[parsed.artifacts[0]].artifact,
+    "angular-native-core",
+  );
+  assert.equal(artifactSpecs[parsed.artifacts[0]].binaryExtension, "aar");
+  assert.equal(artifactSpecs[parsed.artifacts[0]].androidModule, "core");
+  assert.equal(artifactSpecs[parsed.artifacts.at(-1)].binaryExtension, "jar");
+});
+
 test("validates remote checksums", () => {
   const bytes = Buffer.from("published artifact");
   validateChecksum(
@@ -57,5 +76,27 @@ test("validates POM coordinates and package entries", () => {
   assert.throws(
     () => validateEntries("one\n", ["two"], "artifact.jar"),
     /missing 'two'/u,
+  );
+});
+
+test("validates Gradle module coordinates", () => {
+  validateGradleModule(
+    JSON.stringify({
+      component: {
+        group: "io.github.angular-wave",
+        module: "angular-native-core",
+        version: "0.35.1",
+      },
+    }),
+    "angular-native-core",
+    "0.35.1",
+  );
+  assert.throws(
+    () => validateGradleModule("{}", "angular-native-core", "0.35.1"),
+    /invalid component group/u,
+  );
+  assert.throws(
+    () => validateGradleModule("not json", "angular-native-core", "0.35.1"),
+    /not valid JSON/u,
   );
 });

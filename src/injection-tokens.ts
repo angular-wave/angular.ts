@@ -25,6 +25,7 @@ export const _interpolate = "$interpolate" as const;
 export const _location = "$location" as const;
 export const _log = "$log" as const;
 export const _machine = "$machine" as const;
+export const _native = "$native" as const;
 export const _parse = "$parse" as const;
 export const _rest = "$rest" as const;
 export const _rootScope = "$rootScope" as const;
@@ -76,6 +77,7 @@ export const $injectTokens = {
   _location,
   _log,
   _machine,
+  _native,
   _parse,
   _rest,
   _rootScope,

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Pulse" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/pulse_accent</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="android:colorBackground">@color/pulse_background</item>
+        <item name="colorOnBackground">@color/pulse_ink</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/pulse_background</item>
+        <item name="android:statusBarColor">@color/pulse_background</item>
+    </style>
+</resources>

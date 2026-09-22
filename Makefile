@@ -1,4 +1,4 @@
-.PHONY: build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go generated-check-wasm-rust generated-check-wasm-assemblyscript generated-check-wasm-c generated-check-wasm-cpp generated-check-wasm-csharp generated-check-wasm-zig public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-version-test release-notes-test release-notes-check release-integrations-check release-check prepare-major-release prepare-minor-release prepare-patch-release prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
+.PHONY: android-check android-physical-evidence-check build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go generated-check-wasm-rust generated-check-wasm-assemblyscript generated-check-wasm-c generated-check-wasm-cpp generated-check-wasm-csharp generated-check-wasm-zig public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-version-test release-notes-test release-notes-check release-integrations-check release-check prepare-major-release prepare-minor-release prepare-patch-release prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -81,6 +81,7 @@ format:
 
 format-check:
 	@npx prettier ./src --check --cache --log-level=silent
+	@$(MAKE) -C integrations/android format-check
 	
 lint:
 	@$(MAKE) lint-check
@@ -208,6 +209,7 @@ generated-check: integrations-generated-check
 
 integrations-generated-check: types
 	@$(MAKE) --keep-going --jobs=8 --output-sync=target \
+		generated-check-android \
 		generated-check-closure \
 		generated-check-dart \
 		generated-check-gleam \
@@ -221,6 +223,9 @@ integrations-generated-check: types
 		generated-check-wasm-cpp \
 		generated-check-wasm-csharp \
 		generated-check-wasm-zig
+
+generated-check-android:
+	@$(MAKE) -C integrations/android generate-check
 
 generated-check-closure:
 	@$(MAKE) -f integrations/closure/Makefile generate-check
@@ -292,6 +297,7 @@ prepare-release: release-version-test release-notes-check
 	@$(MAKE) release-check
 
 release-integrations-check:
+	@$(MAKE) -C integrations/android release-check
 	@PORT=41100 $(MAKE) -f integrations/closure/Makefile closure-test
 	@PORT=41101 $(MAKE) -f integrations/closure/Makefile clojurescript-test
 	@PORT=41102 $(MAKE) -C integrations/kotlin check
@@ -305,6 +311,9 @@ release-check: release-version-test release-notes-check
 	@bash .husky/pre-commit
 	@npm pack --dry-run
 	@$(MAKE) release-integrations-check
+
+android-physical-evidence-check:
+	@node integrations/android/scripts/verify-physical-release-evidence.mjs
 
 publish-release:
 	@test -z "$$(git status --porcelain)" || \
@@ -322,7 +331,7 @@ publish-release:
 		git push origin "$$tag"
 
 PUBLISHED_MAVEN_VERSION ?= $(shell node -p 'require("./package.json").version')
-PUBLISHED_MAVEN_ARTIFACTS ?= java,clojurescript,scala
+PUBLISHED_MAVEN_ARTIFACTS ?= java,clojurescript,scala,android
 
 published-maven-check-test:
 	@node --test tool/check-published-maven-artifacts.test.mjs
@@ -343,6 +352,7 @@ test: ensure-deps
 
 test-integrations: ensure-deps
 	@echo $(INFO) "Playwright integration tests"
+	@$(MAKE) android-check
 	@$(MAKE) -f integrations/closure/Makefile closure-test
 	@$(MAKE) -C integrations/kotlin check
 	@$(MAKE) scala-check
@@ -353,6 +363,9 @@ wasm-parity: ensure-deps
 
 scala-check: ensure-deps
 	@$(MAKE) -C integrations/scala check
+
+android-check:
+	@$(MAKE) -C integrations/android check
 
 test-ui: ensure-deps
 	@echo $(INFO) "Playwright test JS with ui"

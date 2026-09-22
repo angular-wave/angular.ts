@@ -4,3 +4,4 @@ export { a, abbr, acronym, address, applet, area, article, aside, attrs, audio, 
 export { afterRender, queueAfterRender } from './core/render/after-render.js';
 export { createAngular } from './runtime/index.js';
 export { defineWorkflow } from './services/workflow/workflow.js';
+export { nativeCapabilities } from './runtime/native-capabilities.js';

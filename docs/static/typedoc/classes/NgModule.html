@@ -2404,14 +2404,27 @@
                   <div class="tsd-signature tsd-anchor-link" id="router-1">
                     <span class="tsd-kind-call-signature">router</span
                     ><span class="tsd-signature-symbol">&lt;</span
-                    ><a
+                    ><br />    <span class="tsd-signature-keyword">const</span>
+                    <a
                       class="tsd-signature-type tsd-kind-type-parameter"
                       href="#routertdeclaration"
                       >TDeclaration</a
                     >
-                    <span class="tsd-signature-keyword">extends</span>
-                    <span class="tsd-signature-type">RouterModuleInput</span
-                    ><span class="tsd-signature-symbol">&gt;</span
+                    <span class="tsd-signature-keyword">extends</span
+                    ><br />        <a
+                      href="../interfaces/RouterModuleDeclaration.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >RouterModuleDeclaration</a
+                    ><br />        <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-keyword">readonly</span>
+                    <a
+                      href="../interfaces/RouterModuleDeclaration.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >RouterModuleDeclaration</a
+                    ><span class="tsd-signature-symbol">[]</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >&gt;</span
                     ><span class="tsd-signature-symbol">(</span><br />    <span
                       class="tsd-kind-parameter"
                       >declaration</span
@@ -2460,6 +2473,17 @@
                         composed router runtime, so module router trees compose
                         with <code>lazyState(...)</code> and inherited route
                         policies.
+                        <a
+                          href="../interfaces/RouterModuleDeclaration.html"
+                          class="tsd-kind-interface"
+                          >RouterModuleDeclaration</a
+                        >
+                        is the only public registration contract. Pass one
+                        declaration or a readonly forest; the route map is
+                        inferred from the exact literal. To declare the route
+                        map explicitly, parameterize
+                        <code>createModule&lt;TRouteMap&gt;(...)</code> instead
+                        of <code>router(...)</code>.
                       </p>
                     </div>
                     <section class="tsd-panel">
@@ -2467,13 +2491,23 @@
                       <ul class="tsd-type-parameter-list">
                         <li>
                           <span id="routertdeclaration"
-                            ><span class="tsd-kind-type-parameter"
+                            ><span class="tsd-signature-keyword">const</span>
+                            <span class="tsd-kind-type-parameter"
                               >TDeclaration</span
                             >
                             <span class="tsd-signature-keyword">extends</span>
-                            <span class="tsd-signature-type"
-                              >RouterModuleInput</span
-                            ></span
+                            <a
+                              href="../interfaces/RouterModuleDeclaration.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >RouterModuleDeclaration</a
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-keyword">readonly</span>
+                            <a
+                              href="../interfaces/RouterModuleDeclaration.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >RouterModuleDeclaration</a
+                            ><span class="tsd-signature-symbol">[]</span></span
                           >
                         </li>
                       </ul>
@@ -2514,112 +2548,6 @@
                         href="#routertdeclaration"
                         >TDeclaration</a
                       ><span class="tsd-signature-symbol">&gt;</span
-                      ><span class="tsd-signature-symbol">&gt;</span>
-                    </h4>
-                  </div>
-                </li>
-                <li class="">
-                  <div class="tsd-signature tsd-anchor-link" id="router-2">
-                    <span class="tsd-kind-call-signature">router</span
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><a
-                      class="tsd-signature-type tsd-kind-type-parameter"
-                      href="#routertroutemap"
-                      >TRouteMap</a
-                    >
-                    <span class="tsd-signature-keyword">extends</span>
-                    <a
-                      href="../types/RouteMap.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >RouteMap</a
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">(</span><br />    <span
-                      class="tsd-kind-parameter"
-                      >declaration</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <span class="tsd-signature-type">RouterModuleInput</span
-                    ><span class="tsd-signature-symbol">,</span><br /><span
-                      class="tsd-signature-symbol"
-                      >)</span
-                    ><span class="tsd-signature-symbol">:</span>
-                    <a
-                      href="../types/RouterModule.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >RouterModule</a
-                    ><span class="tsd-signature-symbol">&lt;</span
-                    ><a
-                      class="tsd-signature-type tsd-kind-type-parameter"
-                      href="#routertroutemap"
-                      >TRouteMap</a
-                    ><span class="tsd-signature-symbol">&gt;</span
-                    ><a
-                      href="#router-2"
-                      aria-label="Permalink"
-                      class="tsd-anchor-icon"
-                      ><svg viewBox="0 0 24 24" aria-hidden="true">
-                        <use href="../assets/icons.svg#icon-anchor"></use></svg
-                    ></a>
-                  </div>
-                  <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography">
-                      <p>
-                        Register a module-owned router state tree during module
-                        configuration.
-                      </p>
-                      <p>
-                        Child state names are relative to their parent unless
-                        they contain a dot. Each route is queued for the
-                        composed router runtime, so module router trees compose
-                        with <code>lazyState(...)</code> and inherited route
-                        policies.
-                      </p>
-                    </div>
-                    <section class="tsd-panel">
-                      <h4>Type Parameters</h4>
-                      <ul class="tsd-type-parameter-list">
-                        <li>
-                          <span id="routertroutemap"
-                            ><span class="tsd-kind-type-parameter"
-                              >TRouteMap</span
-                            >
-                            <span class="tsd-signature-keyword">extends</span>
-                            <a
-                              href="../types/RouteMap.html"
-                              class="tsd-signature-type tsd-kind-type-alias"
-                              >RouteMap</a
-                            ></span
-                          >
-                        </li>
-                      </ul>
-                    </section>
-                    <div class="tsd-parameters">
-                      <h4 class="tsd-parameters-title">Parameters</h4>
-                      <ul class="tsd-parameter-list">
-                        <li>
-                          <span
-                            ><span class="tsd-kind-parameter">declaration</span
-                            >:
-                            <span class="tsd-signature-type"
-                              >RouterModuleInput</span
-                            ></span
-                          >
-                          <div class="tsd-comment tsd-typography">
-                            <p>Router tree root declaration.</p>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
-                    <h4 class="tsd-returns-title">
-                      Returns
-                      <a
-                        href="../types/RouterModule.html"
-                        class="tsd-signature-type tsd-kind-type-alias"
-                        >RouterModule</a
-                      ><span class="tsd-signature-symbol">&lt;</span
-                      ><a
-                        class="tsd-signature-type tsd-kind-type-parameter"
-                        href="#routertroutemap"
-                        >TRouteMap</a
                       ><span class="tsd-signature-symbol">&gt;</span>
                     </h4>
                   </div>

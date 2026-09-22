@@ -5400,14 +5400,7 @@ export class CompileRegistry {
 
             if (isFunction(controllerInstance.onInit)) {
               try {
-                /* istanbul ignore next -- controllers are normalized to scoped instances. */
-                const controllerTarget =
-                  controllerInstance._target ?? controllerInstance;
-
-                callFunction(
-                  controllerTarget.onInit as RuntimeFunction,
-                  controllerTarget,
-                );
+                callFunction(controllerInstance.onInit, controllerInstance);
               } catch (err) {
                 $exceptionHandler(err);
               }

@@ -103,5 +103,3 @@ angular
       }
     },
   );
-
-angular.init(document);

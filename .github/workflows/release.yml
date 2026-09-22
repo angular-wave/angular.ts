@@ -12,6 +12,11 @@ on:
         description: Existing release tag requiring npm/GitHub publication recovery
         required: true
         type: string
+      publish_java:
+        description: Publish the Java artifact when the tagged release did not reach Maven Central
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -22,7 +27,7 @@ concurrency:
 jobs:
   release-preflight:
     name: Validate release secrets
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || inputs.publish_java
     runs-on: ubuntu-latest
     steps:
       - name: Require release credentials
@@ -108,7 +113,7 @@ jobs:
         run: make types
 
       - name: Validate Dart release package
-        run: make -C integrations/dart release-check
+        run: make -C integrations/dart package-check
 
       - name: Check for an existing pub.dev release
         id: registry
@@ -168,7 +173,7 @@ jobs:
         shell: bash
         run: |
           version="$(node -p 'require("./package.json").version')"
-          url="https://hex.pm/api/packages/angular_ts/releases/$version"
+          url="https://repo.hex.pm/tarballs/angular_ts-$version.tar"
           status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$url")"
 
           case "$status" in
@@ -185,11 +190,28 @@ jobs:
         env:
           HEXPM_API_KEY: ${{ secrets.HEXPM_API_KEY }}
         working-directory: integrations/gleam
-        run: gleam publish --yes
+        shell: bash
+        run: |
+          printf '%s\n' 'I am not using semantic versioning' | gleam publish --yes
+
+          version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' gleam.toml)"
+          url="https://repo.hex.pm/tarballs/angular_ts-$version.tar"
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error "$url" --output /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Hex package was not published: $url" >&2
+          exit 1
 
   publish-java:
     name: Publish Java package to Maven Central
-    if: github.event_name == 'push'
+    if: >-
+      always() &&
+      (github.event_name == 'push' || inputs.publish_java) &&
+      (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -219,7 +241,8 @@ jobs:
       - name: Validate Java release metadata
         run: make -f integrations/closure/Makefile java-version-check
 
-      - name: Reject an existing Maven Central version
+      - name: Check for an existing Maven Central version
+        id: registry
         shell: bash
         run: |
           version="$(node -p 'require("./package.json").version')"
@@ -227,11 +250,8 @@ jobs:
           status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$pom_url")"
 
           case "$status" in
-            404) ;;
-            200)
-              echo "io.github.angular-wave:angular-ts-java:$version is already published" >&2
-              exit 1
-              ;;
+            200) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
             *)
               echo "Maven Central lookup failed with HTTP $status" >&2
               exit 1
@@ -239,6 +259,7 @@ jobs:
           esac
 
       - name: Publish Java package to Maven Central
+        if: steps.registry.outputs.exists != 'true'
         env:
           MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
@@ -374,6 +395,65 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
         run: make -C integrations/scala publish-central
 
+  publish-android:
+    name: Publish Android packages to Maven Central
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reject existing Android Maven versions
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          mapfile -t artifacts < <(node integrations/android/scripts/android-artifacts.mjs artifact)
+          for artifact in "${artifacts[@]}"; do
+            url="https://repo1.maven.org/maven2/io/github/angular-wave/$artifact/$version/$artifact-$version.pom"
+            status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$url")"
+            case "$status" in
+              404) ;;
+              200)
+                echo "io.github.angular-wave:$artifact:$version is already published" >&2
+                exit 1
+                ;;
+              *)
+                echo "Maven Central lookup failed with HTTP $status" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+      - name: Validate and publish Android packages
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: make -C integrations/android publish
+
   validate-maven:
     name: Validate published Maven artifacts
     if: github.event_name == 'push'
@@ -381,6 +461,7 @@ jobs:
       - publish-java
       - publish-clojurescript
       - publish-scala
+      - publish-android
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -400,11 +481,31 @@ jobs:
           java-version: "21"
 
       - name: Validate Maven Central copies
-        run: >-
-          node tool/check-published-maven-artifacts.mjs
-          --version "$(node -p 'require("./package.json").version')"
-          --artifacts java,clojurescript,scala
-          --wait-seconds 900
+        shell: bash
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          node tool/check-published-maven-artifacts.mjs \
+            --version "$version" \
+            --artifacts java,clojurescript,scala,android \
+            --wait-seconds 900
+
+      - uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+
+      - name: Compile a clean Maven consumer
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          ./integrations/android/gradlew \
+            -p integrations/android/maven-consumer \
+            -PangularTsVersion="$version" \
+            --refresh-dependencies \
+            clean \
+            assembleDebug \
+            assembleRelease \
+            testDebugUnitTest \
+            lint
 
   validate-language-packages:
     name: Validate published Dart and Gleam packages
@@ -440,7 +541,7 @@ jobs:
           version="$(node -p 'require("./package.json").version')"
           urls=(
             "https://pub.dev/api/packages/angular_ts/versions/$version"
-            "https://hex.pm/api/packages/angular_ts/releases/$version"
+            "https://repo.hex.pm/tarballs/angular_ts-$version.tar"
           )
 
           for url in "${urls[@]}"; do
@@ -483,7 +584,19 @@ jobs:
             [componentView, context, tags, view];
           }
           DART
-          dart pub get --directory "$consumer"
+          for attempt in {1..60}; do
+            if dart pub get --directory "$consumer"; then
+              break
+            fi
+
+            if (( attempt == 60 )); then
+              echo "pub.dev package did not become resolvable: angular_ts $version" >&2
+              exit 1
+            fi
+
+            rm -f "$consumer/pubspec.lock"
+            sleep 10
+          done
           dart analyze "$consumer/lib/main.dart"
 
       - name: Compile a Hex consumer
@@ -498,7 +611,19 @@ jobs:
             --skip-github \
             "$consumer"
           cd "$consumer"
-          gleam add "angular_ts@$version"
+          for attempt in {1..60}; do
+            if gleam add "angular_ts@$version"; then
+              break
+            fi
+
+            if (( attempt == 60 )); then
+              echo "Hex package did not become resolvable: angular_ts@$version" >&2
+              exit 1
+            fi
+
+            rm -f manifest.toml
+            sleep 10
+          done
           cat > src/angular_ts_release_consumer.gleam <<'GLEAM'
           import angular_ts/programmatic_view
           import gleam/dynamic.{type Dynamic}
@@ -525,6 +650,7 @@ jobs:
       - publish-java
       - publish-clojurescript
       - publish-scala
+      - publish-android
       - validate-maven
       - publish-dart
       - publish-gleam
@@ -536,11 +662,13 @@ jobs:
         needs.publish-java.result == 'success' &&
         needs.publish-clojurescript.result == 'success' &&
         needs.publish-scala.result == 'success' &&
+        needs.publish-android.result == 'success' &&
         needs.validate-maven.result == 'success' &&
         needs.publish-dart.result == 'success' &&
         needs.publish-gleam.result == 'success' &&
         needs.validate-language-packages.result == 'success') ||
-       github.event_name == 'workflow_dispatch')
+       (github.event_name == 'workflow_dispatch' &&
+        (!inputs.publish_java || needs.publish-java.result == 'success')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -638,8 +766,12 @@ jobs:
             "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-cljs/$PACKAGE_VERSION/angular-ts-cljs-$PACKAGE_VERSION.pom"
             "https://repo1.maven.org/maven2/io/github/angular-wave/angular-ts-scala_sjs1_3/$PACKAGE_VERSION/angular-ts-scala_sjs1_3-$PACKAGE_VERSION.pom"
             "https://pub.dev/api/packages/angular_ts/versions/$PACKAGE_VERSION"
-            "https://hex.pm/api/packages/angular_ts/releases/$PACKAGE_VERSION"
+            "https://repo.hex.pm/tarballs/angular_ts-$PACKAGE_VERSION.tar"
           )
+
+          while IFS= read -r artifact; do
+            urls+=("https://repo1.maven.org/maven2/io/github/angular-wave/$artifact/$PACKAGE_VERSION/$artifact-$PACKAGE_VERSION.pom")
+          done < <(node integrations/android/scripts/android-artifacts.mjs artifact)
 
           for url in "${urls[@]}"; do
             curl --fail --silent --show-error "$url" --output /dev/null

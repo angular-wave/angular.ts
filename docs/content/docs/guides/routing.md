@@ -41,20 +41,23 @@ entire application a client-owned router tree.
 The router is part of the built-in runtime; do not add a speculative `ng.router`
 module dependency.
 
-```js
+```ts
 const app = angular.createModule('taskBoard', []);
 
-app
-  .router({
+const routes = [
+  {
     name: 'tasks',
     url: '/tasks',
     component: 'taskList',
-  })
-  .router({
+  },
+  {
     name: 'tasks.detail',
     url: '/{taskId:int}',
     component: 'taskDetail',
-  });
+  },
+] as const satisfies readonly ng.RouterModuleDeclaration[];
+
+app.router(routes);
 ```
 
 ```html

@@ -1,0 +1,81 @@
+{
+  "settings": {
+    "custom_app_feature_enabled": true,
+    "custom_app_number": 1,
+    "custom_app_data": {
+      "marketing_site": "https://native.example.com",
+      "demo_site": "https://angular-native-demo.dev"
+    }
+  },
+  "rules": [
+    {
+      "patterns": [".*"],
+      "properties": {
+        "context": "default",
+        "uri": "angularNative://fragment/web",
+        "pull_to_refresh_enabled": true
+      }
+    },
+    {
+      "patterns": ["^$", "/home"],
+      "properties": {
+        "uri": "angularNative://fragment/web/home",
+        "presentation": "clear_all"
+      }
+    },
+    {
+      "patterns": ["/new-home"],
+      "properties": {
+        "uri": "angularNative://fragment/web/home",
+        "presentation": "replace_root"
+      }
+    },
+    {
+      "patterns": ["/feature"],
+      "properties": {
+        "query_string_presentation": "replace"
+      }
+    },
+    {
+      "patterns": ["/new$", "/edit$"],
+      "properties": {
+        "context": "modal",
+        "uri": "angularNative://fragment/web/modal",
+        "query_string_presentation": "default",
+        "pull_to_refresh_enabled": false
+      }
+    },
+    {
+      "patterns": [".+\\.(?:bmp|gif|heic|jpg|jpeg|png|svg|webp)"],
+      "properties": {
+        "uri": "angularNative://fragment/image_viewer",
+        "title": "Image Viewer"
+      }
+    },
+    {
+      "patterns": ["/custom/modal"],
+      "properties": {
+        "context": "modal",
+        "uri": "angularNative://fragment/web/modal",
+        "presentation": "replace_root"
+      }
+    },
+    {
+      "patterns": ["/not-animated"],
+      "properties": {
+        "animated": false
+      }
+    },
+    {
+      "patterns": ["/custom/tabs"],
+      "properties": {
+        "tabs": [
+          {
+            "label": "Tab 1",
+            "path": "/tab1"
+          }
+        ]
+      }
+    }
+  ]
+}
