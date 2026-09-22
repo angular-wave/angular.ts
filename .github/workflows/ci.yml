@@ -416,7 +416,7 @@ jobs:
       matrix:
         include:
           - device: phone-api-28
-            runner: macos-15
+            runner: macos-15-intel
             api-level: "28"
             evidence-api-level: 28
             profile: pixel_2
@@ -425,7 +425,7 @@ jobs:
             benchmark: false
             checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
           - device: phone-api-37
-            runner: macos-15
+            runner: macos-15-intel
             api-level: "37.0"
             evidence-api-level: 37
             profile: pixel_6
@@ -434,7 +434,7 @@ jobs:
             benchmark: true
             checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
           - device: tablet-api-37
-            runner: macos-15
+            runner: macos-15-intel
             api-level: "37.0"
             evidence-api-level: 37
             profile: pixel_tablet
@@ -443,7 +443,7 @@ jobs:
             benchmark: false
             checks: navigation-fragments:connectedCheck
           - device: foldable-api-37
-            runner: macos-15
+            runner: macos-15-intel
             api-level: "37.0"
             evidence-api-level: 37
             profile: 7.6in Foldable
@@ -463,7 +463,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
-          arch: arm64-v8a
+          arch: x86_64
           target: google_apis
           profile: ${{ matrix.profile }}
           disable-animations: ${{ matrix.disable_animations }}
