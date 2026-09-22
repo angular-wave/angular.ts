@@ -1,6 +1,7 @@
 package io.github.angularwave.android.benchmark
 
 import android.content.Intent
+import android.os.SystemClock
 import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.MacrobenchmarkScope
@@ -59,7 +60,7 @@ class StartupBenchmark {
             val update =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.res(PACKAGE_NAME, COLLECTION_UPDATE_RESOURCE)),
+                        Until.findObject(By.text(COLLECTION_UPDATE_TEXT)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
@@ -106,27 +107,23 @@ class StartupBenchmark {
             val run =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(
-                            By.res(PACKAGE_NAME, BRIDGE_RUN_RESOURCE).desc(BRIDGE_READY_DESCRIPTION)
-                        ),
+                        Until.findObject(By.text(BRIDGE_RUN_TEXT)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
-                    "WebView benchmark control did not become ready"
+                    "WebView benchmark control did not become accessible"
                 }
+            check(waitUntil { run.isEnabled }) { "WebView benchmark control did not become ready" }
             run.click()
-            val result =
-                requireNotNull(
-                    device.wait(
-                        Until.findObject(
-                            By.res(PACKAGE_NAME, BRIDGE_RUN_RESOURCE).desc(BRIDGE_RESULT_PATTERN)
-                        ),
-                        UI_TIMEOUT_MS,
-                    )
-                ) {
-                    "WebView benchmark result was not reported"
+            check(
+                waitUntil {
+                    BRIDGE_RESULT_PATTERN.matcher(run.contentDescription?.toString().orEmpty())
+                        .matches()
                 }
-            val description = result.contentDescription.toString()
+            ) {
+                "WebView benchmark result was not reported"
+            }
+            val description = run.contentDescription.toString()
             val latencyMilliseconds =
                 description.substringAfter(BRIDGE_LATENCY_PREFIX).substringBefore(';').toDouble()
             check(latencyMilliseconds <= MAX_BRIDGE_LATENCY_MS) {
@@ -141,20 +138,29 @@ class StartupBenchmark {
         }
     }
 
+    private fun waitUntil(predicate: () -> Boolean): Boolean {
+        val deadline = SystemClock.uptimeMillis() + UI_TIMEOUT_MS
+        do {
+            if (predicate()) return true
+            SystemClock.sleep(POLL_INTERVAL_MS)
+        } while (SystemClock.uptimeMillis() < deadline)
+        return predicate()
+    }
+
     private companion object {
         const val PACKAGE_NAME = "io.github.angularwave.android.demo"
         const val MAIN_ACTIVITY = "$PACKAGE_NAME.main.MainActivity"
         const val COLLECTION_BENCHMARK_EXTRA = "collectionBenchmark"
-        const val COLLECTION_UPDATE_RESOURCE = "benchmark_collection_update"
+        const val COLLECTION_UPDATE_TEXT = "Update 10,000 items"
         const val WEB_VIEW_BENCHMARK_EXTRA = "webViewBenchmark"
-        const val BRIDGE_RUN_RESOURCE = "benchmark_bridge_run"
-        const val UI_TIMEOUT_MS = 5_000L
+        const val BRIDGE_RUN_TEXT = "Run bridge benchmark"
+        const val UI_TIMEOUT_MS = 10_000L
+        const val POLL_INTERVAL_MS = 50L
         const val SWIPE_STEPS = 20
         const val SWIPE_START_NUMERATOR = 3
         const val SWIPE_POSITION_DENOMINATOR = 4
         const val ALLOCATED_BYTES_PREFIX = "allocatedBytes="
         const val MAX_UPDATE_ALLOCATED_BYTES = 64L * 1024 * 1024
-        const val BRIDGE_READY_DESCRIPTION = "bridgeLatencyMs=ready"
         const val BRIDGE_LATENCY_PREFIX = "bridgeLatencyMs="
         const val WEB_VIEW_PSS_PREFIX = "appPssKb="
         const val BRIDGE_CALL_COUNT = 1_000

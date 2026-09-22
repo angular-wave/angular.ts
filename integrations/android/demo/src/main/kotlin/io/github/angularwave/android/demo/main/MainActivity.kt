@@ -98,7 +98,6 @@ class MainActivity : AngularNativeActivity() {
             )
         val update =
             Button(this).apply {
-                id = R.id.benchmark_collection_update
                 text = getString(R.string.benchmark_update_collection)
                 contentDescription = "$text; allocatedBytes=0"
                 setOnClickListener {
@@ -159,7 +158,6 @@ class MainActivity : AngularNativeActivity() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val run =
             Button(this).apply {
-                id = R.id.benchmark_bridge_run
                 text = getString(R.string.benchmark_run_bridge)
                 contentDescription = BRIDGE_LOADING_DESCRIPTION
                 isEnabled = false

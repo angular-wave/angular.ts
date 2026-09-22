@@ -1,4 +1,0 @@
-<resources>
-    <item name="benchmark_bridge_run" type="id" />
-    <item name="benchmark_collection_update" type="id" />
-</resources>
