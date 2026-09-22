@@ -58,16 +58,24 @@ class StartupBenchmark {
             val update =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.clazz(BUTTON_CLASS)),
+                        Until.findObject(By.desc(COLLECTION_READY_DESCRIPTION)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
                     "Collection benchmark control did not become accessible"
                 }
             update.click()
-            device.waitForIdle()
+            val result =
+                requireNotNull(
+                    device.wait(
+                        Until.findObject(By.desc(COLLECTION_RESULT_PATTERN)),
+                        UI_TIMEOUT_MS,
+                    )
+                ) {
+                    "Collection benchmark result was not reported"
+                }
             val allocatedBytes =
-                update.contentDescription.substringAfter(ALLOCATED_BYTES_PREFIX).toLong()
+                result.contentDescription.substringAfter(ALLOCATED_BYTES_PREFIX).toLong()
             check(allocatedBytes <= MAX_UPDATE_ALLOCATED_BYTES) {
                 "10,000-item keyed update allocated $allocatedBytes bytes; " +
                     "budget is $MAX_UPDATE_ALLOCATED_BYTES"
@@ -104,7 +112,7 @@ class StartupBenchmark {
             val run =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.clazz(BUTTON_CLASS).enabled(true)),
+                        Until.findObject(By.desc(BRIDGE_READY_DESCRIPTION).enabled(true)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
@@ -114,7 +122,7 @@ class StartupBenchmark {
             val result =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.clazz(BUTTON_CLASS).desc(BRIDGE_RESULT_PATTERN)),
+                        Until.findObject(By.desc(BRIDGE_RESULT_PATTERN)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
@@ -139,19 +147,21 @@ class StartupBenchmark {
         const val PACKAGE_NAME = "io.github.angularwave.android.demo"
         const val COLLECTION_BENCHMARK_ACTIVITY = "$PACKAGE_NAME.main.CollectionBenchmarkActivity"
         const val WEB_VIEW_BENCHMARK_ACTIVITY = "$PACKAGE_NAME.main.WebViewBenchmarkActivity"
-        const val BUTTON_CLASS = "android.widget.Button"
         const val UI_TIMEOUT_MS = 10_000L
         const val SWIPE_STEPS = 20
         const val SWIPE_START_NUMERATOR = 3
         const val SWIPE_POSITION_DENOMINATOR = 4
         const val ALLOCATED_BYTES_PREFIX = "allocatedBytes="
+        const val COLLECTION_READY_DESCRIPTION = "collectionBenchmark=ready"
         const val MAX_UPDATE_ALLOCATED_BYTES = 64L * 1024 * 1024
         const val BRIDGE_LATENCY_PREFIX = "bridgeLatencyMs="
+        const val BRIDGE_READY_DESCRIPTION = "bridgeLatencyMs=ready"
         const val WEB_VIEW_PSS_PREFIX = "appPssKb="
         const val BRIDGE_CALL_COUNT = 1_000
         const val MAX_BRIDGE_LATENCY_MS = 1_000.0
         const val MAX_WEB_VIEW_APP_PSS_KB = 128L * 1024
         val BRIDGE_RESULT_PATTERN: Pattern =
             Pattern.compile("^bridgeLatencyMs=[0-9]+(?:\\.[0-9]+)?; appPssKb=[0-9]+$")
+        val COLLECTION_RESULT_PATTERN: Pattern = Pattern.compile("^.+; allocatedBytes=[0-9]+$")
     }
 }

@@ -97,8 +97,9 @@ open class MainActivity : AngularNativeActivity() {
         val update =
             Button(this).apply {
                 text = getString(R.string.benchmark_update_collection)
-                contentDescription = "$text; allocatedBytes=0"
+                contentDescription = COLLECTION_READY_DESCRIPTION
                 setOnClickListener {
+                    contentDescription = COLLECTION_RUNNING_DESCRIPTION
                     offset = (offset + 1) % COLLECTION_BENCHMARK_SIZE
                     val allocatedBefore = allocatedBytes()
                     Trace.beginSection(COLLECTION_UPDATE_TRACE)
@@ -219,6 +220,8 @@ open class MainActivity : AngularNativeActivity() {
         const val ALLOCATED_BYTES_STAT = "art.gc.bytes-allocated"
         const val COLLECTION_BENCHMARK_SIZE = 10_000
         const val COLLECTION_UPDATE_TRACE = "AngularNativeCollectionUpdate"
+        const val COLLECTION_READY_DESCRIPTION = "collectionBenchmark=ready"
+        const val COLLECTION_RUNNING_DESCRIPTION = "collectionBenchmark=running"
         const val WEB_VIEW_BENCHMARK_INTERFACE = "WebViewBenchmark"
         const val WEB_VIEW_BENCHMARK_ORIGIN = "https://benchmark.invalid/"
         const val WEB_VIEW_BENCHMARK_DOCUMENT = "<!doctype html><title>Bridge benchmark</title>"
