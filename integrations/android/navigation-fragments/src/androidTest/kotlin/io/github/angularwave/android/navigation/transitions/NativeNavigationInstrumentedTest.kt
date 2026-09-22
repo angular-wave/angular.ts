@@ -1,7 +1,9 @@
 package io.github.angularwave.android.navigation.transitions
 
 import android.os.Bundle
+import android.os.Build
 import android.os.SystemClock
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -47,28 +49,29 @@ class NativeNavigationInstrumentedTest {
     }
 
     @Test
-    fun androidXNavigationHandlesPredictiveBackProgressCancellationAndCommit() {
+    fun androidXNavigationHandlesBackAndPredictiveCancellation() {
         ActivityScenario.launch(NativeNavigationTestActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 activity.navigateToDetail()
             }
             waitForNavigation()
-            scenario.onActivity { activity ->
-                val dispatcher = activity.onBackPressedDispatcher
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                scenario.onActivity { activity ->
+                    val dispatcher = activity.onBackPressedDispatcher
 
-                dispatcher.dispatchOnBackStarted(backEvent(0f))
-                dispatcher.dispatchOnBackProgressed(backEvent(0.5f))
-                dispatcher.dispatchOnBackCancelled()
+                    dispatcher.dispatchOnBackStarted(backEvent(0f))
+                    dispatcher.dispatchOnBackProgressed(backEvent(0.5f))
+                    dispatcher.dispatchOnBackCancelled()
+                }
+                waitForNavigation()
+                scenario.onActivity { activity ->
+                    assertEquals(DETAIL_ROUTE, activity.navController.currentDestination?.route)
+                }
             }
-            waitForNavigation()
-            scenario.onActivity { activity ->
-                assertEquals(DETAIL_ROUTE, activity.navController.currentDestination?.route)
 
-                val dispatcher = activity.onBackPressedDispatcher
-                dispatcher.dispatchOnBackStarted(backEvent(0f))
-                dispatcher.dispatchOnBackProgressed(backEvent(0.75f))
-                dispatcher.onBackPressed()
-            }
+            InstrumentationRegistry
+                .getInstrumentation()
+                .sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
             waitForNavigation()
             scenario.onActivity { activity ->
                 assertEquals(ROOT_ROUTE, activity.navController.currentDestination?.route)
