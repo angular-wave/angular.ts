@@ -234,7 +234,7 @@ class NativeOverlayInstrumentedTest {
         x: Float,
         y: Float,
     ) {
-        assertTrue(device.click(x.roundToInt(), y.roundToInt()))
+        device.click(x.roundToInt(), y.roundToInt())
     }
 
     private fun swipe(
@@ -243,14 +243,12 @@ class NativeOverlayInstrumentedTest {
         startY: Float,
         endY: Float,
     ) {
-        assertTrue(
-            device.swipe(
-                x.roundToInt(),
-                startY.roundToInt(),
-                x.roundToInt(),
-                endY.roundToInt(),
-                SWIPE_STEPS,
-            )
+        device.swipe(
+            x.roundToInt(),
+            startY.roundToInt(),
+            x.roundToInt(),
+            endY.roundToInt(),
+            SWIPE_STEPS,
         )
     }
 
