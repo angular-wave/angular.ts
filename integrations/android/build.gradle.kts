@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.dsl.Installation
 import com.android.build.api.dsl.LibraryExtension
 import com.android.build.api.dsl.Lint
 import com.android.build.api.dsl.TestExtension
@@ -70,6 +71,11 @@ fun Lint.enforceStrictChecks() {
     warningsAsErrors = true
 }
 
+fun Installation.configureReliableDeviceInstall() {
+    timeOutInMs = 120_000
+    installOptions.add("--no-streaming")
+}
+
 subprojects {
     tasks.withType<AbstractArchiveTask>().configureEach {
         isPreserveFileTimestamps = false
@@ -138,16 +144,25 @@ subprojects {
     }
 
     plugins.withId("com.android.application") {
-        extensions.configure<ApplicationExtension> { lint.enforceStrictChecks() }
+        extensions.configure<ApplicationExtension> {
+            lint.enforceStrictChecks()
+            installation.configureReliableDeviceInstall()
+        }
     }
     plugins.withId("com.android.library") {
-        extensions.configure<LibraryExtension> { lint.enforceStrictChecks() }
+        extensions.configure<LibraryExtension> {
+            lint.enforceStrictChecks()
+            installation.configureReliableDeviceInstall()
+        }
         extensions.configure<LibraryAndroidComponentsExtension> {
             finalizeDsl { extension -> extension.testOptions.targetSdk = robolectricMaxSdk }
         }
     }
     plugins.withId("com.android.test") {
-        extensions.configure<TestExtension> { lint.enforceStrictChecks() }
+        extensions.configure<TestExtension> {
+            lint.enforceStrictChecks()
+            installation.configureReliableDeviceInstall()
+        }
     }
 }
 
