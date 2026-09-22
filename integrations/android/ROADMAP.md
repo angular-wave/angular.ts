@@ -570,12 +570,11 @@ make check
 
 ## 13. Maven Release
 
-Status: `[~]`
+Status: `[x]`
 
-Remaining: publish all nine Android coordinates in the next AngularTS release
-and validate their signatures, checksums, metadata, archives, and clean-consumer
-behavior from Maven Central. Local staging, clean-consumer shrinking, and
-reproducibility validation are complete.
+AngularTS 0.36.0 published all nine Android coordinates. The release gate
+validated their signatures, checksums, metadata, archives, reproducibility, and
+clean-consumer behavior from Maven Central.
 
 Implement:
 
