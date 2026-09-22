@@ -117,8 +117,7 @@ class StartupBenchmark {
             run.click()
             check(
                 waitUntil {
-                    BRIDGE_RESULT_PATTERN.matcher(run.contentDescription?.toString().orEmpty())
-                        .matches()
+                    BRIDGE_RESULT_PATTERN.matcher(run.contentDescription.orEmpty()).matches()
                 }
             ) {
                 "WebView benchmark result was not reported"
