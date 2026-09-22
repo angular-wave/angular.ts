@@ -14,8 +14,7 @@ class BrowserProviderInstrumentedTest {
     @Test
     fun initializerRegistersProviderOnAndroid() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        AppInitializer
-            .getInstance(context)
+        AppInitializer.getInstance(context)
             .initializeComponent(BrowserRouteDecisionHandlerInitializer::class.java)
         val providers = AndroidNativeProviders.routeDecisionHandlerProviders()
 

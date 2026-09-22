@@ -1,7 +1,7 @@
 package io.github.angularwave.android.navigation.transitions
 
-import android.os.Bundle
 import android.os.Build
+import android.os.Bundle
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -69,9 +69,7 @@ class NativeNavigationInstrumentedTest {
                 }
             }
 
-            InstrumentationRegistry
-                .getInstrumentation()
-                .sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
             waitForNavigation()
             scenario.onActivity { activity ->
                 assertEquals(ROOT_ROUTE, activity.navController.currentDestination?.route)
