@@ -25,7 +25,6 @@ generate-check:
 	node --test scripts/native-elements-schema.test.mjs
 	node --test scripts/native-elements-parity.test.mjs
 	node --test scripts/native-protocol-schema.test.mjs
-	node --test scripts/roadmap-gates.test.mjs
 	node --test scripts/physical-device-check.test.mjs
 	node --test scripts/benchmark-results.test.mjs
 	node --test scripts/verify-physical-release-evidence.test.mjs

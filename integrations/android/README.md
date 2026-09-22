@@ -7,9 +7,6 @@ components only where Android behavior is useful.
 The integration is in preview. Its catalog and protocol are versioned and
 validated by the normal AngularTS release checks.
 
-See the [Android roadmap](ROADMAP.md) for the component catalog, production
-requirements, execution order, and acceptance gates.
-
 See the [security model](SECURITY.md) and [compatibility matrix](COMPATIBILITY.md)
 before shipping an application.
 
