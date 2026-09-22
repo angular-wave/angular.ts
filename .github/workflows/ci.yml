@@ -495,7 +495,30 @@ jobs:
           if [[ "${{ matrix.benchmark }}" == "true" ]]; then
             tasks+=(":benchmark:assembleBenchmark")
           fi
-          ./integrations/android/gradlew -p integrations/android "${tasks[@]}"
+
+          assembled=false
+          for attempt in {1..3}; do
+            gradle_args=(-p integrations/android)
+            if (( attempt > 1 )); then
+              gradle_args+=(--refresh-dependencies)
+            fi
+
+            if ./integrations/android/gradlew "${gradle_args[@]}" "${tasks[@]}"; then
+              assembled=true
+              break
+            fi
+
+            ./integrations/android/gradlew -p integrations/android --stop || true
+            if (( attempt < 3 )); then
+              sleep $((attempt * 10))
+            fi
+          done
+
+          if [[ "$assembled" != "true" ]]; then
+            echo "Android device test assembly failed after 3 attempts" >&2
+            exit 1
+          fi
+
           ./integrations/android/gradlew -p integrations/android --stop
           cat > "$HOME/.gradle/gradle.properties" <<'EOF'
           org.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8

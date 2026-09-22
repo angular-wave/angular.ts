@@ -90,6 +90,14 @@ test("workflow dispatch can recover a missing Java publication", () => {
   );
 });
 
+test("Android device assembly retries transient dependency failures", () => {
+  const source = ciJob("android-connected");
+
+  assert.match(source, /for attempt in \{1\.\.3\}; do/u);
+  assert.match(source, /gradle_args\+=\(--refresh-dependencies\)/u);
+  assert.match(source, /Android device test assembly failed after 3 attempts/u);
+});
+
 test("CI gate requires every first-class job to pass", () => {
   const gate = ciJob("ci-gate");
   for (const name of [...ciJobs.keys()].filter((name) => name !== "ci-gate")) {
