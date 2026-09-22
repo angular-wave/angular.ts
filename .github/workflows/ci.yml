@@ -464,9 +464,7 @@ jobs:
           profile: ${{ matrix.profile }}
           disable-animations: ${{ matrix.disable_animations }}
           script: |
-            ./integrations/android/gradlew -p integrations/android \
-              -Pandroid.testInstrumentationRunnerArguments.formFactor=${{ matrix.form_factor }} \
-              ${{ matrix.checks }}
+            ./integrations/android/gradlew -p integrations/android -Pandroid.testInstrumentationRunnerArguments.formFactor=${{ matrix.form_factor }} ${{ matrix.checks }}
             if [ "${{ matrix.benchmark }}" = "true" ]; then
               make -C integrations/android benchmark-emulator-smoke-check
             fi
