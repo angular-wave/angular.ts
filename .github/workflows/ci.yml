@@ -421,36 +421,44 @@ jobs:
             profile: pixel_2
             ram_size: 2048
             disk_size: 8G
+            window_size: default
+            density: default
             form_factor: phone
             disable_animations: true
             benchmark: false
             checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
-          - device: phone-api-37
-            api-level: "37.0"
-            evidence-api-level: 37
+          - device: phone-api-36
+            api-level: "36"
+            evidence-api-level: 36
             profile: pixel_6
-            ram_size: 4096
+            ram_size: 3072
             disk_size: 8G
+            window_size: 1080x2400
+            density: 420
             form_factor: phone
             disable_animations: false
             benchmark: true
             checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
-          - device: tablet-api-37
-            api-level: "37.0"
-            evidence-api-level: 37
-            profile: pixel_tablet
-            ram_size: 4096
+          - device: tablet-api-36
+            api-level: "36"
+            evidence-api-level: 36
+            profile: pixel_6
+            ram_size: 3072
             disk_size: 8G
+            window_size: 2560x1600
+            density: 320
             form_factor: tablet
             disable_animations: false
             benchmark: false
             checks: navigation-fragments:connectedCheck
-          - device: foldable-api-37
-            api-level: "37.0"
-            evidence-api-level: 37
-            profile: 7.6in Foldable
-            ram_size: 4096
+          - device: foldable-api-36
+            api-level: "36"
+            evidence-api-level: 36
+            profile: pixel_6
+            ram_size: 3072
             disk_size: 8G
+            window_size: 1768x2208
+            density: 420
             form_factor: foldable
             disable_animations: true
             benchmark: false
@@ -478,6 +486,18 @@ jobs:
           kotlin.compiler.execution.strategy=in-process
           EOF
 
+      - name: Assemble Android device tests
+        run: |
+          tasks=()
+          for check in ${{ matrix.checks }}; do
+            tasks+=(":${check%:connectedCheck}:assembleDebugAndroidTest")
+          done
+          if [[ "${{ matrix.benchmark }}" == "true" ]]; then
+            tasks+=(":benchmark:assembleDebugAndroidTest")
+          fi
+          ./integrations/android/gradlew -p integrations/android "${tasks[@]}"
+          ./integrations/android/gradlew -p integrations/android --stop
+
       - name: Run Android device checks
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -490,6 +510,9 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -delay-adb
           disable-animations: ${{ matrix.disable_animations }}
           script: |
+            timeout 120 sh -c 'until adb shell cmd package list packages >/dev/null 2>&1 && adb shell cmd activity get-config >/dev/null 2>&1; do sleep 2; done'
+            [ "${{ matrix.window_size }}" = "default" ] || adb shell wm size ${{ matrix.window_size }}
+            [ "${{ matrix.density }}" = "default" ] || adb shell wm density ${{ matrix.density }}
             ./integrations/android/gradlew -p integrations/android --info -Pandroid.testInstrumentationRunnerArguments.formFactor=${{ matrix.form_factor }} ${{ matrix.checks }}
             [ "${{ matrix.benchmark }}" != "true" ] || make -C integrations/android benchmark-emulator-smoke-check
             ./integrations/android/scripts/capture-device-evidence.sh integrations/android/build/connected-device-evidence ${{ matrix.evidence-api-level }} ${{ matrix.device }}

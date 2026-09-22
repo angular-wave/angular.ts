@@ -145,7 +145,7 @@ on an emulator. Emulator measurements are not release evidence; AndroidX
 rejects them from `physical-benchmark-check`.
 
 CI stores benchmark JSON, generated profiles, logs, and Perfetto traces in the
-API 37 phone's device-evidence artifact.
+stable API 36 phone's device-evidence artifact.
 
 The optional `Android Physical Device` workflow runs connected tests and strict
 benchmarks on a self-hosted runner labeled `android` and `physical`, then
