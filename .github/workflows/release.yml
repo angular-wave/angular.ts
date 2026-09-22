@@ -12,6 +12,11 @@ on:
         description: Existing release tag requiring npm/GitHub publication recovery
         required: true
         type: string
+      publish_java:
+        description: Publish the Java artifact when the tagged release did not reach Maven Central
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -22,7 +27,7 @@ concurrency:
 jobs:
   release-preflight:
     name: Validate release secrets
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || inputs.publish_java
     runs-on: ubuntu-latest
     steps:
       - name: Require release credentials
@@ -203,7 +208,10 @@ jobs:
 
   publish-java:
     name: Publish Java package to Maven Central
-    if: github.event_name == 'push'
+    if: >-
+      always() &&
+      (github.event_name == 'push' || inputs.publish_java) &&
+      (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -233,7 +241,8 @@ jobs:
       - name: Validate Java release metadata
         run: make -f integrations/closure/Makefile java-version-check
 
-      - name: Reject an existing Maven Central version
+      - name: Check for an existing Maven Central version
+        id: registry
         shell: bash
         run: |
           version="$(node -p 'require("./package.json").version')"
@@ -241,11 +250,8 @@ jobs:
           status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$pom_url")"
 
           case "$status" in
-            404) ;;
-            200)
-              echo "io.github.angular-wave:angular-ts-java:$version is already published" >&2
-              exit 1
-              ;;
+            200) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
             *)
               echo "Maven Central lookup failed with HTTP $status" >&2
               exit 1
@@ -253,6 +259,7 @@ jobs:
           esac
 
       - name: Publish Java package to Maven Central
+        if: steps.registry.outputs.exists != 'true'
         env:
           MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
@@ -577,7 +584,19 @@ jobs:
             [componentView, context, tags, view];
           }
           DART
-          dart pub get --directory "$consumer"
+          for attempt in {1..60}; do
+            if dart pub get --directory "$consumer"; then
+              break
+            fi
+
+            if (( attempt == 60 )); then
+              echo "pub.dev package did not become resolvable: angular_ts $version" >&2
+              exit 1
+            fi
+
+            rm -f "$consumer/pubspec.lock"
+            sleep 10
+          done
           dart analyze "$consumer/lib/main.dart"
 
       - name: Compile a Hex consumer
@@ -592,7 +611,19 @@ jobs:
             --skip-github \
             "$consumer"
           cd "$consumer"
-          gleam add "angular_ts@$version"
+          for attempt in {1..60}; do
+            if gleam add "angular_ts@$version"; then
+              break
+            fi
+
+            if (( attempt == 60 )); then
+              echo "Hex package did not become resolvable: angular_ts@$version" >&2
+              exit 1
+            fi
+
+            rm -f manifest.toml
+            sleep 10
+          done
           cat > src/angular_ts_release_consumer.gleam <<'GLEAM'
           import angular_ts/programmatic_view
           import gleam/dynamic.{type Dynamic}
@@ -636,7 +667,8 @@ jobs:
         needs.publish-dart.result == 'success' &&
         needs.publish-gleam.result == 'success' &&
         needs.validate-language-packages.result == 'success') ||
-       github.event_name == 'workflow_dispatch')
+       (github.event_name == 'workflow_dispatch' &&
+        (!inputs.publish_java || needs.publish-java.result == 'success')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

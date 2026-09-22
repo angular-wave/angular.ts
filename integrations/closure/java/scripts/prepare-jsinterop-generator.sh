@@ -51,6 +51,8 @@ fi
 
 rm -rf "${SOURCE_DIR}"
 tar -xzf "${ARCHIVE}" -C "${WORK_DIR}"
+node "${SCRIPT_DIR}/pin-jsinterop-generator-dependencies.mjs" \
+  "${SOURCE_DIR}/MODULE.bazel"
 
 if command -v bazelisk >/dev/null 2>&1; then
   BAZEL_CMD=(bazelisk)

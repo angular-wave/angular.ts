@@ -65,6 +65,31 @@ test("published Maven validation includes the complete Android catalog", () => {
   assert.doesNotMatch(source, /mapfile -t artifacts/u);
 });
 
+test("language package validation waits for clean consumers to resolve", () => {
+  const source = releaseJob("validate-language-packages");
+
+  assert.match(source, /for attempt in \{1\.\.60\}; do[\s\S]*dart pub get/u);
+  assert.match(source, /pub\.dev package did not become resolvable/u);
+  assert.match(source, /for attempt in \{1\.\.60\}; do[\s\S]*gleam add/u);
+  assert.match(source, /Hex package did not become resolvable/u);
+});
+
+test("workflow dispatch can recover a missing Java publication", () => {
+  const preflight = releaseJob("release-preflight");
+  const java = releaseJob("publish-java");
+  const finalPublication = releaseJob("publish");
+
+  assert.match(release, /publish_java:[\s\S]*type: boolean/u);
+  assert.match(preflight, /github\.event_name == 'push' \|\| inputs\.publish_java/u);
+  assert.match(java, /github\.event_name == 'push' \|\| inputs\.publish_java/u);
+  assert.match(java, /id: registry/u);
+  assert.match(java, /if: steps\.registry\.outputs\.exists != 'true'/u);
+  assert.match(
+    finalPublication,
+    /!inputs\.publish_java \|\| needs\.publish-java\.result == 'success'/u,
+  );
+});
+
 test("CI gate requires every first-class job to pass", () => {
   const gate = ciJob("ci-gate");
   for (const name of [...ciJobs.keys()].filter((name) => name !== "ci-gate")) {

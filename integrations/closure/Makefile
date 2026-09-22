@@ -1,4 +1,4 @@
-.PHONY: closure-generate closure-externs closure-validate closure-build closure-test closure-demo clojurescript-generate clojurescript-format clojurescript-format-check clojurescript-lint clojurescript-validate clojurescript-build clojurescript-unit-test clojurescript-test clojurescript-package clojurescript-package-check clojurescript-version-check clojurescript-deploy java-generate java-package java-version-check java-docs-test java-types-test java-artifact-check java-deploy java-check generate-check
+.PHONY: closure-generate closure-externs closure-validate closure-build closure-test closure-demo clojurescript-generate clojurescript-format clojurescript-format-check clojurescript-lint clojurescript-validate clojurescript-build clojurescript-unit-test clojurescript-test clojurescript-package clojurescript-package-check clojurescript-version-check clojurescript-deploy java-generate java-package java-version-check java-docs-test java-generator-test java-types-test java-artifact-check java-deploy java-check generate-check
 
 CLOSURE_INTEGRATION_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 CLOSURE_REPO_ROOT := $(abspath $(CLOSURE_INTEGRATION_DIR)/../..)
@@ -96,6 +96,10 @@ java-docs-test:
 	@cd $(CLOSURE_REPO_ROOT) && \
 		"$(CLOSURE_NODE)" --test integrations/closure/java/scripts/apply-jsinterop-javadocs.test.mjs
 
+java-generator-test:
+	@cd $(CLOSURE_REPO_ROOT) && \
+		"$(CLOSURE_NODE)" --test integrations/closure/java/scripts/pin-jsinterop-generator-dependencies.test.mjs
+
 java-types-test:
 	@cd $(CLOSURE_REPO_ROOT) && \
 		"$(CLOSURE_NODE)" --test integrations/closure/java/scripts/refine-generated-jsinterop-types.test.mjs
@@ -108,7 +112,7 @@ java-deploy: java-version-check
 	@cd $(CLOSURE_REPO_ROOT) && \
 		mvn -f integrations/closure/java/pom.xml -Prelease clean deploy
 
-java-check: java-docs-test java-types-test
+java-check: java-docs-test java-generator-test java-types-test
 	@"$(CLOSURE_NODE)" $(CLOSURE_REPO_ROOT)/utils/generate-programmatic-view-tags.mjs --integration javaTags --check
 	@cd $(CLOSURE_REPO_ROOT) && \
 		mvn -f integrations/closure/java/pom.xml clean install
