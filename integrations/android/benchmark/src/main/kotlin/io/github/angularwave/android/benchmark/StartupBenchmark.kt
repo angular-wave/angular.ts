@@ -12,6 +12,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
+import java.io.ByteArrayOutputStream
 import java.util.regex.Pattern
 import org.junit.Rule
 import org.junit.Test
@@ -59,8 +60,7 @@ class StartupBenchmark {
                         UI_TIMEOUT_MS,
                     )
                 ) {
-                    "Collection benchmark control did not become accessible; " +
-                        "foreground package is ${device.currentPackageName}"
+                    readinessFailure("Collection benchmark control did not become accessible")
                 }
             },
         ) {
@@ -117,8 +117,7 @@ class StartupBenchmark {
                         UI_TIMEOUT_MS,
                     )
                 ) {
-                    "WebView benchmark control did not become accessible; " +
-                        "foreground package is ${device.currentPackageName}"
+                    readinessFailure("WebView benchmark control did not become accessible")
                 }
             },
         ) {
@@ -151,11 +150,19 @@ class StartupBenchmark {
         }
     }
 
+    private fun MacrobenchmarkScope.readinessFailure(message: String): String {
+        val hierarchy = ByteArrayOutputStream()
+        device.dumpWindowHierarchy(hierarchy)
+        return "$message; foreground package is ${device.currentPackageName}; " +
+            "hierarchy=${hierarchy.toString(Charsets.UTF_8.name()).take(HIERARCHY_LIMIT)}"
+    }
+
     private companion object {
         const val PACKAGE_NAME = "io.github.angularwave.android.demo"
         const val COLLECTION_BENCHMARK_ACTIVITY = "$PACKAGE_NAME.main.CollectionBenchmarkActivity"
         const val WEB_VIEW_BENCHMARK_ACTIVITY = "$PACKAGE_NAME.main.WebViewBenchmarkActivity"
         const val UI_TIMEOUT_MS = 30_000L
+        const val HIERARCHY_LIMIT = 8_192
         const val SWIPE_STEPS = 20
         const val SWIPE_START_NUMERATOR = 3
         const val SWIPE_POSITION_DENOMINATOR = 4
