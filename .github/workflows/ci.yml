@@ -442,11 +442,11 @@ jobs:
           - device: tablet-api-36
             api-level: "36"
             evidence-api-level: 36
-            profile: pixel_6
+            profile: pixel_tablet
             ram_size: 3072
             disk_size: 8G
-            window_size: 2560x1600
-            density: 320
+            window_size: default
+            density: default
             form_factor: tablet
             disable_animations: false
             benchmark: false
@@ -454,11 +454,11 @@ jobs:
           - device: foldable-api-36
             api-level: "36"
             evidence-api-level: 36
-            profile: pixel_6
+            profile: 7.6in Foldable
             ram_size: 3072
             disk_size: 8G
-            window_size: 1768x2208
-            density: 420
+            window_size: default
+            density: default
             form_factor: foldable
             disable_animations: true
             benchmark: false
