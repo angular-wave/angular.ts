@@ -1,11 +1,11 @@
 package io.github.angularwave.android.navigation.elements
 
 import android.content.Intent
-import android.view.KeyEvent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,7 +25,9 @@ class NativeOverlayRecreationInstrumentedTest {
     @Test
     fun androidBackDismissesOnceAndReturnsFocus() {
         ActivityScenario.launch<NativeElementTestActivity>(dialogIntent()).use { scenario ->
-            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            UiDevice.getInstance(instrumentation).pressBack()
+            instrumentation.waitForIdleSync()
 
             scenario.onActivity { activity ->
                 val overlay = requireNotNull(activity.restoredOverlay)

@@ -1,15 +1,14 @@
 package io.github.angularwave.android.navigation.elements
 
-import android.accessibilityservice.AccessibilityService
-import android.os.SystemClock
-import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -22,6 +21,7 @@ class NativeOverlayInstrumentedTest {
     @Test
     fun androidBackCancelsDialogAndReturnsFocus() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val device = UiDevice.getInstance(instrumentation)
         ActivityScenario.launch(NativeElementTestActivity::class.java).use { scenario ->
             val events = mutableListOf<String>()
             val dismissed = CountDownLatch(1)
@@ -39,11 +39,7 @@ class NativeOverlayInstrumentedTest {
                 trigger.performClick()
             }
             instrumentation.waitForIdleSync()
-            assertTrue(
-                instrumentation.uiAutomation.performGlobalAction(
-                    AccessibilityService.GLOBAL_ACTION_BACK
-                )
-            )
+            device.pressBack()
             assertTrue(
                 "dialog did not dismiss after Android back",
                 dismissed.await(5, TimeUnit.SECONDS),
@@ -85,6 +81,7 @@ class NativeOverlayInstrumentedTest {
     @Test
     fun outsideTapCancelsDialogAndReturnsFocus() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val device = UiDevice.getInstance(instrumentation)
         ActivityScenario.launch(NativeElementTestActivity::class.java).use { scenario ->
             val events = mutableListOf<String>()
             val dismissed = CountDownLatch(1)
@@ -106,7 +103,7 @@ class NativeOverlayInstrumentedTest {
                 trigger.performClick()
             }
             instrumentation.waitForIdleSync()
-            tap(instrumentation, width / 2f, height * 0.15f)
+            tap(device, width / 2f, height * 0.15f)
             assertTrue("outside tap did not dismiss dialog", dismissed.await(5, TimeUnit.SECONDS))
 
             scenario.onActivity {
@@ -120,6 +117,7 @@ class NativeOverlayInstrumentedTest {
     @Test
     fun downwardSwipeCancelsBottomSheetAndReturnsFocus() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val device = UiDevice.getInstance(instrumentation)
         ActivityScenario.launch(NativeElementTestActivity::class.java).use { scenario ->
             val events = mutableListOf<String>()
             val dismissed = CountDownLatch(1)
@@ -143,7 +141,7 @@ class NativeOverlayInstrumentedTest {
             }
             instrumentation.waitForIdleSync()
             swipe(
-                instrumentation,
+                device,
                 width / 2f,
                 height * 0.86f,
                 height - 1f,
@@ -232,60 +230,31 @@ class NativeOverlayInstrumentedTest {
     }
 
     private fun tap(
-        instrumentation: android.app.Instrumentation,
+        device: UiDevice,
         x: Float,
         y: Float,
     ) {
-        val downTime = SystemClock.uptimeMillis()
-        pointer(instrumentation, downTime, MotionEvent.ACTION_DOWN, x, y)
-        pointer(instrumentation, downTime, MotionEvent.ACTION_UP, x, y)
+        assertTrue(device.click(x.roundToInt(), y.roundToInt()))
     }
 
     private fun swipe(
-        instrumentation: android.app.Instrumentation,
+        device: UiDevice,
         x: Float,
         startY: Float,
         endY: Float,
     ) {
-        val downTime = SystemClock.uptimeMillis()
-        pointer(instrumentation, downTime, MotionEvent.ACTION_DOWN, x, startY)
-        repeat(SWIPE_STEPS) { index ->
-            SystemClock.sleep(SWIPE_STEP_MS)
-            val progress = (index + 1f) / SWIPE_STEPS
-            pointer(
-                instrumentation,
-                downTime,
-                MotionEvent.ACTION_MOVE,
-                x,
-                startY + (endY - startY) * progress,
+        assertTrue(
+            device.swipe(
+                x.roundToInt(),
+                startY.roundToInt(),
+                x.roundToInt(),
+                endY.roundToInt(),
+                SWIPE_STEPS,
             )
-        }
-        pointer(instrumentation, downTime, MotionEvent.ACTION_UP, x, endY)
-    }
-
-    private fun pointer(
-        instrumentation: android.app.Instrumentation,
-        downTime: Long,
-        action: Int,
-        x: Float,
-        y: Float,
-    ) {
-        MotionEvent.obtain(
-                downTime,
-                SystemClock.uptimeMillis(),
-                action,
-                x,
-                y,
-                0,
-            )
-            .also {
-                instrumentation.sendPointerSync(it)
-                it.recycle()
-            }
+        )
     }
 
     private companion object {
         const val SWIPE_STEPS = 16
-        const val SWIPE_STEP_MS = 16L
     }
 }

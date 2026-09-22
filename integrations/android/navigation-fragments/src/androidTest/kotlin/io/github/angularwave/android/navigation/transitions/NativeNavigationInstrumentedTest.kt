@@ -3,7 +3,6 @@ package io.github.angularwave.android.navigation.transitions
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,6 +18,7 @@ import androidx.navigation.fragment.fragment
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,7 +69,8 @@ class NativeNavigationInstrumentedTest {
                 }
             }
 
-            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            UiDevice.getInstance(instrumentation).pressBack()
             waitForNavigation()
             scenario.onActivity { activity ->
                 assertEquals(ROOT_ROUTE, activity.navController.currentDestination?.route)
