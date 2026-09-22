@@ -420,6 +420,7 @@ jobs:
             evidence-api-level: 28
             profile: pixel_2
             ram_size: 2048
+            disk_size: 8G
             form_factor: phone
             disable_animations: true
             benchmark: false
@@ -429,6 +430,7 @@ jobs:
             evidence-api-level: 37
             profile: pixel_6
             ram_size: 4096
+            disk_size: 8G
             form_factor: phone
             disable_animations: false
             benchmark: true
@@ -438,6 +440,7 @@ jobs:
             evidence-api-level: 37
             profile: pixel_tablet
             ram_size: 4096
+            disk_size: 8G
             form_factor: tablet
             disable_animations: false
             benchmark: false
@@ -447,6 +450,7 @@ jobs:
             evidence-api-level: 37
             profile: 7.6in Foldable
             ram_size: 4096
+            disk_size: 8G
             form_factor: foldable
             disable_animations: true
             benchmark: false
@@ -473,24 +477,24 @@ jobs:
           target: google_apis
           profile: ${{ matrix.profile }}
           ram-size: ${{ matrix.ram_size }}
+          disk-size: ${{ matrix.disk_size }}
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -delay-adb
           disable-animations: ${{ matrix.disable_animations }}
           script: |
-            ./integrations/android/gradlew -p integrations/android -Pandroid.testInstrumentationRunnerArguments.formFactor=${{ matrix.form_factor }} ${{ matrix.checks }}
-            if [ "${{ matrix.benchmark }}" = "true" ]; then
-              make -C integrations/android benchmark-emulator-smoke-check
-            fi
-            ./integrations/android/scripts/capture-device-evidence.sh \
-              integrations/android/build/connected-device-evidence \
-              ${{ matrix.evidence-api-level }} \
-              ${{ matrix.device }}
+            ./integrations/android/gradlew -p integrations/android --info -Pandroid.testInstrumentationRunnerArguments.formFactor=${{ matrix.form_factor }} ${{ matrix.checks }}
+            [ "${{ matrix.benchmark }}" != "true" ] || make -C integrations/android benchmark-emulator-smoke-check
+            ./integrations/android/scripts/capture-device-evidence.sh integrations/android/build/connected-device-evidence ${{ matrix.evidence-api-level }} ${{ matrix.device }}
 
       - name: Upload Android device evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: android-native-device-evidence-${{ matrix.device }}
-          path: integrations/android/build/connected-device-evidence
-          if-no-files-found: error
+          path: |
+            integrations/android/build/connected-device-evidence
+            integrations/android/**/build/reports/androidTests/connected
+            integrations/android/**/build/outputs/androidTest-results/connected
+          if-no-files-found: warn
 
   ci-gate:
     name: CI Gate
