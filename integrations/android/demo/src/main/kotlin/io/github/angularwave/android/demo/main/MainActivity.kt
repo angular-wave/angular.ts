@@ -14,6 +14,8 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewClientCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import io.github.angularwave.android.core.ng.webview.AngularNativeWebView
@@ -77,7 +79,7 @@ open class MainActivity : AngularNativeActivity() {
     override fun navigatorConfigurations() = mainTabs.navigatorConfigurations
 
     private fun showCollectionBenchmark() {
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val root = benchmarkRoot()
         val host = FrameLayout(this)
         val context =
             NativeElementContext(
@@ -152,7 +154,7 @@ open class MainActivity : AngularNativeActivity() {
         )
 
     private fun showWebViewBenchmark() {
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val root = benchmarkRoot()
         val run =
             Button(this).apply {
                 text = getString(R.string.benchmark_run_bridge)
@@ -197,6 +199,21 @@ open class MainActivity : AngularNativeActivity() {
             null,
         )
     }
+
+    private fun benchmarkRoot() =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
+                val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                view.setPadding(
+                    systemBars.left,
+                    systemBars.top,
+                    systemBars.right,
+                    systemBars.bottom,
+                )
+                insets
+            }
+        }
 
     override fun onDestroy() {
         benchmarkWebView?.apply {
