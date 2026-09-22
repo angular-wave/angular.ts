@@ -1,7 +1,6 @@
 package io.github.angularwave.android.benchmark
 
 import android.content.Intent
-import android.os.SystemClock
 import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.MacrobenchmarkScope
@@ -60,7 +59,7 @@ class StartupBenchmark {
             val update =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.text(COLLECTION_UPDATE_TEXT)),
+                        Until.findObject(By.clazz(BUTTON_CLASS)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
@@ -107,22 +106,23 @@ class StartupBenchmark {
             val run =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.text(BRIDGE_RUN_TEXT)),
+                        Until.findObject(By.clazz(BUTTON_CLASS).enabled(true)),
                         UI_TIMEOUT_MS,
                     )
                 ) {
                     "WebView benchmark control did not become accessible"
                 }
-            check(waitUntil { run.isEnabled }) { "WebView benchmark control did not become ready" }
             run.click()
-            check(
-                waitUntil {
-                    BRIDGE_RESULT_PATTERN.matcher(run.contentDescription.orEmpty()).matches()
+            val result =
+                requireNotNull(
+                    device.wait(
+                        Until.findObject(By.clazz(BUTTON_CLASS).desc(BRIDGE_RESULT_PATTERN)),
+                        UI_TIMEOUT_MS,
+                    )
+                ) {
+                    "WebView benchmark result was not reported"
                 }
-            ) {
-                "WebView benchmark result was not reported"
-            }
-            val description = run.contentDescription.toString()
+            val description = result.contentDescription
             val latencyMilliseconds =
                 description.substringAfter(BRIDGE_LATENCY_PREFIX).substringBefore(';').toDouble()
             check(latencyMilliseconds <= MAX_BRIDGE_LATENCY_MS) {
@@ -137,24 +137,13 @@ class StartupBenchmark {
         }
     }
 
-    private fun waitUntil(predicate: () -> Boolean): Boolean {
-        val deadline = SystemClock.uptimeMillis() + UI_TIMEOUT_MS
-        do {
-            if (predicate()) return true
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        } while (SystemClock.uptimeMillis() < deadline)
-        return predicate()
-    }
-
     private companion object {
         const val PACKAGE_NAME = "io.github.angularwave.android.demo"
         const val MAIN_ACTIVITY = "$PACKAGE_NAME.main.MainActivity"
         const val COLLECTION_BENCHMARK_EXTRA = "collectionBenchmark"
-        const val COLLECTION_UPDATE_TEXT = "Update 10,000 items"
         const val WEB_VIEW_BENCHMARK_EXTRA = "webViewBenchmark"
-        const val BRIDGE_RUN_TEXT = "Run bridge benchmark"
+        const val BUTTON_CLASS = "android.widget.Button"
         const val UI_TIMEOUT_MS = 10_000L
-        const val POLL_INTERVAL_MS = 50L
         const val SWIPE_STEPS = 20
         const val SWIPE_START_NUMERATOR = 3
         const val SWIPE_POSITION_DENOMINATOR = 4
