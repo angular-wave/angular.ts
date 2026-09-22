@@ -409,14 +409,13 @@ jobs:
   android-connected:
     name: Android device ${{ matrix.device }}
     needs: package
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         include:
           - device: phone-api-28
-            runner: macos-15-intel
             api-level: "28"
             evidence-api-level: 28
             profile: pixel_2
@@ -426,7 +425,6 @@ jobs:
             benchmark: false
             checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
           - device: phone-api-37
-            runner: macos-15-intel
             api-level: "37.0"
             evidence-api-level: 37
             profile: pixel_6
@@ -436,7 +434,6 @@ jobs:
             benchmark: true
             checks: navigation-fragments:connectedCheck browser:connectedCheck credentials:connectedCheck maps:connectedCheck media:connectedCheck custom-elements-sample:connectedCheck demo:connectedCheck
           - device: tablet-api-37
-            runner: macos-15-intel
             api-level: "37.0"
             evidence-api-level: 37
             profile: pixel_tablet
@@ -446,7 +443,6 @@ jobs:
             benchmark: false
             checks: navigation-fragments:connectedCheck
           - device: foldable-api-37
-            runner: macos-15-intel
             api-level: "37.0"
             evidence-api-level: 37
             profile: 7.6in Foldable
@@ -462,6 +458,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       - name: Run Android device checks
         uses: reactivecircus/android-emulator-runner@v2
