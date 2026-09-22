@@ -511,10 +511,7 @@ jobs:
           disable-animations: ${{ matrix.disable_animations }}
           script: |
             timeout 120 sh -c 'until adb shell cmd package list packages >/dev/null 2>&1 && adb shell cmd activity get-config >/dev/null 2>&1; do sleep 2; done'
-            if [ "${{ matrix.form_factor }}" = "foldable" ]; then
-              adb emu unfold
-              sleep 5
-            fi
+            [ "${{ matrix.form_factor }}" != "foldable" ] || { adb emu unfold && sleep 5; }
             [ "${{ matrix.window_size }}" = "default" ] || adb shell wm size ${{ matrix.window_size }}
             [ "${{ matrix.density }}" = "default" ] || adb shell wm density ${{ matrix.density }}
             ./integrations/android/gradlew -p integrations/android --info -Pandroid.testInstrumentationRunnerArguments.formFactor=${{ matrix.form_factor }} ${{ matrix.checks }}
