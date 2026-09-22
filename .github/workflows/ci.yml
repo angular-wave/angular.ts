@@ -514,37 +514,7 @@ jobs:
           disk-size: ${{ matrix.disk_size }}
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -delay-adb
           disable-animations: ${{ matrix.disable_animations }}
-          script: |
-            wait_for_android() {
-              adb wait-for-device
-              timeout 180 sh -c 'until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = "1" ] && adb shell cmd package list packages >/dev/null 2>&1 && adb shell cmd activity get-config >/dev/null 2>&1; do sleep 2; done'
-            }
-            run_device_check() {
-              timeout 12m ./integrations/android/gradlew -p integrations/android --info -Pandroid.testInstrumentationRunnerArguments.formFactor=${{ matrix.form_factor }} "$1"
-            }
-            wait_for_android
-            [ "${{ matrix.form_factor }}" != "foldable" ] || { adb emu unfold && sleep 3 && adb emu posture 2 && sleep 5; }
-            [ "${{ matrix.window_size }}" = "default" ] || adb shell wm size ${{ matrix.window_size }}
-            [ "${{ matrix.density }}" = "default" ] || adb shell wm density ${{ matrix.density }}
-            for check in ${{ matrix.checks }}; do
-              set +e
-              run_device_check "$check"
-              status=$?
-              set -e
-              if [ "$status" -eq 124 ]; then
-                echo "Android device check $check timed out; restarting adb and retrying once."
-                ./integrations/android/gradlew -p integrations/android --stop
-                adb kill-server
-                adb start-server
-                wait_for_android
-                run_device_check "$check"
-              elif [ "$status" -ne 0 ]; then
-                exit "$status"
-              fi
-            done
-            [ "${{ matrix.benchmark }}" != "true" ] || make -C integrations/android benchmark-emulator-smoke-check
-            ./integrations/android/scripts/capture-device-evidence.sh integrations/android/build/connected-device-evidence ${{ matrix.evidence-api-level }} ${{ matrix.device }}
-
+          script: ./integrations/android/scripts/run-device-checks.sh '${{ matrix.form_factor }}' '${{ matrix.window_size }}' '${{ matrix.density }}' '${{ matrix.benchmark }}' '${{ matrix.evidence-api-level }}' '${{ matrix.device }}' ${{ matrix.checks }}
       - name: Upload Android device evidence
         if: always()
         uses: actions/upload-artifact@v4
