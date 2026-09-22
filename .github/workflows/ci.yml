@@ -493,7 +493,7 @@ jobs:
             tasks+=(":${check%:connectedCheck}:assembleDebugAndroidTest")
           done
           if [[ "${{ matrix.benchmark }}" == "true" ]]; then
-            tasks+=(":benchmark:assembleDebugAndroidTest")
+            tasks+=(":benchmark:assembleBenchmark")
           fi
           ./integrations/android/gradlew -p integrations/android "${tasks[@]}"
           ./integrations/android/gradlew -p integrations/android --stop
