@@ -18,6 +18,16 @@
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
 
         <activity
+            android:name="io.github.angularwave.android.demo.main.CollectionBenchmarkActivity"
+            android:exported="true"
+            android:theme="@style/MyTheme.DayNight"/>
+
+        <activity
+            android:name="io.github.angularwave.android.demo.main.WebViewBenchmarkActivity"
+            android:exported="true"
+            android:theme="@style/MyTheme.DayNight"/>
+
+        <activity
             android:name="io.github.angularwave.android.demo.main.MainActivity"
             android:launchMode="singleInstance"
             android:theme="@style/MyTheme.DayNight"

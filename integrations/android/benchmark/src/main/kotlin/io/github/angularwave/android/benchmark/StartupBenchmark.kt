@@ -51,8 +51,7 @@ class StartupBenchmark {
                 killProcess()
                 startActivityAndWait(
                     Intent(Intent.ACTION_MAIN)
-                        .setClassName(PACKAGE_NAME, MAIN_ACTIVITY)
-                        .putExtra(COLLECTION_BENCHMARK_EXTRA, true)
+                        .setClassName(PACKAGE_NAME, COLLECTION_BENCHMARK_ACTIVITY)
                 )
             },
         ) {
@@ -98,8 +97,7 @@ class StartupBenchmark {
                 killProcess()
                 startActivityAndWait(
                     Intent(Intent.ACTION_MAIN)
-                        .setClassName(PACKAGE_NAME, MAIN_ACTIVITY)
-                        .putExtra(WEB_VIEW_BENCHMARK_EXTRA, true)
+                        .setClassName(PACKAGE_NAME, WEB_VIEW_BENCHMARK_ACTIVITY)
                 )
             },
         ) {
@@ -139,9 +137,8 @@ class StartupBenchmark {
 
     private companion object {
         const val PACKAGE_NAME = "io.github.angularwave.android.demo"
-        const val MAIN_ACTIVITY = "$PACKAGE_NAME.main.MainActivity"
-        const val COLLECTION_BENCHMARK_EXTRA = "collectionBenchmark"
-        const val WEB_VIEW_BENCHMARK_EXTRA = "webViewBenchmark"
+        const val COLLECTION_BENCHMARK_ACTIVITY = "$PACKAGE_NAME.main.CollectionBenchmarkActivity"
+        const val WEB_VIEW_BENCHMARK_ACTIVITY = "$PACKAGE_NAME.main.WebViewBenchmarkActivity"
         const val BUTTON_CLASS = "android.widget.Button"
         const val UI_TIMEOUT_MS = 10_000L
         const val SWIPE_STEPS = 20

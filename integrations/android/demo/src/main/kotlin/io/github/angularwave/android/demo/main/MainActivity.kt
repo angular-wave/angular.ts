@@ -1,7 +1,6 @@
 package io.github.angularwave.android.demo.main
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
 import android.os.Debug
 import android.os.Trace
@@ -31,16 +30,27 @@ import io.github.angularwave.android.navigation.util.applyDefaultImeWindowInsets
 import org.json.JSONArray
 import org.json.JSONObject
 
-class MainActivity : AngularNativeActivity() {
+open class MainActivity : AngularNativeActivity() {
     private lateinit var bottomNavigationController: AngularNativeBottomNavigationController
     private val viewModel: MainActivityViewModel by viewModels()
     private var benchmarkWebView: AngularNativeWebView? = null
+    protected open val benchmarkMode = BenchmarkMode.NONE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        if (showCollectionBenchmark() || showWebViewBenchmark()) return
+        when (benchmarkMode) {
+            BenchmarkMode.COLLECTION -> {
+                showCollectionBenchmark()
+                return
+            }
+            BenchmarkMode.WEB_VIEW -> {
+                showWebViewBenchmark()
+                return
+            }
+            BenchmarkMode.NONE -> Unit
+        }
 
         setContentView(R.layout.activity_main)
         findViewById<View>(R.id.root).applyDefaultImeWindowInsets()
@@ -51,17 +61,6 @@ class MainActivity : AngularNativeActivity() {
             activity = this,
             requiredVersion = WebViewInfo.REQUIRED_WEBVIEW_VERSION,
         )
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        if (
-            intent.getBooleanExtra(COLLECTION_BENCHMARK_EXTRA, false) ||
-                intent.getBooleanExtra(WEB_VIEW_BENCHMARK_EXTRA, false)
-        ) {
-            setIntent(intent)
-            recreate()
-        }
     }
 
     private fun initializeBottomTabs() {
@@ -77,8 +76,7 @@ class MainActivity : AngularNativeActivity() {
 
     override fun navigatorConfigurations() = mainTabs.navigatorConfigurations
 
-    private fun showCollectionBenchmark(): Boolean {
-        if (!intent.getBooleanExtra(COLLECTION_BENCHMARK_EXTRA, false)) return false
+    private fun showCollectionBenchmark() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val host = FrameLayout(this)
         val context =
@@ -127,7 +125,6 @@ class MainActivity : AngularNativeActivity() {
             ),
         )
         setContentView(root)
-        return true
     }
 
     private fun collectionProperties(offset: Int): JSONObjectProperties =
@@ -153,8 +150,7 @@ class MainActivity : AngularNativeActivity() {
                 )
         )
 
-    private fun showWebViewBenchmark(): Boolean {
-        if (!intent.getBooleanExtra(WEB_VIEW_BENCHMARK_EXTRA, false)) return false
+    private fun showWebViewBenchmark() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val run =
             Button(this).apply {
@@ -199,7 +195,6 @@ class MainActivity : AngularNativeActivity() {
             Charsets.UTF_8.name(),
             null,
         )
-        return true
     }
 
     override fun onDestroy() {
@@ -214,12 +209,16 @@ class MainActivity : AngularNativeActivity() {
     private fun allocatedBytes(): Long =
         Debug.getRuntimeStat(ALLOCATED_BYTES_STAT)?.toLongOrNull() ?: 0L
 
+    protected enum class BenchmarkMode {
+        NONE,
+        COLLECTION,
+        WEB_VIEW,
+    }
+
     private companion object {
         const val ALLOCATED_BYTES_STAT = "art.gc.bytes-allocated"
-        const val COLLECTION_BENCHMARK_EXTRA = "collectionBenchmark"
         const val COLLECTION_BENCHMARK_SIZE = 10_000
         const val COLLECTION_UPDATE_TRACE = "AngularNativeCollectionUpdate"
-        const val WEB_VIEW_BENCHMARK_EXTRA = "webViewBenchmark"
         const val WEB_VIEW_BENCHMARK_INTERFACE = "WebViewBenchmark"
         const val WEB_VIEW_BENCHMARK_ORIGIN = "https://benchmark.invalid/"
         const val WEB_VIEW_BENCHMARK_DOCUMENT = "<!doctype html><title>Bridge benchmark</title>"
@@ -266,4 +265,12 @@ class MainActivity : AngularNativeActivity() {
             return true
         }
     }
+}
+
+class CollectionBenchmarkActivity : MainActivity() {
+    override val benchmarkMode = BenchmarkMode.COLLECTION
+}
+
+class WebViewBenchmarkActivity : MainActivity() {
+    override val benchmarkMode = BenchmarkMode.WEB_VIEW
 }
