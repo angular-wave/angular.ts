@@ -481,8 +481,8 @@ jobs:
         run: |
           mkdir -p "$HOME/.gradle"
           cat > "$HOME/.gradle/gradle.properties" <<'EOF'
-          org.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8
-          org.gradle.workers.max=2
+          org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
+          org.gradle.workers.max=1
           kotlin.compiler.execution.strategy=in-process
           EOF
 
@@ -497,6 +497,11 @@ jobs:
           fi
           ./integrations/android/gradlew -p integrations/android "${tasks[@]}"
           ./integrations/android/gradlew -p integrations/android --stop
+          cat > "$HOME/.gradle/gradle.properties" <<'EOF'
+          org.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8
+          org.gradle.workers.max=2
+          kotlin.compiler.execution.strategy=in-process
+          EOF
 
       - name: Run Android device checks
         uses: reactivecircus/android-emulator-runner@v2
