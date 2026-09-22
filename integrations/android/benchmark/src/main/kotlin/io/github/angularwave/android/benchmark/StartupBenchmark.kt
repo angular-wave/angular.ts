@@ -59,10 +59,10 @@ class StartupBenchmark {
             val update =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.descContains(ALLOCATED_BYTES_PREFIX)),
+                        Until.findObject(By.res(PACKAGE_NAME, COLLECTION_UPDATE_RESOURCE)),
                         UI_TIMEOUT_MS,
                     )
-                )
+                ) { "Collection benchmark control did not become accessible" }
             update.click()
             device.waitForIdle()
             val allocatedBytes =
@@ -104,18 +104,23 @@ class StartupBenchmark {
             val run =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.desc(BRIDGE_READY_DESCRIPTION)),
+                        Until.findObject(
+                            By.res(PACKAGE_NAME, BRIDGE_RUN_RESOURCE)
+                                .desc(BRIDGE_READY_DESCRIPTION)
+                        ),
                         UI_TIMEOUT_MS,
                     )
-                )
+                ) { "WebView benchmark control did not become ready" }
             run.click()
             val result =
                 requireNotNull(
                     device.wait(
-                        Until.findObject(By.desc(BRIDGE_RESULT_PATTERN)),
+                        Until.findObject(
+                            By.res(PACKAGE_NAME, BRIDGE_RUN_RESOURCE).desc(BRIDGE_RESULT_PATTERN)
+                        ),
                         UI_TIMEOUT_MS,
                     )
-                )
+                ) { "WebView benchmark result was not reported" }
             val description = result.contentDescription.toString()
             val latencyMilliseconds =
                 description.substringAfter(BRIDGE_LATENCY_PREFIX).substringBefore(';').toDouble()
@@ -135,7 +140,9 @@ class StartupBenchmark {
         const val PACKAGE_NAME = "io.github.angularwave.android.demo"
         const val MAIN_ACTIVITY = "$PACKAGE_NAME.main.MainActivity"
         const val COLLECTION_BENCHMARK_EXTRA = "collectionBenchmark"
+        const val COLLECTION_UPDATE_RESOURCE = "benchmark_collection_update"
         const val WEB_VIEW_BENCHMARK_EXTRA = "webViewBenchmark"
+        const val BRIDGE_RUN_RESOURCE = "benchmark_bridge_run"
         const val UI_TIMEOUT_MS = 5_000L
         const val SWIPE_STEPS = 20
         const val SWIPE_START_NUMERATOR = 3
