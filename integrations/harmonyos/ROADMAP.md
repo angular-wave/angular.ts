@@ -1,6 +1,38 @@
 # AngularTS Native for HarmonyOS: Production Roadmap
 
-Status: proposed
+Status: portable implementation complete; official API 26, device, and publication evidence pending
+
+## Current evidence
+
+The repository implementation is no longer a proposal. As of 2026-10-03:
+
+- `make -C integrations/harmonyos check` passes 133 runtime tests with 100%
+  line, branch, and function coverage, 50 tooling tests, generated-file checks,
+  formatting, package metadata, samples, and all 61 shared parity entries.
+- `make -C integrations/harmonyos openharmony-audit` reports zero repository
+  errors against the pinned public OpenHarmony API 23 SDK.
+- `make -C integrations/harmonyos openharmony-build` compiles and retains two
+  HAPs and six compatible HARs. Credentials and Map Kit remain API 26 gates
+  because their Huawei kits are not in the public OpenHarmony SDK.
+- Pull requests and `master` builds run the portable suite, strict API 23 audit,
+  and API 23 package build. The manual official-toolchain lane captures exact
+  API 26 packages, device reports, screenshots, checksums, tool identities,
+  license, dependency manifest, SPDX SBOM, and SLSA provenance.
+
+Production readiness is not yet proven. These external gates remain open:
+
+- Run `release-check` with the checksum-pinned official HarmonyOS API 26
+  command-line tools, including Code Linter and clean packed-HAR consumers.
+- Run the exact commit on supported HarmonyOS phone and tablet targets and
+  retain complete functional, visual, accessibility, and performance evidence.
+- Exercise credentials, Map Kit, media, permissions, process recreation, and
+  every transition on a real or Huawei cloud device.
+- Publish all eight immutable HARs to OHPM, then pass `verify-published` from a
+  clean registry-only consumer.
+
+Unchecked items below therefore mean either device/publication evidence is
+still required or the original criterion has not yet been reconciled with an
+executable verifier. They must not be bulk-checked from implementation intent.
 
 Owner: AngularTS integrations
 

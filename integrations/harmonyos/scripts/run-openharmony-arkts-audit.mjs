@@ -85,6 +85,68 @@ async function stageProject(stagingRoot) {
 }
 `,
   );
+  await writeFile(
+    join(
+      stagingRoot,
+      "packages",
+      "maps",
+      "src",
+      "main",
+      "ets",
+      "MapKit.d.ts",
+    ),
+    `declare module "@kit.MapKit" {
+  namespace mapCommon {
+    interface LatLng { latitude: number; longitude: number; }
+    interface LatLngBounds { northeast: LatLng; southwest: LatLng; }
+    interface CameraPosition { target: LatLng; zoom: number; }
+    interface MapOptions { position: CameraPosition; }
+    interface MarkerOptions {
+      position: LatLng;
+      clickable?: boolean;
+      title?: string;
+      snippet?: string;
+    }
+  }
+  namespace map {
+    interface CameraUpdate {}
+    interface Marker {
+      getId(): string;
+      getPosition(): mapCommon.LatLng;
+      remove(): void;
+    }
+    interface MapEventManager {
+      on(event: string, callback: (...values: ESObject[]) => void): void;
+    }
+    interface MapComponentController {
+      getEventManager(): MapEventManager;
+      getCameraPosition(): mapCommon.CameraPosition;
+      moveCamera(update: CameraUpdate): void;
+      animateCamera(update: CameraUpdate, duration?: number): void;
+      setMapType(type: number): void;
+      setTrafficEnabled(enabled: boolean): void;
+      setMyLocationEnabled(enabled: boolean): void;
+      addMarker(options: mapCommon.MarkerOptions): Promise<Marker>;
+      clear(): void;
+    }
+    function newLatLng(value: mapCommon.LatLng, zoom?: number): CameraUpdate;
+    function newLatLngBounds(value: mapCommon.LatLngBounds, padding: number): CameraUpdate;
+  }
+  interface MapComponentAttribute {
+    width(value: number | string): MapComponentAttribute;
+    height(value: number | string): MapComponentAttribute;
+  }
+  function MapComponent(options: {
+    mapOptions: mapCommon.MapOptions;
+    mapCallback: (
+      error: Error | undefined,
+      controller: map.MapComponentController,
+    ) => void;
+  }): MapComponentAttribute;
+  export { map, mapCommon, MapComponent };
+}
+`,
+  );
   await stageTypeScriptInterop(stagingRoot);
 
   const namespaceRoot = join(stagingRoot, "oh_modules", "@angular-wave");

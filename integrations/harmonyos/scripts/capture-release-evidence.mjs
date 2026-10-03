@@ -77,6 +77,9 @@ export async function captureReleaseEvidence({
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = await captureReleaseEvidence({
+    release: process.env.HARMONY_RELEASE_ARTIFACT_DIR === undefined
+      ? undefined
+      : resolve(process.env.HARMONY_RELEASE_ARTIFACT_DIR),
     commit: process.env.GITHUB_SHA,
     runId: process.env.GITHUB_RUN_ID,
     deviceName: process.env.DEVICE_NAME,

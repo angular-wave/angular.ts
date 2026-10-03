@@ -57,3 +57,13 @@ before `/js/app.js`, then bootstrap the module:
 
 Keep inference warnings enabled and test the ADVANCED build, not only the
 development build. See `demo` for the complete todo project.
+
+## Access shared models
+
+After bootstrap, `(ng/get-model "cart")` lazily retrieves the same registered
+reactive model as dependency injection. `angular-ts.generated/get-model` and
+`angular-ts.generated/angular-get-model` also expose global and explicit-runtime
+lookups. Mutate JavaScript fields on the returned proxy to update observing
+views. Unknown names, ordinary services, and uninitialized or destroyed apps
+throw runtime errors. The generated Closure externs preserve `getModel` under
+ADVANCED optimization.

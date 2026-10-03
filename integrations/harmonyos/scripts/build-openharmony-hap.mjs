@@ -37,7 +37,10 @@ export function projectBuildProfile(profile) {
   }
   if (projected.modules !== undefined) {
     projected.modules = projected.modules.filter(
-      (module) => module.srcPath !== "./packages/credentials",
+      (module) => !new Set([
+        "./packages/credentials",
+        "./packages/maps",
+      ]).has(module.srcPath),
     );
   }
   return projected;
@@ -194,7 +197,7 @@ async function main() {
       env: environment,
     });
     await retainArtifacts(await findArtifacts(stagingRoot), stagingRoot, retainedRoot);
-    for (const sample of ["kitchen-sink", "pulse"]) {
+    for (const sample of ["pulse"]) {
       const sampleRoot = join(stagingRoot, "samples", sample);
       run(join(hvigorHome, "ohpm", "bin", "ohpm"), ["install", "--all"], {
         cwd: sampleRoot,
@@ -212,9 +215,9 @@ async function main() {
     const artifacts = await findArtifacts(retainedRoot);
     const haps = artifacts.filter((path) => path.endsWith(".hap"));
     const hars = artifacts.filter((path) => path.endsWith(".har"));
-    if (haps.length !== 3 || hars.length !== 7) {
+    if (haps.length !== 2 || hars.length !== 6) {
       throw new Error(
-        `Expected 3 HAPs and 7 API 23-compatible HARs, received ${haps.length} HAPs and ${hars.length} HARs`,
+        `Expected 2 HAPs and 6 API 23-compatible HARs, received ${haps.length} HAPs and ${hars.length} HARs`,
       );
     }
     await rm(outputRoot, { force: true, recursive: true });
@@ -225,7 +228,7 @@ async function main() {
     console.log(
       `OpenHarmony API 23 build passed; ${haps.length} HAPs and ${hars.length} compatible HARs retained at ${outputRoot}`,
     );
-    console.log("Credentials remains an API 26 build gate because Online Authentication Kit is unavailable in API 23.");
+    console.log("Credentials and Map Kit remain API 26 build gates because their kits are unavailable in OpenHarmony API 23.");
   } finally {
     await rm(stagingRoot, { force: true, recursive: true });
   }

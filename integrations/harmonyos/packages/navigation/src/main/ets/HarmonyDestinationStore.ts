@@ -10,7 +10,7 @@ export class HarmonyDestinationStore<T extends HarmonyStoredDestination> {
   #closed = false;
 
   constructor(root: string, destination: T) {
-    this.#assertKey(root);
+    this._assertKey(root);
     this.#root = root;
     this.#active.set(root, destination);
   }
@@ -24,15 +24,15 @@ export class HarmonyDestinationStore<T extends HarmonyStoredDestination> {
   }
 
   resolve(key: string): T {
-    this.#assertOpen();
+    this._assertOpen();
     const destination = this.#active.get(key) ?? this.#staged.get(key);
     if (!destination) throw new Error(`Unknown HarmonyOS destination: ${key}`);
     return destination;
   }
 
   stage(key: string, create: () => T): T {
-    this.#assertOpen();
-    this.#assertKey(key);
+    this._assertOpen();
+    this._assertKey(key);
     const current = this.#active.get(key) ?? this.#staged.get(key);
     if (current) return current;
     const destination = create();
@@ -41,16 +41,16 @@ export class HarmonyDestinationStore<T extends HarmonyStoredDestination> {
   }
 
   commitPush(key: string): void {
-    this.#assertOpen();
-    this.#activate(key);
+    this._assertOpen();
+    this._activate(key);
   }
 
   commitReplace(removed: string, replacement: string): void {
-    this.#assertOpen();
+    this._assertOpen();
     if (!this.#active.has(removed)) {
       throw new Error(`Cannot replace unknown HarmonyOS destination: ${removed}`);
     }
-    const destination = this.#activate(replacement);
+    const destination = this._activate(replacement);
     if (removed === replacement) return;
     const previous = this.#active.get(removed);
     this.#active.delete(removed);
@@ -59,7 +59,7 @@ export class HarmonyDestinationStore<T extends HarmonyStoredDestination> {
   }
 
   commitPop(key: string): void {
-    this.#assertOpen();
+    this._assertOpen();
     if (key === this.#root) throw new Error("Cannot pop the HarmonyOS root destination");
     const destination = this.#active.get(key);
     if (!destination) throw new Error(`Cannot pop unknown HarmonyOS destination: ${key}`);
@@ -68,8 +68,8 @@ export class HarmonyDestinationStore<T extends HarmonyStoredDestination> {
   }
 
   commitReset(root: string): void {
-    this.#assertOpen();
-    const destination = this.#activate(root);
+    this._assertOpen();
+    const destination = this._activate(root);
     for (const [key, current] of this.#active) {
       if (key !== root && current !== destination) current.close();
     }
@@ -79,7 +79,7 @@ export class HarmonyDestinationStore<T extends HarmonyStoredDestination> {
   }
 
   abort(key: string): void {
-    this.#assertOpen();
+    this._assertOpen();
     const destination = this.#staged.get(key);
     if (!destination) return;
     this.#staged.delete(key);
@@ -95,7 +95,9 @@ export class HarmonyDestinationStore<T extends HarmonyStoredDestination> {
     for (const destination of destinations) destination.close();
   }
 
-  #activate(key: string): T {
+  /** @internal */
+
+  private _activate(key: string): T {
     const active = this.#active.get(key);
     if (active) return active;
     const staged = this.#staged.get(key);
@@ -105,11 +107,15 @@ export class HarmonyDestinationStore<T extends HarmonyStoredDestination> {
     return staged;
   }
 
-  #assertOpen(): void {
+  /** @internal */
+
+  private _assertOpen(): void {
     if (this.#closed) throw new Error("HarmonyOS destination store is closed");
   }
 
-  #assertKey(key: string): void {
+  /** @internal */
+
+  private _assertKey(key: string): void {
     if (!key.trim()) throw new Error("HarmonyOS destination keys must not be empty");
   }
 }

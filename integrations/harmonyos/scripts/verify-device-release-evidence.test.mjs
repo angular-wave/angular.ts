@@ -13,7 +13,12 @@ import {
   verifyHarmonyEvidence,
 } from "./verify-device-release-evidence.mjs";
 import { captureReleaseEvidence } from "./capture-release-evidence.mjs";
-import { releaseArtifactRecord } from "./stage-release-artifacts.mjs";
+import {
+  releaseArtifactRecord,
+  releaseDependencyManifest,
+  releaseProvenance,
+  releaseSpdx,
+} from "./stage-release-artifacts.mjs";
 import {
   requiredNativeCapabilities,
   requiredNativeElements,
@@ -109,17 +114,64 @@ test("verifies complete device evidence and the exact release HARs", async () =>
       await readFile(resolve(integrationRoot, "harmony-artifacts.json"), "utf8"),
     );
     const records = [];
+    const packages = new Map();
     for (const publication of artifacts) {
       const content = Buffer.from(`HAR:${publication.module}`);
       await writeFile(resolve(release, `${publication.module}.har`), content);
       records.push(releaseArtifactRecord(publication, repository.version, content));
+      packages.set(publication.module, JSON.parse(await readFile(
+        resolve(integrationRoot, "packages", publication.module, "oh-package.json5"),
+        "utf8",
+      )));
     }
+    const dependencies = releaseDependencyManifest(records, packages, repository.version);
+    const releaseContext = {
+      created: "2026-10-03T00:00:00.000Z",
+      commit: sha,
+      repository: "https://github.com/angular-wave/angular.ts",
+      builder: `https://github.com/angular-wave/angular.ts/actions/runs/${run.id}`,
+      invocationId: String(run.id),
+    };
     await writeFile(resolve(release, "manifest.json"), JSON.stringify({
       version: repository.version,
       artifacts: records,
+      metadata: [
+        "LICENSE",
+        "dependencies.json",
+        "provenance.intoto.json",
+        "sbom.spdx.json",
+      ],
     }));
-    await writeFile(resolve(release, "SHA256SUMS"), records
-      .map(({ sha256, file }) => `${sha256}  ${file}\n`).join(""));
+    await writeFile(
+      resolve(release, "LICENSE"),
+      await readFile(resolve(integrationRoot, "../../LICENSE")),
+    );
+    await writeFile(
+      resolve(release, "dependencies.json"),
+      JSON.stringify(dependencies),
+    );
+    await writeFile(
+      resolve(release, "sbom.spdx.json"),
+      JSON.stringify(releaseSpdx(records, dependencies, releaseContext)),
+    );
+    await writeFile(
+      resolve(release, "provenance.intoto.json"),
+      JSON.stringify(releaseProvenance(records, repository.version, releaseContext)),
+    );
+    const releaseFiles = [
+      ...records.map(({ file }) => file),
+      "LICENSE",
+      "dependencies.json",
+      "manifest.json",
+      "provenance.intoto.json",
+      "sbom.spdx.json",
+    ].sort();
+    await writeFile(resolve(release, "SHA256SUMS"), (await Promise.all(
+      releaseFiles.map(async (file) => {
+        const content = await readFile(resolve(release, file));
+        return `${createHash("sha256").update(content).digest("hex")}  ${file}\n`;
+      }),
+    )).join(""));
     await captureReleaseEvidence({
       source,
       release,

@@ -7,6 +7,7 @@ import angular_ts/http
 import angular_ts/injectable
 import angular_ts/injection_tokens
 import angular_ts/programmatic_view
+import angular_ts/runtime
 import angular_ts/storage
 import angular_ts/token
 import angular_ts/unsafe
@@ -19,6 +20,31 @@ import gleeunit/should
 
 @external(javascript, "./programmatic_view_test_ffi.mjs", "install_programmatic_runtime")
 fn install_programmatic_runtime() -> Nil
+
+@external(javascript, "./programmatic_view_test_ffi.mjs", "install_model_runtime")
+fn install_model_runtime() -> Dynamic
+
+@external(javascript, "./programmatic_view_test_ffi.mjs", "restore_runtime")
+fn restore_runtime(previous: Dynamic) -> Nil
+
+pub fn model_getter_preserves_shared_state_test() {
+  let previous = install_model_runtime()
+  let cart = ng.get_model("cart")
+  let same_cart = runtime.get_model("cart")
+  cart |> should.equal(same_cart)
+
+  cart
+  |> unsafe.coerce
+  |> unsafe.set_property("count", unsafe.coerce(2))
+
+  same_cart
+  |> unsafe.coerce
+  |> unsafe.get_property("count")
+  |> unsafe.from_dynamic
+  |> should.equal(2)
+
+  restore_runtime(previous)
+}
 
 fn marker_kind(value: Dynamic) -> String {
   value

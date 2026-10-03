@@ -182,3 +182,14 @@ dismissal returns accessibility focus to the trigger, and destination disposal
 releases all platform references. Drawer, dialog, and bottom-sheet restore open
 after recreation; menu, snackbar, and tooltip restore closed. Dialogs cancel on
 outside taps, and bottom sheets cancel when dragged closed.
+
+## Shared application models
+
+After the page's AngularTS app has initialized, JavaScript in the WebView can
+retrieve app state with `angular.getModel("session")`. Native callbacks can
+update that model through the existing destination JavaScript bridge, for
+example by evaluating `angular.getModel("session").restore({ online: true },
+{ mode: "merge" })` on the WebView's UI thread. Use a model declared by that
+destination's loaded modules. The getter initializes it lazily, and mutations
+update observing views without an explicit digest. Unknown names, ordinary
+services, and uninitialized or destroyed apps throw runtime errors.

@@ -6,6 +6,7 @@
   "description": "Native component kitchen sink for AngularTS on HarmonyOS",
   "license": "MIT",
   "dependencies": {
-    "@angular-wave/angular-native-harmony-core": "file:../../../packages/core"
+    "@angular-wave/angular-native-harmony-core": "file:../../../packages/core",
+    "@angular-wave/angular-native-harmony-maps": "file:../../../packages/maps"
   }
 }

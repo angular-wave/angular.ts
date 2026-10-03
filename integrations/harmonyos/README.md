@@ -3,6 +3,9 @@
 This integration targets HarmonyOS NEXT with ArkTS, ArkUI, ArkWeb, and public
 HAR packages. The shared application API is defined in `../native/`.
 
+See [shared model access](MODEL_ACCESS.md) for reactive state updates from native
+callbacks through the destination's JavaScript bridge.
+
 Huawei's command-line bundle includes the SDK, `ohpm`, Hvigor, and Code Linter.
 Use an existing installation:
 
@@ -44,8 +47,13 @@ This streams only the pinned Linux ETS compiler from the official OpenHarmony
 ArkTS sources against API 23. It catches ArkTS language restrictions and public
 OpenHarmony API drift. It does not provide HarmonyOS-only kits, compile the API
 26 project, replace device tests, or satisfy `release-check`.
-The HarmonyOS workflow runs this audit automatically for relevant pull requests
-and updates to `master`.
+The companion `openharmony-build` target builds the proof and Pulse HAPs plus
+the six compatible HARs. It excludes credentials and maps because Account Kit
+and Map Kit require Huawei's API 26 SDK; their sources are still included in
+the strict ArkTS audit through declaration-only stubs.
+The HarmonyOS workflow runs both the audit and `openharmony-build`
+automatically for relevant pull requests and updates to `master`, then retains
+the commit-scoped API 23 packages for 14 days.
 
 ## Samples
 
@@ -54,6 +62,11 @@ The standalone kitchen sink is generated from every shared native contract:
 ```bash
 make -C integrations/harmonyos/samples/kitchen-sink compile
 ```
+
+The kitchen sink includes the optional maps HAR and passes
+`harmonyMapControllerFactory` to its `AngularNativeDestination`. Compile it
+with the official API 26 SDK; the public OpenHarmony build intentionally omits
+this sample because Map Kit is unavailable there.
 
 Pulse uses the platform-neutral application in `../native/samples/pulse` and a
 HarmonyOS shell containing no application UI or feature logic:
@@ -74,6 +87,11 @@ permission to publish.
 provider still marked `planned` or `unavailable` and verifies successful device
 or cloud evidence from `.github/workflows/harmonyos.yml` for the exact release
 commit. Run this gate before publishing any HAR.
+
+The staged release directory includes all eight HARs, `LICENSE`,
+`dependencies.json`, `sbom.spdx.json`, `provenance.intoto.json`,
+`manifest.json`, and `SHA256SUMS`. Device evidence captures this exact
+directory, and publication verifies every required file and digest.
 
 ## Device or cloud command contract
 

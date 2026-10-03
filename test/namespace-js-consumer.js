@@ -2,6 +2,19 @@
 /// <reference path="../@types/namespace.d.ts" />
 
 /**
+ * @param {ng.Angular} angular
+ * @returns {{ items: string[] }}
+ */
+export function updateExternalCart(angular) {
+  /** @type {ng.Model<{ items: string[] }>} */
+  const cart = angular.getModel("cart");
+
+  cart.items.push("book");
+
+  return cart.snapshot();
+}
+
+/**
  * Exercises every public `ng.*` namespace type from a JavaScript project using
  * JSDoc type checking. This catches declaration emit regressions where the
  * namespace references a type that `stripInternal` removed from another

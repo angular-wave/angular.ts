@@ -80,13 +80,13 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
 
     switch (method) {
       case "mount":
-        return this.mount(id, values, context);
+        return this._mount(id, values, context);
       case "update":
-        return this.update(id, values, context);
+        return this._update(id, values, context);
       case "invoke":
-        return this.invokeNode(id, values, context);
+        return this._invokeNode(id, values, context);
       case "unmount":
-        return this.unmount(id, context);
+        return this._unmount(id, context);
       default:
         throw new NativeBridgeFailure("unknown_method", `Unsupported component method: ${method}`);
     }
@@ -104,7 +104,9 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
     }
   }
 
-  private mount(
+  /** @internal */
+
+  private _mount(
     id: string,
     parameters: Readonly<Record<string, unknown>>,
     context: NativeBridgeInvocationContext,
@@ -118,7 +120,7 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
       if (existing !== undefined && existing.name !== name) {
         throw new NativeBridgeFailure("invalid_params", `Native component ${id} cannot change type`);
       }
-      const mounted = existing ?? this.createNode(id, name, embedId);
+      const mounted = existing ?? this._createNode(id, name, embedId);
       this.adapter.setVisible(mounted.node, false);
       this.adapter.update(mounted.node, properties);
       if (rect !== null) this.adapter.layout(mounted.node, rect);
@@ -127,7 +129,9 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
     });
   }
 
-  private update(
+  /** @internal */
+
+  private _update(
     id: string,
     parameters: Readonly<Record<string, unknown>>,
     context: NativeBridgeInvocationContext,
@@ -135,14 +139,16 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
     const properties = recordValue(parameters, "props") ?? {};
     const rect = rectValue(parameters.rect);
     return this.queue.enqueue(context, () => {
-      const mounted = this.requireNode(id);
+      const mounted = this._requireNode(id);
       this.adapter.update(mounted.node, properties);
       if (rect !== null) this.adapter.layout(mounted.node, rect);
       return { mounted: true, id };
     });
   }
 
-  private invokeNode(
+  /** @internal */
+
+  private _invokeNode(
     id: string,
     parameters: Readonly<Record<string, unknown>>,
     context: NativeBridgeInvocationContext,
@@ -150,13 +156,15 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
     const method = requiredString(parameters, "method", "component.invoke requires params.method");
     const argumentsValue = recordValue(parameters, "args") ?? {};
     return this.queue.enqueue(context, async () => {
-      const mounted = this.requireNode(id);
+      const mounted = this._requireNode(id);
       const result = await this.adapter.invoke(mounted.node, method, argumentsValue);
       return { id, result };
     });
   }
 
-  private unmount(id: string, context: NativeBridgeInvocationContext): Promise<unknown> {
+  /** @internal */
+
+  private _unmount(id: string, context: NativeBridgeInvocationContext): Promise<unknown> {
     return this.queue.enqueue(context, () => {
       const mounted = this.mounted.get(id);
       if (mounted !== undefined) {
@@ -167,7 +175,9 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
     });
   }
 
-  private createNode(
+  /** @internal */
+
+  private _createNode(
     id: string,
     name: string,
     embedId: string | null,
@@ -181,7 +191,9 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
     return mounted;
   }
 
-  private requireNode(id: string): MountedNode<Node> {
+  /** @internal */
+
+  private _requireNode(id: string): MountedNode<Node> {
     const mounted = this.mounted.get(id);
     if (mounted === undefined) {
       throw new NativeBridgeFailure("unknown_instance", `Unknown native component instance: ${id}`);
@@ -233,7 +245,7 @@ class NativeMutationQueue {
     });
     if (!this.scheduled) {
       this.scheduled = true;
-      this.scheduler.schedule(() => { void this.flush(); });
+      this.scheduler.schedule(() => { void this._flush(); });
     }
     return promise;
   }
@@ -245,7 +257,9 @@ class NativeMutationQueue {
     for (const mutation of this.pending.splice(0)) mutation.reject(error);
   }
 
-  private async flush(): Promise<void> {
+  /** @internal */
+
+  private async _flush(): Promise<void> {
     this.scheduled = false;
     if (this.closed) return;
     const mutations = this.pending.splice(0);

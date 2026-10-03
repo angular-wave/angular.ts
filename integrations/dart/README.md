@@ -134,3 +134,13 @@ necessary.
 - [Dart API reference](https://pub.dev/documentation/angular_ts/latest/)
 - [Todo application](https://github.com/angular-wave/angular.ts/tree/main/integrations/dart/example/basic_app)
 - [Issue tracker](https://github.com/angular-wave/angular.ts/issues)
+
+## Access shared models
+
+After bootstrap or injector initialization, use `ng.getModel(cartToken)` or
+`AngularTsRuntime.global().getModel(cartToken)` for typed model lookup. The
+getter uses the token's `fromJs` conversion. `ng.getModelUnsafe('cart')` returns
+the raw JavaScript proxy by name for direct interop. Lookups lazily initialize
+the registered model and share its instance with dependency injection. Writes
+through the proxy update observing views. Unknown names, ordinary services, and
+uninitialized or destroyed apps throw runtime errors.

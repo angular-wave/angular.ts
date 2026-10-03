@@ -51,6 +51,15 @@ jobs:
           key: openharmony-ets-6.1.0.31-${{ runner.os }}-${{ runner.arch }}
       - name: Audit ArkTS against public OpenHarmony API 23
         run: make -C integrations/harmonyos openharmony-audit
+      - name: Build the public OpenHarmony API 23 projection
+        run: make -C integrations/harmonyos openharmony-build
+      - name: Retain OpenHarmony compatibility packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: openharmony-api23-${{ github.sha }}
+          path: integrations/harmonyos/build/openharmony-api23
+          if-no-files-found: error
+          retention-days: 14
 
   official-toolchain:
     if: github.event_name == 'workflow_dispatch'
@@ -110,6 +119,7 @@ jobs:
         env:
           DEVICE_NAME: ${{ inputs.device_name }}
           HARMONY_COMMAND_LINE_TOOLS_SHA256: ${{ secrets.HARMONY_COMMAND_LINE_TOOLS_SHA256 }}
+          HARMONY_RELEASE_ARTIFACT_DIR: ${{ runner.temp }}/harmonyos-release
         run: node integrations/harmonyos/scripts/capture-release-evidence.mjs
       - uses: actions/upload-artifact@v4
         if: always()

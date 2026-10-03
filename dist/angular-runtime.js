@@ -111,6 +111,44 @@ class AngularRuntime extends EventTarget {
         });
     }
     /**
+     * Retrieve a reactive model declared by a loaded application module.
+     *
+     * After `bootstrap()` or `injector()` completes, the first lookup initializes
+     * the model through dependency injection. Later lookups and injected consumers
+     * receive the same app-owned reactive instance. External callbacks can mutate
+     * this instance directly to update every observing view.
+     *
+     * @example
+     * ```ts
+     * const cart = angular.getModel<{ items: string[] }>("cart");
+     * cart.items.push("book");
+     * ```
+     *
+     * @param name Name registered with `NgModule.model()`.
+     * @returns The shared reactive model instance.
+     * @throws If the runtime is uninitialized or destroyed, the name is not a
+     * loaded model, or its injectable registration no longer resolves to a model.
+     */
+    getModel(name) {
+        validateIsString(name, "name");
+        if (!this._injectorCreated) {
+            throw ngError("noinjector", "Cannot get model '{0}' before bootstrap() or injector() completes.", name);
+        }
+        if (this._appContext.destroyed) {
+            throw ngError("destroyed", "Cannot get models from a destroyed app.");
+        }
+        const registered = values(this.currentInjector._modules).some((module) => module._models.has(name));
+        if (!registered) {
+            throw ngError("nomodel", "Model '{0}' is not registered in this app.", name);
+        }
+        const model = this.currentInjector.get(name);
+        const ownedModel = this._appContext.getModel(name);
+        if (!ownedModel || model !== ownedModel) {
+            throw ngError("nomodel", "Injectable '{0}' does not resolve to an app-owned model.", name);
+        }
+        return model;
+    }
+    /**
      * Dispatches an invocation event to either an injectable service or a named scope.
      *
      * The event `type` identifies the target and the payload contains the expression

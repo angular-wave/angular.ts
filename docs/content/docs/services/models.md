@@ -48,6 +48,29 @@ managed by the same app context resolves the same model instance. Destroying a
 root scope removes that root's observations, but the model data survives while
 the app context remains alive.
 
+## Access From External Code
+
+After the app has started with `angular.bootstrap()` or `angular.injector()`,
+use `angular.getModel(name)` to access a model from external code:
+
+```ts
+const user = angular.getModel<{ name: string; authenticated: boolean }>('user');
+
+// An external callback can update the reactive model directly.
+setTimeout(() => {
+  user.name = 'Jane';
+}, 1000);
+```
+
+The first lookup initializes the model if needed. Subsequent lookups and
+dependency injection return the same instance. Mutations schedule updates for
+every observing view without an explicit digest or `$apply()` call.
+
+The getter only accepts models declared by loaded modules. Unknown names,
+ordinary service names, and access before app initialization or after app
+destruction throw errors. Use the Angular runtime instance that owns the app
+when working with multiple applications.
+
 ## Models Versus Local Scope
 
 Use models for shared domain state such as `user`, `cart`, `session`, and

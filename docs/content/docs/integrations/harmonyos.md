@@ -80,6 +80,33 @@ repeat native properties on every element. The browser computes the styles;
 HarmonyOS receives density-independent values and applies system font scale,
 safe areas, right-to-left layout, dark mode, and reduced motion.
 
+## Use Map Kit
+
+Maps are optional because Huawei Map Kit is not needed by most applications.
+Add the maps package, then pass its same-layer controller factory to the shell.
+The page still uses the shared native map element; it does not call ArkTS or
+Map Kit directly.
+
+<!-- tested-by: integrations/harmonyos/scripts/harmony-map-provider.test.mjs -->
+
+```ts
+import { harmonyMapControllerFactory } from '@angular-wave/angular-native-harmony-maps';
+
+new AngularNativeDestination({
+  ...options,
+  nativeControllerFactory: harmonyMapControllerFactory,
+});
+```
+
+The factory renders `MapComponent`, keeps markers and camera state in sync,
+forwards map events, and handles the native map methods declared by the shared
+contract. The kitchen sink uses this exact provider wiring.
+
+Map Kit requires Huawei's HarmonyOS API 26 SDK. The public OpenHarmony API 23
+lane type-checks the provider against a declaration-only compatibility stub,
+but deliberately excludes the maps HAR and the kitchen-sink HAP from its build.
+Only the official API 26 release gate can prove that Map Kit package.
+
 ## Run the sample apps
 
 Use the kitchen sink to inspect every native element and its current contract.
@@ -153,8 +180,12 @@ make -C integrations/harmonyos check
 ```
 
 Relevant pull requests and updates to `master` also run a pinned public
-OpenHarmony API 23 compiler audit. This catches ArkTS language and public API
-regressions without treating that compatibility check as an API 26 release.
+OpenHarmony API 23 compiler audit and package build. This catches ArkTS,
+public API, and packaging regressions without treating that compatibility lane
+as an API 26 release. It retains the exact commit-scoped packages for 14 days.
+The API 23 build produces the proof and Pulse HAPs plus six compatible HARs;
+credentials and maps remain API 26-only build gates because their Huawei kits
+are not available in the public OpenHarmony SDK.
 
 The release gate uses the official ArkTS compiler and Code Linter, builds every
 HAR and HAP, and compiles an isolated application against the built HAR files:
@@ -168,6 +199,12 @@ make -C integrations/harmonyos release-check
 Before publication, `publication-check` also requires complete Android/Harmony
 contract parity and successful device or Huawei cloud evidence for the exact
 commit. A green portable check is not a substitute for that evidence.
+
+The retained release bundle contains the eight HARs, license, exact dependency
+manifest, SPDX 2.3 SBOM, SLSA provenance statement, package manifest, and
+`SHA256SUMS`. Evidence capture copies that exact directory. Publication rejects
+missing metadata, stale package identity, altered HARs, altered metadata, and
+unchecksummed files.
 
 The native workflow accepts schema-v2 evidence only when the device run reports
 no failed or skipped tests, names every contract from the current shared

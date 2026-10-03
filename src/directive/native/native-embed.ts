@@ -37,7 +37,7 @@ export class HarmonyNativeEmbedBinding {
   }
 
   private readonly sync = (): void => {
-    if (this.disposed || this.embed || !this.isHarmonyOS()) return;
+    if (this.disposed || this.embed || !this._isHarmonyOS()) return;
 
     const embed = this.element.ownerDocument.createElement("embed");
     embed.id = this.id;
@@ -54,7 +54,9 @@ export class HarmonyNativeEmbedBinding {
     this.onReady();
   };
 
-  private isHarmonyOS(): boolean {
+  /** @internal */
+
+  private _isHarmonyOS(): boolean {
     return (
       (this.view as NativeEnvironmentWindow).angularNativeEnvironment
         ?.platform === "harmonyos"

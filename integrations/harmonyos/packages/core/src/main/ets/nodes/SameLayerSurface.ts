@@ -30,6 +30,9 @@ export interface SameLayerController {
 
 export type SameLayerControllerFactory = (
   embed: SameLayerEmbed,
+  snapshot: NativeComponentSnapshot,
+  primitive: string,
+  emit: NativeComponentEventEmitter,
 ) => SameLayerController;
 
 interface ComponentEntry {
@@ -79,19 +82,19 @@ export class SameLayerSurface implements HarmonyNativeSurface {
     if (snapshot.embedId !== null) {
       this.componentByEmbed.set(snapshot.embedId, snapshot.id);
       const embed = this.embeds.get(snapshot.embedId);
-      if (embed !== undefined) this.connect(entry, embed);
+      if (embed !== undefined) this._connect(entry, embed);
     }
-    this.markChanged();
+    this._markChanged();
   }
 
   update(snapshot: NativeComponentSnapshot): void {
-    const entry = this.requireComponent(snapshot.id);
+    const entry = this._requireComponent(snapshot.id);
     entry.snapshot = snapshot;
     entry.controller?.update(snapshot, entry.primitive, entry.emit);
   }
 
   layout(id: string, rect: NativeNodeRect): void {
-    const entry = this.requireComponent(id);
+    const entry = this._requireComponent(id);
     entry.rect = rect;
     entry.controller?.layout(rect);
   }
@@ -101,7 +104,7 @@ export class SameLayerSurface implements HarmonyNativeSurface {
     method: string,
     argumentsValue: Readonly<Record<string, unknown>>,
   ): unknown | Promise<unknown> {
-    const controller = this.requireComponent(id).controller;
+    const controller = this._requireComponent(id).controller;
     return controller?.invoke(method, argumentsValue);
   }
 
@@ -113,7 +116,7 @@ export class SameLayerSurface implements HarmonyNativeSurface {
       this.componentByEmbed.delete(entry.snapshot.embedId);
     }
     this.components.delete(id);
-    this.markChanged();
+    this._markChanged();
   }
 
   beginBatch(): void {
@@ -123,24 +126,24 @@ export class SameLayerSurface implements HarmonyNativeSurface {
   endBatch(): void {
     if (this.batchDepth === 0) throw new Error("Same-layer batch is not active");
     this.batchDepth--;
-    if (this.batchDepth === 0 && this.changed) this.flushChange();
+    if (this.batchDepth === 0 && this.changed) this._flushChange();
   }
 
   embedCreated(embed: SameLayerEmbed): void {
     this.embeds.set(embed.domId, embed);
     const componentId = this.componentByEmbed.get(embed.domId);
     if (componentId !== undefined) {
-      this.connect(this.requireComponent(componentId), embed);
+      this._connect(this._requireComponent(componentId), embed);
     }
-    this.markChanged();
+    this._markChanged();
   }
 
   embedUpdated(embed: SameLayerEmbed): void {
     this.embeds.set(embed.domId, embed);
     const componentId = this.componentByEmbed.get(embed.domId);
     if (componentId === undefined) return;
-    const entry = this.requireComponent(componentId);
-    if (entry.controller === null) this.connect(entry, embed);
+    const entry = this._requireComponent(componentId);
+    if (entry.controller === null) this._connect(entry, embed);
     entry.controller?.layout({ x: 0, y: 0, width: embed.width, height: embed.height });
   }
 
@@ -148,10 +151,10 @@ export class SameLayerSurface implements HarmonyNativeSurface {
     this.embeds.delete(domId);
     const componentId = this.componentByEmbed.get(domId);
     if (componentId === undefined) return;
-    const entry = this.requireComponent(componentId);
+    const entry = this._requireComponent(componentId);
     entry.controller?.dispose();
     entry.controller = null;
-    this.markChanged();
+    this._markChanged();
   }
 
   postTouchEvent(embedId: string, event: unknown): boolean {
@@ -159,7 +162,7 @@ export class SameLayerSurface implements HarmonyNativeSurface {
       if (embed.embedId !== embedId) continue;
       const componentId = this.componentByEmbed.get(embed.domId);
       if (componentId === undefined) return false;
-      return (this.requireComponent(componentId).controller as SameLayerController).postTouchEvent(event);
+      return (this._requireComponent(componentId).controller as SameLayerController).postTouchEvent(event);
     }
     return false;
   }
@@ -174,27 +177,40 @@ export class SameLayerSurface implements HarmonyNativeSurface {
     return this.components.get(id)?.controller ?? null;
   }
 
-  private connect(entry: ComponentEntry, embed: SameLayerEmbed): void {
+  /** @internal */
+
+  private _connect(entry: ComponentEntry, embed: SameLayerEmbed): void {
     entry.controller?.dispose();
-    entry.controller = this.createController(embed);
+    entry.controller = this.createController(
+      embed,
+      entry.snapshot,
+      entry.primitive,
+      entry.emit,
+    );
     entry.controller.update(entry.snapshot, entry.primitive, entry.emit);
     entry.controller.layout(
       entry.rect ?? { x: 0, y: 0, width: embed.width, height: embed.height },
     );
   }
 
-  private requireComponent(id: string): ComponentEntry {
+  /** @internal */
+
+  private _requireComponent(id: string): ComponentEntry {
     const entry = this.components.get(id);
     if (entry === undefined) throw new Error(`Unknown native component: ${id}`);
     return entry;
   }
 
-  private markChanged(): void {
+  /** @internal */
+
+  private _markChanged(): void {
     this.changed = true;
-    if (this.batchDepth === 0) this.flushChange();
+    if (this.batchDepth === 0) this._flushChange();
   }
 
-  private flushChange(): void {
+  /** @internal */
+
+  private _flushChange(): void {
     this.changed = false;
     this.changeListener?.();
   }

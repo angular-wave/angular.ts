@@ -73,3 +73,13 @@ Load AngularTS before the J2CL bundle and bootstrap the registered module:
 Build with `mvn package` and serve the output over HTTP. Keep Closure ADVANCED
 optimization enabled, expose only the Java members used by templates, and test
 the optimized output. See `demo` for a complete Maven project.
+
+## Access shared models
+
+After bootstrap, `org.angular.ts.Angular.getModel("cart")` lazily retrieves a
+registered reactive model as `org.angular.ts.ng.Model<T>`. The explicit runtime
+facade `org.angular.ts.ng.Angular` also exposes `getModel(name)`. Both return
+the same JavaScript proxy as dependency injection. Read and mutate domain
+fields using your typed JsInterop model interface; writes update observing
+views. Unknown names, ordinary services, and uninitialized or destroyed apps
+throw runtime errors.

@@ -188,6 +188,21 @@ base class GeneratedNgAngular extends GeneratedNgFacade {
         .jsToDart<Object?>(raw.callMethodVarArgs('getModule'.toJS, args));
   }
 
+  /// Retrieve a reactive model declared by a loaded application module. After `bootstrap()` or
+  /// `injector()` completes, the first lookup initializes the model through dependency injection.
+  /// Later lookups and injected consumers receive the same app-owned reactive instance. External
+  /// callbacks can mutate this instance directly to update every observing view.
+  ///
+  /// Parameters:
+  /// - [name]: Name registered with `NgModule.model()`.
+  Object? getModel(String name) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(name));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('getModel'.toJS, args));
+  }
+
   /// Dispatches an invocation event to either an injectable service or a named scope. The event
   /// `type` identifies the target and the payload contains the expression to evaluate against that
   /// target.
@@ -503,6 +518,21 @@ base class GeneratedNgAngularService extends GeneratedNgFacade {
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('getModule'.toJS, args));
+  }
+
+  /// Retrieve a reactive model declared by a loaded application module. After `bootstrap()` or
+  /// `injector()` completes, the first lookup initializes the model through dependency injection.
+  /// Later lookups and injected consumers receive the same app-owned reactive instance. External
+  /// callbacks can mutate this instance directly to update every observing view.
+  ///
+  /// Parameters:
+  /// - [name]: Name registered with `NgModule.model()`.
+  Object? getModel(String name) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(name));
+
+    return unsafe
+        .jsToDart<Object?>(raw.callMethodVarArgs('getModel'.toJS, args));
   }
 
   /// Dispatches an invocation event to either an injectable service or a named scope. The event

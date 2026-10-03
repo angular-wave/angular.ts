@@ -8,6 +8,7 @@ import type {
 import { HarmonyNativeNodeAdapter } from "../nodes/HarmonyNativeNodeAdapter.ts";
 import { NativeNodeRegistry } from "../nodes/NativeNodeRegistry.ts";
 import { ArkUISameLayerSurface } from "../nodes/ArkUISameLayerSurface.ets";
+import type { ArkUISameLayerControllerFactory } from "../nodes/ArkUISameLayerSurface.ets";
 import { ArkWebDestination } from "./ArkWebDestination.ets";
 import { NativeElementContractRegistry } from "../components/NativeElementContractRegistry.ts";
 import { nativeRenderers } from "../components/NativeRendererCatalog.ts";
@@ -36,6 +37,7 @@ export interface AngularNativeDestinationOptions {
   readonly handlers?: Readonly<Record<string, NativeBridgeHandler>>;
   readonly elements?: NativeElementContractRegistry;
   readonly renderers?: Readonly<Record<string, string>>;
+  readonly nativeControllerFactory?: ArkUISameLayerControllerFactory;
   readonly source?: string | Resource;
   readonly routeDecision?: (location: string) => boolean;
 }
@@ -49,7 +51,7 @@ export class AngularNativeDestination {
     platform: HarmonyCapabilityPlatform,
     options: AngularNativeDestinationOptions = {},
   ) {
-    this.nativeSurface = new ArkUISameLayerSurface();
+    this.nativeSurface = new ArkUISameLayerSurface(options.nativeControllerFactory);
     const elements = options.elements ?? new NativeElementContractRegistry();
     let destination: ArkWebDestination | undefined;
     const emit = (

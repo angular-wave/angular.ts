@@ -5,7 +5,8 @@ import { SameLayerSurface } from "../main/ets/nodes/SameLayerSurface.ts";
 function fixture() {
   const operations = [];
   const controllers = [];
-  const surface = new SameLayerSurface((embed) => {
+  const surface = new SameLayerSurface((embed, snapshot, primitive, emit) => {
+    operations.push(["factory", snapshot.id, primitive, typeof emit]);
     const controller = {
       update: (snapshot, primitive) => operations.push(["update", embed.domId, snapshot.id, primitive]),
       layout: (rect) => operations.push(["layout", embed.domId, rect]),
@@ -43,6 +44,7 @@ test("connects when the bridge mount arrives before ArkWeb lifecycle", () => {
   value.surface.embedCreated(embed);
   assert.deepEqual(value.surface.activeComponentIds(), ["title"]);
   assert.deepEqual(value.operations, [
+    ["factory", "title", "Text", "function"],
     ["update", embed.domId, "title", "Text"],
     ["layout", embed.domId, { x: 0, y: 0, width: 120, height: 30 }],
   ]);

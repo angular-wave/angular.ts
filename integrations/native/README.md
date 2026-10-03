@@ -12,3 +12,13 @@ must consume these contracts instead of maintaining platform copies.
 | `protocol/` | Versioned bridge schemas and portable fixtures |
 
 Run `make native-contract-check` after changing a contract.
+
+## Shared application models
+
+JavaScript running in a native destination can use `angular.getModel(name)`
+after app initialization to lazily retrieve a registered reactive model. Native
+callbacks should mutate that proxy or call `restore(snapshot, { mode: "merge" })`
+through the destination's existing JavaScript bridge. The same instance is used
+by dependency injection, and updates reach every observing view in its app
+context. Unknown names, ordinary services, and uninitialized or destroyed apps
+throw runtime errors. Model lookup does not add a native bridge protocol method.

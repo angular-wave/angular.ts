@@ -53,3 +53,12 @@ AngularTS as `js.Object` or JavaScript collections; ordinary Scala domain types
 can remain behind that boundary.
 
 See `examples/basic_app` for a complete todo project.
+
+## Access shared models
+
+After bootstrap, retrieve the registered model with
+`AngularTS.getModel[TodoModel]("todoModel")` or `AngularTS.getModel(modelToken)`,
+where the token has type `Token[Model[TodoModel]]`. Both lazily initialize and
+return the same reactive instance as dependency injection. Field assignments
+update observing views. Unknown names, ordinary services, and uninitialized or
+destroyed apps throw runtime errors.

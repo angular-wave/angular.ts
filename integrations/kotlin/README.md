@@ -24,3 +24,11 @@ edge of the application.
 Build the production Kotlin/JS output and test it with the same AngularTS bundle
 used in deployment. See `examples/basic_app` for a complete todo project and
 `examples/web_components` for custom elements.
+
+## Access shared models
+
+After the runtime is initialized, `ng.getModel("cart")` lazily retrieves a
+registered reactive model. `ng.getModel(cartToken)` uses the token's typed
+conversion and returns the same instance as dependency injection. Mutating the
+returned proxy updates observing views. Unknown names, ordinary services, and
+uninitialized or destroyed apps throw runtime errors.

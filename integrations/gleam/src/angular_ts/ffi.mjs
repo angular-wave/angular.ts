@@ -115,6 +115,10 @@ export function angular_get_module(name) {
   return getAngular().getModule(name);
 }
 
+export function angular_get_model(name) {
+  return getAngular().getModel(name);
+}
+
 export function angular_bootstrap(root, modules) {
   return getAngular().bootstrap(root, modules);
 }

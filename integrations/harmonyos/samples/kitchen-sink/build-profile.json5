@@ -33,6 +33,18 @@
       ]
     },
     {
+      "name": "maps",
+      "srcPath": "../../packages/maps",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
       "name": "entry",
       "srcPath": "./entry",
       "targets": [

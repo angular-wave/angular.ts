@@ -9,6 +9,15 @@ export type {
   NavigationTransition,
 } from "./HarmonyNavigation.ts";
 export {
+  navigationMotionDuration,
+  navigationMotionFrame,
+} from "./HarmonyNavigationMotion.ts";
+export type {
+  NavigationMotionFrame,
+  NavigationMotionRole,
+  NavigationMotionStage,
+} from "./HarmonyNavigationMotion.ts";
+export {
   HarmonyNavPathPlatform,
   navigationEntry,
 } from "./HarmonyNavPathPlatform.ts";

@@ -4,6 +4,25 @@
             [cljs.test :refer-macros [deftest is testing]]
             [goog.object :as gobj]))
 
+(deftest get-model-returns-the-runtime-instance-and-propagates-errors
+  (let [previous (gobj/get js/angular "getModel")
+        cart #js {:count 0}
+        calls (atom [])]
+    (try
+      (gobj/set js/angular "getModel"
+                (fn [name]
+                  (swap! calls conj name)
+                  (if (= name "cart") cart
+                      (throw (js/Error. "Unknown model")))))
+      (is (identical? cart (ng/get-model "cart")))
+      (is (identical? cart (ng/get-model "cart")))
+      (is (thrown-with-msg? js/Error #"Unknown model" (ng/get-model "missing")))
+      (is (= ["cart" "cart" "missing"] @calls))
+      (finally
+        (if (some? previous)
+          (gobj/set js/angular "getModel" previous)
+          (gobj/remove js/angular "getModel"))))))
+
 (deftest injectable-converts-dependencies-to-an-annotated-array
   (let [factory (fn [] nil)
         annotated (ng/injectable ["first" "second"] factory)]

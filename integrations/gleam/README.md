@@ -40,3 +40,12 @@ use Gleam components for the parts that need client-side state.
 The `examples/basic_app` directory contains a complete todo application with
 an injected store, component, HTML page, and build setup. The full AngularTS
 guide is linked from the package sidebar.
+
+## Access shared models
+
+After bootstrap, `ng.get_model("cart")` or `runtime.get_model("cart")` lazily
+retrieves a registered reactive model. The result is a `namespace.Model(Dynamic)`
+handle; use the existing `angular_ts/unsafe` interop helpers to read or mutate
+its JavaScript fields. Both getters preserve the proxy shared with dependency
+injection, so writes update observing views. Unknown names, ordinary services,
+and uninitialized or destroyed apps throw runtime errors.

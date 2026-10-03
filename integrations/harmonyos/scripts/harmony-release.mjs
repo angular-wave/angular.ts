@@ -7,6 +7,12 @@ import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const releaseMetadataFiles = [
+  "LICENSE",
+  "dependencies.json",
+  "provenance.intoto.json",
+  "sbom.spdx.json",
+];
 
 export function orderArtifacts(artifacts) {
   const rank = new Map([
@@ -132,14 +138,91 @@ export async function verifyArtifactBundle({
   if (manifest.version !== version || manifest.artifacts?.length !== artifacts.length) {
     throw new Error(`HarmonyOS release bundle does not match ${version}`);
   }
-  const sums = await readFile(resolve(directory, "SHA256SUMS"), "utf8");
+  if (
+    !Array.isArray(manifest.metadata)
+    || [...manifest.metadata].sort().join("\n") !== releaseMetadataFiles.join("\n")
+  ) {
+    throw new Error("HarmonyOS release bundle metadata is incomplete");
+  }
+  const sums = new Map();
+  for (const line of (await readFile(resolve(directory, "SHA256SUMS"), "utf8")).split(/\r?\n/u)) {
+    if (!line) continue;
+    const match = /^([0-9a-f]{64})  ([A-Za-z0-9_.-]+)$/u.exec(line);
+    if (match === null || sums.has(match[2])) {
+      throw new Error("HarmonyOS release bundle has invalid checksums");
+    }
+    sums.set(match[2], match[1]);
+  }
   for (const artifact of artifacts) {
     const record = manifest.artifacts.find(({ module }) => module === artifact.module);
     if (!record) throw new Error(`HarmonyOS release bundle lacks ${artifact.module}`);
     const content = await readFile(resolve(directory, `${artifact.module}.${artifact.extension}`));
     verifyArtifactRecord(artifact, version, record, content);
-    if (!sums.includes(`${record.sha256}  ${record.file}\n`)) {
+    if (sums.get(record.file) !== record.sha256) {
       throw new Error(`SHA256SUMS lacks ${record.file}`);
+    }
+  }
+  const checkedFiles = ["manifest.json", ...releaseMetadataFiles];
+  const contents = new Map();
+  for (const file of checkedFiles) {
+    const content = await readFile(resolve(directory, file));
+    const digest = createHash("sha256").update(content).digest("hex");
+    if (sums.get(file) !== digest) throw new Error(`SHA256SUMS lacks ${file}`);
+    contents.set(file, content);
+  }
+  const license = contents.get("LICENSE").toString("utf8");
+  if (!license.includes("MIT License")) throw new Error("HarmonyOS release license is invalid");
+
+  const dependencies = JSON.parse(contents.get("dependencies.json").toString("utf8"));
+  if (
+    dependencies.schemaVersion !== 1
+    || dependencies.version !== version
+    || dependencies.packages?.length !== artifacts.length
+  ) {
+    throw new Error("HarmonyOS dependency manifest is invalid");
+  }
+  for (const artifact of artifacts) {
+    const package_ = dependencies.packages.find(({ module }) => module === artifact.module);
+    if (
+      package_?.package !== artifact.package
+      || package_.version !== version
+      || package_.file !== `${artifact.module}.${artifact.extension}`
+      || typeof package_.dependencies !== "object"
+      || package_.dependencies === null
+    ) {
+      throw new Error(`HarmonyOS dependency manifest lacks ${artifact.module}`);
+    }
+  }
+
+  const spdx = JSON.parse(contents.get("sbom.spdx.json").toString("utf8"));
+  if (spdx.spdxVersion !== "SPDX-2.3" || spdx.packages?.length !== artifacts.length) {
+    throw new Error("HarmonyOS SPDX SBOM is invalid");
+  }
+  for (const record of manifest.artifacts) {
+    const package_ = spdx.packages.find(({ name }) => name === record.package);
+    if (
+      package_?.versionInfo !== version
+      || !package_.checksums?.some(({ algorithm, checksumValue }) =>
+        algorithm === "SHA256" && checksumValue === record.sha256
+      )
+    ) {
+      throw new Error(`HarmonyOS SPDX SBOM lacks ${record.package}`);
+    }
+  }
+
+  const provenance = JSON.parse(contents.get("provenance.intoto.json").toString("utf8"));
+  if (
+    provenance._type !== "https://in-toto.io/Statement/v1"
+    || provenance.predicateType !== "https://slsa.dev/provenance/v1"
+    || provenance.subject?.length !== artifacts.length
+  ) {
+    throw new Error("HarmonyOS provenance is invalid");
+  }
+  for (const record of manifest.artifacts) {
+    if (!provenance.subject.some(({ name, digest }) =>
+      name === record.file && digest?.sha256 === record.sha256
+    )) {
+      throw new Error(`HarmonyOS provenance lacks ${record.file}`);
     }
   }
 }

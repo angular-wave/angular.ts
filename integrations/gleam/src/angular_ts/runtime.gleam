@@ -23,6 +23,11 @@ pub fn get_module(name: String) -> NgModule {
   module.from_handle(name, angular_get_module(name))
 }
 
+/// Lazily retrieves a shared reactive model after the runtime is initialized.
+pub fn get_model(name: String) -> namespace.Model(Dynamic) {
+  angular_get_model(name)
+}
+
 pub fn bootstrap(root: Element, modules: List(String)) -> Injector {
   angular_bootstrap(root, modules)
 }
@@ -36,6 +41,9 @@ fn angular_create_module(name: String, requires: List(String)) -> Dynamic
 
 @external(javascript, "./ffi.mjs", "angular_get_module")
 fn angular_get_module(name: String) -> Dynamic
+
+@external(javascript, "./ffi.mjs", "angular_get_model")
+fn angular_get_model(name: String) -> namespace.Model(Dynamic)
 
 @external(javascript, "./ffi.mjs", "angular_bootstrap")
 fn angular_bootstrap(root: Element, modules: List(String)) -> Injector

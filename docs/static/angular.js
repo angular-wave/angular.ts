@@ -1,0 +1,1 @@
+../../dist/angular-ts.umd.min.js

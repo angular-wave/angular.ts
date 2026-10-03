@@ -83,6 +83,15 @@ public external interface Angular {
      */
     public fun getInjector(element: org.w3c.dom.Element = definedExternally): dynamic
     /**
+     * Retrieve a reactive model declared by a loaded application module. After `bootstrap()`
+     * or `injector()` completes, the first lookup initializes the model through dependency
+     * injection. Later lookups and injected consumers receive the same app-owned reactive
+     * instance. External callbacks can mutate this instance directly to update every observing
+     * view.
+     * @param name Name registered with `NgModule.model()`.
+     */
+    public fun getModel(name: String = definedExternally): dynamic
+    /**
      * Retrieves an existing module.
      * @param name The name of the module to retrieve.
      */
@@ -1344,6 +1353,15 @@ public external interface AngularService {
      * @param element Value supplied for the element parameter.
      */
     public fun getInjector(element: org.w3c.dom.Element = definedExternally): dynamic
+    /**
+     * Retrieve a reactive model declared by a loaded application module. After `bootstrap()`
+     * or `injector()` completes, the first lookup initializes the model through dependency
+     * injection. Later lookups and injected consumers receive the same app-owned reactive
+     * instance. External callbacks can mutate this instance directly to update every observing
+     * view.
+     * @param name Name registered with `NgModule.model()`.
+     */
+    public fun getModel(name: String = definedExternally): dynamic
     /**
      * Retrieves an existing module.
      * @param name The name of the module to retrieve.

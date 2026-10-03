@@ -46,14 +46,14 @@ export class NativeComponentModel {
   }
 
   update(properties: Readonly<Record<string, unknown>>): void {
-    this.assertActive();
+    this._assertActive();
     if (Object.keys(properties).length === 0) return;
     this.properties = { ...this.properties, ...properties };
     this.revision++;
   }
 
   setVisible(visible: boolean): void {
-    this.assertActive();
+    this._assertActive();
     if (this.visible === visible) return;
     this.visible = visible;
     this.revision++;
@@ -63,7 +63,7 @@ export class NativeComponentModel {
     method: string,
     argumentsValue: Readonly<Record<string, unknown>>,
   ): unknown {
-    this.assertActive();
+    this._assertActive();
     switch (method) {
       case "focus":
         this.focused = true;
@@ -77,12 +77,12 @@ export class NativeComponentModel {
         return { focused: false };
       case "show":
         this.setVisible(true);
-        this.emitFirstAvailable("show", "open");
+        this._emitFirstAvailable("show", "open");
         return { visible: true };
       case "hide":
       case "dismiss":
         this.setVisible(false);
-        this.emitFirstAvailable("dismiss", "close");
+        this._emitFirstAvailable("dismiss", "close");
         return { visible: false };
       case "scrollTo":
       case "scrollToStart":
@@ -100,7 +100,9 @@ export class NativeComponentModel {
     }
   }
 
-  private emitFirstAvailable(...events: readonly string[]): void {
+  /** @internal */
+
+  private _emitFirstAvailable(...events: readonly string[]): void {
     const event = events.find((candidate) =>
       this.contract.events.some((entry) => entry.name === candidate)
     );
@@ -108,7 +110,7 @@ export class NativeComponentModel {
   }
 
   emit(event: string, data: Readonly<Record<string, unknown>> = {}): void {
-    this.assertActive();
+    this._assertActive();
     if (!this.contract.events.some((candidate) => candidate.name === event)) {
       throw new NativeBridgeFailure(
         "unknown_method",
@@ -119,7 +121,7 @@ export class NativeComponentModel {
   }
 
   snapshot(): NativeComponentSnapshot {
-    this.assertActive();
+    this._assertActive();
     return {
       id: this.id,
       name: this.name,
@@ -137,7 +139,9 @@ export class NativeComponentModel {
     this.properties = {};
   }
 
-  private assertActive(): void {
+  /** @internal */
+
+  private _assertActive(): void {
     if (this.disposed) {
       throw new NativeBridgeFailure(
         "unknown_instance",

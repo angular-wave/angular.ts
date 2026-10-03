@@ -1995,9 +1995,14 @@ describe("WasmScopeAbi", () => {
     resource.dispose();
   });
 
-  it("binds app-owned models and follows their lifecycle", async () => {
-    const context = new AppContext();
-    const model = context.createReactive({ count: 1 });
+  it("binds lazily retrieved app models and follows their lifecycle", async () => {
+    angular
+      .createModule("wasmModelAccess", [])
+      .model("wasmModel", () => ({ count: 1 }));
+    const injector = angular.injector(["wasmModelAccess"]);
+    expect(angular._appContext.getModel("wasmModel")).toBeUndefined();
+    const model = angular.getModel("wasmModel");
+    expect(injector.get("wasmModel")).toBe(model);
     const resource = wasmService.load({
       source: "/integrations/wasm/c/examples/todo/main.wasm",
     });
@@ -2010,7 +2015,7 @@ describe("WasmScopeAbi", () => {
     expect(binding.name).toBe("runtime:model");
     expect(binding.disposed).toBeFalse();
 
-    context.destroy();
+    model.destroy();
 
     expect(binding.disposed).toBeTrue();
     expect(resource.disposed).toBeFalse();

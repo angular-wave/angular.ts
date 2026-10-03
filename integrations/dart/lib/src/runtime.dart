@@ -7,6 +7,7 @@ import 'injector.dart';
 import 'module.dart';
 import 'programmatic_view.dart';
 import 'scope.dart';
+import 'token.dart';
 import 'unsafe.dart' as unsafe;
 
 @JS('angular')
@@ -40,6 +41,18 @@ final class AngularTsRuntime {
     final value = unsafe.callMethod(_runtime, 'getModule', name.toJS);
 
     return NgModule(name, value as JSObject);
+  }
+
+  /// Lazily retrieves the shared reactive model using a typed token.
+  T getModel<T>(Token<T> token) {
+    final value = unsafe.callMethod(_runtime, 'getModel', token.name.toJS);
+
+    return token.fromJs(value);
+  }
+
+  /// Retrieves a reactive model by name for JavaScript interoperability.
+  JSObject getModelUnsafe(String name) {
+    return unsafe.callMethod(_runtime, 'getModel', name.toJS) as JSObject;
   }
 
   /// The bootstrap.
@@ -134,6 +147,16 @@ NgModule createModule(String name, [List<String> requires = const []]) {
 /// Retrieves an existing module.
 NgModule getModule(String name) {
   return AngularTsRuntime.global().getModule(name);
+}
+
+/// Lazily retrieves the shared reactive model using a typed token.
+T getModel<T>(Token<T> token) {
+  return AngularTsRuntime.global().getModel(token);
+}
+
+/// Retrieves a reactive model by name for JavaScript interoperability.
+JSObject getModelUnsafe(String name) {
+  return AngularTsRuntime.global().getModelUnsafe(name);
 }
 
 /// The bootstrap.

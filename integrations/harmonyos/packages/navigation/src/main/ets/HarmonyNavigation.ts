@@ -47,25 +47,25 @@ export class HarmonyNavigation {
     method: string,
     parameters: Readonly<Record<string, unknown>> | null,
   ): Promise<unknown> {
-    this.assertActive();
+    this._assertActive();
     switch (method) {
       case "status":
-        return this.transaction(async () => this.status());
+        return this._transaction(async () => this._status());
       case "push":
-        return this.transaction(() => this.open("push", "push", parameters, false));
+        return this._transaction(() => this._open("push", "push", parameters, false));
       case "replace":
-        return this.transaction(() => this.open("replace", "replace", parameters, false));
+        return this._transaction(() => this._open("replace", "replace", parameters, false));
       case "modal":
-        return this.transaction(() => this.open("modal", "modal", parameters, true));
+        return this._transaction(() => this._open("modal", "modal", parameters, true));
       case "pop":
-        return this.transaction(() => this.pop());
+        return this._transaction(() => this._pop());
       case "deep-link":
-        return this.transaction(() => this.open("push", "deep-link", parameters, false));
+        return this._transaction(() => this._open("push", "deep-link", parameters, false));
       case "external": {
         const location = safeLocation(parameters?.url, true);
-        return this.transaction(async () => {
+        return this._transaction(async () => {
           await this.platform.openExternal(location);
-          this.assertActive();
+          this._assertActive();
           return { location, external: true };
         });
       }
@@ -80,7 +80,7 @@ export class HarmonyNavigation {
 
   systemPop(): void {
     if (this.closed) return;
-    void this.transaction(async () => {
+    void this._transaction(async () => {
       if (this.entries.length <= 1) return;
       const from = (this.entries.pop() as NavigationEntry).location;
       this.emit({
@@ -94,7 +94,7 @@ export class HarmonyNavigation {
   }
 
   restore(entries: readonly NavigationEntry[]): void {
-    this.assertActive();
+    this._assertActive();
     this.entries.splice(0, this.entries.length, ...entries.map(validateEntry));
   }
 
@@ -103,7 +103,9 @@ export class HarmonyNavigation {
     this.entries.length = 0;
   }
 
-  private status(): Readonly<Record<string, unknown>> {
+  /** @internal */
+
+  private _status(): Readonly<Record<string, unknown>> {
     const current = this.entries[this.entries.length - 1];
     return {
       location: current?.location ?? null,
@@ -113,7 +115,9 @@ export class HarmonyNavigation {
     };
   }
 
-  private async open(
+  /** @internal */
+
+  private async _open(
     operation: "push" | "replace" | "modal",
     method: "push" | "replace" | "modal" | "deep-link",
     parameters: Readonly<Record<string, unknown>> | null,
@@ -136,7 +140,7 @@ export class HarmonyNavigation {
     next.push(entry);
     const transaction = this.nextTransaction++;
     await this.platform.apply(operation, next, transition);
-    this.assertActive();
+    this._assertActive();
     this.entries.splice(0, this.entries.length, ...next);
     this.emit({ transaction, method, phase: "completed", source: "bridge", from, url: location });
     return {
@@ -150,14 +154,16 @@ export class HarmonyNavigation {
     };
   }
 
-  private async pop(): Promise<unknown> {
-    if (this.entries.length <= 1) return { ...this.status(), routed: false, method: "pop" };
+  /** @internal */
+
+  private async _pop(): Promise<unknown> {
+    if (this.entries.length <= 1) return { ...this._status(), routed: false, method: "pop" };
     const next = [...this.entries];
     const removed = next.pop() as NavigationEntry;
     const transition = this.reducedMotion ? "fade" : removed.transition;
     const transaction = this.nextTransaction++;
     await this.platform.apply("pop", next, transition);
-    this.assertActive();
+    this._assertActive();
     this.entries.splice(0, this.entries.length, ...next);
     const url = (next[next.length - 1] as NavigationEntry).location;
     this.emit({ transaction, method: "pop", phase: "completed", source: "bridge", from: removed.location, url });
@@ -171,13 +177,17 @@ export class HarmonyNavigation {
     };
   }
 
-  private assertActive(): void {
+  /** @internal */
+
+  private _assertActive(): void {
     if (this.closed) throw navigationError("interrupted", "Navigation destination was removed");
   }
 
-  private transaction<Result>(operation: () => Promise<Result>): Promise<Result> {
+  /** @internal */
+
+  private _transaction<Result>(operation: () => Promise<Result>): Promise<Result> {
     const result = this.pending.then(() => {
-      this.assertActive();
+      this._assertActive();
       return operation();
     });
     this.pending = result.then(() => undefined, () => undefined);

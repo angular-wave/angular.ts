@@ -52,6 +52,9 @@ pub type Injector =
 pub type NgModule =
   module.NgModule
 
+pub type Model(value) =
+  namespace.Model(value)
+
 pub type GeolocationValue =
   namespace.GeolocationValue
 
@@ -186,6 +189,11 @@ pub fn create_module(name: String) -> NgModule {
 
 pub fn get_module(name: String) -> NgModule {
   runtime.get_module(name)
+}
+
+/// Lazily retrieves a shared reactive model after the runtime is initialized.
+pub fn get_model(name: String) -> Model(Dynamic) {
+  runtime.get_model(name)
 }
 
 pub fn create_module_with_requires(

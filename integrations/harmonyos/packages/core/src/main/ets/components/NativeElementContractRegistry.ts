@@ -46,7 +46,7 @@ export class NativeElementContractRegistry {
 
   constructor() {
     for (const contract of Object.values(nativeElements)) {
-      this.add(contract, "core", true);
+      this._add(contract, "core", true);
     }
   }
 
@@ -55,7 +55,7 @@ export class NativeElementContractRegistry {
       throw new TypeError("Custom native element names must contain a hyphen");
     }
     if (!owner) throw new TypeError("Native element owner is required");
-    this.add(contract, owner, false);
+    this._add(contract, owner, false);
     return () => {
       const entry = this.entries.get(contract.name);
       if (entry?.owner !== owner) return;
@@ -87,7 +87,9 @@ export class NativeElementContractRegistry {
     }
   }
 
-  private add(
+  /** @internal */
+
+  private _add(
     contract: NativeElementContract,
     owner: string,
     builtIn: boolean,

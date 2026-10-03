@@ -1,6 +1,7 @@
 package angular.ts
 
 import org.scalajs.dom
+import scala.annotation.targetName
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
 
@@ -15,6 +16,15 @@ object AngularTS:
 
   def getModule(name: String): NgModule =
     NgModule(RuntimeAngular.getModule(name))
+
+  /** Lazily retrieves the shared reactive model from the initialized runtime. */
+  def getModel[A <: js.Object](name: String): Model[A] =
+    RuntimeAngular.getModel[A](name)
+
+  /** Retrieves the same model instance resolved by typed dependency injection. */
+  @targetName("getModelByToken")
+  def getModel[A <: js.Object](token: Token[Model[A]]): Model[A] =
+    getModel[A](token.name)
 
   def bootstrap(
       element: dom.Element,

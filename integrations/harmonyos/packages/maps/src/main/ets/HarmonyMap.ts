@@ -12,12 +12,12 @@ export class HarmonyMap {
     this.platform = platform;
   }
   update(properties: Readonly<Record<string, unknown>>): void {
-    this.assertActive();
+    this._assertActive();
     this.platform.update(mapProperties(properties));
   }
 
   invoke(method: string, parameters: Readonly<Record<string, unknown>>): unknown | Promise<unknown> {
-    this.assertActive();
+    this._assertActive();
     if (method !== "move" && method !== "animate" && method !== "fitMarkers") {
       throw new Error(`Unsupported map method: ${method}`);
     }
@@ -33,7 +33,9 @@ export class HarmonyMap {
     this.platform.dispose();
   }
 
-  private assertActive(): void {
+  /** @internal */
+
+  private _assertActive(): void {
     if (this.closed) throw new Error("HarmonyOS map was disposed");
   }
 }

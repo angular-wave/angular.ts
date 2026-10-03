@@ -340,6 +340,11 @@ files.set("samples/kitchen-sink/build-profile.json5", json5({
       targets: [{ name: "default", applyToProducts: ["default"] }],
     },
     {
+      name: "maps",
+      srcPath: "../../packages/maps",
+      targets: [{ name: "default", applyToProducts: ["default"] }],
+    },
+    {
       name: "entry",
       srcPath: "./entry",
       targets: [{ name: "default", applyToProducts: ["default"] }],
@@ -386,6 +391,7 @@ files.set("samples/kitchen-sink/entry/oh-package.json5", json5({
   license: "MIT",
   dependencies: {
     "@angular-wave/angular-native-harmony-core": "file:../../../packages/core",
+    "@angular-wave/angular-native-harmony-maps": "file:../../../packages/maps",
   },
 }));
 files.set("samples/kitchen-sink/entry/build-profile.json5", json5({

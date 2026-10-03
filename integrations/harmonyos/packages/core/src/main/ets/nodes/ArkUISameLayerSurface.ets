@@ -605,12 +605,25 @@ export class ArkUISameLayerNodeController extends NodeController implements Same
   }
 }
 
+export type ArkUISameLayerControllerFactory = (
+  embed: SameLayerEmbed,
+  snapshot: NativeComponentSnapshot,
+  primitive: string,
+  emit: NativeComponentEventEmitter,
+) => SameLayerController | undefined;
+
 export class ArkUISameLayerSurface {
   readonly surface: SameLayerSurface;
 
-  constructor() {
+  constructor(factory?: ArkUISameLayerControllerFactory) {
     this.surface = new SameLayerSurface(
-      (embed: SameLayerEmbed) => new ArkUISameLayerNodeController(embed),
+      (
+        embed: SameLayerEmbed,
+        snapshot: NativeComponentSnapshot,
+        primitive: string,
+        emit: NativeComponentEventEmitter,
+      ) => factory?.(embed, snapshot, primitive, emit) ??
+        new ArkUISameLayerNodeController(embed),
     );
   }
 

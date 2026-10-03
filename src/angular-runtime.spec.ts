@@ -63,6 +63,179 @@ describe("AngularRuntime composition ownership", () => {
     };
   }
 
+  describe("getModel", () => {
+    it("lazily initializes a model once and shares it with injection", () => {
+      const runtime = new Angular();
+      let initializations = 0;
+
+      runtimes.push(runtime);
+      runtime
+        .createModule("modelAccess", ["ng"])
+        .value("initialCount", 3)
+        .model("counter", [
+          "initialCount",
+          (count: number) => {
+            initializations++;
+
+            return { count };
+          },
+        ]);
+
+      const injector = runtime.injector(["modelAccess"]);
+
+      expect(initializations).toBe(0);
+      expect(runtime._appContext.getModel("counter")).toBeUndefined();
+
+      const counter: ng.Model<{ count: number }> = runtime.getModel("counter");
+
+      expect(counter.count).toBe(3);
+      expect(counter.snapshot()).toEqual({ count: 3 });
+      expect(runtime.getModel("counter")).toBe(counter);
+      expect(injector.get("counter")).toBe(counter);
+      expect(initializations).toBe(1);
+    });
+
+    it("returns a model already initialized by an injected consumer", () => {
+      const runtime = new Angular();
+
+      runtimes.push(runtime);
+      runtime
+        .createModule("injectedModelAccess", ["ng"])
+        .model("cart", () => ({ items: [] as string[] }));
+      const injector = runtime.injector(["injectedModelAccess"]);
+      const injected = injector.get<ng.Model<{ items: string[] }>>("cart");
+
+      expect(runtime.getModel("cart")).toBe(injected);
+    });
+
+    it("updates observing views from an external callback after bootstrap", async () => {
+      const runtime = new Angular();
+      const element = document.createElement("main");
+
+      runtimes.push(runtime);
+      runtime
+        .createModule("externalModelAccess", ["ng"])
+        .model("cart", () => ({ items: [] as string[] }));
+      element.innerHTML = "<span>{{ cart.items.length }}</span>";
+      const injector = runtime.bootstrap(element, ["externalModelAccess"]);
+      const cart = runtime.getModel<{ items: string[] }>("cart");
+      const scope = injector.get(_rootScope);
+
+      scope.cart = cart;
+      await wait();
+      expect(element.textContent).toBe("0");
+
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          cart.items.push("book");
+          resolve();
+        }, 0);
+      });
+      await wait();
+      expect(element.textContent).toBe("1");
+
+      scope.destroy();
+      expect(runtime.getModel("cart")).toBe(cart);
+    });
+
+    it("rejects access before initialization without starting the app", () => {
+      const runtime = new Angular();
+      const initialize = jasmine
+        .createSpy("initialize")
+        .and.returnValue({ count: 0 });
+
+      runtimes.push(runtime);
+      runtime
+        .createModule("uninitializedModelAccess", ["ng"])
+        .model("counter", initialize);
+
+      expect(() => runtime.getModel("counter")).toThrowError(
+        /before bootstrap\(\) or injector\(\) completes/,
+      );
+      expect(initialize).not.toHaveBeenCalled();
+      expect(runtime.currentInjector).toBeUndefined();
+    });
+
+    it("rejects unknown names, unloaded models, and ordinary services", () => {
+      const { runtime } = createRuntime();
+      const initializeService = jasmine
+        .createSpy("initializeService")
+        .and.returnValue({ count: 0 });
+
+      runtime
+        .createModule("unloadedModel", ["ng"])
+        .model("counter", () => ({ count: 0 }));
+      runtime
+        .createModule("ordinaryService", ["ng"])
+        .factory("plainState", initializeService);
+      runtime.injector(["ordinaryService"]);
+
+      for (const name of ["missing", "counter", "plainState"]) {
+        expect(() => runtime.getModel(name)).toThrowError(
+          /is not registered in this app/,
+        );
+      }
+      expect(initializeService).not.toHaveBeenCalled();
+
+      runtime.injector(["unloadedModel"]);
+      expect(runtime.getModel<{ count: number }>("counter").count).toBe(0);
+    });
+
+    it("rejects a model registration overridden by an ordinary service", () => {
+      const runtime = new Angular();
+
+      runtimes.push(runtime);
+      runtime
+        .createModule("overriddenModelAccess", ["ng"])
+        .model("counter", () => ({ count: 0 }))
+        .value("counter", { count: 10 })
+        .model("emptyCounter", () => ({ count: 0 }))
+        .value("emptyCounter", undefined);
+      runtime.injector(["overriddenModelAccess"]);
+
+      expect(() => runtime.getModel("counter")).toThrowError(
+        /does not resolve to an app-owned model/,
+      );
+      expect(() => runtime.getModel("emptyCounter")).toThrowError(
+        /does not resolve to an app-owned model/,
+      );
+    });
+
+    it("isolates models between independent runtimes", () => {
+      const first = new Angular();
+      const second = new Angular();
+
+      runtimes.push(first, second);
+      for (const runtime of [first, second]) {
+        runtime
+          .createModule("isolatedModelAccess", ["ng"])
+          .model("counter", () => ({ count: 0 }));
+        runtime.injector(["isolatedModelAccess"]);
+      }
+
+      const firstCounter = first.getModel<{ count: number }>("counter");
+      const secondCounter = second.getModel<{ count: number }>("counter");
+
+      firstCounter.count = 2;
+      expect(firstCounter).not.toBe(secondCounter);
+      expect(secondCounter.count).toBe(0);
+    });
+
+    it("rejects access after the app context is destroyed", () => {
+      const runtime = new Angular();
+
+      runtimes.push(runtime);
+      runtime
+        .createModule("destroyedModelAccess", ["ng"])
+        .model("counter", () => ({ count: 0 }));
+      runtime.injector(["destroyedModelAccess"]);
+      runtime.getModel("counter");
+      runtime._appContext.destroy();
+
+      expect(() => runtime.getModel("counter")).toThrowError(/destroyed app/);
+    });
+  });
+
   it("gives sub-applications non-owning compositions", () => {
     const runtime = new Angular();
     const subapp = new Angular(true);

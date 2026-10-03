@@ -50,6 +50,9 @@ export {
   ArkUISameLayerNodeController,
   ArkUISameLayerSurface,
 } from "./nodes/ArkUISameLayerSurface.ets";
+export type {
+  ArkUISameLayerControllerFactory,
+} from "./nodes/ArkUISameLayerSurface.ets";
 export { NativeComponentModel } from "./components/NativeComponentModel.ts";
 export type {
   NativeComponentEventEmitter,

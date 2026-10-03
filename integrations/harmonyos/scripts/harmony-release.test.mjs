@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   classifyPackageLookup,
@@ -6,6 +10,7 @@ import {
   parseSkippedPackages,
   publishArtifacts,
   verifyArtifactRecord,
+  verifyArtifactBundle,
   verifyArtifacts,
 } from "./harmony-release.mjs";
 
@@ -104,4 +109,78 @@ test("verifies exact retained HAR identity and content", () => {
   ]) {
     assert.throws(() => verifyArtifactRecord(artifact, "1.2.3", stale, content));
   }
+});
+
+test("requires checksummed license, dependency, SPDX, and provenance metadata", async (context) => {
+  const directory = await mkdtemp(resolve(tmpdir(), "harmony-release-"));
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  const artifact = {
+    module: "core",
+    package: "@angular-wave/core",
+    extension: "har",
+  };
+  const content = Buffer.from("artifact");
+  const sha256 = createHash("sha256").update(content).digest("hex");
+  const record = {
+    module: "core",
+    package: "@angular-wave/core",
+    version: "1.2.3",
+    file: "core.har",
+    bytes: content.byteLength,
+    sha256,
+  };
+  const files = new Map([
+    ["core.har", content],
+    ["LICENSE", Buffer.from("MIT License\n")],
+    ["dependencies.json", Buffer.from(`${JSON.stringify({
+      schemaVersion: 1,
+      version: "1.2.3",
+      packages: [{
+        module: "core",
+        package: "@angular-wave/core",
+        version: "1.2.3",
+        file: "core.har",
+        dependencies: {},
+      }],
+    })}\n`)],
+    ["sbom.spdx.json", Buffer.from(`${JSON.stringify({
+      spdxVersion: "SPDX-2.3",
+      packages: [{
+        name: "@angular-wave/core",
+        versionInfo: "1.2.3",
+        checksums: [{ algorithm: "SHA256", checksumValue: sha256 }],
+      }],
+    })}\n`)],
+    ["provenance.intoto.json", Buffer.from(`${JSON.stringify({
+      _type: "https://in-toto.io/Statement/v1",
+      predicateType: "https://slsa.dev/provenance/v1",
+      subject: [{ name: "core.har", digest: { sha256 } }],
+    })}\n`)],
+  ]);
+  files.set("manifest.json", Buffer.from(`${JSON.stringify({
+    version: "1.2.3",
+    artifacts: [record],
+    metadata: [
+      "LICENSE",
+      "dependencies.json",
+      "provenance.intoto.json",
+      "sbom.spdx.json",
+    ],
+  })}\n`));
+  for (const [name, value] of files) await writeFile(resolve(directory, name), value);
+  await writeFile(resolve(directory, "SHA256SUMS"), [...files]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, value]) => `${createHash("sha256").update(value).digest("hex")}  ${name}\n`)
+    .join(""));
+
+  await assert.doesNotReject(verifyArtifactBundle({
+    artifacts: [artifact],
+    version: "1.2.3",
+    directory,
+  }));
+  await writeFile(resolve(directory, "sbom.spdx.json"), "{}\n");
+  await assert.rejects(
+    verifyArtifactBundle({ artifacts: [artifact], version: "1.2.3", directory }),
+    /SHA256SUMS lacks sbom\.spdx\.json/u,
+  );
 });

@@ -30,6 +30,37 @@ final class ViewController {
 }
 
 void main() {
+  test('model getters preserve the runtime proxy and token conversion', () {
+    final previous = globalContext.getProperty<JSAny?>('angular'.toJS);
+    final cart = JSObject()..setProperty('count'.toJS, 0.toJS);
+    final names = <String>[];
+    final runtime = JSObject()
+      ..setProperty(
+          'getModel'.toJS,
+          ((JSString name) {
+            names.add(name.toDart);
+            return cart;
+          }).toJS);
+    globalContext.setProperty('angular'.toJS, runtime);
+
+    try {
+      final token =
+          ng.token<JSObject>('cart', fromJs: (value) => value as JSObject);
+      final first = ng.getModel(token);
+      final second = ng.AngularTsRuntime.global().getModel(token);
+      final raw = ng.getModelUnsafe('cart');
+
+      expect(first, same(cart));
+      expect(second, same(first));
+      expect(raw, same(first));
+      first.setProperty('count'.toJS, 2.toJS);
+      expect(second.getProperty<JSNumber>('count'.toJS).toDartInt, 2);
+      expect(names, ['cart', 'cart', 'cart']);
+    } finally {
+      globalContext.setProperty('angular'.toJS, previous);
+    }
+  });
+
   test('geolocation values expose nullable coordinates', () {
     final raw = JSObject()
       ..setProperty('latitude'.toJS, 56.9496.toJS)

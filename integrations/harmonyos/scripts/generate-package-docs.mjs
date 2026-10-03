@@ -29,8 +29,8 @@ const descriptions = {
   ],
   maps: [
     "Maps",
-    "Connect the AngularTS Native map contract to a HarmonyOS map provider.",
-    "HarmonyMap",
+    "Render the AngularTS Native map contract with Huawei Map Kit.",
+    "harmonyMapControllerFactory",
   ],
   media: [
     "Media",
@@ -54,9 +54,23 @@ const descriptions = {
   ],
 };
 
+const examples = {
+  maps: `import { harmonyMapControllerFactory } from "@angular-wave/angular-native-harmony-maps";
+
+new AngularNativeDestination({
+  ...options,
+  nativeControllerFactory: harmonyMapControllerFactory,
+});`,
+};
+
 for (const artifact of artifacts) {
   const [title, summary, imports] = descriptions[artifact.module];
-  const readme = `# AngularTS Native HarmonyOS ${title}\n\n${summary}\n\n## Install\n\n\`\`\`sh\nohpm install ${artifact.package}@${repository.version}\n\`\`\`\n\n## Use\n\n\`\`\`ts\nimport { ${imports} } from "${artifact.package}";\n\`\`\`\n\nThis package is part of [AngularTS](https://github.com/angular-wave/angular.ts). The [HarmonyOS integration guide](https://github.com/angular-wave/angular.ts/tree/master/integrations/harmonyos) covers project setup, security, compatibility, and release checks.\n`;
+  const example = examples[artifact.module]
+    ?? `import { ${imports} } from "${artifact.package}";`;
+  const compatibility = artifact.module === "maps"
+    ? "\nThis package requires Huawei Map Kit and the HarmonyOS API 26 SDK. It is not included in the public OpenHarmony API 23 compatibility build.\n"
+    : "";
+  const readme = `# AngularTS Native HarmonyOS ${title}\n\n${summary}\n\n## Install\n\n\`\`\`sh\nohpm install ${artifact.package}@${repository.version}\n\`\`\`\n\n## Use\n\n\`\`\`ts\n${example}\n\`\`\`\n${compatibility}\nThis package is part of [AngularTS](https://github.com/angular-wave/angular.ts). The [HarmonyOS integration guide](https://github.com/angular-wave/angular.ts/tree/master/integrations/harmonyos) covers project setup, security, compatibility, and release checks.\n`;
   const changelog = `# Changelog\n\n## ${repository.version}\n\n- Initial HarmonyOS NEXT package for AngularTS Native.\n\nSee the [AngularTS changelog](https://github.com/angular-wave/angular.ts/blob/master/CHANGELOG.md) for release details.\n`;
   const directory = resolve(root, "packages", artifact.module);
   for (const [name, content] of [

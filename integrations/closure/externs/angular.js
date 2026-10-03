@@ -33,6 +33,14 @@ angular.createModule = function(name, requires) {};
 angular.getModule = function(name) {};
 
 /**
+ * Lazily retrieve a shared reactive model after the runtime is initialized.
+ * @template T
+ * @param {string} name Registered model name.
+ * @return {!ng.Model<T>}
+ */
+angular.getModel = function(name) {};
+
+/**
  * AngularTS runtime instance used to create modules, bootstrap DOM trees, create injectors, and recover scopes from native elements.
  * @constructor
  */
@@ -167,6 +175,14 @@ ng.Angular.prototype.createModule = function(name, requires, configFn) {};
  * @return {!ng.NgModule}
  */
 ng.Angular.prototype.getModule = function(name) {};
+
+/**
+ * Retrieve a reactive model declared by a loaded application module. After `bootstrap()` or `injector()` completes, the first lookup initializes the model through dependency injection. Later lookups and injected consumers receive the same app-owned reactive instance. External callbacks can mutate this instance directly to update every observing view.
+ * @template T
+ * @param {string} name Name registered with `NgModule.model()`.
+ * @return {!ng.Model<T>}
+ */
+ng.Angular.prototype.getModel = function(name) {};
 
 /**
  * Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.
@@ -1621,6 +1637,14 @@ ng.AngularService.prototype.createModule = function(name, requires, configFn) {}
  * @return {!ng.NgModule}
  */
 ng.AngularService.prototype.getModule = function(name) {};
+
+/**
+ * Retrieve a reactive model declared by a loaded application module. After `bootstrap()` or `injector()` completes, the first lookup initializes the model through dependency injection. Later lookups and injected consumers receive the same app-owned reactive instance. External callbacks can mutate this instance directly to update every observing view.
+ * @template T
+ * @param {string} name Name registered with `NgModule.model()`.
+ * @return {!ng.Model<T>}
+ */
+ng.AngularService.prototype.getModel = function(name) {};
 
 /**
  * Dispatches an invocation event to either an injectable service or a named scope. The event `type` identifies the target and the payload contains the expression to evaluate against that target.

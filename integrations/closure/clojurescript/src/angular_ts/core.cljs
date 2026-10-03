@@ -23,6 +23,11 @@
   ^js/ng.NgModule [^string name]
   (generated/get-module name))
 
+(defn get-model
+  "Lazily retrieve the shared reactive model after the runtime is initialized."
+  ^js/ng.Model [^string name]
+  (generated/get-model name))
+
 (defn value
   "Register an injectable value and return the module."
   ^js/ng.NgModule [^js/ng.NgModule ng-module ^string name object]

@@ -13,6 +13,7 @@
    factory]
   [(ng/injectable ["dependency"] factory)
    (ng/get-module "existing")
+   (ng/get-model "model")
    (ng/create-module "created" ["dependency"])
    (ng/value app "value" #js {})
    (ng/constant app "constant" "value")

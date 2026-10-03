@@ -13,3 +13,9 @@ test("audits credentials through a declaration-only API 26 stub", () => {
   assert.match(runner, /OnlineAuthenticationKit\.d\.ts/u);
   assert.doesNotMatch(runner, /rm\(join\(stagingRoot, "packages", "credentials"/u);
 });
+
+test("audits Map Kit through a declaration-only API 26 stub", () => {
+  assert.match(runner, /declare module "@kit\.MapKit"/u);
+  assert.match(runner, /MapKit\.d\.ts/u);
+  assert.doesNotMatch(runner, /rm\(join\(stagingRoot, "packages", "maps"/u);
+});

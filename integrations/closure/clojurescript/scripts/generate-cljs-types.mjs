@@ -151,6 +151,7 @@ function validateCoreFacade() {
   const facadeHelpers = new Set([
     "create-module",
     "get-module",
+    "get-model",
     "injectable",
     "publish",
   ]);
@@ -577,6 +578,7 @@ assertExtern(
   "angular.createModule",
 );
 assertExtern(/\bangular\.getModule\s*=\s*function\b/, "angular.getModule");
+assertExtern(/\bangular\.getModel\s*=\s*function\b/, "angular.getModel");
 assertExtern(
   /\bng\.NgModule\.prototype\.controller\s*=\s*function\b/,
   "ng.NgModule.prototype.controller",
@@ -717,6 +719,11 @@ ${generatedProperties.map(renderPrototypePropertyReader).join("\n\n")}
   "Retrieve an AngularTS module."
   ^js/ng.NgModule [^string name]
   (.getModule angular name))
+
+(defn get-model
+  "Lazily retrieve a shared reactive model after the runtime is initialized."
+  ^js/ng.Model [^string name]
+  (.getModel angular name))
 
 (defn controller
   "Register an annotated controller or annotate a controller factory from a ClojureScript dependency collection."

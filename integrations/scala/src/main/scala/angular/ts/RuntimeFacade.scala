@@ -10,6 +10,7 @@ private[ts] object RuntimeAngular extends js.Object:
   val tags: js.Dynamic = js.native
   val view: js.Dynamic = js.native
   def getModule(name: String): RuntimeNgModule = js.native
+  def getModel[A <: js.Object](name: String): Model[A] = js.native
   def createModule(name: String, requires: js.Array[String]): RuntimeNgModule =
     js.native
   def bootstrap(element: dom.Element, modules: js.Array[String]): RuntimeInjector =

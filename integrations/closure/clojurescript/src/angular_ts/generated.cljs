@@ -612,6 +612,7 @@
     "angular-error-formatting-config"
     "angular-get-controller"
     "angular-get-injector"
+    "angular-get-model"
     "angular-get-module"
     "angular-get-scope"
     "angular-get-scope-by-name"
@@ -623,6 +624,7 @@
     "angular-service-error-formatting-config"
     "angular-service-get-controller"
     "angular-service-get-injector"
+    "angular-service-get-model"
     "angular-service-get-module"
     "angular-service-get-scope"
     "angular-service-get-scope-by-name"
@@ -1544,6 +1546,11 @@
   ^js/ng.InjectorService [^js/ng.Angular target ^js/Element element]
   (.getInjector target element))
 
+(defn angular-get-model
+  "Retrieve a reactive model declared by a loaded application module. After `bootstrap()` or `injector()` completes, the first lookup initializes the model through dependency injection. Later lookups and injected consumers receive the same app-owned reactive instance. External callbacks can mutate this instance directly to update every observing view.\n\nParams:\n- name: {string} Name registered with `NgModule.model()`.\n\nReturns: {!ng.Model<T>}"
+  ^js/ng.Model [^js/ng.Angular target ^string name]
+  (.getModel target name))
+
 (defn angular-get-module
   "Retrieves an existing module.\n\nParams:\n- name: {string} The name of the module to retrieve.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.Angular target ^string name]
@@ -1598,6 +1605,11 @@
   "Retrieve the injector cached on a bootstrapped DOM element.\n\nParams:\n- element: {!Element} Value supplied for the element parameter.\n\nReturns: {!ng.InjectorService<?>}"
   ^js/ng.InjectorService [^js/ng.AngularService target ^js/Element element]
   (.getInjector target element))
+
+(defn angular-service-get-model
+  "Retrieve a reactive model declared by a loaded application module. After `bootstrap()` or `injector()` completes, the first lookup initializes the model through dependency injection. Later lookups and injected consumers receive the same app-owned reactive instance. External callbacks can mutate this instance directly to update every observing view.\n\nParams:\n- name: {string} Name registered with `NgModule.model()`.\n\nReturns: {!ng.Model<T>}"
+  ^js/ng.Model [^js/ng.AngularService target ^string name]
+  (.getModel target name))
 
 (defn angular-service-get-module
   "Retrieves an existing module.\n\nParams:\n- name: {string} The name of the module to retrieve.\n\nReturns: {!ng.NgModule}"
@@ -6061,6 +6073,11 @@
   "Retrieve an AngularTS module."
   ^js/ng.NgModule [^string name]
   (.getModule angular name))
+
+(defn get-model
+  "Lazily retrieve a shared reactive model after the runtime is initialized."
+  ^js/ng.Model [^string name]
+  (.getModel angular name))
 
 (defn controller
   "Register an annotated controller or annotate a controller factory from a ClojureScript dependency collection."

@@ -4,6 +4,7 @@ import {
   HarmonySystemCapabilities,
 } from "@angular-wave/angular-native-harmony-core";
 import { common } from "@kit.AbilityKit";
+import { harmonyMapControllerFactory } from "@angular-wave/angular-native-harmony-maps";
 
 const KITCHEN_SINK_LOCATION = "resource://rawfile/kitchen-sink.html";
 
@@ -14,7 +15,10 @@ struct Index {
   private readonly destination = new AngularNativeDestination(
     KITCHEN_SINK_LOCATION,
     new HarmonySystemCapabilities(this.context, KITCHEN_SINK_LOCATION),
-    { source: $rawfile("kitchen-sink.html") },
+    {
+      source: $rawfile("kitchen-sink.html"),
+      nativeControllerFactory: harmonyMapControllerFactory,
+    },
   );
 
   aboutToDisappear(): void {

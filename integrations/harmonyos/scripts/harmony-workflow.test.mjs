@@ -11,12 +11,15 @@ const releaseWorkflow = await readFile(
   "utf8",
 );
 
-test("audits ArkTS automatically with the pinned public OpenHarmony SDK", () => {
+test("audits and builds automatically with the pinned public OpenHarmony SDK", () => {
   assert.match(workflow, /pull_request:/u);
   assert.match(workflow, /push:/u);
   assert.match(workflow, /compatibility-audit:/u);
   assert.match(workflow, /openharmony-sdk-6\.1\.0\.31/u);
   assert.match(workflow, /make -C integrations\/harmonyos openharmony-audit/u);
+  assert.match(workflow, /make -C integrations\/harmonyos openharmony-build/u);
+  assert.match(workflow, /name: openharmony-api23-\$\{\{ github\.sha \}\}/u);
+  assert.match(workflow, /path: integrations\/harmonyos\/build\/openharmony-api23/u);
   assert.match(workflow, /official-toolchain:\n    if: github\.event_name == 'workflow_dispatch'/u);
 });
 
@@ -32,6 +35,10 @@ test("requires native release checks and external device evidence", () => {
   assert.match(workflow, /make -C integrations\/harmonyos release-check/u);
   assert.match(workflow, /stage-release-artifacts\.mjs/u);
   assert.match(workflow, /capture-release-evidence\.mjs/u);
+  assert.match(
+    workflow,
+    /HARMONY_RELEASE_ARTIFACT_DIR: \$\{\{ runner\.temp \}\}\/harmonyos-release/u,
+  );
   assert.match(workflow, /harmonyos-hars-/u);
   assert.match(workflow, /HARMONY_DEVICE_TEST_COMMAND/u);
   assert.match(workflow, /validate-device-results\.mjs/u);

@@ -33,6 +33,28 @@ Initial rule:
 - keep large WASM-owned buffers and hot-loop state inside WASM, and expose only
   semantic snapshots or control state to AngularTS models.
 
+## Accessing App Models
+
+After the host app is initialized, `angular.getModel(name)` lazily creates and
+returns the same reactive model that dependency injection resolves. The name
+must be declared with `app.model(...)` in a loaded module. The getter rejects
+ordinary services, unknown names, uninitialized apps, and destroyed apps.
+
+Host adapters for Rust, Go, AssemblyScript, C, C++, C#, and Zig can bind that
+model through the existing reactive-target ABI:
+
+```js
+const player = angular.getModel("player");
+const binding = await physics.bind(player, { name: "player" });
+```
+
+Here `physics` is the app's `WasmResource`. The guest resolves the binding name
+using its existing scope facade. For low-level adapters, use
+`scopeAbi.createScope(player, { name: "player" })` instead. Writes through the
+bound handle update the app model and its observing views. Dispose the binding
+when the guest stops using it; disposing a binding does not destroy the model.
+For snapshot exchange, attach a host-side `player.sync(target)` integration.
+
 ## Encoding
 
 All cross-boundary strings are UTF-8 byte ranges in guest linear memory:

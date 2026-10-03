@@ -40,12 +40,12 @@ implements NavigationPlatform {
   }
 
   get current(): NavigationEntry {
-    this.#assertOpen();
+    this._assertOpen();
     return this.#entries[this.#entries.length - 1] as NavigationEntry;
   }
 
   resolve(id: string): T {
-    this.#assertOpen();
+    this._assertOpen();
     return this.#store.resolve(id);
   }
 
@@ -54,14 +54,14 @@ implements NavigationPlatform {
     entries: readonly NavigationEntry[],
     transition: NavigationTransition,
   ): Promise<void> {
-    this.#assertOpen();
-    this.#assertMutation(operation, entries);
+    this._assertOpen();
+    this._assertMutation(operation, entries);
     if (operation === "pop") {
       const removed = this.current;
       await this.#platform.apply(operation, entries, transition);
-      this.#assertOpen();
+      this._assertOpen();
       this.#store.commitPop(removed.id);
-      this.#replaceEntries(entries);
+      this._replaceEntries(entries);
       return;
     }
 
@@ -69,7 +69,7 @@ implements NavigationPlatform {
     this.#store.stage(incoming.id, () => this.#create(incoming));
     try {
       await this.#platform.apply(operation, entries, transition);
-      this.#assertOpen();
+      this._assertOpen();
     } catch (error) {
       if (!this.#closed) this.#store.abort(incoming.id);
       throw error;
@@ -80,17 +80,17 @@ implements NavigationPlatform {
     } else {
       this.#store.commitPush(incoming.id);
     }
-    this.#replaceEntries(entries);
+    this._replaceEntries(entries);
   }
 
   async openExternal(location: string): Promise<void> {
-    this.#assertOpen();
+    this._assertOpen();
     await this.#platform.openExternal(location);
-    this.#assertOpen();
+    this._assertOpen();
   }
 
   systemPop(): boolean {
-    this.#assertOpen();
+    this._assertOpen();
     if (this.#entries.length === 1) return false;
     const removed = this.#entries.pop() as NavigationEntry;
     this.#store.commitPop(removed.id);
@@ -104,7 +104,9 @@ implements NavigationPlatform {
     this.#store.close();
   }
 
-  #assertMutation(
+  /** @internal */
+
+  private _assertMutation(
     operation: "push" | "replace" | "pop" | "modal",
     entries: readonly NavigationEntry[],
   ): void {
@@ -131,11 +133,15 @@ implements NavigationPlatform {
     }
   }
 
-  #replaceEntries(entries: readonly NavigationEntry[]): void {
+  /** @internal */
+
+  private _replaceEntries(entries: readonly NavigationEntry[]): void {
     this.#entries.splice(0, this.#entries.length, ...entries);
   }
 
-  #assertOpen(): void {
+  /** @internal */
+
+  private _assertOpen(): void {
     if (this.#closed) throw new Error("HarmonyOS destination platform is closed");
   }
 }

@@ -79,36 +79,36 @@ export class NativeBridgeDispatcher {
   receive(message: string | null | undefined, currentLocation: string | null | undefined): void {
     const parsed = parseNativeBridgeRequest(message);
     if (parsed.ok === false) {
-      if (parsed.id !== null) this.emitError(parsed.id, parsed.code, parsed.message);
+      if (parsed.id !== null) this._emitError(parsed.id, parsed.code, parsed.message);
       return;
     }
 
     const request = parsed.request;
     if (this.closed) {
-      this.emitError(request.id, "interrupted", "Native destination was removed");
+      this._emitError(request.id, "interrupted", "Native destination was removed");
       return;
     }
     if (this.active.has(request.id)) {
-      this.emitError(request.id, "invalid_message", "Native request id is already active");
+      this._emitError(request.id, "invalid_message", "Native request id is already active");
       return;
     }
     if (!this.security.accepts(request.session, currentLocation)) {
-      this.emitError(request.id, "unauthorized", "Native session or origin is invalid");
+      this._emitError(request.id, "unauthorized", "Native session or origin is invalid");
       return;
     }
     if (request.target === "bridge") {
-      this.handleBridgeRequest(request);
+      this._handleBridgeRequest(request);
       return;
     }
 
-    const validation = this.validate(request);
+    const validation = this._validate(request);
     if (validation !== null) {
-      this.emitError(request.id, validation.code, validation.message);
+      this._emitError(request.id, validation.code, validation.message);
       return;
     }
     const handler = this.handlers[request.target];
     if (handler === undefined) {
-      this.emitError(request.id, "unavailable", `Native target is unavailable: ${request.target}`);
+      this._emitError(request.id, "unavailable", `Native target is unavailable: ${request.target}`);
       return;
     }
 
@@ -122,7 +122,7 @@ export class NativeBridgeDispatcher {
       .then(() => handler.invoke(request.method, request.params, pending.context))
       .then((result) => {
         if (!pending.completed) {
-          this.commitComponentState(request);
+          this._commitComponentState(request);
           pending.succeed(result);
         }
       })
@@ -146,23 +146,27 @@ export class NativeBridgeDispatcher {
     for (const handler of new Set(Object.values(this.handlers))) handler.close?.();
   }
 
-  private handleBridgeRequest(request: NativeBridgeRequest): void {
+  /** @internal */
+
+  private _handleBridgeRequest(request: NativeBridgeRequest): void {
     if (request.method !== "cancel") {
-      this.emitError(request.id, "unknown_method", `Unsupported bridge method: ${request.method}`);
+      this._emitError(request.id, "unknown_method", `Unsupported bridge method: ${request.method}`);
       return;
     }
     const requestId = stringProperty(request.params, "id");
     if (requestId === null) {
-      this.emitError(request.id, "invalid_params", "bridge.cancel requires params.id");
+      this._emitError(request.id, "invalid_params", "bridge.cancel requires params.id");
       return;
     }
     const cancelled = this.active.get(requestId);
     cancelled?.cancel("cancelled", "Native request was cancelled");
-    this.emitSuccess(request.id, { id: requestId, cancelled: cancelled !== undefined });
+    this._emitSuccess(request.id, { id: requestId, cancelled: cancelled !== undefined });
   }
 
-  private validate(request: NativeBridgeRequest): NativeBridgeError | null {
-    if (request.target === "component") return this.validateComponent(request);
+  /** @internal */
+
+  private _validate(request: NativeBridgeRequest): NativeBridgeError | null {
+    if (request.target === "component") return this._validateComponent(request);
     const capability = nativeCapabilities[request.target as keyof typeof nativeCapabilities];
     if (capability === undefined) {
       return { code: "unknown_target", message: `Unsupported native target: ${request.target}` };
@@ -176,7 +180,9 @@ export class NativeBridgeDispatcher {
     return null;
   }
 
-  private validateComponent(request: NativeBridgeRequest): NativeBridgeError | null {
+  /** @internal */
+
+  private _validateComponent(request: NativeBridgeRequest): NativeBridgeError | null {
     if (!["mount", "update", "invoke", "unmount"].includes(request.method)) {
       return { code: "unknown_method", message: `Unsupported component method: ${request.method}` };
     }
@@ -224,7 +230,9 @@ export class NativeBridgeDispatcher {
     );
   }
 
-  private commitComponentState(request: NativeBridgeRequest): void {
+  /** @internal */
+
+  private _commitComponentState(request: NativeBridgeRequest): void {
     if (request.target !== "component") return;
     const id = stringProperty(request.params, "id") as string;
     if (request.method === "mount") {
@@ -234,11 +242,15 @@ export class NativeBridgeDispatcher {
     }
   }
 
-  private emitSuccess(id: string, result: unknown): void {
+  /** @internal */
+
+  private _emitSuccess(id: string, result: unknown): void {
     this.reply({ protocol: NATIVE_BRIDGE_PROTOCOL_VERSION, id, ok: true, result });
   }
 
-  private emitError(id: string, code: NativeBridgeErrorCode, message: string): void {
+  /** @internal */
+
+  private _emitError(id: string, code: NativeBridgeErrorCode, message: string): void {
     this.reply({ protocol: NATIVE_BRIDGE_PROTOCOL_VERSION, id, ok: false, error: { code, message } });
   }
 }
@@ -291,11 +303,11 @@ class PendingRequest {
   }
 
   succeed(result: unknown): void {
-    this.complete({ protocol: NATIVE_BRIDGE_PROTOCOL_VERSION, id: this.id, ok: true, result });
+    this._complete({ protocol: NATIVE_BRIDGE_PROTOCOL_VERSION, id: this.id, ok: true, result });
   }
 
   fail(code: NativeBridgeErrorCode, message: string): void {
-    this.complete({
+    this._complete({
       protocol: NATIVE_BRIDGE_PROTOCOL_VERSION,
       id: this.id,
       ok: false,
@@ -308,7 +320,9 @@ class PendingRequest {
     this.fail(code, message);
   }
 
-  private complete(reply: NativeBridgeReply): void {
+  /** @internal */
+
+  private _complete(reply: NativeBridgeReply): void {
     this.completed = true;
     this.cancellationActions.length = 0;
     this.finish(reply);

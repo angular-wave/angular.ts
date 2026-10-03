@@ -27,6 +27,28 @@ test("model docs example keeps controller bindings reactive", async ({
   await expect(page.getByTestId("cart-count")).toHaveText("1");
 });
 
+test("external model getter updates the bundled app", async ({ page }) => {
+  await page.goto(TEST_URL);
+  await expect(page.getByTestId("header-name")).toHaveText("John");
+
+  const shared = await page.evaluate(() => {
+    const user = window.angular.getModel<{
+      name: string;
+      authenticated: boolean;
+    }>("user");
+    const cart = window.angular.getModel<{ items: string[] }>("cart");
+
+    user.name = "Jane";
+    cart.items.push("book");
+
+    return window.angular.currentInjector.get("user") === user;
+  });
+
+  expect(shared).toBe(true);
+  await expect(page.getByTestId("header-name")).toHaveText("Jane");
+  await expect(page.getByTestId("cart-count")).toHaveText("2");
+});
+
 test("model docs example can persist through a sync target", async ({
   page,
 }) => {

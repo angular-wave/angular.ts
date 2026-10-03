@@ -16,8 +16,30 @@ import kotlin.js.Promise
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertSame
 
 class AngularTsTest {
+    @Test
+    fun retrievesModelsLazilyAndSharesThemWithInjection() {
+        val name = "kotlinModelGetterTest"
+        val module = ng.createModule(name, listOf("ng"))
+        var initializations = 0
+        module.raw.model("cart") {
+            initializations++
+            js("({ count: 0 })")
+        }
+        val injector = angularRuntime.injector(arrayOf(name))
+
+        assertEquals(0, initializations)
+        val cart = ng.getModel("cart")
+        val typed = ng.getModel(ng.token<RawScope>("cart"))
+        assertSame(cart, typed)
+        assertSame(cart, injector.get("cart"))
+        assertEquals(1, initializations)
+        cart.count = 2
+        assertEquals(2, typed.asDynamic().count)
+    }
+
     @Test
     fun exposesNativeCapabilityContract() {
         assertEquals("connectivity", NativeCapabilities.Connectivity.name)

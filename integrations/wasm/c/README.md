@@ -20,3 +20,12 @@ freed, and never retain temporary host buffers. Use one update for related field
 changes and keep durable shared state in AngularTS models.
 
 See `examples/todo` for the C source, linker exports, host adapter, and page.
+
+## Access shared models
+
+The JavaScript host can lazily retrieve a registered app model with
+`angular.getModel(name)` after initialization, then bind that proxy through
+`WasmResource.bind(...)` or `scopeAbi.createScope(...)`. Guest code uses the
+existing scope handle or binding name to read and update the model. See
+[app model access in the shared ABI](../ABI.md#accessing-app-models) for the
+startup, identity, error, and cleanup contract.

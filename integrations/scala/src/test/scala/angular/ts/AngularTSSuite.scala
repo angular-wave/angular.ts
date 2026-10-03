@@ -7,6 +7,28 @@ import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
 
 class AngularTSSuite extends munit.FunSuite:
+  test("model getters preserve runtime identity and typed token names"):
+    final class Cart(var count: Int) extends js.Object
+    val global = js.Dynamic.global.selectDynamic("globalThis")
+    val previous = global.selectDynamic("angular")
+    val cart = new Cart(0).asInstanceOf[Model[Cart]]
+    val names = scala.collection.mutable.ArrayBuffer.empty[String]
+    val lookup: js.Function1[String, Model[Cart]] = name =>
+      names += name
+      if name != "cart" then throw new IllegalArgumentException("Unknown model")
+      cart
+    global.updateDynamic("angular")(js.Dynamic.literal(getModel = lookup))
+
+    try
+      val first = AngularTS.getModel[Cart]("cart")
+      val second = AngularTS.getModel(AngularTS.token[Model[Cart]]("cart"))
+      assert(first eq second)
+      first.count = 2
+      assertEquals(second.count, 2)
+      intercept[IllegalArgumentException](AngularTS.getModel[Cart]("missing"))
+      assertEquals(names.toList, List("cart", "cart", "missing"))
+    finally global.updateDynamic("angular")(previous)
+
   test("named programmatic tags create typed elements"):
     val global = js.Dynamic.global.selectDynamic("globalThis")
     val previousAngular = global.selectDynamic("angular")

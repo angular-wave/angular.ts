@@ -120,6 +120,8 @@ const parameterTypeOverrides = new Map([
 ]);
 
 const memberReturnTypeOverrides = new Map([
+  ["Angular.getModel", "!ng.Model<T>"],
+  ["AngularService.getModel", "!ng.Model<T>"],
   ["HttpService.get", "!Promise<!ng.HttpResponse<T>>"],
   ["HttpService.delete", "!Promise<!ng.HttpResponse<T>>"],
   ["HttpService.head", "!Promise<!ng.HttpResponse<T>>"],
@@ -729,7 +731,7 @@ function generateExterns() {
   );
   const typeBlocks = aliases.map((alias) => typeExtern(checker, alias));
 
-  return `/**\n * @externs\n * Public externs for AngularTS [VI]{version}[/VI] applications compiled with Google Closure.\n *\n * Version-pinned to @angular-wave/angular.ts [VI]{version}[/VI]; regenerate\n * this file when updating the public ng namespace.\n *\n * This file is generated from src/namespace.ts by\n * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases\n * reuse Closure Compiler's built-in browser externs instead of duplicating DOM\n * API surfaces under the public ng namespace.\n */\n\n/** @const */\nvar angular = {};\n\n/** @const Closure mirror of AngularTS's public TypeScript ng namespace. */\nvar ng = {};\n\n/**\n * Create or replace an AngularTS module.\n * @param {string} name Module name to create.\n * @param {!Array<string>=} requires Dependency module names.\n * @return {!ng.NgModule}\n */\nangular.createModule = function(name, requires) {};\n\n/**\n * Retrieve an AngularTS module.\n * @param {string} name Module name to retrieve.\n * @return {!ng.NgModule}\n */\nangular.getModule = function(name) {};\n\n${typeBlocks.join("\n\n")}\n`;
+  return `/**\n * @externs\n * Public externs for AngularTS [VI]{version}[/VI] applications compiled with Google Closure.\n *\n * Version-pinned to @angular-wave/angular.ts [VI]{version}[/VI]; regenerate\n * this file when updating the public ng namespace.\n *\n * This file is generated from src/namespace.ts by\n * integrations/closure/scripts/generate-externs.mjs. Browser-native aliases\n * reuse Closure Compiler's built-in browser externs instead of duplicating DOM\n * API surfaces under the public ng namespace.\n */\n\n/** @const */\nvar angular = {};\n\n/** @const Closure mirror of AngularTS's public TypeScript ng namespace. */\nvar ng = {};\n\n/**\n * Create or replace an AngularTS module.\n * @param {string} name Module name to create.\n * @param {!Array<string>=} requires Dependency module names.\n * @return {!ng.NgModule}\n */\nangular.createModule = function(name, requires) {};\n\n/**\n * Retrieve an AngularTS module.\n * @param {string} name Module name to retrieve.\n * @return {!ng.NgModule}\n */\nangular.getModule = function(name) {};\n\n/**\n * Lazily retrieve a shared reactive model after the runtime is initialized.\n * @template T\n * @param {string} name Registered model name.\n * @return {!ng.Model<T>}\n */\nangular.getModel = function(name) {};\n\n${typeBlocks.join("\n\n")}\n`;
 }
 
 const output = generateExterns();

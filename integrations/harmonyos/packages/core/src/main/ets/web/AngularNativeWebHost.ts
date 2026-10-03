@@ -61,7 +61,7 @@ export class AngularNativeWebHost {
     this.dispatcher = new NativeBridgeDispatcher(
       new NativeBridgeSecurity(destinationLocation, sessionToken),
       handlers,
-      (reply) => this.emitReply(reply),
+      (reply) => this._emitReply(reply),
       elements,
     );
   }
@@ -88,7 +88,7 @@ export class AngularNativeWebHost {
 
   emitEvent(target: string, event: string, data?: unknown): void {
     if (this.closed) return;
-    this.emitMessage({
+    this._emitMessage({
       protocol: NATIVE_BRIDGE_PROTOCOL_VERSION,
       target,
       event,
@@ -104,11 +104,15 @@ export class AngularNativeWebHost {
     this.dispatcher.close();
   }
 
-  private emitReply(reply: NativeBridgeReply): void {
-    this.emitMessage(reply);
+  /** @internal */
+
+  private _emitReply(reply: NativeBridgeReply): void {
+    this._emitMessage(reply);
   }
 
-  private emitMessage(message: NativeBridgeReply | AngularNativeEvent): void {
+  /** @internal */
+
+  private _emitMessage(message: NativeBridgeReply | AngularNativeEvent): void {
     if (this.closed) return;
     if (!this.ready) {
       this.queuedMessages.push(message);
