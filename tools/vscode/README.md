@@ -122,10 +122,9 @@ compatibility behavior is intentionally opt-in through
 
 ## Limitations
 
-- TypeScript semantic expression intelligence is being wired incrementally:
-  source-backed expression signature help exists, while full controller alias,
-  component binding, and `ng-repeat` local type inference are still roadmap
-  items.
+- Source-backed expression intelligence depends on declarations visible to the
+  TypeScript project. Values registered dynamically at runtime may not provide
+  completion, hover, signature, or definition information.
 - Inline template support is regex and scanner based; complex generated
   templates may not be fully understood.
 - Diagnostics are conservative and focus on actionable AngularTS authoring

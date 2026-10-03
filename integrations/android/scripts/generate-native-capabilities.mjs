@@ -4,10 +4,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { format } from "prettier";
-import { validateNativeCapabilityCatalog } from "./native-capabilities-schema.mjs";
+import { validateNativeCapabilityCatalog } from "../../native/scripts/native-capabilities-schema.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const sourcePath = resolve(root, "integrations/android/native-capabilities.json");
+const sourcePath = resolve(root, "integrations/native/native-capabilities.json");
 const outputs = [
   { path: resolve(root, "integrations/android/navigation-fragments/src/main/java/io/github/angularwave/android/navigation/bridge/NativeCapabilityCatalog.kt"), render: renderAndroid },
   { path: resolve(root, "integrations/kotlin/src/jsMain/kotlin/angular/ts/NativeCapabilities.kt"), render: renderKotlin },
@@ -234,7 +234,7 @@ function renderDocumentation(capabilities) {
   const rows = capabilities.map((capability) => `| \`${capability.name}\` | \`${capability.artifact}\` | ${capability.availability} | ${capability.threading} | ${capability.lifecycle} | \`${capability.errorProtocol}\` | ${capability.permission ? `\`${capability.permission}\`` : "none"} | ${capability.methods.map(({ name }) => `\`${name}\``).join(", ")} | ${capability.events.map(({ name }) => `\`${name}\``).join(", ") || "none"} |`).join("\n");
   return `# Native Capability Catalog
 
-This file is generated from \`native-capabilities.json\`. Edit the catalog and run
+This file is generated from \`integrations/native/native-capabilities.json\`. Edit the catalog and run
 \`make -C integrations/android generate-native-capabilities\`.
 
 | Capability | Artifact | Availability | Thread | Lifecycle | Errors | Permission | Methods | Events |

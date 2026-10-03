@@ -5,7 +5,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 port="${PULSE_PORT:-4175}"
 bash "$root/scripts/configure-adb-reverse.sh" "$port"
 log="$(mktemp)"
-node "$root/sample-social-server/server.mjs" --port "$port" >"$log" 2>&1 &
+node "$root/../native/samples/pulse/server.mjs" --port "$port" >"$log" 2>&1 &
 server_pid=$!
 trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true; rm -f "$log"' EXIT
 

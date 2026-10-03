@@ -1,0 +1,127 @@
+name: HarmonyOS Native
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/harmonyos.yml"
+      - "integrations/harmonyos/**"
+      - "integrations/native/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/harmonyos.yml"
+      - "integrations/harmonyos/**"
+      - "integrations/native/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+    inputs:
+      device_name:
+        description: Device or cloud profile included in the evidence artifact
+        required: true
+        default: harmony-reference
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harmonyos-native
+  cancel-in-progress: false
+
+jobs:
+  compatibility-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Cache pinned OpenHarmony ETS SDK
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/angularts/openharmony-sdk-6.1.0.31
+          key: openharmony-ets-6.1.0.31-${{ runner.os }}-${{ runner.arch }}
+      - name: Audit ArkTS against public OpenHarmony API 23
+        run: make -C integrations/harmonyos openharmony-audit
+
+  official-toolchain:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Require official HarmonyOS toolchain source
+        shell: bash
+        env:
+          HARMONY_COMMAND_LINE_TOOLS_SHA256: ${{ secrets.HARMONY_COMMAND_LINE_TOOLS_SHA256 }}
+          HARMONY_COMMAND_LINE_TOOLS_URL: ${{ secrets.HARMONY_COMMAND_LINE_TOOLS_URL }}
+        run: |
+          test -n "$HARMONY_COMMAND_LINE_TOOLS_URL" || {
+            echo "Missing HARMONY_COMMAND_LINE_TOOLS_URL" >&2
+            exit 1
+          }
+          test -n "$HARMONY_COMMAND_LINE_TOOLS_SHA256" || {
+            echo "Missing HARMONY_COMMAND_LINE_TOOLS_SHA256" >&2
+            exit 1
+          }
+
+      - uses: actions/checkout@v6
+
+      - name: Install official HarmonyOS command-line tools
+        env:
+          HARMONY_COMMAND_LINE_TOOLS_SHA256: ${{ secrets.HARMONY_COMMAND_LINE_TOOLS_SHA256 }}
+          HARMONY_COMMAND_LINE_TOOLS_URL: ${{ secrets.HARMONY_COMMAND_LINE_TOOLS_URL }}
+        run: make -C integrations/harmonyos bootstrap
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install JavaScript dependencies
+        run: npm ci
+      - name: Validate official toolchain and packages
+        run: make -C integrations/harmonyos release-check
+
+      - name: Stage checksummed HarmonyOS release packages
+        run: >-
+          node integrations/harmonyos/scripts/stage-release-artifacts.mjs
+          "$RUNNER_TEMP/harmonyos-release"
+
+      - name: Run configured HarmonyOS device or cloud lane
+        env:
+          HARMONY_DEVICE_TEST_COMMAND: ${{ secrets.HARMONY_DEVICE_TEST_COMMAND }}
+        run: |
+          test -n "$HARMONY_DEVICE_TEST_COMMAND" || {
+            echo "HARMONY_DEVICE_TEST_COMMAND is required on the HarmonyOS runner." >&2
+            exit 1
+          }
+          bash -euo pipefail -c "$HARMONY_DEVICE_TEST_COMMAND"
+      - name: Validate complete HarmonyOS device evidence
+        env:
+          DEVICE_NAME: ${{ inputs.device_name }}
+        run: node integrations/harmonyos/scripts/validate-device-results.mjs
+      - name: Capture immutable evidence
+        env:
+          DEVICE_NAME: ${{ inputs.device_name }}
+          HARMONY_COMMAND_LINE_TOOLS_SHA256: ${{ secrets.HARMONY_COMMAND_LINE_TOOLS_SHA256 }}
+        run: node integrations/harmonyos/scripts/capture-release-evidence.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: harmonyos-native-evidence-${{ inputs.device_name }}
+          path: integrations/harmonyos/build/release-evidence
+          if-no-files-found: error
+          retention-days: 90
+      - name: Retain exact HarmonyOS release packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: harmonyos-hars-${{ github.sha }}
+          path: ${{ runner.temp }}/harmonyos-release
+          if-no-files-found: error
+          retention-days: 30

@@ -17,6 +17,11 @@ on:
         required: false
         default: false
         type: boolean
+      verify_harmony:
+        description: Verify approved HarmonyOS packages and compile an OHPM consumer
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -643,6 +648,33 @@ jobs:
           GLEAM
           gleam build --target javascript
 
+  validate-harmony:
+    name: Validate published HarmonyOS packages
+    if: github.event_name == 'workflow_dispatch' && inputs.verify_harmony
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install official HarmonyOS command-line tools
+        env:
+          HARMONY_COMMAND_LINE_TOOLS_SHA256: ${{ secrets.HARMONY_COMMAND_LINE_TOOLS_SHA256 }}
+          HARMONY_COMMAND_LINE_TOOLS_URL: ${{ secrets.HARMONY_COMMAND_LINE_TOOLS_URL }}
+        run: make -C integrations/harmonyos bootstrap
+
+      - name: Verify public packages through a clean consumer
+        run: make -C integrations/harmonyos verify-published
+
   publish:
     name: Publish npm package and GitHub Release
     needs:
@@ -655,6 +687,7 @@ jobs:
       - publish-dart
       - publish-gleam
       - validate-language-packages
+      - validate-harmony
     if: >-
       always() &&
       ((github.event_name == 'push' &&
@@ -668,7 +701,8 @@ jobs:
         needs.publish-gleam.result == 'success' &&
         needs.validate-language-packages.result == 'success') ||
        (github.event_name == 'workflow_dispatch' &&
-        (!inputs.publish_java || needs.publish-java.result == 'success')))
+        (!inputs.publish_java || needs.publish-java.result == 'success') &&
+        (!inputs.verify_harmony || needs.validate-harmony.result == 'success')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

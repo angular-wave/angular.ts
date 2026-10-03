@@ -406,6 +406,24 @@ jobs:
       - name: Run Android integration check
         run: make -C integrations/android release-check
 
+  harmonyos-contracts:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          package-manager-cache: false
+      - name: Restore node_modules cache
+        uses: actions/cache@v5
+        with:
+          path: node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: deps-${{ runner.os }}-
+      - name: Run HarmonyOS portable checks
+        run: make -C integrations/harmonyos check
+
   android-connected:
     name: Android device ${{ matrix.device }}
     needs: package
@@ -565,6 +583,7 @@ jobs:
       - csharp-wasm
       - android
       - android-connected
+      - harmonyos-contracts
     runs-on: ubuntu-latest
     steps:
       - name: Require every CI job to pass
@@ -581,6 +600,7 @@ jobs:
           needs.csharp-wasm.result != 'success' ||
           needs.android.result != 'success'
           || needs.android-connected.result != 'success'
+          || needs.harmonyos-contracts.result != 'success'
         run: exit 1
 
       - name: Confirm CI completion

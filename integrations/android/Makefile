@@ -20,17 +20,17 @@ generate-check:
 	node scripts/android-artifacts.mjs artifact >/dev/null
 	node --test scripts/android-artifacts.test.mjs
 	node --test scripts/pom-contract.test.mjs
-	node --test scripts/native-capabilities-schema.test.mjs
+	node --test ../native/scripts/native-capabilities-schema.test.mjs
 	node --test scripts/native-capabilities-parity.test.mjs
-	node --test scripts/native-elements-schema.test.mjs
+	node --test ../native/scripts/native-elements-schema.test.mjs
 	node --test scripts/native-elements-parity.test.mjs
-	node --test scripts/native-protocol-schema.test.mjs
+	node --test ../native/scripts/native-protocol-schema.test.mjs
 	node --test scripts/physical-device-check.test.mjs
 	node --test scripts/benchmark-results.test.mjs
 	node --test scripts/verify-physical-release-evidence.test.mjs
 	node --test scripts/reproducibility-check.test.mjs
 	node --test scripts/release-workflow.test.mjs
-	node --test sample-social-server/model.test.mjs sample-social-server/server.test.mjs
+	node --test ../native/samples/pulse/model.test.mjs ../native/samples/pulse/server.test.mjs
 	node scripts/generate-native-elements.mjs --check
 	node scripts/generate-native-capabilities.mjs --check
 

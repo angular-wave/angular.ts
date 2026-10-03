@@ -4,6 +4,8 @@ AngularTS uses one version for npm and its maintained language packages. A
 release tag publishes npm, Java, ClojureScript, Scala.js, Dart, and Gleam from
 GitHub Actions. It also publishes the Android core, navigation, optional UI,
 custom-component sample, and metadata compiler artifacts to Maven Central.
+HarmonyOS HAR packages use the same version but follow OHPM's reviewed,
+interactive publication flow.
 
 ## Registry setup
 
@@ -18,6 +20,15 @@ This setup is required once per registry or when credentials change.
 - Publish the first Dart `angular_ts` version manually. Then enable pub.dev
   GitHub Actions publishing for `angular-wave/angular.ts` with tag pattern
   `v{{version}}`.
+- Create the `angular-wave` organization in the OpenHarmony third-party
+  registry. Add the maintainer's encrypted OHPM public key, then configure
+  `publish_registry`, `publish_id`, and `key_path` with `ohpm config` on the
+  secured HarmonyOS release machine.
+- Add `HARMONY_COMMAND_LINE_TOOLS_URL` and
+  `HARMONY_COMMAND_LINE_TOOLS_SHA256` as repository secrets. The URL must fetch
+  the official Linux command-line bundle; the digest must be copied from a
+  separately verified source. Hosted HarmonyOS workflows reject a missing or
+  mismatched digest.
 
 Pub.dev documents its bootstrap requirement in the
 [automated publishing guide](https://dart.dev/tools/pub/automated-publishing).
@@ -54,8 +65,8 @@ The selected target:
    version.
 2. Promotes `Unreleased` to a dated changelog entry.
 3. Leaves a new empty `Unreleased` section.
-4. Synchronizes npm, Maven, Scala.js, Dart, Gleam, integration docs, and tested
-   consumer examples.
+4. Synchronizes npm, Maven, Scala.js, Dart, Gleam, HarmonyOS, integration docs,
+   and tested consumer examples.
 5. Regenerates versioned website and distribution files.
 6. Runs the complete local release gate.
 
@@ -139,6 +150,55 @@ The tag starts `.github/workflows/release.yml`. The workflow:
 The release is complete only when the entire Release workflow is green. Do not
 publish individual packages from a workstation to work around a failed job.
 
+## Publish HarmonyOS packages
+
+HarmonyOS packages are published only after the portable release is green and
+the exact release commit has successful device or Huawei cloud evidence. On a
+machine with Huawei's official API 26 SDK and command-line tools, run:
+
+```bash
+make -C integrations/harmonyos publish-release
+```
+
+This builds every HAR and HAP, runs Code Linter, compiles an isolated HAR
+consumer, requires complete Android/Harmony contract parity, verifies native
+evidence, and submits the HAR files in dependency order. The encrypted key
+prompt is intentionally interactive; do not put its passphrase in a command,
+workflow file, or process argument.
+
+The native workflow accepts evidence only when its result manifest matches the
+release commit and reports all 44 element contracts, all 17 capabilities, no
+failed or skipped tests, no accessibility or performance failures, JUnit
+output, and phone and tablet screenshots.
+
+Prefer the `harmonyos-hars-<commit>` artifact retained by the successful native
+workflow. Download it, verify `SHA256SUMS`, and publish those exact files:
+
+```bash
+HARMONY_OHPM_ARTIFACT_DIR="$PWD/harmonyos-hars-<commit>" \
+  make -C integrations/harmonyos publish
+```
+
+OHPM reviews each package before it becomes public. If submission stops after
+some packages entered review, list those package names or module names instead
+of resubmitting them:
+
+```bash
+HARMONY_OHPM_SKIP_PACKAGES=core,navigation \
+  make -C integrations/harmonyos publish
+```
+
+After every package is approved, verify registry metadata and compile a clean
+application against exact registry versions:
+
+```bash
+make -C integrations/harmonyos verify-published
+```
+
+The same verification can run on the tagged commit through the Release
+workflow's manual dispatch by selecting `verify_harmony`. HarmonyOS publication
+is complete only after that clean registry consumer passes.
+
 ## Recover a partial release
 
 First rerun a failed GitHub Actions job if the failure was transient. Registry
@@ -149,6 +209,11 @@ Use the Release workflow's manual dispatch with the existing tag only when all
 Maven, Dart, and Gleam artifacts were published but npm or the GitHub release
 did not finish. The recovery path verifies those artifacts before resuming npm
 and GitHub publication.
+
+OHPM submissions may remain under review while other registries complete. Use
+`HARMONY_OHPM_SKIP_PACKAGES` to recover a partial submission and
+`verify-published` after approval. Never resubmit, unpublish, or replace an
+immutable approved version.
 
 If published artifacts contain a defect, prepare a new patch release instead
 of reusing the version.

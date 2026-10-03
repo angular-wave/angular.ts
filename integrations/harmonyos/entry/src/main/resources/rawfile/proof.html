@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" class="platform-web">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AngularTS Native HarmonyOS proof</title>
+    <style>
+      [ng-cloak] { display: none !important; }
+      body { margin: 0; font: 16px sans-serif; }
+      ng-native-column { display: block; min-height: 100vh; padding: 24px; }
+      ng-native-text, ng-native-button, ng-native-text-field { display: block; min-height: 48px; margin: 12px 0; }
+    </style>
+  </head>
+  <body ng-app="harmonyProof" ng-cloak>
+    <ng-native-column label="HarmonyOS proof" spacing="12">
+      <ng-native-text text="AngularTS Native"></ng-native-text>
+      <ng-native-text-field label="Name" placeholder="Enter your name" ng-model="name"></ng-native-text-field>
+      <ng-native-button text="Greet" on-click="greeting = 'Hello, ' + (name || 'HarmonyOS')"></ng-native-button>
+      <ng-native-text text="{{ greeting }}"></ng-native-text>
+      <ng-native-button text="Open kitchen sink" on-click="location.href = './kitchen-sink.html'"></ng-native-button>
+    </ng-native-column>
+    <script type="module">
+      import { angular } from "./dist/angular-ts.esm.js";
+      import { nativeModule } from "./dist/runtime/native.js";
+      nativeModule(angular);
+      angular.createModule("harmonyProof", ["ng.native"]);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+[
+  { "module": "core", "package": "@angular-wave/angular-native-harmony-core", "extension": "har", "maximumBytes": 409600 },
+  { "module": "navigation", "package": "@angular-wave/angular-native-harmony-navigation", "extension": "har", "maximumBytes": 262144 },
+  { "module": "browser", "package": "@angular-wave/angular-native-harmony-browser", "extension": "har", "maximumBytes": 131072 },
+  { "module": "credentials", "package": "@angular-wave/angular-native-harmony-credentials", "extension": "har", "maximumBytes": 196608 },
+  { "module": "maps", "package": "@angular-wave/angular-native-harmony-maps", "extension": "har", "maximumBytes": 196608 },
+  { "module": "media", "package": "@angular-wave/angular-native-harmony-media", "extension": "har", "maximumBytes": 196608 },
+  { "module": "paging", "package": "@angular-wave/angular-native-harmony-paging", "extension": "har", "maximumBytes": 163840 },
+  { "module": "native-elements-compiler", "package": "@angular-wave/angular-native-harmony-compiler", "extension": "har", "maximumBytes": 65536 }
+]

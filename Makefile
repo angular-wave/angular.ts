@@ -1,4 +1,4 @@
-.PHONY: android-check android-physical-evidence-check build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go generated-check-wasm-rust generated-check-wasm-assemblyscript generated-check-wasm-c generated-check-wasm-cpp generated-check-wasm-csharp generated-check-wasm-zig public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-version-test release-notes-test release-notes-check release-integrations-check release-check prepare-major-release prepare-minor-release prepare-patch-release prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke hugo
+.PHONY: android-check android-physical-evidence-check harmonyos-check harmonyos-contract-check native-contract-check build build-ts release-build check test test-integrations test-types test-namespace-js test-wasm-browsers wasm-contracts-check namespace-surface-check public-type-docs-check assert-policy-check error-policy-check dollar-prefixed-api-check private-method-check internal-composition-check internal-composition-report types generated-check integrations-generated-check generated-check-android generated-check-harmonyos generated-check-closure generated-check-dart generated-check-gleam generated-check-kotlin generated-check-scala generated-check-wasm-contracts generated-check-wasm-go generated-check-wasm-rust generated-check-wasm-assemblyscript generated-check-wasm-c generated-check-wasm-cpp generated-check-wasm-csharp generated-check-wasm-zig public-namespace-api update-public-namespace-api docs-examples-check docs-runtime-api-check docs-type-links-check docs-snippets-check docs-learning-check docs-requirement doc coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps ensure-docs-deps lint lint-check lint-fix format-check version-check release-version-test release-notes-test release-notes-check release-integrations-check release-check prepare-major-release prepare-minor-release prepare-patch-release prepare-release publish-release published-maven-check published-maven-check-test underscore-property-key-check wasm-parity scala-check vscode-build vscode-test vscode-smoke mcp-contract-check hugo
 
 BUILD_DIR 	= ./dist
 TS_BUILD_DIR = ./.build
@@ -100,6 +100,9 @@ vscode-test: ensure-vscode-deps
 
 vscode-smoke: ensure-vscode-deps
 	@cd tools/vscode && npm run test:smoke
+
+mcp-contract-check:
+	@node tools/mcp/scripts/contract-check.mjs
 
 underscore-property-key-check:
 	@node ./utils/check-underscore-property-keys.mjs
@@ -210,6 +213,7 @@ generated-check: integrations-generated-check
 integrations-generated-check: types
 	@$(MAKE) --keep-going --jobs=8 --output-sync=target \
 		generated-check-android \
+		generated-check-harmonyos \
 		generated-check-closure \
 		generated-check-dart \
 		generated-check-gleam \
@@ -226,6 +230,21 @@ integrations-generated-check: types
 
 generated-check-android:
 	@$(MAKE) -C integrations/android generate-check
+
+generated-check-harmonyos:
+	@$(MAKE) -C integrations/harmonyos contract-check
+
+native-contract-check:
+	@node --test integrations/native/scripts/native-elements-schema.test.mjs
+	@node --test integrations/native/scripts/native-capabilities-schema.test.mjs
+	@node --test integrations/native/scripts/native-protocol-schema.test.mjs
+	@node integrations/native/scripts/check-platform-matrix.mjs
+
+harmonyos-contract-check:
+	@$(MAKE) -C integrations/harmonyos contract-check
+
+harmonyos-check:
+	@$(MAKE) -C integrations/harmonyos check
 
 generated-check-closure:
 	@$(MAKE) -f integrations/closure/Makefile generate-check
@@ -297,6 +316,7 @@ prepare-release: release-version-test release-notes-check
 	@$(MAKE) release-check
 
 release-integrations-check:
+	@$(MAKE) -C integrations/harmonyos check
 	@$(MAKE) -C integrations/android release-check
 	@PORT=41100 $(MAKE) -f integrations/closure/Makefile closure-test
 	@PORT=41101 $(MAKE) -f integrations/closure/Makefile clojurescript-test

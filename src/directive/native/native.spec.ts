@@ -167,7 +167,7 @@ describe("native bridge", () => {
 
   it("uses the shared native protocol fixtures", async () => {
     const response = await fetch(
-      "/integrations/android/protocol/native-bridge-fixtures.json",
+      "/integrations/native/protocol/native-bridge-fixtures.json",
     );
     const fixtures = await response.json();
     const messages = [];

@@ -14,7 +14,7 @@ const sourceText = sourceFiles
   .join("\n");
 const supportedDirectives = collectSupportedDirectives(sourceText);
 const nativeElementCatalog = JSON.parse(
-  readFileSync(join("integrations", "android", "native-elements.json"), "utf8"),
+  readFileSync(join("integrations", "native", "native-elements.json"), "utf8"),
 );
 for (const element of nativeElementCatalog.elements) {
   supportedDirectives.add(nativeElementName(element.name));

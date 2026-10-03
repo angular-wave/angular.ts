@@ -370,7 +370,7 @@ Rust reference example makes one necessary.
 | `NativeMediaLoadParameters` | covered |
 | `NativeMediaSeekParameters` | covered |
 | `NativeMediaStatus` | covered |
-| `NativeNavigationAndroidChange` | covered |
+| `NativeNavigationPlatformChange` | covered |
 | `NativeNavigationBridgeChange` | covered |
 | `NativeNavigationChange` | covered |
 | `NativeNavigationPopResult` | covered |

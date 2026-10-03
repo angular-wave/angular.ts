@@ -1,0 +1,11 @@
+{
+  "module": {
+    "name": "browser",
+    "type": "har",
+    "deviceTypes": [
+      "phone",
+      "tablet",
+      "2in1"
+    ]
+  }
+}

@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { elementWireNames } from "./native-elements-schema.mjs";
+import { elementWireNames } from "../../native/scripts/native-elements-schema.mjs";
 
 const root = new URL("../../../", import.meta.url);
 const catalog = JSON.parse(
-  await readFile(new URL("integrations/android/native-elements.json", root), "utf8"),
+  await readFile(new URL("integrations/native/native-elements.json", root), "utf8"),
 );
 const outputs = await Promise.all([
   "integrations/android/navigation-fragments/src/main/java/io/github/angularwave/android/navigation/elements/NativeElementCatalog.kt",

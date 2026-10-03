@@ -5657,29 +5657,6 @@ base class GeneratedNgNativeMediaStatus extends GeneratedNgFacade {
   String get state => _toDartString(raw.getProperty('state'.toJS))!;
 }
 
-/// Navigation committed directly by Android rather than requested through the bridge.
-///
-/// Raw JavaScript facade for `ng.NativeNavigationAndroidChange`.
-base class GeneratedNgNativeNavigationAndroidChange extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.NativeNavigationAndroidChange.
-  const GeneratedNgNativeNavigationAndroidChange(super.raw);
-
-  /// The method member of ng.NativeNavigationAndroidChange.
-  String get method => _toDartString(raw.getProperty('method'.toJS))!;
-
-  /// The phase member of ng.NativeNavigationAndroidChange.
-  String get phase => _toDartString(raw.getProperty('phase'.toJS))!;
-
-  /// The source member of ng.NativeNavigationAndroidChange.
-  String get source => _toDartString(raw.getProperty('source'.toJS))!;
-
-  /// The from member of ng.NativeNavigationAndroidChange.
-  String? get from => _toDartString(raw.getProperty('from'.toJS));
-
-  /// The url member of ng.NativeNavigationAndroidChange.
-  String? get url => _toDartString(raw.getProperty('url'.toJS));
-}
-
 /// Completion or cancellation of navigation requested through the bridge.
 ///
 /// Raw JavaScript facade for `ng.NativeNavigationBridgeChange`.
@@ -5726,6 +5703,29 @@ base class GeneratedNgNativeNavigationChange extends GeneratedNgFacade {
   String? get from => _toDartString(raw.getProperty('from'.toJS));
 
   /// The url member of ng.NativeNavigationChange.
+  String? get url => _toDartString(raw.getProperty('url'.toJS));
+}
+
+/// Navigation committed directly by a native platform rather than requested through the bridge.
+///
+/// Raw JavaScript facade for `ng.NativeNavigationPlatformChange`.
+base class GeneratedNgNativeNavigationPlatformChange extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.NativeNavigationPlatformChange.
+  const GeneratedNgNativeNavigationPlatformChange(super.raw);
+
+  /// The method member of ng.NativeNavigationPlatformChange.
+  String get method => _toDartString(raw.getProperty('method'.toJS))!;
+
+  /// The phase member of ng.NativeNavigationPlatformChange.
+  String get phase => _toDartString(raw.getProperty('phase'.toJS))!;
+
+  /// The source member of ng.NativeNavigationPlatformChange.
+  String get source => _toDartString(raw.getProperty('source'.toJS))!;
+
+  /// The from member of ng.NativeNavigationPlatformChange.
+  String? get from => _toDartString(raw.getProperty('from'.toJS));
+
+  /// The url member of ng.NativeNavigationPlatformChange.
   String? get url => _toDartString(raw.getProperty('url'.toJS));
 }
 

@@ -29,7 +29,7 @@ compiler_pid=$!
 printf '%s\n' "$compiler_pid" >"$compiler_pid_file"
 
 env PULSE_DEVELOPMENT=1 ANGULAR_TS_DISTRIBUTION="$repository/.build" \
-  node "$root/sample-social-server/server.mjs" --port "$port" \
+  node "$root/../native/samples/pulse/server.mjs" --port "$port" \
   >"$log_file" 2>&1 &
 server_pid=$!
 printf '%s\n' "$server_pid" >"$pid_file"

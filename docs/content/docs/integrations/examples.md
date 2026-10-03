@@ -18,6 +18,7 @@ place.
 | Scala.js         | `integrations/scala/examples/basic_app`              |
 | Dart             | `integrations/dart/example/basic_app`                |
 | Gleam            | `integrations/gleam/examples/basic_app`              |
+| HarmonyOS        | `integrations/harmonyos/entry`                        |
 | AssemblyScript   | `integrations/wasm/assemblyscript/examples/todo`     |
 | C                | `integrations/wasm/c/examples/todo`                  |
 | C++              | `integrations/wasm/cpp/examples/todo`                |

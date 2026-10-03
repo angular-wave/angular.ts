@@ -7152,40 +7152,40 @@ ng.NativeMediaStatus.prototype.duration;
 ng.NativeMediaStatus.prototype.state;
 
 /**
- * Navigation committed directly by Android rather than requested through the bridge.
+ * Navigation committed directly by a native platform rather than requested through the bridge.
  * @record
  */
-ng.NativeNavigationAndroidChange = function() {};
+ng.NativeNavigationPlatformChange = function() {};
 
 /**
- * Public NativeNavigationAndroidChange.method member exposed by the AngularTS namespace contract.
+ * Public NativeNavigationPlatformChange.method member exposed by the AngularTS namespace contract.
  * @type {string}
  */
-ng.NativeNavigationAndroidChange.prototype.method;
+ng.NativeNavigationPlatformChange.prototype.method;
 
 /**
- * Public NativeNavigationAndroidChange.phase member exposed by the AngularTS namespace contract.
+ * Public NativeNavigationPlatformChange.phase member exposed by the AngularTS namespace contract.
  * @type {string}
  */
-ng.NativeNavigationAndroidChange.prototype.phase;
+ng.NativeNavigationPlatformChange.prototype.phase;
 
 /**
- * Public NativeNavigationAndroidChange.source member exposed by the AngularTS namespace contract.
+ * Public NativeNavigationPlatformChange.source member exposed by the AngularTS namespace contract.
  * @type {string}
  */
-ng.NativeNavigationAndroidChange.prototype.source;
+ng.NativeNavigationPlatformChange.prototype.source;
 
 /**
- * Public NativeNavigationAndroidChange.from member exposed by the AngularTS namespace contract.
+ * Public NativeNavigationPlatformChange.from member exposed by the AngularTS namespace contract.
  * @type {(null|string)}
  */
-ng.NativeNavigationAndroidChange.prototype.from;
+ng.NativeNavigationPlatformChange.prototype.from;
 
 /**
- * Public NativeNavigationAndroidChange.url member exposed by the AngularTS namespace contract.
+ * Public NativeNavigationPlatformChange.url member exposed by the AngularTS namespace contract.
  * @type {(null|string)}
  */
-ng.NativeNavigationAndroidChange.prototype.url;
+ng.NativeNavigationPlatformChange.prototype.url;
 
 /**
  * Completion or cancellation of navigation requested through the bridge.

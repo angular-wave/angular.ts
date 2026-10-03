@@ -1,6 +1,6 @@
 # Native Element Catalog
 
-This file is generated from `native-elements.json`. Edit the catalog and run
+This file is generated from `integrations/native/native-elements.json`. Edit the catalog and run
 `make -C integrations/android generate-native-elements`.
 
 ## `text-field`

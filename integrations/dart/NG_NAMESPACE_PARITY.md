@@ -319,7 +319,7 @@ part of the Dart public facade.
 | `NativeMediaLoadParameters` | started |
 | `NativeMediaSeekParameters` | started |
 | `NativeMediaStatus` | started |
-| `NativeNavigationAndroidChange` | started |
+| `NativeNavigationPlatformChange` | started |
 | `NativeNavigationBridgeChange` | started |
 | `NativeNavigationChange` | started |
 | `NativeNavigationPopResult` | started |

@@ -1,6 +1,6 @@
 # Native Capability Catalog
 
-This file is generated from `native-capabilities.json`. Edit the catalog and run
+This file is generated from `integrations/native/native-capabilities.json`. Edit the catalog and run
 `make -C integrations/android generate-native-capabilities`.
 
 | Capability | Artifact | Availability | Thread | Lifecycle | Errors | Permission | Methods | Events |

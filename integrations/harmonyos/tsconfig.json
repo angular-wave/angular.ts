@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "exactOptionalPropertyTypes": true,
+    "lib": ["ES2023", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "strict": true,
+    "target": "ES2023",
+    "useUnknownInCatchVariables": true
+  },
+  "include": ["packages/**/*.ts", "samples/**/*.ts", "types/**/*.d.ts"],
+  "exclude": [
+    "packages/**/hvigorfile.ts",
+    "samples/**/hvigorfile.ts",
+    "packages/**/src/main/ets/index.ets",
+    "packages/**/src/test/**"
+  ]
+}

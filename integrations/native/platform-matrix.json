@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "platforms": {
+    "android": {
+      "status": "implemented",
+      "minimumApi": 28,
+      "targetApi": 37,
+      "packageFormat": "aar"
+    },
+    "harmonyos": {
+      "status": "in-progress",
+      "minimumApi": 20,
+      "targetApi": 26,
+      "packageFormat": "har"
+    }
+  },
+  "elementProviders": {
+    "android": {
+      "default": { "status": "implemented", "module": "navigation-fragments" },
+      "artifacts": {
+        "maps": { "status": "implemented", "module": "maps" }
+      },
+      "overrides": {}
+    },
+    "harmonyos": {
+      "default": { "status": "implemented", "module": "core" },
+      "artifacts": {
+        "maps": { "status": "implemented", "module": "maps" }
+      },
+      "overrides": {}
+    }
+  },
+  "capabilityProviders": {
+    "android": {
+      "default": { "status": "implemented", "module": "navigation-fragments" },
+      "artifacts": {
+        "browser": { "status": "implemented", "module": "browser" },
+        "credentials": { "status": "implemented", "module": "credentials" },
+        "media": { "status": "implemented", "module": "media" }
+      },
+      "overrides": {}
+    },
+    "harmonyos": {
+      "default": { "status": "implemented", "module": "core" },
+      "artifacts": {
+        "browser": { "status": "implemented", "module": "browser" },
+        "credentials": { "status": "implemented", "module": "credentials" },
+        "media": { "status": "implemented", "module": "media" },
+        "navigation": { "status": "implemented", "module": "navigation" }
+      },
+      "overrides": {}
+    }
+  }
+}

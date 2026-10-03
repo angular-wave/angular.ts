@@ -2,7 +2,7 @@
   "name": "angular-ts-vscode",
   "displayName": "AngularTS",
   "description": "VS Code language support for AngularTS templates, directives, components, filters, and dependency injection.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "angular-wave",
   "icon": "media/icon.png",
   "license": "MIT",

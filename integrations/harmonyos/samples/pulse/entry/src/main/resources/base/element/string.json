@@ -1,0 +1,24 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "Pulse for AngularTS Native"
+    },
+    {
+      "name": "PulseAbility_desc",
+      "value": "Pulse for AngularTS Native"
+    },
+    {
+      "name": "PulseAbility_label",
+      "value": "Pulse"
+    },
+    {
+      "name": "permission_pasteboard",
+      "value": "Used when you paste content into Pulse."
+    },
+    {
+      "name": "permission_location",
+      "value": "Used to provide location-aware social features."
+    }
+  ]
+}

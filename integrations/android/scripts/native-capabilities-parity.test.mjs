@@ -3,7 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
-const catalog = JSON.parse(await readFile(new URL("native-capabilities.json", root), "utf8"));
+const catalog = JSON.parse(
+  await readFile(new URL("../native/native-capabilities.json", root), "utf8"),
+);
 const androidGenerated = await readFile(new URL("navigation-fragments/src/main/java/io/github/angularwave/android/navigation/bridge/NativeCapabilityCatalog.kt", root), "utf8");
 const androidRuntime = await readFile(new URL("navigation-fragments/src/main/java/io/github/angularwave/android/navigation/bridge/AndroidNativeCapabilities.kt", root), "utf8");
 const kotlin = await readFile(new URL("../kotlin/src/jsMain/kotlin/angular/ts/NativeCapabilities.kt", root), "utf8");

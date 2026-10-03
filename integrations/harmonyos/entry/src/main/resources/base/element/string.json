@@ -1,0 +1,15 @@
+{
+  "string": [
+    { "name": "module_desc", "value": "AngularTS Native HarmonyOS proof" },
+    { "name": "EntryAbility_desc", "value": "AngularTS Native HarmonyOS proof" },
+    { "name": "EntryAbility_label", "value": "AngularTS Native" },
+    {
+      "name": "permission_pasteboard",
+      "value": "Used when you paste content into the application."
+    },
+    {
+      "name": "permission_location",
+      "value": "Used to provide location-aware application features."
+    }
+  ]
+}

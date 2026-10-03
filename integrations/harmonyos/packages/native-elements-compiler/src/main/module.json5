@@ -1,0 +1,11 @@
+{
+  "module": {
+    "name": "native_elements_compiler",
+    "type": "har",
+    "deviceTypes": [
+      "phone",
+      "tablet",
+      "2in1"
+    ]
+  }
+}

@@ -5911,27 +5911,28 @@ public external interface NativeMediaStatus {
 }
 
 /**
- * Navigation committed directly by Android rather than requested through the bridge.
+ * Navigation committed directly by a native platform rather than requested through the
+ * bridge.
  */
-public external interface NativeNavigationAndroidChange {
+public external interface NativeNavigationPlatformChange {
     /**
-     * The from member of ng.NativeNavigationAndroidChange.
+     * The from member of ng.NativeNavigationPlatformChange.
      */
     public var from: String
     /**
-     * The method member of ng.NativeNavigationAndroidChange.
+     * The method member of ng.NativeNavigationPlatformChange.
      */
     public var method: dynamic
     /**
-     * The phase member of ng.NativeNavigationAndroidChange.
+     * The phase member of ng.NativeNavigationPlatformChange.
      */
     public var phase: String
     /**
-     * The source member of ng.NativeNavigationAndroidChange.
+     * The source member of ng.NativeNavigationPlatformChange.
      */
-    public var source: String
+    public var source: dynamic
     /**
-     * The url member of ng.NativeNavigationAndroidChange.
+     * The url member of ng.NativeNavigationPlatformChange.
      */
     public var url: String
 }

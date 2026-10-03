@@ -14,6 +14,7 @@ import type {
 import { getEventNameForElement } from "../events/event-name.ts";
 import { nativeElements } from "../../runtime/native-elements.ts";
 import { readNativeStyle } from "./native-element.ts";
+import { HarmonyNativeEmbedBinding } from "./native-embed.ts";
 
 type NativeExpression = (
   context?: ng.Scope,
@@ -194,6 +195,7 @@ export function ngNativeComponentDirective(
             name,
             props: nativeProperties,
             rect: readElementRect(element, view),
+            embedId: embed.id,
           };
           const serialized = JSON.stringify(payload);
 
@@ -217,6 +219,13 @@ export function ngNativeComponentDirective(
           void update();
         });
       };
+
+      const embed = new HarmonyNativeEmbedBinding(
+        element,
+        id,
+        view,
+        scheduleUpdate,
+      );
 
       const ResizeObserverType = (
         view as Window & {
@@ -279,6 +288,7 @@ export function ngNativeComponentDirective(
         if (disposed) return;
 
         disposed = true;
+        embed.dispose();
         if (scheduled) view.cancelAnimationFrame(scheduled);
         resizeObserver?.disconnect();
         attributeObserver?.disconnect();

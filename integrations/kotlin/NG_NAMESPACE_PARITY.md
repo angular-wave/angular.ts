@@ -347,7 +347,7 @@ part of the Kotlin public facade.
 | `NativeMediaLoadParameters` | alias |
 | `NativeMediaSeekParameters` | alias |
 | `NativeMediaStatus` | alias |
-| `NativeNavigationAndroidChange` | alias |
+| `NativeNavigationPlatformChange` | alias |
 | `NativeNavigationBridgeChange` | alias |
 | `NativeNavigationChange` | alias |
 | `NativeNavigationPopResult` | alias |

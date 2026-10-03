@@ -1,5 +1,5 @@
 import type {
-  NativeNavigationAndroidChange,
+  NativeNavigationPlatformChange,
   NativeNavigationBridgeChange,
   NativeNavigationChange,
   NativeNavigationPopResult,
@@ -59,7 +59,7 @@ describe("native navigation contracts", () => {
       url: null,
       reason: "interrupted",
     };
-    const android: NativeNavigationAndroidChange = {
+    const android: NativeNavigationPlatformChange = {
       method: "deep-link",
       phase: "completed",
       source: "android",

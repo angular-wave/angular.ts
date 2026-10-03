@@ -53,7 +53,7 @@ pub use services::{
     NativeGeolocationStatus, NativeHapticParameters, NativeHapticResult, NativeIntentParameters,
     NativeJsonObject, NativeJsonPrimitive, NativeJsonValue, NativeLifecycleStatus,
     NativeMediaLoadParameters, NativeMediaSeekParameters, NativeMediaStatus,
-    NativeNavigationAndroidChange, NativeNavigationBridgeChange, NativeNavigationChange,
+    NativeNavigationPlatformChange, NativeNavigationBridgeChange, NativeNavigationChange,
     NativeNavigationPopResult, NativeNavigationRouteParameters, NativeNavigationRouteResult,
     NativeNavigationStatus, NativeNavigationTransition, NativeNotificationStatus, NativeOpenResult,
     NativePermissionParameters, NativePermissionStatus, NativePlatformStatus, NativeReplyMessage,

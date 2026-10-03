@@ -1,0 +1,536 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://angular-wave.github.io/angular.ts/mcp/contracts/v1.json",
+  "contractVersion": 1,
+  "package": "@angular-wave/mcp-server",
+  "executable": "angular-ts-mcp",
+  "support": {
+    "nodeMajors": [22, 24],
+    "operatingSystems": ["linux", "darwin", "win32"],
+    "protocols": [
+      { "version": "2026-07-28", "status": "current" },
+      { "version": "2025-11-25", "status": "previous" }
+    ],
+    "transports": [
+      { "name": "stdio", "status": "stable", "default": true },
+      {
+        "name": "streamable-http",
+        "status": "experimental",
+        "default": false
+      }
+    ],
+    "access": "read-only"
+  },
+  "limits": {
+    "maxRoots": 8,
+    "maxFileBytes": 2097152,
+    "maxFiles": 10000,
+    "maxDirectoryDepth": 64,
+    "maxResultItems": 200,
+    "maxResponseBytes": 1048576,
+    "maxConcurrentRequests": 8,
+    "requestTimeoutMs": 30000,
+    "maxCacheBytes": 134217728
+  },
+  "defaultDeniedNames": [
+    ".env",
+    ".git",
+    ".hg",
+    ".npmrc",
+    ".pypirc",
+    ".ssh",
+    ".svn",
+    "coverage",
+    "dist",
+    "node_modules"
+  ],
+  "errors": [
+    { "code": "INVALID_ARGUMENT", "retryable": false },
+    { "code": "ROOT_NOT_ALLOWED", "retryable": false },
+    { "code": "PATH_NOT_ALLOWED", "retryable": false },
+    { "code": "CONTENT_NOT_ALLOWED", "retryable": false },
+    { "code": "NOT_FOUND", "retryable": false },
+    { "code": "AMBIGUOUS_SYMBOL", "retryable": false },
+    { "code": "INDEX_NOT_READY", "retryable": true },
+    { "code": "RESULT_LIMIT", "retryable": false },
+    { "code": "REQUEST_CANCELLED", "retryable": true },
+    { "code": "DEADLINE_EXCEEDED", "retryable": true },
+    { "code": "RESOURCE_EXHAUSTED", "retryable": true },
+    { "code": "INTERNAL_ERROR", "retryable": true }
+  ],
+  "resources": [
+    {
+      "name": "project-summary",
+      "uri": "angularts://project/summary",
+      "mimeType": "application/json",
+      "description": "Allowed roots, discovered modules, and index health.",
+      "outputSchema": { "$ref": "#/$defs/projectSummary" }
+    },
+    {
+      "name": "directives",
+      "uri": "angularts://catalog/directives",
+      "mimeType": "application/json",
+      "description": "Built-in and project directive registrations.",
+      "outputSchema": { "$ref": "#/$defs/catalogPage" }
+    },
+    {
+      "name": "components",
+      "uri": "angularts://catalog/components",
+      "mimeType": "application/json",
+      "description": "Project component registrations.",
+      "outputSchema": { "$ref": "#/$defs/catalogPage" }
+    },
+    {
+      "name": "filters",
+      "uri": "angularts://catalog/filters",
+      "mimeType": "application/json",
+      "description": "Built-in and project filter registrations.",
+      "outputSchema": { "$ref": "#/$defs/catalogPage" }
+    },
+    {
+      "name": "injectables",
+      "uri": "angularts://catalog/injectables",
+      "mimeType": "application/json",
+      "description": "Built-in and project injectable registrations.",
+      "outputSchema": { "$ref": "#/$defs/catalogPage" }
+    },
+    {
+      "name": "routes",
+      "uri": "angularts://catalog/routes",
+      "mimeType": "application/json",
+      "description": "Project route declarations.",
+      "outputSchema": { "$ref": "#/$defs/routePage" }
+    },
+    {
+      "name": "diagnostics",
+      "uri": "angularts://diagnostics",
+      "mimeType": "application/json",
+      "description": "Bounded project diagnostics.",
+      "outputSchema": { "$ref": "#/$defs/diagnosticPage" }
+    }
+  ],
+  "tools": [
+    {
+      "name": "inspect_project",
+      "title": "Inspect AngularTS project",
+      "description": "Return allowed roots, discovered modules, and index health.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": { "refresh": { "type": "boolean", "default": false } },
+        "additionalProperties": false
+      },
+      "outputSchema": { "$ref": "#/$defs/projectSummary" }
+    },
+    {
+      "name": "list_symbols",
+      "title": "List AngularTS symbols",
+      "description": "List bounded project symbols by kind, module, and query.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": { "$ref": "#/$defs/symbolKind" },
+          "module": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "query": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 500 }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": { "$ref": "#/$defs/symbolPage" }
+    },
+    {
+      "name": "get_symbol",
+      "title": "Get AngularTS symbol",
+      "description": "Return one exact registration and its public contract.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": { "$ref": "#/$defs/symbolKind" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "module": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "required": ["kind", "name"],
+        "additionalProperties": false
+      },
+      "outputSchema": { "$ref": "#/$defs/catalogEntry" }
+    },
+    {
+      "name": "find_usages",
+      "title": "Find AngularTS symbol usages",
+      "description": "Find bounded source and template usages of one symbol.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": { "$ref": "#/$defs/symbolKind" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 },
+          "cursor": { "type": "string", "minLength": 1, "maxLength": 500 }
+        },
+        "required": ["kind", "name"],
+        "additionalProperties": false
+      },
+      "outputSchema": { "$ref": "#/$defs/usagePage" }
+    },
+    {
+      "name": "diagnose_template",
+      "title": "Diagnose AngularTS template",
+      "description": "Diagnose supplied template text or one allowed workspace file.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "minLength": 1, "maxLength": 4096 },
+          "text": { "type": "string", "maxLength": 2097152 }
+        },
+        "oneOf": [
+          { "required": ["path"], "not": { "required": ["text"] } },
+          { "required": ["text"], "not": { "required": ["path"] } }
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": { "$ref": "#/$defs/diagnosticPage" }
+    },
+    {
+      "name": "explain_directive",
+      "title": "Explain AngularTS directive",
+      "description": "Explain one built-in or project directive and its valid usage.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "outputSchema": { "$ref": "#/$defs/directiveExplanation" }
+    },
+    {
+      "name": "inspect_route",
+      "title": "Inspect AngularTS route",
+      "description": "Return one route's parameters, view, component, and dependencies.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "outputSchema": { "$ref": "#/$defs/route" }
+    },
+    {
+      "name": "inspect_dependency",
+      "title": "Inspect AngularTS dependency",
+      "description": "Explain where an injectable is registered and consumed.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "outputSchema": { "$ref": "#/$defs/dependencyInspection" }
+    }
+  ],
+  "$defs": {
+    "symbolKind": {
+      "type": "string",
+      "enum": [
+        "component",
+        "controller",
+        "directive",
+        "factory",
+        "filter",
+        "injectable",
+        "module",
+        "provider",
+        "route",
+        "service",
+        "value"
+      ]
+    },
+    "sourceLocation": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 }
+      },
+      "required": ["path", "line", "column"],
+      "additionalProperties": false
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "mode": { "type": "string", "enum": ["@", "<", "=", "&"] },
+        "optional": { "type": "boolean" }
+      },
+      "required": ["name", "mode", "optional"],
+      "additionalProperties": false
+    },
+    "symbolSummary": {
+      "type": "object",
+      "properties": {
+        "kind": { "$ref": "#/$defs/symbolKind" },
+        "name": { "type": "string" },
+        "module": { "type": "string" },
+        "location": { "$ref": "#/$defs/sourceLocation" }
+      },
+      "required": ["kind", "name", "location"],
+      "additionalProperties": false
+    },
+    "catalogEntry": {
+      "type": "object",
+      "properties": {
+        "kind": { "$ref": "#/$defs/symbolKind" },
+        "name": { "type": "string" },
+        "module": { "type": "string" },
+        "description": { "type": "string" },
+        "restrict": { "type": "string", "pattern": "^[EACM]+$" },
+        "bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/binding" },
+          "maxItems": 200
+        },
+        "templatePath": { "type": "string" },
+        "location": { "$ref": "#/$defs/sourceLocation" }
+      },
+      "required": ["kind", "name", "location"],
+      "additionalProperties": false
+    },
+    "usage": {
+      "type": "object",
+      "properties": {
+        "kind": { "$ref": "#/$defs/symbolKind" },
+        "name": { "type": "string" },
+        "context": { "type": "string", "maxLength": 500 },
+        "location": { "$ref": "#/$defs/sourceLocation" }
+      },
+      "required": ["kind", "name", "location"],
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warning", "information", "hint"]
+        },
+        "location": { "$ref": "#/$defs/sourceLocation" }
+      },
+      "required": ["code", "message", "severity"],
+      "additionalProperties": false
+    },
+    "route": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "component": { "type": "string" },
+        "templatePath": { "type": "string" },
+        "parameters": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 200
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 200
+        },
+        "location": { "$ref": "#/$defs/sourceLocation" }
+      },
+      "required": ["name", "location"],
+      "additionalProperties": false
+    },
+    "projectSummary": {
+      "type": "object",
+      "properties": {
+        "roots": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "modules": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": ["building", "ready", "partial", "failed"]
+        },
+        "indexedFiles": { "type": "integer", "minimum": 0 },
+        "skippedFiles": { "type": "integer", "minimum": 0 },
+        "diagnostics": { "type": "integer", "minimum": 0 },
+        "truncated": { "type": "boolean" }
+      },
+      "required": [
+        "roots",
+        "modules",
+        "status",
+        "indexedFiles",
+        "skippedFiles",
+        "diagnostics",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "pageMetadata": {
+      "type": "object",
+      "properties": {
+        "nextCursor": { "type": "string" },
+        "truncated": { "type": "boolean" }
+      },
+      "required": ["truncated"],
+      "additionalProperties": false
+    },
+    "catalogPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/catalogEntry" },
+          "maxItems": 200
+        },
+        "page": { "$ref": "#/$defs/pageMetadata" }
+      },
+      "required": ["items", "page"],
+      "additionalProperties": false
+    },
+    "symbolPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/symbolSummary" },
+          "maxItems": 200
+        },
+        "page": { "$ref": "#/$defs/pageMetadata" }
+      },
+      "required": ["items", "page"],
+      "additionalProperties": false
+    },
+    "usagePage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/usage" },
+          "maxItems": 200
+        },
+        "page": { "$ref": "#/$defs/pageMetadata" }
+      },
+      "required": ["items", "page"],
+      "additionalProperties": false
+    },
+    "diagnosticPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/diagnostic" },
+          "maxItems": 200
+        },
+        "page": { "$ref": "#/$defs/pageMetadata" }
+      },
+      "required": ["items", "page"],
+      "additionalProperties": false
+    },
+    "routePage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/route" },
+          "maxItems": 200
+        },
+        "page": { "$ref": "#/$defs/pageMetadata" }
+      },
+      "required": ["items", "page"],
+      "additionalProperties": false
+    },
+    "directiveExplanation": {
+      "type": "object",
+      "properties": {
+        "directive": { "$ref": "#/$defs/catalogEntry" },
+        "usage": { "type": "string", "maxLength": 10000 },
+        "examples": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 10000 },
+          "maxItems": 10
+        }
+      },
+      "required": ["directive", "usage", "examples"],
+      "additionalProperties": false
+    },
+    "dependencyInspection": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "registration": { "$ref": "#/$defs/symbolSummary" },
+        "consumers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/usage" },
+          "maxItems": 200
+        },
+        "truncated": { "type": "boolean" }
+      },
+      "required": ["name", "consumers", "truncated"],
+      "additionalProperties": false
+    }
+  }
+}

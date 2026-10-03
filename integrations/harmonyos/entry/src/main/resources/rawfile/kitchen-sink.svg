@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Mountain lake placeholder">
+  <rect width="800" height="500" fill="#e9e2d7" />
+  <path d="M0 380 190 150l120 140L470 80l330 360v60H0Z" fill="#6f8173" />
+  <path d="m260 500 210-420 330 360v60Z" fill="#405849" />
+  <path d="m390 240 80-160 86 94-47-20-36 38-35-25Z" fill="#fffdf8" />
+  <path d="M0 390c180-36 333-24 460 36 99 47 212 52 340 15v59H0Z" fill="#8eb4bc" />
+</svg>

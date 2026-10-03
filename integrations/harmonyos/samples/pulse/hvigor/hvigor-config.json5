@@ -1,0 +1,21 @@
+{
+  "modelVersion": "6.0.0",
+  "dependencies": {},
+  "execution": {
+    "analyze": "advanced",
+    "daemon": true,
+    "incremental": true,
+    "parallel": true,
+    "typeCheck": true
+  },
+  "logging": {
+    "level": "info"
+  },
+  "debugging": {
+    "stacktrace": true
+  },
+  "nodeOptions": {
+    "maxOldSpaceSize": 4096,
+    "exposeGC": true
+  }
+}

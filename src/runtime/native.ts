@@ -59,7 +59,7 @@ export type {
   NativeMediaLoadParameters,
   NativeMediaSeekParameters,
   NativeMediaStatus,
-  NativeNavigationAndroidChange,
+  NativeNavigationPlatformChange,
   NativeNavigationBridgeChange,
   NativeNavigationChange,
   NativeNavigationPopResult,

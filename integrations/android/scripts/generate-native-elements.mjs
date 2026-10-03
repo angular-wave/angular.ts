@@ -8,10 +8,10 @@ import {
   elementWireNames,
   validateNativeElementCatalog,
   wireIdentifier,
-} from "./native-elements-schema.mjs";
+} from "../../native/scripts/native-elements-schema.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const sourcePath = resolve(root, "integrations/android/native-elements.json");
+const sourcePath = resolve(root, "integrations/native/native-elements.json");
 const outputs = [
   {
     path: resolve(
@@ -378,7 +378,7 @@ Accessibility role: \`${element.accessibility.role}\`; label property:
 
   return `# Native Element Catalog
 
-This file is generated from \`native-elements.json\`. Edit the catalog and run
+This file is generated from \`integrations/native/native-elements.json\`. Edit the catalog and run
 \`make -C integrations/android generate-native-elements\`.
 
 ${sections}

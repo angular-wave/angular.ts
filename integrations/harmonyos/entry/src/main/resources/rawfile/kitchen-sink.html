@@ -1,0 +1,1533 @@
+<!doctype html>
+<html lang="en" class="platform-web">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f2e8" />
+    <title>AngularTS Native kitchen sink</title>
+    <style>
+      :root { color: #20201d; background: #f7f2e8; font: 16px "Avenir Next", Avenir, sans-serif; }
+      [ng-cloak] { display: none !important; }
+      body { margin: 0; }
+      header { padding: 24px; background: #fffdf8; border-bottom: 1px solid #d8d0c2; }
+      header h1 { margin: 0; color: #b83a24; font: 700 2rem Georgia, serif; }
+      header p { margin-bottom: 0; color: #6f6b63; }
+      main { display: grid; gap: 24px; padding: 24px; }
+      .category { display: grid; gap: 16px; }
+      .category > h1 { margin: 0; font: 700 1.5rem Georgia, serif; }
+      .component, .capability { padding: 16px; background: #fffdf8; border: 1px solid #d8d0c2; border-radius: 12px; }
+      .component h2, .capability h3 { margin-top: 0; }
+      .contract { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+      .contract code { padding: 3px 6px; background: #eee9e0; border-radius: 999px; font-size: .75rem; }
+      [data-element] > ng-native-text-field,
+      [data-element] > ng-native-search-field,
+      [data-element] > ng-native-image,
+      [data-element] > ng-native-map,
+      [data-element] > ng-native-list,
+      [data-element] > ng-native-grid,
+      [data-element] > ng-native-scroll,
+      [data-element] > ng-native-scaffold { display: block; min-height: 180px; }
+      [data-element] > :is(ng-native-row, ng-native-column, ng-native-box, ng-native-surface, ng-native-card) { display: block; min-height: 80px; }
+      [data-element] > :is(ng-native-text, ng-native-button, ng-native-checkbox, ng-native-switch, ng-native-slider, ng-native-chip, ng-native-progress) { display: block; min-height: 56px; }
+      .capabilities { display: grid; gap: 16px; }
+      .result { position: sticky; bottom: 0; padding: 12px 24px; color: #fffaf2; background: #20201d; }
+      @media (min-width: 800px) { main { grid-template-columns: repeat(2, minmax(0, 1fr)); } .capabilities { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    </style>
+  </head>
+  <body ng-app="harmonyKitchenSink" ng-controller="KitchenSinkController as sink" ng-cloak>
+    <header>
+      <h1>AngularTS Native kitchen sink</h1>
+      <p>Every generated native contract is visible here. Interact with a control to inspect its latest event.</p>
+    </header>
+    <main>
+    <section class="category" data-category="input">
+      <h1>Input</h1>
+      <section class="component" data-element="text-field">
+        <h2>Text Field</h2>
+        <ng-native-text-field
+          id="sink-text-field"
+          key="sink-text-field"
+          label="Text Field example"
+          value=""
+          placeholder="Enter text field"
+          enabled="true"
+          required="false"
+          error=""
+          keyboard-type="text"
+          ime-action="done"
+          autofill-hints="[&quot;image/*&quot;]"
+          selection-start="0"
+          selection-end="0"
+          read-only="false"
+          pending="false"
+          on-change="sink.record('text-field.change', $data)"
+          on-focus="sink.record('text-field.focus', $data)"
+          on-blur="sink.record('text-field.blur', $data)"
+          on-submit="sink.record('text-field.submit', $data)"
+        ></ng-native-text-field>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: STRING</code>
+          <code data-property="placeholder">placeholder: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="keyboardType">keyboardType: STRING</code>
+          <code data-property="imeAction">imeAction: STRING</code>
+          <code data-property="autofillHints">autofillHints: STRING_LIST</code>
+          <code data-property="selectionStart">selectionStart: INTEGER</code>
+          <code data-property="selectionEnd">selectionEnd: INTEGER</code>
+          <code data-property="readOnly">readOnly: BOOLEAN</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          <code data-event="submit">submit</code>
+          <code data-method="focus">focus()</code>
+          <code data-method="blur">blur()</code>
+        </div>
+      </section>
+      <section class="component" data-element="search-field">
+        <h2>Search Field</h2>
+        <ng-native-search-field
+          id="sink-search-field"
+          key="sink-search-field"
+          label="Search Field example"
+          value=""
+          placeholder="Enter search field"
+          enabled="true"
+          required="false"
+          error=""
+          keyboard-type="search"
+          ime-action="search"
+          autofill-hints="[&quot;image/*&quot;]"
+          selection-start="0"
+          selection-end="0"
+          read-only="false"
+          pending="false"
+          on-change="sink.record('search-field.change', $data)"
+          on-focus="sink.record('search-field.focus', $data)"
+          on-blur="sink.record('search-field.blur', $data)"
+          on-submit="sink.record('search-field.submit', $data)"
+        ></ng-native-search-field>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: STRING</code>
+          <code data-property="placeholder">placeholder: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="keyboardType">keyboardType: STRING</code>
+          <code data-property="imeAction">imeAction: STRING</code>
+          <code data-property="autofillHints">autofillHints: STRING_LIST</code>
+          <code data-property="selectionStart">selectionStart: INTEGER</code>
+          <code data-property="selectionEnd">selectionEnd: INTEGER</code>
+          <code data-property="readOnly">readOnly: BOOLEAN</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          <code data-event="submit">submit</code>
+          <code data-method="focus">focus()</code>
+          <code data-method="blur">blur()</code>
+        </div>
+      </section>
+      <section class="component" data-element="checkbox">
+        <h2>Checkbox</h2>
+        <ng-native-checkbox
+          id="sink-checkbox"
+          key="sink-checkbox"
+          label="Checkbox example"
+          value="false"
+          enabled="true"
+          required="false"
+          error=""
+          pending="false"
+          on-change="sink.record('checkbox.change', $data)"
+          on-focus="sink.record('checkbox.focus', $data)"
+          on-blur="sink.record('checkbox.blur', $data)"
+        ></ng-native-checkbox>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: BOOLEAN</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="switch">
+        <h2>Switch</h2>
+        <ng-native-switch
+          id="sink-switch"
+          key="sink-switch"
+          label="Switch example"
+          value="false"
+          enabled="true"
+          required="false"
+          error=""
+          pending="false"
+          on-change="sink.record('switch.change', $data)"
+          on-focus="sink.record('switch.focus', $data)"
+          on-blur="sink.record('switch.blur', $data)"
+        ></ng-native-switch>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: BOOLEAN</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="slider">
+        <h2>Slider</h2>
+        <ng-native-slider
+          id="sink-slider"
+          key="sink-slider"
+          label="Slider example"
+          value="0"
+          min="0"
+          max="100"
+          step="0"
+          enabled="true"
+          required="false"
+          error=""
+          pending="false"
+          on-change="sink.record('slider.change', $data)"
+          on-focus="sink.record('slider.focus', $data)"
+          on-blur="sink.record('slider.blur', $data)"
+        ></ng-native-slider>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: FLOAT</code>
+          <code data-property="min">min: FLOAT</code>
+          <code data-property="max">max: FLOAT</code>
+          <code data-property="step">step: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="radio-group">
+        <h2>Radio Group</h2>
+        <ng-native-radio-group
+          id="sink-radio-group"
+          key="sink-radio-group"
+          label="Radio Group example"
+          value=""
+          options="{}"
+          enabled="true"
+          required="false"
+          error=""
+          pending="false"
+          on-change="sink.record('radio-group.change', $data)"
+          on-focus="sink.record('radio-group.focus', $data)"
+          on-blur="sink.record('radio-group.blur', $data)"
+        ><button key="one">One</button><button key="two">Two</button></ng-native-radio-group>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: STRING</code>
+          <code data-property="options">options: JSON</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="range-slider">
+        <h2>Range Slider</h2>
+        <ng-native-range-slider
+          id="sink-range-slider"
+          key="sink-range-slider"
+          label="Range Slider example"
+          value="{}"
+          min="0"
+          max="100"
+          step="0"
+          enabled="true"
+          required="false"
+          error=""
+          pending="false"
+          on-change="sink.record('range-slider.change', $data)"
+          on-focus="sink.record('range-slider.focus', $data)"
+          on-blur="sink.record('range-slider.blur', $data)"
+        ></ng-native-range-slider>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: JSON</code>
+          <code data-property="min">min: FLOAT</code>
+          <code data-property="max">max: FLOAT</code>
+          <code data-property="step">step: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="date-picker">
+        <h2>Date Picker</h2>
+        <ng-native-date-picker
+          id="sink-date-picker"
+          key="sink-date-picker"
+          label="Date Picker example"
+          value=""
+          enabled="true"
+          required="false"
+          error=""
+          pending="false"
+          on-change="sink.record('date-picker.change', $data)"
+          on-focus="sink.record('date-picker.focus', $data)"
+          on-blur="sink.record('date-picker.blur', $data)"
+        ></ng-native-date-picker>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="time-picker">
+        <h2>Time Picker</h2>
+        <ng-native-time-picker
+          id="sink-time-picker"
+          key="sink-time-picker"
+          label="Time Picker example"
+          value=""
+          enabled="true"
+          required="false"
+          error=""
+          pending="false"
+          on-change="sink.record('time-picker.change', $data)"
+          on-focus="sink.record('time-picker.focus', $data)"
+          on-blur="sink.record('time-picker.blur', $data)"
+        ></ng-native-time-picker>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="file-picker">
+        <h2>File Picker</h2>
+        <ng-native-file-picker
+          id="sink-file-picker"
+          key="sink-file-picker"
+          label="File Picker example"
+          text="File Picker"
+          value="{}"
+          accept="[&quot;image/*&quot;]"
+          multiple="false"
+          enabled="true"
+          required="false"
+          error=""
+          pending="false"
+          on-request="sink.record('file-picker.request', $data)"
+          on-change="sink.record('file-picker.change', $data)"
+          on-cancel="sink.record('file-picker.cancel', $data)"
+          on-focus="sink.record('file-picker.focus', $data)"
+          on-blur="sink.record('file-picker.blur', $data)"
+        ></ng-native-file-picker>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="text">text: STRING</code>
+          <code data-property="value">value: JSON</code>
+          <code data-property="accept">accept: STRING_LIST</code>
+          <code data-property="multiple">multiple: BOOLEAN</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="required">required: BOOLEAN</code>
+          <code data-property="error">error: STRING</code>
+          <code data-property="pending">pending: BOOLEAN</code>
+          <code data-event="request">request</code>
+          <code data-event="change">change</code>
+          <code data-event="cancel">cancel</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          <code data-method="open">open()</code>
+        </div>
+      </section>
+    </section>
+    <section class="category" data-category="display">
+      <h1>Display</h1>
+      <section class="component" data-element="text">
+        <h2>Text</h2>
+        <ng-native-text
+          id="sink-text"
+          key="sink-text"
+          text="Text"
+          color="#b83a24"
+          text-size="16"
+          max-lines="2147483647"
+        ></ng-native-text>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="color">color: COLOR</code>
+          <code data-property="textSize">textSize: FLOAT</code>
+          <code data-property="maxLines">maxLines: INTEGER</code>
+          
+          
+        </div>
+      </section>
+      <section class="component" data-element="icon">
+        <h2>Icon</h2>
+        <ng-native-icon
+          id="sink-icon"
+          key="sink-icon"
+          resource="ic_menu_help"
+          content-description="Icon example"
+          tint="#b83a24"
+        ></ng-native-icon>
+        <div class="contract">
+          <code data-property="resource">resource: STRING</code>
+          <code data-property="contentDescription">contentDescription: STRING</code>
+          <code data-property="tint">tint: COLOR</code>
+          
+          
+        </div>
+      </section>
+      <section class="component" data-element="divider">
+        <h2>Divider</h2>
+        <ng-native-divider
+          id="sink-divider"
+          key="sink-divider"
+          label="Divider example"
+          color="#1f000000"
+          thickness="1"
+        ></ng-native-divider>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="color">color: COLOR</code>
+          <code data-property="thickness">thickness: FLOAT</code>
+          
+          
+        </div>
+      </section>
+      <section class="component" data-element="badge">
+        <h2>Badge</h2>
+        <ng-native-badge
+          id="sink-badge"
+          key="sink-badge"
+          text="Badge"
+          background-color="#b3261e"
+          text-color="#ffffff"
+        ></ng-native-badge>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="backgroundColor">backgroundColor: COLOR</code>
+          <code data-property="textColor">textColor: COLOR</code>
+          
+          
+        </div>
+      </section>
+      <section class="component" data-element="progress">
+        <h2>Progress</h2>
+        <ng-native-progress
+          id="sink-progress"
+          key="sink-progress"
+          label="Progress example"
+          value="0"
+          max="100"
+          indeterminate="false"
+        ></ng-native-progress>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="value">value: INTEGER</code>
+          <code data-property="max">max: INTEGER</code>
+          <code data-property="indeterminate">indeterminate: BOOLEAN</code>
+          
+          
+        </div>
+      </section>
+      <section class="component" data-element="loading-indicator">
+        <h2>Loading Indicator</h2>
+        <ng-native-loading-indicator
+          id="sink-loading-indicator"
+          key="sink-loading-indicator"
+          label="Loading Indicator example"
+          visible="true"
+        ></ng-native-loading-indicator>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="visible">visible: BOOLEAN</code>
+          
+          
+        </div>
+      </section>
+      <section class="component" data-element="card">
+        <h2>Card</h2>
+        <ng-native-card
+          id="sink-card"
+          key="sink-card"
+          title="Card"
+          text="Card"
+          enabled="true"
+          on-click="sink.record('card.click', $data)"
+          on-long-click="sink.record('card.longClick', $data)"
+          on-focus="sink.record('card.focus', $data)"
+          on-blur="sink.record('card.blur', $data)"
+        ><ng-native-text text="Card child"></ng-native-text></ng-native-card>
+        <div class="contract">
+          <code data-property="title">title: STRING</code>
+          <code data-property="text">text: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-event="click">click</code>
+          <code data-event="longClick">longClick</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="image">
+        <h2>Image</h2>
+        <ng-native-image
+          id="sink-image"
+          key="sink-image"
+          src="./kitchen-sink.svg"
+          content-description="Image example"
+          content-scale="crop"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          enabled="true"
+          placeholder-color="#e9e2d7"
+          error-color="#ead8d2"
+          on-load="sink.record('image.load', $data)"
+          on-error="sink.record('image.error', $data)"
+          on-click="sink.record('image.click', $data)"
+          on-long-click="sink.record('image.longClick', $data)"
+          on-focus="sink.record('image.focus', $data)"
+          on-blur="sink.record('image.blur', $data)"
+        ></ng-native-image>
+        <div class="contract">
+          <code data-property="src">src: STRING</code>
+          <code data-property="contentDescription">contentDescription: STRING</code>
+          <code data-property="contentScale">contentScale: STRING</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="placeholderColor">placeholderColor: COLOR</code>
+          <code data-property="errorColor">errorColor: COLOR</code>
+          <code data-event="load">load</code>
+          <code data-event="error">error</code>
+          <code data-event="click">click</code>
+          <code data-event="longClick">longClick</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+    </section>
+    <section class="category" data-category="action">
+      <h1>Action</h1>
+      <section class="component" data-element="button">
+        <h2>Button</h2>
+        <ng-native-button
+          id="sink-button"
+          key="sink-button"
+          text="Button"
+          enabled="true"
+          loading="false"
+          loading-text="Loading"
+          on-click="sink.record('button.click', $data)"
+          on-long-click="sink.record('button.longClick', $data)"
+          on-focus="sink.record('button.focus', $data)"
+          on-blur="sink.record('button.blur', $data)"
+        ></ng-native-button>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="loading">loading: BOOLEAN</code>
+          <code data-property="loadingText">loadingText: STRING</code>
+          <code data-event="click">click</code>
+          <code data-event="longClick">longClick</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="chip">
+        <h2>Chip</h2>
+        <ng-native-chip
+          id="sink-chip"
+          key="sink-chip"
+          text="Chip"
+          enabled="true"
+          checkable="false"
+          checked="false"
+          on-click="sink.record('chip.click', $data)"
+          on-change="sink.record('chip.change', $data)"
+          on-focus="sink.record('chip.focus', $data)"
+          on-blur="sink.record('chip.blur', $data)"
+        ></ng-native-chip>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="checkable">checkable: BOOLEAN</code>
+          <code data-property="checked">checked: BOOLEAN</code>
+          <code data-event="click">click</code>
+          <code data-event="change">change</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="floating-action-button">
+        <h2>Floating Action Button</h2>
+        <ng-native-floating-action-button
+          id="sink-floating-action-button"
+          key="sink-floating-action-button"
+          resource="ic_input_add"
+          content-description="Floating Action Button example"
+          enabled="true"
+          on-click="sink.record('floating-action-button.click', $data)"
+          on-long-click="sink.record('floating-action-button.longClick', $data)"
+          on-focus="sink.record('floating-action-button.focus', $data)"
+          on-blur="sink.record('floating-action-button.blur', $data)"
+        ></ng-native-floating-action-button>
+        <div class="contract">
+          <code data-property="resource">resource: STRING</code>
+          <code data-property="contentDescription">contentDescription: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-event="click">click</code>
+          <code data-event="longClick">longClick</code>
+          <code data-event="focus">focus</code>
+          <code data-event="blur">blur</code>
+          
+        </div>
+      </section>
+    </section>
+    <section class="category" data-category="overlay">
+      <h1>Overlay</h1>
+      <section class="component" data-element="drawer">
+        <h2>Drawer</h2>
+        <ng-native-drawer
+          id="sink-drawer"
+          key="sink-drawer"
+          text="Drawer"
+          items="[{&quot;key&quot;:&quot;one&quot;,&quot;label&quot;:&quot;One&quot;}]"
+          on-open="sink.record('drawer.open', $data)"
+          on-close="sink.record('drawer.close', $data)"
+          on-select="sink.record('drawer.select', $data)"
+        ><ng-native-text text="Drawer child"></ng-native-text></ng-native-drawer>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="items">items: JSON</code>
+          <code data-event="open">open</code>
+          <code data-event="close">close</code>
+          <code data-event="select">select</code>
+          <code data-method="show">show()</code>
+          <code data-method="hide">hide()</code>
+          <code data-method="dismiss">dismiss()</code>
+        </div>
+      </section>
+      <section class="component" data-element="dialog">
+        <h2>Dialog</h2>
+        <ng-native-dialog
+          id="sink-dialog"
+          key="sink-dialog"
+          text="Dialog"
+          title="Dialog"
+          message="Dialog message"
+          enabled="true"
+          confirm-text="OK"
+          cancel-text="Cancel"
+          on-show="sink.record('dialog.show', $data)"
+          on-confirm="sink.record('dialog.confirm', $data)"
+          on-cancel="sink.record('dialog.cancel', $data)"
+          on-dismiss="sink.record('dialog.dismiss', $data)"
+        ></ng-native-dialog>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="title">title: STRING</code>
+          <code data-property="message">message: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="confirmText">confirmText: STRING</code>
+          <code data-property="cancelText">cancelText: STRING</code>
+          <code data-event="show">show</code>
+          <code data-event="confirm">confirm</code>
+          <code data-event="cancel">cancel</code>
+          <code data-event="dismiss">dismiss</code>
+          <code data-method="show">show()</code>
+          <code data-method="hide">hide()</code>
+          <code data-method="dismiss">dismiss()</code>
+        </div>
+      </section>
+      <section class="component" data-element="bottom-sheet">
+        <h2>Bottom Sheet</h2>
+        <ng-native-bottom-sheet
+          id="sink-bottom-sheet"
+          key="sink-bottom-sheet"
+          text="Bottom Sheet"
+          title="Bottom Sheet"
+          message="Bottom Sheet message"
+          enabled="true"
+          on-show="sink.record('bottom-sheet.show', $data)"
+          on-cancel="sink.record('bottom-sheet.cancel', $data)"
+          on-dismiss="sink.record('bottom-sheet.dismiss', $data)"
+        ></ng-native-bottom-sheet>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="title">title: STRING</code>
+          <code data-property="message">message: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-event="show">show</code>
+          <code data-event="cancel">cancel</code>
+          <code data-event="dismiss">dismiss</code>
+          <code data-method="show">show()</code>
+          <code data-method="hide">hide()</code>
+          <code data-method="dismiss">dismiss()</code>
+        </div>
+      </section>
+      <section class="component" data-element="menu">
+        <h2>Menu</h2>
+        <ng-native-menu
+          id="sink-menu"
+          key="sink-menu"
+          text="Menu"
+          title="Menu"
+          message="Menu message"
+          enabled="true"
+          items="[{&quot;key&quot;:&quot;one&quot;,&quot;label&quot;:&quot;One&quot;}]"
+          on-show="sink.record('menu.show', $data)"
+          on-select="sink.record('menu.select', $data)"
+          on-dismiss="sink.record('menu.dismiss', $data)"
+        ></ng-native-menu>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="title">title: STRING</code>
+          <code data-property="message">message: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="items">items: JSON</code>
+          <code data-event="show">show</code>
+          <code data-event="select">select</code>
+          <code data-event="dismiss">dismiss</code>
+          <code data-method="show">show()</code>
+          <code data-method="hide">hide()</code>
+          <code data-method="dismiss">dismiss()</code>
+        </div>
+      </section>
+      <section class="component" data-element="snackbar">
+        <h2>Snackbar</h2>
+        <ng-native-snackbar
+          id="sink-snackbar"
+          key="sink-snackbar"
+          text="Snackbar"
+          title="Snackbar"
+          message="Snackbar message"
+          enabled="true"
+          action-text="Retry"
+          indefinite="false"
+          on-show="sink.record('snackbar.show', $data)"
+          on-action="sink.record('snackbar.action', $data)"
+          on-dismiss="sink.record('snackbar.dismiss', $data)"
+        ></ng-native-snackbar>
+        <div class="contract">
+          <code data-property="text">text: STRING</code>
+          <code data-property="title">title: STRING</code>
+          <code data-property="message">message: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="actionText">actionText: STRING</code>
+          <code data-property="indefinite">indefinite: BOOLEAN</code>
+          <code data-event="show">show</code>
+          <code data-event="action">action</code>
+          <code data-event="dismiss">dismiss</code>
+          <code data-method="show">show()</code>
+          <code data-method="hide">hide()</code>
+          <code data-method="dismiss">dismiss()</code>
+        </div>
+      </section>
+      <section class="component" data-element="tooltip">
+        <h2>Tooltip</h2>
+        <ng-native-tooltip
+          id="sink-tooltip"
+          key="sink-tooltip"
+          label="Tooltip example"
+          text="Tooltip"
+          message="Tooltip message"
+          on-show="sink.record('tooltip.show', $data)"
+          on-dismiss="sink.record('tooltip.dismiss', $data)"
+        ></ng-native-tooltip>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="text">text: STRING</code>
+          <code data-property="message">message: STRING</code>
+          <code data-event="show">show</code>
+          <code data-event="dismiss">dismiss</code>
+          <code data-method="show">show()</code>
+          <code data-method="hide">hide()</code>
+          <code data-method="dismiss">dismiss()</code>
+        </div>
+      </section>
+    </section>
+    <section class="category" data-category="layout">
+      <h1>Layout</h1>
+      <section class="component" data-element="row">
+        <h2>Row</h2>
+        <ng-native-row
+          id="sink-row"
+          key="sink-row"
+          label="Row example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          spacing="0"
+          horizontal-alignment="stretch"
+          vertical-alignment="stretch"
+          enabled="true"
+          swipe-enabled="false"
+          reorder-enabled="false"
+          safe-area="false"
+          on-child-event="sink.record('row.childEvent', $data)"
+        ><ng-native-text text="Row child"></ng-native-text></ng-native-row>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="spacing">spacing: FLOAT</code>
+          <code data-property="horizontalAlignment">horizontalAlignment: STRING</code>
+          <code data-property="verticalAlignment">verticalAlignment: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="swipeEnabled">swipeEnabled: BOOLEAN</code>
+          <code data-property="reorderEnabled">reorderEnabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="column">
+        <h2>Column</h2>
+        <ng-native-column
+          id="sink-column"
+          key="sink-column"
+          label="Column example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          spacing="0"
+          horizontal-alignment="stretch"
+          vertical-alignment="stretch"
+          enabled="true"
+          swipe-enabled="false"
+          reorder-enabled="false"
+          safe-area="false"
+          on-child-event="sink.record('column.childEvent', $data)"
+        ><ng-native-text text="Column child"></ng-native-text></ng-native-column>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="spacing">spacing: FLOAT</code>
+          <code data-property="horizontalAlignment">horizontalAlignment: STRING</code>
+          <code data-property="verticalAlignment">verticalAlignment: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="swipeEnabled">swipeEnabled: BOOLEAN</code>
+          <code data-property="reorderEnabled">reorderEnabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="box">
+        <h2>Box</h2>
+        <ng-native-box
+          id="sink-box"
+          key="sink-box"
+          label="Box example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          horizontal-alignment="stretch"
+          vertical-alignment="stretch"
+          enabled="true"
+          safe-area="false"
+          on-child-event="sink.record('box.childEvent', $data)"
+        ><ng-native-text text="Box child"></ng-native-text></ng-native-box>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="horizontalAlignment">horizontalAlignment: STRING</code>
+          <code data-property="verticalAlignment">verticalAlignment: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="surface">
+        <h2>Surface</h2>
+        <ng-native-surface
+          id="sink-surface"
+          key="sink-surface"
+          label="Surface example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          horizontal-alignment="stretch"
+          vertical-alignment="stretch"
+          enabled="true"
+          background-color="#00000000"
+          safe-area="false"
+          on-child-event="sink.record('surface.childEvent', $data)"
+        ><ng-native-text text="Surface child"></ng-native-text></ng-native-surface>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="horizontalAlignment">horizontalAlignment: STRING</code>
+          <code data-property="verticalAlignment">verticalAlignment: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="backgroundColor">backgroundColor: COLOR</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="scroll">
+        <h2>Scroll</h2>
+        <ng-native-scroll
+          id="sink-scroll"
+          key="sink-scroll"
+          label="Scroll example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          spacing="0"
+          horizontal-alignment="stretch"
+          vertical-alignment="stretch"
+          enabled="true"
+          safe-area="false"
+          on-child-event="sink.record('scroll.childEvent', $data)"
+          on-scroll="sink.record('scroll.scroll', $data)"
+        ><ng-native-text text="Scroll child"></ng-native-text></ng-native-scroll>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="spacing">spacing: FLOAT</code>
+          <code data-property="horizontalAlignment">horizontalAlignment: STRING</code>
+          <code data-property="verticalAlignment">verticalAlignment: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          <code data-event="scroll">scroll</code>
+          <code data-method="scrollTo">scrollTo()</code>
+          <code data-method="scrollToStart">scrollToStart()</code>
+          <code data-method="scrollToEnd">scrollToEnd()</code>
+        </div>
+      </section>
+      <section class="component" data-element="scaffold">
+        <h2>Scaffold</h2>
+        <ng-native-scaffold
+          id="sink-scaffold"
+          key="sink-scaffold"
+          label="Scaffold example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          spacing="0"
+          horizontal-alignment="stretch"
+          vertical-alignment="stretch"
+          enabled="true"
+          safe-area="true"
+          on-child-event="sink.record('scaffold.childEvent', $data)"
+        ><ng-native-text text="Scaffold child"></ng-native-text></ng-native-scaffold>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="spacing">spacing: FLOAT</code>
+          <code data-property="horizontalAlignment">horizontalAlignment: STRING</code>
+          <code data-property="verticalAlignment">verticalAlignment: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          
+        </div>
+      </section>
+    </section>
+    <section class="category" data-category="navigation">
+      <h1>Navigation</h1>
+      <section class="component" data-element="app-bar">
+        <h2>App Bar</h2>
+        <ng-native-app-bar
+          id="sink-app-bar"
+          key="sink-app-bar"
+          label="App Bar example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          spacing="0"
+          horizontal-alignment="stretch"
+          vertical-alignment="stretch"
+          enabled="true"
+          safe-area="false"
+          on-child-event="sink.record('app-bar.childEvent', $data)"
+        ><ng-native-text text="App Bar child"></ng-native-text></ng-native-app-bar>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="spacing">spacing: FLOAT</code>
+          <code data-property="horizontalAlignment">horizontalAlignment: STRING</code>
+          <code data-property="verticalAlignment">verticalAlignment: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="bottom-bar">
+        <h2>Bottom Bar</h2>
+        <ng-native-bottom-bar
+          id="sink-bottom-bar"
+          key="sink-bottom-bar"
+          label="Bottom Bar example"
+          items="[{&quot;key&quot;:&quot;one&quot;,&quot;label&quot;:&quot;One&quot;}]"
+          selected-key=""
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          enabled="true"
+          safe-area="false"
+          on-select="sink.record('bottom-bar.select', $data)"
+          on-reselect="sink.record('bottom-bar.reselect', $data)"
+        ><button key="one">One</button><button key="two">Two</button></ng-native-bottom-bar>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="items">items: JSON</code>
+          <code data-property="selectedKey">selectedKey: STRING</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="select">select</code>
+          <code data-event="reselect">reselect</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="navigation-rail">
+        <h2>Navigation Rail</h2>
+        <ng-native-navigation-rail
+          id="sink-navigation-rail"
+          key="sink-navigation-rail"
+          label="Navigation Rail example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          spacing="0"
+          horizontal-alignment="stretch"
+          vertical-alignment="stretch"
+          enabled="true"
+          safe-area="false"
+          on-child-event="sink.record('navigation-rail.childEvent', $data)"
+        ><button key="one">One</button><button key="two">Two</button></ng-native-navigation-rail>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="spacing">spacing: FLOAT</code>
+          <code data-property="horizontalAlignment">horizontalAlignment: STRING</code>
+          <code data-property="verticalAlignment">verticalAlignment: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="tabs">
+        <h2>Tabs</h2>
+        <ng-native-tabs
+          id="sink-tabs"
+          key="sink-tabs"
+          label="Tabs example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          enabled="true"
+          value=""
+          safe-area="false"
+          on-child-event="sink.record('tabs.childEvent', $data)"
+          on-change="sink.record('tabs.change', $data)"
+        ><button key="one">One</button><button key="two">Two</button></ng-native-tabs>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="value">value: STRING</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          <code data-event="change">change</code>
+          <code data-method="scrollTo">scrollTo()</code>
+        </div>
+      </section>
+      <section class="component" data-element="pager">
+        <h2>Pager</h2>
+        <ng-native-pager
+          id="sink-pager"
+          key="sink-pager"
+          label="Pager example"
+          children="{}"
+          padding="0"
+          width="0"
+          height="0"
+          min-width="0"
+          min-height="0"
+          enabled="true"
+          value="0"
+          safe-area="false"
+          on-child-event="sink.record('pager.childEvent', $data)"
+          on-change="sink.record('pager.change', $data)"
+        ><ng-native-text text="Pager child"></ng-native-text></ng-native-pager>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="width">width: FLOAT</code>
+          <code data-property="height">height: FLOAT</code>
+          <code data-property="minWidth">minWidth: FLOAT</code>
+          <code data-property="minHeight">minHeight: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="value">value: INTEGER</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          <code data-event="change">change</code>
+          <code data-method="scrollTo">scrollTo()</code>
+        </div>
+      </section>
+    </section>
+    <section class="category" data-category="collection">
+      <h1>Collection</h1>
+      <section class="component" data-element="list">
+        <h2>List</h2>
+        <ng-native-list
+          id="sink-list"
+          key="sink-list"
+          label="List example"
+          children="{}"
+          padding="0"
+          enabled="true"
+          safe-area="false"
+          on-child-event="sink.record('list.childEvent', $data)"
+          on-scroll="sink.record('list.scroll', $data)"
+          on-load-more="sink.record('list.loadMore', $data)"
+          on-swipe="sink.record('list.swipe', $data)"
+          on-move="sink.record('list.move', $data)"
+        ><ng-native-text text="List child"></ng-native-text></ng-native-list>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          <code data-event="scroll">scroll</code>
+          <code data-event="loadMore">loadMore</code>
+          <code data-event="swipe">swipe</code>
+          <code data-event="move">move</code>
+          <code data-method="scrollTo">scrollTo()</code>
+          <code data-method="scrollToStart">scrollToStart()</code>
+          <code data-method="scrollToEnd">scrollToEnd()</code>
+        </div>
+      </section>
+      <section class="component" data-element="grid">
+        <h2>Grid</h2>
+        <ng-native-grid
+          id="sink-grid"
+          key="sink-grid"
+          label="Grid example"
+          children="{}"
+          padding="0"
+          enabled="true"
+          columns="2"
+          swipe-enabled="false"
+          reorder-enabled="false"
+          safe-area="false"
+          on-child-event="sink.record('grid.childEvent', $data)"
+          on-scroll="sink.record('grid.scroll', $data)"
+          on-load-more="sink.record('grid.loadMore', $data)"
+          on-swipe="sink.record('grid.swipe', $data)"
+          on-move="sink.record('grid.move', $data)"
+        ><ng-native-text text="Grid child"></ng-native-text></ng-native-grid>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="columns">columns: INTEGER</code>
+          <code data-property="swipeEnabled">swipeEnabled: BOOLEAN</code>
+          <code data-property="reorderEnabled">reorderEnabled: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          <code data-event="scroll">scroll</code>
+          <code data-event="loadMore">loadMore</code>
+          <code data-event="swipe">swipe</code>
+          <code data-event="move">move</code>
+          <code data-method="scrollTo">scrollTo()</code>
+          <code data-method="scrollToStart">scrollToStart()</code>
+          <code data-method="scrollToEnd">scrollToEnd()</code>
+        </div>
+      </section>
+      <section class="component" data-element="list-item">
+        <h2>List Item</h2>
+        <ng-native-list-item
+          id="sink-list-item"
+          key="sink-list-item"
+          label="List Item example"
+          text="List Item"
+          supporting-text=""
+          selected="false"
+          enabled="true"
+          on-click="sink.record('list-item.click', $data)"
+          on-long-click="sink.record('list-item.longClick', $data)"
+        ><ng-native-text text="List Item child"></ng-native-text></ng-native-list-item>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="text">text: STRING</code>
+          <code data-property="supportingText">supportingText: STRING</code>
+          <code data-property="selected">selected: BOOLEAN</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-event="click">click</code>
+          <code data-event="longClick">longClick</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="swipe-action">
+        <h2>Swipe Action</h2>
+        <ng-native-swipe-action
+          id="sink-swipe-action"
+          key="sink-swipe-action"
+          label="Swipe Action example"
+          text="Swipe Action"
+          enabled="true"
+          on-action="sink.record('swipe-action.action', $data)"
+        ><ng-native-text text="Swipe Action child"></ng-native-text></ng-native-swipe-action>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="text">text: STRING</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-event="action">action</code>
+          
+        </div>
+      </section>
+      <section class="component" data-element="pull-to-refresh">
+        <h2>Pull To Refresh</h2>
+        <ng-native-pull-to-refresh
+          id="sink-pull-to-refresh"
+          key="sink-pull-to-refresh"
+          label="Pull To Refresh example"
+          children="{}"
+          padding="0"
+          enabled="true"
+          refreshing="false"
+          safe-area="false"
+          on-child-event="sink.record('pull-to-refresh.childEvent', $data)"
+          on-refresh="sink.record('pull-to-refresh.refresh', $data)"
+        ><ng-native-text text="Pull To Refresh child"></ng-native-text></ng-native-pull-to-refresh>
+        <div class="contract">
+          <code data-property="label">label: STRING</code>
+          <code data-property="children">children: JSON</code>
+          <code data-property="padding">padding: FLOAT</code>
+          <code data-property="enabled">enabled: BOOLEAN</code>
+          <code data-property="refreshing">refreshing: BOOLEAN</code>
+          <code data-property="safeArea">safeArea: BOOLEAN</code>
+          <code data-event="childEvent">childEvent</code>
+          <code data-event="refresh">refresh</code>
+          
+        </div>
+      </section>
+    </section>
+    <section class="category" data-category="media">
+      <h1>Media</h1>
+      <section class="component" data-element="map">
+        <h2>Map</h2>
+        <ng-native-map
+          id="sink-map"
+          key="sink-map"
+          latitude="0"
+          longitude="0"
+          zoom="12"
+          map-type="normal"
+          traffic="false"
+          user-location="false"
+          markers="[{&quot;id&quot;:&quot;one&quot;,&quot;latitude&quot;:56.9496,&quot;longitude&quot;:24.1052,&quot;title&quot;:&quot;Riga&quot;}]"
+          content-description="Map example"
+          on-ready="sink.record('map.ready', $data)"
+          on-camera-change="sink.record('map.cameraChange', $data)"
+          on-marker-click="sink.record('map.markerClick', $data)"
+          on-map-click="sink.record('map.mapClick', $data)"
+        ></ng-native-map>
+        <div class="contract">
+          <code data-property="latitude">latitude: FLOAT</code>
+          <code data-property="longitude">longitude: FLOAT</code>
+          <code data-property="zoom">zoom: FLOAT</code>
+          <code data-property="mapType">mapType: STRING</code>
+          <code data-property="traffic">traffic: BOOLEAN</code>
+          <code data-property="userLocation">userLocation: BOOLEAN</code>
+          <code data-property="markers">markers: JSON</code>
+          <code data-property="contentDescription">contentDescription: STRING</code>
+          <code data-event="ready">ready</code>
+          <code data-event="cameraChange">cameraChange</code>
+          <code data-event="markerClick">markerClick</code>
+          <code data-event="mapClick">mapClick</code>
+          <code data-method="move">move()</code>
+          <code data-method="animate">animate()</code>
+          <code data-method="fitMarkers">fitMarkers()</code>
+        </div>
+      </section>
+    </section>
+      <section class="capabilities">
+        <h1>Capabilities</h1>
+        <article class="capability" data-capability="navigation">
+          <h3>Navigation</h3>
+          <ng-native-button text="Check Navigation" on-click="sink.call('navigation', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="push"><code>push(NAVIGATION_ROUTE_PARAMETERS)</code></li>
+            <li data-method="replace"><code>replace(NAVIGATION_ROUTE_PARAMETERS)</code></li>
+            <li data-method="pop"><code>pop()</code></li>
+            <li data-method="modal"><code>modal(NAVIGATION_ROUTE_PARAMETERS)</code></li>
+            <li data-method="deep-link"><code>deep-link(NAVIGATION_ROUTE_PARAMETERS)</code></li>
+            <li data-method="external"><code>external(INTENT_PARAMETERS)</code></li><li data-event="change"><code>change</code></li></ul>
+        </article>
+        <article class="capability" data-capability="platform">
+          <h3>Platform</h3>
+          <ng-native-button text="Check Platform" on-click="sink.call('platform', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li></ul>
+        </article>
+        <article class="capability" data-capability="permissions">
+          <h3>Permissions</h3>
+          
+          <ul><li data-method="status"><code>status(PERMISSION_PARAMETERS)</code></li>
+            <li data-method="request"><code>request(PERMISSION_PARAMETERS)</code></li></ul>
+        </article>
+        <article class="capability" data-capability="clipboard">
+          <h3>Clipboard</h3>
+          
+          <ul><li data-method="read"><code>read()</code></li>
+            <li data-method="write"><code>write(CLIPBOARD_WRITE_PARAMETERS)</code></li></ul>
+        </article>
+        <article class="capability" data-capability="sharing">
+          <h3>Sharing</h3>
+          
+          <ul><li data-method="share"><code>share(SHARE_PARAMETERS)</code></li></ul>
+        </article>
+        <article class="capability" data-capability="intents">
+          <h3>Intents</h3>
+          
+          <ul><li data-method="open"><code>open(INTENT_PARAMETERS)</code></li></ul>
+        </article>
+        <article class="capability" data-capability="haptics">
+          <h3>Haptics</h3>
+          
+          <ul><li data-method="perform"><code>perform(HAPTIC_PARAMETERS)</code></li></ul>
+        </article>
+        <article class="capability" data-capability="connectivity">
+          <h3>Connectivity</h3>
+          <ng-native-button text="Check Connectivity" on-click="sink.call('connectivity', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="watch"><code>watch()</code></li>
+            <li data-method="unwatch"><code>unwatch()</code></li><li data-event="change"><code>change</code></li></ul>
+        </article>
+        <article class="capability" data-capability="lifecycle">
+          <h3>Lifecycle</h3>
+          <ng-native-button text="Check Lifecycle" on-click="sink.call('lifecycle', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="watch"><code>watch()</code></li>
+            <li data-method="unwatch"><code>unwatch()</code></li><li data-event="change"><code>change</code></li></ul>
+        </article>
+        <article class="capability" data-capability="window">
+          <h3>Window</h3>
+          <ng-native-button text="Check Window" on-click="sink.call('window', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="watch"><code>watch()</code></li>
+            <li data-method="unwatch"><code>unwatch()</code></li><li data-event="change"><code>change</code></li></ul>
+        </article>
+        <article class="capability" data-capability="notifications">
+          <h3>Notifications</h3>
+          <ng-native-button text="Check Notifications" on-click="sink.call('notifications', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="open-settings"><code>open-settings()</code></li></ul>
+        </article>
+        <article class="capability" data-capability="geolocation">
+          <h3>Geolocation</h3>
+          <ng-native-button text="Check Geolocation" on-click="sink.call('geolocation', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="current"><code>current()</code></li></ul>
+        </article>
+        <article class="capability" data-capability="biometrics">
+          <h3>Biometrics</h3>
+          <ng-native-button text="Check Biometrics" on-click="sink.call('biometrics', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li></ul>
+        </article>
+        <article class="capability" data-capability="camera">
+          <h3>Camera</h3>
+          <ng-native-button text="Check Camera" on-click="sink.call('camera', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="capture"><code>capture()</code></li></ul>
+        </article>
+        <article class="capability" data-capability="files">
+          <h3>Files</h3>
+          <ng-native-button text="Check Files" on-click="sink.call('files', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="open"><code>open(FILE_OPEN_PARAMETERS)</code></li>
+            <li data-method="upload"><code>upload(FILE_UPLOAD_PARAMETERS)</code></li><li data-event="progress"><code>progress</code></li></ul>
+        </article>
+        <article class="capability" data-capability="credentials">
+          <h3>Credentials</h3>
+          <ng-native-button text="Check Credentials" on-click="sink.call('credentials', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="get"><code>get(CREDENTIAL_GET_PARAMETERS)</code></li>
+            <li data-method="create-password"><code>create-password(CREDENTIAL_CREATE_PASSWORD_PARAMETERS)</code></li>
+            <li data-method="create-passkey"><code>create-passkey(CREDENTIAL_CREATE_PASSKEY_PARAMETERS)</code></li>
+            <li data-method="clear"><code>clear()</code></li></ul>
+        </article>
+        <article class="capability" data-capability="media">
+          <h3>Media</h3>
+          <ng-native-button text="Check Media" on-click="sink.call('media', 'status')"></ng-native-button>
+          <ul><li data-method="status"><code>status()</code></li>
+            <li data-method="load"><code>load(MEDIA_LOAD_PARAMETERS)</code></li>
+            <li data-method="play"><code>play()</code></li>
+            <li data-method="pause"><code>pause()</code></li>
+            <li data-method="stop"><code>stop()</code></li>
+            <li data-method="seek"><code>seek(MEDIA_SEEK_PARAMETERS)</code></li>
+            <li data-method="release"><code>release()</code></li></ul>
+        </article>
+      </section>
+    </main>
+    <output class="result">{{ sink.result }}</output>
+    <script type="module">
+      import { angular } from "./dist/angular-ts.esm.js";
+      import { nativeModule } from "./dist/runtime/native.js";
+
+      nativeModule(angular);
+
+      class KitchenSinkController {
+        static $inject = ["$native"];
+
+        constructor(native) {
+          this.native = native;
+          this.result = "Ready";
+        }
+
+        record(name, data) {
+          this.result = name + ": " + JSON.stringify(data ?? null);
+        }
+
+        async call(target, method) {
+          try {
+            this.record(target + "." + method, await this.native.call(target, method));
+          } catch (error) {
+            this.record(target + "." + method, { error: error.message });
+          }
+        }
+      }
+
+      angular.createModule("harmonyKitchenSink", ["ng.native"])
+        .controller("KitchenSinkController", KitchenSinkController);
+    </script>
+  </body>
+</html>

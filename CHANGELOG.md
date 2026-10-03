@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+- Added the portable Angular Native HarmonyOS bridge, ArkUI element contracts,
+  navigation and capability adapters, package generation, release checks, and
+  public integration guide.
+- Added version-pinned OHPM metadata, reviewed publication recovery, and clean
+  consumers for built and registry-hosted HarmonyOS packages.
+- Added checksum-verified hosted HarmonyOS CI and transactional destination
+  ownership for ArkUI navigation hosts.
+- Added a reusable ArkUI navigation host plus standalone, catalog-checked
+  HarmonyOS kitchen-sink and shared Pulse sample applications.
+
 ## [0.36.0] - 2026-09-13
 
 - Added Angular Native Android navigation, components, platform capabilities, and optional UI artifacts.

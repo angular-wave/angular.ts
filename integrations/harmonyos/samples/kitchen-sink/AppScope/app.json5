@@ -1,0 +1,10 @@
+{
+  "app": {
+    "bundleName": "io.github.angularwave.harmony.kitchensink",
+    "vendor": "Angular Wave",
+    "versionCode": 3600,
+    "versionName": "0.36.0",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name"
+  }
+}

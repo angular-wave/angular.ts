@@ -14,6 +14,7 @@ import type {
   NativeService,
 } from "../../services/native/native.ts";
 import { isObject } from "../../shared/utils.ts";
+import { HarmonyNativeEmbedBinding } from "./native-embed.ts";
 
 interface NativeTagBinding {
   readonly element: HTMLElement;
@@ -151,6 +152,7 @@ function mountNativeRoot(
         name: descriptor.name,
         props: descriptor.props,
         rect: readElementRect(element, runtimeWindow),
+        embedId: embed.id,
       };
       const serialized = JSON.stringify(payload);
       if (serialized === lastPayload) return;
@@ -170,6 +172,13 @@ function mountNativeRoot(
       void render();
     });
   };
+
+  const embed = new HarmonyNativeEmbedBinding(
+    element,
+    id,
+    runtimeWindow,
+    schedule,
+  );
 
   rootSchedules.set(element, schedule);
   const eventNames = new Set<string>([
@@ -212,6 +221,7 @@ function mountNativeRoot(
   root.scope.on("$destroy", () => {
     if (disposed) return;
     disposed = true;
+    embed.dispose();
     resizeObserver?.disconnect();
     mutationObserver?.disconnect();
     runtimeWindow.removeEventListener("resize", schedule);

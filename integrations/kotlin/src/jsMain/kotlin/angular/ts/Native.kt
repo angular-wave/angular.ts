@@ -49,7 +49,7 @@ import angular.ts.generated.NativeLifecycleStatus as RawNativeLifecycleStatus
 import angular.ts.generated.NativeMediaLoadParameters as RawNativeMediaLoadParameters
 import angular.ts.generated.NativeMediaSeekParameters as RawNativeMediaSeekParameters
 import angular.ts.generated.NativeMediaStatus as RawNativeMediaStatus
-import angular.ts.generated.NativeNavigationAndroidChange as RawNativeNavigationAndroidChange
+import angular.ts.generated.NativeNavigationPlatformChange as RawNativeNavigationPlatformChange
 import angular.ts.generated.NativeNavigationBridgeChange as RawNativeNavigationBridgeChange
 import angular.ts.generated.NativeNavigationChange as RawNativeNavigationChange
 import angular.ts.generated.NativeNavigationPopResult as RawNativeNavigationPopResult
@@ -168,8 +168,8 @@ public typealias NativeMediaSeekParameters =
     RawNativeMediaSeekParameters
 public typealias NativeMediaStatus =
     RawNativeMediaStatus
-public typealias NativeNavigationAndroidChange =
-    RawNativeNavigationAndroidChange
+public typealias NativeNavigationPlatformChange =
+    RawNativeNavigationPlatformChange
 public typealias NativeNavigationBridgeChange =
     RawNativeNavigationBridgeChange
 public typealias NativeNavigationChange =

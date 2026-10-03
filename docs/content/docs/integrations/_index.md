@@ -18,10 +18,14 @@ pub.dev, Gleam is on Hex, and Closure externs ship in the npm package. Kotlin
 and the WebAssembly bindings are currently distributed as source with complete
 examples.
 
+## Native platforms
+
+- [Android]({{< relref "/docs/integrations/android" >}})
+- [HarmonyOS]({{< relref "/docs/integrations/harmonyos" >}})
+
 ## JavaScript and JVM languages
 
 - [ClojureScript]({{< relref "/docs/integrations/clojurescript" >}})
-- [Android]({{< relref "/docs/integrations/android" >}})
 - [Closure Compiler]({{< relref "/docs/integrations/closure" >}})
 - [Dart]({{< relref "/docs/integrations/dart" >}})
 - [Gleam]({{< relref "/docs/integrations/gleam" >}})

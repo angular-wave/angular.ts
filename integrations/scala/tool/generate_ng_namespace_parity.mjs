@@ -156,7 +156,7 @@ function renderParity(typeNames, methods) {
     "- `manual`: handwritten Scala facade exists.",
     "- `generated`: generated Scala facade exists.",
     "- `planned`: tracked but not implemented yet.",
-    "- `unsupported`: intentionally unavailable with a reason in the roadmap.",
+    "- `unsupported`: intentionally unavailable from the Scala.js integration.",
     "",
     "| ng type | AngularTS contract | Scala.js status |",
     "| --- | --- | --- |",

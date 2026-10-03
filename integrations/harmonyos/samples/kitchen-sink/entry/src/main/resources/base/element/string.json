@@ -1,0 +1,24 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "AngularTS Native kitchen sink"
+    },
+    {
+      "name": "KitchenSinkAbility_desc",
+      "value": "AngularTS Native kitchen sink"
+    },
+    {
+      "name": "KitchenSinkAbility_label",
+      "value": "Native Kitchen Sink"
+    },
+    {
+      "name": "permission_pasteboard",
+      "value": "Used by the clipboard component examples."
+    },
+    {
+      "name": "permission_location",
+      "value": "Used to demonstrate location-aware native features."
+    }
+  ]
+}

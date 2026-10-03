@@ -152,9 +152,9 @@
     "js/ng.NativeMediaLoadParameters"
     "js/ng.NativeMediaSeekParameters"
     "js/ng.NativeMediaStatus"
-    "js/ng.NativeNavigationAndroidChange"
     "js/ng.NativeNavigationBridgeChange"
     "js/ng.NativeNavigationChange"
+    "js/ng.NativeNavigationPlatformChange"
     "js/ng.NativeNavigationPopResult"
     "js/ng.NativeNavigationRouteParameters"
     "js/ng.NativeNavigationRouteResult"
@@ -452,9 +452,9 @@
      "js/ng.NativeMediaLoadParameters" "Media source loaded by the native player."
      "js/ng.NativeMediaSeekParameters" "Position, in milliseconds, passed to the native media player."
      "js/ng.NativeMediaStatus" "Current state of the native media player."
-     "js/ng.NativeNavigationAndroidChange" "Navigation committed directly by Android rather than requested through the bridge."
      "js/ng.NativeNavigationBridgeChange" "Completion or cancellation of navigation requested through the bridge."
      "js/ng.NativeNavigationChange" "Committed or cancelled native navigation event."
+     "js/ng.NativeNavigationPlatformChange" "Navigation committed directly by a native platform rather than requested through the bridge."
      "js/ng.NativeNavigationPopResult" "Result of requesting native back navigation."
      "js/ng.NativeNavigationRouteParameters" "URL and optional transition passed to a native route operation."
      "js/ng.NativeNavigationRouteResult" "Accepted push, replace, modal, or deep-link operation."
@@ -1183,11 +1183,6 @@
     "native-media-status-playing"
     "native-media-status-position"
     "native-media-status-state"
-    "native-navigation-android-change-from"
-    "native-navigation-android-change-method"
-    "native-navigation-android-change-phase"
-    "native-navigation-android-change-source"
-    "native-navigation-android-change-url"
     "native-navigation-bridge-change-from"
     "native-navigation-bridge-change-method"
     "native-navigation-bridge-change-phase"
@@ -1199,6 +1194,11 @@
     "native-navigation-change-phase"
     "native-navigation-change-source"
     "native-navigation-change-url"
+    "native-navigation-platform-change-from"
+    "native-navigation-platform-change-method"
+    "native-navigation-platform-change-phase"
+    "native-navigation-platform-change-source"
+    "native-navigation-platform-change-url"
     "native-navigation-pop-result-method"
     "native-navigation-pop-result-routed"
     "native-navigation-route-parameters-transition"
@@ -4480,31 +4480,6 @@
   ^string [^js/ng.NativeMediaStatus target]
   (.-state target))
 
-(defn native-navigation-android-change-from
-  "Public NativeNavigationAndroidChange.from member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
-  ^string [^js/ng.NativeNavigationAndroidChange target]
-  (.-from target))
-
-(defn native-navigation-android-change-method
-  "Public NativeNavigationAndroidChange.method member exposed by the AngularTS namespace contract.\n\nType: {string}"
-  ^string [^js/ng.NativeNavigationAndroidChange target]
-  (.-method target))
-
-(defn native-navigation-android-change-phase
-  "Public NativeNavigationAndroidChange.phase member exposed by the AngularTS namespace contract.\n\nType: {string}"
-  ^string [^js/ng.NativeNavigationAndroidChange target]
-  (.-phase target))
-
-(defn native-navigation-android-change-source
-  "Public NativeNavigationAndroidChange.source member exposed by the AngularTS namespace contract.\n\nType: {string}"
-  ^string [^js/ng.NativeNavigationAndroidChange target]
-  (.-source target))
-
-(defn native-navigation-android-change-url
-  "Public NativeNavigationAndroidChange.url member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
-  ^string [^js/ng.NativeNavigationAndroidChange target]
-  (.-url target))
-
 (defn native-navigation-bridge-change-from
   "Public NativeNavigationBridgeChange.from member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
   ^string [^js/ng.NativeNavigationBridgeChange target]
@@ -4558,6 +4533,31 @@
 (defn native-navigation-change-url
   "Public NativeNavigationChange.url member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
   ^string [^js/ng.NativeNavigationChange target]
+  (.-url target))
+
+(defn native-navigation-platform-change-from
+  "Public NativeNavigationPlatformChange.from member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationPlatformChange target]
+  (.-from target))
+
+(defn native-navigation-platform-change-method
+  "Public NativeNavigationPlatformChange.method member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationPlatformChange target]
+  (.-method target))
+
+(defn native-navigation-platform-change-phase
+  "Public NativeNavigationPlatformChange.phase member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationPlatformChange target]
+  (.-phase target))
+
+(defn native-navigation-platform-change-source
+  "Public NativeNavigationPlatformChange.source member exposed by the AngularTS namespace contract.\n\nType: {string}"
+  ^string [^js/ng.NativeNavigationPlatformChange target]
+  (.-source target))
+
+(defn native-navigation-platform-change-url
+  "Public NativeNavigationPlatformChange.url member exposed by the AngularTS namespace contract.\n\nType: {(null|string)}"
+  ^string [^js/ng.NativeNavigationPlatformChange target]
   (.-url target))
 
 (defn native-navigation-pop-result-method

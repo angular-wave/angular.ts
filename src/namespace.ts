@@ -296,7 +296,7 @@ import type {
   NativeMediaLoadParameters as TNativeMediaLoadParameters,
   NativeMediaSeekParameters as TNativeMediaSeekParameters,
   NativeMediaStatus as TNativeMediaStatus,
-  NativeNavigationAndroidChange as TNativeNavigationAndroidChange,
+  NativeNavigationPlatformChange as TNativeNavigationPlatformChange,
   NativeNavigationBridgeChange as TNativeNavigationBridgeChange,
   NativeNavigationChange as TNativeNavigationChange,
   NativeNavigationPopResult as TNativeNavigationPopResult,
@@ -847,7 +847,8 @@ declare global {
     export type NativeMediaLoadParameters = TNativeMediaLoadParameters;
     export type NativeMediaSeekParameters = TNativeMediaSeekParameters;
     export type NativeMediaStatus = TNativeMediaStatus;
-    export type NativeNavigationAndroidChange = TNativeNavigationAndroidChange;
+    export type NativeNavigationPlatformChange =
+      TNativeNavigationPlatformChange;
     export type NativeNavigationBridgeChange = TNativeNavigationBridgeChange;
     export type NativeNavigationChange = TNativeNavigationChange;
     export type NativeNavigationPopResult = TNativeNavigationPopResult;

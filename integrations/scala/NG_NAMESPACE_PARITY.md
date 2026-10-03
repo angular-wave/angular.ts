@@ -8,7 +8,7 @@ Statuses:
 - `manual`: handwritten Scala facade exists.
 - `generated`: generated Scala facade exists.
 - `planned`: tracked but not implemented yet.
-- `unsupported`: intentionally unavailable with a reason in the roadmap.
+- `unsupported`: intentionally unavailable from the Scala.js integration.
 
 | ng type | AngularTS contract | Scala.js status |
 | --- | --- | --- |
@@ -208,7 +208,7 @@ Statuses:
 | `NativeMediaLoadParameters` | Media source loaded by the native player. | planned |
 | `NativeMediaSeekParameters` | Position, in milliseconds, passed to the native media player. | planned |
 | `NativeMediaStatus` | Current state of the native media player. | planned |
-| `NativeNavigationAndroidChange` | Navigation committed directly by Android rather than requested through the bridge. | planned |
+| `NativeNavigationPlatformChange` | Navigation committed directly by a native platform rather than requested through the bridge. | planned |
 | `NativeNavigationBridgeChange` | Completion or cancellation of navigation requested through the bridge. | planned |
 | `NativeNavigationChange` | Committed or cancelled native navigation event. | planned |
 | `NativeNavigationPopResult` | Result of requesting native back navigation. | planned |

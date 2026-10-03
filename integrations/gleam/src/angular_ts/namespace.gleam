@@ -644,8 +644,8 @@ pub type NativeMediaSeekParameters
 /// Current state of the native media player.
 pub type NativeMediaStatus
 
-/// Navigation committed directly by Android rather than requested through the bridge.
-pub type NativeNavigationAndroidChange
+/// Navigation committed directly by a native platform rather than requested through the bridge.
+pub type NativeNavigationPlatformChange
 
 /// Completion or cancellation of navigation requested through the bridge.
 pub type NativeNavigationBridgeChange

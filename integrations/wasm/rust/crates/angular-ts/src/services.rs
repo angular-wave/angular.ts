@@ -2512,7 +2512,7 @@ mod host {
     pub struct NativeMediaStatus;
 
     #[derive(Debug, Clone, Copy)]
-    pub struct NativeNavigationAndroidChange;
+    pub struct NativeNavigationPlatformChange;
 
     #[derive(Debug, Clone, Copy)]
     pub struct NativeNavigationBridgeChange;
@@ -3024,8 +3024,8 @@ mod browser {
         pub type NativeMediaStatus;
 
         /// Navigation committed directly by Android rather than requested through the bridge.
-        #[wasm_bindgen(typescript_type = "ng.NativeNavigationAndroidChange")]
-        pub type NativeNavigationAndroidChange;
+        #[wasm_bindgen(typescript_type = "ng.NativeNavigationPlatformChange")]
+        pub type NativeNavigationPlatformChange;
 
         /// Completion or cancellation of navigation requested through the bridge.
         #[wasm_bindgen(typescript_type = "ng.NativeNavigationBridgeChange")]
@@ -3995,7 +3995,7 @@ pub use browser::{
     NativeGeolocationStatus, NativeHapticParameters, NativeHapticResult, NativeIntentParameters,
     NativeJsonObject, NativeJsonPrimitive, NativeJsonValue, NativeLifecycleStatus,
     NativeMediaLoadParameters, NativeMediaSeekParameters, NativeMediaStatus,
-    NativeNavigationAndroidChange, NativeNavigationBridgeChange, NativeNavigationChange,
+    NativeNavigationPlatformChange, NativeNavigationBridgeChange, NativeNavigationChange,
     NativeNavigationPopResult, NativeNavigationRouteParameters, NativeNavigationRouteResult,
     NativeNavigationStatus, NativeNavigationTransition, NativeNotificationStatus, NativeOpenResult,
     NativePermissionParameters, NativePermissionStatus, NativePlatformStatus, NativeReplyMessage,
@@ -4020,7 +4020,7 @@ pub use host::{
     NativeGeolocationStatus, NativeHapticParameters, NativeHapticResult, NativeIntentParameters,
     NativeJsonObject, NativeJsonPrimitive, NativeJsonValue, NativeLifecycleStatus,
     NativeMediaLoadParameters, NativeMediaSeekParameters, NativeMediaStatus,
-    NativeNavigationAndroidChange, NativeNavigationBridgeChange, NativeNavigationChange,
+    NativeNavigationPlatformChange, NativeNavigationBridgeChange, NativeNavigationChange,
     NativeNavigationPopResult, NativeNavigationRouteParameters, NativeNavigationRouteResult,
     NativeNavigationStatus, NativeNavigationTransition, NativeNotificationStatus, NativeOpenResult,
     NativePermissionParameters, NativePermissionStatus, NativePlatformStatus, NativeReplyMessage,

@@ -279,11 +279,11 @@ export type NativeNavigationBridgeChange =
         | "interrupted";
     };
 
-/** Navigation committed directly by Android rather than requested through the bridge. */
-export interface NativeNavigationAndroidChange {
+/** Navigation committed directly by a native platform rather than requested through the bridge. */
+export interface NativeNavigationPlatformChange {
   readonly method: "pop" | "deep-link";
   readonly phase: "completed";
-  readonly source: "android";
+  readonly source: "android" | "harmonyos";
   readonly from: string | null;
   readonly url: string | null;
 }
@@ -291,7 +291,7 @@ export interface NativeNavigationAndroidChange {
 /** Committed or cancelled native navigation event. */
 export type NativeNavigationChange =
   | NativeNavigationBridgeChange
-  | NativeNavigationAndroidChange;
+  | NativeNavigationPlatformChange;
 
 /** Runtime and application metadata reported by a native shell. */
 export interface NativePlatformStatus {

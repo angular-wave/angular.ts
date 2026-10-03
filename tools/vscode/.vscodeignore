@@ -1,6 +1,14 @@
 src/**
 test-fixtures/**
 out/test/**
+out/smoke/**
+out/**/*.map
+scripts/**
+references.md
+RELEASE_CHECKLIST.md
+tsconfig.json
+.gitignore
+media/icon.svg
 *.tsbuildinfo
 node_modules/**
 package-lock.json
