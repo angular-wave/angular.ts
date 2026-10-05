@@ -2,13 +2,25 @@ import { dealoc, removeElementData } from '../../shared/dom.js';
 import { assertInvariantDefined, shouldHandleViewRetentionPause } from '../../shared/utils.js';
 
 let nextFragmentId = 1;
+let compiledFragmentRetentionConsumers = 0;
+const emptyFragmentRetentionDomWork = [];
 const compiledFragmentsByNode = new WeakMap();
 const compiledFragmentParents = new WeakMap();
 const fragmentRetentionDomStates = new WeakMap();
 const compiledFragmentStatesByRoot = new WeakMap();
-const compiledFragmentScopeDestroyDeregisters = new WeakMap();
+/** @internal Enables retained-view DOM scheduling while a supporting runtime is active. */
+function enableCompiledFragmentRetention() {
+    compiledFragmentRetentionConsumers++;
+    let enabled = true;
+    return () => {
+        if (!enabled)
+            return;
+        enabled = false;
+        compiledFragmentRetentionConsumers--;
+    };
+}
 function createPublicLinkCompiledFragmentRecord(root, parentScope, nodes, ownsNodes = true) {
-    const id = getInitialFragmentId({});
+    const id = getNextFragmentId();
     ensureLinkedFragmentCanBeCreated(id, root, true);
     const record = {
         id,
@@ -20,12 +32,13 @@ function createPublicLinkCompiledFragmentRecord(root, parentScope, nodes, ownsNo
         diagnostics: createPublicLinkDiagnostics(root),
         linked: true,
         disposed: false,
+        _scopeDestroyDeregister: undefined,
         dispose: disposeCompiledFragmentRecordSelf,
     };
     return registerCompiledFragmentRecord(record, false);
 }
 function createPublicLinkSingleNodeCompiledFragmentRecord(root, parentScope, node, ownsNodes = true) {
-    const id = getInitialFragmentId({});
+    const id = getNextFragmentId();
     ensureLinkedFragmentCanBeCreated(id, root, true);
     const record = {
         id,
@@ -37,6 +50,7 @@ function createPublicLinkSingleNodeCompiledFragmentRecord(root, parentScope, nod
         diagnostics: createPublicLinkDiagnostics(root),
         linked: true,
         disposed: false,
+        _scopeDestroyDeregister: undefined,
         dispose: disposeCompiledFragmentRecordSelf,
     };
     return registerCompiledFragmentRecord(record, false);
@@ -66,6 +80,7 @@ function createCompiledFragmentRecord(options) {
         },
         linked,
         disposed: false,
+        _scopeDestroyDeregister: undefined,
         dispose: disposeCompiledFragmentRecordSelf,
     };
     return registerCompiledFragmentRecord(record);
@@ -95,6 +110,7 @@ function createSingleNodeCompiledFragmentRecord(options) {
         },
         linked,
         disposed: false,
+        _scopeDestroyDeregister: undefined,
         dispose: disposeCompiledFragmentRecordSelf,
     };
     return registerCompiledFragmentRecord(record);
@@ -436,7 +452,10 @@ function clearFragmentArray(record, key) {
     getFragmentArray(record, key)?.splice(0);
 }
 function getInitialFragmentId(options) {
-    return options.id ?? `fragment:${String(nextFragmentId++)}`;
+    return options.id ?? getNextFragmentId();
+}
+function getNextFragmentId() {
+    return `fragment:${String(nextFragmentId++)}`;
 }
 function ensureLinkedFragmentCanBeCreated(id, root, linked) {
     if (!root.destroyed)
@@ -464,7 +483,7 @@ function registerCompiledFragmentRecord(record, retentionAware = true) {
     else {
         registerCompiledFragmentScopeLifecycle(record);
     }
-    return retentionAware
+    return retentionAware && compiledFragmentRetentionConsumers > 0
         ? registerCompiledFragmentRetentionDomAdapter(record)
         : record;
 }
@@ -474,19 +493,22 @@ function registerCompiledFragmentScopeLifecycle(record) {
     if (!parentScope || !root || parentScope === root.rootScope)
         return;
     const deregister = parentScope.on("$destroy", () => {
-        compiledFragmentScopeDestroyDeregisters.delete(record);
+        record._scopeDestroyDeregister = undefined;
         disposeCompiledFragmentRecord(record, false);
     });
-    compiledFragmentScopeDestroyDeregisters.set(record, deregister);
+    record._scopeDestroyDeregister = deregister;
+    unregisterRootCompiledFragment(record, record.root);
 }
 function disposeCompiledFragmentScopeLifecycle(record) {
-    const deregister = compiledFragmentScopeDestroyDeregisters.get(record);
+    const deregister = record._scopeDestroyDeregister;
     if (!deregister)
         return;
-    compiledFragmentScopeDestroyDeregisters.delete(record);
+    record._scopeDestroyDeregister = undefined;
     deregister();
 }
 function registerRootCompiledFragment(record) {
+    if (record._scopeDestroyDeregister)
+        return;
     const root = assertInvariantDefined(record.root);
     let state = compiledFragmentStatesByRoot.get(root);
     if (!state) {
@@ -537,12 +559,13 @@ function registerCompiledFragmentRetentionDomAdapter(record) {
     }
     const state = {
         paused: false,
-        pending: [],
+        pending: emptyFragmentRetentionDomWork,
         deferredPrefixCount: 0,
         deregisterPause: parentScope.on("$viewRetentionPause", (...args) => {
             if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                 return;
             }
+            state.pending = [];
             state.paused = true;
             state.deferredPrefixCount = 0;
         }),
@@ -597,4 +620,4 @@ function disposeCompiledFragmentRecordSelf() {
     disposeCompiledFragmentRecord(this);
 }
 
-export { addCompiledFragmentAsyncWork, addCompiledFragmentChild, addCompiledFragmentDisposer, createCompiledFragmentRecord, createPublicLinkCompiledFragmentRecord, createPublicLinkSingleNodeCompiledFragmentRecord, createSingleNodeCompiledFragmentRecord, disposeCompiledFragmentRecord, disposeCompiledFragmentRecords, findCompiledFragmentRecord, getCompiledFragmentRecord, getCompiledFragmentRecordFromNodes, getCompiledFragmentRecordsFromNodes, markCompiledFragmentLinked, registerCompiledFragmentNode, registerCompiledFragmentNodes, removeCompiledFragmentAsyncWork, replaceCompiledFragmentNodes, scheduleCompiledFragmentDomWork, shouldRunCompiledFragmentCallback, snapshotCompiledFragmentNodes };
+export { addCompiledFragmentAsyncWork, addCompiledFragmentChild, addCompiledFragmentDisposer, createCompiledFragmentRecord, createPublicLinkCompiledFragmentRecord, createPublicLinkSingleNodeCompiledFragmentRecord, createSingleNodeCompiledFragmentRecord, disposeCompiledFragmentRecord, disposeCompiledFragmentRecords, enableCompiledFragmentRetention, findCompiledFragmentRecord, getCompiledFragmentRecord, getCompiledFragmentRecordFromNodes, getCompiledFragmentRecordsFromNodes, markCompiledFragmentLinked, registerCompiledFragmentNode, registerCompiledFragmentNodes, removeCompiledFragmentAsyncWork, replaceCompiledFragmentNodes, scheduleCompiledFragmentDomWork, shouldRunCompiledFragmentCallback, snapshotCompiledFragmentNodes };

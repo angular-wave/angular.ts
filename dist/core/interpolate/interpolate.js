@@ -1,6 +1,5 @@
 import { _parse } from '../../injection-tokens.js';
-import { isDefined, stringify, callFunction, isFunction, deProxy, isUndefined, createErrorFactory } from '../../shared/utils.js';
-import { SCE_CONTEXTS } from '../../services/sce/context.js';
+import { isDefined, deProxy, stringify, callFunction, isFunction, isUndefined, createErrorFactory } from '../../shared/utils.js';
 
 function getWatchableContext(context) {
     return isFunction(context?.watch)
@@ -48,7 +47,7 @@ function ensureInterpolateRuntimeActive(state) {
     }
 }
 /** @internal */
-function createInterpolateService(state, $parse, security) {
+function createInterpolateService(state, $parse, policies) {
     ensureInterpolateRuntimeActive(state);
     const interpolationStartSymbol = state.startSymbol;
     const interpolationEndSymbol = state.endSymbol;
@@ -65,19 +64,20 @@ function createInterpolateService(state, $parse, security) {
             .replace(escapedEndRegexp, interpolationEndSymbol);
     }
     const $interpolate = (text, mustHaveExpression, trustedContext, allOrNothing) => {
-        const contextAllowsConcatenation = trustedContext === SCE_CONTEXTS._URL ||
-            trustedContext === SCE_CONTEXTS._MEDIA_URL;
+        const contextAllowsConcatenation = trustedContext === "url" || trustedContext === "mediaUrl";
         if (!text.length || !text.includes(interpolationStartSymbol)) {
             if (mustHaveExpression) {
                 return undefined;
             }
             let unescapedText = unescapeText(text);
             if (contextAllowsConcatenation) {
-                unescapedText = security.getTrusted(trustedContext, unescapedText);
+                unescapedText = policies._apply(trustedContext, unescapedText);
             }
             const constantInterp = (() => unescapedText);
             constantInterp.exp = text;
             constantInterp.expressions = [];
+            if (trustedContext && !contextAllowsConcatenation)
+                unescapedText = policies._apply(trustedContext, unescapedText);
             return constantInterp;
         }
         allOrNothing = !!allOrNothing;
@@ -125,7 +125,12 @@ function createInterpolateService(state, $parse, security) {
                         const value = parseFn(context);
                         return parseStringifyInterceptor(deProxy(isFunction(value) ? value() : value));
                     }
-                    : (context) => parseFn(context);
+                    : (context) => {
+                        const value = parseFn(context);
+                        return allOrNothing && !isDefined(value)
+                            ? value
+                            : policies._apply(trustedContext, deProxy(isFunction(value) ? value() : value) ?? "");
+                    };
                 const fn = ((context, cb) => {
                     try {
                         if (cb) {
@@ -155,12 +160,12 @@ function createInterpolateService(state, $parse, security) {
                     concat[expressionPositions[i]] = values[i];
                 }
                 if (contextAllowsConcatenation) {
-                    return security.getTrusted(trustedContext, concat.join(""));
+                    return policies._apply(trustedContext, concat.join(""));
                 }
                 if (trustedContext && concat.length > 1) {
                     throwNoconcat(text);
                 }
-                return concat.join("");
+                return trustedContext ? values[0] : concat.join("");
             };
             const fn = ((context, cb) => {
                 const values = new Array(expressions.length);
@@ -193,11 +198,17 @@ function createInterpolateService(state, $parse, security) {
         }
         function parseStringifyInterceptor(value) {
             try {
+                if (allOrNothing && !isDefined(value))
+                    return value;
                 value =
                     trustedContext && !contextAllowsConcatenation
-                        ? security.getTrusted(trustedContext, value)
-                        : security.valueOf(value);
-                return allOrNothing && !isDefined(value) ? value : stringify(value);
+                        ? policies._apply(trustedContext, value)
+                        : deProxy(value);
+                return allOrNothing && !isDefined(value)
+                    ? value
+                    : trustedContext && !contextAllowsConcatenation
+                        ? value
+                        : stringify(value);
             }
             catch (err) {
                 return interr(text, err);
@@ -210,10 +221,10 @@ function createInterpolateService(state, $parse, security) {
     return $interpolate;
 }
 /** @internal */
-function createInterpolateRegistration(state, security) {
+function createInterpolateRegistration(state, policies) {
     return [
         _parse,
-        ($parse) => createInterpolateService(state, $parse, security),
+        ($parse) => createInterpolateService(state, $parse, policies),
     ];
 }
 

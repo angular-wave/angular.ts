@@ -133,6 +133,12 @@ describe("dom", () => {
       expect(getDirectiveHostElement(clonedAnchor)).toBe(host);
       expect(getNormalizedAttr(clonedAnchor, "ngClick")).toBe("save()");
       expect(hasNormalizedAttr(clonedAnchor, "ngClick")).toBeTrue();
+
+      const secondClone = clone.cloneNode(true);
+
+      cloneTranscludedHostElements(clone, secondClone);
+
+      expect(getDirectiveHostElement(secondClone.firstChild)).toBe(host);
       expect(getDirectiveHostElement(null)).toBeNull();
       expect(getDirectiveHostElement(document.createTextNode("x"))).toBeNull();
     });

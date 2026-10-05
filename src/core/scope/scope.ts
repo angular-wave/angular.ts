@@ -2,7 +2,6 @@ import {
   callFunction,
   createObject,
   deleteProperty,
-  getHashKey,
   hasOwn,
   isArray,
   isDefined,
@@ -34,6 +33,31 @@ import type {
 } from "../../shared/utils.ts";
 import type { AppContext } from "../app-context/app-context.ts";
 
+/** @internal Scope associated with a directly linked DOM event target. */
+export const EVENT_SCOPE = Symbol();
+
+const SCOPE_HANDLER = Symbol();
+
+function getScopeHandler(scope: ng.Scope): Scope {
+  const handler = (
+    scope as unknown as {
+      [SCOPE_HANDLER]?: Scope;
+    }
+  )[SCOPE_HANDLER];
+
+  return handler ?? (scope as ng.Scope & { _handler: Scope })._handler;
+}
+
+function getOptionalScopeHandler(scope: ng.Scope): Scope | undefined {
+  const handler = (
+    scope as unknown as {
+      [SCOPE_HANDLER]?: Scope;
+    }
+  )[SCOPE_HANDLER];
+
+  return handler ?? (scope as unknown as { _handler?: Scope })._handler;
+}
+
 /**
  * Public watcher callback shape.
  *
@@ -43,6 +67,102 @@ import type { AppContext } from "../app-context/app-context.ts";
 export type ListenerFn = {
   bivarianceHack(newValue?: unknown, originalTarget?: object): void;
 }["bivarianceHack"];
+
+type InternalListenerFn = (
+  newValue?: unknown,
+  originalTarget?: object,
+  context?: unknown,
+) => void;
+
+/** @internal Registers a scope watcher when its explicit deregistration handle is not needed. */
+export function registerScopeWatch(
+  scope: ng.Scope,
+  watchProp: string,
+  listenerFn: ng.ListenerFn,
+  lazy = false,
+  directLeaf = false,
+  synchronousInitial = false,
+  resolvedValue?: unknown,
+  hasResolvedValue = false,
+  listenerContext?: unknown,
+  watchPlan?: ScopeWatchPlan,
+): void {
+  const handler = getScopeHandler(scope);
+
+  if (watchPlan) {
+    handler._watchPlanned(
+      watchProp,
+      listenerFn,
+      lazy,
+      synchronousInitial,
+      resolvedValue,
+      hasResolvedValue,
+      listenerContext,
+      watchPlan,
+    );
+
+    return;
+  }
+
+  handler.watch(
+    watchProp,
+    listenerFn,
+    lazy,
+    directLeaf,
+    false,
+    synchronousInitial,
+    resolvedValue,
+    hasResolvedValue,
+    listenerContext,
+  );
+}
+
+/** @internal Registers cleanup that runs when a scope is destroyed. */
+export function registerScopeDestroyCallback(
+  scope: ng.Scope,
+  callback: () => void,
+): void {
+  const handler = getOptionalScopeHandler(scope);
+
+  if (handler) {
+    handler._registerDestroyCallback(callback);
+    return;
+  }
+
+  scope.on("$destroy", callback);
+}
+
+/** @internal Registers native event cleanup without allocating a destroy closure. */
+export function registerScopeEventCleanup(
+  scope: ng.Scope,
+  target: EventTarget,
+  type: string,
+  listener: EventListenerOrEventListenerObject,
+  options?: boolean | AddEventListenerOptions,
+): void {
+  const handler = getOptionalScopeHandler(scope);
+
+  if (handler) {
+    handler._registerEventCleanup(target, type, listener, options);
+    return;
+  }
+
+  registerScopeDestroyCallback(scope, (): void => {
+    if (options === undefined) {
+      target.removeEventListener(type, listener);
+    } else {
+      target.removeEventListener(type, listener, options);
+    }
+  });
+}
+
+/** @internal Registers scope metadata cleanup for a delegated DOM event target. */
+export function registerScopeDelegatedEventCleanup(
+  scope: ng.Scope,
+  target: EventTarget,
+): void {
+  getScopeHandler(scope)._registerDelegatedEventCleanup(target);
+}
 
 /**
  * Marker value for objects or properties excluded from scope proxying.
@@ -67,29 +187,38 @@ export interface NonScopeMarked {
   };
 }
 
+let nextListenerId = 0;
+
 interface Listener {
   /** @internal */
-  _originalTarget: ScopeTarget;
+  _owner: Scope;
+  /** @internal Raw proxy target captured when this listener is registered. */
+  _originalTarget?: ScopeTarget;
   /** @internal */
-  _listenerFn: ListenerFn;
+  _listenerFn: InternalListenerFn;
+  /** @internal */
+  _listenerContext?: unknown;
   /** @internal */
   _watchFn: CompiledExpression;
   /** @internal */
-  _parse: ng.ParseService;
+  _parse?: ng.ParseService;
   /** @internal */
   _id: number;
   /** @internal */
-  _scopeId: number;
-  /** @internal */
-  _property: string[];
+  _scopeId?: number;
   /** @internal */
   _watchProp?: string;
   /** @internal */
   _invokeWatchFn?: CompiledExpression;
   /** @internal */
   _watchParentFn?: CompiledExpression;
-  /** @internal */
   _foreignWatchDescriptors?: ForeignWatchDescriptor[];
+  /** @internal Immutable single-descriptor plan shared by compiled bindings. */
+  _plannedForeignWatchDescriptor?: ScopeWatchPlanDescriptor;
+  /** @internal Mutable parent state for a shared planned descriptor. */
+  _plannedForeignWatchParent?: unknown;
+  /** @internal Mutable dependency state for a shared planned descriptor. */
+  _plannedForeignWatchDependency?: ForeignListenerRef;
   /** @internal */
   _watchNestedObject?: boolean;
   /** @internal */
@@ -110,6 +239,12 @@ interface Listener {
   _lastValue?: unknown;
 }
 
+function getListenerOwnerTarget(listener: Listener): ScopeTarget {
+  const owner = listener._owner;
+
+  return listener._originalTarget ?? owner._scopeTarget ?? owner._target;
+}
+
 interface ForeignListenerRef {
   _handler: Scope;
   _key: string;
@@ -119,18 +254,77 @@ interface ForeignListenerRef {
 interface ForeignWatchDescriptor {
   _watchProp: string;
   _watchParentFn: CompiledExpression;
+  _parentKey?: string;
   _key: string;
   _parent?: unknown;
   _dependency?: ForeignListenerRef;
+}
+
+interface DirectMemberWatchPlan {
+  _key: string;
+  _parentKey: string;
+  _watchProp: string;
+  _watchParentFn: CompiledExpression;
+}
+
+interface ScopeWatchPlanDescriptor {
+  readonly _watchProp: string;
+  readonly _watchParentFn: CompiledExpression;
+  readonly _parentKey?: string;
+  readonly _key: string;
+}
+
+/** @internal Immutable registration metadata shared by compiled bindings. */
+export interface ScopeWatchPlan {
+  readonly _watchFn: CompiledExpression;
+  readonly _keys: readonly string[];
+  readonly _foreignDescriptors?: readonly ScopeWatchPlanDescriptor[];
 }
 
 /**
  * Narrows inherited/foreign listener delivery by watched key and original
  * target hash.
  */
-type ForeignListenerHashIndex = Map<string, Map<unknown, Listener[]>>;
+type ListenerHashEntry = Listener | Listener[];
+
+type ObjectListenerKeys = string | string[];
+
+type ForeignListenerHashIndex = Map<string, Map<unknown, ListenerHashEntry>>;
 
 type ListenerIndex = Map<string, Map<number, number>>;
+
+const scopeWatchIdentityValues = new WeakSet<object>();
+const unresolvedForeignWatchParent = Symbol();
+
+/** @internal Associates a repeated child scope with its raw object identity. */
+export function setScopeWatchIdentity(
+  handler: Scope,
+  value: unknown,
+  valueIsRaw = false,
+): void {
+  const rawValue = valueIsRaw ? value : unwrapScopeValue(value);
+
+  if (rawValue !== null && typeof rawValue === "object") {
+    handler._watchIdentity = rawValue;
+    scopeWatchIdentityValues.add(rawValue);
+  } else {
+    handler._watchIdentity = undefined;
+  }
+}
+
+function getScopeWatchIdentity(handler: Scope, target: unknown): unknown {
+  const identity = handler._watchIdentity;
+
+  if (identity && target === (handler._scopeTarget ?? handler._target)) {
+    return identity;
+  }
+
+  return target !== null &&
+    typeof target === "object" &&
+    scopeWatchIdentityValues.has(target)
+    ? target
+    : undefined;
+}
 
 interface ListenerStats {
   _nestedCandidateCount: number;
@@ -308,7 +502,7 @@ export function observeScopeExpression(
   listener: (value: unknown) => void,
   registerDestroy = true,
 ): () => void {
-  const owner = scope._handler;
+  const owner = getScopeHandler(scope);
   const observer: ScopeExpressionObserver = {
     _owner: owner,
     _read: read,
@@ -337,9 +531,27 @@ export function observeScopeExpression(
   return dispose;
 }
 
-interface WatcherRef {
-  _key: string;
-  _id: number;
+/** @internal Creates a lightweight value cell tracked by scope expression observers. */
+export function createScopeExpressionValue<T>(initialValue: T): { value: T } {
+  let value = initialValue;
+  const target = {} as { value: T };
+
+  Object.defineProperty(target, "value", {
+    enumerable: true,
+    get() {
+      trackScopeExpressionRead(target, "value");
+
+      return value;
+    },
+    set(nextValue: T) {
+      if (Object.is(value, nextValue)) return;
+
+      value = nextValue;
+      scheduleScopeExpressionObservers(target, "value");
+    },
+  });
+
+  return target;
 }
 
 type ListenerScheduleFilter = (listeners: Listener[]) => Listener[];
@@ -508,6 +720,12 @@ export type ScopeProxied<T extends object> = T & {
 };
 
 type ScopeProxy = ng.Scope;
+
+const EMPTY_SCOPE_CHILDREN: ScopeProxy[] = [];
+
+const EMPTY_SCHEDULED_LISTENERS: Listener[] = [];
+
+const EMPTY_SCOPE_LISTENERS = new Map<string, ScopeEventListener[]>();
 
 export type ScopeTarget = NonScopeMarked & Record<PropertyKey, unknown>;
 
@@ -1006,6 +1224,54 @@ function getSimpleMemberExpression(node: ASTNode): string | undefined {
   return objectExpression ? `${objectExpression}.${propertyName}` : undefined;
 }
 
+const directMemberWatchPlanCache = new WeakMap<
+  CompiledExpression,
+  DirectMemberWatchPlan | false
+>();
+
+function getDirectMemberWatchPlan(
+  watchFn: CompiledExpression,
+  node: ASTNode,
+  watchProp: string,
+  parse: ng.ParseService,
+): DirectMemberWatchPlan | undefined {
+  const cached = directMemberWatchPlanCache.get(watchFn);
+
+  if (cached !== undefined) {
+    return cached || undefined;
+  }
+
+  let plan: DirectMemberWatchPlan | false = false;
+
+  if (node._type === ASTType._MemberExpression) {
+    const expressionNode = node as ExpressionNode;
+    const objectNode = expressionNode._object;
+    const key = getNodePropertyName(node);
+    const parentKey =
+      objectNode?._type === ASTType._Identifier
+        ? getNodeName(objectNode)
+        : undefined;
+
+    if (
+      !expressionNode._computed &&
+      key &&
+      parentKey &&
+      watchProp === `${parentKey}.${key}`
+    ) {
+      plan = {
+        _key: key,
+        _parentKey: parentKey,
+        _watchProp: watchProp,
+        _watchParentFn: parse(parentKey),
+      };
+    }
+  }
+
+  directMemberWatchPlanCache.set(watchFn, plan);
+
+  return plan || undefined;
+}
+
 function addForeignWatchDescriptor(
   listener: Listener,
   watchProp: string | undefined,
@@ -1025,7 +1291,13 @@ function addForeignWatchDescriptor(
 
   const descriptor: ForeignWatchDescriptor = {
     _watchProp: watchProp,
-    _watchParentFn: listener._parse(parentExpression),
+    _watchParentFn: (listener._parse ?? listener._owner._parse)(
+      parentExpression,
+    ),
+    _parentKey:
+      parentExpression.includes(".") || parentExpression.includes("[")
+        ? undefined
+        : parentExpression,
     _key: key,
   };
 
@@ -1095,14 +1367,13 @@ function listenerNeedsNestedCollection(listener: Listener): boolean {
 function pushUniqueListenerKey(
   keySet: string[],
   seenKeys: Set<string>,
-  listener: Listener,
+  _listener: Listener,
   key: string,
 ): void {
   if (seenKeys.has(key)) return;
 
   seenKeys.add(key);
   keySet.push(key);
-  listener._property.push(key);
 }
 
 function registerListenerKeys(
@@ -1123,13 +1394,13 @@ function registerListenerKeys(
 
 function deregisterListenerKeys(
   scope: Scope,
-  listenerId: number,
+  listener: Listener,
   watchKeys: (string | undefined)[],
 ): void {
   for (let i = 0, l = watchKeys.length; i < l; i++) {
     const key = watchKeys[i];
 
-    if (key) scope._deregisterKey(key, listenerId);
+    if (key) scope._deregisterKey(key, listener);
   }
 }
 
@@ -1348,6 +1619,119 @@ function collectForeignWatchDescriptors(
       }
     }
   }
+}
+
+function collectStandaloneListenerKeys(
+  node: ASTNode | undefined,
+  standaloneKeys: Set<string>,
+): void {
+  if (!node || node._type === ASTType._Literal) return;
+
+  if (node._type === ASTType._Identifier) {
+    const key = getNodeName(node);
+
+    if (key) standaloneKeys.add(key);
+    return;
+  }
+
+  if (node._type === ASTType._MemberExpression) {
+    collectStandaloneListenerKeys(node._object, standaloneKeys);
+
+    if (node._computed) {
+      collectStandaloneListenerKeys(node._property, standaloneKeys);
+    }
+
+    return;
+  }
+
+  if (node._type === ASTType._CallExpression) {
+    collectStandaloneListenerKeys(node._callee, standaloneKeys);
+
+    const callArguments = node._arguments ?? [];
+
+    for (let i = 0, l = callArguments.length; i < l; i++) {
+      collectStandaloneListenerKeys(callArguments[i], standaloneKeys);
+    }
+
+    return;
+  }
+
+  if (node._type === ASTType._LogicalExpression) {
+    collectStandaloneListenerKeys(node._left, standaloneKeys);
+    collectStandaloneListenerKeys(node._right, standaloneKeys);
+
+    return;
+  }
+
+  if (node._type === ASTType._ConditionalExpression) {
+    collectStandaloneListenerKeys(node._test, standaloneKeys);
+    collectStandaloneListenerKeys(node._alternate, standaloneKeys);
+    collectStandaloneListenerKeys(node._consequent, standaloneKeys);
+
+    return;
+  }
+
+  const toWatch = node._toWatch;
+
+  if (!toWatch?.length) return;
+
+  for (let i = 0, l = toWatch.length; i < l; i++) {
+    const watchTarget = toWatch[i];
+
+    if (watchTarget !== node) {
+      collectStandaloneListenerKeys(watchTarget, standaloneKeys);
+    }
+  }
+}
+
+/** @internal Builds reusable registration metadata for a compiled binding. */
+export function createScopeWatchPlan(
+  parse: ng.ParseService,
+  watchProp: string,
+): ScopeWatchPlan | undefined {
+  const watchFn = parse(watchProp);
+  const expression = watchFn._decoratedNode._body[0]?._expression;
+
+  if (!expression) {
+    return undefined;
+  }
+
+  const keys: string[] = [];
+  const listener = { _parse: parse } as Listener;
+  const seenKeys = new Set<string>();
+
+  collectExpressionListenerKeys(expression, keys, seenKeys, listener);
+  collectForeignWatchDescriptors(expression, listener, keys, seenKeys);
+
+  const descriptors = listener._foreignWatchDescriptors;
+
+  if (descriptors) {
+    const standaloneKeys = new Set<string>();
+
+    collectStandaloneListenerKeys(expression, standaloneKeys);
+
+    if (standaloneKeys.size > 0) {
+      for (let i = 0, l = descriptors.length; i < l; i++) {
+        const descriptorKey = descriptors[i]._key;
+
+        if (standaloneKeys.has(descriptorKey)) continue;
+
+        const keyIndex = keys.indexOf(descriptorKey);
+
+        if (keyIndex !== -1) keys.splice(keyIndex, 1);
+      }
+    }
+  }
+
+  if (keys.length === 0) {
+    return undefined;
+  }
+
+  return {
+    _watchFn: watchFn,
+    _keys: keys,
+    _foreignDescriptors: listener._foreignWatchDescriptors,
+  };
 }
 
 function collectExpressionListenerKeys(
@@ -1580,9 +1964,30 @@ const nonScopeCache = new WeakSet<object>();
 
 const scopeCache = new WeakSet<object>();
 
-const scopeProxyCache = new WeakMap<object, WeakMap<Scope, ScopeProxy>>();
+const scopeProxyCache = new WeakMap<
+  object,
+  ScopeProxy | WeakMap<Scope, ScopeProxy>
+>();
 
 const scopeProxyTargets = new WeakMap<object, object>();
+
+const unboundScopeMethod = Symbol("unboundScopeMethod");
+
+const scopeMethodPropertyMap = Object.assign(Object.create(null), {
+  broadcast: unboundScopeMethod,
+  batch: unboundScopeMethod,
+  destroy: unboundScopeMethod,
+  emit: unboundScopeMethod,
+  getById: unboundScopeMethod,
+  _isRoot: unboundScopeMethod,
+  merge: unboundScopeMethod,
+  new: unboundScopeMethod,
+  newIsolate: unboundScopeMethod,
+  on: unboundScopeMethod,
+  searchByName: unboundScopeMethod,
+  transcluded: unboundScopeMethod,
+  watch: unboundScopeMethod,
+}) as Record<PropertyKey, unknown>;
 
 let destroyedScopeCleanupQueue: Scope[] = [];
 
@@ -1711,25 +2116,29 @@ function unwrapCollectionArgs(args: unknown[]): unknown[] {
 }
 
 function addObjectListenerKey(
-  objectListeners: WeakMap<object, string[]>,
+  objectListeners: WeakMap<object, ObjectListenerKeys>,
   target: object,
   key: string,
 ): void {
   const keyList = objectListeners.get(target);
 
   if (keyList) {
-    if (!keyList.includes(key)) {
-      keyList.push(key);
+    if (isArray(keyList)) {
+      if (!keyList.includes(key)) {
+        keyList.push(key);
+      }
+    } else if (keyList !== key) {
+      objectListeners.set(target, [keyList, key]);
     }
 
     return;
   }
 
-  objectListeners.set(target, [key]);
+  objectListeners.set(target, key);
 }
 
 function removeObjectListenerKey(
-  objectListeners: WeakMap<object, string[]>,
+  objectListeners: WeakMap<object, ObjectListenerKeys>,
   target: object,
   key: string,
 ): void {
@@ -1739,14 +2148,22 @@ function removeObjectListenerKey(
     return;
   }
 
+  if (!isArray(keyList)) {
+    if (keyList === key) {
+      objectListeners.delete(target);
+    }
+
+    return;
+  }
+
   const keyIndex = keyList.indexOf(key);
 
   if (keyIndex === -1) {
     return;
   }
 
-  if (keyList.length === 1) {
-    objectListeners.delete(target);
+  if (keyList.length === 2) {
+    objectListeners.set(target, keyList[keyIndex === 0 ? 1 : 0]);
 
     return;
   }
@@ -1762,24 +2179,47 @@ function getCachedScopeProxy(target: unknown, handler: Scope): unknown {
 
   const objectTarget = target;
 
-  let proxiesByHandler = scopeProxyCache.get(objectTarget);
+  const cached = scopeProxyCache.get(objectTarget);
 
-  if (!proxiesByHandler) {
-    proxiesByHandler = new WeakMap();
+  if (cached && isProxy(cached)) {
+    if (cached._handler === handler) return cached;
+
+    const proxiesByHandler = new WeakMap<Scope, ScopeProxy>();
+
+    proxiesByHandler.set(cached._handler, cached);
     scopeProxyCache.set(objectTarget, proxiesByHandler);
-  }
 
-  let proxy = proxiesByHandler.get(handler);
+    const proxy = new Proxy(objectTarget, handler) as ScopeProxy;
 
-  if (!proxy) {
-    proxy = new Proxy(target, handler) as ScopeProxy;
+    handler._scopeTarget ??= objectTarget as ScopeTarget;
     proxiesByHandler.set(handler, proxy);
-    scopeProxyTargets.set(proxy as object, target);
+    scopeProxyTargets.set(proxy as object, objectTarget);
 
-    const bind = (target as ScopeProxyBindable)[SCOPE_PROXY_BIND];
+    const bind = (objectTarget as ScopeProxyBindable)[SCOPE_PROXY_BIND];
 
     if (isFunction(bind)) {
-      bind.call(target, handler, proxy);
+      bind.call(objectTarget, handler, proxy);
+    }
+
+    return proxy;
+  }
+
+  let proxy = cached?.get(handler);
+
+  if (!proxy) {
+    proxy = new Proxy(objectTarget, handler) as ScopeProxy;
+    handler._scopeTarget ??= objectTarget as ScopeTarget;
+    if (cached) {
+      cached.set(handler, proxy);
+    } else {
+      scopeProxyCache.set(objectTarget, proxy);
+    }
+    scopeProxyTargets.set(proxy as object, objectTarget);
+
+    const bind = (objectTarget as ScopeProxyBindable)[SCOPE_PROXY_BIND];
+
+    if (isFunction(bind)) {
+      bind.call(objectTarget, handler, proxy);
     }
   }
 
@@ -1808,13 +2248,19 @@ export function isNonScope(target: unknown): boolean {
   }
 
   // 3. Explicit non-scope flags
+  const targetConstructor = objectTarget.constructor;
+
   if (
     objectTarget.$nonscope === true ||
-    objectTarget.constructor?.$nonscope === true
+    targetConstructor?.$nonscope === true
   ) {
     nonScopeCache.add(objectTarget);
 
     return true;
+  }
+
+  if (targetConstructor === Object) {
+    return false;
   }
 
   // 4. Global objects
@@ -1844,7 +2290,7 @@ export function isNonScope(target: unknown): boolean {
         continue;
       }
 
-      if (isInstanceOf(objectTarget, ctor)) {
+      if (objectTarget instanceof ctor) {
         nonScopeCache.add(objectTarget);
 
         return true;
@@ -1889,13 +2335,19 @@ export class Scope {
   _watchers: Map<string, Listener[]>;
 
   /** @internal */
-  _watcherIndexes: ListenerIndex;
-
-  /** @internal */
   _watchersByHash: ForeignListenerHashIndex;
 
   /** @internal */
   _listeners: Map<string, ScopeEventListener[]>;
+
+  /** @internal */
+  _destroyCallbacks?: Array<() => void> | null;
+
+  /** @internal Flat target/type/listener/options records for native event cleanup. */
+  _eventCleanups?: unknown[] | null;
+
+  /** @internal DOM targets whose delegated event scope metadata must be cleared. */
+  _delegatedEventTargets?: EventTarget[] | null;
 
   /** @internal */
   _foreignListeners: Map<string, Listener[]>;
@@ -1913,7 +2365,7 @@ export class Scope {
   _foreignProxyTargets: WeakMap<object, ScopeProxy>;
 
   /** @internal */
-  _objectListeners: WeakMap<object, string[]>;
+  _objectListeners: WeakMap<object, ObjectListenerKeys>;
 
   /** @internal */
   _listenerStats: ListenerStats;
@@ -1927,14 +2379,20 @@ export class Scope {
   /** @internal */
   _target: ScopeTarget;
 
+  /** @internal Stable owner target; nested proxies may replace `_target`. */
+  _scopeTarget?: ScopeTarget;
+
+  /** @internal Raw repeated value used to index this scope's listeners. */
+  _watchIdentity?: object;
+
   /** @internal */
   _children: ScopeProxy[];
 
   /** @internal */
-  _childIndices: WeakMap<object, number>;
+  _parentIndex = -1;
 
   /** @internal */
-  _childTargets: WeakMap<object, ScopeProxy>;
+  _childTargets?: WeakMap<object, ScopeProxy>;
 
   id;
 
@@ -1957,10 +2415,10 @@ export class Scope {
   _propertyMap: Record<PropertyKey, unknown>;
 
   /** @internal */
-  _ownedForeignListeners: ForeignListenerRef[];
+  _ownedForeignListeners: (Scope | string | number)[];
 
   /** @internal */
-  _ownedWatchers: WatcherRef[];
+  _ownedWatchers: (string | Listener | number)[];
 
   /** @internal */
   _listenerScheduler: ScopeListenerScheduler;
@@ -1977,6 +2435,221 @@ export class Scope {
   /** @internal */
   _modelChangeTracker?: ModelChangeTracker;
 
+  /** @internal Registers an immediate compiled binding without generic watch mode branches. */
+  _watchPlannedImmediate(
+    listenerFn: ng.ListenerFn,
+    listenerContext: unknown,
+    watchPlan: ScopeWatchPlan,
+  ): void {
+    const scopeTarget = this._target;
+    const descriptorPlans = watchPlan._foreignDescriptors;
+
+    const listener: Listener = {
+      _owner: this,
+      _originalTarget: scopeTarget,
+      _listenerFn: listenerFn,
+      _watchFn: watchPlan._watchFn,
+      _id: ++nextListenerId,
+      _plannedForeignWatchParent: unresolvedForeignWatchParent,
+    };
+
+    listener._listenerContext = listenerContext;
+
+    const keys = watchPlan._keys;
+
+    if (descriptorPlans?.length === 1) {
+      const descriptor = descriptorPlans[0];
+
+      listener._plannedForeignWatchDescriptor = descriptor;
+
+      if (
+        descriptor._parentKey &&
+        scopeTarget[descriptor._parentKey] === this._watchIdentity
+      ) {
+        listener._plannedForeignWatchParent = this._watchIdentity;
+      } else {
+        this._bindForeignDependency(listener);
+      }
+    } else if (descriptorPlans) {
+      const descriptors = new Array<ForeignWatchDescriptor>(
+        descriptorPlans.length,
+      );
+
+      for (let i = 0, l = descriptorPlans.length; i < l; i++) {
+        const descriptor = descriptorPlans[i];
+
+        descriptors[i] = {
+          _watchProp: descriptor._watchProp,
+          _watchParentFn: descriptor._watchParentFn,
+          _parentKey: descriptor._parentKey,
+          _key: descriptor._key,
+          _parent: unresolvedForeignWatchParent,
+        };
+      }
+
+      listener._foreignWatchDescriptors = descriptors;
+      this._bindForeignDependency(listener);
+    }
+
+    const listenerObject = listener._watchFn(scopeTarget);
+
+    if (isObject(listenerObject)) {
+      const listenerTarget = getObjectListenerTarget(listenerObject);
+
+      if (listenerTarget) {
+        addObjectListenerKey(
+          this._objectListeners,
+          listenerTarget,
+          assertInvariantDefined(keys[0]),
+        );
+      }
+    }
+
+    const hashKey = getScopeWatchIdentity(this, scopeTarget);
+
+    if (isDefined(hashKey)) {
+      for (let i = 0, l = keys.length; i < l; i++) {
+        this._registerPlannedHashedKey(keys[i], listener, hashKey);
+      }
+    } else {
+      for (let i = 0, l = keys.length; i < l; i++) {
+        this._registerKey(keys[i], listener, false, hashKey);
+      }
+    }
+
+    if (!isFunction(listenerObject) && !isArray(listenerObject)) {
+      try {
+        (listenerFn as InternalListenerFn)(
+          listenerObject,
+          getListenerOwnerTarget(listener),
+          listenerContext,
+        );
+      } catch (err) {
+        this._exceptionHandler(err);
+      }
+    } else {
+      this._notifyListener(listener, scopeTarget);
+    }
+  }
+
+  /** @internal Registers a compiled binding without entering generic watch analysis. */
+  _watchPlanned(
+    watchProp: string,
+    listenerFn: ng.ListenerFn,
+    lazy: boolean,
+    synchronousInitial: boolean,
+    resolvedValue: unknown,
+    hasResolvedValue: boolean,
+    listenerContext: unknown,
+    watchPlan: ScopeWatchPlan,
+  ): void {
+    const scopeTarget = this._target;
+    const descriptorPlans = watchPlan._foreignDescriptors;
+
+    const listener: Listener = {
+      _owner: this,
+      _originalTarget: scopeTarget,
+      _listenerFn: listenerFn,
+      _watchFn: watchPlan._watchFn,
+      _id: ++nextListenerId,
+      _plannedForeignWatchParent: unresolvedForeignWatchParent,
+    };
+
+    if (listenerContext !== undefined) {
+      listener._listenerContext = listenerContext;
+    }
+
+    const keys = watchPlan._keys;
+
+    if (descriptorPlans?.length === 1) {
+      const descriptor = descriptorPlans[0];
+
+      listener._plannedForeignWatchDescriptor = descriptor;
+
+      if (
+        descriptor._parentKey &&
+        scopeTarget[descriptor._parentKey] === this._watchIdentity
+      ) {
+        listener._plannedForeignWatchParent = this._watchIdentity;
+      } else {
+        this._bindForeignDependency(listener);
+      }
+    } else if (descriptorPlans) {
+      const descriptors = new Array<ForeignWatchDescriptor>(
+        descriptorPlans.length,
+      );
+
+      for (let i = 0, l = descriptorPlans.length; i < l; i++) {
+        const descriptor = descriptorPlans[i];
+
+        descriptors[i] = {
+          _watchProp: descriptor._watchProp,
+          _watchParentFn: descriptor._watchParentFn,
+          _parentKey: descriptor._parentKey,
+          _key: descriptor._key,
+          _parent: unresolvedForeignWatchParent,
+        };
+      }
+
+      listener._foreignWatchDescriptors = descriptors;
+      this._bindForeignDependency(listener);
+    }
+
+    const listenerObject = hasResolvedValue
+      ? resolvedValue
+      : listener._watchFn(scopeTarget);
+
+    if (isObject(listenerObject)) {
+      const listenerTarget = getObjectListenerTarget(listenerObject);
+
+      if (listenerTarget) {
+        addObjectListenerKey(
+          this._objectListeners,
+          listenerTarget,
+          assertInvariantDefined(keys[0]),
+        );
+      }
+    }
+
+    const hashKey = getScopeWatchIdentity(this, scopeTarget);
+
+    if (isDefined(hashKey)) {
+      for (let i = 0, l = keys.length; i < l; i++) {
+        this._registerPlannedHashedKey(keys[i], listener, hashKey);
+      }
+    } else {
+      for (let i = 0, l = keys.length; i < l; i++) {
+        this._registerKey(keys[i], listener, false, hashKey);
+      }
+    }
+
+    if (!lazy) {
+      if (
+        synchronousInitial &&
+        !isFunction(listenerObject) &&
+        !isArray(listenerObject)
+      ) {
+        try {
+          if (listenerContext === undefined) {
+            listenerFn(listenerObject, getListenerOwnerTarget(listener));
+          } else {
+            (listenerFn as InternalListenerFn)(
+              listenerObject,
+              getListenerOwnerTarget(listener),
+              listenerContext,
+            );
+          }
+        } catch (err) {
+          this._exceptionHandler(err);
+        }
+      } else if (synchronousInitial) {
+        this._notifyListener(listener, scopeTarget);
+      } else {
+        this._scheduleListener([listener]);
+      }
+    }
+  }
+
   /**
    * Initializes the handler with the target object and a context.
    *
@@ -1988,6 +2661,8 @@ export class Scope {
     parent?: ng.Scope,
     scheduler?: ScopeListenerScheduler,
   ) {
+    this._listeners = EMPTY_SCOPE_LISTENERS;
+
     this._parse = context?._parse ?? defaultParse;
 
     this._exceptionHandler =
@@ -1995,13 +2670,9 @@ export class Scope {
 
     this._watchers = context?._watchers ?? new Map<string, Listener[]>();
 
-    this._watcherIndexes =
-      context?._watcherIndexes ?? new Map<string, Map<number, number>>();
-
     this._watchersByHash =
-      context?._watchersByHash ?? new Map<string, Map<unknown, Listener[]>>();
-
-    this._listeners = new Map();
+      context?._watchersByHash ??
+      new Map<string, Map<unknown, ListenerHashEntry>>();
 
     this._foreignListeners =
       context?._foreignListeners ?? new Map<string, Listener[]>();
@@ -2012,7 +2683,7 @@ export class Scope {
 
     this._foreignListenersByHash =
       context?._foreignListenersByHash ??
-      new Map<string, Map<unknown, Listener[]>>();
+      new Map<string, Map<unknown, ListenerHashEntry>>();
 
     this._foreignProxies = context?._foreignProxies ?? new Set();
 
@@ -2027,12 +2698,11 @@ export class Scope {
     this._handler = this;
 
     this._target = null as unknown as ScopeTarget;
+    this._scopeTarget = undefined;
 
-    this._children = [];
+    this._watchIdentity = undefined;
 
-    this._childIndices = new WeakMap();
-
-    this._childTargets = new WeakMap();
+    this._children = EMPTY_SCOPE_CHILDREN;
 
     this.id = nextId();
 
@@ -2042,7 +2712,7 @@ export class Scope {
 
     this._destroyed = false;
 
-    this._scheduled = [];
+    this._scheduled = EMPTY_SCHEDULED_LISTENERS;
 
     this._arrayOwnerListenersScheduled = false;
 
@@ -2057,7 +2727,9 @@ export class Scope {
       scheduler ??
       createScopeListenerScheduler();
 
-    this._listenerScheduler._owner ??= this;
+    if (!context) {
+      this._listenerScheduler._owner ??= this;
+    }
 
     this._arrayMutationWrappers =
       context?._arrayMutationWrappers ?? new WeakMap();
@@ -2068,27 +2740,49 @@ export class Scope {
     this._modelChangeTracker = context?._modelChangeTracker;
 
     this._propertyMap = {
-      broadcast: this.broadcast.bind(this),
-      batch: this.batch.bind(this),
+      __proto__: scopeMethodPropertyMap,
       _children: this._children,
-      destroy: this.destroy.bind(this),
-      emit: this.emit.bind(this),
-      getById: this.getById.bind(this),
       _handler: this,
       id: this.id,
-      _isRoot: this._isRoot.bind(this),
-      merge: this.merge.bind(this),
-      new: this.new.bind(this),
-      newIsolate: this.newIsolate.bind(this),
-      on: this.on.bind(this),
       parent: this.parent,
       _proxy: this._proxy,
       root: this.root,
       scopeName: this.scopeName,
-      searchByName: this.searchByName.bind(this),
-      transcluded: this.transcluded.bind(this),
-      watch: this.watch.bind(this),
     };
+  }
+
+  /** @internal Binds a scope API method only when it is first read through the proxy. */
+  _bindScopeMethod(property: string): unknown {
+    switch (property) {
+      case "broadcast":
+        return this.broadcast.bind(this);
+      case "batch":
+        return this.batch.bind(this);
+      case "destroy":
+        return this.destroy.bind(this);
+      case "emit":
+        return this.emit.bind(this);
+      case "getById":
+        return this.getById.bind(this);
+      case "_isRoot":
+        return this._isRoot.bind(this);
+      case "merge":
+        return this.merge.bind(this);
+      case "new":
+        return this.new.bind(this);
+      case "newIsolate":
+        return this.newIsolate.bind(this);
+      case "on":
+        return this.on.bind(this);
+      case "searchByName":
+        return this.searchByName.bind(this);
+      case "transcluded":
+        return this.transcluded.bind(this);
+      case "watch":
+        return this.watch.bind(this);
+      default:
+        return undefined;
+    }
   }
 
   /** @internal Updates runtime services for this scope tree. */
@@ -2110,7 +2804,7 @@ export class Scope {
     if (visited.has(objectValue)) return;
     visited.add(objectValue);
 
-    const childScope = this._childTargets.get(objectValue);
+    const childScope = this._childTargets?.get(objectValue);
 
     if (childScope) {
       if (childScope._handler._destroyed) return;
@@ -2659,7 +3353,7 @@ export class Scope {
           ? this._watchers.get(property)
           : undefined;
 
-        const targetHashKey = getHashKey(target);
+        const targetHashKey = getScopeWatchIdentity(this, target);
         let hasExactPropListeners = false;
 
         if (isDefined(targetHashKey)) {
@@ -2668,7 +3362,9 @@ export class Scope {
             ?.get(targetHashKey);
 
           if (hashedPropListeners) {
-            propListeners = hashedPropListeners;
+            propListeners = isArray(hashedPropListeners)
+              ? hashedPropListeners
+              : [hashedPropListeners];
             hasExactPropListeners = directListeners.length === 0;
           }
         }
@@ -2696,16 +3392,17 @@ export class Scope {
                     continue;
                   }
 
-                  const expectedParent = x._watchParentFn?.(x._originalTarget);
+                  const originalTarget = getListenerOwnerTarget(x);
+                  const expectedParent = x._watchParentFn?.(originalTarget);
 
                   const expectedParentTarget = unwrapScopeValue(expectedParent);
 
                   if (
                     expectedTarget === expectedParentTarget ||
                     (isArray(expectedParentTarget) &&
-                      expectedTarget === x._originalTarget) ||
+                      expectedTarget === originalTarget) ||
                     (x._watchProp.includes("[") &&
-                      expectedTarget === x._originalTarget)
+                      expectedTarget === originalTarget)
                   ) {
                     scheduled?.push(x);
                   } else {
@@ -2775,11 +3472,18 @@ export class Scope {
           let scheduled = _foreignListeners;
 
           // filter for repeaters
-          const hashKey = getHashKey(this._target);
+          const hashKey = getScopeWatchIdentity(this, this._target);
 
           if (isDefined(hashKey)) {
-            scheduled =
-              this._foreignListenersByHash.get(property)?.get(hashKey) ?? [];
+            const hashedListeners = this._foreignListenersByHash
+              .get(property)
+              ?.get(hashKey);
+
+            scheduled = hashedListeners
+              ? isArray(hashedListeners)
+                ? hashedListeners
+                : [hashedListeners]
+              : [];
           }
 
           if (scheduled.length > 0) {
@@ -2806,17 +3510,23 @@ export class Scope {
         const keyList = this._objectListeners.get(target);
 
         if (keyList) {
-          const objectHashKey = getHashKey(target);
+          const hasMultipleKeys = isArray(keyList);
+          const keyCount = hasMultipleKeys ? keyList.length : 1;
+          const objectHashKey = getScopeWatchIdentity(this, target);
 
-          for (let i = 0, l = keyList.length; i < l; i++) {
-            const key = keyList[i];
+          for (let i = 0; i < keyCount; i++) {
+            const key = hasMultipleKeys ? keyList[i] : keyList;
 
             const listeners = isDefined(objectHashKey)
               ? this._watchersByHash.get(key)?.get(objectHashKey)
               : this._watchers.get(key);
 
-            if (listeners && this._scheduled !== listeners) {
-              this._scheduleListener(listeners);
+            if (listeners) {
+              const scheduled = isArray(listeners) ? listeners : [listeners];
+
+              if (this._scheduled !== scheduled) {
+                this._scheduleListener(scheduled);
+              }
             }
           }
         }
@@ -2841,6 +3551,13 @@ export class Scope {
     property: string | number | symbol,
     proxy: ScopeProxy,
   ): unknown {
+    if (property === SCOPE_HANDLER || property === "_handler") {
+      this._target = target;
+      this._proxy = proxy;
+
+      return this;
+    }
+
     if (property === "scopeName" && this.scopeName) return this.scopeName;
 
     if (property === "$$watchersCount") return calculateWatcherCount(this);
@@ -2863,24 +3580,76 @@ export class Scope {
         ? target[property]
         : target[property];
 
-    const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
+    const scopeableTargetProp =
+      isObject(targetProp) && !isNonScope(targetProp) ? targetProp : undefined;
 
-    const foreignProxy =
-      isObject(targetProp) && !isNonScope(targetProp)
-        ? this._foreignProxyTargets.get(targetProp)
-        : undefined;
+    const nonscopeProps = scopeableTargetProp
+      ? (target.constructor?.$nonscope ?? target.$nonscope)
+      : undefined;
 
-    const scopedTargetProp: unknown =
-      foreignProxy ??
-      (isString(property) &&
+    const foreignProxy = scopeableTargetProp
+      ? this._foreignProxyTargets.get(scopeableTargetProp)
+      : undefined;
+
+    let scopedTargetProp: unknown;
+
+    if (foreignProxy) {
+      scopedTargetProp = foreignProxy;
+    } else if (
+      isString(property) &&
       isArray(nonscopeProps) &&
       nonscopeProps.includes(property)
-        ? targetProp
-        : getCachedScopeProxy(targetProp, this));
+    ) {
+      scopedTargetProp = targetProp;
+    } else if (scopeableTargetProp) {
+      if (isProxy(scopeableTargetProp)) {
+        scopedTargetProp = scopeableTargetProp;
+      } else {
+        const cached = scopeProxyCache.get(scopeableTargetProp);
+        let proxiesByHandler: WeakMap<Scope, ScopeProxy> | undefined;
+        let cachedProxy: ScopeProxy | undefined;
+
+        if (cached && isProxy(cached)) {
+          if (cached._handler === this) {
+            cachedProxy = cached;
+          } else {
+            proxiesByHandler = new WeakMap();
+            proxiesByHandler.set(cached._handler, cached);
+            scopeProxyCache.set(scopeableTargetProp, proxiesByHandler);
+          }
+        } else {
+          proxiesByHandler = cached;
+        }
+
+        cachedProxy ??= proxiesByHandler?.get(this);
+
+        if (!cachedProxy) {
+          cachedProxy = new Proxy(scopeableTargetProp, this) as ScopeProxy;
+          if (proxiesByHandler) {
+            proxiesByHandler.set(this, cachedProxy);
+          } else {
+            scopeProxyCache.set(scopeableTargetProp, cachedProxy);
+          }
+          scopeProxyTargets.set(cachedProxy as object, scopeableTargetProp);
+
+          const bind = (scopeableTargetProp as ScopeProxyBindable)[
+            SCOPE_PROXY_BIND
+          ];
+
+          if (isFunction(bind)) {
+            bind.call(scopeableTargetProp, this, cachedProxy);
+          }
+        }
+
+        scopedTargetProp = cachedProxy;
+      }
+    } else {
+      scopedTargetProp = targetProp;
+    }
 
     if (isProxy(scopedTargetProp)) {
-      this._proxy = scopedTargetProp;
-    } else {
+      if (this._proxy !== scopedTargetProp) this._proxy = scopedTargetProp;
+    } else if (this._proxy !== proxy) {
       this._proxy = proxy;
     }
 
@@ -2892,7 +3661,7 @@ export class Scope {
       this._propertyMap._proxy = proxy;
     }
 
-    const scopeMember =
+    let scopeMember =
       typeof property !== "symbol" ? this._propertyMap[property] : undefined;
 
     const targetShadowsScopeData =
@@ -2900,10 +3669,15 @@ export class Scope {
 
     if (
       typeof property !== "symbol" &&
-      hasOwn(this._propertyMap, property) &&
+      property in this._propertyMap &&
       !targetShadowsScopeData
     ) {
       this._target = target;
+
+      if (scopeMember === unboundScopeMethod) {
+        scopeMember = this._bindScopeMethod(String(property));
+        this._propertyMap[property] = scopeMember;
+      }
 
       return scopeMember;
     }
@@ -2952,8 +3726,11 @@ export class Scope {
           const keyList = this._objectListeners.get(target);
 
           if (keyList) {
-            for (let i = 0, l = keyList.length; i < l; i++) {
-              const key = keyList[i];
+            const hasMultipleKeys = isArray(keyList);
+            const keyCount = hasMultipleKeys ? keyList.length : 1;
+
+            for (let i = 0; i < keyCount; i++) {
+              const key = hasMultipleKeys ? keyList[i] : keyList;
 
               const listenerGroups = [
                 this._watchers.get(key),
@@ -2971,6 +3748,10 @@ export class Scope {
                   if (scheduledIds.has(listener._id)) continue;
 
                   scheduledIds.add(listener._id);
+                  if (this._scheduled === EMPTY_SCHEDULED_LISTENERS) {
+                    this._scheduled = [];
+                  }
+
                   this._scheduled.push(listener);
                 }
               }
@@ -3017,7 +3798,7 @@ export class Scope {
           );
 
           if (previousLength !== target.length) {
-            this._scheduleWatchKeys(["length"], scheduledIds);
+            this._scheduleWatchKeys("length", scheduledIds);
           }
 
           this._recordModelChange(property, target);
@@ -3282,14 +4063,17 @@ export class Scope {
     }
 
     if (sizeChanged) {
-      this._scheduleWatchKeys(["size"], seenListenerIds);
+      this._scheduleWatchKeys("size", seenListenerIds);
     }
 
     this._scheduleObjectOwnerListeners(target, seenListenerIds);
   }
 
   /** @internal Queues local and foreign listeners registered for the provided keys. */
-  _scheduleWatchKeys(watchKeys: string[], seenListenerIds?: Set<number>): void {
+  _scheduleWatchKeys(
+    watchKeys: ObjectListenerKeys,
+    seenListenerIds?: Set<number>,
+  ): void {
     const scheduleUnique = (listeners: Listener[] | undefined): void => {
       if (!listeners) {
         return;
@@ -3319,8 +4103,11 @@ export class Scope {
       }
     };
 
-    for (let i = 0, l = watchKeys.length; i < l; i++) {
-      const key = watchKeys[i];
+    const hasMultipleKeys = isArray(watchKeys);
+    const keyCount = hasMultipleKeys ? watchKeys.length : 1;
+
+    for (let i = 0; i < keyCount; i++) {
+      const key = hasMultipleKeys ? watchKeys[i] : watchKeys;
 
       scheduleUnique(this._watchers.get(key));
       scheduleUnique(this._foreignListeners.get(key));
@@ -3346,31 +4133,52 @@ export class Scope {
   }
 
   /** @internal Registers a member-expression listener against its current foreign proxy parent. */
-  _bindForeignDependency(listener: Listener): boolean {
+  _bindForeignDependency(
+    listener: Listener,
+    resolvedValue?: unknown,
+    hasResolvedValue = false,
+  ): boolean {
+    const plannedDescriptor = listener._plannedForeignWatchDescriptor;
     const descriptors = listener._foreignWatchDescriptors;
+    const descriptorCount = plannedDescriptor ? 1 : (descriptors?.length ?? 0);
 
-    if (!descriptors?.length) {
+    if (descriptorCount === 0) {
       return false;
     }
 
     let bound = false;
+    const listenerTarget = getListenerOwnerTarget(listener);
 
-    for (let i = 0, l = descriptors.length; i < l; i++) {
-      const descriptor = descriptors[i];
-      const existing = descriptor._dependency;
-      const parent = descriptor._watchParentFn(listener._originalTarget);
+    for (let i = 0; i < descriptorCount; i++) {
+      const descriptor =
+        plannedDescriptor ?? assertInvariantDefined(descriptors?.[i]);
+      const mutableDescriptor = descriptor as ForeignWatchDescriptor;
+      const existing = plannedDescriptor
+        ? listener._plannedForeignWatchDependency
+        : mutableDescriptor._dependency;
+      const parent = descriptor._parentKey
+        ? listenerTarget[descriptor._parentKey]
+        : descriptor._watchParentFn(listenerTarget);
+      const previousParent = plannedDescriptor
+        ? listener._plannedForeignWatchParent
+        : mutableDescriptor._parent;
 
-      if (existing && descriptor._parent === parent) {
+      if (previousParent === parent) {
         continue;
       }
 
       const foreignProxy = this._resolveForeignDependencyProxy(
-        listener,
         descriptor,
         parent,
+        listenerTarget,
       );
 
       if (!foreignProxy) {
+        if (plannedDescriptor) {
+          listener._plannedForeignWatchParent = parent;
+        } else {
+          mutableDescriptor._parent = parent;
+        }
         continue;
       }
 
@@ -3379,7 +4187,12 @@ export class Scope {
         existing?._handler === foreignProxy._handler &&
         existing._key === descriptor._key
       ) {
-        descriptor._parent = parent;
+        if (plannedDescriptor) {
+          listener._plannedForeignWatchParent = parent;
+        } else {
+          mutableDescriptor._parent = parent;
+        }
+
         continue;
       }
 
@@ -3395,19 +4208,29 @@ export class Scope {
       foreignProxy._handler._registerForeignKey(
         descriptor._key,
         listener,
-        listener._parse(descriptor._watchProp)(listener._originalTarget),
+        hasResolvedValue && descriptorCount === 1
+          ? resolvedValue
+          : this._parse(descriptor._watchProp)(listenerTarget),
       );
       this._trackOwnedForeignListener(
         foreignProxy._handler,
         descriptor._key,
         listener._id,
       );
-      descriptor._dependency = {
+      const dependency = {
         _handler: foreignProxy._handler,
         _key: descriptor._key,
         _id: listener._id,
       };
-      descriptor._parent = parent;
+
+      if (plannedDescriptor) {
+        listener._plannedForeignWatchDependency = dependency;
+        listener._plannedForeignWatchParent = parent;
+      } else {
+        mutableDescriptor._dependency = dependency;
+        mutableDescriptor._parent = parent;
+      }
+
       bound = true;
     }
 
@@ -3416,14 +4239,21 @@ export class Scope {
 
   /** @internal Removes the current foreign dependency owned by this listener. */
   _releaseForeignDependency(listener: Listener): void {
+    const plannedDescriptor = listener._plannedForeignWatchDescriptor;
     const descriptors = listener._foreignWatchDescriptors;
+    const descriptorCount = plannedDescriptor ? 1 : (descriptors?.length ?? 0);
 
-    if (!descriptors?.length) {
+    if (descriptorCount === 0) {
       return;
     }
 
-    for (let i = 0, l = descriptors.length; i < l; i++) {
-      const existing = descriptors[i]._dependency;
+    for (let i = 0; i < descriptorCount; i++) {
+      const descriptor =
+        plannedDescriptor ?? assertInvariantDefined(descriptors?.[i]);
+      const mutableDescriptor = descriptor as ForeignWatchDescriptor;
+      const existing = plannedDescriptor
+        ? listener._plannedForeignWatchDependency
+        : mutableDescriptor._dependency;
 
       if (!existing) {
         continue;
@@ -3435,17 +4265,35 @@ export class Scope {
         existing._key,
         listener._id,
       );
-      descriptors[i]._dependency = undefined;
-      descriptors[i]._parent = undefined;
+
+      if (plannedDescriptor) {
+        listener._plannedForeignWatchDependency = undefined;
+        listener._plannedForeignWatchParent = undefined;
+      } else {
+        mutableDescriptor._dependency = undefined;
+        mutableDescriptor._parent = undefined;
+      }
     }
   }
 
   /** @internal Resolves the foreign proxy parent for a member-expression listener. */
   _resolveForeignDependencyProxy(
-    listener: Listener,
     descriptor: ForeignWatchDescriptor,
     potentialProxy: unknown,
+    listenerTarget: ScopeTarget,
   ): ScopeProxy | undefined {
+    const potentialScopeProxy = isProxy(potentialProxy)
+      ? potentialProxy
+      : undefined;
+
+    if (
+      potentialScopeProxy &&
+      (this._foreignProxies.has(potentialScopeProxy) ||
+        potentialScopeProxy._handler !== this)
+    ) {
+      return potentialScopeProxy;
+    }
+
     if (
       isObject(potentialProxy) &&
       isFunction((potentialProxy as ScopeProxyBindable)[SCOPE_PROXY_BIND])
@@ -3455,25 +4303,15 @@ export class Scope {
 
     let foreignProxy: ScopeProxy | undefined;
 
-    const potentialScopeProxy = isProxy(potentialProxy)
-      ? potentialProxy
-      : undefined;
+    const foreignTarget = getObjectListenerTarget(potentialProxy);
 
-    if (potentialScopeProxy && this._foreignProxies.has(potentialScopeProxy)) {
-      foreignProxy = potentialScopeProxy;
-    } else if (potentialScopeProxy && potentialScopeProxy._handler !== this) {
-      foreignProxy = potentialScopeProxy;
-    } else {
-      const foreignTarget = getObjectListenerTarget(potentialProxy);
-
-      if (foreignTarget) {
-        foreignProxy = this._foreignProxyTargets.get(foreignTarget as Scope);
-      }
+    if (foreignTarget) {
+      foreignProxy = this._foreignProxyTargets.get(foreignTarget as Scope);
     }
 
     foreignProxy ??= this._resolveForeignProxyParent(
       descriptor._watchProp,
-      listener._originalTarget,
+      listenerTarget,
     );
 
     return foreignProxy;
@@ -3566,7 +4404,7 @@ export class Scope {
     if (isProxy(target[property])) {
       target[property] = undefined;
 
-      this._scheduleWatchKeys([String(property)]);
+      this._scheduleWatchKeys(String(property));
 
       if (this._scheduled.length === 0 && this._objectListeners.has(target)) {
         this._scheduleObjectOwnerListeners(target);
@@ -3588,7 +4426,7 @@ export class Scope {
     if (this._scheduled.length === 0 && this._objectListeners.has(target)) {
       this._scheduleObjectOwnerListeners(target);
     } else {
-      this._scheduleWatchKeys([String(property)]);
+      this._scheduleWatchKeys(String(property));
     }
 
     if (this._scheduled.length > 0) {
@@ -3913,29 +4751,47 @@ export class Scope {
     listenerFn?: ng.ListenerFn,
     lazy = false,
     directLeaf = false,
+    returnDeregister = true,
+    synchronousInitial = false,
+    resolvedValue?: unknown,
+    hasResolvedValue = false,
+    listenerContext?: unknown,
   ) {
     if (!isString(watchProp)) {
       throw new TypeError("Watched property must be a string");
     }
     watchProp = watchProp.trim();
     const get = this._parse(watchProp);
+    const scopeTarget = this._target;
 
     // Constant are immediately passed to listener function
     if (get._constant) {
-      if (listenerFn) {
-        this._scheduleCallback(() => {
+      if (listenerFn && !lazy) {
+        const notify = (): void => {
           let res = get();
 
           while (isFunction(res)) {
             res = res();
           }
-          listenerFn(res, this._target as object);
-        });
+          (listenerFn as InternalListenerFn)(
+            res,
+            scopeTarget as object,
+            listenerContext,
+          );
+        };
+
+        if (synchronousInitial) {
+          notify();
+        } else {
+          this._scheduleCallback(notify);
+        }
       }
 
-      return () => {
-        /* empty */
-      };
+      return returnDeregister
+        ? () => {
+            /* empty */
+          }
+        : undefined;
     }
 
     const expr = get._decoratedNode._body[0]?._expression;
@@ -3945,24 +4801,101 @@ export class Scope {
     }
 
     if (!listenerFn) {
-      let res = get(this._target);
+      let res = get(scopeTarget);
 
       while (isFunction(res)) {
-        res = callFunction(res, undefined, this._target);
+        res = callFunction(res, undefined, scopeTarget);
       }
 
       return undefined;
     }
 
     const listener: Listener = {
-      _originalTarget: this._target,
+      _owner: this,
       _listenerFn: listenerFn,
       _watchFn: get,
       _parse: this._parse,
       _scopeId: this.id,
       _id: nextUid(),
-      _property: [],
     };
+
+    if (listenerContext !== undefined) {
+      listener._listenerContext = listenerContext;
+    }
+
+    if (!returnDeregister) {
+      const plan = getDirectMemberWatchPlan(get, expr, watchProp, this._parse);
+
+      if (plan) {
+        const { _key: memberKey, _parentKey: parentKey } = plan;
+
+        listener._dedupeUnchanged = true;
+        listener._watchProp = watchProp;
+        listener._watchParentFn = plan._watchParentFn;
+        listener._foreignWatchDescriptors = [
+          {
+            _watchProp: plan._watchProp,
+            _watchParentFn: plan._watchParentFn,
+            _key: memberKey,
+          },
+        ];
+        const listenerObject = hasResolvedValue
+          ? resolvedValue
+          : listener._watchFn(scopeTarget);
+        const dependencyBound = this._bindForeignDependency(
+          listener,
+          listenerObject,
+          true,
+        );
+
+        listener._directLeaf = directLeaf;
+
+        if (isObject(listenerObject)) {
+          const listenerTarget = getObjectListenerTarget(listenerObject);
+
+          if (listenerTarget) {
+            addObjectListenerKey(
+              this._objectListeners,
+              listenerTarget,
+              memberKey,
+            );
+          }
+        }
+
+        this._registerKey(memberKey, listener);
+
+        if (parentKey !== memberKey) {
+          this._registerKey(parentKey, listener);
+        }
+
+        if (!lazy) {
+          if (
+            synchronousInitial &&
+            dependencyBound &&
+            !isFunction(listenerObject) &&
+            !isArray(listenerObject)
+          ) {
+            try {
+              (listenerFn as InternalListenerFn)(
+                listenerObject,
+                getListenerOwnerTarget(listener),
+                listenerContext,
+              );
+            } catch (err) {
+              this._exceptionHandler(err);
+            }
+          } else if (synchronousInitial) {
+            this._notifyListener(listener, scopeTarget);
+          } else {
+            this._scheduleListener([listener]);
+          }
+        }
+
+        return undefined;
+      }
+    }
+
+    listener._originalTarget = scopeTarget;
 
     // simplest case
     let key = getNodeName(expr);
@@ -3987,6 +4920,9 @@ export class Scope {
         if (keySet.length === 0) {
           throw new Error("Unable to determine key");
         }
+
+        this._bindForeignDependency(listener);
+
         break;
       }
       // 5
@@ -4001,9 +4937,11 @@ export class Scope {
         registerListenerKeys(this, listener, keySet);
         this._bindForeignDependency(listener);
 
+        if (!returnDeregister) return undefined;
+
         return () => {
           this._releaseForeignDependency(listener);
-          deregisterListenerKeys(this, listener._id, keySet);
+          deregisterListenerKeys(this, listener, keySet);
         };
       }
       // 6
@@ -4018,6 +4956,7 @@ export class Scope {
           }
           pushUniqueListenerKey(keySet, seenKeys, listener, key);
           collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
+          this._bindForeignDependency(listener);
           break;
         } else {
           const toWatch = assertInvariantDefined(expr._toWatch);
@@ -4031,13 +4970,15 @@ export class Scope {
             keyList[i] = registerKey;
           }
 
-          registerListenerKeys(this, listener, keyList, true);
+          registerListenerKeys(this, listener, keyList, !lazy);
           collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
+
+          if (!returnDeregister) return undefined;
 
           // Return deregistration function
           return () => {
             this._releaseForeignDependency(listener);
-            deregisterListenerKeys(this, listener._id, keyList);
+            deregisterListenerKeys(this, listener, keyList);
           };
         }
       }
@@ -4075,25 +5016,27 @@ export class Scope {
         collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
 
         if (keySet.length === 0) {
-          this._scheduleListener([listener]);
+          if (!lazy) this._scheduleListener([listener]);
 
-          return () => false;
+          return returnDeregister ? () => false : undefined;
         }
 
         registerListenerKeys(this, listener, keySet);
         this._bindForeignDependency(listener);
 
-        if (filterInputWatchKeys) {
+        if (!lazy && filterInputWatchKeys) {
           for (let i = 0, l = filterInputWatchKeys.length; i < l; i++) {
             this._scheduleListener([listener]);
           }
-        } else {
+        } else if (!lazy) {
           this._scheduleListener([listener]);
         }
 
+        if (!returnDeregister) return undefined;
+
         return () => {
           this._releaseForeignDependency(listener);
-          deregisterListenerKeys(this, listener._id, keySet);
+          deregisterListenerKeys(this, listener, keySet);
         };
       }
 
@@ -4177,12 +5120,14 @@ export class Scope {
           throw new Error("Unable to determine key");
         }
 
-        registerListenerKeys(this, listener, keySet, true);
+        registerListenerKeys(this, listener, keySet, !lazy);
         this._bindForeignDependency(listener);
+
+        if (!returnDeregister) return undefined;
 
         return () => {
           this._releaseForeignDependency(listener);
-          deregisterListenerKeys(this, listener._id, keySet);
+          deregisterListenerKeys(this, listener, keySet);
         };
       }
 
@@ -4245,7 +5190,9 @@ export class Scope {
     }
 
     // if the target is an object, then start observing it
-    const listenerObject = listener._watchFn(this._target);
+    const listenerObject = hasResolvedValue
+      ? resolvedValue
+      : listener._watchFn(scopeTarget);
 
     if (isObject(listenerObject)) {
       if (!key && keySet.length > 0) {
@@ -4273,15 +5220,21 @@ export class Scope {
     }
 
     if (!lazy) {
-      this._scheduleListener([listener]);
+      if (synchronousInitial) {
+        this._notifyListener(listener, scopeTarget);
+      } else {
+        this._scheduleListener([listener]);
+      }
     }
+
+    if (!returnDeregister) return undefined;
 
     return () => {
       if (keySet.length > 0) {
         let res = true;
 
         for (let i = 0, l = keySet.length; i < l; i++) {
-          const success = this._deregisterKey(keySet[i], listener._id);
+          const success = this._deregisterKey(keySet[i], listener);
 
           if (!success) {
             res = false;
@@ -4298,7 +5251,7 @@ export class Scope {
 
         this._releaseForeignDependency(listener);
 
-        return this._deregisterKey(key, listener._id);
+        return this._deregisterKey(key, listener);
       }
     };
   }
@@ -4326,16 +5279,22 @@ export class Scope {
       child = createObject(this._target as object | null) as ng.Scope;
     }
 
-    const proxy = new Proxy(child, new Scope(this) as ProxyHandler<ng.Scope>);
+    const handler = new Scope(this);
+    const proxy = new Proxy(child, handler as ProxyHandler<ng.Scope>);
+
+    handler._target = child;
+    handler._scopeTarget = child as ScopeTarget;
+    handler._proxy = proxy;
 
     scopeProxyTargets.set(proxy as unknown as object, child as object);
 
+    if (this._children === EMPTY_SCOPE_CHILDREN) {
+      this._children = [];
+      this._propertyMap._children = this._children;
+    }
+    handler._parentIndex = this._children.length;
     this._children.push(proxy);
-    this._childIndices.set(
-      proxy as unknown as object,
-      this._children.length - 1,
-    );
-    this._childTargets.set(child as object, proxy);
+    (this._childTargets ??= new WeakMap()).set(child as object, proxy);
 
     return proxy;
   }
@@ -4344,54 +5303,129 @@ export class Scope {
   newIsolate(instance?: ng.Scope): ng.Scope {
     const child = instance ?? (nullObject() as ng.Scope);
 
-    const proxy = new Proxy(
-      child,
-      new Scope(this, this.root as unknown as Scope) as ProxyHandler<ng.Scope>,
-    );
+    const handler = new Scope(this, this.root as unknown as Scope);
+    const proxy = new Proxy(child, handler as ProxyHandler<ng.Scope>);
+
+    handler._target = child;
+    handler._scopeTarget = child as ScopeTarget;
+    handler._proxy = proxy;
 
     scopeProxyTargets.set(proxy as unknown as object, child as object);
 
+    if (this._children === EMPTY_SCOPE_CHILDREN) {
+      this._children = [];
+      this._propertyMap._children = this._children;
+    }
+    handler._parentIndex = this._children.length;
     this._children.push(proxy);
-    this._childIndices.set(
-      proxy as unknown as object,
-      this._children.length - 1,
-    );
-    this._childTargets.set(child as object, proxy);
+    (this._childTargets ??= new WeakMap()).set(child as object, proxy);
 
     return proxy;
   }
 
   /** Creates a transcluded child scope linked to this scope and an optional parent instance. */
   transcluded(parentInstance?: ng.Scope): ng.Scope {
-    const child = createObject(this._target as object | null) as ng.Scope;
+    const child = Object.create(this._target as object | null) as ng.Scope;
 
-    const proxy = new Proxy(
-      child,
-      new Scope(this, parentInstance) as ProxyHandler<ng.Scope>,
-    );
+    const handler = new Scope(this, parentInstance);
+    const proxy = new Proxy(child, handler as ProxyHandler<ng.Scope>);
+
+    handler._target = child;
+    handler._scopeTarget = child as ScopeTarget;
+    handler._proxy = proxy;
 
     scopeProxyTargets.set(proxy as unknown as object, child as object);
 
-    this._children.push(proxy);
-    this._childIndices.set(
-      proxy as unknown as object,
-      this._children.length - 1,
-    );
-    this._childTargets.set(child as object, proxy);
+    if (this._children === EMPTY_SCOPE_CHILDREN) {
+      this._children = [];
+      this._propertyMap._children = this._children;
+    }
+    const childIndex = this._children.length;
+    handler._parentIndex = childIndex;
+    this._children[childIndex] = proxy;
 
     return proxy;
   }
 
   /** @internal Registers a listener under a watched key on this scope. */
-  _registerKey(key: string, listener: Listener): void {
-    this._ownedWatchers.push({
-      _key: key,
-      _id: listener._id,
-    });
+  _registerPlannedHashedKey(
+    key: string,
+    listener: Listener,
+    hashKey: unknown,
+  ): void {
+    let listenersByHash = this._watchersByHash.get(key);
 
-    this._registerInheritedKey(key);
-    this._registerObjectMutationTarget(key, listener._originalTarget);
-    this._trackNestedListenerCandidate(listener);
+    if (!listenersByHash) {
+      listenersByHash = new Map();
+      this._watchersByHash.set(key, listenersByHash);
+    }
+
+    const hashedListeners = listenersByHash.get(hashKey);
+
+    if (!hashedListeners) {
+      if (!Object.prototype.hasOwnProperty.call(this._target, key)) {
+        this._registerInheritedKey(key);
+      }
+      this._registerObjectMutationTarget(key, getListenerOwnerTarget(listener));
+    }
+
+    const listeners = this._watchers.get(key);
+    let listenerIndex = 0;
+
+    if (listeners) {
+      listenerIndex = listeners.length;
+      listeners.push(listener);
+    } else {
+      this._watchers.set(key, [listener]);
+    }
+
+    const ownedWatcherIndex = this._ownedWatchers.length;
+
+    this._ownedWatchers[ownedWatcherIndex] = key;
+    this._ownedWatchers[ownedWatcherIndex + 1] = listener;
+    this._ownedWatchers[ownedWatcherIndex + 2] = listenerIndex;
+
+    if (hashedListeners) {
+      if (isArray(hashedListeners)) {
+        hashedListeners.push(listener);
+      } else {
+        const listenerPair = [hashedListeners, listener, listener];
+
+        listenerPair.length = 2;
+        listenersByHash.set(hashKey, listenerPair);
+      }
+
+      return;
+    }
+
+    listenersByHash.set(hashKey, listener);
+  }
+
+  /** @internal Registers a listener under a watched key on this scope. */
+  _registerKey(
+    key: string,
+    listener: Listener,
+    trackNested = true,
+    hashKey: unknown = getScopeWatchIdentity(
+      listener._owner,
+      getListenerOwnerTarget(listener),
+    ),
+  ): void {
+    let listenersByHash = isDefined(hashKey)
+      ? this._watchersByHash.get(key)
+      : undefined;
+    const hashedListeners = listenersByHash?.get(hashKey);
+
+    if (!hashedListeners) {
+      if (!hasOwn(this._target, key)) {
+        this._registerInheritedKey(key);
+      }
+      this._registerObjectMutationTarget(key, getListenerOwnerTarget(listener));
+    }
+
+    if (trackNested) {
+      this._trackNestedListenerCandidate(listener);
+    }
 
     const listeners = this._watchers.get(key);
 
@@ -4404,37 +5438,35 @@ export class Scope {
       this._watchers.set(key, [listener]);
     }
 
-    let keyIndexes = this._watcherIndexes.get(key);
+    const ownedWatcherIndex = this._ownedWatchers.length;
 
-    if (!keyIndexes) {
-      keyIndexes = new Map();
-      this._watcherIndexes.set(key, keyIndexes);
-    }
-
-    keyIndexes.set(listener._id, listenerIndex);
-
-    const hashKey = getHashKey(listener._originalTarget);
+    this._ownedWatchers[ownedWatcherIndex] = key;
+    this._ownedWatchers[ownedWatcherIndex + 1] = listener;
+    this._ownedWatchers[ownedWatcherIndex + 2] = listenerIndex;
 
     if (!isDefined(hashKey)) {
       return;
     }
-
-    let listenersByHash = this._watchersByHash.get(key);
 
     if (!listenersByHash) {
       listenersByHash = new Map();
       this._watchersByHash.set(key, listenersByHash);
     }
 
-    const hashedListeners = listenersByHash.get(hashKey);
-
     if (hashedListeners) {
-      hashedListeners.push(listener);
+      if (isArray(hashedListeners)) {
+        hashedListeners.push(listener);
+      } else {
+        const listenerPair = [hashedListeners, listener, listener];
+
+        listenerPair.length = 2;
+        listenersByHash.set(hashKey, listenerPair);
+      }
 
       return;
     }
 
-    listenersByHash.set(hashKey, [listener]);
+    listenersByHash.set(hashKey, listener);
   }
 
   /** @internal Registers owner-key mutation delivery for a watched object value. */
@@ -4442,7 +5474,13 @@ export class Scope {
     const ownerTarget = getObjectListenerTarget(target[key]);
 
     if (ownerTarget) {
-      addObjectListenerKey(this._objectListeners, ownerTarget, key);
+      const registeredKey = this._objectListeners.get(ownerTarget);
+
+      if (!registeredKey) {
+        this._objectListeners.set(ownerTarget, key);
+      } else if (registeredKey !== key) {
+        addObjectListenerKey(this._objectListeners, ownerTarget, key);
+      }
     }
   }
 
@@ -4465,10 +5503,6 @@ export class Scope {
 
   /** @internal Registers inherited property listeners with the owning parent scope. */
   _registerInheritedKey(key: string): void {
-    if (hasOwn(this._target, key)) {
-      return;
-    }
-
     const parent = (this.parent as ScopeProxied<ng.Scope> | undefined)
       ?._handler as Scope | undefined;
 
@@ -4503,15 +5537,34 @@ export class Scope {
   }
 
   /** @internal Removes a tracked local watcher registration record. */
-  _untrackOwnedWatcher(key: string, id: number): void {
+  _untrackOwnedWatcher(key: string, listener: Listener): void {
     const refs = this._ownedWatchers;
 
-    for (let i = 0; i < refs.length; i++) {
-      const ref = refs[i];
+    for (let i = 0; i < refs.length; i += 3) {
+      if (refs[i] === key && refs[i + 1] === listener) {
+        const lastIndex = refs.length - 3;
 
-      if (ref._key === key && ref._id === id) {
-        refs[i] = refs[refs.length - 1];
-        refs.length--;
+        refs[i] = refs[lastIndex];
+        refs[i + 1] = refs[lastIndex + 1];
+        refs[i + 2] = refs[lastIndex + 2];
+        refs.length = lastIndex;
+
+        return;
+      }
+    }
+  }
+
+  /** @internal Updates a tracked local watcher after swap-and-pop removal. */
+  _updateOwnedWatcherIndex(
+    key: string,
+    listener: Listener,
+    listenerIndex: number,
+  ): void {
+    const refs = this._ownedWatchers;
+
+    for (let i = 0; i < refs.length; i += 3) {
+      if (refs[i] === key && refs[i + 1] === listener) {
+        refs[i + 2] = listenerIndex;
 
         return;
       }
@@ -4552,7 +5605,7 @@ export class Scope {
 
     keyIndexes.set(listener._id, listenerIndex);
 
-    const hashKey = getHashKey(listener._originalTarget);
+    const hashKey = getScopeWatchIdentity(this, this._target);
 
     if (!isDefined(hashKey)) {
       return;
@@ -4568,41 +5621,43 @@ export class Scope {
     const hashedListeners = listenersByHash.get(hashKey);
 
     if (hashedListeners) {
-      hashedListeners.push(listener);
+      if (isArray(hashedListeners)) {
+        hashedListeners.push(listener);
+      } else {
+        listenersByHash.set(hashKey, [hashedListeners, listener]);
+      }
 
       return;
     }
 
-    listenersByHash.set(hashKey, [listener]);
+    listenersByHash.set(hashKey, listener);
   }
 
   /** @internal Tracks a foreign-listener registration owned by this scope. */
   _trackOwnedForeignListener(handler: Scope, key: string, id: number): void {
-    this._ownedForeignListeners.push({
-      _handler: handler,
-      _key: key,
-      _id: id,
-    });
+    this._ownedForeignListeners.push(handler, key, id);
   }
 
   /** @internal Removes a tracked foreign-listener registration record. */
   _untrackOwnedForeignListener(handler: Scope, key: string, id: number): void {
     const refs = this._ownedForeignListeners;
 
-    for (let i = 0; i < refs.length; i++) {
-      const ref = refs[i];
+    for (let i = 0; i < refs.length; i += 3) {
+      if (refs[i] === handler && refs[i + 1] === key && refs[i + 2] === id) {
+        const lastIndex = refs.length - 3;
 
-      if (ref._handler === handler && ref._key === key && ref._id === id) {
-        refs[i] = refs[refs.length - 1];
-        refs.length--;
+        refs[i] = refs[lastIndex];
+        refs[i + 1] = refs[lastIndex + 1];
+        refs[i + 2] = refs[lastIndex + 2];
+        refs.length = lastIndex;
 
         return;
       }
     }
   }
 
-  /** @internal Removes a listener by id from the local watcher map. */
-  _deregisterKey(key: string, id: number, untrack = true): boolean {
+  /** @internal Removes a listener from the local watcher map. */
+  _deregisterKey(key: string, listener: Listener, untrack = true): boolean {
     const listenerList = this._watchers.get(key);
 
     if (!listenerList) {
@@ -4610,20 +5665,26 @@ export class Scope {
     }
 
     const len = listenerList.length;
+    const ownedWatchers = this._ownedWatchers;
+    let listenerIndex: number | undefined;
 
-    const keyIndexes = this._watcherIndexes.get(key);
+    for (let i = 0; i < ownedWatchers.length; i += 3) {
+      if (ownedWatchers[i] === key && ownedWatchers[i + 1] === listener) {
+        listenerIndex = ownedWatchers[i + 2] as number;
 
-    let listenerIndex = keyIndexes?.get(id);
+        break;
+      }
+    }
 
     if (
       listenerIndex === undefined ||
       listenerIndex >= len ||
-      listenerList[listenerIndex]._id !== id
+      listenerList[listenerIndex] !== listener
     ) {
       listenerIndex = undefined;
 
       for (let i = 0; i < len; i++) {
-        if (listenerList[i]._id === id) {
+        if (listenerList[i] === listener) {
           listenerIndex = i;
 
           break;
@@ -4635,23 +5696,29 @@ export class Scope {
       return false;
     }
 
-    const listener = listenerList[listenerIndex];
-
     this._releaseForeignDependency(listener);
 
     const movedListener = listenerList[len - 1];
 
     if (len === 1) {
       this._watchers.delete(key);
-      this._watcherIndexes.delete(key);
     } else {
       listenerList[listenerIndex] = movedListener;
       listenerList.length = len - 1;
-      keyIndexes?.set(movedListener._id, listenerIndex);
-      keyIndexes?.delete(id);
+
+      if (movedListener !== listener) {
+        movedListener._owner._updateOwnedWatcherIndex(
+          key,
+          movedListener,
+          listenerIndex,
+        );
+      }
     }
 
-    const hashKey = getHashKey(listener._originalTarget);
+    const hashKey = getScopeWatchIdentity(
+      listener._owner,
+      getListenerOwnerTarget(listener),
+    );
 
     if (isDefined(hashKey)) {
       const listenersByHash = this._watchersByHash.get(key);
@@ -4659,22 +5726,26 @@ export class Scope {
       const hashedListeners = listenersByHash?.get(hashKey);
 
       if (hashedListeners) {
-        const hashedLen = hashedListeners.length;
+        if (isArray(hashedListeners)) {
+          const hashedLen = hashedListeners.length;
 
-        for (let j = 0; j < hashedLen; j++) {
-          if (hashedListeners[j]._id === id) {
-            if (hashedLen === 1) {
-              listenersByHash?.delete(hashKey);
-
-              if (listenersByHash?.size === 0) {
-                this._watchersByHash.delete(key);
+          for (let j = 0; j < hashedLen; j++) {
+            if (hashedListeners[j] === listener) {
+              if (hashedLen === 2) {
+                listenersByHash?.set(hashKey, hashedListeners[j === 0 ? 1 : 0]);
+              } else {
+                hashedListeners[j] = hashedListeners[hashedLen - 1];
+                hashedListeners.length = hashedLen - 1;
               }
-            } else {
-              hashedListeners[j] = hashedListeners[hashedLen - 1];
-              hashedListeners.length = hashedLen - 1;
-            }
 
-            break;
+              break;
+            }
+          }
+        } else if (hashedListeners === listener) {
+          listenersByHash?.delete(hashKey);
+
+          if (listenersByHash?.size === 0) {
+            this._watchersByHash.delete(key);
           }
         }
       }
@@ -4682,7 +5753,7 @@ export class Scope {
 
     this._untrackNestedListenerCandidate(listener);
 
-    if (untrack) this._untrackOwnedWatcher(key, id);
+    if (untrack) this._untrackOwnedWatcher(key, listener);
 
     return true;
   }
@@ -4735,24 +5806,18 @@ export class Scope {
       keyIndexes?.delete(id);
     }
 
-    const hashKey = getHashKey(listener._originalTarget);
+    const listenersByHash = this._foreignListenersByHash.get(key);
 
-    if (isDefined(hashKey)) {
-      const listenersByHash = this._foreignListenersByHash.get(key);
+    if (listenersByHash) {
+      for (const [hashKey, hashedListeners] of listenersByHash) {
+        if (isArray(hashedListeners)) {
+          const hashedLen = hashedListeners.length;
 
-      const hashedListeners = listenersByHash?.get(hashKey);
+          for (let j = 0; j < hashedLen; j++) {
+            if (hashedListeners[j]._id !== id) continue;
 
-      if (hashedListeners) {
-        const hashedLen = hashedListeners.length;
-
-        for (let j = 0; j < hashedLen; j++) {
-          if (hashedListeners[j]._id === id) {
-            if (hashedLen === 1) {
-              listenersByHash?.delete(hashKey);
-
-              if (listenersByHash?.size === 0) {
-                this._foreignListenersByHash.delete(key);
-              }
+            if (hashedLen === 2) {
+              listenersByHash.set(hashKey, hashedListeners[j === 0 ? 1 : 0]);
             } else {
               hashedListeners[j] = hashedListeners[hashedLen - 1];
               hashedListeners.length = hashedLen - 1;
@@ -4760,7 +5825,13 @@ export class Scope {
 
             break;
           }
+        } else if (hashedListeners._id === id) {
+          listenersByHash.delete(hashKey);
         }
+      }
+
+      if (listenersByHash.size === 0) {
+        this._foreignListenersByHash.delete(key);
       }
     }
 
@@ -4794,14 +5865,18 @@ export class Scope {
       return;
     }
 
-    for (let i = 0, l = keyList.length; i < l; i++) {
-      const currentListeners = this._watchers.get(keyList[i]);
+    const hasMultipleKeys = isArray(keyList);
+    const keyCount = hasMultipleKeys ? keyList.length : 1;
+
+    for (let i = 0; i < keyCount; i++) {
+      const key = hasMultipleKeys ? keyList[i] : keyList;
+      const currentListeners = this._watchers.get(key);
 
       if (currentListeners) {
         this._scheduleListener(currentListeners);
       }
 
-      const currentForeignListeners = this._foreignListeners.get(keyList[i]);
+      const currentForeignListeners = this._foreignListeners.get(key);
 
       if (currentForeignListeners) {
         this._scheduleListener(currentForeignListeners);
@@ -4822,12 +5897,57 @@ export class Scope {
     }
   }
 
+  /** @internal Registers callback-only cleanup without generic scope-event bookkeeping. */
+  _registerDestroyCallback(callback: () => void): void {
+    if (this._destroyed || this._destroyCallbacks === null) {
+      callback();
+      return;
+    }
+
+    (this._destroyCallbacks ??= []).push(callback);
+  }
+
+  /** @internal Records native event cleanup directly on this scope. */
+  _registerEventCleanup(
+    target: EventTarget,
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions,
+  ): void {
+    if (this._destroyed || this._eventCleanups === null) {
+      if (options === undefined) {
+        target.removeEventListener(type, listener);
+      } else {
+        target.removeEventListener(type, listener, options);
+      }
+
+      return;
+    }
+
+    (this._eventCleanups ??= []).push(target, type, listener, options);
+  }
+
+  /** @internal Records a delegated event target without native listener bookkeeping. */
+  _registerDelegatedEventCleanup(target: EventTarget): void {
+    if (this._destroyed || this._delegatedEventTargets === null) {
+      deleteProperty(target, EVENT_SCOPE);
+      return;
+    }
+
+    (this._delegatedEventTargets ??= []).push(target);
+  }
+
   /** Registers an event listener on this scope and returns a deregistration function. */
   on(name: string, listener: ScopeEventListener): () => void {
     let namedListeners = this._listeners.get(name);
 
     if (!namedListeners) {
       namedListeners = [];
+
+      if (this._listeners === EMPTY_SCOPE_LISTENERS) {
+        this._listeners = new Map();
+      }
+
       this._listeners.set(name, namedListeners);
     }
     namedListeners.push(listener);
@@ -4997,6 +6117,57 @@ export class Scope {
       this.broadcast("$destroy");
     }
 
+    const eventCleanups = this._eventCleanups;
+    this._eventCleanups = null;
+
+    const delegatedEventTargets = this._delegatedEventTargets;
+    this._delegatedEventTargets = null;
+
+    if (delegatedEventTargets) {
+      for (let i = 0, l = delegatedEventTargets.length; i < l; i++) {
+        deleteProperty(delegatedEventTargets[i], EVENT_SCOPE);
+      }
+    }
+
+    if (eventCleanups) {
+      for (let i = 0, l = eventCleanups.length; i < l; i += 4) {
+        const target = eventCleanups[i] as EventTarget;
+        const type = eventCleanups[i + 1] as string;
+        const listener = eventCleanups[
+          i + 2
+        ] as EventListenerOrEventListenerObject;
+        const options = eventCleanups[i + 3] as
+          | boolean
+          | AddEventListenerOptions
+          | undefined;
+
+        try {
+          if (options === undefined) {
+            target.removeEventListener(type, listener);
+          } else {
+            target.removeEventListener(type, listener, options);
+          }
+        } catch (error) {
+          this._exceptionHandler(error);
+        }
+
+        deleteProperty(target, EVENT_SCOPE);
+      }
+    }
+
+    const destroyCallbacks = this._destroyCallbacks;
+    this._destroyCallbacks = null;
+
+    if (destroyCallbacks) {
+      for (let i = 0, l = destroyCallbacks.length; i < l; i++) {
+        try {
+          destroyCallbacks[i]();
+        } catch (error) {
+          this._exceptionHandler(error);
+        }
+      }
+    }
+
     if (this._children.length > 0) {
       const children = this._children.slice();
 
@@ -5016,24 +6187,28 @@ export class Scope {
 
     const ownedWatchers = this._ownedWatchers;
 
-    for (let i = 0, l = ownedWatchers.length; i < l; i++) {
-      const ref = ownedWatchers[i];
-
-      this._deregisterKey(ref._key, ref._id, false);
+    for (let i = 0, l = ownedWatchers.length; i < l; i += 3) {
+      this._deregisterKey(
+        ownedWatchers[i] as string,
+        ownedWatchers[i + 1] as Listener,
+        false,
+      );
     }
 
     ownedWatchers.length = 0;
 
-    for (let i = 0; i < this._ownedForeignListeners.length; i++) {
-      const ref = this._ownedForeignListeners[i];
+    const ownedForeignListeners = this._ownedForeignListeners;
 
-      ref._handler._deregisterForeignKey(ref._key, ref._id);
+    for (let i = 0, l = ownedForeignListeners.length; i < l; i += 3) {
+      (ownedForeignListeners[i] as Scope)._deregisterForeignKey(
+        ownedForeignListeners[i + 1] as string,
+        ownedForeignListeners[i + 2] as number,
+      );
     }
-    this._ownedForeignListeners.length = 0;
+    ownedForeignListeners.length = 0;
 
     if (this._isRoot()) {
       this._watchers.clear();
-      this._watcherIndexes.clear();
       this._watchersByHash.clear();
       this._foreignListeners.clear();
       this._foreignListenerIndexes.clear();
@@ -5052,29 +6227,22 @@ export class Scope {
 
       const children = parentHandler._children;
 
-      const childProxy = this._proxy as unknown as object;
-
-      const childIndex = parentHandler._childIndices.get(childProxy);
+      const childIndex = this._parentIndex;
 
       const childTarget = this._target as object | null;
 
       if (childTarget) {
-        parentHandler._childTargets.delete(childTarget);
+        parentHandler._childTargets?.delete(childTarget);
       }
 
       const lastIndex = children.length - 1;
 
-      if (childIndex !== undefined && childIndex <= lastIndex) {
+      if (childIndex >= 0 && childIndex <= lastIndex) {
         const movedChild = children[lastIndex];
-
-        parentHandler._childIndices.delete(childProxy);
 
         if (childIndex !== lastIndex) {
           children[childIndex] = movedChild;
-          parentHandler._childIndices.set(
-            movedChild as unknown as object,
-            childIndex,
-          );
+          movedChild._handler._parentIndex = childIndex;
         }
 
         children.length = lastIndex;
@@ -5083,16 +6251,9 @@ export class Scope {
           if (children[i].id === scopeId) {
             const movedChild = children[l - 1];
 
-            parentHandler._childIndices.delete(
-              children[i] as unknown as object,
-            );
-
             if (i !== l - 1) {
               children[i] = movedChild;
-              parentHandler._childIndices.set(
-                movedChild as unknown as object,
-                i,
-              );
+              movedChild._handler._parentIndex = i;
             }
 
             children.length = l - 1;
@@ -5105,7 +6266,6 @@ export class Scope {
     this._scheduled = [];
     this._foreignProxies.clear();
     this._foreignProxyTargets = new WeakMap();
-    this._watcherIndexes = new Map();
     this._watchersByHash = new Map();
     this._foreignListeners = new Map();
     this._foreignListenerIndexes = new Map();
@@ -5117,8 +6277,8 @@ export class Scope {
       this._listenerStats._nestedCandidateCount = 0;
     }
 
-    this._childIndices = new WeakMap();
-    this._childTargets = new WeakMap();
+    this._parentIndex = -1;
+    this._childTargets = undefined;
 
     this._listeners.clear();
     this._destroyed = true;
@@ -5128,37 +6288,44 @@ export class Scope {
 
   /** @internal Completes deferred reference cleanup after destroy observers have run. */
   _cleanupDestroyedScope(): void {
-    if (!this._destroyed) return;
+    if (this._destroyed) {
+      if (this._isRoot()) {
+        this._children.length = 0;
+      } else {
+        this._children.length = 0;
+        this._watchers = new Map();
+        this._watchersByHash = new Map();
+      }
 
-    if (this._isRoot()) {
-      this._children.length = 0;
-    } else {
-      this._children.length = 0;
-      this._watchers = new Map();
-      this._watcherIndexes = new Map();
-      this._watchersByHash = new Map();
+      this._target = null as unknown as ScopeTarget;
+      this._scopeTarget = undefined;
+      this._proxy = undefined as unknown as ScopeProxy;
+      this._watchIdentity = undefined;
+
+      if (!this._isRoot()) {
+        this.parent = undefined;
+        this.root = undefined as unknown as ng.Scope;
+      }
+
+      this._propertyMap = {
+        destroy:
+          this._propertyMap.destroy === unboundScopeMethod
+            ? this.destroy.bind(this)
+            : this._propertyMap.destroy,
+        _handler: this,
+        id: this.id,
+        _isRoot:
+          this._propertyMap._isRoot === unboundScopeMethod
+            ? this._isRoot.bind(this)
+            : this._propertyMap._isRoot,
+        parent: this.parent,
+        _proxy: this._proxy,
+        root: this.root,
+        scopeName: this.scopeName,
+        _target: this._target,
+        _children: this._children,
+      };
     }
-
-    this._target = null as unknown as ScopeTarget;
-    this._proxy = undefined as unknown as ScopeProxy;
-
-    if (!this._isRoot()) {
-      this.parent = undefined;
-      this.root = undefined as unknown as ng.Scope;
-    }
-
-    this._propertyMap = {
-      destroy: this._propertyMap.destroy,
-      _handler: this,
-      id: this.id,
-      _isRoot: this._propertyMap._isRoot,
-      parent: this.parent,
-      _proxy: this._proxy,
-      root: this.root,
-      scopeName: this.scopeName,
-      _target: this._target,
-      _children: this._children,
-    };
   }
 
   /** @internal Resolves the watched value and notifies a single listener. */
@@ -5189,7 +6356,15 @@ export class Scope {
         return;
       }
 
-      listener._listenerFn(value, listener._originalTarget);
+      if (listener._listenerContext === undefined) {
+        listener._listenerFn(value, getListenerOwnerTarget(listener));
+      } else {
+        listener._listenerFn(
+          value,
+          getListenerOwnerTarget(listener),
+          listener._listenerContext,
+        );
+      }
     } catch (err) {
       this._exceptionHandler(err);
     }
@@ -5202,17 +6377,31 @@ export class Scope {
     sourceHandler?: Scope,
     sourceProperty?: PropertyKey,
   ): void {
-    const { _originalTarget, _listenerFn, _watchFn } = listener;
+    const { _listenerFn, _watchFn, _listenerContext } = listener;
+    const owner = listener._owner as Scope | undefined;
+    const _originalTarget =
+      listener._originalTarget ??
+      owner?._scopeTarget ??
+      owner?._target ??
+      (target as ScopeTarget);
 
     try {
       let hasStableForeignSource = false;
 
       if (sourceProperty !== undefined) {
+        const plannedDescriptor = listener._plannedForeignWatchDescriptor;
         const descriptors = listener._foreignWatchDescriptors;
+        const descriptorCount = plannedDescriptor
+          ? 1
+          : (descriptors?.length ?? 0);
 
-        if (descriptors) {
-          for (let i = 0, l = descriptors.length; i < l; i++) {
-            const dependency = descriptors[i]._dependency;
+        if (descriptorCount > 0) {
+          for (let i = 0; i < descriptorCount; i++) {
+            const descriptor =
+              plannedDescriptor ?? assertInvariantDefined(descriptors?.[i]);
+            const dependency = plannedDescriptor
+              ? listener._plannedForeignWatchDependency
+              : (descriptor as ForeignWatchDescriptor)._dependency;
 
             if (dependency?._key !== sourceProperty) {
               continue;
@@ -5224,7 +6413,7 @@ export class Scope {
 
             if (!hasStableForeignSource && isString(sourceProperty)) {
               const parentPath = getForeignProxyParentPath(
-                descriptors[i]._watchProp,
+                descriptor._watchProp,
               );
 
               hasStableForeignSource =
@@ -5248,9 +6437,11 @@ export class Scope {
       }
 
       if (!isFunction(newVal) && !isArray(newVal)) {
-        const hasForeignDependency = listener._foreignWatchDescriptors?.some(
-          (descriptor) => descriptor._dependency,
-        );
+        const hasForeignDependency =
+          listener._plannedForeignWatchDependency !== undefined ||
+          listener._foreignWatchDescriptors?.some(
+            (descriptor) => descriptor._dependency,
+          ) === true;
 
         if (listener._dedupeUnchanged && !hasForeignDependency) {
           if (
@@ -5264,15 +6455,21 @@ export class Scope {
           listener._lastValue = newVal;
         }
 
-        _listenerFn(newVal, _originalTarget);
+        if (_listenerContext === undefined) {
+          _listenerFn(newVal, _originalTarget);
+        } else {
+          _listenerFn(newVal, _originalTarget, _listenerContext);
+        }
 
         return;
       }
 
       const notify = (value: unknown): void => {
-        const hasForeignDependency = listener._foreignWatchDescriptors?.some(
-          (descriptor) => descriptor._dependency,
-        );
+        const hasForeignDependency =
+          listener._plannedForeignWatchDependency !== undefined ||
+          listener._foreignWatchDescriptors?.some(
+            (descriptor) => descriptor._dependency,
+          ) === true;
 
         if (listener._dedupeUnchanged && !hasForeignDependency) {
           if (
@@ -5286,7 +6483,11 @@ export class Scope {
           listener._lastValue = value;
         }
 
-        _listenerFn(value, _originalTarget);
+        if (_listenerContext === undefined) {
+          _listenerFn(value, _originalTarget);
+        } else {
+          _listenerFn(value, _originalTarget, _listenerContext);
+        }
       };
 
       if (isFunction(newVal)) {
@@ -5375,7 +6576,7 @@ function calculateWatcherCount(model: Scope): number {
 
   for (const watchers of model._watchers.values()) {
     for (let i = 0, l = watchers.length; i < l; i++) {
-      if (childIds.has(watchers[i]._scopeId)) {
+      if (childIds.has(watchers[i]._scopeId ?? watchers[i]._owner.id)) {
         count++;
       }
     }

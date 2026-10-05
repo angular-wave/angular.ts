@@ -285,6 +285,7 @@ module.router({ url: "/missing-name" });
 module.router({ name: "invalidChildren", children: ["child"] });
 module.config({
   $compile: {
+    htmlPolicy: (html) => html.replace(/</g, "&lt;"),
     strictComponentBindingsEnabled: true,
     propertySecurityContexts: [
       {
@@ -396,16 +397,13 @@ module.config({
   },
 });
 module.config({
-  $sce: {
-    enabled: true,
-  },
-});
-module.config({
-  $sceDelegate: {
-    trustedResourceUrlList: ["self", "https://cdn.example.com/**", /^https?:/],
-    bannedResourceUrlList: ["https://cdn.example.com/private/**"],
-    aHrefSanitizationTrustedUrlList: /^https?:/,
-    imgSrcSanitizationTrustedUrlList: /^\s*(https?|data:image\/)/,
+  $compile: {
+    htmlPolicy: (html) => html,
+    urlPolicy: (url) => url,
+    mediaUrlPolicy: (url) => url,
+    resourceUrlPolicy: (url) => url,
+    scriptPolicy: (script) => script,
+    scriptUrlPolicy: (url) => url,
   },
 });
 module.config({
@@ -513,13 +511,6 @@ module.config({
   $location: {
     html5Mode: false,
   },
-  $sce: {
-    enabled: false,
-  },
-  $sceDelegate: {
-    trustedResourceUrlList: null,
-    bannedResourceUrlList: [],
-  },
   $rest: {
     defaults: {
       timeout: 1000,
@@ -621,16 +612,14 @@ module.config({ $interpolate: { startSymbol: 1 } });
 module.config({ $location: { html5Mode: { unknown: true } } });
 // @ts-expect-error invalid location rewriteLinks type
 module.config({ $location: { html5Mode: { rewriteLinks: 1 } } });
-// @ts-expect-error invalid sce config field
-module.config({ $sce: { strict: false } });
-// @ts-expect-error sce enabled must be boolean
-module.config({ $sce: { enabled: "false" } });
-// @ts-expect-error invalid sceDelegate config field
-module.config({ $sceDelegate: { trustedUrls: ["self"] } });
-// @ts-expect-error sceDelegate matchers must be strings or RegExp
-module.config({ $sceDelegate: { trustedResourceUrlList: [{}] } });
-// @ts-expect-error sceDelegate sanitizer lists must be RegExp
-module.config({ $sceDelegate: { aHrefSanitizationTrustedUrlList: "https" } });
+// @ts-expect-error SCE configuration has been removed
+module.config({ $sce: { enabled: true } });
+// @ts-expect-error SCE delegate configuration has been removed
+module.config({ $sceDelegate: { trustedResourceUrlList: ["self"] } });
+// @ts-expect-error policies are synchronous string-returning functions
+module.config({ $compile: { scriptPolicy: async (script) => script } });
+// @ts-expect-error URL policies cannot return null
+module.config({ $compile: { urlPolicy: () => null } });
 // @ts-expect-error security fallback must be allow or deny
 module.config({ $security: { fallback: "block" } });
 // @ts-expect-error insecure origin entries must be strings
@@ -709,6 +698,24 @@ module.config({
   $webTransport: {
     // @ts-expect-error webTransport congestionControl rejects unknown values
     defaults: { congestionControl: "balanced" },
+  },
+});
+module.config({
+  $compile: {
+    // @ts-expect-error HTML policies must return a string
+    htmlPolicy: () => null,
+  },
+});
+module.config({
+  $compile: {
+    // @ts-expect-error HTML policies must be synchronous
+    htmlPolicy: async (html) => html,
+  },
+});
+module.config({
+  $compile: {
+    // @ts-expect-error HTML policies must be callable
+    htmlPolicy: "invalid",
   },
 });
 module.config({

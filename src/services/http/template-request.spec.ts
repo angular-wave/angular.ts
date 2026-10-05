@@ -16,7 +16,6 @@ describe("$templateRequest", () => {
     $templateRequest,
     $templateCache,
     $http,
-    $sce,
     angular,
     errors;
 
@@ -36,7 +35,6 @@ describe("$templateRequest", () => {
     $templateRequest = injector.get("$templateRequest");
     $templateCache = injector.get("$templateCache");
     $http = injector.get("$http");
-    $sce = injector.get("$sce");
   });
 
   it("keeps default options when configuration has no HTTP options", () => {
@@ -45,13 +43,66 @@ describe("$templateRequest", () => {
     expect(applyTemplateRequestConfig(options, {})).toBe(options);
   });
 
+  it("enforces resource policy before cache and pending-request lookup", async () => {
+    const cache = new Map([
+      ["https://blocked.example/template.html", "cached"],
+    ]);
+    const response = Promise.withResolvers();
+    const http = {
+      defaults: {},
+      get: jasmine.createSpy("get").and.returnValue(response.promise),
+    };
+    let allow = false;
+    const policy = jasmine.createSpy("resourcePolicy").and.callFake((url) => {
+      if (!allow) throw new Error("resource denied");
+      return url;
+    });
+    const request = createTemplateRequestService(cache, http, {}, policy);
+    await expectAsync(
+      request("https://blocked.example/template.html"),
+    ).toBeRejectedWithError("resource denied");
+    expect(http.get).not.toHaveBeenCalled();
+    allow = true;
+    const pending = request("/pending.html");
+    await Promise.resolve();
+    await Promise.resolve();
+    allow = false;
+    await expectAsync(request("/pending.html")).toBeRejectedWithError(
+      "resource denied",
+    );
+    response.resolve({ data: "approved template" });
+    await expectAsync(pending).toBeResolvedTo("approved template");
+    expect(policy).toHaveBeenCalledTimes(3);
+  });
+
+  it("uses the resource-policy result for requests and cache keys", async () => {
+    const cache = new Map();
+    const http = {
+      defaults: {},
+      get: jasmine.createSpy("get").and.resolveTo({ data: "template" }),
+    };
+    const request = createTemplateRequestService(
+      cache,
+      http,
+      {},
+      () => "/approved.html",
+    );
+    await expectAsync(request("/unprocessed.html")).toBeResolvedTo("template");
+    expect(http.get).toHaveBeenCalledWith(
+      "/approved.html",
+      jasmine.any(Object),
+    );
+    expect(cache.get("/approved.html")).toBe("template");
+    expect(cache.has("/unprocessed.html")).toBeFalse();
+  });
+
   it("removes a lone default response transform", async () => {
     const cache = new Map();
     const http = {
       defaults: { transformResponse: defaultHttpResponseTransform },
       get: jasmine.createSpy("get").and.resolveTo({ data: "template" }),
     };
-    const request = createTemplateRequestService(cache, http, {});
+    const request = createTemplateRequestService(cache, http, {}, (url) => url);
 
     await expectAsync(request("/template.html")).toBeResolvedTo("template");
 
@@ -67,7 +118,7 @@ describe("$templateRequest", () => {
       defaults: {},
       get: jasmine.createSpy("get").and.resolveTo({ data: "template" }),
     };
-    const request = createTemplateRequestService(cache, http, {});
+    const request = createTemplateRequestService(cache, http, {}, (url) => url);
 
     await request("/plain-template.html");
 
@@ -82,7 +133,7 @@ describe("$templateRequest", () => {
       defaults: {},
       get: jasmine.createSpy("get"),
     };
-    const request = createTemplateRequestService(cache, http, {});
+    const request = createTemplateRequestService(cache, http, {}, (url) => url);
 
     await expectAsync(request("/cached.html")).toBeResolvedTo(
       "cached template",
@@ -96,7 +147,7 @@ describe("$templateRequest", () => {
       defaults: {},
       get: jasmine.createSpy("get"),
     };
-    const request = createTemplateRequestService(cache, http, {});
+    const request = createTemplateRequestService(cache, http, {}, (url) => url);
     const pending = request("/late-cached.html");
 
     cache.set("/late-cached.html", "late cached template");
@@ -112,7 +163,7 @@ describe("$templateRequest", () => {
       defaults: {},
       get: jasmine.createSpy("get").and.returnValue(response.promise),
     };
-    const request = createTemplateRequestService(cache, http, {});
+    const request = createTemplateRequestService(cache, http, {}, (url) => url);
     const first = request("/pending.html");
     const second = request("/pending.html");
 
@@ -261,12 +312,9 @@ describe("$templateRequest", () => {
   });
 
   it("should accept empty templates and refuse null or undefined templates in cache", async () => {
-    // Will throw on any template not in cache.
-    spyOn($sce, "getTrustedResourceUrl").and.returnValue(false);
-
     $templateRequest("/public/test.html").catch((e) => {
       expect(e).toMatch("Template not found");
-    }); // should go through $sce
+    });
 
     $templateCache.set("/public/test.html", ""); // should work (empty template)
     const res = await $templateRequest("/public/test.html");

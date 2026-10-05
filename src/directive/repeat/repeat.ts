@@ -3,7 +3,6 @@ import {
   callBackOnce,
   arrayFrom,
   assertInvariantDefined,
-  callFunction,
   createErrorFactory,
   deleteProperty,
   hasOwn,
@@ -15,7 +14,6 @@ import {
   isInstanceOf,
   isProxy,
   nullObject,
-  setHashKey,
 } from "../../shared/utils.ts";
 import {
   createDocumentFragment,
@@ -27,6 +25,7 @@ import {
 } from "../../shared/dom.ts";
 import {
   getArrayMutationMeta,
+  setScopeWatchIdentity,
   type ArrayMutationMeta,
 } from "../../core/scope/scope.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
@@ -138,8 +137,10 @@ type RepeatScope = ng.Scope &
 
 type RepeatClone = Node | Node[];
 
+type RepeatBlockKey = string | number;
+
 interface RepeatBlock {
-  _id: string;
+  _id: RepeatBlockKey;
   _scope?: RepeatScope;
   _clone?: RepeatClone;
   _fragment?: CompiledFragmentRecord;
@@ -147,7 +148,7 @@ interface RepeatBlock {
   _usesPositionLocals?: boolean;
 }
 
-type RepeatBlockMap = Partial<Record<string, RepeatBlock>>;
+type RepeatBlockMap = Partial<Record<RepeatBlockKey, RepeatBlock>>;
 
 export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
   const getAnimate = createLazyAnimate($injector);
@@ -161,11 +162,15 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     "$even",
   ];
 
-  function scopeUsesRepeatPositionLocals(scope: RepeatScope): boolean {
-    const watchers = scope._handler._watchers;
+  function scopeUsesRepeatPositionLocals(
+    handler: RepeatScope["_handler"],
+  ): boolean {
+    const watcherRefs = handler._ownedWatchers;
 
-    for (let i = 0; i < repeatPositionLocalKeys.length; i++) {
-      if (watchers.has(repeatPositionLocalKeys[i])) {
+    for (let i = 0; i < watcherRefs.length; i += 3) {
+      const key = watcherRefs[i] as string;
+
+      if (key.charCodeAt(0) === 36 && repeatPositionLocalKeys.includes(key)) {
         return true;
       }
     }
@@ -191,11 +196,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       scope[keyIdentifier] = key;
     }
 
-    if (value && (typeof value === "object" || typeof value === "function")) {
-      setHashKey(scope._target, hashKey(value));
-    } else {
-      setHashKey(scope._target, null);
-    }
+    setScopeWatchIdentity(scope._handler, value);
 
     if (!updatePositionLocals) {
       return;
@@ -244,24 +245,22 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     keyIdentifier: string | undefined,
     key: unknown,
     arrayLength: number,
-  ) {
-    const target = scope._target as Record<string, unknown>;
+  ): RepeatScope["_handler"] {
+    const handler = scope._handler;
+    const target = handler._target as Record<string, unknown>;
+    const valueIsProxy = isProxy(value);
 
     target[valueIdentifier] = value;
 
-    if (isProxy(value)) {
-      scope._handler._foreignProxies.add(value);
+    if (valueIsProxy) {
+      handler._foreignProxies.add(value);
     }
 
     if (keyIdentifier) {
       target[keyIdentifier] = key;
     }
 
-    if (value && (typeof value === "object" || typeof value === "function")) {
-      setHashKey(target, hashKey(value));
-    } else {
-      setHashKey(target, null);
-    }
+    setScopeWatchIdentity(handler, value, !valueIsProxy);
 
     target.$index = index;
     target.$first = index === 0;
@@ -269,6 +268,8 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     target.$middle = !target.$first && !target.$last;
     target.$odd = (index & 1) !== 0;
     target.$even = !target.$odd;
+
+    return handler;
   }
 
   function reconcileScopedObjectValue(
@@ -445,7 +446,6 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
     }
 
     const property = indexProperty ?? "id";
-
     if (!hasOwn(value, property)) {
       return undefined;
     }
@@ -456,16 +456,9 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       return undefined;
     }
 
-    return `property:${property}:${typeof indexValue}:${String(indexValue)}`;
-  }
-
-  function createTrackByIdArrayFn(indexProperty: string | undefined) {
-    return (_$scope: RepeatScope, _key: unknown, value: unknown) =>
-      trackByObjectIndex(value, indexProperty) ?? hashKey(value);
-  }
-
-  function trackByIdObjFn(_$scope: RepeatScope, key: unknown): string {
-    return String(key);
+    return typeof indexValue === "number"
+      ? indexValue
+      : `${typeof indexValue}:${String(indexValue)}`;
   }
 
   function canSkipDomMoveChecks(
@@ -760,9 +753,8 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
         function attachTranscludedBlock(
           blockToLink: RepeatBlock,
-          valueToLink: unknown,
           insertAfterNode: ChildNode,
-          blockMap: Partial<Record<string, RepeatBlock | true>>,
+          blockMap: Partial<Record<RepeatBlockKey, RepeatBlock | true>>,
           clone: RepeatClone,
           scope: RepeatScope,
         ): void {
@@ -792,7 +784,6 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
           blockToLink._clone = normalizedClone;
           blockToLink._fragment = getCompiledFragmentRecord(cloneNodes[0]);
-          blockToLink._value = valueToLink;
           blockMap[blockToLink._id] = blockToLink;
         }
 
@@ -862,6 +853,10 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
         let lastSeenArrayMutationVersion = 0;
 
+        // Scope proxy methods are lazily bound before being returned.
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        const createTranscludedScope = $scope.transcluded;
+
         $scope.watch(
           rhs,
           (collection: unknown) => {
@@ -872,24 +867,17 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
             let nextNode: Node | null;
 
-            const nextBlockMap: Partial<Record<string, RepeatBlock | true>> =
-              nullObject();
+            const nextBlockMap: Partial<
+              Record<RepeatBlockKey, RepeatBlock | true>
+            > = nullObject();
 
             let key: PropertyKey;
 
             let value: unknown;
 
-            let trackById: string;
+            let trackById: RepeatBlockKey;
 
-            let trackByIdFn:
-              | ((
-                  scope: RepeatScope,
-                  key: PropertyKey,
-                  value: unknown,
-                ) => string)
-              | undefined;
-
-            let collectionKeys: unknown[] = [];
+            let collectionKeys: ArrayLike<unknown> = [];
 
             let block: RepeatBlock;
 
@@ -899,19 +887,21 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
               $scope[aliasAs] = collection;
             }
 
-            let isIndexKeyedCollection = isArrayLike(collection);
+            let isIndexKeyedCollection = isArray(collection);
 
             if (isIndexKeyedCollection) {
-              collectionKeys = arrayFrom(collection as ArrayLike<unknown>);
-              trackByIdFn = createTrackByIdArrayFn(indexProperty);
+              collectionKeys = collection as ArrayLike<unknown>;
+            } else if (isArrayLike(collection)) {
+              collectionKeys = collection as ArrayLike<unknown>;
+              isIndexKeyedCollection = true;
             } else if (isIterableCollection(collection)) {
               collectionKeys = arrayFrom(collection);
               collection = collectionKeys;
               isIndexKeyedCollection = true;
-              trackByIdFn = createTrackByIdArrayFn(indexProperty);
             } else {
-              trackByIdFn = trackByIdObjFn;
-              collectionKeys = [];
+              const objectKeys: string[] = [];
+
+              collectionKeys = objectKeys;
 
               const collectionRecord = collection as Record<string, unknown>;
 
@@ -920,7 +910,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   hasOwn(collectionRecord, itemKey) &&
                   !itemKey.startsWith("$")
                 ) {
-                  collectionKeys.push(itemKey);
+                  objectKeys.push(itemKey);
                 }
               }
             }
@@ -943,7 +933,9 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
               value = isIndexKeyedCollection
                 ? collectionKeys[index]
                 : (collection as Record<PropertyKey, unknown>)[key];
-              trackById = trackByIdFn($scope, key, value);
+              trackById = isIndexKeyedCollection
+                ? (trackByObjectIndex(value, indexProperty) ?? hashKey(value))
+                : String(key);
 
               const lastBlock = lastBlockMap[trackById];
 
@@ -984,6 +976,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   _id: trackById,
                   _scope: undefined,
                   _clone: undefined,
+                  _value: value,
                 };
                 nextBlockMap[trackById] = true;
               }
@@ -1228,13 +1221,15 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
             }
 
             for (index = startIndex; index < collectionLength; index++) {
+              block = nextBlockOrder[index];
               key = isIndexKeyedCollection
                 ? index
                 : String(collectionKeys[index]);
-              value = isIndexKeyedCollection
-                ? collectionKeys[index]
-                : (collection as Record<PropertyKey, unknown>)[key];
-              block = nextBlockOrder[index];
+              value = hasRetainedBlocks
+                ? isIndexKeyedCollection
+                  ? collectionKeys[index]
+                  : (collection as Record<PropertyKey, unknown>)[key]
+                : block._value;
 
               if (block._scope) {
                 flushPendingInserts();
@@ -1316,9 +1311,9 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   block._value = collectionValue;
                 }
               } else {
-                const childScope = $scope.transcluded() as RepeatScope;
+                const childScope = createTranscludedScope() as RepeatScope;
 
-                initializeScope(
+                const childScopeHandler = initializeScope(
                   childScope,
                   index,
                   valueIdentifier,
@@ -1329,22 +1324,22 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                 );
 
                 if ($transclude) {
-                  callFunction(
-                    $transclude as (...args: unknown[]) => unknown,
-                    undefined,
+                  ($transclude as (...args: unknown[]) => unknown)(
                     childScope,
                     attachTranscludedBlock.bind(
                       null,
                       block,
-                      value,
                       previousNode as ChildNode,
                       nextBlockMap,
                     ),
+                    undefined,
+                    undefined,
+                    true,
                   );
                 }
 
                 block._usesPositionLocals =
-                  scopeUsesRepeatPositionLocals(childScope);
+                  scopeUsesRepeatPositionLocals(childScopeHandler);
               }
             }
 

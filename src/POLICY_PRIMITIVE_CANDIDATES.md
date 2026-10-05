@@ -191,7 +191,6 @@ Implementation stoppages:
 
 Scope:
 
-- `$sce`
 - `$templateRequest`
 - `$compile`
 - `$http`
@@ -207,12 +206,12 @@ Why it qualifies:
 
 - template URLs, dynamic HTML, resource URLs, and compile-time DOM insertion are
   one trust boundary even when different services touch them.
-- app security posture is incoherent if `$sce`, template fetching, and compile
+- app security posture is incoherent if binding policies, template fetching, and compile
   insertion make unrelated trust decisions.
 
 Implementation stoppages:
 
-- [ ] Preserve `$sce` as the explicit trusted-value boundary.
+- [x] Use compiler-owned destination policies and native Trusted Types.
 - [ ] Define which resources can be sanitized and which can only be denied.
 - [ ] Prove template request and compile insertion consume the same decision
       without making normal static templates harder.

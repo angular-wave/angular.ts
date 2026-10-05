@@ -799,7 +799,6 @@ export function applyHttpConfiguration(
 /** @internal */
 export function createHttpService(
   $injector: ng.InjectorService,
-  $sce: ng.SceService,
   $cookie: ng.CookieService,
   $security: SecurityPolicy,
   $stream: ng.StreamService,
@@ -853,10 +852,10 @@ export function createHttpService(
       );
     }
 
-    if (!isString($sce.valueOf(requestConfig.url))) {
+    if (!isString(requestConfig.url)) {
       throw $httpError(
         "badreq",
-        "Http request configuration url must be a string or a $sce trusted object.  Received: {0}",
+        "Http request configuration url must be a string.  Received: {0}",
         requestConfig.url,
       );
     }
@@ -1216,10 +1215,7 @@ export function createHttpService(
     }
 
     const paramSerializer = config.paramSerializer as HttpParamSerializer;
-    const url = buildUrl(
-      String($sce.valueOf(config.url)),
-      paramSerializer(config.params),
-    );
+    const url = buildUrl(config.url, paramSerializer(config.params));
     const result = await executeCacheStrategy<HttpResponse<unknown>>({
       strategy,
       store,
@@ -1280,11 +1276,6 @@ export function createHttpService(
     config.headers = reqHeaders;
 
     let { url } = config;
-
-    if (!isString(url)) {
-      // If it is not a string then the URL must be a $sce trusted object
-      url = String($sce.valueOf(url));
-    }
 
     const paramSerializer = config.paramSerializer as HttpParamSerializer;
 

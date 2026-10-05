@@ -2,7 +2,7 @@ import {
   defaultHttpResponseTransform,
   mergeHttpHeaderDefaults,
 } from "../http/http.ts";
-import { extend, isArray } from "../../shared/utils.ts";
+import { extend, isArray, isString } from "../../shared/utils.ts";
 
 /**
  * Downloads a template using $http and, upon success, stores the
@@ -66,10 +66,22 @@ export function createTemplateRequestService(
   $templateCache: ng.TemplateCacheService,
   $http: ng.HttpService,
   httpOptions: ng.HttpRequestOptions,
+  resourceUrlPolicy: (url: string) => string,
 ): TemplateRequestService {
   const pendingRequests = new Map<string, Promise<string>>();
 
   return (templateUrl: string): Promise<string> => {
+    try {
+      if (!isString(templateUrl))
+        throw new TypeError("Template URL must be a string.");
+      templateUrl = resourceUrlPolicy(templateUrl);
+      if (!isString(templateUrl))
+        throw new TypeError("$compile.resourceUrlPolicy must return a string.");
+    } catch (error) {
+      return Promise.resolve().then(() => {
+        throw error;
+      });
+    }
     const pendingRequest = pendingRequests.get(templateUrl);
 
     if (pendingRequest) return pendingRequest;

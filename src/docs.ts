@@ -318,15 +318,16 @@ export type {
   RestResponse,
   RestRevalidateEvent,
 } from "./services/rest/rest.ts";
-export { SCE_CONTEXTS } from "./services/sce/context.ts";
-export type { SceContext } from "./services/sce/context.ts";
 export type {
-  SceConfig,
-  SceDelegateConfig,
-  SceDelegateService,
-  SceResourceUrlMatcher,
-  SceService,
-} from "./services/sce/sce.ts";
+  BindingContext,
+  BindingPolicyConfig,
+  UrlPolicy,
+} from "./core/compile/binding-policy.ts";
+export type { HtmlPolicy } from "./core/compile/html-policy.ts";
+export type {
+  ScriptPolicy,
+  ScriptUrlPolicy,
+} from "./core/compile/script-policy.ts";
 export type {
   SseConfig,
   SseConnection,

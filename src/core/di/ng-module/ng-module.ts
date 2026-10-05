@@ -28,8 +28,6 @@ import {
   _rest,
   _rootElement,
   _rootScope,
-  _sce,
-  _sceDelegate,
   _serviceWorker,
   _state,
   _stateRegistry,
@@ -133,10 +131,6 @@ import type { EventBusConfig } from "../../../services/event-bus/event-bus.ts";
 import type { AnchorScrollConfig } from "../../../services/anchor-scroll/anchor-scroll.ts";
 import type { AriaConfig } from "../../../directive/aria/aria.ts";
 import type { InterpolateConfig } from "../../interpolate/interpolate.ts";
-import type {
-  SceConfig,
-  SceDelegateConfig,
-} from "../../../services/sce/sce.ts";
 import type { HttpConfig } from "../../../services/http/http.ts";
 import type { HtmlCanvasConfig } from "../../../services/html-canvas/html-canvas.ts";
 import type { TemplateCacheConfig } from "../../../services/template-cache/template-cache.ts";
@@ -318,8 +312,6 @@ export interface AngularConfigMap {
   [_native]?: NativeConfig;
   [_rest]?: RestConfig;
   [routerConfigKey]?: RouterConfig;
-  [_sce]?: SceConfig;
-  [_sceDelegate]?: SceDelegateConfig;
   [_security]?: SecurityConfig;
   [_sse]?: SseModuleConfig;
   [_templateCache]?: TemplateCacheConfig;
@@ -354,8 +346,6 @@ const angularConfigKeys = new Set<string>([
   _native,
   _rest,
   routerConfigKey,
-  _sce,
-  _sceDelegate,
   _security,
   _sse,
   _templateCache,
@@ -1005,26 +995,6 @@ export class NgModule {
         this._runtimeConfig,
         "configure",
         [_location, locationConfig],
-      ]);
-    }
-
-    const sceConfig = normalized.$sce;
-
-    if (sceConfig) {
-      this._configBlocks.push([
-        this._runtimeConfig,
-        "configure",
-        [_sce, sceConfig],
-      ]);
-    }
-
-    const sceDelegateConfig = normalized.$sceDelegate;
-
-    if (sceDelegateConfig) {
-      this._configBlocks.push([
-        this._runtimeConfig,
-        "configure",
-        [_sceDelegate, sceDelegateConfig],
       ]);
     }
 

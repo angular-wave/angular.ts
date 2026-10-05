@@ -1,4 +1,4 @@
-import { isArray, notNullOrUndefined, isDefined, isString, isInstanceOf, isNumber, isFunction } from './utils.js';
+import { isArray, isFunction, notNullOrUndefined, isDefined, isString, isInstanceOf, isNumber } from './utils.js';
 
 const BADARG = "badarg";
 const BADARGKEY = "badarg: key";

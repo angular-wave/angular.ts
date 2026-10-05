@@ -187,19 +187,15 @@ describe("ngInclude", () => {
       await runMalformedTransclusion(false);
     });
 
-    it("should trust and use trusted urls", async () => {
+    it("should load same-origin resource URLs", async () => {
       const element = createElementFromHTML(
         '<div><div ng-include="fooUrl">test</div></div>',
       );
 
       const injector = angular.bootstrap(element);
 
-      const $sce = injector.get("$sce");
-
       $rootScope = injector.get("$rootScope");
-      $rootScope.fooUrl = $sce.trustAsResourceUrl(
-        `${window.location.origin}/mock/hello`,
-      );
+      $rootScope.fooUrl = `${window.location.origin}/mock/hello`;
       await waitUntil(() => element.textContent === "Hello");
       expect(element.textContent).toEqual("Hello");
     });

@@ -84,8 +84,6 @@ describe("ngSrc", () => {
 
     let element;
 
-    let $sce;
-
     let error;
 
     beforeEach(() => {
@@ -101,11 +99,10 @@ describe("ngSrc", () => {
       createInjector(["myModule"]).invoke([
         "$rootScope",
         "$compile",
-        "$sce",
-        ($rootScope, _$compile_, _$sce_) => {
+
+        ($rootScope, _$compile_) => {
           $scope = $rootScope.new();
           $compile = _$compile_;
-          $sce = _$sce_;
         },
       ]);
     });
@@ -133,45 +130,9 @@ describe("ngSrc", () => {
       expect(error).toBeDefined();
     });
 
-    it("should error on non-resource_url src attributes", async () => {
-      element = $compile('<iframe ng-src="{{testUrl}}"></iframe>')($scope);
-      $scope.testUrl = $sce.trustAsUrl("javascript:doTrustedStuff()");
-      await wait();
-
-      expect(error).toBeDefined();
-    });
-
-    it("should pass through $sce.trustAs() values in src attributes", async () => {
-      element = $compile('<iframe ng-src="{{testUrl}}"></iframe>')($scope);
-      $scope.testUrl = $sce.trustAsResourceUrl("javascript:doTrustedStuff()");
-      await wait();
-
-      expect(element.getAttribute("src")).toEqual(
-        "javascript:doTrustedStuff()",
-      );
-    });
-
-    it("should interpolate the expression and bind to src with a trusted value", async () => {
-      element = $compile('<iframe ng-src="{{id}}"></iframe>')($scope);
-
-      expect(element.getAttribute("src")).toBeNull();
-
-      $scope.id = $sce.trustAsResourceUrl("http://somewhere");
-      await wait();
-      expect(element.getAttribute("src")).toEqual("http://somewhere");
-    });
-
     it("should NOT interpolate a multi-part expression in a `src` attribute that requires a non-MEDIA_URL context", async () => {
       element = $compile('<iframe ng-src="some/{{id}}"></iframe>')($scope);
       $scope.id = 1;
-      await wait();
-
-      expect(error).toBeDefined();
-    });
-
-    it("should NOT interpolate a wrongly typed expression", async () => {
-      element = $compile('<iframe ng-src="{{id}}"></iframe>')($scope);
-      $scope.id = $sce.trustAsUrl("http://somewhere");
       await wait();
 
       expect(error).toBeDefined();

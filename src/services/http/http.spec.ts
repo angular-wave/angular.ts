@@ -52,7 +52,7 @@ describe("HTTP runtime configuration", () => {
     };
 
     configuration.defaults.paramSerializer = "configuredSerializer";
-    createHttpService(injector, {}, {}, {}, {}, configuration);
+    createHttpService(injector, {}, {}, {}, configuration);
 
     expect(injector.get).toHaveBeenCalledOnceWith("configuredSerializer");
     expect(configuration.defaults.paramSerializer).toBe(serializer);

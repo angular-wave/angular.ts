@@ -18,7 +18,6 @@ import {
   createInterpolateRegistration,
   type InterpolateConfig,
 } from "../core/interpolate/interpolate.ts";
-import { passThroughSecurityAdapter } from "../services/security/security-adapter.ts";
 import { createParseService } from "../core/parse/parse.ts";
 import { createRootScopeService } from "../core/scope/scope.ts";
 import { requireAppRoot } from "../core/app-context/app-context.ts";
@@ -158,7 +157,7 @@ export function registerComposedNgModule(
       _interpolate,
       createInterpolateRegistration(
         composition.interpolateState,
-        passThroughSecurityAdapter,
+        compileRegistry._bindingPolicies,
       ),
     );
     registry.factory(_controller, [
@@ -194,7 +193,6 @@ export function registerComposedNgModule(
         compileRegistry.createService(
           $injector,
           $interpolate,
-          passThroughSecurityAdapter,
           $exceptionHandler,
           $parse,
           $controller,

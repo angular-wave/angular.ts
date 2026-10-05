@@ -14,8 +14,6 @@ describe("ng-bind", () => {
 
   let scope;
 
-  let $sce;
-
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
@@ -31,11 +29,10 @@ describe("ng-bind", () => {
       .invoke([
         "$rootScope",
         "$compile",
-        "$sce",
-        (_$rootScope_, _$compile_, _$sce_) => {
+
+        (_$rootScope_, _$compile_) => {
           $rootScope = _$rootScope_;
           $compile = _$compile_;
-          $sce = _$sce_;
         },
       ]);
   });
@@ -229,7 +226,7 @@ describe("ng-bind", () => {
     it("should parse the expression during compile", () => {
       const parse = jasmine.createSpy("$parse").and.returnValue(() => {});
 
-      const directive = ngBindHtmlDirective(parse);
+      const directive = ngBindHtmlDirective(parse, $compile);
       const element = document.createElement("div");
 
       element.setAttribute("ng-bind-html", "html");
@@ -241,7 +238,9 @@ describe("ng-bind", () => {
     });
 
     it("should create a link function that writes watched html", () => {
-      const directive = ngBindHtmlDirective(() => {});
+      const directive = ngBindHtmlDirective(() => {}, {
+        _prepareHtml: (html) => html,
+      });
       const element = document.createElement("div");
 
       element.setAttribute("ng-bind-html", "html");
@@ -269,184 +268,6 @@ describe("ng-bind", () => {
       expect(() => {
         $compile('<div ng-bind-html="{{myHtml}}"></div>');
       }).toThrowError(/syntax/);
-    });
-
-    describe("SCE disabled", () => {
-      beforeEach(() => {
-        dealoc(document.getElementById("app"));
-        window.angular
-          .createModule("myModule", ["ng"])
-          .config({ $sce: { enabled: false } })
-          .decorator("$exceptionHandler", function () {
-            return (exception) => {
-              throw new Error(exception.message);
-            };
-          });
-        window.angular
-          .bootstrap(document.getElementById("app"), ["myModule"])
-          .invoke([
-            "$rootScope",
-            "$compile",
-            "$sce",
-            (_$rootScope_, _$compile_, _$sce_) => {
-              $rootScope = _$rootScope_;
-              $compile = _$compile_;
-              $sce = _$sce_;
-            },
-          ]);
-      });
-
-      afterEach(() => dealoc(element));
-
-      it("should set html", async () => {
-        element = $compile('<div ng-bind-html="html"></div>')($rootScope);
-        $rootScope.html = '<div onclick="">hello</div>';
-        await wait();
-        expect(element.innerHTML).toEqual('<div onclick="">hello</div>');
-      });
-
-      it("should support normalized data-ng-bind-html aliases", async () => {
-        element = $compile('<div data-ng-bind-html="html"></div>')($rootScope);
-        $rootScope.html = "<span>hello</span>";
-        await wait();
-        expect(element.innerHTML).toEqual("<span>hello</span>");
-      });
-
-      it("should update html", async () => {
-        element = $compile('<div ng-bind-html="html"></div>')($rootScope);
-        $rootScope.html = "hello";
-        await wait();
-        expect(element.innerHTML).toEqual("hello");
-        $rootScope.html = "goodbye";
-        await wait();
-        expect(element.innerHTML).toEqual("goodbye");
-      });
-    });
-
-    describe("SCE enabled", () => {
-      beforeEach(() => {
-        dealoc(document.getElementById("app"));
-        window.angular
-          .createModule("myModule", ["ng"])
-          .config({ $sce: { enabled: true } })
-          .decorator("$exceptionHandler", function () {
-            return (exception) => {
-              throw new Error(exception.message);
-            };
-          });
-        window.angular
-          .bootstrap(document.getElementById("app"), ["myModule"])
-          .invoke([
-            "$rootScope",
-            "$compile",
-            "$sce",
-            (_$rootScope_, _$compile_, _$sce_) => {
-              $rootScope = _$rootScope_;
-              $compile = _$compile_;
-              $sce = _$sce_;
-            },
-          ]);
-        scope = $rootScope.new();
-      });
-
-      afterEach(() => dealoc(element));
-
-      it("should set html for trusted values", async () => {
-        element = $compile('<div ng-bind-html="html"></div>')($rootScope);
-        $rootScope.html = $sce.trustAsHtml('<div onclick="">hello</div>');
-        await wait();
-        expect(element.innerHTML).toEqual('<div onclick="">hello</div>');
-      });
-
-      it("should update html", async () => {
-        element = $compile('<div ng-bind-html="html"></div>')(scope);
-        scope.html = $sce.trustAsHtml("hello");
-        await wait();
-        expect(element.innerHTML).toEqual("hello");
-        scope.html = $sce.trustAsHtml("goodbye");
-        await wait();
-        expect(element.innerHTML).toEqual("goodbye");
-      });
-
-      it("should not cause infinite recursion for trustAsHtml object watches", async () => {
-        // Ref: https://github.com/angular/angular.js/issues/3932
-        // If the binding is a function that creates a new value on every call via trustAs, we'll
-        // trigger an infinite digest if we don't take care of it.
-        element = $compile('<div ng-bind-html="getHtml()"></div>')($rootScope);
-        $rootScope.getHtml = function () {
-          return $sce.trustAsHtml('<div onclick="">hello</div>');
-        };
-        await wait();
-        expect(element.innerHTML).toEqual('<div onclick="">hello</div>');
-      });
-
-      it("should handle custom $sce objects", async () => {
-        function MySafeHtml(val) {
-          this.val = val;
-        }
-
-        dealoc(document.getElementById("app"));
-
-        window.angular
-          .createModule("myModule", ["ng"])
-          .decorator("$sce", [
-            "$delegate",
-            ($delegate) => {
-              $delegate.trustAsHtml = function (html) {
-                return new MySafeHtml(html);
-              };
-              $delegate.getTrustedHtml = function (mySafeHtml) {
-                return mySafeHtml.val;
-              };
-              $delegate.valueOf = function (v) {
-                return v instanceof MySafeHtml ? v.val : v;
-              };
-
-              return $delegate;
-            },
-          ])
-          .decorator("$exceptionHandler", function () {
-            return (exception) => {
-              throw new Error(exception.message);
-            };
-          });
-        const injector = window.angular.bootstrap(
-          document.getElementById("app"),
-          ["myModule"],
-        );
-
-        injector.invoke([
-          "$rootScope",
-          "$compile",
-          "$sce",
-          (_$rootScope_, _$compile_, _$sce_) => {
-            $rootScope = _$rootScope_.new();
-            $compile = _$compile_;
-            $sce = _$sce_;
-          },
-        ]);
-
-        async () => {
-          // Ref: https://github.com/angular/angular.js/issues/14526
-          // Previous code used toString for change detection, which fails for custom objects
-          // that don't override toString.
-          element = $compile('<div ng-bind-html="getHtml()"></div>')(
-            $rootScope,
-          );
-          let html = "hello";
-
-          $rootScope.getHtml = function () {
-            return $sce.trustAsHtml(html);
-          };
-          await wait();
-          expect(element.innerHTML).toEqual("hello");
-          html = "goodbye";
-          await wait();
-          expect(element.innerHTML).toEqual("goodbye");
-        };
-
-        expect(true).toBeTrue();
-      });
     });
   });
 });

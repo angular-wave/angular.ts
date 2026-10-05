@@ -14,6 +14,7 @@ import {
   createPublicLinkSingleNodeCompiledFragmentRecord,
   createSingleNodeCompiledFragmentRecord,
   disposeCompiledFragmentRecord,
+  enableCompiledFragmentRetention,
   findCompiledFragmentRecord,
   getCompiledFragmentRecord,
   getCompiledFragmentRecordFromNodes,
@@ -38,6 +39,17 @@ function createRoot() {
 }
 
 describe("incremental compiled fragments", () => {
+  let disableRetention: (() => void) | undefined;
+
+  afterEach(() => {
+    disableRetention?.();
+    disableRetention = undefined;
+  });
+
+  function enableRetention(): void {
+    disableRetention = enableCompiledFragmentRetention();
+  }
+
   it("creates root-owned fragment records without linking them", () => {
     const { root, rootScope } = createRoot();
     const node = document.createElement("section");
@@ -918,6 +930,7 @@ describe("incremental compiled fragments", () => {
   });
 
   it("defers retained inactive fragment DOM work without pausing active root work", () => {
+    enableRetention();
     const { root, rootScope } = createRoot();
     const retainedScope = rootScope.new();
     const activeScope = rootScope.new();
@@ -971,6 +984,7 @@ describe("incremental compiled fragments", () => {
   });
 
   it("filters retention modes and ignores empty resume queues", () => {
+    enableRetention();
     const { root, rootScope } = createRoot();
     const record = createCompiledFragmentRecord({
       root,
@@ -987,6 +1001,7 @@ describe("incremental compiled fragments", () => {
   });
 
   it("keeps resumed DOM work deferred when the fragment pauses again", () => {
+    enableRetention();
     const { root, rootScope } = createRoot();
     const calls: string[] = [];
     const record = createCompiledFragmentRecord({
@@ -1009,6 +1024,7 @@ describe("incremental compiled fragments", () => {
   });
 
   it("drops paused work when its root becomes stale", () => {
+    enableRetention();
     const { root, rootScope } = createRoot();
     const record = createCompiledFragmentRecord({
       root,

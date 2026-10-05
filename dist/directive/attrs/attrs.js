@@ -1,11 +1,11 @@
-import { _sce } from '../../injection-tokens.js';
+import { _compile, _exceptionHandler } from '../../injection-tokens.js';
 import { BOOLEAN_ATTR, getNormalizedAttr, setNormalizedAttr, getNormalizedAttrName } from '../../shared/dom.js';
-import { directiveNormalize, entries, getNodeName, isString, stringify, trim, isNullOrUndefined, createErrorFactory } from '../../shared/utils.js';
+import { directiveNormalize, entries, getNodeName, trim, isNullOrUndefined, stringify, isString, createErrorFactory } from '../../shared/utils.js';
 import { ALIASED_ATTR } from '../../shared/constants.js';
 
 const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 const $compileError = createErrorFactory("$compile");
-function sanitizeSrcset($sce, value, invokeType) {
+function sanitizeSrcset($compile, value, invokeType) {
     if (!value) {
         return value;
     }
@@ -24,14 +24,14 @@ function sanitizeSrcset($sce, value, invokeType) {
         const uri = trim(rawUris[innerIdx]);
         result += uri.startsWith("unsafe:")
             ? uri
-            : String($sce.getTrustedMediaUrl(uri));
+            : String($compile._applyBindingPolicy("mediaUrl", uri));
         result += ` ${trim(rawUris[innerIdx + 1])}`;
     }
     const lastTuple = trim(rawUris[i * 2]).split(/\s/);
     const uri = trim(lastTuple[0]);
     result += uri.startsWith("unsafe:")
         ? uri
-        : String($sce.getTrustedMediaUrl(uri));
+        : String($compile._applyBindingPolicy("mediaUrl", uri));
     if (lastTuple.length === 2) {
         result += ` ${trim(lastTuple[1])}`;
     }
@@ -102,9 +102,10 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 ["src", "srcset", "href"].forEach((attrName) => {
     const normalized = directiveNormalize(`ng-${attrName}`);
     ngAttributeAliasDirectives[normalized] = [
-        _sce,
+        _compile,
+        _exceptionHandler,
         /** Creates the alias directive for interpolated URL-like attributes. */
-        function ($sce) {
+        function ($compile, $exceptionHandler) {
             return {
                 priority: 99, // it needs to run after the attributes are interpolated
                 compile(_element) {
@@ -122,17 +123,36 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                                 return value;
                             }
                             const stringValue = stringify(value);
-                            if (stringValue.startsWith("unsafe:")) {
+                            if (stringValue.startsWith("unsafe:") &&
+                                !(attrName === "src" &&
+                                    !["img", "video", "audio", "source", "track"].includes(nodeName)) &&
+                                !(attrName === "href" &&
+                                    ["script", "base", "link"].includes(nodeName))) {
                                 return stringValue;
                             }
                             if (attrName === "src" &&
                                 !["img", "video", "audio", "source", "track"].includes(nodeName)) {
-                                return $sce.getTrustedResourceUrl(stringValue);
+                                return $compile._applyBindingPolicy(nodeName === "script" ? "scriptUrl" : "resourceUrl", stringValue, element.ownerDocument.defaultView ?? window);
                             }
                             if (attrName === "href" && nodeName !== "image") {
-                                return $sce.getTrustedUrl(stringValue);
+                                return $compile._applyBindingPolicy(nodeName === "script"
+                                    ? "scriptUrl"
+                                    : ["base", "link"].includes(nodeName)
+                                        ? "resourceUrl"
+                                        : "url", stringValue, element.ownerDocument.defaultView ?? window);
                             }
-                            return $sce.getTrustedMediaUrl(stringValue);
+                            return $compile._applyBindingPolicy("mediaUrl", stringValue, element.ownerDocument.defaultView ?? window);
+                        }
+                        function writeAliasValue(value) {
+                            if (nodeName === "script" && attrName === "href") {
+                                element.setAttribute("href", value);
+                            }
+                            else if (nodeName === "script" && attrName === "src") {
+                                element.src = value;
+                            }
+                            else {
+                                setNormalizedAttr(element, attrName, value);
+                            }
                         }
                         function readAliasValue() {
                             const value = getNormalizedAttr(element, normalized);
@@ -152,21 +172,14 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                             if (attrName === "href" ||
                                 (attrName === "src" &&
                                     ["img", "video", "audio", "source", "track"].includes(nodeName))) {
-                                setNormalizedAttr(element, attrName, sanitize(value));
+                                writeAliasValue(sanitize(value));
                             }
                             else if (attrName === "srcset") {
-                                setNormalizedAttr(element, attrName, sanitizeSrcset($sce, value, "ng-srcset"));
+                                setNormalizedAttr(element, attrName, sanitizeSrcset($compile, value, "ng-srcset"));
                             }
                             else {
-                                setNormalizedAttr(element, attrName, value);
+                                writeAliasValue(sanitize(value));
                             }
-                        }
-                        // We need to sanitize the url at least once, in case it is a constant
-                        // non-interpolated attribute.
-                        if (initialValue && !initialValue.includes("{{")) {
-                            setNormalizedAttr(element, attrName, attrName === "srcset"
-                                ? sanitizeSrcset($sce, initialValue, "ng-srcset")
-                                : sanitize(initialValue));
                         }
                         let skipInitialInterpolation = Boolean(getNormalizedAttr(element, normalized)?.includes("{{"));
                         const syncObservedAliasValue = () => {
@@ -178,15 +191,26 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
                             }
                             syncAliasValue(value);
                         };
-                        syncObservedAliasValue();
+                        if (initialValue && !initialValue.includes("{{")) {
+                            syncAliasValue(initialValue);
+                        }
+                        else {
+                            syncObservedAliasValue();
+                        }
                         const observerName = directiveNormalize(normalized);
                         const observer = new MutationObserver((mutations) => {
-                            for (let i = 0; i < mutations.length; i++) {
-                                const attributeName = mutations[i].attributeName;
-                                if (attributeName &&
-                                    directiveNormalize(attributeName) === observerName) {
-                                    syncObservedAliasValue();
+                            try {
+                                for (let i = 0; i < mutations.length; i++) {
+                                    const attributeName = mutations[i].attributeName;
+                                    if (attributeName &&
+                                        directiveNormalize(attributeName) === observerName) {
+                                        syncObservedAliasValue();
+                                        break;
+                                    }
                                 }
+                            }
+                            catch (error) {
+                                $exceptionHandler(error);
                             }
                         });
                         observer.observe(element, { attributes: true });

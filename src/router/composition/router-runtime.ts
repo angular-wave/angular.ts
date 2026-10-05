@@ -2,6 +2,7 @@ import type {
   CompileLifecycle,
   CompileRegistry,
 } from "../../core/compile/compile.ts";
+import { enableCompiledFragmentRetention } from "../../core/compile/incremental-fragment.ts";
 import type {
   ProviderCompositionContext,
   RuntimeRegistrationRecipe,
@@ -100,6 +101,7 @@ export function applyRouterRuntimeCommand(
 export function createRouterRuntime(
   dependencies: RouterRuntimeDependencies,
 ): RouterRuntimeComposition {
+  const disableCompiledFragmentRetention = enableCompiledFragmentRetention();
   const routerState = new RouterRuntimeState(dependencies.locationConfig);
   const stateRegistry = new StateRegistryRuntime(
     routerState,
@@ -169,6 +171,7 @@ export function createRouterRuntime(
       if (destroyed) return;
 
       destroyed = true;
+      disableCompiledFragmentRetention();
       stateService._destroyRuntime();
       viewService?.destroy();
     },

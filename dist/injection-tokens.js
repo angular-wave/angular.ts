@@ -30,8 +30,6 @@ const _parse = "$parse";
 const _rest = "$rest";
 const _rootScope = "$rootScope";
 const _rootElement = "$rootElement";
-const _sce = "$sce";
-const _sceDelegate = "$sceDelegate";
 const _state = "$state";
 const _stateRegistry = "$stateRegistry";
 const _storage = "$storage";
@@ -81,8 +79,6 @@ const $injectTokens = {
     _rest,
     _rootScope,
     _rootElement,
-    _sce,
-    _sceDelegate,
     _security,
     _serviceWorker,
     _state,
@@ -104,4 +100,4 @@ const $injectTokens = {
     _injector,
 };
 
-export { $injectTokens, _anchorScroll, _angular, _animate, _aria, _compile, _controller, _cookie, _document, _element, _eventBus, _exceptionHandler, _filter, _htmlCanvas, _http, _httpParamSerializer, _injector, _interpolate, _location, _log, _machine, _native, _parse, _rest, _rootElement, _rootScope, _sce, _sceDelegate, _scope, _security, _serviceWorker, _sse, _state, _stateRegistry, _storage, _stream, _templateCache, _templateRequest, _transitions, _wasm, _webComponent, _webTransport, _websocket, _window, _worker, _workflow, _workflowSupervisor };
+export { $injectTokens, _anchorScroll, _angular, _animate, _aria, _compile, _controller, _cookie, _document, _element, _eventBus, _exceptionHandler, _filter, _htmlCanvas, _http, _httpParamSerializer, _injector, _interpolate, _location, _log, _machine, _native, _parse, _rest, _rootElement, _rootScope, _scope, _security, _serviceWorker, _sse, _state, _stateRegistry, _storage, _stream, _templateCache, _templateRequest, _transitions, _wasm, _webComponent, _webTransport, _websocket, _window, _worker, _workflow, _workflowSupervisor };

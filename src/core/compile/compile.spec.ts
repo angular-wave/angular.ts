@@ -106,8 +106,7 @@ describe("$compile", () => {
     $compile: AnyFn,
     $templateCache: any,
     log: any,
-    errorLog: any[] = [],
-    $sce: any;
+    errorLog: any[] = [];
 
   let myModule: any;
 
@@ -153,7 +152,6 @@ describe("$compile", () => {
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
     $templateCache = injector.get("$templateCache");
-    $sce = injector.get("$sce");
   }
 
   function registerDirectives(...args: any[]) {
@@ -295,7 +293,6 @@ describe("$compile", () => {
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
     $templateCache = injector.get("$templateCache");
-    $sce = injector.get("$sce");
   }
 
   it("is provided by injector $compile", () => {
@@ -6203,6 +6200,23 @@ describe("$compile", () => {
         expect(element.classList.contains("class_2")).toBeTrue();
       });
 
+      it("should update a wholly interpolated css class", async () => {
+        reloadModules();
+        element = $compile('<div class="{{cls}}"></div>')($rootScope);
+        await wait();
+
+        expect(element.getAttribute("class")).toBe("");
+        expect(element.classList.length).toBe(0);
+
+        $rootScope.cls = "one two";
+        await wait();
+        expect(Array.from(element.classList)).toEqual(["one", "two"]);
+
+        $rootScope.cls = "two three";
+        await wait();
+        expect(Array.from(element.classList)).toEqual(["two", "three"]);
+      });
+
       it("should merge interpolated css class", async () => {
         reloadModules();
         element = $compile('<div class="one {{cls}} three" replace></div>')(
@@ -6450,8 +6464,7 @@ describe("$compile", () => {
     });
 
     describe("templateUrl", () => {
-      let $sce, errors;
-      // let module, log, $compile, $rootScope, $sce, $templateCache, errors;
+      let errors;
 
       async function waitForTemplateCloneResolution(
         predicate,
@@ -6475,6 +6488,19 @@ describe("$compile", () => {
         await wait(25);
         errors = [];
         myModule
+          .config({
+            $compile: {
+              resourceUrlPolicy: (url) => {
+                const resolved = new URL(url, document.baseURI);
+                if (
+                  resolved.origin === location.origin ||
+                  resolved.origin === new URL(__PW_API_URL__).origin
+                )
+                  return url;
+                throw new Error("insecurl: test resource URL rejected");
+              },
+            },
+          })
           .decorator("$exceptionHandler", () => {
             return (exception, cause) => {
               errors.push(exception.message);
@@ -6501,7 +6527,7 @@ describe("$compile", () => {
           .directive("trustedTemplate", () => ({
             restrict: "A",
             templateUrl() {
-              return $sce.trustAsResourceUrl(`${__PW_API_URL__}hello`);
+              return `${__PW_API_URL__}hello`;
             },
           }))
           .directive("cError", () => ({
@@ -6585,18 +6611,18 @@ describe("$compile", () => {
           "$compile",
           "$rootScope",
           "$templateCache",
-          "$sce",
-          (_$compile_, _$rootScope_, _$templateCache_, _$sce_) => {
+
+          (_$compile_, _$rootScope_, _$templateCache_) => {
             $compile = _$compile_;
             $rootScope = _$rootScope_;
             $templateCache = _$templateCache_;
-            $sce = _$sce_;
+
             $templateCache.set("error.html", "<div></div>");
           },
         ]);
       });
 
-      it("should allow all template URLs by default", async () => {
+      it("rejects cached external template URLs without an approving resource policy", async () => {
         $templateCache.set(
           "http://example.com/should-not-load.html",
           "<span>example.com/cached-version</span>",
@@ -6604,24 +6630,22 @@ describe("$compile", () => {
         element = $compile("<div cross-domain-template></div>")($rootScope);
         await wait();
 
-        expect(element.outerHTML).toEqual(
-          '<div cross-domain-template=""><span>example.com/cached-version</span></div>',
-        );
-        expect(errors.length).toBe(0);
-      });
-
-      it("should trust what is already in the template cache", async () => {
-        $templateCache.set(
-          "http://example.com/should-not-load.html",
-          "<span>example.com/cached-version</span>",
-        );
-        element = $compile("<div cross-domain-template></div>")($rootScope);
         expect(element.outerHTML).toEqual(
           '<div cross-domain-template=""></div>',
         );
+        expect(errors[0]).toMatch(/insecurl/);
+      });
+
+      it("loads same-origin template URLs from the cache", async () => {
+        $templateCache.set(
+          "/mock/hello",
+          "<span>example.com/cached-version</span>",
+        );
+        element = $compile("<div hello></div>")($rootScope);
+        expect(element.outerHTML).toEqual('<div hello=""></div>');
         await wait();
         expect(element.outerHTML).toEqual(
-          '<div cross-domain-template=""><span>example.com/cached-version</span></div>',
+          '<div hello=""><span>example.com/cached-version</span></div>',
         );
       });
 
@@ -7894,8 +7918,6 @@ describe("$compile", () => {
 
       let module;
 
-      let $sce;
-
       beforeEach(() => {
         log = [];
         module = window.angular.createModule("test1", ["ng"]);
@@ -7906,12 +7928,11 @@ describe("$compile", () => {
             "$compile",
             "$rootScope",
             "$templateCache",
-            "$sce",
-            (_$compile_, _$rootScope_, _$templateCache_, _$sce_) => {
+
+            (_$compile_, _$rootScope_, _$templateCache_) => {
               $compile = _$compile_;
               $rootScope = _$rootScope_;
               $templateCache = _$templateCache_;
-              $sce = _$sce_;
             },
           ]);
       });
@@ -8030,18 +8051,6 @@ describe("$compile", () => {
         expect(log.join("; ")).toEqual(
           "compile={{name}}; preLinkP101={{name}}; preLinkP0={{name}}; postLink={{name}}; digest=angular",
         );
-      });
-
-      describe("SCE values", () => {
-        it("should resolve compile and link both attribute and text bindings", async () => {
-          $rootScope.name = $sce.trustAsHtml("angular");
-          element = $compile('<div name="attr: {{name}}">text: {{name}}</div>')(
-            $rootScope,
-          );
-          await wait();
-          expect(element.textContent).toEqual("text: angular");
-          expect(element.getAttribute("name")).toEqual("attr: angular");
-        });
       });
 
       it("should support non-interpolated `src` and `data-src` on the same element", async () => {
@@ -15016,28 +15025,6 @@ describe("$compile", () => {
           "http://example.com/image.mp4",
         );
       });
-
-      it("should accept trusted values", async () => {
-        // As a MEDIA_URL URL
-        element = $compile(`<${tag} src="{{testUrl}}"></${tag}>`)($rootScope);
-        // Some browsers complain if you try to write `javascript:` into an `img[src]`
-        // So for the test use something different
-        $rootScope.testUrl = $sce.trustAsMediaUrl("untrusted:foo()");
-        await wait();
-        expect(element.getAttribute("src")).toEqual("untrusted:foo()");
-
-        // As a URL
-        element = $compile(`<${tag} src="{{testUrl}}"></${tag}>`)($rootScope);
-        await wait();
-        $rootScope.testUrl = $sce.trustAsUrl("untrusted:foo()");
-        expect(element.getAttribute("src")).toEqual("untrusted:foo()");
-
-        // As a RESOURCE URL
-        element = $compile(`<${tag} src="{{testUrl}}"></${tag}>`)($rootScope);
-        await wait();
-        $rootScope.testUrl = $sce.trustAsResourceUrl("untrusted:foo()");
-        expect(element.getAttribute("src")).toEqual("untrusted:foo()");
-      });
     });
   });
 
@@ -15053,75 +15040,10 @@ describe("$compile", () => {
           "http://example.com/image.mp4",
         );
       });
-
-      it("should accept trusted values", async () => {
-        // As a MEDIA_URL URL
-        element = $compile(
-          `<video><${tag} src="{{testUrl}}"></${tag}></video>`,
-        )($rootScope);
-        $rootScope.testUrl = $sce.trustAsMediaUrl("javascript:foo()");
-        await wait();
-        expect(element.querySelector(tag).getAttribute("src")).toEqual(
-          "javascript:foo()",
-        );
-
-        // As a URL
-        element = $compile(
-          `<video><${tag} src="{{testUrl}}"></${tag}></video>`,
-        )($rootScope);
-        $rootScope.testUrl = $sce.trustAsUrl("javascript:foo()");
-        await wait();
-        expect(element.querySelector(tag).getAttribute("src")).toEqual(
-          "javascript:foo()",
-        );
-
-        // As a RESOURCE URL
-        element = $compile(
-          `<video><${tag} src="{{testUrl}}"></${tag}></video>`,
-        )($rootScope);
-
-        $rootScope.testUrl = $sce.trustAsResourceUrl("javascript:foo()");
-        await wait();
-        expect(element.querySelector(tag).getAttribute("src")).toEqual(
-          "javascript:foo()",
-        );
-      });
     });
   });
 
   describe("img[src] sanitization", () => {
-    it("should accept trusted values", async () => {
-      element = $compile('<img src="{{testUrl}}"></img>')($rootScope);
-      // Some browsers complain if you try to write `javascript:` into an `img[src]`
-      // So for the test use something different
-      $rootScope.testUrl = $sce.trustAsMediaUrl("someUntrustedThing:foo();");
-      await wait();
-      expect(element.getAttribute("src")).toEqual("someUntrustedThing:foo();");
-    });
-
-    it("should sanitize concatenated values even if they are trusted", async () => {
-      element = $compile('<img src="{{testUrl}}ponies"></img>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsUrl("untrusted:foo();");
-      await wait();
-      expect(element.getAttribute("src")).toEqual(
-        "unsafe:untrusted:foo();ponies",
-      );
-
-      element = $compile('<img src="http://{{testUrl2}}"></img>')($rootScope);
-      $rootScope.testUrl2 = $sce.trustAsUrl("xyz;");
-      await wait();
-      expect(element.getAttribute("src")).toEqual("http://xyz;");
-
-      element = $compile('<img src="{{testUrl3}}{{testUrl3}}"></img>')(
-        $rootScope,
-      );
-      $rootScope.testUrl3 = $sce.trustAsUrl("untrusted:foo();");
-      await wait();
-      expect(element.getAttribute("src")).toEqual(
-        "unsafe:untrusted:foo();untrusted:foo();",
-      );
-    });
-
     it("should not sanitize attributes other than src", async () => {
       element = $compile('<img title="{{testUrl}}"></img>')($rootScope);
       $rootScope.testUrl = "javascript:doEvilStuff()";
@@ -15136,27 +15058,6 @@ describe("$compile", () => {
       await wait();
       expect(element.getAttribute("src")).toBe("unsafe:javascript:foo()");
     });
-
-    it("should sanitize concatenated trusted values", async () => {
-      initInjector("test1");
-
-      element = $compile('<img src="{{testUrl}}ponies"></img>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:foo();");
-      await wait();
-      expect(element.getAttribute("src")).toEqual(
-        "unsafe:javascript:foo();ponies",
-      );
-    });
-
-    it("should pass through trusted media values", async () => {
-      initInjector("test1");
-      element = $compile('<img src="{{testUrl}}"></img>')($rootScope);
-      // Assigning javascript:foo to src makes at least IE9-11 complain, so use another
-      // protocol name.
-      $rootScope.testUrl = $sce.trustAsMediaUrl("untrusted:foo();");
-      await wait();
-      expect(element.getAttribute("src")).toEqual("untrusted:foo();");
-    });
   });
 
   describe("img[srcset] sanitization", () => {
@@ -15166,33 +15067,6 @@ describe("$compile", () => {
       await wait();
       expect(element.getAttribute("srcset")).toEqual(
         "http://example.com/image.png",
-      );
-    });
-
-    it("should accept trusted values, if they are also trusted URIs", async () => {
-      element = $compile('<img srcset="{{testUrl}}"></img>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsUrl("http://example.com");
-      await wait();
-      expect(element.getAttribute("srcset")).toEqual("http://example.com");
-    });
-
-    it("should NOT work with trusted values", async () => {
-      // A limitation of the approach used for srcset is that you cannot use `trustAsUrl`.
-      // Use trustAsHtml and ng-bind-html to work around this.
-      element = $compile('<img srcset="{{testUrl}}"></img>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:something");
-      await wait();
-      expect(element.getAttribute("srcset")).toEqual(
-        "unsafe:javascript:something",
-      );
-
-      element = $compile('<img srcset="{{testUrl}},{{testUrl}}"></img>')(
-        $rootScope,
-      );
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:something");
-      await wait();
-      expect(element.getAttribute("srcset")).toEqual(
-        "unsafe:javascript:something ,unsafe:javascript:something",
       );
     });
 
@@ -15271,10 +15145,13 @@ describe("$compile", () => {
       });
     }
 
-    it("should apply imgSrcSanitizationTrustedUrlList to supported srcset bindings", async () => {
+    it("should apply mediaUrlPolicy to supported srcset bindings", async () => {
       module.config({
-        $sceDelegate: {
-          imgSrcSanitizationTrustedUrlList: /^https:\/\/angularjs\.org\//,
+        $compile: {
+          mediaUrlPolicy: (url) =>
+            /^https:\/\/angularjs\.org\//.test(url)
+              ? url
+              : `unsafe:${new URL(url, document.baseURI).href}`,
         },
       });
       initInjector("test1");
@@ -15310,7 +15187,7 @@ describe("$compile", () => {
       $rootScope.testUrl = disallowedDomainPayload;
       await wait();
       expect(srcsetElement.getAttribute("srcset")).toEqual(
-        disallowedDomainPayload,
+        "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
       );
 
       srcsetElement = $compile('<img ng-prop-srcset="testUrl"></img>')(
@@ -15338,17 +15215,6 @@ describe("$compile", () => {
       expect(element.getAttribute("ng-href")).toEqual(
         "http://example.com/image.png",
       );
-    });
-
-    it("should accept trusted values for non-trusted URI values", async () => {
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:foo()"); // `javascript` is not trusted
-      element = $compile('<a href="{{testUrl}}"></a>')($rootScope);
-      await wait();
-      expect(element.getAttribute("href")).toEqual("javascript:foo()");
-
-      element = $compile('<a ng-href="{{testUrl}}"></a>')($rootScope);
-      await wait();
-      expect(element.getAttribute("ng-href")).toEqual("javascript:foo()");
     });
 
     it("should sanitize non-trusted values", async () => {
@@ -15460,10 +15326,13 @@ describe("$compile", () => {
       );
     });
 
-    it("should apply imgSrcSanitizationTrustedUrlList to svg image href bindings", async () => {
+    it("should apply mediaUrlPolicy to svg image href bindings", async () => {
       module.config({
-        $sceDelegate: {
-          imgSrcSanitizationTrustedUrlList: /^https:\/\/angularjs\.org\//,
+        $compile: {
+          mediaUrlPolicy: (url) =>
+            /^https:\/\/angularjs\.org\//.test(url)
+              ? url
+              : `unsafe:${new URL(url, document.baseURI).href}`,
         },
       });
       initInjector("test1");
@@ -15601,46 +15470,20 @@ describe("$compile", () => {
       await wait();
       expect(errors[0]).toMatch(/insecurl/);
     });
-
-    it("should clear out non-resource_url src attributes", async () => {
-      element = $compile('<iframe src="{{testUrl}}"></iframe>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:doTrustedStuff()");
-      await wait();
-      expect(errors[0]).toMatch(/insecurl/);
-    });
-
-    it("should pass through $sce.trustAs() values in src attributes", async () => {
-      element = $compile('<iframe src="{{testUrl}}"></iframe>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsResourceUrl(
-        "javascript:doTrustedStuff()",
-      );
-      await wait();
-
-      expect(element.getAttribute("src")).toEqual(
-        "javascript:doTrustedStuff()",
-      );
-    });
   });
 
   describe("base[href]", () => {
-    it("should be a RESOURCE_URL context", async () => {
-      const error = [];
-
-      module.decorator("$exceptionHandler", () => {
-        return (exception, cause) => {
-          error.push(exception.message);
-        };
-      });
+    it("rejects external base URLs", async () => {
+      const errors = [];
+      module.decorator(
+        "$exceptionHandler",
+        () => (error) => errors.push(error),
+      );
       initInjector("test1");
-      element = $compile('<base href="{{testUrl}}"/>')($rootScope);
-
-      $rootScope.testUrl = $sce.trustAsResourceUrl("https://example.com/");
+      $compile('<base href="{{url}}">')($rootScope);
+      $rootScope.url = "https://external.example/";
       await wait();
-      expect(element.getAttribute("href")).toContain("https://example.com/");
-
-      $rootScope.testUrl = "https://not.example.com/";
-      await wait();
-      expect(error[0]).toMatch(/insecurl/);
+      expect(errors[0].message).toMatch(/insecurl/);
     });
   });
 
@@ -15677,25 +15520,6 @@ describe("$compile", () => {
       await wait();
       expect(error[0]).toMatch(/insecurl/);
     });
-
-    it("should clear out non-resource_url action attribute", async () => {
-      element = $compile('<form action="{{testUrl}}"></form>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:doTrustedStuff()");
-      await wait();
-      expect(error[0]).toMatch(/insecurl/);
-    });
-
-    it("should pass through $sce.trustAsResourceUrl() values in action attribute", async () => {
-      element = $compile('<form action="{{testUrl}}"></form>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsResourceUrl(
-        "javascript:doTrustedStuff()",
-      );
-      await wait();
-
-      expect(element.getAttribute("action")).toEqual(
-        "javascript:doTrustedStuff()",
-      );
-    });
   });
 
   describe("link[href]", () => {
@@ -15718,24 +15542,6 @@ describe("$compile", () => {
       );
       await wait();
       expect(error[0]).toMatch(/insecurl/);
-    });
-
-    it("should accept valid RESOURCE_URLs", async () => {
-      element = $compile('<link href="{{testUrl}}" rel="stylesheet" />')(
-        $rootScope,
-      );
-
-      $rootScope.testUrl = "./css1.css";
-      await wait();
-      expect(element.getAttribute("href")).toContain("css1.css");
-
-      $rootScope.testUrl = $sce.trustAsResourceUrl(
-        "https://elsewhere.example.org/css2.css",
-      );
-      await wait();
-      expect(element.getAttribute("href")).toContain(
-        "https://elsewhere.example.org/css2.css",
-      );
     });
 
     it("should accept valid constants", async () => {
@@ -15972,12 +15778,12 @@ describe("$compile", () => {
       expect(true).toBeTrue();
     });
 
-    it("should allow different sce types of a property on different element types", () => {
+    it("allows different policy contexts of a property on different element types", () => {
       module.config({
         $compile: {
           propertySecurityContexts: [
             { elementName: "div", propertyName: "title", context: "mediaUrl" },
-            { elementName: "span", propertyName: "title", context: "css" },
+            { elementName: "span", propertyName: "title", context: "url" },
             { elementName: "*", propertyName: "title", context: "resourceUrl" },
             { elementName: "article", propertyName: "title", context: "html" },
           ],
@@ -16015,85 +15821,6 @@ describe("$compile", () => {
       });
       createInjector(["ng", "test1"]);
       expect(true).toBeTrue();
-    });
-
-    it("should enforce the specified sce type for properties added for specific elements", async () => {
-      module.config({
-        $compile: {
-          propertySecurityContexts: [
-            { elementName: "div", propertyName: "foo", context: "mediaUrl" },
-          ],
-        },
-      });
-      injector = createInjector(["ng", "defaultModule", "test1"]);
-      reloadInjector();
-
-      const element = $compile('<div ng-prop-foo="bar"></div>')($rootScope);
-
-      $rootScope.bar = "untrusted:test1";
-      await wait();
-      expect(element.foo).toBe("unsafe:untrusted:test1");
-      $rootScope.bar = $sce.trustAsHtml("untrusted:test2");
-      await wait();
-
-      expect(element.foo).toBe("unsafe:untrusted:test2");
-
-      $rootScope.bar = $sce.trustAsMediaUrl("untrusted:test3");
-      await wait();
-      expect(element.foo).toBe("untrusted:test3");
-    });
-
-    it("should enforce the specified sce type for properties added for all elements (*)", async () => {
-      module.config({
-        $compile: {
-          propertySecurityContexts: [
-            { elementName: "*", propertyName: "foo", context: "mediaUrl" },
-          ],
-        },
-      });
-      injector = createInjector(["ng", "defaultModule", "test1"]);
-      reloadInjector();
-
-      const element = $compile('<div ng-prop-foo="bar"></div>')($rootScope);
-
-      $rootScope.bar = "untrusted:test1";
-      await wait();
-      expect(element.foo).toBe("unsafe:untrusted:test1");
-
-      $rootScope.bar = $sce.trustAsHtml("untrusted:test2");
-      await wait();
-      expect(element.foo).toBe("unsafe:untrusted:test2");
-
-      $rootScope.bar = $sce.trustAsMediaUrl("untrusted:test3");
-      await wait();
-      expect(element.foo).toBe("untrusted:test3");
-    });
-
-    it("should enforce the specific sce type when both an element specific and generic exist", async () => {
-      module.config({
-        $compile: {
-          propertySecurityContexts: [
-            { elementName: "*", propertyName: "foo", context: "css" },
-            { elementName: "div", propertyName: "foo", context: "mediaUrl" },
-          ],
-        },
-      });
-      injector = createInjector(["ng", "defaultModule", "test1"]);
-      reloadInjector();
-
-      const element = $compile('<div ng-prop-foo="bar"></div>')($rootScope);
-
-      $rootScope.bar = "untrusted:test1";
-      await wait();
-      expect(element.foo).toBe("unsafe:untrusted:test1");
-
-      $rootScope.bar = $sce.trustAsHtml("untrusted:test2");
-      await wait();
-      expect(element.foo).toBe("unsafe:untrusted:test2");
-
-      $rootScope.bar = $sce.trustAsMediaUrl("untrusted:test3");
-      await wait();
-      expect(element.foo).toBe("untrusted:test3");
     });
   });
 

@@ -165,11 +165,17 @@ export function isInstanceOf<T>(
   type: InstanceConstructor<T>,
 ): val is T;
 export function isInstanceOf(val: unknown, type: InstanceConstructor): boolean {
-  if (!isFunction(type)) return false;
+  if (typeof type !== "function") return false;
 
   const typePrototype = (type as { prototype?: unknown }).prototype;
 
-  if (!isObject(typePrototype)) return false;
+  if (
+    (typeof typePrototype !== "object" &&
+      typeof typePrototype !== "function") ||
+    typePrototype === null
+  ) {
+    return false;
+  }
 
   return val instanceof type;
 }
@@ -325,7 +331,14 @@ export function isWindow(obj: unknown): obj is Window {
  * Returns whether a value looks like an Angular scope object.
  */
 export function isScope(obj: unknown): boolean {
-  return isObject(obj) && isFunction((obj as { watch?: unknown }).watch);
+  if (!isObject(obj)) return false;
+
+  const scopeLike = obj as UnknownRecord & {
+    [isProxySymbol]?: unknown;
+    watch?: unknown;
+  };
+
+  return !!scopeLike[isProxySymbol] || isFunction(scopeLike.watch);
 }
 
 /**
@@ -566,21 +579,10 @@ export function hasCustomToString(
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
  */
-const nodeNameCache = new WeakMap<Element, string>();
-
 export function getNodeName(element: Element): string {
-  let nodeName = nodeNameCache.get(element);
+  const nodeName = element.nodeName;
 
-  if (nodeName === undefined) {
-    const rawNodeName = element.nodeName;
-
-    if (!rawNodeName) return undefined as unknown as string;
-
-    nodeName = rawNodeName.toLowerCase();
-    nodeNameCache.set(element, nodeName);
-  }
-
-  return nodeName;
+  return nodeName ? nodeName.toLowerCase() : (undefined as unknown as string);
 }
 
 /**
@@ -1102,7 +1104,9 @@ export function assertInvariantDefined<T>(
   value: T | null | undefined,
   errorMsg = "AngularTS invariant violated: expected a defined value",
 ): NonNullable<T> {
-  assertInvariant(notNullOrUndefined(value), errorMsg);
+  if (value === null || value === undefined) {
+    throw new Error(errorMsg);
+  }
 
   return value;
 }

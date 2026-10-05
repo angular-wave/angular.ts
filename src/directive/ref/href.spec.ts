@@ -99,7 +99,7 @@ describe("ngHref", () => {
     $rootScope.value = {};
     element = $compile('<a ng-href="{{value}}"></a>')($rootScope);
     await wait();
-    expect(element.getAttribute("href")).toEqual("[object Object]");
+    expect(element.getAttribute("href")).toEqual("{}");
 
     function SafeClass() {}
 

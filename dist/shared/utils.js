@@ -96,11 +96,14 @@ function isArray(array) {
     return Array.isArray(array);
 }
 function isInstanceOf(val, type) {
-    if (!isFunction(type))
+    if (typeof type !== "function")
         return false;
     const typePrototype = type.prototype;
-    if (!isObject(typePrototype))
+    if ((typeof typePrototype !== "object" &&
+        typeof typePrototype !== "function") ||
+        typePrototype === null) {
         return false;
+    }
     return val instanceof type;
 }
 /**
@@ -234,7 +237,10 @@ function isWindow(obj) {
  * Returns whether a value looks like an Angular scope object.
  */
 function isScope(obj) {
-    return isObject(obj) && isFunction(obj.watch);
+    if (!isObject(obj))
+        return false;
+    const scopeLike = obj;
+    return !!scopeLike[isProxySymbol] || isFunction(scopeLike.watch);
 }
 /**
  * Returns whether a value is a `File`.
@@ -416,17 +422,9 @@ function hasCustomToString(obj) {
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
  */
-const nodeNameCache = new WeakMap();
 function getNodeName(element) {
-    let nodeName = nodeNameCache.get(element);
-    if (nodeName === undefined) {
-        const rawNodeName = element.nodeName;
-        if (!rawNodeName)
-            return undefined;
-        nodeName = rawNodeName.toLowerCase();
-        nodeNameCache.set(element, nodeName);
-    }
-    return nodeName;
+    const nodeName = element.nodeName;
+    return nodeName ? nodeName.toLowerCase() : undefined;
 }
 /**
  * Returns whether an array-like collection contains a given value.
@@ -845,7 +843,9 @@ function assertInvariant(argument, errorMsg = "AngularTS invariant violated") {
  * @throws Error when `value` is null or undefined.
  */
 function assertInvariantDefined(value, errorMsg = "AngularTS invariant violated: expected a defined value") {
-    assertInvariant(notNullOrUndefined(value), errorMsg);
+    if (value === null || value === undefined) {
+        throw new Error(errorMsg);
+    }
     return value;
 }
 const errorConfig = {

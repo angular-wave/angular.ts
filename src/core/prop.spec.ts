@@ -10,7 +10,7 @@ import {
 import { wait } from "../shared/test-utils.ts";
 
 describe("ngProp*", () => {
-  let $compile, $rootScope, compileRegistry, $sce;
+  let $compile, $rootScope, compileRegistry;
 
   let logs = [];
 
@@ -33,7 +33,6 @@ describe("ngProp*", () => {
 
     $compile = injector.get("$compile");
     $rootScope = injector.get("$rootScope");
-    $sce = injector.get("$sce");
   });
 
   it("should bind boolean properties (input disabled)", async () => {
@@ -313,16 +312,6 @@ describe("ngProp*", () => {
   });
 
   describe("img[src] sanitization", () => {
-    it("should accept trusted values", async () => {
-      const element = $compile('<img ng-prop-src="testUrl"></img>')($rootScope);
-
-      // Some browsers complain if you try to write `javascript:` into an `img[src]`
-      // So for the test use something different
-      $rootScope.testUrl = $sce.trustAsMediaUrl("someuntrustedthing:foo();");
-      await wait();
-      expect(element.src).toEqual("someuntrustedthing:foo();");
-    });
-
     it("should sanitize plain values through SCE", async () => {
       app.innerHTML = '<img ng-prop-src="testUrl"></img>';
 
@@ -332,18 +321,6 @@ describe("ngProp*", () => {
       await wait();
 
       expect(app.querySelector("img").src).toMatch(/^http:\/\/.*\/someUrl$/);
-    });
-
-    it("should pass through trusted values", async () => {
-      app.innerHTML = '<img ng-prop-src="testUrl"></img>';
-
-      $compile(app)($rootScope);
-
-      // Assigning javascript:foo to src makes at least IE9-11 complain, so use another
-      // protocol name.
-      $rootScope.testUrl = $sce.trustAsMediaUrl("untrusted:foo();");
-      await wait();
-      expect(app.querySelector("img").src).toBe("untrusted:foo();");
     });
   });
 
@@ -356,16 +333,6 @@ describe("ngProp*", () => {
 
       element = $compile('<a ng-prop-href="testUrl"></a>')($rootScope);
       expect(element.href).toEqual("http://example.com/image.png");
-    });
-
-    it("should accept trusted values for non-trusted URI values", () => {
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:foo()"); // `javascript` is not trusted
-      let element = $compile('<a ng-prop-href="testUrl"></a>')($rootScope);
-
-      expect(element.href).toEqual("javascript:foo()");
-
-      element = $compile('<a ng-prop-href="testUrl"></a>')($rootScope);
-      expect(element.href).toEqual("javascript:foo()");
     });
 
     it("should sanitize non-trusted values", () => {
@@ -429,11 +396,10 @@ describe("ngProp*", () => {
       createInjector(["myModule"]).invoke([
         "$compile",
         "$rootScope",
-        "$sce",
-        (_$compile_, _$rootScope_, _$sce_) => {
+
+        (_$compile_, _$rootScope_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
-          $sce = _$sce_;
         },
       ]);
     });
@@ -464,52 +430,26 @@ describe("ngProp*", () => {
       await wait();
       expect(logs[0]).toMatch(/insecurl/);
     });
-
-    it("should clear out non-resource_url src properties", async () => {
-      $compile('<iframe ng-prop-src="testUrl"></iframe>')($rootScope);
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:doTrustedStuff()");
-      await wait();
-      expect(logs[0]).toMatch(/insecurl/);
-    });
-
-    it("should pass through $sce.trustAs() values in src properties", async () => {
-      const element = $compile('<iframe ng-prop-src="testUrl"></iframe>')(
-        $rootScope,
-      );
-
-      $rootScope.testUrl = $sce.trustAsResourceUrl(
-        "javascript:doTrustedStuff()",
-      );
-      await wait();
-
-      expect(element.src).toEqual("javascript:doTrustedStuff()");
-    });
   });
 
   describe("base[href]", () => {
+    it("rejects external resource URLs", async () => {
+      app.innerHTML = '<base ng-prop-href="testUrl">';
+      $compile(app)($rootScope);
+      $rootScope.testUrl = "https://external.example/";
+      await wait();
+      expect(logs[0]).toMatch(/insecurl/);
+    });
     beforeEach(() => {
       createInjector(["myModule"]).invoke([
         "$compile",
         "$rootScope",
-        "$sce",
-        (_$compile_, _$rootScope_, _$sce_) => {
+
+        (_$compile_, _$rootScope_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
-          $sce = _$sce_;
         },
       ]);
-    });
-
-    it("should be a RESOURCE_URL context", async () => {
-      const element = $compile('<base ng-prop-href="testUrl"/>')($rootScope);
-
-      $rootScope.testUrl = $sce.trustAsResourceUrl("https://example.com/");
-      await wait();
-      expect(element.href).toContain("https://example.com/");
-
-      $rootScope.testUrl = "https://not.example.com/";
-      await wait();
-      expect(logs[0]).toMatch(/insecurl/);
     });
   });
 
@@ -518,11 +458,10 @@ describe("ngProp*", () => {
       createInjector(["myModule"]).invoke([
         "$compile",
         "$rootScope",
-        "$sce",
-        (_$compile_, _$rootScope_, _$sce_) => {
+
+        (_$compile_, _$rootScope_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
-          $sce = _$sce_;
         },
       ]);
     });
@@ -554,29 +493,6 @@ describe("ngProp*", () => {
       await wait();
       expect(logs[0]).toMatch(/insecurl/);
     });
-
-    it("should clear out non-resource_url action property", async () => {
-      const element = $compile('<form ng-prop-action="testUrl"></form>')(
-        $rootScope,
-      );
-
-      $rootScope.testUrl = $sce.trustAsUrl("javascript:doTrustedStuff()");
-      await wait();
-      expect(logs[0]).toMatch(/insecurl/);
-    });
-
-    it("should pass through $sce.trustAsResourceUrl() values in action property", async () => {
-      const element = $compile('<form ng-prop-action="testUrl"></form>')(
-        $rootScope,
-      );
-
-      $rootScope.testUrl = $sce.trustAsResourceUrl(
-        "javascript:doTrustedStuff()",
-      );
-      await wait();
-
-      expect(element.action).toEqual("javascript:doTrustedStuff()");
-    });
   });
 
   describe("link[href]", () => {
@@ -584,11 +500,10 @@ describe("ngProp*", () => {
       createInjector(["myModule"]).invoke([
         "$compile",
         "$rootScope",
-        "$sce",
-        (_$compile_, _$rootScope_, _$sce_) => {
+
+        (_$compile_, _$rootScope_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
-          $sce = _$sce_;
         },
       ]);
     });
@@ -601,199 +516,6 @@ describe("ngProp*", () => {
       $rootScope.testUrl = "https://evil.example.org/css.css";
       await wait();
       expect(logs[0]).toMatch(/insecurl/);
-    });
-
-    it("should accept valid RESOURCE_URLs", async () => {
-      const element = $compile(
-        '<link ng-prop-href="testUrl" rel="stylesheet" />',
-      )($rootScope);
-
-      $rootScope.testUrl = "./css1.css";
-      await wait();
-      expect(element.href).toContain("css1.css");
-
-      $rootScope.testUrl = $sce.trustAsResourceUrl(
-        "https://elsewhere.example.org/css2.css",
-      );
-      await wait();
-      expect(element.href).toContain("https://elsewhere.example.org/css2.css");
-    });
-  });
-
-  describe("*[innerHTML]", () => {
-    describe("SCE disabled", () => {
-      beforeEach(() => {
-        dealoc(document.getElementById("app"));
-        window.angular
-          .createModule("propSceDisabled", ["myModule"])
-          .config({ $sce: { enabled: false } });
-        window.angular
-          .bootstrap(document.getElementById("app"), ["propSceDisabled"])
-          .invoke([
-            "$compile",
-            "$rootScope",
-            "$sce",
-            (_$compile_, _$rootScope_, _$sce_) => {
-              $compile = _$compile_;
-              $rootScope = _$rootScope_;
-              $sce = _$sce_;
-            },
-          ]);
-      });
-
-      it("should set html", async () => {
-        const element = $compile('<div ng-prop-inner_h_t_m_l="html"></div>')(
-          $rootScope,
-        );
-
-        $rootScope.html = '<div onclick="">hello</div>';
-        await wait();
-        expect(element.innerHTML).toEqual('<div onclick="">hello</div>');
-      });
-
-      it("should update html", async () => {
-        const element = $compile('<div ng-prop-inner_h_t_m_l="html"></div>')(
-          $rootScope,
-        );
-
-        $rootScope.html = "hello";
-        await wait();
-        expect(element.innerHTML).toEqual("hello");
-        $rootScope.html = "goodbye";
-        await wait();
-        expect(element.innerHTML).toEqual("goodbye");
-      });
-    });
-
-    describe("SCE enabled", () => {
-      beforeEach(() => {
-        dealoc(document.getElementById("app"));
-        window.angular
-          .createModule("propSceEnabled", ["myModule"])
-          .config({ $sce: { enabled: true } });
-        window.angular
-          .bootstrap(document.getElementById("app"), ["propSceEnabled"])
-          .invoke([
-            "$compile",
-            "$rootScope",
-            "$sce",
-            (_$compile_, _$rootScope_, _$sce_) => {
-              $compile = _$compile_;
-              $rootScope = _$rootScope_;
-              $sce = _$sce_;
-            },
-          ]);
-      });
-
-      it("should NOT set html for untrusted values", async () => {
-        const element = $compile('<div ng-prop-inner_h_t_m_l="html"></div>')(
-          $rootScope,
-        );
-
-        $rootScope.html = '<div onclick="">hello</div>';
-        await wait();
-        expect(logs[0]).toMatch(/unsafe/);
-      });
-
-      it("should NOT set html for wrongly typed values", async () => {
-        const element = $compile('<div ng-prop-inner_h_t_m_l="html"></div>')(
-          $rootScope,
-        );
-
-        $rootScope.html = $sce.trustAsUrl('<div onclick="">hello</div>');
-        await wait();
-        expect(logs[0]).toMatch(/unsafe/);
-      });
-
-      it("should set html for trusted values", async () => {
-        const element = $compile('<div ng-prop-inner_h_t_m_l="html"></div>')(
-          $rootScope,
-        );
-
-        $rootScope.html = $sce.trustAsHtml('<div onclick="">hello</div>');
-        await wait();
-        expect(element.innerHTML).toEqual('<div onclick="">hello</div>');
-      });
-
-      it("should update html", async () => {
-        const element = $compile('<div ng-prop-inner_h_t_m_l="html"></div>')(
-          $rootScope,
-        );
-
-        $rootScope.html = $sce.trustAsHtml("hello");
-        await wait();
-        expect(element.innerHTML).toEqual("hello");
-        $rootScope.html = $sce.trustAsHtml("goodbye");
-        await wait();
-        expect(element.innerHTML).toEqual("goodbye");
-      });
-
-      it("should not cause infinite recursion for trustAsHtml object watches", async () => {
-        // Ref: https://github.com/angular/angular.js/issues/3932
-        // If the binding is a function that creates a new value on every call via trustAs, we'll
-        // trigger an infinite digest if we don't take care of it.
-        const element = $compile(
-          '<div ng-prop-inner_h_t_m_l="getHtml()"></div>',
-        )($rootScope);
-
-        $rootScope.getHtml = function () {
-          return $sce.trustAsHtml('<div onclick="">hello</div>');
-        };
-        await wait();
-        expect(element.innerHTML).toEqual('<div onclick="">hello</div>');
-      });
-
-      it("should handle custom $sce objects", async () => {
-        function MySafeHtml(val) {
-          this.val = val;
-        }
-
-        window.angular
-          .createModule("customSceProp", ["myModule"])
-          .decorator("$sce", [
-            "$delegate",
-            ($delegate) => {
-              $delegate.trustAsHtml = function (html) {
-                return new MySafeHtml(html);
-              };
-              $delegate.getTrusted = function (type, mySafeHtml) {
-                return mySafeHtml && mySafeHtml.val;
-              };
-              $delegate.valueOf = function (v) {
-                return v instanceof MySafeHtml ? v.val : v;
-              };
-
-              return $delegate;
-            },
-          ]);
-
-        createInjector(["customSceProp"]).invoke([
-          "$compile",
-          "$rootScope",
-          "$sce",
-          (_$compile_, _$rootScope_, _$sce_) => {
-            $compile = _$compile_;
-            $rootScope = _$rootScope_;
-            $sce = _$sce_;
-          },
-        ]);
-
-        // Ref: https://github.com/angular/angular.js/issues/14526
-        // Previous code used toString for change detection, which fails for custom objects
-        // that don't override toString.
-        const html = "hello";
-
-        $rootScope.getHtml = function () {
-          return $sce.trustAsHtml(html);
-        };
-        const element = $compile(
-          '<div ng-prop-inner_h_t_m_l="getHtml()"></div>',
-        )($rootScope);
-
-        await wait();
-
-        expect(element.innerHTML).toEqual("hello");
-      });
     });
   });
 

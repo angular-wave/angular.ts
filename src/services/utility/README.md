@@ -5,7 +5,6 @@ This README covers the Tier 4 utility-service contract for:
 - `$log`
 - `$exceptionHandler`
 - `$eventBus` / `EventBus`
-- `$sce`
 
 These services should stay intentionally small. Most lifecycle, reactivity,
 recovery, scheduling, and native-resource contracts are not applicable unless a
@@ -100,40 +99,6 @@ Dependency replacement and composition:
 - Realtime services, worker services, workflows, and app integrations can
   publish onto `$eventBus`; `$eventBus` does not own their lifecycle or state.
 
-## `$sce`
-
-Responsibility:
-
-- Provide Strict Contextual Escaping helpers and trusted-value wrappers.
-- Enforce trusted resource URL policy for template/resource loading and
-  sensitive bindings.
-
-Policy:
-
-- SCE is enabled by default.
-- `sce.enabled` can disable SCE, but user docs classify this as risky.
-- `sceDelegate.trustedResourceUrlList` and
-  `sceDelegate.bannedResourceUrlList` define resource URL policy; banned
-  patterns override trusted patterns.
-- URL and media contexts are sanitized when possible; resource URLs must match
-  policy or be explicitly trusted.
-
-Failure:
-
-- Invalid trust contexts and trust values throw through the SCE delegate path;
-  a detached framework caller may then report the failure through
-  `$exceptionHandler`.
-- Untrusted resource URLs are blocked.
-- HTML sanitization requires a sanitizer; without one, unsafe HTML trust checks
-  fail rather than silently rendering unsafe content.
-
-Dependency replacement and composition:
-
-- `$sce` replaces scattered manual escaping and URL allowlist checks at
-  sensitive binding boundaries.
-- It composes with `$templateRequest`, directives that bind privileged
-  contexts, security policy docs, and optional sanitizer modules.
-
 ## Test Harness
 
 - `src/services/log/log.spec.ts` verifies injection, default console behavior,
@@ -145,6 +110,3 @@ Dependency replacement and composition:
 - `src/services/event-bus/event-bus.spec.ts` verifies subscription, unsubscription,
   contexts, one-time listeners, asynchronous publish behavior, disposal, and
   exception-handler delegation.
-- `src/services/sce/sce.spec.ts` verifies trusted contexts, delegate override,
-  resource URL policy, banned-list precedence, URL sanitization, and unsafe HTML
-  failure behavior.

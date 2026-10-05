@@ -22,8 +22,6 @@ import {
   _workflowSupervisor,
   _rest,
   _rootElement,
-  _sce,
-  _sceDelegate,
   _serviceWorker,
   _sse,
   _templateCache,
@@ -295,15 +293,7 @@ describe("NgModule", () => {
     });
     ngModule.config({ $interpolate: { startSymbol: "[[", endSymbol: "]]" } });
     ngModule.config({ $location: { html5Mode: true } });
-    ngModule.config({ $sce: { enabled: true } });
-    ngModule.config({
-      $sceDelegate: {
-        trustedResourceUrlList: ["self", "https://cdn.example.com/**"],
-        bannedResourceUrlList: ["https://cdn.example.com/private/**"],
-        aHrefSanitizationTrustedUrlList: /^https?:/,
-        imgSrcSanitizationTrustedUrlList: /^\s*(https?|data:image\/)/,
-      },
-    });
+    ngModule.config({ $compile: { htmlPolicy: (html) => html } });
     ngModule.config({
       $templateCache: {
         cache: new Map([["cached.html", "<p>Cached</p>"]]),
@@ -398,8 +388,7 @@ describe("NgModule", () => {
       _http,
       _interpolate,
       _location,
-      _sce,
-      _sceDelegate,
+
       _templateCache,
       _templateRequest,
       _rest,
@@ -443,10 +432,6 @@ describe("NgModule", () => {
       $interpolate: { startSymbol: "[[", endSymbol: "]]" },
       $location: { hashPrefix: "!" },
       $log: { debug: true },
-      $sce: { enabled: true },
-      $sceDelegate: {
-        trustedResourceUrlList: ["self"],
-      },
       $templateCache: {
         cache: new Map(),
       },
@@ -523,8 +508,7 @@ describe("NgModule", () => {
       _interpolate,
       _log,
       _location,
-      _sce,
-      _sceDelegate,
+
       _templateCache,
       _templateRequest,
       _rest,
@@ -668,13 +652,27 @@ describe("NgModule", () => {
           hashPrefix: "!",
         },
       })
-      .config({ $sce: { enabled: false } })
       .config({
-        $sceDelegate: {
-          trustedResourceUrlList: ["self", "https://cdn.example.com/**"],
-          bannedResourceUrlList: ["https://cdn.example.com/private/**"],
-          aHrefSanitizationTrustedUrlList: aHrefPattern,
-          imgSrcSanitizationTrustedUrlList: imgSrcPattern,
+        $compile: {
+          htmlPolicy: (html) => html,
+          resourceUrlPolicy: (url) => {
+            const resolved = new URL(url, document.baseURI);
+            if (
+              resolved.origin === location.origin ||
+              (resolved.origin === "https://cdn.example.com" &&
+                !resolved.pathname.startsWith("/private/"))
+            )
+              return url;
+            throw new Error("insecurl: rejected resource");
+          },
+          urlPolicy: (url) =>
+            aHrefPattern.test(new URL(url, document.baseURI).href)
+              ? url
+              : `unsafe:${url}`,
+          mediaUrlPolicy: (url) =>
+            imgSrcPattern.test(new URL(url, document.baseURI).href)
+              ? url
+              : `unsafe:${url}`,
         },
       })
       .config({ $templateCache: { cache: templateCache } })
@@ -805,30 +803,31 @@ describe("NgModule", () => {
         rewriteLinks: "internal-link",
       },
     });
-    expect(injector.get("$sce").isEnabled()).toBeFalse();
-    const $sceDelegate = injector.get("$sceDelegate");
+    expect(injector.has("$sce")).toBeFalse();
+    expect(injector.has("$sceDelegate")).toBeFalse();
+    const compile = injector.get("$compile");
 
     expect(
-      $sceDelegate.getTrusted(
+      compile._applyBindingPolicy(
         "resourceUrl",
         "https://cdn.example.com/templates/home.html",
       ),
     ).toBe("https://cdn.example.com/templates/home.html");
     expect(() =>
-      $sceDelegate.getTrusted(
+      compile._applyBindingPolicy(
         "resourceUrl",
         "https://cdn.example.com/private/secret.html",
       ),
     ).toThrowError(/insecurl/);
-    expect($sceDelegate.getTrusted("url", "https://example.com")).toBe(
+    expect(compile._applyBindingPolicy("url", "https://example.com")).toBe(
       "https://example.com",
     );
-    expect($sceDelegate.getTrusted("url", "mailto:test@example.com")).toBe(
+    expect(compile._applyBindingPolicy("url", "mailto:test@example.com")).toBe(
       "unsafe:mailto:test@example.com",
     );
-    expect($sceDelegate.getTrusted("mediaUrl", "data:image/png;base64,x")).toBe(
-      "data:image/png;base64,x",
-    );
+    expect(
+      compile._applyBindingPolicy("mediaUrl", "data:image/png;base64,x"),
+    ).toBe("data:image/png;base64,x");
     const $templateCache = injector.get("$templateCache");
 
     expect($templateCache).toBe(templateCache);

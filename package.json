@@ -23,6 +23,10 @@
       "types": "./@types/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
     },
+    "./view": {
+      "types": "./@types/core/compile/programmatic-view.d.ts",
+      "import": "./dist/core/compile/programmatic-view.js"
+    },
     "./runtime/animation": {
       "types": "./@types/runtime/animation.d.ts",
       "import": "./dist/runtime/animation.js"

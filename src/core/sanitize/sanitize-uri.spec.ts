@@ -1,34 +1,24 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import {
-  SCE_CONTEXTS,
-  SceDelegateConfiguration,
-} from "../../services/sce/sce.js";
+import { createBindingPolicies } from "../compile/binding-policy.ts";
 
 describe("sanitizeUri", () => {
   let sanitizeHref;
 
   let sanitizeImg;
 
-  let sceDelegateConfig;
+  let policies;
 
   let testUrl;
 
   beforeEach(() => {
-    sceDelegateConfig = new SceDelegateConfiguration();
-    const sceDelegate = sceDelegateConfig.createService(
-      { has: () => false },
-      window,
-      (error) => {
-        throw error;
-      },
-    );
+    policies = createBindingPolicies();
 
     sanitizeHref = function (uri) {
-      return sceDelegate.getTrusted(SCE_CONTEXTS._URL, uri);
+      return policies._apply("url", uri);
     };
     sanitizeImg = function (uri) {
-      return sceDelegate.getTrusted(SCE_CONTEXTS._MEDIA_URL, uri);
+      return policies._apply("mediaUrl", uri);
     };
   });
 
@@ -148,15 +138,10 @@ describe("sanitizeUri", () => {
     });
 
     it("should allow reconfiguration of the src trusted URIs", () => {
-      let returnVal;
-
-      expect(
-        sceDelegateConfig.getImgSrcSanitizationTrustedUrlList() instanceof
-          RegExp,
-      ).toBe(true);
-      returnVal =
-        sceDelegateConfig.setImgSrcSanitizationTrustedUrlList(/javascript:/);
-      expect(returnVal).toBe(sceDelegateConfig);
+      policies._configure({
+        mediaUrlPolicy: (url) =>
+          /javascript:/.test(url) ? url : `unsafe:${url}`,
+      });
 
       testUrl = "javascript:doEvilStuff()";
       expect(sanitizeImg(testUrl)).toBe("javascript:doEvilStuff()");
@@ -252,15 +237,9 @@ describe("sanitizeUri", () => {
     });
 
     it("should allow reconfiguration of the href trusted URIs", () => {
-      let returnVal;
-
-      expect(
-        sceDelegateConfig.getAHrefSanitizationTrustedUrlList() instanceof
-          RegExp,
-      ).toBe(true);
-      returnVal =
-        sceDelegateConfig.setAHrefSanitizationTrustedUrlList(/javascript:/);
-      expect(returnVal).toBe(sceDelegateConfig);
+      policies._configure({
+        urlPolicy: (url) => (/javascript:/.test(url) ? url : `unsafe:${url}`),
+      });
 
       testUrl = "javascript:doEvilStuff()";
       expect(sanitizeHref(testUrl)).toBe("javascript:doEvilStuff()");

@@ -7,7 +7,7 @@ functions that evaluate against a scope or another expression context.
 
 - Parse one or more interpolation expressions through `$parse`.
 - Stringify expression results and preserve all-or-nothing behavior.
-- Enforce trusted-context concatenation rules through the security adapter.
+- Apply compiler-owned binding policies and strict-context concatenation rules.
 - Support escaped interpolation markers.
 - Apply runtime-owned start and end delimiter configuration.
 - Expose the configured delimiters through `$interpolate.startSymbol()` and

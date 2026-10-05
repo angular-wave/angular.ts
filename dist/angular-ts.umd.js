@@ -37,8 +37,6 @@
     const _rest = "$rest";
     const _rootScope = "$rootScope";
     const _rootElement = "$rootElement";
-    const _sce = "$sce";
-    const _sceDelegate = "$sceDelegate";
     const _state = "$state";
     const _stateRegistry = "$stateRegistry";
     const _storage = "$storage";
@@ -88,8 +86,6 @@
         _rest,
         _rootScope,
         _rootElement,
-        _sce,
-        _sceDelegate,
         _security,
         _serviceWorker,
         _state,
@@ -233,11 +229,14 @@
         return Array.isArray(array);
     }
     function isInstanceOf(val, type) {
-        if (!isFunction(type))
+        if (typeof type !== "function")
             return false;
         const typePrototype = type.prototype;
-        if (!isObject(typePrototype))
+        if ((typeof typePrototype !== "object" &&
+            typeof typePrototype !== "function") ||
+            typePrototype === null) {
             return false;
+        }
         return val instanceof type;
     }
     /**
@@ -371,7 +370,10 @@
      * Returns whether a value looks like an Angular scope object.
      */
     function isScope(obj) {
-        return isObject(obj) && isFunction(obj.watch);
+        if (!isObject(obj))
+            return false;
+        const scopeLike = obj;
+        return !!scopeLike[isProxySymbol] || isFunction(scopeLike.watch);
     }
     /**
      * Returns whether a value is a `File`.
@@ -553,17 +555,9 @@
      *
      * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
      */
-    const nodeNameCache = new WeakMap();
     function getNodeName$1(element) {
-        let nodeName = nodeNameCache.get(element);
-        if (nodeName === undefined) {
-            const rawNodeName = element.nodeName;
-            if (!rawNodeName)
-                return undefined;
-            nodeName = rawNodeName.toLowerCase();
-            nodeNameCache.set(element, nodeName);
-        }
-        return nodeName;
+        const nodeName = element.nodeName;
+        return nodeName ? nodeName.toLowerCase() : undefined;
     }
     /**
      * Returns whether an array-like collection contains a given value.
@@ -931,22 +925,14 @@
         return src;
     }
     /**
-     * Throws when a framework-owned invariant is false.
-     *
-     * @throws Error when `argument` is false.
-     */
-    function assertInvariant(argument, errorMsg = "AngularTS invariant violated") {
-        if (!argument) {
-            throw new Error(errorMsg);
-        }
-    }
-    /**
      * Returns a framework-owned non-nullish value or throws when it is absent.
      *
      * @throws Error when `value` is null or undefined.
      */
     function assertInvariantDefined(value, errorMsg = "AngularTS invariant violated: expected a defined value") {
-        assertInvariant(notNullOrUndefined(value), errorMsg);
+        if (value === null || value === undefined) {
+            throw new Error(errorMsg);
+        }
         return value;
     }
     const errorConfig = {
@@ -1230,13 +1216,13 @@
     const HTML_PARSE_CACHE_MAX_SIZE = 256;
     let expandoCache = new WeakMap();
     const transcludedHostElements = new WeakMap();
+    const transcludedHostSubtrees = new WeakSet();
     const htmlParseCache = new Map();
     /**
      * Key for storing scope data attached to an element.
      */
     const SCOPE_KEY = _scope;
     const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
-    const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
     const SIMPLE_ATTR_NAME = /^\w/;
     /**
      * HTML attributes whose presence alone represents a truthy value.
@@ -1275,15 +1261,6 @@
      */
     function kebabToCamel(name) {
         return name.replace(DASH_LOWERCASE_REGEXP, fnCamelCaseReplace);
-    }
-    /**
-     * Converts snake_case to camelCase.
-     *
-     * @param name - Name to normalize.
-     * @returns The camel-cased name.
-     */
-    function snakeToCamel(name) {
-        return name.replace(UNDERSCORE_LOWERCASE_REGEXP, fnCamelCaseReplace);
     }
     function createDocumentFragment() {
         return document.createDocumentFragment();
@@ -1414,7 +1391,8 @@
      * @param [value] - The value to store.
      */
     function setCacheData(element, key, value) {
-        if (elementAcceptsData(element)) {
+        if (element.nodeType === NodeType._ELEMENT_NODE ||
+            elementAcceptsData(element)) {
             const expandoStore = getExpando(element, true);
             assertInvariantDefined(expandoStore)[kebabToCamel(key)] = value;
         }
@@ -1445,13 +1423,25 @@
     /** Stores the original element that was replaced by an element-transclusion anchor. */
     function setTranscludedHostElement(anchor, hostElement) {
         transcludedHostElements.set(anchor, hostElement);
+        let node = anchor;
+        while (node) {
+            transcludedHostSubtrees.add(node);
+            node = node.parentNode;
+        }
     }
     /** Returns the original element replaced by an element-transclusion anchor. */
     function getTranscludedHostElement(anchor) {
         return transcludedHostElements.get(anchor);
     }
+    /** Returns whether a node tree contains element-transclusion host metadata. */
+    function hasTranscludedHostElements(node) {
+        return transcludedHostSubtrees.has(node);
+    }
     /** Copies element-transclusion host metadata from an original node tree to its clone. */
     function cloneTranscludedHostElements(source, clone) {
+        if (!transcludedHostSubtrees.has(source))
+            return;
+        transcludedHostSubtrees.add(clone);
         const hostElement = transcludedHostElements.get(source);
         if (hostElement instanceof Element) {
             transcludedHostElements.set(clone, hostElement);
@@ -1507,8 +1497,19 @@
      * @param element - The DOM element to set data on.
      * @param scope - The scope to attach to this element.
      */
-    function setScope(element, scope) {
+    function setScope(element, scope, cacheKey, cacheValue) {
+        if (element.nodeType === NodeType._ELEMENT_NODE) {
+            const expandoStore = getExpando(element, true);
+            assertInvariantDefined(expandoStore)[SCOPE_KEY] = scope;
+            if (cacheKey) {
+                expandoStore[cacheKey] = cacheValue;
+            }
+            return;
+        }
         setCacheData(element, SCOPE_KEY, scope);
+        if (cacheKey) {
+            setCacheData(element, cacheKey, cacheValue);
+        }
     }
     /**
      * Sets the isolate scope attached to a given element.
@@ -1517,7 +1518,8 @@
      * @param scope - The isolate scope to attach to this element.
      */
     function setIsolateScope(element, scope) {
-        setCacheData(element, ISOLATE_SCOPE_KEY, scope);
+        const expandoStore = getExpando(element, true);
+        assertInvariantDefined(expandoStore)[ISOLATE_SCOPE_KEY] = scope;
     }
     /**
      * Gets the controller instance for a given element.
@@ -2668,6 +2670,80 @@
         _UpdateExpression: 18,
     };
 
+    /** @internal Scope associated with a directly linked DOM event target. */
+    const EVENT_SCOPE = Symbol();
+    const SCOPE_HANDLER = Symbol();
+    function getScopeHandler(scope) {
+        const handler = scope[SCOPE_HANDLER];
+        return handler ?? scope._handler;
+    }
+    function getOptionalScopeHandler(scope) {
+        const handler = scope[SCOPE_HANDLER];
+        return handler ?? scope._handler;
+    }
+    /** @internal Registers a scope watcher when its explicit deregistration handle is not needed. */
+    function registerScopeWatch(scope, watchProp, listenerFn, lazy = false, directLeaf = false, synchronousInitial = false, resolvedValue, hasResolvedValue = false, listenerContext, watchPlan) {
+        const handler = getScopeHandler(scope);
+        handler.watch(watchProp, listenerFn, lazy, directLeaf, false, synchronousInitial, resolvedValue, hasResolvedValue, listenerContext);
+    }
+    /** @internal Registers cleanup that runs when a scope is destroyed. */
+    function registerScopeDestroyCallback(scope, callback) {
+        const handler = getOptionalScopeHandler(scope);
+        if (handler) {
+            handler._registerDestroyCallback(callback);
+            return;
+        }
+        scope.on("$destroy", callback);
+    }
+    /** @internal Registers native event cleanup without allocating a destroy closure. */
+    function registerScopeEventCleanup(scope, target, type, listener, options) {
+        const handler = getOptionalScopeHandler(scope);
+        if (handler) {
+            handler._registerEventCleanup(target, type, listener, options);
+            return;
+        }
+        registerScopeDestroyCallback(scope, () => {
+            if (options === undefined) {
+                target.removeEventListener(type, listener);
+            }
+            else {
+                target.removeEventListener(type, listener, options);
+            }
+        });
+    }
+    /** @internal Registers scope metadata cleanup for a delegated DOM event target. */
+    function registerScopeDelegatedEventCleanup(scope, target) {
+        getScopeHandler(scope)._registerDelegatedEventCleanup(target);
+    }
+    let nextListenerId = 0;
+    function getListenerOwnerTarget(listener) {
+        const owner = listener._owner;
+        return listener._originalTarget ?? owner._scopeTarget ?? owner._target;
+    }
+    const scopeWatchIdentityValues = new WeakSet();
+    const unresolvedForeignWatchParent = Symbol();
+    /** @internal Associates a repeated child scope with its raw object identity. */
+    function setScopeWatchIdentity(handler, value, valueIsRaw = false) {
+        const rawValue = valueIsRaw ? value : unwrapScopeValue(value);
+        if (rawValue !== null && typeof rawValue === "object") {
+            handler._watchIdentity = rawValue;
+            scopeWatchIdentityValues.add(rawValue);
+        }
+        else {
+            handler._watchIdentity = undefined;
+        }
+    }
+    function getScopeWatchIdentity(handler, target) {
+        const identity = handler._watchIdentity;
+        if (identity && target === (handler._scopeTarget ?? handler._target)) {
+            return identity;
+        }
+        return target !== null &&
+            typeof target === "object" &&
+            scopeWatchIdentityValues.has(target)
+            ? target
+            : undefined;
+    }
     const scopeExpressionObservers = new WeakMap();
     let activeScopeExpressionObserver;
     function trackScopeExpressionRead(target, property) {
@@ -2780,7 +2856,7 @@
     }
     /** @internal Observes the Scope-backed values read while evaluating a function. */
     function observeScopeExpression(scope, read, listener, registerDestroy = true) {
-        const owner = scope._handler;
+        const owner = getScopeHandler(scope);
         const observer = {
             _owner: owner,
             _read: read,
@@ -2804,6 +2880,25 @@
         }
         runScopeExpressionObserver(observer);
         return dispose;
+    }
+    /** @internal Creates a lightweight value cell tracked by scope expression observers. */
+    function createScopeExpressionValue(initialValue) {
+        let value = initialValue;
+        const target = {};
+        Object.defineProperty(target, "value", {
+            enumerable: true,
+            get() {
+                trackScopeExpressionRead(target, "value");
+                return value;
+            },
+            set(nextValue) {
+                if (Object.is(value, nextValue))
+                    return;
+                value = nextValue;
+                scheduleScopeExpressionObservers(target, "value");
+            },
+        });
+        return target;
     }
     const scheduledBindingTask = {
         _kind: "bindings",
@@ -2847,6 +2942,9 @@
     function isScopeEventStopped(event) {
         return event.stopped;
     }
+    const EMPTY_SCOPE_CHILDREN = [];
+    const EMPTY_SCHEDULED_LISTENERS = [];
+    const EMPTY_SCOPE_LISTENERS = new Map();
     const SCOPE_PROXY_BIND = Symbol("ngProxyBind");
     let uid = 0;
     /**
@@ -3146,6 +3244,35 @@
         const objectExpression = getSimpleMemberExpression(assertInvariantDefined(node._object));
         return objectExpression ? `${objectExpression}.${propertyName}` : undefined;
     }
+    const directMemberWatchPlanCache = new WeakMap();
+    function getDirectMemberWatchPlan(watchFn, node, watchProp, parse) {
+        const cached = directMemberWatchPlanCache.get(watchFn);
+        if (cached !== undefined) {
+            return cached || undefined;
+        }
+        let plan = false;
+        if (node._type === ASTType._MemberExpression) {
+            const expressionNode = node;
+            const objectNode = expressionNode._object;
+            const key = getNodePropertyName(node);
+            const parentKey = objectNode?._type === ASTType._Identifier
+                ? getNodeName(objectNode)
+                : undefined;
+            if (!expressionNode._computed &&
+                key &&
+                parentKey &&
+                watchProp === `${parentKey}.${key}`) {
+                plan = {
+                    _key: key,
+                    _parentKey: parentKey,
+                    _watchProp: watchProp,
+                    _watchParentFn: parse(parentKey),
+                };
+            }
+        }
+        directMemberWatchPlanCache.set(watchFn, plan);
+        return plan || undefined;
+    }
     function addForeignWatchDescriptor(listener, watchProp, key) {
         if (!watchProp ||
             !key ||
@@ -3157,7 +3284,10 @@
         const parentExpression = getWatchParentExpression(watchProp);
         const descriptor = {
             _watchProp: watchProp,
-            _watchParentFn: listener._parse(parentExpression),
+            _watchParentFn: (listener._parse ?? listener._owner._parse)(parentExpression),
+            _parentKey: parentExpression.includes(".") || parentExpression.includes("[")
+                ? undefined
+                : parentExpression,
             _key: key,
         };
         listener._foreignWatchDescriptors ?? (listener._foreignWatchDescriptors = []);
@@ -3207,12 +3337,11 @@
             listener._watchNestedObject ??
             listener._watchLiteralInput);
     }
-    function pushUniqueListenerKey(keySet, seenKeys, listener, key) {
+    function pushUniqueListenerKey(keySet, seenKeys, _listener, key) {
         if (seenKeys.has(key))
             return;
         seenKeys.add(key);
         keySet.push(key);
-        listener._property.push(key);
     }
     function registerListenerKeys(scope, listener, watchKeys, schedule = false) {
         for (let i = 0, l = watchKeys.length; i < l; i++) {
@@ -3224,11 +3353,11 @@
                 scope._scheduleListener([listener]);
         }
     }
-    function deregisterListenerKeys(scope, listenerId, watchKeys) {
+    function deregisterListenerKeys(scope, listener, watchKeys) {
         for (let i = 0, l = watchKeys.length; i < l; i++) {
             const key = watchKeys[i];
             if (key)
-                scope._deregisterKey(key, listenerId);
+                scope._deregisterKey(key, listener);
         }
     }
     /**
@@ -3345,6 +3474,87 @@
                 }
             }
         }
+    }
+    function collectStandaloneListenerKeys(node, standaloneKeys) {
+        if (!node || node._type === ASTType._Literal)
+            return;
+        if (node._type === ASTType._Identifier) {
+            const key = getNodeName(node);
+            if (key)
+                standaloneKeys.add(key);
+            return;
+        }
+        if (node._type === ASTType._MemberExpression) {
+            collectStandaloneListenerKeys(node._object, standaloneKeys);
+            if (node._computed) {
+                collectStandaloneListenerKeys(node._property, standaloneKeys);
+            }
+            return;
+        }
+        if (node._type === ASTType._CallExpression) {
+            collectStandaloneListenerKeys(node._callee, standaloneKeys);
+            const callArguments = node._arguments ?? [];
+            for (let i = 0, l = callArguments.length; i < l; i++) {
+                collectStandaloneListenerKeys(callArguments[i], standaloneKeys);
+            }
+            return;
+        }
+        if (node._type === ASTType._LogicalExpression) {
+            collectStandaloneListenerKeys(node._left, standaloneKeys);
+            collectStandaloneListenerKeys(node._right, standaloneKeys);
+            return;
+        }
+        if (node._type === ASTType._ConditionalExpression) {
+            collectStandaloneListenerKeys(node._test, standaloneKeys);
+            collectStandaloneListenerKeys(node._alternate, standaloneKeys);
+            collectStandaloneListenerKeys(node._consequent, standaloneKeys);
+            return;
+        }
+        const toWatch = node._toWatch;
+        if (!toWatch?.length)
+            return;
+        for (let i = 0, l = toWatch.length; i < l; i++) {
+            const watchTarget = toWatch[i];
+            if (watchTarget !== node) {
+                collectStandaloneListenerKeys(watchTarget, standaloneKeys);
+            }
+        }
+    }
+    /** @internal Builds reusable registration metadata for a compiled binding. */
+    function createScopeWatchPlan(parse, watchProp) {
+        const watchFn = parse(watchProp);
+        const expression = watchFn._decoratedNode._body[0]?._expression;
+        if (!expression) {
+            return undefined;
+        }
+        const keys = [];
+        const listener = { _parse: parse };
+        const seenKeys = new Set();
+        collectExpressionListenerKeys(expression, keys, seenKeys, listener);
+        collectForeignWatchDescriptors(expression, listener, keys, seenKeys);
+        const descriptors = listener._foreignWatchDescriptors;
+        if (descriptors) {
+            const standaloneKeys = new Set();
+            collectStandaloneListenerKeys(expression, standaloneKeys);
+            if (standaloneKeys.size > 0) {
+                for (let i = 0, l = descriptors.length; i < l; i++) {
+                    const descriptorKey = descriptors[i]._key;
+                    if (standaloneKeys.has(descriptorKey))
+                        continue;
+                    const keyIndex = keys.indexOf(descriptorKey);
+                    if (keyIndex !== -1)
+                        keys.splice(keyIndex, 1);
+                }
+            }
+        }
+        if (keys.length === 0) {
+            return undefined;
+        }
+        return {
+            _watchFn: watchFn,
+            _keys: keys,
+            _foreignDescriptors: listener._foreignWatchDescriptors,
+        };
     }
     function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
         if (!node)
@@ -3473,6 +3683,22 @@
     const scopeCache = new WeakSet();
     const scopeProxyCache = new WeakMap();
     const scopeProxyTargets = new WeakMap();
+    const unboundScopeMethod = Symbol("unboundScopeMethod");
+    const scopeMethodPropertyMap = Object.assign(Object.create(null), {
+        broadcast: unboundScopeMethod,
+        batch: unboundScopeMethod,
+        destroy: unboundScopeMethod,
+        emit: unboundScopeMethod,
+        getById: unboundScopeMethod,
+        _isRoot: unboundScopeMethod,
+        merge: unboundScopeMethod,
+        new: unboundScopeMethod,
+        newIsolate: unboundScopeMethod,
+        on: unboundScopeMethod,
+        searchByName: unboundScopeMethod,
+        transcluded: unboundScopeMethod,
+        watch: unboundScopeMethod,
+    });
     let destroyedScopeCleanupQueue = [];
     let destroyedScopeCleanupQueued = false;
     function queueDestroyedScopeCleanup(scope) {
@@ -3565,24 +3791,35 @@
     function addObjectListenerKey(objectListeners, target, key) {
         const keyList = objectListeners.get(target);
         if (keyList) {
-            if (!keyList.includes(key)) {
-                keyList.push(key);
+            if (isArray(keyList)) {
+                if (!keyList.includes(key)) {
+                    keyList.push(key);
+                }
+            }
+            else if (keyList !== key) {
+                objectListeners.set(target, [keyList, key]);
             }
             return;
         }
-        objectListeners.set(target, [key]);
+        objectListeners.set(target, key);
     }
     function removeObjectListenerKey(objectListeners, target, key) {
         const keyList = objectListeners.get(target);
         if (!keyList) {
             return;
         }
+        if (!isArray(keyList)) {
+            if (keyList === key) {
+                objectListeners.delete(target);
+            }
+            return;
+        }
         const keyIndex = keyList.indexOf(key);
         if (keyIndex === -1) {
             return;
         }
-        if (keyList.length === 1) {
-            objectListeners.delete(target);
+        if (keyList.length === 2) {
+            objectListeners.set(target, keyList[keyIndex === 0 ? 1 : 0]);
             return;
         }
         keyList[keyIndex] = keyList[keyList.length - 1];
@@ -3594,19 +3831,37 @@
         if (!isObject(target) || isNonScope(target))
             return target;
         const objectTarget = target;
-        let proxiesByHandler = scopeProxyCache.get(objectTarget);
-        if (!proxiesByHandler) {
-            proxiesByHandler = new WeakMap();
+        const cached = scopeProxyCache.get(objectTarget);
+        if (cached && isProxy(cached)) {
+            if (cached._handler === handler)
+                return cached;
+            const proxiesByHandler = new WeakMap();
+            proxiesByHandler.set(cached._handler, cached);
             scopeProxyCache.set(objectTarget, proxiesByHandler);
-        }
-        let proxy = proxiesByHandler.get(handler);
-        if (!proxy) {
-            proxy = new Proxy(target, handler);
+            const proxy = new Proxy(objectTarget, handler);
+            handler._scopeTarget ?? (handler._scopeTarget = objectTarget);
             proxiesByHandler.set(handler, proxy);
-            scopeProxyTargets.set(proxy, target);
-            const bind = target[SCOPE_PROXY_BIND];
+            scopeProxyTargets.set(proxy, objectTarget);
+            const bind = objectTarget[SCOPE_PROXY_BIND];
             if (isFunction(bind)) {
-                bind.call(target, handler, proxy);
+                bind.call(objectTarget, handler, proxy);
+            }
+            return proxy;
+        }
+        let proxy = cached?.get(handler);
+        if (!proxy) {
+            proxy = new Proxy(objectTarget, handler);
+            handler._scopeTarget ?? (handler._scopeTarget = objectTarget);
+            if (cached) {
+                cached.set(handler, proxy);
+            }
+            else {
+                scopeProxyCache.set(objectTarget, proxy);
+            }
+            scopeProxyTargets.set(proxy, objectTarget);
+            const bind = objectTarget[SCOPE_PROXY_BIND];
+            if (isFunction(bind)) {
+                bind.call(objectTarget, handler, proxy);
             }
         }
         return proxy;
@@ -3629,10 +3884,14 @@
             return false;
         }
         // 3. Explicit non-scope flags
+        const targetConstructor = objectTarget.constructor;
         if (objectTarget.$nonscope === true ||
-            objectTarget.constructor?.$nonscope === true) {
+            targetConstructor?.$nonscope === true) {
             nonScopeCache.add(objectTarget);
             return true;
+        }
+        if (targetConstructor === Object) {
+            return false;
         }
         // 4. Global objects
         if (identityTarget === global.window ||
@@ -3653,7 +3912,7 @@
                 if (!isFunction(ctor)) {
                     continue;
                 }
-                if (isInstanceOf(objectTarget, ctor)) {
+                if (objectTarget instanceof ctor) {
                     nonScopeCache.add(objectTarget);
                     return true;
                 }
@@ -3680,6 +3939,162 @@
      * observer-like behavior.
      */
     class Scope {
+        /** @internal Registers an immediate compiled binding without generic watch mode branches. */
+        _watchPlannedImmediate(listenerFn, listenerContext, watchPlan) {
+            const scopeTarget = this._target;
+            const descriptorPlans = watchPlan._foreignDescriptors;
+            const listener = {
+                _owner: this,
+                _originalTarget: scopeTarget,
+                _listenerFn: listenerFn,
+                _watchFn: watchPlan._watchFn,
+                _id: ++nextListenerId,
+                _plannedForeignWatchParent: unresolvedForeignWatchParent,
+            };
+            listener._listenerContext = listenerContext;
+            const keys = watchPlan._keys;
+            if (descriptorPlans?.length === 1) {
+                const descriptor = descriptorPlans[0];
+                listener._plannedForeignWatchDescriptor = descriptor;
+                if (descriptor._parentKey &&
+                    scopeTarget[descriptor._parentKey] === this._watchIdentity) {
+                    listener._plannedForeignWatchParent = this._watchIdentity;
+                }
+                else {
+                    this._bindForeignDependency(listener);
+                }
+            }
+            else if (descriptorPlans) {
+                const descriptors = new Array(descriptorPlans.length);
+                for (let i = 0, l = descriptorPlans.length; i < l; i++) {
+                    const descriptor = descriptorPlans[i];
+                    descriptors[i] = {
+                        _watchProp: descriptor._watchProp,
+                        _watchParentFn: descriptor._watchParentFn,
+                        _parentKey: descriptor._parentKey,
+                        _key: descriptor._key,
+                        _parent: unresolvedForeignWatchParent,
+                    };
+                }
+                listener._foreignWatchDescriptors = descriptors;
+                this._bindForeignDependency(listener);
+            }
+            const listenerObject = listener._watchFn(scopeTarget);
+            if (isObject(listenerObject)) {
+                const listenerTarget = getObjectListenerTarget(listenerObject);
+                if (listenerTarget) {
+                    addObjectListenerKey(this._objectListeners, listenerTarget, assertInvariantDefined(keys[0]));
+                }
+            }
+            const hashKey = getScopeWatchIdentity(this, scopeTarget);
+            if (isDefined(hashKey)) {
+                for (let i = 0, l = keys.length; i < l; i++) {
+                    this._registerPlannedHashedKey(keys[i], listener, hashKey);
+                }
+            }
+            else {
+                for (let i = 0, l = keys.length; i < l; i++) {
+                    this._registerKey(keys[i], listener, false, hashKey);
+                }
+            }
+            if (!isFunction(listenerObject) && !isArray(listenerObject)) {
+                try {
+                    listenerFn(listenerObject, getListenerOwnerTarget(listener), listenerContext);
+                }
+                catch (err) {
+                    this._exceptionHandler(err);
+                }
+            }
+            else {
+                this._notifyListener(listener, scopeTarget);
+            }
+        }
+        /** @internal Registers a compiled binding without entering generic watch analysis. */
+        _watchPlanned(watchProp, listenerFn, lazy, synchronousInitial, resolvedValue, hasResolvedValue, listenerContext, watchPlan) {
+            const scopeTarget = this._target;
+            const descriptorPlans = watchPlan._foreignDescriptors;
+            const listener = {
+                _owner: this,
+                _originalTarget: scopeTarget,
+                _listenerFn: listenerFn,
+                _watchFn: watchPlan._watchFn,
+                _id: ++nextListenerId,
+                _plannedForeignWatchParent: unresolvedForeignWatchParent,
+            };
+            if (listenerContext !== undefined) {
+                listener._listenerContext = listenerContext;
+            }
+            const keys = watchPlan._keys;
+            if (descriptorPlans?.length === 1) {
+                const descriptor = descriptorPlans[0];
+                listener._plannedForeignWatchDescriptor = descriptor;
+                if (descriptor._parentKey &&
+                    scopeTarget[descriptor._parentKey] === this._watchIdentity) {
+                    listener._plannedForeignWatchParent = this._watchIdentity;
+                }
+                else {
+                    this._bindForeignDependency(listener);
+                }
+            }
+            else if (descriptorPlans) {
+                const descriptors = new Array(descriptorPlans.length);
+                for (let i = 0, l = descriptorPlans.length; i < l; i++) {
+                    const descriptor = descriptorPlans[i];
+                    descriptors[i] = {
+                        _watchProp: descriptor._watchProp,
+                        _watchParentFn: descriptor._watchParentFn,
+                        _parentKey: descriptor._parentKey,
+                        _key: descriptor._key,
+                        _parent: unresolvedForeignWatchParent,
+                    };
+                }
+                listener._foreignWatchDescriptors = descriptors;
+                this._bindForeignDependency(listener);
+            }
+            const listenerObject = hasResolvedValue
+                ? resolvedValue
+                : listener._watchFn(scopeTarget);
+            if (isObject(listenerObject)) {
+                const listenerTarget = getObjectListenerTarget(listenerObject);
+                if (listenerTarget) {
+                    addObjectListenerKey(this._objectListeners, listenerTarget, assertInvariantDefined(keys[0]));
+                }
+            }
+            const hashKey = getScopeWatchIdentity(this, scopeTarget);
+            if (isDefined(hashKey)) {
+                for (let i = 0, l = keys.length; i < l; i++) {
+                    this._registerPlannedHashedKey(keys[i], listener, hashKey);
+                }
+            }
+            else {
+                for (let i = 0, l = keys.length; i < l; i++) {
+                    this._registerKey(keys[i], listener, false, hashKey);
+                }
+            }
+            if (!lazy) {
+                if (synchronousInitial &&
+                    !isFunction(listenerObject) &&
+                    !isArray(listenerObject)) {
+                    try {
+                        if (listenerContext === undefined) {
+                            listenerFn(listenerObject, getListenerOwnerTarget(listener));
+                        }
+                        else {
+                            listenerFn(listenerObject, getListenerOwnerTarget(listener), listenerContext);
+                        }
+                    }
+                    catch (err) {
+                        this._exceptionHandler(err);
+                    }
+                }
+                else if (synchronousInitial) {
+                    this._notifyListener(listener, scopeTarget);
+                }
+                else {
+                    this._scheduleListener([listener]);
+                }
+            }
+        }
         /**
          * Initializes the handler with the target object and a context.
          *
@@ -3688,15 +4103,16 @@
          */
         constructor(context, parent, scheduler) {
             var _a;
+            /** @internal */
+            this._parentIndex = -1;
+            this._listeners = EMPTY_SCOPE_LISTENERS;
             this._parse = context?._parse ?? defaultParse;
             this._exceptionHandler =
                 context?._exceptionHandler ?? defaultExceptionHandler;
             this._watchers = context?._watchers ?? new Map();
-            this._watcherIndexes =
-                context?._watcherIndexes ?? new Map();
             this._watchersByHash =
-                context?._watchersByHash ?? new Map();
-            this._listeners = new Map();
+                context?._watchersByHash ??
+                    new Map();
             this._foreignListeners =
                 context?._foreignListeners ?? new Map();
             this._foreignListenerIndexes =
@@ -3713,14 +4129,14 @@
             };
             this._handler = this;
             this._target = null;
-            this._children = [];
-            this._childIndices = new WeakMap();
-            this._childTargets = new WeakMap();
+            this._scopeTarget = undefined;
+            this._watchIdentity = undefined;
+            this._children = EMPTY_SCOPE_CHILDREN;
             this.id = nextId();
             this.root = context ? context.root : this;
             this.parent = parent ?? (this.root === this ? undefined : context);
             this._destroyed = false;
-            this._scheduled = [];
+            this._scheduled = EMPTY_SCHEDULED_LISTENERS;
             this._arrayOwnerListenersScheduled = false;
             this.scopeName = undefined;
             this._ownedForeignListeners = [];
@@ -3729,34 +4145,57 @@
                 context?._listenerScheduler ??
                     scheduler ??
                     createScopeListenerScheduler();
-            (_a = this._listenerScheduler)._owner ?? (_a._owner = this);
+            if (!context) {
+                (_a = this._listenerScheduler)._owner ?? (_a._owner = this);
+            }
             this._arrayMutationWrappers =
                 context?._arrayMutationWrappers ?? new WeakMap();
             this._collectionMethodWrappers =
                 context?._collectionMethodWrappers ?? new WeakMap();
             this._modelChangeTracker = context?._modelChangeTracker;
             this._propertyMap = {
-                broadcast: this.broadcast.bind(this),
-                batch: this.batch.bind(this),
+                __proto__: scopeMethodPropertyMap,
                 _children: this._children,
-                destroy: this.destroy.bind(this),
-                emit: this.emit.bind(this),
-                getById: this.getById.bind(this),
                 _handler: this,
                 id: this.id,
-                _isRoot: this._isRoot.bind(this),
-                merge: this.merge.bind(this),
-                new: this.new.bind(this),
-                newIsolate: this.newIsolate.bind(this),
-                on: this.on.bind(this),
                 parent: this.parent,
                 _proxy: this._proxy,
                 root: this.root,
                 scopeName: this.scopeName,
-                searchByName: this.searchByName.bind(this),
-                transcluded: this.transcluded.bind(this),
-                watch: this.watch.bind(this),
             };
+        }
+        /** @internal Binds a scope API method only when it is first read through the proxy. */
+        _bindScopeMethod(property) {
+            switch (property) {
+                case "broadcast":
+                    return this.broadcast.bind(this);
+                case "batch":
+                    return this.batch.bind(this);
+                case "destroy":
+                    return this.destroy.bind(this);
+                case "emit":
+                    return this.emit.bind(this);
+                case "getById":
+                    return this.getById.bind(this);
+                case "_isRoot":
+                    return this._isRoot.bind(this);
+                case "merge":
+                    return this.merge.bind(this);
+                case "new":
+                    return this.new.bind(this);
+                case "newIsolate":
+                    return this.newIsolate.bind(this);
+                case "on":
+                    return this.on.bind(this);
+                case "searchByName":
+                    return this.searchByName.bind(this);
+                case "transcluded":
+                    return this.transcluded.bind(this);
+                case "watch":
+                    return this.watch.bind(this);
+                default:
+                    return undefined;
+            }
         }
         /** @internal Updates runtime services for this scope tree. */
         _setRuntimeDependencies(runtime) {
@@ -3774,7 +4213,7 @@
             if (visited.has(objectValue))
                 return;
             visited.add(objectValue);
-            const childScope = this._childTargets.get(objectValue);
+            const childScope = this._childTargets?.get(objectValue);
             if (childScope) {
                 if (childScope._handler._destroyed)
                     return;
@@ -4125,14 +4564,16 @@
                     let propListeners = hasDirectPropertyListeners
                         ? this._watchers.get(property)
                         : undefined;
-                    const targetHashKey = getHashKey(target);
+                    const targetHashKey = getScopeWatchIdentity(this, target);
                     let hasExactPropListeners = false;
                     if (isDefined(targetHashKey)) {
                         const hashedPropListeners = this._watchersByHash
                             .get(property)
                             ?.get(targetHashKey);
                         if (hashedPropListeners) {
-                            propListeners = hashedPropListeners;
+                            propListeners = isArray(hashedPropListeners)
+                                ? hashedPropListeners
+                                : [hashedPropListeners];
                             hasExactPropListeners = directListeners.length === 0;
                         }
                     }
@@ -4154,13 +4595,14 @@
                                         scheduled?.push(x);
                                         continue;
                                     }
-                                    const expectedParent = x._watchParentFn?.(x._originalTarget);
+                                    const originalTarget = getListenerOwnerTarget(x);
+                                    const expectedParent = x._watchParentFn?.(originalTarget);
                                     const expectedParentTarget = unwrapScopeValue(expectedParent);
                                     if (expectedTarget === expectedParentTarget ||
                                         (isArray(expectedParentTarget) &&
-                                            expectedTarget === x._originalTarget) ||
+                                            expectedTarget === originalTarget) ||
                                         (x._watchProp.includes("[") &&
-                                            expectedTarget === x._originalTarget)) {
+                                            expectedTarget === originalTarget)) {
                                         scheduled?.push(x);
                                     }
                                     else {
@@ -4199,10 +4641,16 @@
                     if (_foreignListeners) {
                         let scheduled = _foreignListeners;
                         // filter for repeaters
-                        const hashKey = getHashKey(this._target);
+                        const hashKey = getScopeWatchIdentity(this, this._target);
                         if (isDefined(hashKey)) {
-                            scheduled =
-                                this._foreignListenersByHash.get(property)?.get(hashKey) ?? [];
+                            const hashedListeners = this._foreignListenersByHash
+                                .get(property)
+                                ?.get(hashKey);
+                            scheduled = hashedListeners
+                                ? isArray(hashedListeners)
+                                    ? hashedListeners
+                                    : [hashedListeners]
+                                : [];
                         }
                         if (scheduled.length > 0) {
                             if (seenListenerIds.size > 0) {
@@ -4223,14 +4671,19 @@
                 if (this._objectListeners.has(target) && property !== "length") {
                     const keyList = this._objectListeners.get(target);
                     if (keyList) {
-                        const objectHashKey = getHashKey(target);
-                        for (let i = 0, l = keyList.length; i < l; i++) {
-                            const key = keyList[i];
+                        const hasMultipleKeys = isArray(keyList);
+                        const keyCount = hasMultipleKeys ? keyList.length : 1;
+                        const objectHashKey = getScopeWatchIdentity(this, target);
+                        for (let i = 0; i < keyCount; i++) {
+                            const key = hasMultipleKeys ? keyList[i] : keyList;
                             const listeners = isDefined(objectHashKey)
                                 ? this._watchersByHash.get(key)?.get(objectHashKey)
                                 : this._watchers.get(key);
-                            if (listeners && this._scheduled !== listeners) {
-                                this._scheduleListener(listeners);
+                            if (listeners) {
+                                const scheduled = isArray(listeners) ? listeners : [listeners];
+                                if (this._scheduled !== scheduled) {
+                                    this._scheduleListener(scheduled);
+                                }
                             }
                         }
                     }
@@ -4249,6 +4702,11 @@
          * @returns The value of the property or a method if accessing `watch` or `sync`.
          */
         get(target, property, proxy) {
+            if (property === SCOPE_HANDLER || property === "_handler") {
+                this._target = target;
+                this._proxy = proxy;
+                return this;
+            }
             if (property === "scopeName" && this.scopeName)
                 return this.scopeName;
             if (property === "$$watchersCount")
@@ -4266,20 +4724,69 @@
                 : isString(property)
                     ? target[property]
                     : target[property];
-            const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
-            const foreignProxy = isObject(targetProp) && !isNonScope(targetProp)
-                ? this._foreignProxyTargets.get(targetProp)
+            const scopeableTargetProp = isObject(targetProp) && !isNonScope(targetProp) ? targetProp : undefined;
+            const nonscopeProps = scopeableTargetProp
+                ? (target.constructor?.$nonscope ?? target.$nonscope)
                 : undefined;
-            const scopedTargetProp = foreignProxy ??
-                (isString(property) &&
-                    isArray(nonscopeProps) &&
-                    nonscopeProps.includes(property)
-                    ? targetProp
-                    : getCachedScopeProxy(targetProp, this));
-            if (isProxy(scopedTargetProp)) {
-                this._proxy = scopedTargetProp;
+            const foreignProxy = scopeableTargetProp
+                ? this._foreignProxyTargets.get(scopeableTargetProp)
+                : undefined;
+            let scopedTargetProp;
+            if (foreignProxy) {
+                scopedTargetProp = foreignProxy;
+            }
+            else if (isString(property) &&
+                isArray(nonscopeProps) &&
+                nonscopeProps.includes(property)) {
+                scopedTargetProp = targetProp;
+            }
+            else if (scopeableTargetProp) {
+                if (isProxy(scopeableTargetProp)) {
+                    scopedTargetProp = scopeableTargetProp;
+                }
+                else {
+                    const cached = scopeProxyCache.get(scopeableTargetProp);
+                    let proxiesByHandler;
+                    let cachedProxy;
+                    if (cached && isProxy(cached)) {
+                        if (cached._handler === this) {
+                            cachedProxy = cached;
+                        }
+                        else {
+                            proxiesByHandler = new WeakMap();
+                            proxiesByHandler.set(cached._handler, cached);
+                            scopeProxyCache.set(scopeableTargetProp, proxiesByHandler);
+                        }
+                    }
+                    else {
+                        proxiesByHandler = cached;
+                    }
+                    cachedProxy ?? (cachedProxy = proxiesByHandler?.get(this));
+                    if (!cachedProxy) {
+                        cachedProxy = new Proxy(scopeableTargetProp, this);
+                        if (proxiesByHandler) {
+                            proxiesByHandler.set(this, cachedProxy);
+                        }
+                        else {
+                            scopeProxyCache.set(scopeableTargetProp, cachedProxy);
+                        }
+                        scopeProxyTargets.set(cachedProxy, scopeableTargetProp);
+                        const bind = scopeableTargetProp[SCOPE_PROXY_BIND];
+                        if (isFunction(bind)) {
+                            bind.call(scopeableTargetProp, this, cachedProxy);
+                        }
+                    }
+                    scopedTargetProp = cachedProxy;
+                }
             }
             else {
+                scopedTargetProp = targetProp;
+            }
+            if (isProxy(scopedTargetProp)) {
+                if (this._proxy !== scopedTargetProp)
+                    this._proxy = scopedTargetProp;
+            }
+            else if (this._proxy !== proxy) {
                 this._proxy = proxy;
             }
             if (this._propertyMap._target !== target) {
@@ -4288,12 +4795,16 @@
             if (this._propertyMap._proxy !== proxy) {
                 this._propertyMap._proxy = proxy;
             }
-            const scopeMember = typeof property !== "symbol" ? this._propertyMap[property] : undefined;
+            let scopeMember = typeof property !== "symbol" ? this._propertyMap[property] : undefined;
             const targetShadowsScopeData = isString(property) && !property.startsWith("_") && property in target;
             if (typeof property !== "symbol" &&
-                hasOwn(this._propertyMap, property) &&
+                property in this._propertyMap &&
                 !targetShadowsScopeData) {
                 this._target = target;
+                if (scopeMember === unboundScopeMethod) {
+                    scopeMember = this._bindScopeMethod(String(property));
+                    this._propertyMap[property] = scopeMember;
+                }
                 return scopeMember;
             }
             if (isNativeScopedTarget(target)) {
@@ -4324,8 +4835,10 @@
                     if (this._objectListeners.has(target)) {
                         const keyList = this._objectListeners.get(target);
                         if (keyList) {
-                            for (let i = 0, l = keyList.length; i < l; i++) {
-                                const key = keyList[i];
+                            const hasMultipleKeys = isArray(keyList);
+                            const keyCount = hasMultipleKeys ? keyList.length : 1;
+                            for (let i = 0; i < keyCount; i++) {
+                                const key = hasMultipleKeys ? keyList[i] : keyList;
                                 const listenerGroups = [
                                     this._watchers.get(key),
                                     this._foreignListeners.get(key),
@@ -4339,6 +4852,9 @@
                                         if (scheduledIds.has(listener._id))
                                             continue;
                                         scheduledIds.add(listener._id);
+                                        if (this._scheduled === EMPTY_SCHEDULED_LISTENERS) {
+                                            this._scheduled = [];
+                                        }
                                         this._scheduled.push(listener);
                                     }
                                 }
@@ -4362,7 +4878,7 @@
                         }
                         setArrayMutationMeta(proxy, getMethodArrayMutationMeta(property, rawArgs, previousLength, target.length));
                         if (previousLength !== target.length) {
-                            this._scheduleWatchKeys(["length"], scheduledIds);
+                            this._scheduleWatchKeys("length", scheduledIds);
                         }
                         this._recordModelChange(property, target);
                         if (this._scheduled.length > 0 &&
@@ -4521,7 +5037,7 @@
                 this._scheduleWatchKeys(setMutationWatchKeys, seenListenerIds);
             }
             if (sizeChanged) {
-                this._scheduleWatchKeys(["size"], seenListenerIds);
+                this._scheduleWatchKeys("size", seenListenerIds);
             }
             this._scheduleObjectOwnerListeners(target, seenListenerIds);
         }
@@ -4548,8 +5064,10 @@
                     this._scheduleListener(scheduled);
                 }
             };
-            for (let i = 0, l = watchKeys.length; i < l; i++) {
-                const key = watchKeys[i];
+            const hasMultipleKeys = isArray(watchKeys);
+            const keyCount = hasMultipleKeys ? watchKeys.length : 1;
+            for (let i = 0; i < keyCount; i++) {
+                const key = hasMultipleKeys ? watchKeys[i] : watchKeys;
                 scheduleUnique(this._watchers.get(key));
                 scheduleUnique(this._foreignListeners.get(key));
             }
@@ -4566,85 +5084,125 @@
             this._scheduleWatchKeys(keyList, seenListenerIds);
         }
         /** @internal Registers a member-expression listener against its current foreign proxy parent. */
-        _bindForeignDependency(listener) {
+        _bindForeignDependency(listener, resolvedValue, hasResolvedValue = false) {
+            const plannedDescriptor = listener._plannedForeignWatchDescriptor;
             const descriptors = listener._foreignWatchDescriptors;
-            if (!descriptors?.length) {
+            const descriptorCount = plannedDescriptor ? 1 : (descriptors?.length ?? 0);
+            if (descriptorCount === 0) {
                 return false;
             }
             let bound = false;
-            for (let i = 0, l = descriptors.length; i < l; i++) {
-                const descriptor = descriptors[i];
-                const existing = descriptor._dependency;
-                const parent = descriptor._watchParentFn(listener._originalTarget);
-                if (existing && descriptor._parent === parent) {
+            const listenerTarget = getListenerOwnerTarget(listener);
+            for (let i = 0; i < descriptorCount; i++) {
+                const descriptor = plannedDescriptor ?? assertInvariantDefined(descriptors?.[i]);
+                const mutableDescriptor = descriptor;
+                const existing = plannedDescriptor
+                    ? listener._plannedForeignWatchDependency
+                    : mutableDescriptor._dependency;
+                const parent = descriptor._parentKey
+                    ? listenerTarget[descriptor._parentKey]
+                    : descriptor._watchParentFn(listenerTarget);
+                const previousParent = plannedDescriptor
+                    ? listener._plannedForeignWatchParent
+                    : mutableDescriptor._parent;
+                if (previousParent === parent) {
                     continue;
                 }
-                const foreignProxy = this._resolveForeignDependencyProxy(listener, descriptor, parent);
+                const foreignProxy = this._resolveForeignDependencyProxy(descriptor, parent, listenerTarget);
                 if (!foreignProxy) {
+                    if (plannedDescriptor) {
+                        listener._plannedForeignWatchParent = parent;
+                    }
+                    else {
+                        mutableDescriptor._parent = parent;
+                    }
                     continue;
                 }
                 /* istanbul ignore next -- avoids replacing an equivalent cached dependency. */
                 if (existing?._handler === foreignProxy._handler &&
                     existing._key === descriptor._key) {
-                    descriptor._parent = parent;
+                    if (plannedDescriptor) {
+                        listener._plannedForeignWatchParent = parent;
+                    }
+                    else {
+                        mutableDescriptor._parent = parent;
+                    }
                     continue;
                 }
                 if (existing) {
                     existing._handler._deregisterForeignKey(existing._key, listener._id);
                     this._untrackOwnedForeignListener(existing._handler, existing._key, listener._id);
                 }
-                foreignProxy._handler._registerForeignKey(descriptor._key, listener, listener._parse(descriptor._watchProp)(listener._originalTarget));
+                foreignProxy._handler._registerForeignKey(descriptor._key, listener, hasResolvedValue && descriptorCount === 1
+                    ? resolvedValue
+                    : this._parse(descriptor._watchProp)(listenerTarget));
                 this._trackOwnedForeignListener(foreignProxy._handler, descriptor._key, listener._id);
-                descriptor._dependency = {
+                const dependency = {
                     _handler: foreignProxy._handler,
                     _key: descriptor._key,
                     _id: listener._id,
                 };
-                descriptor._parent = parent;
+                if (plannedDescriptor) {
+                    listener._plannedForeignWatchDependency = dependency;
+                    listener._plannedForeignWatchParent = parent;
+                }
+                else {
+                    mutableDescriptor._dependency = dependency;
+                    mutableDescriptor._parent = parent;
+                }
                 bound = true;
             }
             return bound;
         }
         /** @internal Removes the current foreign dependency owned by this listener. */
         _releaseForeignDependency(listener) {
+            const plannedDescriptor = listener._plannedForeignWatchDescriptor;
             const descriptors = listener._foreignWatchDescriptors;
-            if (!descriptors?.length) {
+            const descriptorCount = plannedDescriptor ? 1 : (descriptors?.length ?? 0);
+            if (descriptorCount === 0) {
                 return;
             }
-            for (let i = 0, l = descriptors.length; i < l; i++) {
-                const existing = descriptors[i]._dependency;
+            for (let i = 0; i < descriptorCount; i++) {
+                const descriptor = plannedDescriptor ?? assertInvariantDefined(descriptors?.[i]);
+                const mutableDescriptor = descriptor;
+                const existing = plannedDescriptor
+                    ? listener._plannedForeignWatchDependency
+                    : mutableDescriptor._dependency;
                 if (!existing) {
                     continue;
                 }
                 existing._handler._deregisterForeignKey(existing._key, listener._id);
                 this._untrackOwnedForeignListener(existing._handler, existing._key, listener._id);
-                descriptors[i]._dependency = undefined;
-                descriptors[i]._parent = undefined;
+                if (plannedDescriptor) {
+                    listener._plannedForeignWatchDependency = undefined;
+                    listener._plannedForeignWatchParent = undefined;
+                }
+                else {
+                    mutableDescriptor._dependency = undefined;
+                    mutableDescriptor._parent = undefined;
+                }
             }
         }
         /** @internal Resolves the foreign proxy parent for a member-expression listener. */
-        _resolveForeignDependencyProxy(listener, descriptor, potentialProxy) {
+        _resolveForeignDependencyProxy(descriptor, potentialProxy, listenerTarget) {
+            const potentialScopeProxy = isProxy(potentialProxy)
+                ? potentialProxy
+                : undefined;
+            if (potentialScopeProxy &&
+                (this._foreignProxies.has(potentialScopeProxy) ||
+                    potentialScopeProxy._handler !== this)) {
+                return potentialScopeProxy;
+            }
             if (isObject(potentialProxy) &&
                 isFunction(potentialProxy[SCOPE_PROXY_BIND])) {
                 getCachedScopeProxy(potentialProxy, this);
             }
             let foreignProxy;
-            const potentialScopeProxy = isProxy(potentialProxy)
-                ? potentialProxy
-                : undefined;
-            if (potentialScopeProxy && this._foreignProxies.has(potentialScopeProxy)) {
-                foreignProxy = potentialScopeProxy;
+            const foreignTarget = getObjectListenerTarget(potentialProxy);
+            if (foreignTarget) {
+                foreignProxy = this._foreignProxyTargets.get(foreignTarget);
             }
-            else if (potentialScopeProxy && potentialScopeProxy._handler !== this) {
-                foreignProxy = potentialScopeProxy;
-            }
-            else {
-                const foreignTarget = getObjectListenerTarget(potentialProxy);
-                if (foreignTarget) {
-                    foreignProxy = this._foreignProxyTargets.get(foreignTarget);
-                }
-            }
-            foreignProxy ?? (foreignProxy = this._resolveForeignProxyParent(descriptor._watchProp, listener._originalTarget));
+            foreignProxy ?? (foreignProxy = this._resolveForeignProxyParent(descriptor._watchProp, listenerTarget));
             return foreignProxy;
         }
         /** @internal Resolves a nested foreign proxy parent from a simple dotted watch path. */
@@ -4701,7 +5259,7 @@
             // Currently deletes $model
             if (isProxy(target[property])) {
                 target[property] = undefined;
-                this._scheduleWatchKeys([String(property)]);
+                this._scheduleWatchKeys(String(property));
                 if (this._scheduled.length === 0 && this._objectListeners.has(target)) {
                     this._scheduleObjectOwnerListeners(target);
                 }
@@ -4718,7 +5276,7 @@
                 this._scheduleObjectOwnerListeners(target);
             }
             else {
-                this._scheduleWatchKeys([String(property)]);
+                this._scheduleWatchKeys(String(property));
             }
             if (this._scheduled.length > 0) {
                 this._scheduleListener(this._scheduled);
@@ -4951,47 +5509,110 @@
          * @returns A function to deregister the watcher, or undefined if no listener function is provided.
          * @throws Error when `watchProp` is not a string expression.
          */
-        watch(watchProp, listenerFn, lazy = false, directLeaf = false) {
+        watch(watchProp, listenerFn, lazy = false, directLeaf = false, returnDeregister = true, synchronousInitial = false, resolvedValue, hasResolvedValue = false, listenerContext) {
             if (!isString(watchProp)) {
                 throw new TypeError("Watched property must be a string");
             }
             watchProp = watchProp.trim();
             const get = this._parse(watchProp);
+            const scopeTarget = this._target;
             // Constant are immediately passed to listener function
             if (get._constant) {
-                if (listenerFn) {
-                    this._scheduleCallback(() => {
+                if (listenerFn && !lazy) {
+                    const notify = () => {
                         let res = get();
                         while (isFunction(res)) {
                             res = res();
                         }
-                        listenerFn(res, this._target);
-                    });
+                        listenerFn(res, scopeTarget, listenerContext);
+                    };
+                    if (synchronousInitial) {
+                        notify();
+                    }
+                    else {
+                        this._scheduleCallback(notify);
+                    }
                 }
-                return () => {
-                    /* empty */
-                };
+                return returnDeregister
+                    ? () => {
+                        /* empty */
+                    }
+                    : undefined;
             }
             const expr = get._decoratedNode._body[0]?._expression;
             if (!expr) {
                 throw new Error("Unable to determine watched expression");
             }
             if (!listenerFn) {
-                let res = get(this._target);
+                let res = get(scopeTarget);
                 while (isFunction(res)) {
-                    res = callFunction(res, undefined, this._target);
+                    res = callFunction(res, undefined, scopeTarget);
                 }
                 return undefined;
             }
             const listener = {
-                _originalTarget: this._target,
+                _owner: this,
                 _listenerFn: listenerFn,
                 _watchFn: get,
                 _parse: this._parse,
                 _scopeId: this.id,
                 _id: nextUid(),
-                _property: [],
             };
+            if (listenerContext !== undefined) {
+                listener._listenerContext = listenerContext;
+            }
+            if (!returnDeregister) {
+                const plan = getDirectMemberWatchPlan(get, expr, watchProp, this._parse);
+                if (plan) {
+                    const { _key: memberKey, _parentKey: parentKey } = plan;
+                    listener._dedupeUnchanged = true;
+                    listener._watchProp = watchProp;
+                    listener._watchParentFn = plan._watchParentFn;
+                    listener._foreignWatchDescriptors = [
+                        {
+                            _watchProp: plan._watchProp,
+                            _watchParentFn: plan._watchParentFn,
+                            _key: memberKey,
+                        },
+                    ];
+                    const listenerObject = hasResolvedValue
+                        ? resolvedValue
+                        : listener._watchFn(scopeTarget);
+                    const dependencyBound = this._bindForeignDependency(listener, listenerObject, true);
+                    listener._directLeaf = directLeaf;
+                    if (isObject(listenerObject)) {
+                        const listenerTarget = getObjectListenerTarget(listenerObject);
+                        if (listenerTarget) {
+                            addObjectListenerKey(this._objectListeners, listenerTarget, memberKey);
+                        }
+                    }
+                    this._registerKey(memberKey, listener);
+                    if (parentKey !== memberKey) {
+                        this._registerKey(parentKey, listener);
+                    }
+                    if (!lazy) {
+                        if (synchronousInitial &&
+                            dependencyBound &&
+                            !isFunction(listenerObject) &&
+                            !isArray(listenerObject)) {
+                            try {
+                                listenerFn(listenerObject, getListenerOwnerTarget(listener), listenerContext);
+                            }
+                            catch (err) {
+                                this._exceptionHandler(err);
+                            }
+                        }
+                        else if (synchronousInitial) {
+                            this._notifyListener(listener, scopeTarget);
+                        }
+                        else {
+                            this._scheduleListener([listener]);
+                        }
+                    }
+                    return undefined;
+                }
+            }
+            listener._originalTarget = scopeTarget;
             // simplest case
             let key = getNodeName(expr);
             const keySet = [];
@@ -5010,6 +5631,7 @@
                     if (keySet.length === 0) {
                         throw new Error("Unable to determine key");
                     }
+                    this._bindForeignDependency(listener);
                     break;
                 }
                 // 5
@@ -5021,9 +5643,11 @@
                     }
                     registerListenerKeys(this, listener, keySet);
                     this._bindForeignDependency(listener);
+                    if (!returnDeregister)
+                        return undefined;
                     return () => {
                         this._releaseForeignDependency(listener);
-                        deregisterListenerKeys(this, listener._id, keySet);
+                        deregisterListenerKeys(this, listener, keySet);
                     };
                 }
                 // 6
@@ -5036,6 +5660,7 @@
                         }
                         pushUniqueListenerKey(keySet, seenKeys, listener, key);
                         collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
+                        this._bindForeignDependency(listener);
                         break;
                     }
                     else {
@@ -5047,12 +5672,14 @@
                                 throw new Error("Unable to determine key");
                             keyList[i] = registerKey;
                         }
-                        registerListenerKeys(this, listener, keyList, true);
+                        registerListenerKeys(this, listener, keyList, !lazy);
                         collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
+                        if (!returnDeregister)
+                            return undefined;
                         // Return deregistration function
                         return () => {
                             this._releaseForeignDependency(listener);
-                            deregisterListenerKeys(this, listener._id, keyList);
+                            deregisterListenerKeys(this, listener, keyList);
                         };
                     }
                 }
@@ -5082,22 +5709,25 @@
                     collectExpressionListenerKeys(expr._callee, keySet, seenKeys, listener);
                     collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
                     if (keySet.length === 0) {
-                        this._scheduleListener([listener]);
-                        return () => false;
+                        if (!lazy)
+                            this._scheduleListener([listener]);
+                        return returnDeregister ? () => false : undefined;
                     }
                     registerListenerKeys(this, listener, keySet);
                     this._bindForeignDependency(listener);
-                    if (filterInputWatchKeys) {
+                    if (!lazy && filterInputWatchKeys) {
                         for (let i = 0, l = filterInputWatchKeys.length; i < l; i++) {
                             this._scheduleListener([listener]);
                         }
                     }
-                    else {
+                    else if (!lazy) {
                         this._scheduleListener([listener]);
                     }
+                    if (!returnDeregister)
+                        return undefined;
                     return () => {
                         this._releaseForeignDependency(listener);
-                        deregisterListenerKeys(this, listener._id, keySet);
+                        deregisterListenerKeys(this, listener, keySet);
                     };
                 }
                 // 9
@@ -5154,11 +5784,13 @@
                     if (keySet.length === 0) {
                         throw new Error("Unable to determine key");
                     }
-                    registerListenerKeys(this, listener, keySet, true);
+                    registerListenerKeys(this, listener, keySet, !lazy);
                     this._bindForeignDependency(listener);
+                    if (!returnDeregister)
+                        return undefined;
                     return () => {
                         this._releaseForeignDependency(listener);
-                        deregisterListenerKeys(this, listener._id, keySet);
+                        deregisterListenerKeys(this, listener, keySet);
                     };
                 }
                 // 14
@@ -5210,7 +5842,9 @@
                 }
             }
             // if the target is an object, then start observing it
-            const listenerObject = listener._watchFn(this._target);
+            const listenerObject = hasResolvedValue
+                ? resolvedValue
+                : listener._watchFn(scopeTarget);
             if (isObject(listenerObject)) {
                 if (!key && keySet.length > 0) {
                     [key] = keySet;
@@ -5234,13 +5868,20 @@
                 this._registerKey(key, listener);
             }
             if (!lazy) {
-                this._scheduleListener([listener]);
+                if (synchronousInitial) {
+                    this._notifyListener(listener, scopeTarget);
+                }
+                else {
+                    this._scheduleListener([listener]);
+                }
             }
+            if (!returnDeregister)
+                return undefined;
             return () => {
                 if (keySet.length > 0) {
                     let res = true;
                     for (let i = 0, l = keySet.length; i < l; i++) {
-                        const success = this._deregisterKey(keySet[i], listener._id);
+                        const success = this._deregisterKey(keySet[i], listener);
                         if (!success) {
                             res = false;
                         }
@@ -5253,7 +5894,7 @@
                         return false;
                     }
                     this._releaseForeignDependency(listener);
-                    return this._deregisterKey(key, listener._id);
+                    return this._deregisterKey(key, listener);
                 }
             };
         }
@@ -5275,42 +5916,71 @@
             else {
                 child = createObject(this._target);
             }
-            const proxy = new Proxy(child, new Scope(this));
+            const handler = new Scope(this);
+            const proxy = new Proxy(child, handler);
+            handler._target = child;
+            handler._scopeTarget = child;
+            handler._proxy = proxy;
             scopeProxyTargets.set(proxy, child);
+            if (this._children === EMPTY_SCOPE_CHILDREN) {
+                this._children = [];
+                this._propertyMap._children = this._children;
+            }
+            handler._parentIndex = this._children.length;
             this._children.push(proxy);
-            this._childIndices.set(proxy, this._children.length - 1);
-            this._childTargets.set(child, proxy);
+            (this._childTargets ?? (this._childTargets = new WeakMap())).set(child, proxy);
             return proxy;
         }
         /** Creates an isolate child scope that does not inherit watchable properties directly. */
         newIsolate(instance) {
             const child = instance ?? nullObject();
-            const proxy = new Proxy(child, new Scope(this, this.root));
+            const handler = new Scope(this, this.root);
+            const proxy = new Proxy(child, handler);
+            handler._target = child;
+            handler._scopeTarget = child;
+            handler._proxy = proxy;
             scopeProxyTargets.set(proxy, child);
+            if (this._children === EMPTY_SCOPE_CHILDREN) {
+                this._children = [];
+                this._propertyMap._children = this._children;
+            }
+            handler._parentIndex = this._children.length;
             this._children.push(proxy);
-            this._childIndices.set(proxy, this._children.length - 1);
-            this._childTargets.set(child, proxy);
+            (this._childTargets ?? (this._childTargets = new WeakMap())).set(child, proxy);
             return proxy;
         }
         /** Creates a transcluded child scope linked to this scope and an optional parent instance. */
         transcluded(parentInstance) {
-            const child = createObject(this._target);
-            const proxy = new Proxy(child, new Scope(this, parentInstance));
+            const child = Object.create(this._target);
+            const handler = new Scope(this, parentInstance);
+            const proxy = new Proxy(child, handler);
+            handler._target = child;
+            handler._scopeTarget = child;
+            handler._proxy = proxy;
             scopeProxyTargets.set(proxy, child);
-            this._children.push(proxy);
-            this._childIndices.set(proxy, this._children.length - 1);
-            this._childTargets.set(child, proxy);
+            if (this._children === EMPTY_SCOPE_CHILDREN) {
+                this._children = [];
+                this._propertyMap._children = this._children;
+            }
+            const childIndex = this._children.length;
+            handler._parentIndex = childIndex;
+            this._children[childIndex] = proxy;
             return proxy;
         }
         /** @internal Registers a listener under a watched key on this scope. */
-        _registerKey(key, listener) {
-            this._ownedWatchers.push({
-                _key: key,
-                _id: listener._id,
-            });
-            this._registerInheritedKey(key);
-            this._registerObjectMutationTarget(key, listener._originalTarget);
-            this._trackNestedListenerCandidate(listener);
+        _registerPlannedHashedKey(key, listener, hashKey) {
+            let listenersByHash = this._watchersByHash.get(key);
+            if (!listenersByHash) {
+                listenersByHash = new Map();
+                this._watchersByHash.set(key, listenersByHash);
+            }
+            const hashedListeners = listenersByHash.get(hashKey);
+            if (!hashedListeners) {
+                if (!Object.prototype.hasOwnProperty.call(this._target, key)) {
+                    this._registerInheritedKey(key);
+                }
+                this._registerObjectMutationTarget(key, getListenerOwnerTarget(listener));
+            }
             const listeners = this._watchers.get(key);
             let listenerIndex = 0;
             if (listeners) {
@@ -5320,33 +5990,82 @@
             else {
                 this._watchers.set(key, [listener]);
             }
-            let keyIndexes = this._watcherIndexes.get(key);
-            if (!keyIndexes) {
-                keyIndexes = new Map();
-                this._watcherIndexes.set(key, keyIndexes);
+            const ownedWatcherIndex = this._ownedWatchers.length;
+            this._ownedWatchers[ownedWatcherIndex] = key;
+            this._ownedWatchers[ownedWatcherIndex + 1] = listener;
+            this._ownedWatchers[ownedWatcherIndex + 2] = listenerIndex;
+            if (hashedListeners) {
+                if (isArray(hashedListeners)) {
+                    hashedListeners.push(listener);
+                }
+                else {
+                    const listenerPair = [hashedListeners, listener, listener];
+                    listenerPair.length = 2;
+                    listenersByHash.set(hashKey, listenerPair);
+                }
+                return;
             }
-            keyIndexes.set(listener._id, listenerIndex);
-            const hashKey = getHashKey(listener._originalTarget);
+            listenersByHash.set(hashKey, listener);
+        }
+        /** @internal Registers a listener under a watched key on this scope. */
+        _registerKey(key, listener, trackNested = true, hashKey = getScopeWatchIdentity(listener._owner, getListenerOwnerTarget(listener))) {
+            let listenersByHash = isDefined(hashKey)
+                ? this._watchersByHash.get(key)
+                : undefined;
+            const hashedListeners = listenersByHash?.get(hashKey);
+            if (!hashedListeners) {
+                if (!hasOwn(this._target, key)) {
+                    this._registerInheritedKey(key);
+                }
+                this._registerObjectMutationTarget(key, getListenerOwnerTarget(listener));
+            }
+            if (trackNested) {
+                this._trackNestedListenerCandidate(listener);
+            }
+            const listeners = this._watchers.get(key);
+            let listenerIndex = 0;
+            if (listeners) {
+                listenerIndex = listeners.length;
+                listeners.push(listener);
+            }
+            else {
+                this._watchers.set(key, [listener]);
+            }
+            const ownedWatcherIndex = this._ownedWatchers.length;
+            this._ownedWatchers[ownedWatcherIndex] = key;
+            this._ownedWatchers[ownedWatcherIndex + 1] = listener;
+            this._ownedWatchers[ownedWatcherIndex + 2] = listenerIndex;
             if (!isDefined(hashKey)) {
                 return;
             }
-            let listenersByHash = this._watchersByHash.get(key);
             if (!listenersByHash) {
                 listenersByHash = new Map();
                 this._watchersByHash.set(key, listenersByHash);
             }
-            const hashedListeners = listenersByHash.get(hashKey);
             if (hashedListeners) {
-                hashedListeners.push(listener);
+                if (isArray(hashedListeners)) {
+                    hashedListeners.push(listener);
+                }
+                else {
+                    const listenerPair = [hashedListeners, listener, listener];
+                    listenerPair.length = 2;
+                    listenersByHash.set(hashKey, listenerPair);
+                }
                 return;
             }
-            listenersByHash.set(hashKey, [listener]);
+            listenersByHash.set(hashKey, listener);
         }
         /** @internal Registers owner-key mutation delivery for a watched object value. */
         _registerObjectMutationTarget(key, target) {
             const ownerTarget = getObjectListenerTarget(target[key]);
             if (ownerTarget) {
-                addObjectListenerKey(this._objectListeners, ownerTarget, key);
+                const registeredKey = this._objectListeners.get(ownerTarget);
+                if (!registeredKey) {
+                    this._objectListeners.set(ownerTarget, key);
+                }
+                else if (registeredKey !== key) {
+                    addObjectListenerKey(this._objectListeners, ownerTarget, key);
+                }
             }
         }
         /** @internal Tracks a registered listener that can require nested collection scans. */
@@ -5364,9 +6083,6 @@
         }
         /** @internal Registers inherited property listeners with the owning parent scope. */
         _registerInheritedKey(key) {
-            if (hasOwn(this._target, key)) {
-                return;
-            }
             const parent = this.parent
                 ?._handler;
             let owner = parent;
@@ -5390,13 +6106,25 @@
             }
         }
         /** @internal Removes a tracked local watcher registration record. */
-        _untrackOwnedWatcher(key, id) {
+        _untrackOwnedWatcher(key, listener) {
             const refs = this._ownedWatchers;
-            for (let i = 0; i < refs.length; i++) {
-                const ref = refs[i];
-                if (ref._key === key && ref._id === id) {
-                    refs[i] = refs[refs.length - 1];
-                    refs.length--;
+            for (let i = 0; i < refs.length; i += 3) {
+                if (refs[i] === key && refs[i + 1] === listener) {
+                    const lastIndex = refs.length - 3;
+                    refs[i] = refs[lastIndex];
+                    refs[i + 1] = refs[lastIndex + 1];
+                    refs[i + 2] = refs[lastIndex + 2];
+                    refs.length = lastIndex;
+                    return;
+                }
+            }
+        }
+        /** @internal Updates a tracked local watcher after swap-and-pop removal. */
+        _updateOwnedWatcherIndex(key, listener, listenerIndex) {
+            const refs = this._ownedWatchers;
+            for (let i = 0; i < refs.length; i += 3) {
+                if (refs[i] === key && refs[i + 1] === listener) {
+                    refs[i + 2] = listenerIndex;
                     return;
                 }
             }
@@ -5423,7 +6151,7 @@
                 this._foreignListenerIndexes.set(key, keyIndexes);
             }
             keyIndexes.set(listener._id, listenerIndex);
-            const hashKey = getHashKey(listener._originalTarget);
+            const hashKey = getScopeWatchIdentity(this, this._target);
             if (!isDefined(hashKey)) {
                 return;
             }
@@ -5434,46 +6162,55 @@
             }
             const hashedListeners = listenersByHash.get(hashKey);
             if (hashedListeners) {
-                hashedListeners.push(listener);
+                if (isArray(hashedListeners)) {
+                    hashedListeners.push(listener);
+                }
+                else {
+                    listenersByHash.set(hashKey, [hashedListeners, listener]);
+                }
                 return;
             }
-            listenersByHash.set(hashKey, [listener]);
+            listenersByHash.set(hashKey, listener);
         }
         /** @internal Tracks a foreign-listener registration owned by this scope. */
         _trackOwnedForeignListener(handler, key, id) {
-            this._ownedForeignListeners.push({
-                _handler: handler,
-                _key: key,
-                _id: id,
-            });
+            this._ownedForeignListeners.push(handler, key, id);
         }
         /** @internal Removes a tracked foreign-listener registration record. */
         _untrackOwnedForeignListener(handler, key, id) {
             const refs = this._ownedForeignListeners;
-            for (let i = 0; i < refs.length; i++) {
-                const ref = refs[i];
-                if (ref._handler === handler && ref._key === key && ref._id === id) {
-                    refs[i] = refs[refs.length - 1];
-                    refs.length--;
+            for (let i = 0; i < refs.length; i += 3) {
+                if (refs[i] === handler && refs[i + 1] === key && refs[i + 2] === id) {
+                    const lastIndex = refs.length - 3;
+                    refs[i] = refs[lastIndex];
+                    refs[i + 1] = refs[lastIndex + 1];
+                    refs[i + 2] = refs[lastIndex + 2];
+                    refs.length = lastIndex;
                     return;
                 }
             }
         }
-        /** @internal Removes a listener by id from the local watcher map. */
-        _deregisterKey(key, id, untrack = true) {
+        /** @internal Removes a listener from the local watcher map. */
+        _deregisterKey(key, listener, untrack = true) {
             const listenerList = this._watchers.get(key);
             if (!listenerList) {
                 return false;
             }
             const len = listenerList.length;
-            const keyIndexes = this._watcherIndexes.get(key);
-            let listenerIndex = keyIndexes?.get(id);
+            const ownedWatchers = this._ownedWatchers;
+            let listenerIndex;
+            for (let i = 0; i < ownedWatchers.length; i += 3) {
+                if (ownedWatchers[i] === key && ownedWatchers[i + 1] === listener) {
+                    listenerIndex = ownedWatchers[i + 2];
+                    break;
+                }
+            }
             if (listenerIndex === undefined ||
                 listenerIndex >= len ||
-                listenerList[listenerIndex]._id !== id) {
+                listenerList[listenerIndex] !== listener) {
                 listenerIndex = undefined;
                 for (let i = 0; i < len; i++) {
-                    if (listenerList[i]._id === id) {
+                    if (listenerList[i] === listener) {
                         listenerIndex = i;
                         break;
                     }
@@ -5482,45 +6219,49 @@
             if (listenerIndex === undefined) {
                 return false;
             }
-            const listener = listenerList[listenerIndex];
             this._releaseForeignDependency(listener);
             const movedListener = listenerList[len - 1];
             if (len === 1) {
                 this._watchers.delete(key);
-                this._watcherIndexes.delete(key);
             }
             else {
                 listenerList[listenerIndex] = movedListener;
                 listenerList.length = len - 1;
-                keyIndexes?.set(movedListener._id, listenerIndex);
-                keyIndexes?.delete(id);
+                if (movedListener !== listener) {
+                    movedListener._owner._updateOwnedWatcherIndex(key, movedListener, listenerIndex);
+                }
             }
-            const hashKey = getHashKey(listener._originalTarget);
+            const hashKey = getScopeWatchIdentity(listener._owner, getListenerOwnerTarget(listener));
             if (isDefined(hashKey)) {
                 const listenersByHash = this._watchersByHash.get(key);
                 const hashedListeners = listenersByHash?.get(hashKey);
                 if (hashedListeners) {
-                    const hashedLen = hashedListeners.length;
-                    for (let j = 0; j < hashedLen; j++) {
-                        if (hashedListeners[j]._id === id) {
-                            if (hashedLen === 1) {
-                                listenersByHash?.delete(hashKey);
-                                if (listenersByHash?.size === 0) {
-                                    this._watchersByHash.delete(key);
+                    if (isArray(hashedListeners)) {
+                        const hashedLen = hashedListeners.length;
+                        for (let j = 0; j < hashedLen; j++) {
+                            if (hashedListeners[j] === listener) {
+                                if (hashedLen === 2) {
+                                    listenersByHash?.set(hashKey, hashedListeners[j === 0 ? 1 : 0]);
                                 }
+                                else {
+                                    hashedListeners[j] = hashedListeners[hashedLen - 1];
+                                    hashedListeners.length = hashedLen - 1;
+                                }
+                                break;
                             }
-                            else {
-                                hashedListeners[j] = hashedListeners[hashedLen - 1];
-                                hashedListeners.length = hashedLen - 1;
-                            }
-                            break;
+                        }
+                    }
+                    else if (hashedListeners === listener) {
+                        listenersByHash?.delete(hashKey);
+                        if (listenersByHash?.size === 0) {
+                            this._watchersByHash.delete(key);
                         }
                     }
                 }
             }
             this._untrackNestedListenerCandidate(listener);
             if (untrack)
-                this._untrackOwnedWatcher(key, id);
+                this._untrackOwnedWatcher(key, listener);
             return true;
         }
         /** @internal Removes a listener by id from the foreign watcher map. */
@@ -5558,19 +6299,16 @@
                 keyIndexes?.set(movedListener._id, listenerIndex);
                 keyIndexes?.delete(id);
             }
-            const hashKey = getHashKey(listener._originalTarget);
-            if (isDefined(hashKey)) {
-                const listenersByHash = this._foreignListenersByHash.get(key);
-                const hashedListeners = listenersByHash?.get(hashKey);
-                if (hashedListeners) {
-                    const hashedLen = hashedListeners.length;
-                    for (let j = 0; j < hashedLen; j++) {
-                        if (hashedListeners[j]._id === id) {
-                            if (hashedLen === 1) {
-                                listenersByHash?.delete(hashKey);
-                                if (listenersByHash?.size === 0) {
-                                    this._foreignListenersByHash.delete(key);
-                                }
+            const listenersByHash = this._foreignListenersByHash.get(key);
+            if (listenersByHash) {
+                for (const [hashKey, hashedListeners] of listenersByHash) {
+                    if (isArray(hashedListeners)) {
+                        const hashedLen = hashedListeners.length;
+                        for (let j = 0; j < hashedLen; j++) {
+                            if (hashedListeners[j]._id !== id)
+                                continue;
+                            if (hashedLen === 2) {
+                                listenersByHash.set(hashKey, hashedListeners[j === 0 ? 1 : 0]);
                             }
                             else {
                                 hashedListeners[j] = hashedListeners[hashedLen - 1];
@@ -5579,6 +6317,12 @@
                             break;
                         }
                     }
+                    else if (hashedListeners._id === id) {
+                        listenersByHash.delete(hashKey);
+                    }
+                }
+                if (listenersByHash.size === 0) {
+                    this._foreignListenersByHash.delete(key);
                 }
             }
             this._untrackNestedListenerCandidate(listener);
@@ -5598,12 +6342,15 @@
             if (!keyList) {
                 return;
             }
-            for (let i = 0, l = keyList.length; i < l; i++) {
-                const currentListeners = this._watchers.get(keyList[i]);
+            const hasMultipleKeys = isArray(keyList);
+            const keyCount = hasMultipleKeys ? keyList.length : 1;
+            for (let i = 0; i < keyCount; i++) {
+                const key = hasMultipleKeys ? keyList[i] : keyList;
+                const currentListeners = this._watchers.get(key);
                 if (currentListeners) {
                     this._scheduleListener(currentListeners);
                 }
-                const currentForeignListeners = this._foreignListeners.get(keyList[i]);
+                const currentForeignListeners = this._foreignListeners.get(key);
                 if (currentForeignListeners) {
                     this._scheduleListener(currentForeignListeners);
                 }
@@ -5618,11 +6365,43 @@
                 this.set(this._target, key, newTargetRecord[key], this._proxy);
             }
         }
+        /** @internal Registers callback-only cleanup without generic scope-event bookkeeping. */
+        _registerDestroyCallback(callback) {
+            if (this._destroyed || this._destroyCallbacks === null) {
+                callback();
+                return;
+            }
+            (this._destroyCallbacks ?? (this._destroyCallbacks = [])).push(callback);
+        }
+        /** @internal Records native event cleanup directly on this scope. */
+        _registerEventCleanup(target, type, listener, options) {
+            if (this._destroyed || this._eventCleanups === null) {
+                if (options === undefined) {
+                    target.removeEventListener(type, listener);
+                }
+                else {
+                    target.removeEventListener(type, listener, options);
+                }
+                return;
+            }
+            (this._eventCleanups ?? (this._eventCleanups = [])).push(target, type, listener, options);
+        }
+        /** @internal Records a delegated event target without native listener bookkeeping. */
+        _registerDelegatedEventCleanup(target) {
+            if (this._destroyed || this._delegatedEventTargets === null) {
+                deleteProperty(target, EVENT_SCOPE);
+                return;
+            }
+            (this._delegatedEventTargets ?? (this._delegatedEventTargets = [])).push(target);
+        }
         /** Registers an event listener on this scope and returns a deregistration function. */
         on(name, listener) {
             let namedListeners = this._listeners.get(name);
             if (!namedListeners) {
                 namedListeners = [];
+                if (this._listeners === EMPTY_SCOPE_LISTENERS) {
+                    this._listeners = new Map();
+                }
                 this._listeners.set(name, namedListeners);
             }
             namedListeners.push(listener);
@@ -5737,6 +6516,47 @@
                 (this._listeners.has("$destroy") || this._children.length > 0)) {
                 this.broadcast("$destroy");
             }
+            const eventCleanups = this._eventCleanups;
+            this._eventCleanups = null;
+            const delegatedEventTargets = this._delegatedEventTargets;
+            this._delegatedEventTargets = null;
+            if (delegatedEventTargets) {
+                for (let i = 0, l = delegatedEventTargets.length; i < l; i++) {
+                    deleteProperty(delegatedEventTargets[i], EVENT_SCOPE);
+                }
+            }
+            if (eventCleanups) {
+                for (let i = 0, l = eventCleanups.length; i < l; i += 4) {
+                    const target = eventCleanups[i];
+                    const type = eventCleanups[i + 1];
+                    const listener = eventCleanups[i + 2];
+                    const options = eventCleanups[i + 3];
+                    try {
+                        if (options === undefined) {
+                            target.removeEventListener(type, listener);
+                        }
+                        else {
+                            target.removeEventListener(type, listener, options);
+                        }
+                    }
+                    catch (error) {
+                        this._exceptionHandler(error);
+                    }
+                    deleteProperty(target, EVENT_SCOPE);
+                }
+            }
+            const destroyCallbacks = this._destroyCallbacks;
+            this._destroyCallbacks = null;
+            if (destroyCallbacks) {
+                for (let i = 0, l = destroyCallbacks.length; i < l; i++) {
+                    try {
+                        destroyCallbacks[i]();
+                    }
+                    catch (error) {
+                        this._exceptionHandler(error);
+                    }
+                }
+            }
             if (this._children.length > 0) {
                 const children = this._children.slice();
                 for (let i = 0, l = children.length; i < l; i++) {
@@ -5750,19 +6570,17 @@
             }
             const scopeId = this.id;
             const ownedWatchers = this._ownedWatchers;
-            for (let i = 0, l = ownedWatchers.length; i < l; i++) {
-                const ref = ownedWatchers[i];
-                this._deregisterKey(ref._key, ref._id, false);
+            for (let i = 0, l = ownedWatchers.length; i < l; i += 3) {
+                this._deregisterKey(ownedWatchers[i], ownedWatchers[i + 1], false);
             }
             ownedWatchers.length = 0;
-            for (let i = 0; i < this._ownedForeignListeners.length; i++) {
-                const ref = this._ownedForeignListeners[i];
-                ref._handler._deregisterForeignKey(ref._key, ref._id);
+            const ownedForeignListeners = this._ownedForeignListeners;
+            for (let i = 0, l = ownedForeignListeners.length; i < l; i += 3) {
+                ownedForeignListeners[i]._deregisterForeignKey(ownedForeignListeners[i + 1], ownedForeignListeners[i + 2]);
             }
-            this._ownedForeignListeners.length = 0;
+            ownedForeignListeners.length = 0;
             if (this._isRoot()) {
                 this._watchers.clear();
-                this._watcherIndexes.clear();
                 this._watchersByHash.clear();
                 this._foreignListeners.clear();
                 this._foreignListenerIndexes.clear();
@@ -5777,19 +6595,17 @@
                 }
                 const parentHandler = parent._handler;
                 const children = parentHandler._children;
-                const childProxy = this._proxy;
-                const childIndex = parentHandler._childIndices.get(childProxy);
+                const childIndex = this._parentIndex;
                 const childTarget = this._target;
                 if (childTarget) {
-                    parentHandler._childTargets.delete(childTarget);
+                    parentHandler._childTargets?.delete(childTarget);
                 }
                 const lastIndex = children.length - 1;
-                if (childIndex !== undefined && childIndex <= lastIndex) {
+                if (childIndex >= 0 && childIndex <= lastIndex) {
                     const movedChild = children[lastIndex];
-                    parentHandler._childIndices.delete(childProxy);
                     if (childIndex !== lastIndex) {
                         children[childIndex] = movedChild;
-                        parentHandler._childIndices.set(movedChild, childIndex);
+                        movedChild._handler._parentIndex = childIndex;
                     }
                     children.length = lastIndex;
                 }
@@ -5797,10 +6613,9 @@
                     for (let i = 0, l = children.length; i < l; i++) {
                         if (children[i].id === scopeId) {
                             const movedChild = children[l - 1];
-                            parentHandler._childIndices.delete(children[i]);
                             if (i !== l - 1) {
                                 children[i] = movedChild;
-                                parentHandler._childIndices.set(movedChild, i);
+                                movedChild._handler._parentIndex = i;
                             }
                             children.length = l - 1;
                             break;
@@ -5811,7 +6626,6 @@
             this._scheduled = [];
             this._foreignProxies.clear();
             this._foreignProxyTargets = new WeakMap();
-            this._watcherIndexes = new Map();
             this._watchersByHash = new Map();
             this._foreignListeners = new Map();
             this._foreignListenerIndexes = new Map();
@@ -5821,43 +6635,48 @@
             if (this._isRoot()) {
                 this._listenerStats._nestedCandidateCount = 0;
             }
-            this._childIndices = new WeakMap();
-            this._childTargets = new WeakMap();
+            this._parentIndex = -1;
+            this._childTargets = undefined;
             this._listeners.clear();
             this._destroyed = true;
             queueDestroyedScopeCleanup(this);
         }
         /** @internal Completes deferred reference cleanup after destroy observers have run. */
         _cleanupDestroyedScope() {
-            if (!this._destroyed)
-                return;
-            if (this._isRoot()) {
-                this._children.length = 0;
+            if (this._destroyed) {
+                if (this._isRoot()) {
+                    this._children.length = 0;
+                }
+                else {
+                    this._children.length = 0;
+                    this._watchers = new Map();
+                    this._watchersByHash = new Map();
+                }
+                this._target = null;
+                this._scopeTarget = undefined;
+                this._proxy = undefined;
+                this._watchIdentity = undefined;
+                if (!this._isRoot()) {
+                    this.parent = undefined;
+                    this.root = undefined;
+                }
+                this._propertyMap = {
+                    destroy: this._propertyMap.destroy === unboundScopeMethod
+                        ? this.destroy.bind(this)
+                        : this._propertyMap.destroy,
+                    _handler: this,
+                    id: this.id,
+                    _isRoot: this._propertyMap._isRoot === unboundScopeMethod
+                        ? this._isRoot.bind(this)
+                        : this._propertyMap._isRoot,
+                    parent: this.parent,
+                    _proxy: this._proxy,
+                    root: this.root,
+                    scopeName: this.scopeName,
+                    _target: this._target,
+                    _children: this._children,
+                };
             }
-            else {
-                this._children.length = 0;
-                this._watchers = new Map();
-                this._watcherIndexes = new Map();
-                this._watchersByHash = new Map();
-            }
-            this._target = null;
-            this._proxy = undefined;
-            if (!this._isRoot()) {
-                this.parent = undefined;
-                this.root = undefined;
-            }
-            this._propertyMap = {
-                destroy: this._propertyMap.destroy,
-                _handler: this,
-                id: this.id,
-                _isRoot: this._propertyMap._isRoot,
-                parent: this.parent,
-                _proxy: this._proxy,
-                root: this.root,
-                scopeName: this.scopeName,
-                _target: this._target,
-                _children: this._children,
-            };
         }
         /** @internal Resolves the watched value and notifies a single listener. */
         _notifyBindingListener(listener) {
@@ -5874,7 +6693,12 @@
                     this._notifyListener(listener, sourceHandler, sourceHandler, sourceProperty);
                     return;
                 }
-                listener._listenerFn(value, listener._originalTarget);
+                if (listener._listenerContext === undefined) {
+                    listener._listenerFn(value, getListenerOwnerTarget(listener));
+                }
+                else {
+                    listener._listenerFn(value, getListenerOwnerTarget(listener), listener._listenerContext);
+                }
             }
             catch (err) {
                 this._exceptionHandler(err);
@@ -5882,14 +6706,26 @@
         }
         /** @internal Resolves the watched value and notifies a single listener. */
         _notifyListener(listener, target, sourceHandler, sourceProperty) {
-            const { _originalTarget, _listenerFn, _watchFn } = listener;
+            const { _listenerFn, _watchFn, _listenerContext } = listener;
+            const owner = listener._owner;
+            const _originalTarget = listener._originalTarget ??
+                owner?._scopeTarget ??
+                owner?._target ??
+                target;
             try {
                 let hasStableForeignSource = false;
                 if (sourceProperty !== undefined) {
+                    const plannedDescriptor = listener._plannedForeignWatchDescriptor;
                     const descriptors = listener._foreignWatchDescriptors;
-                    if (descriptors) {
-                        for (let i = 0, l = descriptors.length; i < l; i++) {
-                            const dependency = descriptors[i]._dependency;
+                    const descriptorCount = plannedDescriptor
+                        ? 1
+                        : (descriptors?.length ?? 0);
+                    if (descriptorCount > 0) {
+                        for (let i = 0; i < descriptorCount; i++) {
+                            const descriptor = plannedDescriptor ?? assertInvariantDefined(descriptors?.[i]);
+                            const dependency = plannedDescriptor
+                                ? listener._plannedForeignWatchDependency
+                                : descriptor._dependency;
                             if (dependency?._key !== sourceProperty) {
                                 continue;
                             }
@@ -5897,7 +6733,7 @@
                                 dependency._handler === sourceHandler ||
                                     dependency._handler._target === target;
                             if (!hasStableForeignSource && isString(sourceProperty)) {
-                                const parentPath = getForeignProxyParentPath(descriptors[i]._watchProp);
+                                const parentPath = getForeignProxyParentPath(descriptor._watchProp);
                                 hasStableForeignSource =
                                     parentPath !== undefined &&
                                         !parentPath.includes(sourceProperty);
@@ -5915,7 +6751,8 @@
                     newVal = _watchFn(target);
                 }
                 if (!isFunction(newVal) && !isArray(newVal)) {
-                    const hasForeignDependency = listener._foreignWatchDescriptors?.some((descriptor) => descriptor._dependency);
+                    const hasForeignDependency = listener._plannedForeignWatchDependency !== undefined ||
+                        listener._foreignWatchDescriptors?.some((descriptor) => descriptor._dependency) === true;
                     if (listener._dedupeUnchanged && !hasForeignDependency) {
                         if (listener._hasLastValue &&
                             simpleCompare(listener._lastValue, newVal)) {
@@ -5924,11 +6761,17 @@
                         listener._hasLastValue = true;
                         listener._lastValue = newVal;
                     }
-                    _listenerFn(newVal, _originalTarget);
+                    if (_listenerContext === undefined) {
+                        _listenerFn(newVal, _originalTarget);
+                    }
+                    else {
+                        _listenerFn(newVal, _originalTarget, _listenerContext);
+                    }
                     return;
                 }
                 const notify = (value) => {
-                    const hasForeignDependency = listener._foreignWatchDescriptors?.some((descriptor) => descriptor._dependency);
+                    const hasForeignDependency = listener._plannedForeignWatchDependency !== undefined ||
+                        listener._foreignWatchDescriptors?.some((descriptor) => descriptor._dependency) === true;
                     if (listener._dedupeUnchanged && !hasForeignDependency) {
                         if (listener._hasLastValue &&
                             simpleCompare(listener._lastValue, value)) {
@@ -5937,7 +6780,12 @@
                         listener._hasLastValue = true;
                         listener._lastValue = value;
                     }
-                    _listenerFn(value, _originalTarget);
+                    if (_listenerContext === undefined) {
+                        _listenerFn(value, _originalTarget);
+                    }
+                    else {
+                        _listenerFn(value, _originalTarget, _listenerContext);
+                    }
                 };
                 if (isFunction(newVal)) {
                     if (!listener._invokeWatchFn && listener._watchProp) {
@@ -6007,7 +6855,7 @@
         let count = 0;
         for (const watchers of model._watchers.values()) {
             for (let i = 0, l = watchers.length; i < l; i++) {
-                if (childIds.has(watchers[i]._scopeId)) {
+                if (childIds.has(watchers[i]._scopeId ?? watchers[i]._owner.id)) {
                     count++;
                 }
             }
@@ -6033,20 +6881,159 @@
         return ids;
     }
 
-    const SCE_CONTEXTS = {
-        // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
-        _HTML: "html",
-        // An URL used in a context where it refers to the source of media, which are not expected to be run
-        // as scripts, such as an image, audio, video, etc.
-        _MEDIA_URL: "mediaUrl",
-        // An URL used in a context where it does not refer to a resource that loads code.
-        // A value that can be trusted as a URL can also trusted as a MEDIA_URL.
-        _URL: "url",
-        // RESOURCE_URL is a subtype of URL used where the referred-to resource could be interpreted as
-        // code. (e.g. ng-include, script src binding, templateUrl)
-        // A value that can be trusted as a RESOURCE_URL, can also trusted as a URL and a MEDIA_URL.
-        _RESOURCE_URL: "resourceUrl",
-    };
+    const policies = new WeakMap();
+    function getFactory(platformWindow) {
+        return platformWindow
+            .trustedTypes;
+    }
+    function runHtmlPolicy(html, policy) {
+        const result = policy(html);
+        if (!isString(result)) {
+            throw new TypeError("$compile.htmlPolicy must return a string.");
+        }
+        return result;
+    }
+    /** @internal */
+    function prepareHtmlBinding(value, policy, platformWindow) {
+        value = deProxy(value);
+        const factory = getFactory(platformWindow);
+        if (factory?.isHTML(value))
+            return value;
+        const html = stringify$1(value);
+        if (!factory)
+            return runHtmlPolicy(html, policy);
+        let nativePolicy = policies.get(platformWindow);
+        if (!nativePolicy) {
+            // Pass the runtime's callback per invocation so policies can share a CSP name.
+            nativePolicy = factory.createPolicy("angular-ts-html", {
+                createHTML: runHtmlPolicy,
+            });
+            policies.set(platformWindow, nativePolicy);
+        }
+        return nativePolicy.createHTML(html, policy);
+    }
+
+    const scriptPolicies = new WeakMap();
+    const scriptUrlPolicies = new WeakMap();
+    function runPolicy(value, policy, context) {
+        const result = policy(value);
+        if (!isString(result))
+            throw new TypeError(`$compile.${context}Policy must return a string.`);
+        return result;
+    }
+    /** @internal */
+    function prepareScriptBinding(value, callback, platformWindow, context) {
+        value = deProxy(value);
+        const factory = platformWindow.trustedTypes;
+        if (context === "script"
+            ? factory?.isScript(value)
+            : factory?.isScriptURL(value))
+            return value;
+        const source = stringify$1(value);
+        if (!factory)
+            return runPolicy(source, callback, context);
+        const policies = context === "script" ? scriptPolicies : scriptUrlPolicies;
+        let policy = policies.get(platformWindow);
+        if (!policy) {
+            policy = factory.createPolicy(context === "script" ? "angular-ts-script" : "angular-ts-script-url", context === "script"
+                ? {
+                    createScript: (input, rule) => runPolicy(input, rule, "script"),
+                }
+                : {
+                    createScriptURL: (input, rule) => runPolicy(input, rule, "scriptUrl"),
+                });
+            policies.set(platformWindow, policy);
+        }
+        return context === "script"
+            ? policy.createScript(source, callback)
+            : policy.createScriptURL(source, callback);
+    }
+
+    const policyError = createErrorFactory("$compile");
+    const linkProtocols = /^(https?|s?ftp|mailto|tel|file):$/;
+    const mediaProtocols = /^(https?|ftp|file|blob):$/;
+    const mediaData = /^data:image\/(?:png|gif|jpe?g|webp|avif|bmp|x-icon)(?:;|,)/i;
+    const policyKeys = [
+        "htmlPolicy",
+        "urlPolicy",
+        "mediaUrlPolicy",
+        "resourceUrlPolicy",
+        "scriptPolicy",
+        "scriptUrlPolicy",
+    ];
+    function rejectHtml(html) {
+        if (!html)
+            return html;
+        throw policyError("unsafe", "HTML strings require a $compile.htmlPolicy callback.");
+    }
+    function rejectScript(script) {
+        if (!script)
+            return script;
+        throw policyError("unsafe", "Script strings require a $compile.scriptPolicy callback.");
+    }
+    function applyUrlPolicy(value, policy, context, platformWindow) {
+        const url = String(deProxy(value));
+        if (policy) {
+            const result = policy(url);
+            if (!isString(result))
+                throw new TypeError(`$compile.${context}Policy must return a string.`);
+            return result;
+        }
+        if (!url)
+            return url;
+        if (context !== "resourceUrl" && url.startsWith("unsafe:"))
+            return url;
+        const resolved = new URL(url, platformWindow.document.baseURI);
+        if (context === "resourceUrl") {
+            if (resolved.origin === platformWindow.origin &&
+                /^https?:$/.test(resolved.protocol))
+                return url;
+            throw policyError("insecurl", "Resource URL is not allowed by $compile.resourceUrlPolicy: {0}", url);
+        }
+        const allowed = context === "url"
+            ? linkProtocols.test(resolved.protocol)
+            : mediaProtocols.test(resolved.protocol) || mediaData.test(resolved.href);
+        return allowed ? url : `unsafe:${resolved.href}`;
+    }
+    /** @internal */
+    function createBindingPolicies() {
+        let configuration = {};
+        return {
+            _configure(config) {
+                for (const key of policyKeys) {
+                    if (config[key] !== undefined && !isFunction(config[key])) {
+                        throw new TypeError(`$compile.${key} must be a function.`);
+                    }
+                }
+                for (const key of policyKeys) {
+                    if (config[key] !== undefined)
+                        configuration[key] = config[key];
+                }
+            },
+            _apply(context, value, platformWindow = window) {
+                value = deProxy(value);
+                if (context === "html")
+                    return prepareHtmlBinding(value, configuration.htmlPolicy ?? rejectHtml, platformWindow);
+                if (context === "script")
+                    return prepareScriptBinding(value, configuration.scriptPolicy ?? rejectScript, platformWindow, "script");
+                if (context === "scriptUrl") {
+                    if (value === null || value === undefined)
+                        return value;
+                    return prepareScriptBinding(value, configuration.scriptUrlPolicy ??
+                        ((url) => applyUrlPolicy(url, undefined, "resourceUrl", platformWindow)), platformWindow, "scriptUrl");
+                }
+                if (!context || value === null || value === undefined)
+                    return value;
+                return applyUrlPolicy(value, configuration[`${context}Policy`], context, platformWindow);
+            },
+            _resourceUrl(value, platformWindow = window) {
+                return applyUrlPolicy(value, configuration.resourceUrlPolicy, "resourceUrl", platformWindow);
+            },
+            _destroy() {
+                configuration = {};
+            },
+        };
+    }
 
     /**
      * Creates a resolver that instantiates `$animate` only when animation-aware code
@@ -6066,26 +7053,6 @@
     function tokenizeClassString(value) {
         const trimmed = value.trim();
         return trimmed ? trimmed.split(/\s+/) : [];
-    }
-    function tokenDifference(str1, str2) {
-        if (str1 === str2) {
-            return [];
-        }
-        const tokens1 = tokenizeClassString(str1);
-        if (tokens1.length === 0) {
-            return [];
-        }
-        const excludedTokens = new Set(tokenizeClassString(str2));
-        const seenTokens = new Set();
-        const difference = [];
-        for (let i = 0; i < tokens1.length; i++) {
-            const token = tokens1[i];
-            if (!excludedTokens.has(token) && !seenTokens.has(token)) {
-                seenTokens.add(token);
-                difference.push(token);
-            }
-        }
-        return difference;
     }
     function setClass(element, addClasses, removeClasses, getAnimate) {
         if (!addClasses && !removeClasses)
@@ -6142,7 +7109,46 @@
     function updateClass(element, newClasses, oldClasses, getAnimate) {
         if (newClasses === oldClasses)
             return;
-        setClass(element, tokenDifference(newClasses, oldClasses).join(" "), tokenDifference(oldClasses, newClasses).join(" "), getAnimate);
+        const newTokens = tokenizeClassString(newClasses);
+        const oldTokens = tokenizeClassString(oldClasses);
+        let toAdd;
+        let toRemove;
+        if (oldTokens.length === 0) {
+            toAdd = newTokens;
+            toRemove = [];
+        }
+        else if (newTokens.length === 0) {
+            toAdd = [];
+            toRemove = oldTokens;
+        }
+        else {
+            const newTokenSet = new Set(newTokens);
+            const oldTokenSet = new Set(oldTokens);
+            toAdd = [];
+            toRemove = [];
+            for (const token of newTokenSet) {
+                if (!oldTokenSet.has(token))
+                    toAdd.push(token);
+            }
+            for (const token of oldTokenSet) {
+                if (!newTokenSet.has(token))
+                    toRemove.push(token);
+            }
+        }
+        if (toAdd.length === 0 && toRemove.length === 0)
+            return;
+        const targetElement = getDirectiveHostElement(element);
+        if (!targetElement)
+            return;
+        const animate = getAnimateForNode(getAnimate, targetElement);
+        if (animate) {
+            animate.setClass(targetElement, toAdd.join(" "), toRemove.join(" "));
+            return;
+        }
+        if (toAdd.length)
+            targetElement.classList.add(...toAdd);
+        if (toRemove.length)
+            targetElement.classList.remove(...toRemove);
     }
 
     const AFTER_RENDER_EVENT_SCHEDULER_KEY = "$$ar";
@@ -6306,21 +7312,113 @@
         });
     }
 
+    const DELEGATED_EVENT_TYPE = Symbol();
+    const DELEGATED_EVENT_LISTENER = Symbol();
+    const DELEGATED_EVENT_LISTENERS = Symbol();
+    const DELEGATED_EVENT_DOCUMENT = Symbol();
+    const delegatedEvents = new WeakSet();
+    const directEventTypes = new Set([
+        "abort",
+        "blur",
+        "error",
+        "focus",
+        "load",
+        "mouseenter",
+        "mouseleave",
+        "scroll",
+    ]);
+    const delegatedRootEvents = new WeakMap();
+    /** Returns whether an event type can use element-to-root delegation. */
+    function canDelegateEvent(type) {
+        return !directEventTypes.has(type);
+    }
+    function dispatchDelegatedEvent(event) {
+        if (delegatedEvents.has(event))
+            return;
+        delegatedEvents.add(event);
+        const path = event.composedPath();
+        for (let i = 0, l = path.length; i < l; i++) {
+            const target = path[i];
+            if (!(target instanceof Element))
+                continue;
+            const delegatedTarget = target;
+            const listener = delegatedTarget[DELEGATED_EVENT_TYPE] === event.type
+                ? delegatedTarget[DELEGATED_EVENT_LISTENER]
+                : delegatedTarget[DELEGATED_EVENT_LISTENERS]?.get(event.type);
+            if (listener)
+                listener.call(target, event);
+            // cancelBubble is the only observable signal that stopPropagation() was called.
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
+            if (event.cancelBubble)
+                return;
+        }
+    }
+    function addDelegatedRootEventListener(root, type) {
+        const eventTypes = delegatedRootEvents.get(root);
+        if (eventTypes === type ||
+            (eventTypes instanceof Set && eventTypes.has(type))) {
+            return;
+        }
+        if (eventTypes === undefined) {
+            delegatedRootEvents.set(root, type);
+            root.addEventListener(type, dispatchDelegatedEvent);
+            return;
+        }
+        if (typeof eventTypes === "string") {
+            delegatedRootEvents.set(root, new Set([eventTypes, type]));
+        }
+        else {
+            eventTypes.add(type);
+        }
+        root.addEventListener(type, dispatchDelegatedEvent);
+    }
+    function addDelegatedEventListener(target, type, listener) {
+        const primaryType = target[DELEGATED_EVENT_TYPE];
+        if (primaryType === undefined || primaryType === type) {
+            target[DELEGATED_EVENT_TYPE] = type;
+            target[DELEGATED_EVENT_LISTENER] = listener;
+        }
+        else {
+            let listeners = target[DELEGATED_EVENT_LISTENERS];
+            if (!listeners) {
+                listeners = new Map();
+                const primaryListener = target[DELEGATED_EVENT_LISTENER];
+                if (primaryListener)
+                    listeners.set(primaryType, primaryListener);
+                target[DELEGATED_EVENT_LISTENERS] = listeners;
+            }
+            listeners.set(type, listener);
+        }
+        const document = target.ownerDocument;
+        const root = target.getRootNode();
+        if (root !== document) {
+            addDelegatedRootEventListener(root, type);
+        }
+        if (listener[DELEGATED_EVENT_DOCUMENT] === document)
+            return;
+        addDelegatedRootEventListener(document, type);
+        listener[DELEGATED_EVENT_DOCUMENT] = document;
+    }
+    /** Registers a delegated element event whose eligibility was resolved at compile time. */
+    function addScopeDelegatedEventListener(scope, target, type, listener) {
+        addDelegatedEventListener(target, type, listener);
+        registerScopeDelegatedEventCleanup(scope, target);
+    }
     function addScopeEventListener(scope, target, type, listener, options) {
+        if (options === undefined &&
+            target instanceof Element &&
+            typeof listener === "function" &&
+            canDelegateEvent(type)) {
+            addScopeDelegatedEventListener(scope, target, type, listener);
+            return;
+        }
         if (options === undefined) {
             target.addEventListener(type, listener);
         }
         else {
             target.addEventListener(type, listener, options);
         }
-        scope.on("$destroy", () => {
-            if (options === undefined) {
-                target.removeEventListener(type, listener);
-            }
-            else {
-                target.removeEventListener(type, listener, options);
-            }
-        });
+        registerScopeEventCleanup(scope, target, type, listener, options);
     }
 
     /*
@@ -6385,29 +7483,50 @@
                 if (!isString(expression))
                     return () => undefined;
                 const eventBehavior = readEventBehavior(element);
-                const fn = $parse(expression);
-                return (scope, element) => {
-                    const handler = (event) => {
-                        if (eventBehavior._prevent) {
-                            event.preventDefault();
-                        }
-                        if (eventBehavior._stop) {
-                            event.stopPropagation();
-                        }
-                        try {
-                            fn(scope, { $event: event });
-                        }
-                        catch (error) {
-                            $exceptionHandler(error);
-                        }
-                        finally {
-                            scheduleEventAfterRender(scope, element);
-                        }
-                    };
-                    addScopeEventListener(scope, element, eventName, handler, eventBehavior._listenerOptions);
+                return {
+                    post: linkEventDirective,
+                    _postLinkCtx: {
+                        _delegated: eventBehavior._listenerOptions === undefined &&
+                            canDelegateEvent(eventName),
+                        _eventBehavior: eventBehavior,
+                        _eventName: eventName,
+                        _exceptionHandler: $exceptionHandler,
+                        _fn: $parse(expression),
+                    },
                 };
             },
         };
+    }
+    /** Links an event directive from immutable compile-time state. */
+    function linkEventDirective(linkState, scope, element) {
+        const eventTarget = element;
+        eventTarget[EVENT_SCOPE] = scope;
+        const handler = (linkState._handler ?? (linkState._handler = function eventHandler(event) {
+            const linkedScope = this[EVENT_SCOPE];
+            if (!linkedScope)
+                return;
+            if (linkState._eventBehavior._prevent) {
+                event.preventDefault();
+            }
+            if (linkState._eventBehavior._stop) {
+                event.stopPropagation();
+            }
+            try {
+                linkState._fn(linkedScope, { $event: event });
+            }
+            catch (error) {
+                linkState._exceptionHandler(error);
+            }
+            finally {
+                scheduleEventAfterRender(linkedScope, this);
+            }
+        }));
+        if (linkState._delegated) {
+            addScopeDelegatedEventListener(scope, element, linkState._eventName, handler);
+        }
+        else {
+            addScopeEventListener(scope, element, linkState._eventName, handler, linkState._eventBehavior._listenerOptions);
+        }
     }
     function readEventBehavior(element) {
         const prevent = hasNormalizedAttr(element, "eventPrevent");
@@ -6503,13 +7622,25 @@
     }
 
     let nextFragmentId = 1;
+    let compiledFragmentRetentionConsumers = 0;
+    const emptyFragmentRetentionDomWork = [];
     const compiledFragmentsByNode = new WeakMap();
     const compiledFragmentParents = new WeakMap();
     const fragmentRetentionDomStates = new WeakMap();
     const compiledFragmentStatesByRoot = new WeakMap();
-    const compiledFragmentScopeDestroyDeregisters = new WeakMap();
+    /** @internal Enables retained-view DOM scheduling while a supporting runtime is active. */
+    function enableCompiledFragmentRetention() {
+        compiledFragmentRetentionConsumers++;
+        let enabled = true;
+        return () => {
+            if (!enabled)
+                return;
+            enabled = false;
+            compiledFragmentRetentionConsumers--;
+        };
+    }
     function createPublicLinkCompiledFragmentRecord(root, parentScope, nodes, ownsNodes = true) {
-        const id = getInitialFragmentId({});
+        const id = getNextFragmentId();
         ensureLinkedFragmentCanBeCreated(id, root);
         const record = {
             id,
@@ -6521,12 +7652,13 @@
             diagnostics: createPublicLinkDiagnostics(root),
             linked: true,
             disposed: false,
+            _scopeDestroyDeregister: undefined,
             dispose: disposeCompiledFragmentRecordSelf,
         };
         return registerCompiledFragmentRecord(record, false);
     }
     function createPublicLinkSingleNodeCompiledFragmentRecord(root, parentScope, node, ownsNodes = true) {
-        const id = getInitialFragmentId({});
+        const id = getNextFragmentId();
         ensureLinkedFragmentCanBeCreated(id, root);
         const record = {
             id,
@@ -6538,6 +7670,7 @@
             diagnostics: createPublicLinkDiagnostics(root),
             linked: true,
             disposed: false,
+            _scopeDestroyDeregister: undefined,
             dispose: disposeCompiledFragmentRecordSelf,
         };
         return registerCompiledFragmentRecord(record, false);
@@ -6834,8 +7967,8 @@
     function clearFragmentArray(record, key) {
         getFragmentArray(record, key)?.splice(0);
     }
-    function getInitialFragmentId(options) {
-        return options.id ?? `fragment:${String(nextFragmentId++)}`;
+    function getNextFragmentId() {
+        return `fragment:${String(nextFragmentId++)}`;
     }
     function ensureLinkedFragmentCanBeCreated(id, root, linked) {
         if (!root.destroyed)
@@ -6862,7 +7995,7 @@
         else {
             registerCompiledFragmentScopeLifecycle(record);
         }
-        return retentionAware
+        return retentionAware && compiledFragmentRetentionConsumers > 0
             ? registerCompiledFragmentRetentionDomAdapter(record)
             : record;
     }
@@ -6872,19 +8005,22 @@
         if (!parentScope || !root || parentScope === root.rootScope)
             return;
         const deregister = parentScope.on("$destroy", () => {
-            compiledFragmentScopeDestroyDeregisters.delete(record);
+            record._scopeDestroyDeregister = undefined;
             disposeCompiledFragmentRecord(record, false);
         });
-        compiledFragmentScopeDestroyDeregisters.set(record, deregister);
+        record._scopeDestroyDeregister = deregister;
+        unregisterRootCompiledFragment(record, record.root);
     }
     function disposeCompiledFragmentScopeLifecycle(record) {
-        const deregister = compiledFragmentScopeDestroyDeregisters.get(record);
+        const deregister = record._scopeDestroyDeregister;
         if (!deregister)
             return;
-        compiledFragmentScopeDestroyDeregisters.delete(record);
+        record._scopeDestroyDeregister = undefined;
         deregister();
     }
     function registerRootCompiledFragment(record) {
+        if (record._scopeDestroyDeregister)
+            return;
         const root = assertInvariantDefined(record.root);
         let state = compiledFragmentStatesByRoot.get(root);
         if (!state) {
@@ -6935,12 +8071,13 @@
         }
         const state = {
             paused: false,
-            pending: [],
+            pending: emptyFragmentRetentionDomWork,
             deferredPrefixCount: 0,
             deregisterPause: parentScope.on("$viewRetentionPause", (...args) => {
                 if (!shouldHandleViewRetentionPause(args, "schedulers")) {
                     return;
                 }
+                state.pending = [];
                 state.paused = true;
                 state.deferredPrefixCount = 0;
             }),
@@ -7139,6 +8276,19 @@
             _binding: binding,
         });
     }
+    function handleProgrammaticEvent(eventValue) {
+        try {
+            if (isFunction(this._listener)) {
+                Reflect.apply(this._listener, eventValue.currentTarget, [eventValue]);
+            }
+            else {
+                this._listener.handleEvent(eventValue);
+            }
+        }
+        catch (error) {
+            this._exceptionHandler?.(error);
+        }
+    }
     function firstKeyedStateNode(state) {
         for (let index = 0; index < state._children.length; index++) {
             const nodes = state._children[index]._nodes;
@@ -7219,6 +8369,12 @@
             (attributeGroup in value || propertyGroup in value));
     }
     function setDomProperty(element, name, value) {
+        if (getNodeName$1(element) === "script" &&
+            (name === "src" || name === "href") &&
+            (value === null || value === undefined)) {
+            element.removeAttribute(name);
+            return;
+        }
         if (name in element && Reflect.set(element, name, value)) {
             return;
         }
@@ -7226,11 +8382,7 @@
             element.removeAttribute(name);
             return;
         }
-        element.setAttribute(name, value === true
-            ? ""
-            : typeof value === "string"
-                ? value
-                : String(value));
+        element.setAttribute(name, (value === true ? "" : value));
     }
     const booleanAttributes = new Set([
         "allowfullscreen",
@@ -7259,7 +8411,32 @@
         "reversed",
         "selected",
     ]);
-    const deferredStaticProperties = new Set(["innerhtml", "outerhtml", "srcdoc"]);
+    const deferredStaticProperties = new Set([
+        "innerhtml",
+        "outerhtml",
+        "srcdoc",
+        "src",
+        "srcset",
+        "href",
+        "action",
+        "formaction",
+        "data",
+        "codebase",
+        "poster",
+        "background",
+        "cite",
+        "longdesc",
+        "usemap",
+        "ping",
+        "manifest",
+        "profile",
+    ]);
+    function requiresBindingPolicy(element, name) {
+        const property = name.toLowerCase();
+        return (deferredStaticProperties.has(property) ||
+            (element.localName === "script" &&
+                ["text", "textcontent", "innertext"].includes(property)));
+    }
     function setDomAttribute(element, name, value) {
         if (value === null ||
             value === undefined ||
@@ -7269,9 +8446,15 @@
         }
         element.setAttribute(name, value === true && booleanAttributes.has(name.toLowerCase())
             ? ""
-            : String(value));
+            : value);
     }
     function setExplicitDomProperty(element, name, value) {
+        if ((value === null || value === undefined) &&
+            element.localName === "script" &&
+            (name === "src" || name === "href")) {
+            element.removeAttribute(name);
+            return;
+        }
         if (!Reflect.set(element, name, value)) {
             throw new TypeError(`DOM property '${name}' cannot be assigned.`);
         }
@@ -7289,7 +8472,7 @@
     }
     function applyProperty(element, propertyName, propertyValue, target) {
         if (target === "property") {
-            if (deferredStaticProperties.has(propertyName.toLowerCase())) {
+            if (requiresBindingPolicy(element, propertyName)) {
                 addPendingBinding(element, {
                     _kind: "static-property",
                     _name: propertyName,
@@ -7328,6 +8511,7 @@
                         : normalizedEventProperty.slice(2),
                     _listener: propertyValue,
                     _options: metadata?._kind === "event" ? metadata._options : undefined,
+                    handleEvent: handleProgrammaticEvent,
                 });
             }
         }
@@ -7339,7 +8523,7 @@
                 _target: target === "auto" && propertyName !== "class" ? "property" : target,
             });
         }
-        else if (deferredStaticProperties.has(propertyName.toLowerCase())) {
+        else if (requiresBindingPolicy(element, propertyName)) {
             addPendingBinding(element, {
                 _kind: "static-property",
                 _name: propertyName,
@@ -7400,12 +8584,41 @@
         return nodes;
     }
     function appendChildren(element, children, startIndex) {
-        const nodes = [];
         for (let index = startIndex; index < children.length; index++) {
-            materializeChild(children[index], nodes);
+            appendChild(element, children[index]);
         }
-        for (let index = 0; index < nodes.length; index++) {
-            element.appendChild(nodes[index]);
+    }
+    function appendChild(element, value) {
+        if (isArray(value)) {
+            for (let index = 0; index < value.length; index++) {
+                appendChild(element, value[index]);
+            }
+            return;
+        }
+        if (value instanceof Node) {
+            element.appendChild(value);
+            return;
+        }
+        if (isFunction(value)) {
+            const metadata = getBindingMetadata(value);
+            const anchor = document.createComment(metadata?._kind === "keyed-child" ? "ng-view-each" : "ng-view-binding");
+            if (metadata?._kind === "keyed-child") {
+                addPendingBinding(anchor, {
+                    _kind: "keyed-child",
+                    _binding: metadata._binding,
+                });
+            }
+            else {
+                addPendingBinding(anchor, {
+                    _kind: "child",
+                    _read: value,
+                });
+            }
+            element.appendChild(anchor);
+            return;
+        }
+        if (value !== null && value !== undefined && typeof value !== "boolean") {
+            element.appendChild(document.createTextNode(String(value)));
         }
     }
     function createTag(namespaceUri, name, ...args) {
@@ -7675,7 +8888,7 @@
     function linkChildValue(value, parent, anchor, runtime) {
         return linkMaterializedChildren(materializeProgrammaticView(value), parent, anchor, runtime);
     }
-    function linkMaterializedChildren(rawNodes, parent, anchor, runtime) {
+    function linkMaterializedChildren(rawNodes, parent, anchor, runtime, ownBindings = false) {
         const children = [];
         for (let index = 0; index < rawNodes.length; index++) {
             const rawNode = rawNodes[index];
@@ -7700,7 +8913,7 @@
             children.push({
                 _nodes: linkedNodes,
                 _records: uniqueRecords(linkedNodes),
-                _disposeBindings: activateProgrammaticBindings(linkedNodes, runtime),
+                _disposeBindings: activateProgrammaticBindings(linkedNodes, runtime, ownBindings),
             });
         }
         return children;
@@ -7926,7 +9139,7 @@
                     const replacements = new Array(items.length);
                     for (let index = 0; index < items.length; index++) {
                         const item = items[index];
-                        const holder = createScope({ value: item }, runtime._scope._handler);
+                        const holder = createScopeExpressionValue(item);
                         replacements[index] = {
                             _holder: holder,
                             _nodes: materializeProgrammaticView(binding._render(() => holder.value)),
@@ -7972,7 +9185,7 @@
                 for (let index = retainedLength; index < items.length; index++) {
                     const item = items[index];
                     const key = appendedKeys[index - retainedLength];
-                    const holder = createScope({ value: item }, runtime._scope._handler);
+                    const holder = createScopeExpressionValue(item);
                     const children = linkMaterializedChildren(materializeProgrammaticView(binding._render(() => holder.value)), parent, anchor, runtime);
                     states.set(key, {
                         _key: key,
@@ -7985,7 +9198,7 @@
                 return;
             }
             const plan = planKeyedReconciliation(items, states, binding._key, (state) => state._index, (item) => {
-                const holder = createScope({ value: item }, runtime._scope._handler);
+                const holder = createScopeExpressionValue(item);
                 return {
                     _holder: holder,
                     _nodes: materializeProgrammaticView(binding._render(() => holder.value)),
@@ -8071,22 +9284,11 @@
                 const binding = multipleBindings ? bindings[index] : bindings;
                 if (binding._kind === "event") {
                     const eventTarget = node;
-                    const listener = function (eventValue) {
-                        try {
-                            if (isFunction(binding._listener)) {
-                                Reflect.apply(binding._listener, this, [eventValue]);
-                            }
-                            else {
-                                binding._listener.handleEvent(eventValue);
-                            }
-                        }
-                        catch (error) {
-                            runtime._exceptionHandler(error);
-                        }
-                    };
-                    eventTarget.addEventListener(binding._name, listener, binding._options);
+                    binding._exceptionHandler = runtime._exceptionHandler;
+                    eventTarget.addEventListener(binding._name, binding, binding._options);
                     disposers.push(() => {
-                        eventTarget.removeEventListener(binding._name, listener, binding._options);
+                        eventTarget.removeEventListener(binding._name, binding, binding._options);
+                        binding._exceptionHandler = undefined;
                     });
                 }
                 else if (binding._kind === "static-property") {
@@ -8130,7 +9332,7 @@
             activateNodeBindings(snapshot[index], runtime, disposers);
         }
     }
-    function activateProgrammaticBindings(nodes, runtime) {
+    function activateProgrammaticBindings(nodes, runtime, ownBindings) {
         const disposers = [];
         for (let index = 0; index < nodes.length; index++) {
             activateNodeBindings(nodes[index], runtime, disposers);
@@ -8141,8 +9343,8 @@
             }
             disposers.length = 0;
         };
-        const release = runtime._ownDisposer(dispose);
-        disposers.push(release);
+        if (ownBindings)
+            disposers.push(runtime._ownDisposer(dispose));
         const owner = uniqueRecords(nodes).at(0);
         if (owner)
             addCompiledFragmentDisposer(owner, dispose);
@@ -8267,7 +9469,7 @@
                     },
                 };
                 const boundary = marker.nextSibling;
-                linkMaterializedChildren(rawNodes, element, boundary, runtime);
+                linkMaterializedChildren(rawNodes, element, boundary, runtime, true);
             };
             const post = (_scope, element) => {
                 findMarker(element)?.remove();
@@ -8729,6 +9931,7 @@
             candidate._attr !== undefined);
     }
     const EMPTY_LINK_FN_RECORDS = Object.freeze([]);
+    const EMPTY_ELEMENT_CONTROLLERS = Object.freeze({});
     function readNormalizedElementAttribute(element, normalizedName) {
         const hostElement = getDirectiveHostElement(element);
         const attrElement = hostElement ?? element;
@@ -8781,6 +9984,7 @@
     class CompileRegistry {
         /** Configures directive registration and compile-time provider behavior. */
         constructor($compileLifecycle) {
+            const policies = (this._bindingPolicies = createBindingPolicies());
             const directiveFactoryRegistry = {};
             const componentBindingRegistry = nullObject();
             const bindingCache = nullObject();
@@ -8858,15 +10062,13 @@
             function sanitizeProgrammaticProperty($injector, element, propertyName, value) {
                 const elementName = element.localName.toLowerCase();
                 const normalizedPropertyName = propertyName.toLowerCase();
-                const security = $injector.get(_sce);
+                const trustedContext = (PROP_CONTEXTS[`${elementName}|${normalizedPropertyName}`] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]);
+                const platformWindow = element.ownerDocument.defaultView ?? window;
                 if (normalizedPropertyName === "srcset" &&
                     (elementName === "img" || elementName === "source")) {
-                    return sanitizeProgrammaticSrcset(value, security.valueOf.bind(security), security.getTrustedMediaUrl.bind(security));
+                    return sanitizeProgrammaticSrcset(value, deProxy, (url) => policies._apply("mediaUrl", url, platformWindow));
                 }
-                const trustedContext = (PROP_CONTEXTS[`${elementName}|${normalizedPropertyName}`] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]);
-                return trustedContext
-                    ? security.getTrusted(trustedContext, value)
-                    : value;
+                return policies._apply(trustedContext, value, platformWindow);
             }
             function instantiateDirectiveDefinitions(name, $injector, $exceptionHandler) {
                 const directives = [];
@@ -9105,6 +10307,7 @@
             };
             this.component = registerComponent;
             this.configure = (config) => {
+                policies._configure(config);
                 if (config.strictComponentBindingsEnabled !== undefined) {
                     this.setStrictComponentBindingsEnabled(config.strictComponentBindingsEnabled);
                 }
@@ -9136,6 +10339,7 @@
                     deleteProperty(PROP_CONTEXTS, name);
                 }
                 strictComponentBindingsEnabled = false;
+                policies._destroy();
             };
             /**
              * @param enabled - New strict component binding validation state.
@@ -9160,12 +10364,6 @@
              * The security context of DOM Properties.
              */
             const PROP_CONTEXTS = nullObject();
-            const LEGACY_SCE_CONTEXTS = {
-                html: SCE_CONTEXTS._HTML,
-                mediaUrl: SCE_CONTEXTS._MEDIA_URL,
-                resourceUrl: SCE_CONTEXTS._RESOURCE_URL,
-                url: SCE_CONTEXTS._URL,
-            };
             /**
              * Defines the security context for DOM properties bound by ng-prop-*.
              *
@@ -9175,7 +10373,17 @@
              * @returns `this` for chaining.
              */
             this.addPropertySecurityContext = function (elementName, propertyName, ctx) {
-                const normalizedCtx = LEGACY_SCE_CONTEXTS[ctx] ?? ctx;
+                if (![
+                    "html",
+                    "url",
+                    "mediaUrl",
+                    "resourceUrl",
+                    "script",
+                    "scriptUrl",
+                ].includes(ctx)) {
+                    throw new TypeError("Unknown $compile property binding context: " + ctx);
+                }
+                const normalizedCtx = ctx;
                 const key = `${elementName.toLowerCase()}|${propertyName.toLowerCase()}`;
                 if (key in PROP_CONTEXTS && PROP_CONTEXTS[key] !== normalizedCtx) {
                     throw $compileError$1("ctxoverride", "Property context '{0}.{1}' already set to '{2}', cannot override to '{3}'.", elementName, propertyName, PROP_CONTEXTS[key], normalizedCtx);
@@ -9198,12 +10406,8 @@
                         PROP_CONTEXTS[items[i].toLowerCase()] = ctx;
                     }
                 }
-                registerContext(SCE_CONTEXTS._HTML, [
-                    "iframe|srcdoc",
-                    "*|innerHTML",
-                    "*|outerHTML",
-                ]);
-                registerContext(SCE_CONTEXTS._URL, [
+                registerContext("html", ["iframe|srcdoc", "*|innerHTML", "*|outerHTML"]);
+                registerContext("url", [
                     "area|href",
                     "area|ping",
                     "a|href",
@@ -9215,7 +10419,7 @@
                     "ins|cite",
                     "q|cite",
                 ]);
-                registerContext(SCE_CONTEXTS._MEDIA_URL, [
+                registerContext("mediaUrl", [
                     "audio|src",
                     "img|src",
                     "img|srcset",
@@ -9225,7 +10429,7 @@
                     "video|src",
                     "video|poster",
                 ]);
-                registerContext(SCE_CONTEXTS._RESOURCE_URL, [
+                registerContext("resourceUrl", [
                     "*|formAction",
                     "applet|code",
                     "applet|codebase",
@@ -9240,12 +10444,19 @@
                     "media|src",
                     "object|codebase",
                     "object|data",
-                    "script|src",
+                ]);
+                registerContext("scriptUrl", ["script|src"]);
+                registerContext("scriptUrl", ["script|href"]);
+                registerContext("script", [
+                    "script|innerHTML",
+                    "script|text",
+                    "script|textContent",
+                    "script|innerText",
                 ]);
             })();
             this.createService =
                 /** Creates the runtime `$compile` service and its shared helper closures. */
-                ($injector, $interpolate, security, $exceptionHandler, $parse, $controller, $appRoot) => {
+                ($injector, $interpolate, $exceptionHandler, $parse, $controller, $appRoot) => {
                     let lazyTemplateRequest;
                     async function requestTemplate(templateUrl) {
                         if (lazyTemplateRequest === undefined) {
@@ -9258,6 +10469,7 @@
                             : fetchTemplate(templateUrl);
                     }
                     async function fetchTemplate(templateUrl) {
+                        templateUrl = policies._resourceUrl(templateUrl);
                         return fetch(templateUrl, {
                             headers: { Accept: "text/html" },
                         }).then(async (response) => {
@@ -9404,12 +10616,7 @@
                             return;
                         }
                         callFunction(state._parentSet, undefined, state._scopeTarget, (state._lastValue = val));
-                        const attributeWatchers = state._scope._handler._watchers.get(String(state._attrExpression));
-                        if (attributeWatchers) {
-                            for (let i = 0, l = attributeWatchers.length; i < l; i++) {
-                                attributeWatchers[i]._listenerFn(val, state._scope._target);
-                            }
-                        }
+                        state._scope._handler._scheduleWatchKeys(String(state._attrExpression));
                         scheduleControllerAfterRender(state._destAny, state._scope);
                     }
                     function handleStringBindingObserve(state, value) {
@@ -9489,12 +10696,23 @@
                         }
                         return snapshot;
                     }
-                    function cloneTemplateNodes(nodes) {
+                    function templateHasTranscludedHostElements(nodes) {
+                        if (!nodes)
+                            return false;
+                        for (let i = 0, l = nodes.length; i < l; i++) {
+                            if (hasTranscludedHostElements(nodes[i]))
+                                return true;
+                        }
+                        return false;
+                    }
+                    function cloneTemplateNodes(nodes, cloneTransclusionHosts) {
                         const cloned = new Array(nodes.length);
                         for (let i = 0, l = nodes.length; i < l; i++) {
                             const source = nodes[i];
                             const clone = source.cloneNode(true);
-                            cloneTranscludedHostElements(source, clone);
+                            if (cloneTransclusionHosts) {
+                                cloneTranscludedHostElements(source, clone);
+                            }
                             cloned[i] = clone;
                         }
                         return cloned;
@@ -9552,43 +10770,40 @@
                         let $linkNode;
                         if (state._namespace !== "html") {
                             const fragment = createElementFromHTML("<div></div>");
-                            fragment.append(getTemplateNodeAt(nodes, 0));
+                            fragment.append(nodes[0]);
                             const wrappedTemplate = wrapTemplate(state._namespace, fragment.innerHTML);
                             $linkNode = [wrappedTemplate[0]];
                         }
                         else if (cloneConnectFn) {
-                            $linkNode = cloneTemplateNodes(nodes);
+                            $linkNode = cloneTemplateNodes(nodes, state._hasTranscludedHostElements);
                         }
                         else {
                             $linkNode = nodes;
                         }
-                        const linkedNodeCount = getTemplateNodeCount($linkNode);
-                        const ownsLinkedNodes = state._ownsNodes ||
-                            options._ownsNodes === true ||
-                            !!cloneConnectFn ||
-                            state._namespace !== "html";
-                        const singleLinkedNode = linkedNodeCount === 1
-                            ? getTemplateNodeAt($linkNode, 0)
-                            : null;
-                        const fragmentRecord = singleLinkedNode
-                            ? createPublicLinkSingleNodeCompiledFragmentRecord($appRoot, scope, singleLinkedNode, ownsLinkedNodes)
-                            : createPublicLinkCompiledFragmentRecord($appRoot, scope, $linkNode, ownsLinkedNodes);
-                        if (singleLinkedNode) {
-                            registerCompiledFragmentNode(fragmentRecord, singleLinkedNode);
-                        }
-                        else {
-                            registerCompiledFragmentNodes(fragmentRecord, fragmentRecord.nodes);
-                        }
-                        const parentFragment = findCompiledFragmentRecord(_futureParentElement);
-                        if (parentFragment) {
-                            addCompiledFragmentChild(parentFragment, fragmentRecord);
+                        if (!options._externalNodeOwner) {
+                            const linkedNodeCount = getTemplateNodeCount($linkNode);
+                            const ownsLinkedNodes = state._ownsNodes ||
+                                options._ownsNodes === true ||
+                                !!cloneConnectFn ||
+                                state._namespace !== "html";
+                            const singleLinkedNode = linkedNodeCount === 1 ? $linkNode[0] : null;
+                            const fragmentRecord = singleLinkedNode
+                                ? createPublicLinkSingleNodeCompiledFragmentRecord($appRoot, scope, singleLinkedNode, ownsLinkedNodes)
+                                : createPublicLinkCompiledFragmentRecord($appRoot, scope, $linkNode, ownsLinkedNodes);
+                            if (singleLinkedNode) {
+                                registerCompiledFragmentNode(fragmentRecord, singleLinkedNode);
+                            }
+                            else {
+                                registerCompiledFragmentNodes(fragmentRecord, fragmentRecord.nodes);
+                            }
+                            const parentFragment = findCompiledFragmentRecord(_futureParentElement);
+                            if (parentFragment) {
+                                addCompiledFragmentChild(parentFragment, fragmentRecord);
+                            }
                         }
                         const linkElement = getSingleTemplateElement($linkNode);
                         if (linkElement) {
-                            setScope(linkElement, scope);
-                            if (_futureParentElement) {
-                                setCacheData(linkElement, FUTURE_PARENT_ELEMENT_KEY, _futureParentElement);
-                            }
+                            setScope(linkElement, scope, _futureParentElement ? FUTURE_PARENT_ELEMENT_KEY : undefined, _futureParentElement);
                         }
                         if (_transcludeControllers) {
                             const controllers = _transcludeControllers;
@@ -9614,15 +10829,22 @@
                         const stableNodeList = buildStableNodeList(plan, nodeList);
                         executeTemplateLinkMappings(plan, stableNodeList, scope, _parentBoundTranscludeFn ?? null);
                     }
-                    function invokeBoundTransclude(state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
+                    function invokeBoundTransclude(state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope, externalNodeOwner = false) {
                         transcludedScope ?? (transcludedScope = state._scope.transcluded(containingScope));
                         return state._transcludeFn(transcludedScope, cloneFn, {
                             _parentBoundTranscludeFn: state._previousBoundTranscludeFn,
                             _transcludeControllers: controllers,
                             _futureParentElement,
+                            _externalNodeOwner: externalNodeOwner,
                         });
                     }
-                    Object.assign(compile, {
+                    const compileService = Object.assign(compile, {
+                        /** @internal Prepares HTML without converting native trusted values to strings. */
+                        _prepareHtml(value, platformWindow) {
+                            return policies._apply("html", value, platformWindow);
+                        },
+                        /** @internal Applies the policy selected by a DOM binding. */
+                        _applyBindingPolicy: policies._apply.bind(policies),
                         /** @internal Links a programmatic node without public-link overhead when no directives match. */
                         _linkProgrammaticNode(node, scope, options) {
                             const publicLinkState = createPublicLinkState(node, null);
@@ -9632,18 +10854,22 @@
                             if (templatePlan._trackedNodeList) {
                                 publicLinkState._nodes = templatePlan._trackedNodeList;
                             }
+                            publicLinkState._hasTranscludedHostElements =
+                                templateHasTranscludedHostElements(publicLinkState._nodes);
                             publicLinkState._templateLinkExecutor =
                                 createTemplateLinkExecutor(templatePlan);
                             return invokePublicLink(publicLinkState, scope, undefined, options);
                         },
                     });
-                    return compile;
+                    return compileService;
                     function compile(element, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
                         const publicLinkState = createPublicLinkState(element, previousCompileContext);
                         const templatePlan = planTemplate(publicLinkState._nodes, transcludeFn ?? undefined, maxPriority, ignoreDirective, previousCompileContext);
                         if (templatePlan?._trackedNodeList) {
                             publicLinkState._nodes = templatePlan._trackedNodeList;
                         }
+                        publicLinkState._hasTranscludedHostElements =
+                            templateHasTranscludedHostElements(publicLinkState._nodes);
                         publicLinkState._templateLinkExecutor = templatePlan
                             ? createTemplateLinkExecutor(templatePlan)
                             : null;
@@ -9655,13 +10881,14 @@
                             _ownsNodes: typeof element === "string",
                             _templateLinkExecutor: null,
                             _namespace: null,
+                            _hasTranscludedHostElements: false,
                             _previousCompileContext: previousCompileContext ??
                                 null,
                         };
                     }
                     function createPublicLinkFn(publicLinkState) {
                         const publicLinkFn = function publicLinkFn(scope, cloneConnectFn, options) {
-                            return invokePublicLink(assertInvariantDefined(publicLinkFn._state), scope, cloneConnectFn, options);
+                            return invokePublicLink(publicLinkState, scope, cloneConnectFn, options);
                         };
                         publicLinkFn._state = publicLinkState;
                         return publicLinkFn;
@@ -9712,9 +10939,6 @@
                     function getTemplateNodeCount(nodes) {
                         return nodes.length;
                     }
-                    function getTemplateNodeAt(nodes, index) {
-                        return nodes[index];
-                    }
                     function getPlanningNodeAt(nodes, trackedNodeList, index) {
                         return trackedNodeList
                             ? getTrackedNodeAt(trackedNodeList, index)
@@ -9752,6 +10976,7 @@
                     function planTemplate(nodeList, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
                         if (!nodeList)
                             return null;
+                        removeTableStructureWhitespace(nodeList);
                         let trackedNodeList = null;
                         let templatePlan = null;
                         for (let i = 0, l = getTemplateNodeCount(nodeList); i < l; i++) {
@@ -9786,6 +11011,33 @@
                             previousCompileContext = null;
                         }
                         return templatePlan;
+                    }
+                    function removeTableStructureWhitespace(nodeList) {
+                        if (!(nodeList instanceof NodeList) || !nodeList.length) {
+                            return;
+                        }
+                        const parentNode = nodeList[0].parentElement;
+                        if (!parentNode) {
+                            return;
+                        }
+                        switch (getNodeName$1(parentNode)) {
+                            case "table":
+                            case "thead":
+                            case "tbody":
+                            case "tfoot":
+                            case "tr":
+                            case "colgroup":
+                                break;
+                            default:
+                                return;
+                        }
+                        for (let i = nodeList.length - 1; i >= 0; i--) {
+                            const node = nodeList[i];
+                            if (node.nodeType === NodeType._TEXT_NODE &&
+                                !(node.nodeValue ?? "").trim()) {
+                                parentNode.removeChild(node);
+                            }
+                        }
                     }
                     function createTemplateLinkPlan(nodeList, transcludeFn) {
                         return {
@@ -9851,7 +11103,38 @@
                             const [nodeLinkPlan] = templatePlan._nodeLinkPlans;
                             const [childLinkExecutor] = templatePlan._childLinkExecutors;
                             return function singleTemplateLinkExecutor(scope, nodeList, _parentBoundTranscludeFn) {
-                                executeTemplateLinkMapping(templatePlan, nodeLinkPlan, childLinkExecutor, getTemplateNodeAt(nodeList, index), scope, _parentBoundTranscludeFn ?? null);
+                                const node = nodeList[index];
+                                if (nodeLinkPlan) {
+                                    const childScope = nodeLinkPlan._newScope ? scope.new() : scope;
+                                    let childBoundTranscludeFn;
+                                    if (nodeLinkPlan._transcludeOnThisElement) {
+                                        childBoundTranscludeFn = createBoundTranscludeFn(scope, nodeLinkPlan._transclude, _parentBoundTranscludeFn ?? null);
+                                    }
+                                    else if (!nodeLinkPlan._templateOnThisElement &&
+                                        _parentBoundTranscludeFn) {
+                                        childBoundTranscludeFn = _parentBoundTranscludeFn;
+                                    }
+                                    else if (!_parentBoundTranscludeFn &&
+                                        templatePlan._transcludeFn) {
+                                        childBoundTranscludeFn = createBoundTranscludeFn(scope, templatePlan._transcludeFn, null);
+                                    }
+                                    else {
+                                        childBoundTranscludeFn = null;
+                                    }
+                                    if (nodeLinkPlan._newScope &&
+                                        node.nodeType === NodeType._ELEMENT_NODE) {
+                                        setScope(node, childScope);
+                                    }
+                                    if (nodeLinkPlan._nodeLinkFnState !== undefined) {
+                                        nodeLinkPlan._nodeLinkFn(nodeLinkPlan._nodeLinkFnState, childLinkExecutor, childScope, node, childBoundTranscludeFn);
+                                    }
+                                    else {
+                                        nodeLinkPlan._nodeLinkFn(childLinkExecutor, childScope, node, childBoundTranscludeFn);
+                                    }
+                                }
+                                else if (childLinkExecutor) {
+                                    childLinkExecutor(scope, node.childNodes, _parentBoundTranscludeFn ?? null);
+                                }
                             };
                         }
                         return function templateLinkExecutor(scope, nodeList, _parentBoundTranscludeFn) {
@@ -9867,8 +11150,8 @@
                             _transcludeFn: transcludeFn,
                             _previousBoundTranscludeFn: previousBoundTranscludeFn,
                         };
-                        const boundTranscludeFn = function boundTranscludeFn(transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
-                            return invokeBoundTransclude(assertInvariantDefined(boundTranscludeFn._state), transcludedScope, cloneFn, controllers, _futureParentElement, containingScope);
+                        const boundTranscludeFn = function boundTranscludeFn(transcludedScope, cloneFn, controllers, _futureParentElement, containingScope, externalNodeOwner) {
+                            return invokeBoundTransclude(boundTranscludeState, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope, externalNodeOwner);
                         };
                         boundTranscludeFn._state = boundTranscludeState;
                         // We need  to attach the transclusion slots onto the `boundTranscludeFn`
@@ -9904,6 +11187,11 @@
                             }
                             case NodeType._TEXT_NODE:
                                 {
+                                    if (node.parentElement &&
+                                        getNodeName$1(node.parentElement) === "script" &&
+                                        node.nodeValue?.includes(startSymbol)) {
+                                        throw $compileError$1("scriptinterp", "Script interpolation is not supported. Bind the text property with a scriptPolicy.");
+                                    }
                                     const textDirective = createTextInterpolateDirective(node.nodeValue ?? "");
                                     if (textDirective) {
                                         directives = [textDirective];
@@ -10063,21 +11351,21 @@
                     }
                     function createLazyCompilationFn(lazyCompilationState) {
                         /** Defers compilation until the returned linker/transclude function is first invoked. */
-                        const lazyCompilation = function lazyCompilation(...args) {
-                            return invokeLazyCompilation(assertInvariantDefined(lazyCompilation._state), ...args);
+                        const lazyCompilation = function lazyCompilation(scope, cloneConnectFn, options) {
+                            return invokeLazyCompilation(assertInvariantDefined(lazyCompilation._state), scope, cloneConnectFn, options);
                         };
                         lazyCompilation._state = lazyCompilationState;
                         return lazyCompilation;
                     }
                     /** Shared invoker for lazily compiled public-link/transclude functions. */
-                    function invokeLazyCompilation(state, ...args) {
+                    function invokeLazyCompilation(state, scope, cloneConnectFn, options) {
                         if (!state._compiled) {
                             state._compiled = compile(state._nodes, state._transcludeFn, state._maxPriority, state._ignoreDirective, state._previousCompileContext);
                             state._nodes = null;
                             state._transcludeFn = null;
                             state._previousCompileContext = null;
                         }
-                        return state._compiled(...args);
+                        return state._compiled(scope, cloneConnectFn, options);
                     }
                     /**
                      * Stores link metadata in a compact record so linking can use shared invokers instead of wrapped closures.
@@ -10098,6 +11386,18 @@
                     /** Invokes a link record with consistent scope selection and argument ordering. */
                     function invokeLinkFnRecord(linkFnRecord, isolateScope, scope, node, attrs, controllers, transcludeFn) {
                         const linkScope = linkFnRecord._isolateScope ? isolateScope : scope;
+                        if (!linkFnRecord._require &&
+                            !transcludeFn &&
+                            (linkFnRecord._linkCtx === undefined ||
+                                !hasLinkContextAttr(linkFnRecord._linkCtx))) {
+                            if (linkFnRecord._linkCtx !== undefined) {
+                                return linkFnRecord._fn(linkFnRecord._linkCtx, linkScope, node);
+                            }
+                            if (linkFnRecord._thisArg !== undefined) {
+                                return linkFnRecord._fn.call(linkFnRecord._thisArg, linkScope, node);
+                            }
+                            return linkFnRecord._fn(linkScope, node);
+                        }
                         const linkTailArgs = linkFnRecord._require
                             ? transcludeFn
                                 ? [controllers, transcludeFn]
@@ -10120,11 +11420,19 @@
                         return linkFnRecord._fn(linkScope, node, ...linkTailArgs);
                     }
                     /** Shared post-link executor for text interpolation directives. */
+                    function applyDirectTextInterpolationValue(value, _originalTarget, context) {
+                        applyTextInterpolationValue(context, stringify$1(value));
+                    }
+                    /** Shared post-link executor for text interpolation directives. */
                     function textInterpolateLinkFn(linkState, scope, node) {
                         if (linkState._singleExpression) {
-                            scope.watch(linkState._watchExpression, (value) => {
-                                applyTextInterpolationValue(node, stringify$1(value));
-                            });
+                            const watchPlan = linkState._watchPlan;
+                            if (watchPlan) {
+                                scope._handler._watchPlannedImmediate(applyDirectTextInterpolationValue, node, watchPlan);
+                            }
+                            else {
+                                registerScopeWatch(scope, linkState._watchExpression, applyDirectTextInterpolationValue, false, false, true, undefined, false, node);
+                            }
                             return;
                         }
                         const bindingState = {
@@ -10133,9 +11441,9 @@
                             _node: node,
                         };
                         handleTextInterpolationWatch(bindingState);
-                        scope.watch(linkState._watchExpression, () => {
+                        registerScopeWatch(scope, linkState._watchExpression, () => {
                             handleTextInterpolationWatch(bindingState);
-                        });
+                        }, true);
                     }
                     /** Re-applies text interpolation using explicit per-link state. */
                     function handleTextInterpolationWatch(bindingState) {
@@ -10176,15 +11484,41 @@
                             return;
                         }
                         if (linkState._name === "srcset") {
-                            attr.setValue(node, linkState._name, linkState._isNgAttr
-                                ? toInterpolatedAttributeValue(value)
-                                : toInterpolatedAttributeValue(sanitizeSrcset(security.valueOf(value), "srcset")));
+                            attr.setValue(node, linkState._name, toInterpolatedAttributeValue(sanitizeSrcset(deProxy(value), "srcset")));
                             return;
                         }
-                        if ((linkState._trustedContext === SCE_CONTEXTS._URL ||
-                            linkState._trustedContext === SCE_CONTEXTS._MEDIA_URL) &&
-                            !(typeof value === "string" && value.startsWith("unsafe:"))) {
-                            value = toInterpolatedAttributeValue(security.getTrusted(linkState._trustedContext, value));
+                        if (linkState._trustedContext === "resourceUrl" &&
+                            (linkState._name === "ngSrc" || linkState._name === "ngHref")) {
+                            setNormalizedAttr(node, linkState._name === "ngSrc" ? "src" : "href", toInterpolatedAttributeValue(value));
+                            return;
+                        }
+                        if (linkState._trustedContext === "scriptUrl" ||
+                            linkState._trustedContext === "html") {
+                            const element = getDirectiveHostElement(node);
+                            if (element &&
+                                linkState._trustedContext === "scriptUrl" &&
+                                (value === null || value === undefined)) {
+                                element.removeAttribute(linkState._name === "src" || linkState._name === "ngSrc"
+                                    ? "src"
+                                    : "href");
+                                return;
+                            }
+                            if (element &&
+                                (linkState._name === "href" || linkState._name === "ngHref") &&
+                                getNodeName$1(element) === "script") {
+                                element.setAttribute("href", value);
+                                return;
+                            }
+                            if (element &&
+                                (linkState._name === "src" || linkState._name === "ngSrc") &&
+                                getNodeName$1(element) === "script") {
+                                element.src = value;
+                                return;
+                            }
+                            if (element && linkState._name === "srcdoc") {
+                                element.srcdoc = value;
+                                return;
+                            }
                         }
                         attr.setValue(node, linkState._name, toInterpolatedAttributeValue(value));
                     }
@@ -10202,17 +11536,77 @@
                         bindingState._lastValue = value;
                         applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, bindingState._node, value);
                     }
+                    /** Links an unchanged whole-class interpolation without generic attribute state setup. */
+                    function wholeClassInterpolatePreLinkFn(linkState, scope, node) {
+                        const classElement = getDirectiveHostElement(node);
+                        const interpolateFn = linkState._interpolateFn;
+                        const expressions = interpolateFn?.expressions;
+                        const linkedClass = classElement?.getAttribute("class");
+                        const targetScope = (classElement
+                            ? compileAttributeObserverScopes.get(classElement)?.get("class")
+                            : undefined) ?? scope;
+                        if (!classElement ||
+                            (linkedClass !== linkState._value &&
+                                !(linkState._wholeClassTemplateCleared && linkedClass === "")) ||
+                            expressions?.length !== 1 ||
+                            targetScope !== scope ||
+                            !linkState._watchPlan) {
+                            attrInterpolatePreLinkFn(linkState, scope, node);
+                            return;
+                        }
+                        if (!linkState._wholeClassTemplateCleared) {
+                            const templateElement = linkState._wholeClassTemplateElement;
+                            if (templateElement &&
+                                templateElement.getAttribute("class") === linkState._value) {
+                                templateElement.setAttribute("class", "");
+                                linkState._wholeClassTemplateCleared = true;
+                            }
+                        }
+                        let listener = linkState._wholeClassListener;
+                        if (!listener) {
+                            const attr = assertInvariantDefined(linkState._sharedAttr ?? linkState._attr);
+                            listener = linkState._wholeClassListener = (value, _originalTarget, context) => {
+                                applyInterpolatedAttrValue(linkState, attr, context, stringify$1(value));
+                            };
+                        }
+                        const initialValue = linkState._watchPlan._watchFn(scope._target);
+                        const initialClass = typeof initialValue === "string"
+                            ? initialValue
+                            : stringify$1(initialValue);
+                        const currentClass = classElement.className;
+                        if (typeof currentClass === "string") {
+                            if (currentClass !== initialClass) {
+                                classElement.className = initialClass;
+                            }
+                        }
+                        else {
+                            if (classElement.getAttribute("class") !== initialClass) {
+                                classElement.setAttribute("class", initialClass);
+                            }
+                        }
+                        scope._handler._watchPlanned(assertInvariantDefined(expressions[0]), listener, true, true, initialValue, true, node, linkState._watchPlan);
+                    }
                     /**
                      * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
                      * current interpolation function in sync if an earlier compile step rewrites the attribute.
                      */
                     function attrInterpolatePreLinkFn(linkState, scope, node) {
-                        const attr = assertInvariantDefined(linkState._attr);
+                        const attr = assertInvariantDefined(linkState._attr ?? linkState._sharedAttr);
                         // Recompute interpolation if another compile step rewrote the attribute value.
                         const name = linkState._name;
-                        const newValue = linkState._isNgAttr
-                            ? readSourceElementAttribute(attr, node, name)
-                            : readNormalizedElementAttribute(node, name);
+                        const classElement = name === "class" ? getDirectiveHostElement(node) : undefined;
+                        const newValue = classElement
+                            ? classElement.getAttribute("class")
+                            : linkState._isNgAttr
+                                ? readSourceElementAttribute(attr, node, name)
+                                : readNormalizedElementAttribute(node, name);
+                        if (linkState._isWholeClassInterpolation &&
+                            newValue === linkState._value &&
+                            typeof newValue === "string") {
+                            if (classElement) {
+                                classElement.setAttribute("class", "");
+                            }
+                        }
                         if (newValue !== linkState._value) {
                             linkState._interpolateFn = newValue
                                 ? $interpolate(stringify$1(newValue), true, linkState._trustedContext, linkState._allOrNothing)
@@ -10224,28 +11618,61 @@
                         }
                         const interpolateFn = linkState._interpolateFn;
                         const { expressions } = interpolateFn;
-                        CompileAttributeState.markElementAttributeInterpolated(node, name);
-                        const bindingState = {
-                            _linkState: linkState,
-                            _scope: scope,
-                            _node: node,
-                            _attr: attr,
-                        };
                         if (expressions.length > 0) {
                             const targetScope = getCompileAttributeObserverScope(node, name) ?? scope;
+                            if (linkState._isWholeClassInterpolation &&
+                                expressions.length === 1 &&
+                                targetScope === scope) {
+                                const watchPlan = linkState._watchPlan;
+                                if (watchPlan) {
+                                    const listener = (linkState._wholeClassListener ?? (linkState._wholeClassListener = (value, _originalTarget, context) => {
+                                        applyInterpolatedAttrValue(linkState, attr, context, stringify$1(value));
+                                    }));
+                                    scope._handler._watchPlanned(assertInvariantDefined(expressions[0]), listener, false, true, undefined, false, node, watchPlan);
+                                }
+                                else {
+                                    const listener = (value) => {
+                                        applyInterpolatedAttrValue(linkState, attr, node, stringify$1(value));
+                                    };
+                                    registerScopeWatch(scope, assertInvariantDefined(expressions[0]), listener, false, false, true);
+                                }
+                                return;
+                            }
+                            CompileAttributeState.markElementAttributeInterpolated(node, name);
+                            const bindingState = {
+                                _linkState: linkState,
+                                _scope: scope,
+                                _node: node,
+                                _attr: attr,
+                            };
                             const watchExpression = buildInterpolationWatchExpression(expressions);
-                            targetScope.watch(watchExpression, () => {
+                            registerScopeWatch(targetScope, watchExpression, () => {
                                 handleAttrInterpolationWatch(bindingState);
                             });
                         }
                         else {
+                            CompileAttributeState.markElementAttributeInterpolated(node, name);
+                            const bindingState = {
+                                _linkState: linkState,
+                                _scope: scope,
+                                _node: node,
+                                _attr: attr,
+                            };
                             handleAttrInterpolationWatch(bindingState);
                         }
                     }
                     /** Applies the current `ng-prop-*` value from explicit per-link state. */
                     function updatePropertyDirectiveValue(bindingState) {
                         const linkState = bindingState._linkState;
-                        bindingState._element[linkState._propName] = linkState._sanitizer(linkState._ngPropGetter(bindingState._scope));
+                        const value = linkState._sanitizer(linkState._ngPropGetter(bindingState._scope));
+                        const element = bindingState._element;
+                        if ((value === null || value === undefined) &&
+                            element.localName === "script" &&
+                            (linkState._propName === "src" || linkState._propName === "href")) {
+                            element.removeAttribute(linkState._propName);
+                            return;
+                        }
+                        bindingState._element[linkState._propName] = value;
                     }
                     /** Shared watch callback for property-name watchers. */
                     function handlePropertyDirectiveValueWatch(bindingState) {
@@ -10253,7 +11680,6 @@
                     }
                     /** Shared watch callback for backing attribute-expression watchers. */
                     function handlePropertyDirectiveAttrWatch(bindingState, value) {
-                        security.valueOf(value);
                         updatePropertyDirectiveValue(bindingState);
                     }
                     /** Invokes an expression binding against the stored parent getter and scope target. */
@@ -10271,12 +11697,12 @@
                             _element: $element,
                         };
                         updatePropertyDirectiveValue(bindingState);
-                        scope.watch(linkState._propName, () => {
+                        registerScopeWatch(scope, linkState._propName, () => {
                             handlePropertyDirectiveValueWatch(bindingState);
-                        });
-                        scope.watch(linkState._attrExpression, (val) => {
-                            handlePropertyDirectiveAttrWatch(bindingState, val);
-                        });
+                        }, true);
+                        registerScopeWatch(scope, linkState._attrExpression, (val) => {
+                            handlePropertyDirectiveAttrWatch(bindingState);
+                        }, true);
                     }
                     /**
                      * Links against a resolved async template using the already materialized node.
@@ -10499,7 +11925,7 @@
                         $exceptionHandler(error);
                     }
                     /** Handles `$transclude(...)` calls for the shared node-link executor. */
-                    function invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName) {
+                    function invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName, externalNodeOwner = false) {
                         if (transcludeState._destroyed) {
                             return undefined;
                         }
@@ -10518,7 +11944,7 @@
                         if (requestedSlotName) {
                             const slotTranscludeFn = boundTranscludeFn._slots[requestedSlotName];
                             if (slotTranscludeFn) {
-                                return slotTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild);
+                                return slotTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild, externalNodeOwner);
                             }
                             if (slotTranscludeFn === undefined) {
                                 throw $compileError$1("noslot", 'No parent directive that requires a transclusion with slot name "{0}". ' +
@@ -10526,11 +11952,11 @@
                             }
                             return undefined;
                         }
-                        return boundTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild);
+                        return boundTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild, externalNodeOwner);
                     }
                     function createControllersBoundTranscludeFn(transcludeState) {
-                        const wrapper = function wrapper(scopeParam, cloneAttachFn, _futureParentElement, slotName) {
-                            return invokeControllersBoundTransclude(assertInvariantDefined(wrapper._state), scopeParam, cloneAttachFn, _futureParentElement, slotName);
+                        const wrapper = function wrapper(scopeParam, cloneAttachFn, _futureParentElement, slotName, externalNodeOwner) {
+                            return invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName, externalNodeOwner);
                         };
                         wrapper._state = transcludeState;
                         wrapper._boundTransclude = transcludeState._boundTranscludeFn;
@@ -10548,13 +11974,93 @@
                      * state explicitly instead of closing over it in a per-node function.
                      */
                     function executeStoredNodeLinkPlan(nodeLinkState, childLinkExecutor, scope, linkNode, boundTranscludeFn) {
+                        const simpleLinkMode = nodeLinkState._simpleLink;
+                        if (simpleLinkMode === 2) {
+                            const linkFnRecord = nodeLinkState._preLinkFns[0];
+                            try {
+                                linkFnRecord._fn(linkFnRecord._linkCtx, scope, linkNode);
+                            }
+                            catch (err) {
+                                $exceptionHandler(err);
+                            }
+                            if (childLinkExecutor) {
+                                const childNodes = linkNode.childNodes;
+                                if (childNodes.length) {
+                                    childLinkExecutor(scope, childNodes, boundTranscludeFn);
+                                }
+                            }
+                            return;
+                        }
+                        if (simpleLinkMode === 3) {
+                            if (childLinkExecutor) {
+                                const childNodes = linkNode.childNodes;
+                                if (childNodes.length) {
+                                    childLinkExecutor(scope, childNodes, boundTranscludeFn);
+                                }
+                            }
+                            const linkFnRecord = nodeLinkState._postLinkFns[0];
+                            try {
+                                linkFnRecord._fn(linkFnRecord._linkCtx, scope, linkNode);
+                            }
+                            catch (err) {
+                                $exceptionHandler(err);
+                            }
+                            return;
+                        }
+                        if (simpleLinkMode) {
+                            const attrs = nodeLinkState._templateAttrs;
+                            const transcludeFn = nodeLinkState._transcludeFn;
+                            for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
+                                try {
+                                    const linkFnRecord = nodeLinkState._preLinkFns[i];
+                                    if (linkFnRecord._linkCtx !== undefined &&
+                                        !linkFnRecord._require &&
+                                        !linkFnRecord._isolateScope &&
+                                        !transcludeFn &&
+                                        !hasLinkContextAttr(linkFnRecord._linkCtx)) {
+                                        linkFnRecord._fn(linkFnRecord._linkCtx, scope, linkNode);
+                                    }
+                                    else {
+                                        invokeLinkFnRecord(linkFnRecord, undefined, scope, linkNode, attrs, undefined, transcludeFn);
+                                    }
+                                }
+                                catch (err) {
+                                    $exceptionHandler(err);
+                                }
+                            }
+                            if (childLinkExecutor) {
+                                const childNodes = linkNode.childNodes;
+                                if (childNodes.length) {
+                                    childLinkExecutor(scope, childNodes, boundTranscludeFn);
+                                }
+                            }
+                            for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
+                                try {
+                                    const linkFnRecord = nodeLinkState._postLinkFns[i];
+                                    if (linkFnRecord._linkCtx !== undefined &&
+                                        !linkFnRecord._require &&
+                                        !linkFnRecord._isolateScope &&
+                                        !transcludeFn &&
+                                        !hasLinkContextAttr(linkFnRecord._linkCtx)) {
+                                        linkFnRecord._fn(linkFnRecord._linkCtx, scope, linkNode);
+                                    }
+                                    else {
+                                        invokeLinkFnRecord(linkFnRecord, undefined, scope, linkNode, attrs, undefined, transcludeFn);
+                                    }
+                                }
+                                catch (err) {
+                                    $exceptionHandler(err);
+                                }
+                            }
+                            return;
+                        }
                         let isolateScope;
                         let controllerScope;
-                        let elementControllers = nullObject();
+                        let elementControllers = EMPTY_ELEMENT_CONTROLLERS;
                         let scopeToChild = scope;
                         const elementNode = linkNode;
-                        let scopeBindingInfo;
-                        const attrs = nodeLinkState._compileNode === linkNode
+                        const attrs = nodeLinkState._compileNode === linkNode ||
+                            !nodeLinkState._needsLinkAttributeState
                             ? nodeLinkState._templateAttrs
                             : new CompileAttributeState($injector, $exceptionHandler, nodeLinkState._templateAttrs);
                         const element = elementNode.nodeType === NodeType._ELEMENT_NODE
@@ -10570,7 +12076,7 @@
                         controllerScope = controllerScope ?? scope;
                         let transcludeFn = nodeLinkState._transcludeFn;
                         let transcludeState;
-                        if (boundTranscludeFn) {
+                        if (boundTranscludeFn && nodeLinkState._needsBoundTransclude) {
                             transcludeState = {
                                 _boundTranscludeFn: boundTranscludeFn,
                                 _elementControllers: elementControllers,
@@ -10579,26 +12085,67 @@
                                 _elementNode: elementNode,
                             };
                             const currentTranscludeState = transcludeState;
-                            scope.on("$destroy", () => {
+                            registerScopeDestroyCallback(scope, () => {
                                 releaseControllersBoundTranscludeState(currentTranscludeState);
                             });
                             transcludeFn = createControllersBoundTranscludeFn(transcludeState);
                         }
-                        const controllerDirectives = nodeLinkState._controllerDirectives ?? nullObject();
                         if (nodeLinkState._controllerDirectives) {
-                            elementControllers = setupControllers(elementNode, attrs, transcludeFn, nodeLinkState._controllerDirectives, isolateScope ?? scope, scope, nodeLinkState._newIsolateScopeDirective);
+                            elementControllers = initializeNodeControllers(nodeLinkState, scope, controllerScope, elementNode, element, attrs, transcludeFn, isolateScope, scopeToChild, transcludeState);
+                        }
+                        else if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
+                            initializeNodeIsolateBindings(scope, attrs, isolateScope, nodeLinkState._newIsolateScopeDirective, elementNode);
+                        }
+                        for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
+                            const preLinkFn = nodeLinkState._preLinkFns[i];
+                            const controllers = preLinkFn._require &&
+                                getControllers(preLinkFn._directiveName, preLinkFn._require, element, elementControllers);
+                            try {
+                                invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
+                            }
+                            catch (err) {
+                                $exceptionHandler(err);
+                            }
+                        }
+                        if (nodeLinkState._newIsolateScopeDirective &&
+                            (nodeLinkState._newIsolateScopeDirective.template ||
+                                nodeLinkState._newIsolateScopeDirective.templateUrl === null)) {
+                            scopeToChild = isolateScope ?? scope;
                             if (transcludeState) {
                                 syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, elementNode);
                             }
                         }
-                        if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
-                            isolateScope._target._isolateBindings =
-                                nodeLinkState._newIsolateScopeDirective._isolateBindings;
-                            scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope._target
-                                ._isolateBindings, nodeLinkState._newIsolateScopeDirective, elementNode);
-                            if (scopeBindingInfo._removeWatches) {
-                                isolateScope.on("$destroy", scopeBindingInfo._removeWatches);
+                        if (childLinkExecutor && linkNode.childNodes.length) {
+                            childLinkExecutor(scopeToChild, linkNode.childNodes, boundTranscludeFn);
+                        }
+                        for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
+                            const postLinkFn = nodeLinkState._postLinkFns[i];
+                            const controllers = postLinkFn._require &&
+                                getControllers(postLinkFn._directiveName, postLinkFn._require, elementNode, elementControllers);
+                            try {
+                                if (postLinkFn._isolateScope && isolateScope) {
+                                    deleteCacheData(element, _scope);
+                                    setIsolateScope(element, isolateScope);
+                                }
+                                invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
                             }
+                            catch (err) {
+                                $exceptionHandler(err);
+                            }
+                        }
+                        if (nodeLinkState._controllerDirectives) {
+                            finalizeNodeControllers(elementControllers, controllerScope);
+                        }
+                    }
+                    /** Initializes controller-bearing nodes outside the controller-free link hot path. */
+                    function initializeNodeControllers(nodeLinkState, scope, controllerScope, elementNode, element, attrs, transcludeFn, isolateScope, scopeToChild, transcludeState) {
+                        const controllerDirectives = assertInvariantDefined(nodeLinkState._controllerDirectives);
+                        const elementControllers = setupControllers(elementNode, attrs, transcludeFn, controllerDirectives, isolateScope ?? scope, scope, nodeLinkState._newIsolateScopeDirective);
+                        if (transcludeState) {
+                            syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, elementNode);
+                        }
+                        if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
+                            initializeNodeIsolateBindings(scope, attrs, isolateScope, nodeLinkState._newIsolateScopeDirective, elementNode);
                         }
                         for (const name in elementControllers) {
                             const controllerDirective = controllerDirectives[name];
@@ -10622,21 +12169,17 @@
                             setCacheData(elementNode, `$${controllerDirective.name}Controller`, controller._instance);
                             controller._bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller._instance, bindings, controllerDirective, elementNode);
                         }
-                        if (nodeLinkState._controllerDirectives) {
-                            setCacheData(elementNode, AFTER_RENDER_EVENT_SCHEDULER_KEY, () => {
-                                scheduleElementControllersAfterRender(elementControllers, controllerScope);
-                            });
-                        }
-                        if (nodeLinkState._controllerDirectives) {
-                            for (const name in controllerDirectives) {
-                                const controllerDirective = controllerDirectives[name];
-                                const { require } = controllerDirective;
-                                if (controllerDirective.bindToController &&
-                                    !isArray(require) &&
-                                    require &&
-                                    typeof require === "object") {
-                                    extend(assertInvariantDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
-                                }
+                        setCacheData(elementNode, AFTER_RENDER_EVENT_SCHEDULER_KEY, () => {
+                            scheduleElementControllersAfterRender(elementControllers, controllerScope);
+                        });
+                        for (const name in controllerDirectives) {
+                            const controllerDirective = controllerDirectives[name];
+                            const { require } = controllerDirective;
+                            if (controllerDirective.bindToController &&
+                                !isArray(require) &&
+                                require &&
+                                typeof require === "object") {
+                                extend(assertInvariantDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
                             }
                         }
                         for (const name in elementControllers) {
@@ -10688,43 +12231,20 @@
                                 }
                             });
                         }
-                        for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
-                            const preLinkFn = nodeLinkState._preLinkFns[i];
-                            const controllers = preLinkFn._require &&
-                                getControllers(preLinkFn._directiveName, preLinkFn._require, element, elementControllers);
-                            try {
-                                invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
-                            }
-                            catch (err) {
-                                $exceptionHandler(err);
-                            }
+                        return elementControllers;
+                    }
+                    /** Initializes bindings for a node-owned isolate scope. */
+                    function initializeNodeIsolateBindings(scope, attrs, isolateScope, isolateScopeDirective, elementNode) {
+                        isolateScope._target._isolateBindings =
+                            isolateScopeDirective._isolateBindings;
+                        const scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope._target
+                            ._isolateBindings, isolateScopeDirective, elementNode);
+                        if (scopeBindingInfo._removeWatches) {
+                            isolateScope.on("$destroy", scopeBindingInfo._removeWatches);
                         }
-                        if (nodeLinkState._newIsolateScopeDirective &&
-                            (nodeLinkState._newIsolateScopeDirective.template ||
-                                nodeLinkState._newIsolateScopeDirective.templateUrl === null)) {
-                            scopeToChild = isolateScope ?? scope;
-                            if (transcludeState) {
-                                syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, elementNode);
-                            }
-                        }
-                        if (childLinkExecutor && linkNode.childNodes.length) {
-                            childLinkExecutor(scopeToChild, linkNode.childNodes, boundTranscludeFn);
-                        }
-                        for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
-                            const postLinkFn = nodeLinkState._postLinkFns[i];
-                            const controllers = postLinkFn._require &&
-                                getControllers(postLinkFn._directiveName, postLinkFn._require, elementNode, elementControllers);
-                            try {
-                                if (postLinkFn._isolateScope && isolateScope) {
-                                    deleteCacheData(element, _scope);
-                                    setIsolateScope(element, isolateScope);
-                                }
-                                invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
-                            }
-                            catch (err) {
-                                $exceptionHandler(err);
-                            }
-                        }
+                    }
+                    /** Runs controller post-link hooks after child and directive linking. */
+                    function finalizeNodeControllers(elementControllers, controllerScope) {
                         for (const name in elementControllers) {
                             const controller = assertInvariantDefined(elementControllers[name]);
                             const controllerInstance = controller._instance;
@@ -10836,7 +12356,7 @@
                     function applyTransclusionDirective(directive, directiveName, directiveValue, compileNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, hasElementTranscludeDirective, terminalPriority, mightHaveMultipleTransclusionError, previousCompileContext) {
                         const nextNonTlbTranscludeDirective = applyDirectiveTransclusionOwnershipEffect(directive, directiveName, compileNode, nonTlbTranscludeDirective);
                         if (directiveValue === "element") {
-                            const elementTransclusion = applyElementTransclusionDirective(compileNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nextNonTlbTranscludeDirective, mightHaveMultipleTransclusionError);
+                            const elementTransclusion = applyElementTransclusionDirective(directiveName, compileNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nextNonTlbTranscludeDirective, mightHaveMultipleTransclusionError);
                             return {
                                 _compileNode: elementTransclusion._compileNode,
                                 _childTranscludeFn: elementTransclusion._childTranscludeFn,
@@ -10935,6 +12455,13 @@
                         };
                     }
                     function createStoredNodeLinkState(compileNode, templateAttrs, transcludeFn, controllerDirectives, newIsolateScopeDirective, newScopeDirective, hasElementTranscludeDirective, preLinkFns, postLinkFns) {
+                        const needsBoundTransclude = !!controllerDirectives ||
+                            linkFnsNeedBoundTransclude(preLinkFns) ||
+                            linkFnsNeedBoundTransclude(postLinkFns);
+                        const needsLinkAttributeState = !!controllerDirectives ||
+                            !!newIsolateScopeDirective ||
+                            linkFnsNeedAttributeState(preLinkFns) ||
+                            linkFnsNeedAttributeState(postLinkFns);
                         return {
                             _compileNode: compileNode,
                             _templateAttrs: templateAttrs,
@@ -10943,9 +12470,55 @@
                             _newIsolateScopeDirective: newIsolateScopeDirective,
                             _newScopeDirective: newScopeDirective,
                             _hasElementTranscludeDirective: hasElementTranscludeDirective,
+                            _needsBoundTransclude: needsBoundTransclude,
+                            _needsLinkAttributeState: needsLinkAttributeState,
+                            _simpleLink: !controllerDirectives &&
+                                !newIsolateScopeDirective &&
+                                !newScopeDirective &&
+                                !needsBoundTransclude &&
+                                !needsLinkAttributeState &&
+                                linkFnsCanUseSimpleLink(preLinkFns) &&
+                                linkFnsCanUseSimpleLink(postLinkFns)
+                                ? !transcludeFn &&
+                                    preLinkFns.length === 1 &&
+                                    postLinkFns.length === 0
+                                    ? 2
+                                    : !transcludeFn &&
+                                        preLinkFns.length === 0 &&
+                                        postLinkFns.length === 1
+                                        ? 3
+                                        : 1
+                                : 0,
                             _preLinkFns: preLinkFns,
                             _postLinkFns: postLinkFns,
                         };
+                    }
+                    function linkFnsCanUseSimpleLink(linkFns) {
+                        for (const linkFn of linkFns) {
+                            if (linkFn._require || linkFn._isolateScope) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    /** Keeps public directive links on the controller-bound transclusion path. */
+                    function linkFnsNeedBoundTransclude(linkFns) {
+                        for (const linkFn of linkFns) {
+                            if (linkFn._linkCtx === undefined) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                    /** Keeps mutable per-link attrs for public and attr-aware directive links. */
+                    function linkFnsNeedAttributeState(linkFns) {
+                        for (const linkFn of linkFns) {
+                            if (linkFn._linkCtx === undefined ||
+                                hasLinkContextAttr(linkFn._linkCtx)) {
+                                return true;
+                            }
+                        }
+                        return false;
                     }
                     function createNodeLinkPlan(nodeLinkFn, nodeLinkFnState, terminal, transcludeFn, transcludeOnThisElement, templateOnThisElement, newScopeDirective) {
                         return {
@@ -10968,15 +12541,15 @@
                         const state = nodeLinkPlan?._nodeLinkFnState;
                         return isNodeLinkState(state) ? state._compileNode : fallback;
                     }
-                    function applyElementTransclusionDirective(templateNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, mightHaveMultipleTransclusionError) {
+                    function applyElementTransclusionDirective(directiveName, templateNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, mightHaveMultipleTransclusionError) {
                         const transcludedTemplateElement = templateNode;
                         const compileNode = document.createComment("");
-                        setTranscludedHostElement(compileNode, transcludedTemplateElement);
                         if (contextNodeList) {
                             setTrackedNodeAt(contextNodeList, index, compileNode);
                         }
                         replaceWith(transcludedTemplateElement, compileNode, index);
-                        const childTranscludeFn = compilationGenerator(mightHaveMultipleTransclusionError, transcludedTemplateElement, transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
+                        setTranscludedHostElement(compileNode, transcludedTemplateElement);
+                        const childTranscludeFn = compilationGenerator(directiveName === "ngRepeat" || mightHaveMultipleTransclusionError, transcludedTemplateElement, transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
                             // Don't pass controller/scope/template directives through element transclusion:
                             // the transcluded template will compile against its own directive context.
                             _nonTlbTranscludeDirective: nonTlbTranscludeDirective,
@@ -11561,11 +13134,15 @@
                         }
                         const { expressions } = interpolateFn;
                         const watchExpression = buildInterpolationWatchExpression(expressions);
+                        const singleExpression = expressions.length === 1 &&
+                            text === startSymbol + watchExpression + endSymbol;
                         const linkState = {
                             _interpolateFn: interpolateFn,
                             _watchExpression: watchExpression,
-                            _singleExpression: expressions.length === 1 &&
-                                text === startSymbol + watchExpression + endSymbol,
+                            _singleExpression: singleExpression,
+                            _watchPlan: singleExpression
+                                ? createScopeWatchPlan($parse, watchExpression)
+                                : undefined,
                         };
                         return {
                             priority: 0,
@@ -11582,20 +13159,34 @@
                     }
                     /** Determines the trust context required for a DOM attribute binding. */
                     function getTrustedAttrContext(nodeName, attrNormalizedName) {
+                        if (nodeName === "script" &&
+                            ["src", "ngSrc", "href", "ngHref"].includes(attrNormalizedName))
+                            return "scriptUrl";
+                        // Alias directives validate the completed value at the actual sink.
+                        if (attrNormalizedName === "ngHref" &&
+                            ["base", "link"].includes(nodeName))
+                            return "resourceUrl";
+                        if (attrNormalizedName === "ngHref" ||
+                            (attrNormalizedName === "ngSrc" &&
+                                ["img", "video", "audio", "source", "track"].includes(nodeName)))
+                            return undefined;
+                        if (attrNormalizedName === "srcset" ||
+                            attrNormalizedName === "ngSrcset")
+                            return undefined;
                         if (attrNormalizedName === "srcdoc") {
-                            return SCE_CONTEXTS._HTML;
+                            return "html";
                         }
                         // All nodes with src attributes require a RESOURCE_URL value, except for
                         // img and various html5 media nodes, which require the MEDIA_URL context.
                         if (attrNormalizedName === "src" || attrNormalizedName === "ngSrc") {
                             if (!["img", "video", "audio", "source", "track"].includes(nodeName)) {
-                                return SCE_CONTEXTS._RESOURCE_URL;
+                                return "resourceUrl";
                             }
-                            return SCE_CONTEXTS._MEDIA_URL;
+                            return "mediaUrl";
                         }
                         if (nodeName === "image" &&
                             (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
-                            return SCE_CONTEXTS._MEDIA_URL;
+                            return "mediaUrl";
                         }
                         if (
                         // Formaction
@@ -11605,13 +13196,13 @@
                             (nodeName === "base" && attrNormalizedName === "href") ||
                             // links can be stylesheets or imports, which can run script in the current origin
                             (nodeName === "link" && attrNormalizedName === "href")) {
-                            return SCE_CONTEXTS._RESOURCE_URL;
+                            return "resourceUrl";
                         }
                         if (nodeName === "a" &&
                             (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
-                            return SCE_CONTEXTS._URL;
+                            return "url";
                         }
-                        return undefined;
+                        return getTrustedPropContext(nodeName, attrNormalizedName);
                     }
                     /** Determines the trust context required for a DOM property binding. */
                     function getTrustedPropContext(nodeName, propNormalizedName) {
@@ -11627,12 +13218,7 @@
                         if (typeof value !== "string") {
                             throw $compileError$1("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, stringify$1(value));
                         }
-                        // Such values are a bit too complex to handle automatically inside the security adapter.
-                        // Instead, we sanitize each of the URIs individually, which works, even dynamically.
-                        // A single trusted media URL cannot represent a whole srcset list.
-                        // If you want to programmatically set explicitly trusted unsafe URLs, you should use
-                        // a trusted/sanitized HTML binding for the whole `img` tag and inject it using the
-                        // `ng-bind-html` directive.
+                        // A srcset policy must validate each candidate rather than the list as one URL.
                         let result = "";
                         // first check if there are spaces because it's not the same pattern
                         const trimmedSrcset = trim(value);
@@ -11652,7 +13238,7 @@
                             // sanitize the uri
                             result += uri.startsWith("unsafe:")
                                 ? uri
-                                : String(security.getTrustedMediaUrl(uri));
+                                : String(policies._apply("mediaUrl", uri));
                             // add the descriptor
                             result += ` ${trim(rawUris[innerIdx + 1])}`;
                         }
@@ -11662,7 +13248,7 @@
                         const uri = trim(lastTuple[0]);
                         result += uri.startsWith("unsafe:")
                             ? uri
-                            : String(security.getTrustedMediaUrl(uri));
+                            : String(policies._apply("mediaUrl", uri));
                         // and add the last descriptor if any
                         if (lastTuple.length === 2) {
                             result += ` ${trim(lastTuple[1])}`;
@@ -11680,10 +13266,11 @@
                         // Sanitize img[srcset] + source[srcset] values.
                         if (propName === "srcset" &&
                             (nodeName === "img" || nodeName === "source")) {
-                            sanitizer = (value) => sanitizeSrcset(security.valueOf(value), "ng-prop-srcset");
+                            sanitizer = (value) => sanitizeSrcset(deProxy(value), "ng-prop-srcset");
                         }
                         else if (trustedContext) {
-                            sanitizer = (value) => security.getTrusted(trustedContext, value);
+                            const platformWindow = node.ownerDocument.defaultView ?? window;
+                            sanitizer = (value) => policies._apply(trustedContext, value, platformWindow);
                         }
                         const directive = {
                             priority: 100,
@@ -11727,6 +13314,12 @@
                         if (!interpolateFn) {
                             return false;
                         }
+                        const trimmedValue = value.trim();
+                        const interpolationEnd = trimmedValue.indexOf(endSymbol, startSymbol.length);
+                        const isWholeClassInterpolation = name === "class" &&
+                            interpolateFn.expressions.length === 1 &&
+                            trimmedValue.startsWith(startSymbol) &&
+                            interpolationEnd === trimmedValue.length - endSymbol.length;
                         if (name === "multiple" && nodeName === "select") {
                             throw $compileError$1("selmulti", "Binding to the 'multiple' attribute is not supported. Element: {0}", startingTag(node.outerHTML));
                         }
@@ -11744,6 +13337,10 @@
                                 _allOrNothing: allOrNothing,
                                 _isNgAttr: isNgAttr,
                                 _interpolateFn: interpolateFn,
+                                _isWholeClassInterpolation: isWholeClassInterpolation,
+                                _watchPlan: isWholeClassInterpolation
+                                    ? createScopeWatchPlan($parse, assertInvariantDefined(interpolateFn.expressions[0]))
+                                    : undefined,
                             },
                         };
                         directives.push(directive);
@@ -11751,11 +13348,16 @@
                     }
                     /** Shared compile function for synthetic interpolated-attribute directives. */
                     function compileAttrInterpolateDirective(_element, attr) {
+                        const isWholeClassInterpolation = this._compileState._isWholeClassInterpolation;
                         return {
-                            pre: attrInterpolatePreLinkFn,
+                            pre: isWholeClassInterpolation
+                                ? wholeClassInterpolatePreLinkFn
+                                : attrInterpolatePreLinkFn,
                             _preLinkCtx: {
                                 ...this._compileState,
-                                _attr: attr,
+                                ...(isWholeClassInterpolation
+                                    ? { _sharedAttr: attr, _wholeClassTemplateElement: _element }
+                                    : { _attr: attr }),
                             },
                         };
                     }
@@ -12089,10 +13691,10 @@
     function applyTextInterpolationValue(node, value) {
         switch (node.nodeType) {
             case NodeType._ELEMENT_NODE:
-                node.innerHTML = value;
+                node.textContent = value;
                 break;
             default:
-                node.nodeValue = value;
+                node.data = value;
         }
     }
     /**
@@ -12824,7 +14426,7 @@
         }
     }
     /** @internal */
-    function createInterpolateService(state, $parse, security) {
+    function createInterpolateService(state, $parse, policies) {
         ensureInterpolateRuntimeActive(state);
         const interpolationStartSymbol = state.startSymbol;
         const interpolationEndSymbol = state.endSymbol;
@@ -12841,19 +14443,20 @@
                 .replace(escapedEndRegexp, interpolationEndSymbol);
         }
         const $interpolate = (text, mustHaveExpression, trustedContext, allOrNothing) => {
-            const contextAllowsConcatenation = trustedContext === SCE_CONTEXTS._URL ||
-                trustedContext === SCE_CONTEXTS._MEDIA_URL;
+            const contextAllowsConcatenation = trustedContext === "url" || trustedContext === "mediaUrl";
             if (!text.length || !text.includes(interpolationStartSymbol)) {
                 if (mustHaveExpression) {
                     return undefined;
                 }
                 let unescapedText = unescapeText(text);
                 if (contextAllowsConcatenation) {
-                    unescapedText = security.getTrusted(trustedContext, unescapedText);
+                    unescapedText = policies._apply(trustedContext, unescapedText);
                 }
                 const constantInterp = (() => unescapedText);
                 constantInterp.exp = text;
                 constantInterp.expressions = [];
+                if (trustedContext && !contextAllowsConcatenation)
+                    unescapedText = policies._apply(trustedContext, unescapedText);
                 return constantInterp;
             }
             allOrNothing = !!allOrNothing;
@@ -12901,7 +14504,12 @@
                             const value = parseFn(context);
                             return parseStringifyInterceptor(deProxy(isFunction(value) ? value() : value));
                         }
-                        : (context) => parseFn(context);
+                        : (context) => {
+                            const value = parseFn(context);
+                            return allOrNothing && !isDefined(value)
+                                ? value
+                                : policies._apply(trustedContext, deProxy(isFunction(value) ? value() : value) ?? "");
+                        };
                     const fn = ((context, cb) => {
                         try {
                             if (cb) {
@@ -12931,12 +14539,12 @@
                         concat[expressionPositions[i]] = values[i];
                     }
                     if (contextAllowsConcatenation) {
-                        return security.getTrusted(trustedContext, concat.join(""));
+                        return policies._apply(trustedContext, concat.join(""));
                     }
                     if (trustedContext && concat.length > 1) {
                         throwNoconcat(text);
                     }
-                    return concat.join("");
+                    return trustedContext ? values[0] : concat.join("");
                 };
                 const fn = ((context, cb) => {
                     const values = new Array(expressions.length);
@@ -12969,11 +14577,17 @@
             }
             function parseStringifyInterceptor(value) {
                 try {
+                    if (allOrNothing && !isDefined(value))
+                        return value;
                     value =
                         trustedContext && !contextAllowsConcatenation
-                            ? security.getTrusted(trustedContext, value)
-                            : security.valueOf(value);
-                    return allOrNothing && !isDefined(value) ? value : stringify$1(value);
+                            ? policies._apply(trustedContext, value)
+                            : deProxy(value);
+                    return allOrNothing && !isDefined(value)
+                        ? value
+                        : trustedContext && !contextAllowsConcatenation
+                            ? value
+                            : stringify$1(value);
                 }
                 catch (err) {
                     return interr(text, err);
@@ -12986,10 +14600,10 @@
         return $interpolate;
     }
     /** @internal */
-    function createInterpolateRegistration(state, security) {
+    function createInterpolateRegistration(state, policies) {
         return [
             _parse,
-            ($parse) => createInterpolateService(state, $parse, security),
+            ($parse) => createInterpolateService(state, $parse, policies),
         ];
     }
 
@@ -13276,8 +14890,6 @@
         _native,
         _rest,
         routerConfigKey,
-        _sce,
-        _sceDelegate,
         _security,
         _sse,
         _templateCache,
@@ -13598,22 +15210,6 @@
                     this._runtimeConfig,
                     "configure",
                     [_location, locationConfig],
-                ]);
-            }
-            const sceConfig = normalized.$sce;
-            if (sceConfig) {
-                this._configBlocks.push([
-                    this._runtimeConfig,
-                    "configure",
-                    [_sce, sceConfig],
-                ]);
-            }
-            const sceDelegateConfig = normalized.$sceDelegate;
-            if (sceDelegateConfig) {
-                this._configBlocks.push([
-                    this._runtimeConfig,
-                    "configure",
-                    [_sceDelegate, sceDelegateConfig],
                 ]);
             }
             const templateCacheConfig = normalized.$templateCache;
@@ -20567,7 +22163,7 @@
 
     const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
     const $compileError = createErrorFactory("$compile");
-    function sanitizeSrcset($sce, value, invokeType) {
+    function sanitizeSrcset($compile, value, invokeType) {
         if (!value) {
             return value;
         }
@@ -20586,14 +22182,14 @@
             const uri = trim(rawUris[innerIdx]);
             result += uri.startsWith("unsafe:")
                 ? uri
-                : String($sce.getTrustedMediaUrl(uri));
+                : String($compile._applyBindingPolicy("mediaUrl", uri));
             result += ` ${trim(rawUris[innerIdx + 1])}`;
         }
         const lastTuple = trim(rawUris[i * 2]).split(/\s/);
         const uri = trim(lastTuple[0]);
         result += uri.startsWith("unsafe:")
             ? uri
-            : String($sce.getTrustedMediaUrl(uri));
+            : String($compile._applyBindingPolicy("mediaUrl", uri));
         if (lastTuple.length === 2) {
             result += ` ${trim(lastTuple[1])}`;
         }
@@ -20664,9 +22260,10 @@
     ["src", "srcset", "href"].forEach((attrName) => {
         const normalized = directiveNormalize(`ng-${attrName}`);
         ngAttributeAliasDirectives[normalized] = [
-            _sce,
+            _compile,
+            _exceptionHandler,
             /** Creates the alias directive for interpolated URL-like attributes. */
-            function ($sce) {
+            function ($compile, $exceptionHandler) {
                 return {
                     priority: 99, // it needs to run after the attributes are interpolated
                     compile(_element) {
@@ -20684,17 +22281,36 @@
                                     return value;
                                 }
                                 const stringValue = stringify$1(value);
-                                if (stringValue.startsWith("unsafe:")) {
+                                if (stringValue.startsWith("unsafe:") &&
+                                    !(attrName === "src" &&
+                                        !["img", "video", "audio", "source", "track"].includes(nodeName)) &&
+                                    !(attrName === "href" &&
+                                        ["script", "base", "link"].includes(nodeName))) {
                                     return stringValue;
                                 }
                                 if (attrName === "src" &&
                                     !["img", "video", "audio", "source", "track"].includes(nodeName)) {
-                                    return $sce.getTrustedResourceUrl(stringValue);
+                                    return $compile._applyBindingPolicy(nodeName === "script" ? "scriptUrl" : "resourceUrl", stringValue, element.ownerDocument.defaultView ?? window);
                                 }
                                 if (attrName === "href" && nodeName !== "image") {
-                                    return $sce.getTrustedUrl(stringValue);
+                                    return $compile._applyBindingPolicy(nodeName === "script"
+                                        ? "scriptUrl"
+                                        : ["base", "link"].includes(nodeName)
+                                            ? "resourceUrl"
+                                            : "url", stringValue, element.ownerDocument.defaultView ?? window);
                                 }
-                                return $sce.getTrustedMediaUrl(stringValue);
+                                return $compile._applyBindingPolicy("mediaUrl", stringValue, element.ownerDocument.defaultView ?? window);
+                            }
+                            function writeAliasValue(value) {
+                                if (nodeName === "script" && attrName === "href") {
+                                    element.setAttribute("href", value);
+                                }
+                                else if (nodeName === "script" && attrName === "src") {
+                                    element.src = value;
+                                }
+                                else {
+                                    setNormalizedAttr(element, attrName, value);
+                                }
                             }
                             function readAliasValue() {
                                 const value = getNormalizedAttr(element, normalized);
@@ -20714,21 +22330,14 @@
                                 if (attrName === "href" ||
                                     (attrName === "src" &&
                                         ["img", "video", "audio", "source", "track"].includes(nodeName))) {
-                                    setNormalizedAttr(element, attrName, sanitize(value));
+                                    writeAliasValue(sanitize(value));
                                 }
                                 else if (attrName === "srcset") {
-                                    setNormalizedAttr(element, attrName, sanitizeSrcset($sce, value, "ng-srcset"));
+                                    setNormalizedAttr(element, attrName, sanitizeSrcset($compile, value, "ng-srcset"));
                                 }
                                 else {
-                                    setNormalizedAttr(element, attrName, value);
+                                    writeAliasValue(sanitize(value));
                                 }
-                            }
-                            // We need to sanitize the url at least once, in case it is a constant
-                            // non-interpolated attribute.
-                            if (initialValue && !initialValue.includes("{{")) {
-                                setNormalizedAttr(element, attrName, attrName === "srcset"
-                                    ? sanitizeSrcset($sce, initialValue, "ng-srcset")
-                                    : sanitize(initialValue));
                             }
                             let skipInitialInterpolation = Boolean(getNormalizedAttr(element, normalized)?.includes("{{"));
                             const syncObservedAliasValue = () => {
@@ -20740,15 +22349,26 @@
                                 }
                                 syncAliasValue(value);
                             };
-                            syncObservedAliasValue();
+                            if (initialValue && !initialValue.includes("{{")) {
+                                syncAliasValue(initialValue);
+                            }
+                            else {
+                                syncObservedAliasValue();
+                            }
                             const observerName = directiveNormalize(normalized);
                             const observer = new MutationObserver((mutations) => {
-                                for (let i = 0; i < mutations.length; i++) {
-                                    const attributeName = mutations[i].attributeName;
-                                    if (attributeName &&
-                                        directiveNormalize(attributeName) === observerName) {
-                                        syncObservedAliasValue();
+                                try {
+                                    for (let i = 0; i < mutations.length; i++) {
+                                        const attributeName = mutations[i].attributeName;
+                                        if (attributeName &&
+                                            directiveNormalize(attributeName) === observerName) {
+                                            syncObservedAliasValue();
+                                            break;
+                                        }
                                     }
+                                }
+                                catch (error) {
+                                    $exceptionHandler(error);
                                 }
                             });
                             observer.observe(element, { attributes: true });
@@ -20769,6 +22389,8 @@
     function ngBindDirective() {
         return {
             link(scope, element) {
+                if (getNodeName$1(element) === "script")
+                    throw new TypeError("Use ng-prop-text with a scriptPolicy for script source.");
                 const expression = getNormalizedAttr(element, "ngBind");
                 if (!isString(expression))
                     return;
@@ -20783,6 +22405,8 @@
     function ngBindTemplateDirective() {
         return {
             link(scope, element) {
+                if (getNodeName$1(element) === "script")
+                    throw new TypeError("Use ng-prop-text with a scriptPolicy for script source.");
                 const syncTemplate = () => {
                     const value = getNormalizedAttr(element, "ngBindTemplate");
                     element.textContent = isNullOrUndefined(value) ? "" : value;
@@ -20808,12 +22432,14 @@
             },
         };
     }
-    ngBindHtmlDirective.$inject = [_parse];
+    ngBindHtmlDirective.$inject = [_parse, _compile];
     /** Binds trusted HTML into the element while still validating the expression. */
-    function ngBindHtmlDirective($parse) {
+    function ngBindHtmlDirective($parse, $compile) {
         return {
             restrict: "A",
             compile(tElement) {
+                if (getNodeName$1(tElement) === "script")
+                    throw new TypeError("Use ng-prop-text with a scriptPolicy for script source.");
                 const expression = getNormalizedAttr(tElement, "ngBindHtml");
                 if (!isString(expression))
                     return () => undefined;
@@ -20822,8 +22448,9 @@
                 /** Watches the expression and writes the resulting HTML into the element. */
                 (scope, element) => {
                     scope.watch(expression, (val) => {
-                        const html = isUndefined(val) || isNull(val) ? "" : stringify$1(deProxy(val));
-                        element.innerHTML = isString(html) ? html : "";
+                        const html = $compile._prepareHtml(val, element.ownerDocument.defaultView ?? window);
+                        // TypeScript's DOM declarations do not include TrustedHTML yet.
+                        element.innerHTML = html;
                     }, false, true);
                 });
             },
@@ -21931,30 +23558,6 @@
         };
     }
     /**
-     * Parse a request URL and determine whether this is a same-origin request as the application
-     * document.
-     *
-     * @param requestUrl - The URL of the request as a string that will be resolved or a
-     *     parsed URL object.
-     * @returns Whether the request is for the same origin as the application document.
-     */
-    function urlIsSameOrigin(requestUrl) {
-        return urlsAreSameOrigin(requestUrl, originUrl);
-    }
-    /**
-     * Parse a request URL and determine whether it is same-origin as the current document base URL.
-     *
-     * Note: The base URL is usually the same as the document location (`location.href`) but can
-     * be overriden by using the `<base>` tag.
-     *
-     * @param requestUrl - The URL of the request as a string that will be resolved or a
-     *     parsed URL object.
-     * @returns Whether the URL is same-origin as the document base URL.
-     */
-    function urlIsSameOriginAsBaseUrl(requestUrl) {
-        return urlsAreSameOrigin(requestUrl, document.baseURI);
-    }
-    /**
      * Create a function that can check a URL's origin against a list of allowed/trusted origins.
      * The current location's origin is implicitly trusted.
      *
@@ -22418,7 +24021,7 @@
         }
     }
     /** @internal */
-    function createHttpService($injector, $sce, $cookie, $security, $stream, configuration) {
+    function createHttpService($injector, $cookie, $security, $stream, configuration) {
         const { defaults, interceptors, xsrfTrustedOrigins } = configuration;
         const defaultCache = new Map();
         const strategyCache = new Map();
@@ -22450,8 +24053,8 @@
             if (!isObject(requestConfig)) {
                 throw $httpError("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
             }
-            if (!isString($sce.valueOf(requestConfig.url))) {
-                throw $httpError("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
+            if (!isString(requestConfig.url)) {
+                throw $httpError("badreq", "Http request configuration url must be a string.  Received: {0}", requestConfig.url);
             }
             const hasCustomResponseTransform = hasOwn(requestConfig, "transformResponse");
             const config = extend({
@@ -22655,7 +24258,7 @@
                 return sendReq(config, reqData);
             }
             const paramSerializer = config.paramSerializer;
-            const url = buildUrl(String($sce.valueOf(config.url)), paramSerializer(config.params));
+            const url = buildUrl(config.url, paramSerializer(config.params));
             const result = await executeCacheStrategy({
                 strategy,
                 store,
@@ -22692,10 +24295,6 @@
             const reqHeaders = assertInvariantDefined(config.headers);
             config.headers = reqHeaders;
             let { url } = config;
-            if (!isString(url)) {
-                // If it is not a string then the URL must be a $sce trusted object
-                url = String($sce.valueOf(url));
-            }
             const paramSerializer = config.paramSerializer;
             url = buildUrl(url, paramSerializer(config.params));
             $http.pendingRequests.push(config);
@@ -26986,10 +28585,11 @@
             "$odd",
             "$even",
         ];
-        function scopeUsesRepeatPositionLocals(scope) {
-            const watchers = scope._handler._watchers;
-            for (let i = 0; i < repeatPositionLocalKeys.length; i++) {
-                if (watchers.has(repeatPositionLocalKeys[i])) {
+        function scopeUsesRepeatPositionLocals(handler) {
+            const watcherRefs = handler._ownedWatchers;
+            for (let i = 0; i < watcherRefs.length; i += 3) {
+                const key = watcherRefs[i];
+                if (key.charCodeAt(0) === 36 && repeatPositionLocalKeys.includes(key)) {
                     return true;
                 }
             }
@@ -27002,12 +28602,7 @@
             if (keyIdentifier && scope[keyIdentifier] !== key) {
                 scope[keyIdentifier] = key;
             }
-            if (value && (typeof value === "object" || typeof value === "function")) {
-                setHashKey(scope._target, hashKey(value));
-            }
-            else {
-                setHashKey(scope._target, null);
-            }
+            setScopeWatchIdentity(scope._handler, value);
             if (!updatePositionLocals) {
                 return;
             }
@@ -27036,26 +28631,24 @@
             }
         }
         function initializeScope(scope, index, valueIdentifier, value, keyIdentifier, key, arrayLength) {
-            const target = scope._target;
+            const handler = scope._handler;
+            const target = handler._target;
+            const valueIsProxy = isProxy(value);
             target[valueIdentifier] = value;
-            if (isProxy(value)) {
-                scope._handler._foreignProxies.add(value);
+            if (valueIsProxy) {
+                handler._foreignProxies.add(value);
             }
             if (keyIdentifier) {
                 target[keyIdentifier] = key;
             }
-            if (value && (typeof value === "object" || typeof value === "function")) {
-                setHashKey(target, hashKey(value));
-            }
-            else {
-                setHashKey(target, null);
-            }
+            setScopeWatchIdentity(handler, value, !valueIsProxy);
             target.$index = index;
             target.$first = index === 0;
             target.$last = index === arrayLength - 1;
             target.$middle = !target.$first && !target.$last;
             target.$odd = (index & 1) !== 0;
             target.$even = !target.$odd;
+            return handler;
         }
         function reconcileScopedObjectValue(scope, valueIdentifier, value) {
             const current = scope[valueIdentifier];
@@ -27181,13 +28774,9 @@
             if (!isRepeatIndexKey(indexValue)) {
                 return undefined;
             }
-            return `property:${property}:${typeof indexValue}:${String(indexValue)}`;
-        }
-        function createTrackByIdArrayFn(indexProperty) {
-            return (_$scope, _key, value) => trackByObjectIndex(value, indexProperty) ?? hashKey(value);
-        }
-        function trackByIdObjFn(_$scope, key) {
-            return String(key);
+            return typeof indexValue === "number"
+                ? indexValue
+                : `${typeof indexValue}:${String(indexValue)}`;
         }
         function canSkipDomMoveChecks(mutationMeta, blockOrder) {
             if (mutationMeta?._kind !== "splice" ||
@@ -27358,7 +28947,7 @@
                         }
                         pendingInsertEnd = nodes[nodes.length - 1];
                     }
-                    function attachTranscludedBlock(blockToLink, valueToLink, insertAfterNode, blockMap, clone, scope) {
+                    function attachTranscludedBlock(blockToLink, insertAfterNode, blockMap, clone, scope) {
                         const normalizedClone = normalizeCloneNodes(clone);
                         const cloneNodes = isArray(normalizedClone)
                             ? normalizedClone
@@ -27381,7 +28970,6 @@
                         }
                         blockToLink._clone = normalizedClone;
                         blockToLink._fragment = getCompiledFragmentRecord(cloneNodes[0]);
-                        blockToLink._value = valueToLink;
                         blockMap[blockToLink._id] = blockToLink;
                     }
                     function moveSwappedBlocks(leftIndex, rightIndex) {
@@ -27424,6 +29012,9 @@
                     let lastBlockMap = nullObject();
                     let lastBlockOrder = [];
                     let lastSeenArrayMutationVersion = 0;
+                    // Scope proxy methods are lazily bound before being returned.
+                    // eslint-disable-next-line @typescript-eslint/unbound-method
+                    const createTranscludedScope = $scope.transcluded;
                     $scope.watch(rhs, (collection) => {
                         swap();
                         let index = 0;
@@ -27433,32 +29024,33 @@
                         let key;
                         let value;
                         let trackById;
-                        let trackByIdFn;
                         let collectionKeys = [];
                         let block;
                         let elementsToRemove;
                         if (aliasAs) {
                             $scope[aliasAs] = collection;
                         }
-                        let isIndexKeyedCollection = isArrayLike(collection);
+                        let isIndexKeyedCollection = isArray(collection);
                         if (isIndexKeyedCollection) {
-                            collectionKeys = arrayFrom(collection);
-                            trackByIdFn = createTrackByIdArrayFn(indexProperty);
+                            collectionKeys = collection;
+                        }
+                        else if (isArrayLike(collection)) {
+                            collectionKeys = collection;
+                            isIndexKeyedCollection = true;
                         }
                         else if (isIterableCollection(collection)) {
                             collectionKeys = arrayFrom(collection);
                             collection = collectionKeys;
                             isIndexKeyedCollection = true;
-                            trackByIdFn = createTrackByIdArrayFn(indexProperty);
                         }
                         else {
-                            trackByIdFn = trackByIdObjFn;
-                            collectionKeys = [];
+                            const objectKeys = [];
+                            collectionKeys = objectKeys;
                             const collectionRecord = collection;
                             for (const itemKey in collectionRecord) {
                                 if (hasOwn(collectionRecord, itemKey) &&
                                     !itemKey.startsWith("$")) {
-                                    collectionKeys.push(itemKey);
+                                    objectKeys.push(itemKey);
                                 }
                             }
                         }
@@ -27475,7 +29067,9 @@
                             value = isIndexKeyedCollection
                                 ? collectionKeys[index]
                                 : collection[key];
-                            trackById = trackByIdFn($scope, key, value);
+                            trackById = isIndexKeyedCollection
+                                ? (trackByObjectIndex(value, indexProperty) ?? hashKey(value))
+                                : String(key);
                             const lastBlock = lastBlockMap[trackById];
                             if (lastBlock) {
                                 block = lastBlock;
@@ -27504,6 +29098,7 @@
                                     _id: trackById,
                                     _scope: undefined,
                                     _clone: undefined,
+                                    _value: value,
                                 };
                                 nextBlockMap[trackById] = true;
                             }
@@ -27649,13 +29244,15 @@
                             }
                         }
                         for (index = startIndex; index < collectionLength; index++) {
+                            block = nextBlockOrder[index];
                             key = isIndexKeyedCollection
                                 ? index
                                 : String(collectionKeys[index]);
-                            value = isIndexKeyedCollection
-                                ? collectionKeys[index]
-                                : collection[key];
-                            block = nextBlockOrder[index];
+                            value = hasRetainedBlocks
+                                ? isIndexKeyedCollection
+                                    ? collectionKeys[index]
+                                    : collection[key]
+                                : block._value;
                             if (block._scope) {
                                 flushPendingInserts();
                                 const collectionValue = value;
@@ -27700,13 +29297,13 @@
                                 }
                             }
                             else {
-                                const childScope = $scope.transcluded();
-                                initializeScope(childScope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
+                                const childScope = createTranscludedScope();
+                                const childScopeHandler = initializeScope(childScope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
                                 if ($transclude) {
-                                    callFunction($transclude, undefined, childScope, attachTranscludedBlock.bind(null, block, value, previousNode, nextBlockMap));
+                                    $transclude(childScope, attachTranscludedBlock.bind(null, block, previousNode, nextBlockMap), undefined, undefined, true);
                                 }
                                 block._usesPositionLocals =
-                                    scopeUsesRepeatPositionLocals(childScope);
+                                    scopeUsesRepeatPositionLocals(childScopeHandler);
                             }
                         }
                         flushPendingInserts();
@@ -37797,6 +39394,7 @@
     }
     /** @internal */
     function createRouterRuntime(dependencies) {
+        const disableCompiledFragmentRetention = enableCompiledFragmentRetention();
         const routerState = new RouterRuntimeState(dependencies.locationConfig);
         const stateRegistry = new StateRegistryRuntime(routerState, dependencies.compileRegistry);
         const transitions = new TransitionRuntime(routerState, dependencies.exceptionHandler, dependencies.securityPolicy);
@@ -37841,6 +39439,7 @@
                 if (destroyed)
                     return;
                 destroyed = true;
+                disableCompiledFragmentRetention();
                 stateService._destroyRuntime();
                 viewService?.destroy();
             },
@@ -40886,683 +42485,6 @@
         return service;
     }
 
-    const $sceError = createErrorFactory("$sce");
-    const DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST = /^\s*(https?|s?ftp|mailto|tel|file):/;
-    const DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST = /^\s*((https?|ftp|file|blob):|data:image\/)/;
-    const trustedTypesPolicyByWindow = new WeakMap();
-    // Copied from:
-    // http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.ts.source.html#line1021
-    // Prereq: s is a string.
-    /**
-     * Escapes a string so it can be embedded safely inside a regular expression.
-     */
-    function escapeForRegexp(str) {
-        return str.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
-    }
-    /**
-     * Adjusts a matcher string or `RegExp` into the normalized SCE matcher form.
-     */
-    function adjustMatcher(matcher) {
-        if (matcher === "self") {
-            return matcher;
-        }
-        if (isString(matcher)) {
-            // Strings match exactly except for 2 wildcards - '*' and '**'.
-            // '*' matches any character except those from the set ':/.?&'.
-            // '**' matches any character (like .* in a RegExp).
-            // More than 2 *'s raises an error as it's ill defined.
-            if (matcher.includes("***")) {
-                throw $sceError("iwcard", "Illegal sequence *** in string matcher.  String: {0}", matcher);
-            }
-            matcher = escapeForRegexp(matcher)
-                .replace(/\\\*\\\*/g, ".*")
-                .replace(/\\\*/g, "[^:/.?&;]*");
-            return new RegExp(`^${matcher}$`);
-        }
-        if (isRegExp(matcher)) {
-            // The only other type of matcher allowed is a Regexp.
-            // Match entire URL / disallow partial matches.
-            // Flags are reset (i.e. no global, ignoreCase or multiline)
-            return new RegExp(`^${matcher.source}$`);
-        }
-        throw $sceError("imatcher", 'Matchers may only be "self", string patterns or RegExp objects');
-    }
-    function getTrustedTypesPolicy($window) {
-        if (trustedTypesPolicyByWindow.has($window)) {
-            return trustedTypesPolicyByWindow.get($window) ?? null;
-        }
-        const { trustedTypes } = $window;
-        let policy = null;
-        if (trustedTypes) {
-            try {
-                policy = trustedTypes.createPolicy("angular-ts", {
-                    createHTML: (value) => value,
-                    createScriptURL: (value) => value,
-                });
-            }
-            catch {
-                policy = null;
-            }
-        }
-        trustedTypesPolicyByWindow.set($window, policy);
-        return policy;
-    }
-    function createTrustedType(policy, type, value) {
-        if (!policy) {
-            return value;
-        }
-        if (type === SCE_CONTEXTS._HTML) {
-            return policy.createHTML(value);
-        }
-        if (type === SCE_CONTEXTS._RESOURCE_URL) {
-            return policy.createScriptURL(value);
-        }
-        return value;
-    }
-    function unwrapTrustedValueForContext(type, value) {
-        if (type === SCE_CONTEXTS._HTML || type === SCE_CONTEXTS._RESOURCE_URL) {
-            return value._unwrapTrustedType();
-        }
-        return value._unwrapTrustedValue();
-    }
-    /**
-     * `$sceDelegate` is a service that is used by the `$sce` service to provide {@link ng.$sce Strict
-     * Contextual Escaping (SCE)} services to AngularTS.
-     *
-     * For an overview of this service and the functionality it provides in AngularTS, see the main
-     * page for {@link ng.$sce SCE}. The current page is targeted for developers who need to alter how
-     * SCE works in their application, which shouldn't be needed in most cases.
-     *
-     * <div class="alert alert-danger">
-     * AngularTS strongly relies on contextual escaping for the security of bindings: disabling or
-     * modifying this might cause cross site scripting (XSS) vulnerabilities. For libraries owners,
-     * changes to this service will also influence users, so be extra careful and document your changes.
-     * </div>
-     *
-     * Typically, you would configure or override the {@link ng.$sceDelegate $sceDelegate} instead of
-     * the `$sce` service to customize the way Strict Contextual Escaping works in AngularTS.  This is
-     * because, while the `$sce` provides numerous shorthand methods, etc., you really only need to
-     * override 3 core functions (`trustAs`, `getTrusted` and `valueOf`) to replace the way things
-     * work because `$sce` delegates to `$sceDelegate` for these operations.
-     *
-     * Configure the service with `app.config({ $sceDelegate: ... })`.
-     *
-     * The default instance of `$sceDelegate` should work out of the box with little pain.  While you
-     * can override it completely to change the behavior of `$sce`, the common case would
-     * involve configuring `$sceDelegate` with typed trusted and banned resource
-     * lists for URLs used to load AngularTS resources such as templates.
-     */
-    /**
-     *
-     * Typed `$sceDelegate` configuration controls the service used as a delegate
-     * for {@link ng.$sce Strict Contextual Escaping (SCE)}.
-     *
-     * `trustedResourceUrlList` and `bannedResourceUrlList` ensure that URLs used
-     * for AngularTS templates and other script-running resources are safe.
-     *
-     * For the general details about this service in AngularTS, read the main page for {@link ng.$sce
-     * Strict Contextual Escaping (SCE)}.
-     *
-     * **Example**:  Consider the following case. <a name="example"></a>
-     *
-     * - your app is hosted at url `http://myapp.example.com/`
-     * - but some of your templates are hosted on other domains you control such as
-     *   `http://srv01.assets.example.com/`, `http://srv02.assets.example.com/`, etc.
-     * - and you have an open redirect at `http://myapp.example.com/clickThru?...`.
-     *
-     * Here is what a secure configuration for this scenario might look like:
-     *
-     * ```
-     *  angular.createModule('myApp', []).config({
-     *    $sceDelegate: {
-     *      trustedResourceUrlList: [
-     *        // Allow same origin resource loads.
-     *        'self',
-     *        // Allow loading from our assets domain.  Notice the difference between * and **.
-     *        'http://srv*.assets.example.com/**',
-     *      ],
-     *      // The banned resource URL list overrides the trusted resource URL list so the open redirect
-     *      // here is blocked.
-     *      bannedResourceUrlList: [
-     *        'http://myapp.example.com/clickThru**',
-     *      ],
-     *    },
-     *  });
-     * ```
-     * Note that an empty trusted resource URL list will block every resource URL from being loaded, and will require
-     * you to manually mark each one as trusted with `$sce.trustAsResourceUrl`. However, templates
-     * requested by {@link ng.$templateRequest $templateRequest} that are present in
-     * {@link ng.$templateCache $templateCache} will not go through this check. If you have a mechanism
-     * to populate your templates in that cache at config time, then it is a good idea to remove 'self'
-     * from the trusted resource URL lsit. This helps to mitigate the security impact of certain types
-     * of issues, like for instance attacker-controlled `ng-includes`.
-     */
-    /** @internal */
-    class SceDelegateConfiguration {
-        constructor() {
-            // Resource URLs can also be trusted by policy.
-            let trustedResourceUrlList = ["self"];
-            let bannedResourceUrlList = [];
-            let aHrefSanitizationTrustedUrlList = DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST;
-            let imgSrcSanitizationTrustedUrlList = DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST;
-            /**
-             *
-             * @param value When provided, replaces the trustedResourceUrlList with
-             *     the value provided.  This must be an array or null.  A snapshot of this array is used so
-             *     further changes to the array are ignored.
-             *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
-             *     allowed in this array.
-             *
-             * @returns This configuration for chaining.
-             *
-             *
-             * Replaces the list of trusted resource URLs.
-             *
-             * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
-             * allowing only same origin resource requests.
-             *
-             * <div class="alert alert-warning">
-             * **Note:** the default `trustedResourceUrlList` of 'self' is not recommended if your app shares
-             * its origin with other apps! It is a good idea to limit it to only your application's directory.
-             * </div>
-             */
-            this.setTrustedResourceUrlList = function (value) {
-                trustedResourceUrlList = (value ?? []).map(adjustMatcher);
-                return this;
-            };
-            /**
-             *
-             * @param value When provided, replaces the `bannedResourceUrlList` with
-             *     the value provided. This must be an array or null. A snapshot of this array is used so
-             *     further changes to the array are ignored.</p><p>
-             *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
-             *     allowed in this array.</p><p>
-             *     The typical usage for the `bannedResourceUrlList` is to **block
-             *     [open redirects](http://cwe.mitre.org/data/definitions/601.html)** served by your domain as
-             *     these would otherwise be trusted but actually return content from the redirected domain.
-             *     </p><p>
-             *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
-             *     the final say.
-             *
-             * @returns This configuration for chaining.
-             *
-             *
-             * Replaces the list of banned resource URLs.
-             *
-             * The **default value** when no trusted resource URL list has been explicitly set is the empty
-             * array (i.e. there is no `bannedResourceUrlList`.)
-             */
-            this.setBannedResourceUrlList = function (value) {
-                bannedResourceUrlList = (value ?? []).map(adjustMatcher);
-                return this;
-            };
-            /**
-             * Retrieves or overrides the default regular expression that is used for
-             * determining trusted safe urls during a[href] sanitization.
-             *
-             * The sanitization is a security measure aimed at preventing XSS attacks
-             * via html links.
-             *
-             * Any url about to be assigned to a[href] via data-binding is first
-             * normalized and turned into an absolute url. Afterwards, the url is
-             * matched against the `aHrefSanitizationTrustedUrlList` regular expression.
-             * If a match is found, the original url is written into the DOM. Otherwise,
-             * the absolute url is prefixed with `'unsafe:'` string and only then is it
-             * written into the DOM.
-             *
-             * @param regexp - New regexp to trust urls with.
-             * @returns This configuration for chaining.
-             */
-            this.getAHrefSanitizationTrustedUrlList = () => aHrefSanitizationTrustedUrlList;
-            this.setAHrefSanitizationTrustedUrlList = function (regexp) {
-                aHrefSanitizationTrustedUrlList = regexp;
-                return this;
-            };
-            /**
-             * Retrieves or overrides the default regular expression that is used for
-             * determining trusted safe urls during media src sanitization.
-             *
-             * The sanitization is a security measure aimed at preventing XSS attacks
-             * via html links.
-             *
-             * Any url about to be assigned to img[src], srcset, or compatible media
-             * bindings via data-binding is first normalized and turned into an absolute
-             * url. Afterwards, the url is matched against the
-             * `imgSrcSanitizationTrustedUrlList` regular expression. If a match is
-             * found, the original url is written into the DOM. Otherwise, the absolute
-             * url is prefixed with `'unsafe:'` string and only then is it written into
-             * the DOM.
-             *
-             * @param regexp - New regexp to trust urls with.
-             * @returns This configuration for chaining.
-             */
-            this.getImgSrcSanitizationTrustedUrlList = () => imgSrcSanitizationTrustedUrlList;
-            this.setImgSrcSanitizationTrustedUrlList = function (regexp) {
-                imgSrcSanitizationTrustedUrlList = regexp;
-                return this;
-            };
-            /** Creates `$sceDelegate` from the current policy configuration. */
-            this.createService = function ($injector, $window) {
-                const trustedTypesPolicy = getTrustedTypesPolicy($window);
-                let htmlSanitizer = function () {
-                    throw $sceError("unsafe", "Attempting to use an unsafe value in a safe context.");
-                };
-                if ($injector.has("$sanitize")) {
-                    htmlSanitizer =
-                        $injector.get("$sanitize");
-                }
-                /**
-                 * Tests whether a parsed URL matches one SCE allow/deny matcher.
-                 */
-                function matchUrl(matcher, parsedUrl) {
-                    if (matcher === "self") {
-                        return (urlIsSameOrigin(parsedUrl) || urlIsSameOriginAsBaseUrl(parsedUrl));
-                    }
-                    // definitely a regex.  See adjustMatchers()
-                    return !!matcher.exec(parsedUrl.href);
-                }
-                /**
-                 * Returns whether a resource URL is permitted by the current policy lists.
-                 */
-                function isResourceUrlAllowedByPolicy(url) {
-                    const parsedUrl = urlResolve(url);
-                    let i;
-                    let j;
-                    let allowed = false;
-                    // Ensure that at least one item from the trusted resource URL list allows this url.
-                    for (i = 0, j = trustedResourceUrlList.length; i < j; i++) {
-                        if (matchUrl(trustedResourceUrlList[i], parsedUrl)) {
-                            allowed = true;
-                            break;
-                        }
-                    }
-                    if (allowed) {
-                        // Ensure that no item from the banned resource URL list has blocked this url.
-                        for (i = 0, j = bannedResourceUrlList.length; i < j; i++) {
-                            if (matchUrl(bannedResourceUrlList[i], parsedUrl)) {
-                                allowed = false;
-                                break;
-                            }
-                        }
-                    }
-                    return allowed;
-                }
-                function sanitizeUri(uri, isMediaUrl) {
-                    const regex = isMediaUrl
-                        ? imgSrcSanitizationTrustedUrlList
-                        : aHrefSanitizationTrustedUrlList;
-                    const normalizedVal = new URL(uri.trim(), $window.location.href).href;
-                    if (normalizedVal !== "" && !normalizedVal.match(regex)) {
-                        return `unsafe:${normalizedVal}`;
-                    }
-                    return uri;
-                }
-                /**
-                 * Creates one trusted-value holder constructor for a specific SCE context.
-                 */
-                function generateHolderType(Base) {
-                    /** @param trustedValue */
-                    const holderType = function TrustedValueHolderType(trustedValue = "", trustedType = trustedValue) {
-                        this._unwrapTrustedValue = function () {
-                            return trustedValue;
-                        };
-                        this._unwrapTrustedType = function () {
-                            return trustedType;
-                        };
-                    };
-                    if (Base) {
-                        holderType.prototype = new Base();
-                    }
-                    holderType.prototype.valueOf =
-                        function sceValueOf() {
-                            return this._unwrapTrustedValue();
-                        };
-                    holderType.prototype.toString =
-                        function sceToString() {
-                            return this._unwrapTrustedValue();
-                        };
-                    return holderType;
-                }
-                const trustedValueHolderBase = generateHolderType();
-                const byType = {};
-                byType[SCE_CONTEXTS._HTML] = generateHolderType(trustedValueHolderBase);
-                byType[SCE_CONTEXTS._MEDIA_URL] = generateHolderType(trustedValueHolderBase);
-                byType[SCE_CONTEXTS._URL] = generateHolderType(byType[SCE_CONTEXTS._MEDIA_URL]);
-                byType[SCE_CONTEXTS._RESOURCE_URL] = generateHolderType(byType[SCE_CONTEXTS._URL]);
-                /**
-                 * Returns a trusted representation of the parameter for the specified context. This trusted
-                 * object will later on be used as-is, without any security check, by bindings or directives
-                 * that require this security context.
-                 * For instance, marking a string as trusted for the `$sce.HTML` context will entirely bypass
-                 * the potential `$sanitize` call in corresponding `$sce.HTML` bindings or directives, such as
-                 * `ng-bind-html`. Note that in most cases you won't need to call this function: if you have the
-                 * sanitizer loaded, passing the value itself will render all the HTML that does not pose a
-                 * security risk.
-                 *
-                 * See {@link ng.$sceDelegate#getTrusted getTrusted} for the function that will consume those
-                 * trusted values, and {@link ng.$sce $sce} for general documentation about strict contextual
-                 * escaping.
-                 *
-                 * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
-                 *     `$sce.RESOURCE_URL` or `$sce.HTML`.
-                 *
-                 * @param trustedValue The value that should be considered trusted.
-                 * @returns A trusted representation of value, that can be used in the given context.
-                 */
-                function trustAs(type, trustedValue) {
-                    const Constructor = isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
-                    if (!Constructor) {
-                        throw $sceError("icontext", "Attempted to trust a value in invalid context. Context: {0}; Value: {1}", type, trustedValue);
-                    }
-                    if (trustedValue === null ||
-                        isUndefined(trustedValue) ||
-                        trustedValue === "") {
-                        return trustedValue;
-                    }
-                    // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
-                    // mutable objects, we ensure here that the value passed in is actually a string.
-                    if (!isString(trustedValue)) {
-                        throw $sceError("itype", "Attempted to trust a non-string value in a content requiring a string: Context: {0}", type);
-                    }
-                    const tst = new Constructor(trustedValue, createTrustedType(trustedTypesPolicy, type, trustedValue));
-                    return tst;
-                }
-                /**
-                 * If the passed parameter had been returned by a prior call to {@link ng.$sceDelegate#trustAs
-                 * `$sceDelegate.trustAs`}, returns the value that had been passed to {@link
-                 * ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}.
-                 *
-                 * If the passed parameter is not a value that had been returned by {@link
-                 * ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}, it must be returned as-is.
-                 *
-                 * @param maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}
-                 *     call or anything else.
-                 * @returns The `value` that was originally provided to {@link ng.$sceDelegate#trustAs
-                 *     `$sceDelegate.trustAs`} if `value` is the result of such a call.  Otherwise, returns
-                 *     `value` unchanged.
-                 */
-                function valueOf(maybeTrusted) {
-                    if (isInstanceOf(maybeTrusted, trustedValueHolderBase)) {
-                        return maybeTrusted._unwrapTrustedValue();
-                    }
-                    return maybeTrusted;
-                }
-                /**
-                 *
-                 * Given an object and a security context in which to assign it, returns a value that's safe to
-                 * use in this context, which was represented by the parameter. To do so, this function either
-                 * unwraps the safe type it has been given (for instance, a {@link ng.$sceDelegate#trustAs
-                 * `$sceDelegate.trustAs`} result), or it might try to sanitize the value given, depending on
-                 * the context and sanitizer availablility.
-                 *
-                 * The contexts that can be sanitized are $sce.MEDIA_URL, $sce.URL and $sce.HTML. The first two are available
-                 * by default, and the third one relies on the `$sanitize` service (which may be loaded through
-                 * the `ngSanitize` module). Furthermore, for $sce.RESOURCE_URL context, a plain string may be
-                 * accepted if the resource URL policy configured through
-                 * `app.config({ $sceDelegate: ... })` accepts that resource.
-                 *
-                 * This function will throw if the safe type isn't appropriate for this context, or if the
-                 * value given cannot be accepted in the context (which might be caused by sanitization not
-                 * being available, or the value not being recognized as safe).
-                 *
-                 * <div class="alert alert-danger">
-                 * Disabling auto-escaping is extremely dangerous, it usually creates a Cross Site Scripting
-                 * (XSS) vulnerability in your application.
-                 * </div>
-                 *
-                 * @param type The context in which this value is to be used (such as `$sce.HTML`).
-                 * @param maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs
-                 *     `$sceDelegate.trustAs`} call, or anything else (which will not be considered trusted.)
-                 * @returns A version of the value that's safe to use in the given context, or throws an
-                 *     exception if this is impossible.
-                 */
-                function getTrusted(type, maybeTrusted) {
-                    if (maybeTrusted === null ||
-                        isUndefined(maybeTrusted) ||
-                        maybeTrusted === "") {
-                        return maybeTrusted;
-                    }
-                    const constructor = hasOwn(byType, type) ? byType[type] : null;
-                    // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
-                    // as-is.
-                    if (constructor && isInstanceOf(maybeTrusted, constructor)) {
-                        return unwrapTrustedValueForContext(type, maybeTrusted);
-                    }
-                    // If maybeTrusted is a trusted class instance but not of the correct trusted type
-                    // then unwrap it and allow it to pass through to the rest of the checks
-                    const unwrapTrustedValue = isObject(maybeTrusted)
-                        ? maybeTrusted
-                            ._unwrapTrustedValue
-                        : undefined;
-                    if (isFunction(unwrapTrustedValue)) {
-                        maybeTrusted = unwrapTrustedValue.call(maybeTrusted);
-                    }
-                    // If we get here, then we will either sanitize the value or throw an exception.
-                    if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
-                        // we attempt to sanitize non-resource URLs
-                        return sanitizeUri(String(maybeTrusted), type === SCE_CONTEXTS._MEDIA_URL);
-                    }
-                    if (type === SCE_CONTEXTS._RESOURCE_URL) {
-                        if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
-                            return maybeTrusted;
-                        }
-                        throw $sceError("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", String(maybeTrusted));
-                    }
-                    // htmlSanitizer throws its own error when no sanitizer is available.
-                    return htmlSanitizer(maybeTrusted);
-                }
-                return { trustAs, getTrusted, valueOf };
-            };
-        }
-    }
-    /** @internal */
-    class SceConfiguration {
-        constructor() {
-            let enabled = true;
-            /**
-             * @param value Enables or disables SCE application-wide.
-             * @returns This configuration for chaining.
-             */
-            this.setEnabled = function (value) {
-                enabled = value;
-                return this;
-            };
-            /**
-             * Creates the runtime `$sce` service.
-             */
-            this.createService = ($parse, $sceDelegate) => {
-                const sce = {};
-                /**
-                 * @returns True if SCE is enabled, false otherwise. Configure the value
-                 *     through `app.config({ $sce: { enabled } })`.
-                 *
-                 *
-                 * Returns a boolean indicating if SCE is enabled.
-                 */
-                sce.isEnabled = function () {
-                    return enabled;
-                };
-                sce.trustAs = (type, value) => $sceDelegate.trustAs(type, value);
-                sce.getTrusted = (type, value) => $sceDelegate.getTrusted(type, value);
-                sce.valueOf = (value) => $sceDelegate.valueOf(value);
-                if (!enabled) {
-                    /**
-                     * Disables trust enforcement when SCE is configured off.
-                     */
-                    sce.trustAs = sce.getTrusted = function (type, value) {
-                        return value;
-                    };
-                    sce.valueOf = (v) => v;
-                }
-                /**
-                 * Converts AngularTS {@link guide/expression expression} into a function.  This is like {@link
-                 * ng.$parse $parse} and is identical when the expression is a literal constant.  Otherwise, it
-                 * wraps the expression in a call to {@link ng.$sce#getTrusted $sce.getTrusted(*type*,
-                 * *result*)}
-                 *
-                 * @param type The SCE context in which this result will be used.
-                 * @param expr String expression to compile.
-                 * @returns A function which represents the compiled expression:
-                 *
-                 *    * `context` – `{object}` – an object against which any expressions embedded in the
-                 *      strings are evaluated against (typically a scope object).
-                 *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-                 *      in `context`.
-                 */
-                sce.parseAs = (type, expr) => {
-                    const parsed = $parse(expr);
-                    if (parsed._literal && parsed._constant) {
-                        return parsed;
-                    }
-                    return $parse(expr, (value) => sce.getTrusted(type, value));
-                };
-                /**
-                 * Delegates to {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}. As such, returns a
-                 * wrapped object that represents your value, and the trust you have in its safety for the given
-                 * context. AngularTS can then use that value as-is in bindings of the specified secure context.
-                 * This is used in bindings for `ng-bind-html`, `ng-include`, and most `src` attribute
-                 * interpolations. See {@link ng.$sce $sce} for strict contextual escaping.
-                 *
-                 * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
-                 *     `$sce.RESOURCE_URL` or `$sce.HTML`.
-                 *
-                 * @param value The value that that should be considered trusted.
-                 * @returns A wrapped version of value that can be used as a trusted variant of your `value`
-                 *     in the context you specified.
-                 */
-                /**
-                 * Shorthand method.  `$sce.trustAsHtml(value)` →
-                 *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.HTML, value)`}
-                 *
-                 * @param value The value to mark as trusted for `$sce.HTML` context.
-                 * @returns A wrapped version of value that can be used as a trusted variant of your `value`
-                 *     in `$sce.HTML` context (like `ng-bind-html`).
-                 */
-                /**
-                 * Shorthand method.  `$sce.trustAsUrl(value)` →
-                 *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.URL, value)`}
-                 *
-                 * @param value The value to mark as trusted for `$sce.URL` context.
-                 * @returns A wrapped version of value that can be used as a trusted variant of your `value`
-                 *     in `$sce.URL` context. That context is currently unused, so there are almost no reasons
-                 *     to use this function so far.
-                 */
-                /**
-                 * Shorthand method.  `$sce.trustAsResourceUrl(value)` →
-                 *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.RESOURCE_URL, value)`}
-                 *
-                 * @param value The value to mark as trusted for `$sce.RESOURCE_URL` context.
-                 * @returns A wrapped version of value that can be used as a trusted variant of your `value`
-                 *     in `$sce.RESOURCE_URL` context (template URLs in `ng-include`, most `src` attribute
-                 *     bindings, ...)
-                 */
-                /**
-                 * Delegates to {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted`}.  As such,
-                 * takes any input, and either returns a value that's safe to use in the specified context,
-                 * or throws an exception. This function is aware of trusted values created by the `trustAs`
-                 * function and its shorthands, and when contexts are appropriate, returns the unwrapped value
-                 * as-is. Finally, this function can also throw when there is no way to turn `maybeTrusted` in a
-                 * safe value (e.g., no sanitization is available or possible.)
-                 *
-                 * @param type The context in which this value is to be used.
-                 * @param maybeTrusted The result of a prior {@link ng.$sce#trustAs
-                 *     `$sce.trustAs`} call, or anything else (which will not be considered trusted.)
-                 * @returns A version of the value that's safe to use in the given context, or throws an
-                 *     exception if this is impossible.
-                 */
-                /**
-                 * Shorthand method.  `$sce.getTrustedHtml(value)` →
-                 *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.HTML, value)`}
-                 *
-                 * @param value The value to pass to `$sce.getTrusted`.
-                 * @returns The return value of `$sce.getTrusted($sce.HTML, value)`
-                 */
-                /**
-                 * Shorthand method.  `$sce.getTrustedUrl(value)` →
-                 *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.URL, value)`}
-                 *
-                 * @param value The value to pass to `$sce.getTrusted`.
-                 * @returns The return value of `$sce.getTrusted($sce.URL, value)`
-                 */
-                /**
-                 * Shorthand method.  `$sce.getTrustedResourceUrl(value)` →
-                 *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.RESOURCE_URL, value)`}
-                 *
-                 * @param value The value to pass to `$sceDelegate.getTrusted`.
-                 * @returns The return value of `$sce.getTrusted($sce.RESOURCE_URL, value)`
-                 */
-                /**
-                 * Shorthand method.  `$sce.parseAsHtml(expression string)` →
-                 *     {@link ng.$sceparseAs `$sce.parseAs($sce.HTML, value)`}
-                 *
-                 * @param expression String expression to compile.
-                 * @returns A function which represents the compiled expression:
-                 *
-                 *    * `context` – `{object}` – an object against which any expressions embedded in the
-                 *      strings are evaluated against (typically a scope object).
-                 *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-                 *      in `context`.
-                 */
-                /**
-                 * Shorthand method.  `$sce.parseAsUrl(value)` →
-                 *     {@link ng.$sceparseAs `$sce.parseAs($sce.URL, value)`}
-                 *
-                 * @param expression String expression to compile.
-                 * @returns A function which represents the compiled expression:
-                 *
-                 *    * `context` – `{object}` – an object against which any expressions embedded in the
-                 *      strings are evaluated against (typically a scope object).
-                 *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-                 *      in `context`.
-                 */
-                /**
-                 * Shorthand method.  `$sce.parseAsResourceUrl(value)` →
-                 *     {@link ng.$sceparseAs `$sce.parseAs($sce.RESOURCE_URL, value)`}
-                 *
-                 * @param expression String expression to compile.
-                 * @returns A function which represents the compiled expression:
-                 *
-                 *    * `context` – `{object}` – an object against which any expressions embedded in the
-                 *      strings are evaluated against (typically a scope object).
-                 *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-                 *      in `context`.
-                 */
-                /**
-                 * Shorthand method.  `$sce.parseAsJs(value)` →
-                 *     {@link ng.$sceparseAs `$sce.parseAs($sce.JS, value)`}
-                 *
-                 * @param expression String expression to compile.
-                 * @returns A function which represents the compiled expression:
-                 *
-                 *    * `context` – `{object}` – an object against which any expressions embedded in the
-                 *      strings are evaluated against (typically a scope object).
-                 *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-                 *      in `context`.
-                 */
-                // Shorthand delegations.
-                const parse = (type, expr) => sce.parseAs(type, expr);
-                const getTrusted = (type, value) => sce.getTrusted(type, value);
-                const trustAs = (type, value) => sce.trustAs(type, value);
-                entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
-                    const lName = name.replace(/^_/, "").toLowerCase();
-                    /** @param expr */
-                    sce[snakeToCamel(`parse_as_${lName}`)] = function (expr) {
-                        return parse(enumValue, expr);
-                    };
-                    /** @param value */
-                    sce[snakeToCamel(`get_trusted_${lName}`)] = function (value) {
-                        return getTrusted(enumValue, value);
-                    };
-                    /** @param value */
-                    sce[snakeToCamel(`trust_as_${lName}`)] = function (value) {
-                        return trustAs(enumValue, value);
-                    };
-                });
-                return sce;
-            };
-        }
-    }
-
     /**
      * Shared connection manager for push transports such as SSE and WebSocket.
      * Handles reconnect, heartbeat, and event callbacks.
@@ -42006,9 +42928,21 @@
         return next;
     }
     /** @internal */
-    function createTemplateRequestService($templateCache, $http, httpOptions) {
+    function createTemplateRequestService($templateCache, $http, httpOptions, resourceUrlPolicy) {
         const pendingRequests = new Map();
         return (templateUrl) => {
+            try {
+                if (!isString(templateUrl))
+                    throw new TypeError("Template URL must be a string.");
+                templateUrl = resourceUrlPolicy(templateUrl);
+                if (!isString(templateUrl))
+                    throw new TypeError("$compile.resourceUrlPolicy must return a string.");
+            }
+            catch (error) {
+                return Promise.resolve().then(() => {
+                    throw error;
+                });
+            }
             const pendingRequest = pendingRequests.get(templateUrl);
             if (pendingRequest)
                 return pendingRequest;
@@ -43024,8 +43958,7 @@
             });
             return registry.factory(name, [
                 _parse,
-                _sce,
-                ($parse, $sce) => createInterpolateService(state, $parse, $sce),
+                ($parse) => createInterpolateService(state, $parse, context.compileRegistry._bindingPolicies),
             ]);
         },
     };
@@ -43178,7 +44111,7 @@
             return registry.factory(name, [
                 _templateCache,
                 _http,
-                ($templateCache, $http) => createTemplateRequestService($templateCache, $http, httpOptions),
+                ($templateCache, $http) => createTemplateRequestService($templateCache, $http, httpOptions, (url) => context.compileRegistry._bindingPolicies._resourceUrl(url, context.platform.window)),
             ]);
         },
     };
@@ -43197,11 +44130,10 @@
             });
             return registry.factory(name, [
                 _injector,
-                _sce,
                 _cookie,
                 _security,
                 _stream,
-                ($injector, $sce, $cookie, $security, $stream) => createHttpService($injector, $sce, $cookie, $security, $stream, configuration),
+                ($injector, $cookie, $security, $stream) => createHttpService($injector, $cookie, $security, $stream, configuration),
             ]);
         },
     };
@@ -43276,50 +44208,6 @@
         $templateCache: templateCacheRuntimeRegistration,
         $templateRequest: templateRequestRuntimeRegistration,
     };
-    /** Strict contextual escaping providers. */
-    const sceRuntimeRegistration = {
-        /** @internal */
-        _register(registry, name, context) {
-            const configuration = new SceConfiguration();
-            context.runtime.configRegistry.register(name, (value) => {
-                const config = value;
-                if (config.enabled !== undefined) {
-                    configuration.setEnabled(config.enabled);
-                }
-            });
-            return registry.factory(name, [
-                _parse,
-                _sceDelegate,
-                ($parse, $sceDelegate) => configuration.createService($parse, $sceDelegate),
-            ]);
-        },
-    };
-    const sceDelegateRuntimeRegistration = {
-        /** @internal */
-        _register(registry, name, context) {
-            const configuration = new SceDelegateConfiguration();
-            context.runtime.configRegistry.register(name, (value) => {
-                const config = value;
-                if (config.trustedResourceUrlList !== undefined) {
-                    configuration.setTrustedResourceUrlList(config.trustedResourceUrlList);
-                }
-                if (config.bannedResourceUrlList !== undefined) {
-                    configuration.setBannedResourceUrlList(config.bannedResourceUrlList);
-                }
-                if (config.aHrefSanitizationTrustedUrlList !== undefined) {
-                    configuration.setAHrefSanitizationTrustedUrlList(config.aHrefSanitizationTrustedUrlList);
-                }
-                if (config.imgSrcSanitizationTrustedUrlList !== undefined) {
-                    configuration.setImgSrcSanitizationTrustedUrlList(config.imgSrcSanitizationTrustedUrlList);
-                }
-            });
-            return registry.factory(name, [
-                _injector,
-                _window,
-                ($injector, $window) => configuration.createService($injector, $window),
-            ]);
-        },
-    };
     const securityRuntimeRegistration = {
         /** @internal */
         _register(registry, name, context) {
@@ -43334,8 +44222,6 @@
     };
     const ngSecurityProviders = {
         $security: securityRuntimeRegistration,
-        $sce: sceRuntimeRegistration,
-        $sceDelegate: sceDelegateRuntimeRegistration,
     };
     /** Native animation service composition. */
     const animateRuntimeRegistration = {
@@ -43673,12 +44559,11 @@
             registry.factory(_compile, [
                 _injector,
                 _interpolate,
-                _sce,
                 _exceptionHandler,
                 _parse,
                 _controller,
                 _rootScope,
-                ($injector, $interpolate, $sce, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, $sce, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
+                ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
             ]);
             const registeredProviders = new Map();
             ngDefaultProviderGroups.forEach((providers) => {
@@ -43721,13 +44606,6 @@
     }
 
     /** @internal */
-    const passThroughSecurityAdapter = {
-        getTrusted: (_context, value) => value,
-        getTrustedMediaUrl: (value) => value,
-        valueOf: (value) => value,
-    };
-
-    /** @internal */
     function getRuntimeComposition(angular) {
         return angular._composition;
     }
@@ -43761,7 +44639,7 @@
             composition.configRegistry.register(_interpolate, (value) => {
                 applyInterpolateConfiguration(composition.interpolateState, value);
             });
-            registry.factory(_interpolate, createInterpolateRegistration(composition.interpolateState, passThroughSecurityAdapter));
+            registry.factory(_interpolate, createInterpolateRegistration(composition.interpolateState, compileRegistry._bindingPolicies));
             registry.factory(_controller, [
                 _injector,
                 ($injector) => createControllerService(composition.controllerRegistry, $injector),
@@ -43777,7 +44655,7 @@
                 _parse,
                 _controller,
                 _rootScope,
-                ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, passThroughSecurityAdapter, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
+                ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
             ]);
             registry.value(_angular, angular);
             registerRuntimeProviders(registry, providers, composition);

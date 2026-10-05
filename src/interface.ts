@@ -31,8 +31,6 @@ import {
   _rest,
   _rootElement,
   _rootScope,
-  _sce,
-  _sceDelegate,
   _scope,
   _security,
   _serviceWorker,
@@ -91,8 +89,6 @@ export interface InjectionTokenMap {
   $rest: ng.RestFactory;
   $rootElement: ng.RootElementService;
   $rootScope: ng.RootScopeService;
-  $sce: ng.SceService;
-  $sceDelegate: ng.SceDelegateService;
   $security: ng.SecurityPolicy;
   $serviceWorker: ng.ServiceWorkerService;
   $sse: ng.SseService;
@@ -139,8 +135,6 @@ export const PublicInjectionTokens = {
   $rest: _rest,
   $rootScope: _rootScope,
   $rootElement: _rootElement,
-  $sce: _sce,
-  $sceDelegate: _sceDelegate,
   $security: _security,
   $serviceWorker: _serviceWorker,
   $state: _state,

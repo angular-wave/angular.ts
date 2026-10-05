@@ -71,6 +71,16 @@ export function createAngular(
 }
 
 export { AngularRuntime };
+export type { HtmlPolicy } from "../core/compile/html-policy.ts";
+export type {
+  BindingContext,
+  BindingPolicyConfig,
+  UrlPolicy,
+} from "../core/compile/binding-policy.ts";
+export type {
+  ScriptPolicy,
+  ScriptUrlPolicy,
+} from "../core/compile/script-policy.ts";
 export type {
   DirectiveRegistration,
   DirectiveRegistrations,

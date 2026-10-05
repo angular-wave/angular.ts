@@ -2,7 +2,8 @@ import { _parse, _exceptionHandler } from '../../injection-tokens.js';
 import { directiveNormalize, isString } from '../../shared/utils.js';
 import { getNormalizedAttr, hasNormalizedAttr, getInheritedData } from '../../shared/dom.js';
 import { AFTER_RENDER_EVENT_SCHEDULER_KEY } from '../../core/render/after-render.js';
-import { addScopeEventListener } from '../../core/render/event-dispatcher.js';
+import { canDelegateEvent, addScopeDelegatedEventListener, addScopeEventListener } from '../../core/render/event-dispatcher.js';
+import { EVENT_SCOPE } from '../../core/scope/scope.js';
 
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
@@ -66,29 +67,50 @@ function createEventDirective($parse, $exceptionHandler, directiveName, eventNam
             if (!isString(expression))
                 return () => undefined;
             const eventBehavior = readEventBehavior(element);
-            const fn = $parse(expression);
-            return (scope, element) => {
-                const handler = (event) => {
-                    if (eventBehavior._prevent) {
-                        event.preventDefault();
-                    }
-                    if (eventBehavior._stop) {
-                        event.stopPropagation();
-                    }
-                    try {
-                        fn(scope, { $event: event });
-                    }
-                    catch (error) {
-                        $exceptionHandler(error);
-                    }
-                    finally {
-                        scheduleEventAfterRender(scope, element);
-                    }
-                };
-                addScopeEventListener(scope, element, eventName, handler, eventBehavior._listenerOptions);
+            return {
+                post: linkEventDirective,
+                _postLinkCtx: {
+                    _delegated: eventBehavior._listenerOptions === undefined &&
+                        canDelegateEvent(eventName),
+                    _eventBehavior: eventBehavior,
+                    _eventName: eventName,
+                    _exceptionHandler: $exceptionHandler,
+                    _fn: $parse(expression),
+                },
             };
         },
     };
+}
+/** Links an event directive from immutable compile-time state. */
+function linkEventDirective(linkState, scope, element) {
+    const eventTarget = element;
+    eventTarget[EVENT_SCOPE] = scope;
+    const handler = (linkState._handler ?? (linkState._handler = function eventHandler(event) {
+        const linkedScope = this[EVENT_SCOPE];
+        if (!linkedScope)
+            return;
+        if (linkState._eventBehavior._prevent) {
+            event.preventDefault();
+        }
+        if (linkState._eventBehavior._stop) {
+            event.stopPropagation();
+        }
+        try {
+            linkState._fn(linkedScope, { $event: event });
+        }
+        catch (error) {
+            linkState._exceptionHandler(error);
+        }
+        finally {
+            scheduleEventAfterRender(linkedScope, this);
+        }
+    }));
+    if (linkState._delegated) {
+        addScopeDelegatedEventListener(scope, element, linkState._eventName, handler);
+    }
+    else {
+        addScopeEventListener(scope, element, linkState._eventName, handler, linkState._eventBehavior._listenerOptions);
+    }
 }
 function readEventBehavior(element) {
     const prevent = hasNormalizedAttr(element, "eventPrevent");

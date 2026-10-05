@@ -355,7 +355,7 @@ function applyHttpConfiguration(configuration, config) {
     }
 }
 /** @internal */
-function createHttpService($injector, $sce, $cookie, $security, $stream, configuration) {
+function createHttpService($injector, $cookie, $security, $stream, configuration) {
     const { defaults, interceptors, xsrfTrustedOrigins } = configuration;
     const defaultCache = new Map();
     const strategyCache = new Map();
@@ -387,8 +387,8 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
         if (!isObject(requestConfig)) {
             throw $httpError("badreq", "Http request configuration must be an object.  Received: {0}", requestConfig);
         }
-        if (!isString($sce.valueOf(requestConfig.url))) {
-            throw $httpError("badreq", "Http request configuration url must be a string or a $sce trusted object.  Received: {0}", requestConfig.url);
+        if (!isString(requestConfig.url)) {
+            throw $httpError("badreq", "Http request configuration url must be a string.  Received: {0}", requestConfig.url);
         }
         const hasCustomResponseTransform = hasOwn(requestConfig, "transformResponse");
         const config = extend({
@@ -592,7 +592,7 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
             return sendReq(config, reqData);
         }
         const paramSerializer = config.paramSerializer;
-        const url = buildUrl(String($sce.valueOf(config.url)), paramSerializer(config.params));
+        const url = buildUrl(config.url, paramSerializer(config.params));
         const result = await executeCacheStrategy({
             strategy,
             store,
@@ -629,10 +629,6 @@ function createHttpService($injector, $sce, $cookie, $security, $stream, configu
         const reqHeaders = assertInvariantDefined(config.headers);
         config.headers = reqHeaders;
         let { url } = config;
-        if (!isString(url)) {
-            // If it is not a string then the URL must be a $sce trusted object
-            url = String($sce.valueOf(url));
-        }
         const paramSerializer = config.paramSerializer;
         url = buildUrl(url, paramSerializer(config.params));
         $http.pendingRequests.push(config);

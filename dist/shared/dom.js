@@ -1,6 +1,6 @@
 import { _scope, _injector } from '../injection-tokens.js';
 import { ALIASED_ATTR } from './constants.js';
-import { directiveNormalize, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, uppercase, isDefined, assertInvariantDefined, isString, assign } from './utils.js';
+import { directiveNormalize, isDefined, uppercase, hasOwn, snakeCase, isNullOrUndefined, isInstanceOf, isArray, arrayFrom, deleteProperty, assertInvariantDefined, isString, assign } from './utils.js';
 import { NodeType } from './node.js';
 
 /**
@@ -14,6 +14,7 @@ const HTML_PARSE_CACHE_MAX_SIZE = 256;
 let expandoCache = new WeakMap();
 let cacheSize = 0;
 const transcludedHostElements = new WeakMap();
+const transcludedHostSubtrees = new WeakSet();
 const htmlParseCache = new Map();
 const Cache = {
     get size() {
@@ -229,7 +230,8 @@ function setAllCacheData(element, data) {
  * @param [value] - The value to store.
  */
 function setCacheData(element, key, value) {
-    if (elementAcceptsData(element)) {
+    if (element.nodeType === NodeType._ELEMENT_NODE ||
+        elementAcceptsData(element)) {
         const expandoStore = getExpando(element, true);
         assertInvariantDefined(expandoStore)[kebabToCamel(key)] = value;
     }
@@ -260,13 +262,25 @@ function getCacheData(element, key) {
 /** Stores the original element that was replaced by an element-transclusion anchor. */
 function setTranscludedHostElement(anchor, hostElement) {
     transcludedHostElements.set(anchor, hostElement);
+    let node = anchor;
+    while (node) {
+        transcludedHostSubtrees.add(node);
+        node = node.parentNode;
+    }
 }
 /** Returns the original element replaced by an element-transclusion anchor. */
 function getTranscludedHostElement(anchor) {
     return transcludedHostElements.get(anchor);
 }
+/** Returns whether a node tree contains element-transclusion host metadata. */
+function hasTranscludedHostElements(node) {
+    return transcludedHostSubtrees.has(node);
+}
 /** Copies element-transclusion host metadata from an original node tree to its clone. */
 function cloneTranscludedHostElements(source, clone) {
+    if (!transcludedHostSubtrees.has(source))
+        return;
+    transcludedHostSubtrees.add(clone);
     const hostElement = transcludedHostElements.get(source);
     if (hostElement instanceof Element) {
         transcludedHostElements.set(clone, hostElement);
@@ -324,8 +338,19 @@ function getScope(element) {
  * @param element - The DOM element to set data on.
  * @param scope - The scope to attach to this element.
  */
-function setScope(element, scope) {
+function setScope(element, scope, cacheKey, cacheValue) {
+    if (element.nodeType === NodeType._ELEMENT_NODE) {
+        const expandoStore = getExpando(element, true);
+        assertInvariantDefined(expandoStore)[SCOPE_KEY] = scope;
+        if (cacheKey) {
+            expandoStore[cacheKey] = cacheValue;
+        }
+        return;
+    }
     setCacheData(element, SCOPE_KEY, scope);
+    if (cacheKey) {
+        setCacheData(element, cacheKey, cacheValue);
+    }
 }
 /**
  * Sets the isolate scope attached to a given element.
@@ -334,7 +359,8 @@ function setScope(element, scope) {
  * @param scope - The isolate scope to attach to this element.
  */
 function setIsolateScope(element, scope) {
-    setCacheData(element, ISOLATE_SCOPE_KEY, scope);
+    const expandoStore = getExpando(element, true);
+    assertInvariantDefined(expandoStore)[ISOLATE_SCOPE_KEY] = scope;
 }
 /**
  * Gets the controller instance for a given element.
@@ -733,4 +759,4 @@ function extractElementNode(element) {
     return undefined;
 }
 
-export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, addElementDisposer, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getAllCacheData, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getScope, getTranscludedHostElement, hasNormalizedAttr, isTextNode, kebabToCamel, removeElement, removeElementData, setAllCacheData, setCacheData, setIsolateScope, setNormalizedAttr, setScope, setTranscludedHostElement, snakeToCamel, startingTag };
+export { BOOLEAN_ATTR, Cache, FUTURE_PARENT_ELEMENT_KEY, addElementDisposer, animatedomInsert, cloneTranscludedHostElements, createDocumentFragment, createElementFromHTML, createNodelistFromHTML, dealoc, deleteCacheData, domInsert, emptyElement, extractElementNode, getAllCacheData, getBaseHref, getBlockNodes, getBooleanAttrName, getCacheData, getController, getDirectiveHostElement, getInheritedData, getInjector, getNormalizedAttr, getNormalizedAttrName, getScope, getTranscludedHostElement, hasNormalizedAttr, hasTranscludedHostElements, isTextNode, kebabToCamel, removeElement, removeElementData, setAllCacheData, setCacheData, setIsolateScope, setNormalizedAttr, setScope, setTranscludedHostElement, snakeToCamel, startingTag };

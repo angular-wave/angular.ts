@@ -1,7 +1,6 @@
 import { _window, _document, _filter, _parse, _injector, _rootScope, _exceptionHandler, _interpolate, _controller, _compile, _angular } from '../injection-tokens.js';
 import { createFilterRegistration } from '../core/filter/filter.js';
 import { applyInterpolateConfiguration, createInterpolateRegistration } from '../core/interpolate/interpolate.js';
-import { passThroughSecurityAdapter } from '../services/security/security-adapter.js';
 import { createParseService } from '../core/parse/parse.js';
 import { createRootScopeService } from '../core/scope/scope.js';
 import { requireAppRoot } from '../core/app-context/app-context.js';
@@ -57,7 +56,7 @@ function registerComposedNgModule(angular, options) {
         composition.configRegistry.register(_interpolate, (value) => {
             applyInterpolateConfiguration(composition.interpolateState, value);
         });
-        registry.factory(_interpolate, createInterpolateRegistration(composition.interpolateState, passThroughSecurityAdapter));
+        registry.factory(_interpolate, createInterpolateRegistration(composition.interpolateState, compileRegistry._bindingPolicies));
         registry.factory(_controller, [
             _injector,
             ($injector) => createControllerService(composition.controllerRegistry, $injector),
@@ -73,7 +72,7 @@ function registerComposedNgModule(angular, options) {
             _parse,
             _controller,
             _rootScope,
-            ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, passThroughSecurityAdapter, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
+            ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
         ]);
         registry.value(_angular, angular);
         registerRuntimeProviders(registry, providers, composition);

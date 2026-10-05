@@ -3,6 +3,10 @@ window.angular
   .config({
     $compile: {
       strictComponentBindingsEnabled: true,
+      mediaUrlPolicy: (url) => {
+        if (url !== "media:test-resource") throw new Error("Media URL rejected");
+        return url;
+      },
       propertySecurityContexts: [
         {
           elementName: "div",
@@ -25,11 +29,9 @@ window.angular
   .controller(
     "CompileConfigCtrl",
     class {
-      static $inject = ["$sce"];
-
-      constructor($sce) {
+      constructor() {
         this.strictEnabled = true;
-        this.boundValue = $sce.trustAsMediaUrl("media:test-resource");
+        this.boundValue = "media:test-resource";
       }
     },
   );

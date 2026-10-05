@@ -1,11 +1,11 @@
-import { _templateRequest, _scope, _injector, _sce } from '../../injection-tokens.js';
-import { setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, createElementFromHTML, setScope, setCacheData, FUTURE_PARENT_ELEMENT_KEY, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, hasNormalizedAttr, getDirectiveHostElement, getNormalizedAttr, getBooleanAttrName, cloneTranscludedHostElements, setNormalizedAttr } from '../../shared/dom.js';
+import { _templateRequest, _scope, _injector } from '../../injection-tokens.js';
+import { setScope, setTranscludedHostElement, isTextNode, createNodelistFromHTML, createDocumentFragment, removeElementData, emptyElement, startingTag, createElementFromHTML, hasTranscludedHostElements, setCacheData, getDirectiveHostElement, deleteCacheData, setIsolateScope, getInheritedData, getCacheData, hasNormalizedAttr, getNormalizedAttr, getBooleanAttrName, setNormalizedAttr, cloneTranscludedHostElements, FUTURE_PARENT_ELEMENT_KEY } from '../../shared/dom.js';
 import { NodeType } from '../../shared/node.js';
 import { identifierForController } from '../controller/controller.js';
-import { createScope } from '../scope/scope.js';
-import { deleteProperty, nullObject, assertInvariantDefined, assign, getNodeName, uppercase, isFunction, trim, hasOwn, inherit, stringify, arrayRemove, directiveNormalize, validateNotHasOwnPropertyName, isString, isArray, extend, callFunction, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, shouldHandleViewRetentionPause, equals } from '../../shared/utils.js';
+import { createScopeWatchPlan, registerScopeWatch, registerScopeDestroyCallback, createScope } from '../scope/scope.js';
+import { deleteProperty, nullObject, assertInvariantDefined, getNodeName, assign, uppercase, isFunction, trim, hasOwn, inherit, stringify, arrayRemove, directiveNormalize, validateNotHasOwnPropertyName, isString, isArray, extend, callFunction, deProxy, createErrorFactory, keys, arrayFrom, simpleCompare, snakeCase, isScope, shouldHandleViewRetentionPause, equals } from '../../shared/utils.js';
 import { validateTruthy } from '../../shared/validate.js';
-import { SCE_CONTEXTS } from '../../services/sce/context.js';
+import { createBindingPolicies } from './binding-policy.js';
 import { PREFIX_REGEXP, ALIASED_ATTR } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { updateClass } from '../../animations/class-mutation.js';
@@ -451,6 +451,7 @@ function hasLinkContextAttr(candidate) {
         candidate._attr !== undefined);
 }
 const EMPTY_LINK_FN_RECORDS = Object.freeze([]);
+const EMPTY_ELEMENT_CONTROLLERS = Object.freeze({});
 function readNormalizedElementAttribute(element, normalizedName) {
     const hostElement = getDirectiveHostElement(element);
     const attrElement = hostElement ?? element;
@@ -503,6 +504,7 @@ const valueFn = (value) => () => value;
 class CompileRegistry {
     /** Configures directive registration and compile-time provider behavior. */
     constructor($compileLifecycle) {
+        const policies = (this._bindingPolicies = createBindingPolicies());
         const directiveFactoryRegistry = {};
         const componentBindingRegistry = nullObject();
         const bindingCache = nullObject();
@@ -580,15 +582,13 @@ class CompileRegistry {
         function sanitizeProgrammaticProperty($injector, element, propertyName, value) {
             const elementName = element.localName.toLowerCase();
             const normalizedPropertyName = propertyName.toLowerCase();
-            const security = $injector.get(_sce);
+            const trustedContext = (PROP_CONTEXTS[`${elementName}|${normalizedPropertyName}`] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]);
+            const platformWindow = element.ownerDocument.defaultView ?? window;
             if (normalizedPropertyName === "srcset" &&
                 (elementName === "img" || elementName === "source")) {
-                return sanitizeProgrammaticSrcset(value, security.valueOf.bind(security), security.getTrustedMediaUrl.bind(security));
+                return sanitizeProgrammaticSrcset(value, deProxy, (url) => policies._apply("mediaUrl", url, platformWindow));
             }
-            const trustedContext = (PROP_CONTEXTS[`${elementName}|${normalizedPropertyName}`] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]);
-            return trustedContext
-                ? security.getTrusted(trustedContext, value)
-                : value;
+            return policies._apply(trustedContext, value, platformWindow);
         }
         function instantiateDirectiveDefinitions(name, $injector, $exceptionHandler) {
             const directives = [];
@@ -827,6 +827,7 @@ class CompileRegistry {
         };
         this.component = registerComponent;
         this.configure = (config) => {
+            policies._configure(config);
             if (config.strictComponentBindingsEnabled !== undefined) {
                 this.setStrictComponentBindingsEnabled(config.strictComponentBindingsEnabled);
             }
@@ -858,6 +859,7 @@ class CompileRegistry {
                 deleteProperty(PROP_CONTEXTS, name);
             }
             strictComponentBindingsEnabled = false;
+            policies._destroy();
         };
         /**
          * @param enabled - New strict component binding validation state.
@@ -882,12 +884,6 @@ class CompileRegistry {
          * The security context of DOM Properties.
          */
         const PROP_CONTEXTS = nullObject();
-        const LEGACY_SCE_CONTEXTS = {
-            html: SCE_CONTEXTS._HTML,
-            mediaUrl: SCE_CONTEXTS._MEDIA_URL,
-            resourceUrl: SCE_CONTEXTS._RESOURCE_URL,
-            url: SCE_CONTEXTS._URL,
-        };
         /**
          * Defines the security context for DOM properties bound by ng-prop-*.
          *
@@ -897,7 +893,17 @@ class CompileRegistry {
          * @returns `this` for chaining.
          */
         this.addPropertySecurityContext = function (elementName, propertyName, ctx) {
-            const normalizedCtx = LEGACY_SCE_CONTEXTS[ctx] ?? ctx;
+            if (![
+                "html",
+                "url",
+                "mediaUrl",
+                "resourceUrl",
+                "script",
+                "scriptUrl",
+            ].includes(ctx)) {
+                throw new TypeError("Unknown $compile property binding context: " + ctx);
+            }
+            const normalizedCtx = ctx;
             const key = `${elementName.toLowerCase()}|${propertyName.toLowerCase()}`;
             if (key in PROP_CONTEXTS && PROP_CONTEXTS[key] !== normalizedCtx) {
                 throw $compileError("ctxoverride", "Property context '{0}.{1}' already set to '{2}', cannot override to '{3}'.", elementName, propertyName, PROP_CONTEXTS[key], normalizedCtx);
@@ -920,12 +926,8 @@ class CompileRegistry {
                     PROP_CONTEXTS[items[i].toLowerCase()] = ctx;
                 }
             }
-            registerContext(SCE_CONTEXTS._HTML, [
-                "iframe|srcdoc",
-                "*|innerHTML",
-                "*|outerHTML",
-            ]);
-            registerContext(SCE_CONTEXTS._URL, [
+            registerContext("html", ["iframe|srcdoc", "*|innerHTML", "*|outerHTML"]);
+            registerContext("url", [
                 "area|href",
                 "area|ping",
                 "a|href",
@@ -937,7 +939,7 @@ class CompileRegistry {
                 "ins|cite",
                 "q|cite",
             ]);
-            registerContext(SCE_CONTEXTS._MEDIA_URL, [
+            registerContext("mediaUrl", [
                 "audio|src",
                 "img|src",
                 "img|srcset",
@@ -947,7 +949,7 @@ class CompileRegistry {
                 "video|src",
                 "video|poster",
             ]);
-            registerContext(SCE_CONTEXTS._RESOURCE_URL, [
+            registerContext("resourceUrl", [
                 "*|formAction",
                 "applet|code",
                 "applet|codebase",
@@ -962,12 +964,19 @@ class CompileRegistry {
                 "media|src",
                 "object|codebase",
                 "object|data",
-                "script|src",
+            ]);
+            registerContext("scriptUrl", ["script|src"]);
+            registerContext("scriptUrl", ["script|href"]);
+            registerContext("script", [
+                "script|innerHTML",
+                "script|text",
+                "script|textContent",
+                "script|innerText",
             ]);
         })();
         this.createService =
             /** Creates the runtime `$compile` service and its shared helper closures. */
-            ($injector, $interpolate, security, $exceptionHandler, $parse, $controller, $appRoot) => {
+            ($injector, $interpolate, $exceptionHandler, $parse, $controller, $appRoot) => {
                 let lazyTemplateRequest;
                 async function requestTemplate(templateUrl) {
                     if (lazyTemplateRequest === undefined) {
@@ -980,6 +989,7 @@ class CompileRegistry {
                         : fetchTemplate(templateUrl);
                 }
                 async function fetchTemplate(templateUrl) {
+                    templateUrl = policies._resourceUrl(templateUrl);
                     return fetch(templateUrl, {
                         headers: { Accept: "text/html" },
                     }).then(async (response) => {
@@ -1126,12 +1136,7 @@ class CompileRegistry {
                         return;
                     }
                     callFunction(state._parentSet, undefined, state._scopeTarget, (state._lastValue = val));
-                    const attributeWatchers = state._scope._handler._watchers.get(String(state._attrExpression));
-                    if (attributeWatchers) {
-                        for (let i = 0, l = attributeWatchers.length; i < l; i++) {
-                            attributeWatchers[i]._listenerFn(val, state._scope._target);
-                        }
-                    }
+                    state._scope._handler._scheduleWatchKeys(String(state._attrExpression));
                     scheduleControllerAfterRender(state._destAny, state._scope);
                 }
                 function handleStringBindingObserve(state, value) {
@@ -1211,12 +1216,23 @@ class CompileRegistry {
                     }
                     return snapshot;
                 }
-                function cloneTemplateNodes(nodes) {
+                function templateHasTranscludedHostElements(nodes) {
+                    if (!nodes)
+                        return false;
+                    for (let i = 0, l = nodes.length; i < l; i++) {
+                        if (hasTranscludedHostElements(nodes[i]))
+                            return true;
+                    }
+                    return false;
+                }
+                function cloneTemplateNodes(nodes, cloneTransclusionHosts) {
                     const cloned = new Array(nodes.length);
                     for (let i = 0, l = nodes.length; i < l; i++) {
                         const source = nodes[i];
                         const clone = source.cloneNode(true);
-                        cloneTranscludedHostElements(source, clone);
+                        if (cloneTransclusionHosts) {
+                            cloneTranscludedHostElements(source, clone);
+                        }
                         cloned[i] = clone;
                     }
                     return cloned;
@@ -1274,43 +1290,40 @@ class CompileRegistry {
                     let $linkNode;
                     if (state._namespace !== "html") {
                         const fragment = createElementFromHTML("<div></div>");
-                        fragment.append(getTemplateNodeAt(nodes, 0));
+                        fragment.append(nodes[0]);
                         const wrappedTemplate = wrapTemplate(state._namespace, fragment.innerHTML);
                         $linkNode = [wrappedTemplate[0]];
                     }
                     else if (cloneConnectFn) {
-                        $linkNode = cloneTemplateNodes(nodes);
+                        $linkNode = cloneTemplateNodes(nodes, state._hasTranscludedHostElements);
                     }
                     else {
                         $linkNode = nodes;
                     }
-                    const linkedNodeCount = getTemplateNodeCount($linkNode);
-                    const ownsLinkedNodes = state._ownsNodes ||
-                        options._ownsNodes === true ||
-                        !!cloneConnectFn ||
-                        state._namespace !== "html";
-                    const singleLinkedNode = linkedNodeCount === 1
-                        ? getTemplateNodeAt($linkNode, 0)
-                        : null;
-                    const fragmentRecord = singleLinkedNode
-                        ? createPublicLinkSingleNodeCompiledFragmentRecord($appRoot, scope, singleLinkedNode, ownsLinkedNodes)
-                        : createPublicLinkCompiledFragmentRecord($appRoot, scope, $linkNode, ownsLinkedNodes);
-                    if (singleLinkedNode) {
-                        registerCompiledFragmentNode(fragmentRecord, singleLinkedNode);
-                    }
-                    else {
-                        registerCompiledFragmentNodes(fragmentRecord, fragmentRecord.nodes);
-                    }
-                    const parentFragment = findCompiledFragmentRecord(_futureParentElement);
-                    if (parentFragment) {
-                        addCompiledFragmentChild(parentFragment, fragmentRecord);
+                    if (!options._externalNodeOwner) {
+                        const linkedNodeCount = getTemplateNodeCount($linkNode);
+                        const ownsLinkedNodes = state._ownsNodes ||
+                            options._ownsNodes === true ||
+                            !!cloneConnectFn ||
+                            state._namespace !== "html";
+                        const singleLinkedNode = linkedNodeCount === 1 ? $linkNode[0] : null;
+                        const fragmentRecord = singleLinkedNode
+                            ? createPublicLinkSingleNodeCompiledFragmentRecord($appRoot, scope, singleLinkedNode, ownsLinkedNodes)
+                            : createPublicLinkCompiledFragmentRecord($appRoot, scope, $linkNode, ownsLinkedNodes);
+                        if (singleLinkedNode) {
+                            registerCompiledFragmentNode(fragmentRecord, singleLinkedNode);
+                        }
+                        else {
+                            registerCompiledFragmentNodes(fragmentRecord, fragmentRecord.nodes);
+                        }
+                        const parentFragment = findCompiledFragmentRecord(_futureParentElement);
+                        if (parentFragment) {
+                            addCompiledFragmentChild(parentFragment, fragmentRecord);
+                        }
                     }
                     const linkElement = getSingleTemplateElement($linkNode);
                     if (linkElement) {
-                        setScope(linkElement, scope);
-                        if (_futureParentElement) {
-                            setCacheData(linkElement, FUTURE_PARENT_ELEMENT_KEY, _futureParentElement);
-                        }
+                        setScope(linkElement, scope, _futureParentElement ? FUTURE_PARENT_ELEMENT_KEY : undefined, _futureParentElement);
                     }
                     if (_transcludeControllers) {
                         const controllers = _transcludeControllers;
@@ -1336,15 +1349,22 @@ class CompileRegistry {
                     const stableNodeList = buildStableNodeList(plan, nodeList);
                     executeTemplateLinkMappings(plan, stableNodeList, scope, _parentBoundTranscludeFn ?? null);
                 }
-                function invokeBoundTransclude(state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
+                function invokeBoundTransclude(state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope, externalNodeOwner = false) {
                     transcludedScope ?? (transcludedScope = state._scope.transcluded(containingScope));
                     return state._transcludeFn(transcludedScope, cloneFn, {
                         _parentBoundTranscludeFn: state._previousBoundTranscludeFn,
                         _transcludeControllers: controllers,
                         _futureParentElement,
+                        _externalNodeOwner: externalNodeOwner,
                     });
                 }
-                Object.assign(compile, {
+                const compileService = Object.assign(compile, {
+                    /** @internal Prepares HTML without converting native trusted values to strings. */
+                    _prepareHtml(value, platformWindow) {
+                        return policies._apply("html", value, platformWindow);
+                    },
+                    /** @internal Applies the policy selected by a DOM binding. */
+                    _applyBindingPolicy: policies._apply.bind(policies),
                     /** @internal Links a programmatic node without public-link overhead when no directives match. */
                     _linkProgrammaticNode(node, scope, options) {
                         const publicLinkState = createPublicLinkState(node, null);
@@ -1354,18 +1374,22 @@ class CompileRegistry {
                         if (templatePlan._trackedNodeList) {
                             publicLinkState._nodes = templatePlan._trackedNodeList;
                         }
+                        publicLinkState._hasTranscludedHostElements =
+                            templateHasTranscludedHostElements(publicLinkState._nodes);
                         publicLinkState._templateLinkExecutor =
                             createTemplateLinkExecutor(templatePlan);
                         return invokePublicLink(publicLinkState, scope, undefined, options);
                     },
                 });
-                return compile;
+                return compileService;
                 function compile(element, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
                     const publicLinkState = createPublicLinkState(element, previousCompileContext);
                     const templatePlan = planTemplate(publicLinkState._nodes, transcludeFn ?? undefined, maxPriority, ignoreDirective, previousCompileContext);
                     if (templatePlan?._trackedNodeList) {
                         publicLinkState._nodes = templatePlan._trackedNodeList;
                     }
+                    publicLinkState._hasTranscludedHostElements =
+                        templateHasTranscludedHostElements(publicLinkState._nodes);
                     publicLinkState._templateLinkExecutor = templatePlan
                         ? createTemplateLinkExecutor(templatePlan)
                         : null;
@@ -1377,13 +1401,14 @@ class CompileRegistry {
                         _ownsNodes: typeof element === "string",
                         _templateLinkExecutor: null,
                         _namespace: null,
+                        _hasTranscludedHostElements: false,
                         _previousCompileContext: previousCompileContext ??
                             null,
                     };
                 }
                 function createPublicLinkFn(publicLinkState) {
                     const publicLinkFn = function publicLinkFn(scope, cloneConnectFn, options) {
-                        return invokePublicLink(assertInvariantDefined(publicLinkFn._state), scope, cloneConnectFn, options);
+                        return invokePublicLink(publicLinkState, scope, cloneConnectFn, options);
                     };
                     publicLinkFn._state = publicLinkState;
                     return publicLinkFn;
@@ -1434,9 +1459,6 @@ class CompileRegistry {
                 function getTemplateNodeCount(nodes) {
                     return nodes.length;
                 }
-                function getTemplateNodeAt(nodes, index) {
-                    return nodes[index];
-                }
                 function getPlanningNodeAt(nodes, trackedNodeList, index) {
                     return trackedNodeList
                         ? getTrackedNodeAt(trackedNodeList, index)
@@ -1474,6 +1496,7 @@ class CompileRegistry {
                 function planTemplate(nodeList, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
                     if (!nodeList)
                         return null;
+                    removeTableStructureWhitespace(nodeList);
                     let trackedNodeList = null;
                     let templatePlan = null;
                     for (let i = 0, l = getTemplateNodeCount(nodeList); i < l; i++) {
@@ -1508,6 +1531,33 @@ class CompileRegistry {
                         previousCompileContext = null;
                     }
                     return templatePlan;
+                }
+                function removeTableStructureWhitespace(nodeList) {
+                    if (!(nodeList instanceof NodeList) || !nodeList.length) {
+                        return;
+                    }
+                    const parentNode = nodeList[0].parentElement;
+                    if (!parentNode) {
+                        return;
+                    }
+                    switch (getNodeName(parentNode)) {
+                        case "table":
+                        case "thead":
+                        case "tbody":
+                        case "tfoot":
+                        case "tr":
+                        case "colgroup":
+                            break;
+                        default:
+                            return;
+                    }
+                    for (let i = nodeList.length - 1; i >= 0; i--) {
+                        const node = nodeList[i];
+                        if (node.nodeType === NodeType._TEXT_NODE &&
+                            !(node.nodeValue ?? "").trim()) {
+                            parentNode.removeChild(node);
+                        }
+                    }
                 }
                 function createTemplateLinkPlan(nodeList, transcludeFn) {
                     return {
@@ -1573,7 +1623,38 @@ class CompileRegistry {
                         const [nodeLinkPlan] = templatePlan._nodeLinkPlans;
                         const [childLinkExecutor] = templatePlan._childLinkExecutors;
                         return function singleTemplateLinkExecutor(scope, nodeList, _parentBoundTranscludeFn) {
-                            executeTemplateLinkMapping(templatePlan, nodeLinkPlan, childLinkExecutor, getTemplateNodeAt(nodeList, index), scope, _parentBoundTranscludeFn ?? null);
+                            const node = nodeList[index];
+                            if (nodeLinkPlan) {
+                                const childScope = nodeLinkPlan._newScope ? scope.new() : scope;
+                                let childBoundTranscludeFn;
+                                if (nodeLinkPlan._transcludeOnThisElement) {
+                                    childBoundTranscludeFn = createBoundTranscludeFn(scope, nodeLinkPlan._transclude, _parentBoundTranscludeFn ?? null);
+                                }
+                                else if (!nodeLinkPlan._templateOnThisElement &&
+                                    _parentBoundTranscludeFn) {
+                                    childBoundTranscludeFn = _parentBoundTranscludeFn;
+                                }
+                                else if (!_parentBoundTranscludeFn &&
+                                    templatePlan._transcludeFn) {
+                                    childBoundTranscludeFn = createBoundTranscludeFn(scope, templatePlan._transcludeFn, null);
+                                }
+                                else {
+                                    childBoundTranscludeFn = null;
+                                }
+                                if (nodeLinkPlan._newScope &&
+                                    node.nodeType === NodeType._ELEMENT_NODE) {
+                                    setScope(node, childScope);
+                                }
+                                if (nodeLinkPlan._nodeLinkFnState !== undefined) {
+                                    nodeLinkPlan._nodeLinkFn(nodeLinkPlan._nodeLinkFnState, childLinkExecutor, childScope, node, childBoundTranscludeFn);
+                                }
+                                else {
+                                    nodeLinkPlan._nodeLinkFn(childLinkExecutor, childScope, node, childBoundTranscludeFn);
+                                }
+                            }
+                            else if (childLinkExecutor) {
+                                childLinkExecutor(scope, node.childNodes, _parentBoundTranscludeFn ?? null);
+                            }
                         };
                     }
                     return function templateLinkExecutor(scope, nodeList, _parentBoundTranscludeFn) {
@@ -1589,8 +1670,8 @@ class CompileRegistry {
                         _transcludeFn: transcludeFn,
                         _previousBoundTranscludeFn: previousBoundTranscludeFn,
                     };
-                    const boundTranscludeFn = function boundTranscludeFn(transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
-                        return invokeBoundTransclude(assertInvariantDefined(boundTranscludeFn._state), transcludedScope, cloneFn, controllers, _futureParentElement, containingScope);
+                    const boundTranscludeFn = function boundTranscludeFn(transcludedScope, cloneFn, controllers, _futureParentElement, containingScope, externalNodeOwner) {
+                        return invokeBoundTransclude(boundTranscludeState, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope, externalNodeOwner);
                     };
                     boundTranscludeFn._state = boundTranscludeState;
                     // We need  to attach the transclusion slots onto the `boundTranscludeFn`
@@ -1626,6 +1707,11 @@ class CompileRegistry {
                         }
                         case NodeType._TEXT_NODE:
                             {
+                                if (node.parentElement &&
+                                    getNodeName(node.parentElement) === "script" &&
+                                    node.nodeValue?.includes(startSymbol)) {
+                                    throw $compileError("scriptinterp", "Script interpolation is not supported. Bind the text property with a scriptPolicy.");
+                                }
                                 const textDirective = createTextInterpolateDirective(node.nodeValue ?? "");
                                 if (textDirective) {
                                     directives = [textDirective];
@@ -1785,21 +1871,21 @@ class CompileRegistry {
                 }
                 function createLazyCompilationFn(lazyCompilationState) {
                     /** Defers compilation until the returned linker/transclude function is first invoked. */
-                    const lazyCompilation = function lazyCompilation(...args) {
-                        return invokeLazyCompilation(assertInvariantDefined(lazyCompilation._state), ...args);
+                    const lazyCompilation = function lazyCompilation(scope, cloneConnectFn, options) {
+                        return invokeLazyCompilation(assertInvariantDefined(lazyCompilation._state), scope, cloneConnectFn, options);
                     };
                     lazyCompilation._state = lazyCompilationState;
                     return lazyCompilation;
                 }
                 /** Shared invoker for lazily compiled public-link/transclude functions. */
-                function invokeLazyCompilation(state, ...args) {
+                function invokeLazyCompilation(state, scope, cloneConnectFn, options) {
                     if (!state._compiled) {
                         state._compiled = compile(state._nodes, state._transcludeFn, state._maxPriority, state._ignoreDirective, state._previousCompileContext);
                         state._nodes = null;
                         state._transcludeFn = null;
                         state._previousCompileContext = null;
                     }
-                    return state._compiled(...args);
+                    return state._compiled(scope, cloneConnectFn, options);
                 }
                 /**
                  * Stores link metadata in a compact record so linking can use shared invokers instead of wrapped closures.
@@ -1820,6 +1906,18 @@ class CompileRegistry {
                 /** Invokes a link record with consistent scope selection and argument ordering. */
                 function invokeLinkFnRecord(linkFnRecord, isolateScope, scope, node, attrs, controllers, transcludeFn) {
                     const linkScope = linkFnRecord._isolateScope ? isolateScope : scope;
+                    if (!linkFnRecord._require &&
+                        !transcludeFn &&
+                        (linkFnRecord._linkCtx === undefined ||
+                            !hasLinkContextAttr(linkFnRecord._linkCtx))) {
+                        if (linkFnRecord._linkCtx !== undefined) {
+                            return linkFnRecord._fn(linkFnRecord._linkCtx, linkScope, node);
+                        }
+                        if (linkFnRecord._thisArg !== undefined) {
+                            return linkFnRecord._fn.call(linkFnRecord._thisArg, linkScope, node);
+                        }
+                        return linkFnRecord._fn(linkScope, node);
+                    }
                     const linkTailArgs = linkFnRecord._require
                         ? transcludeFn
                             ? [controllers, transcludeFn]
@@ -1842,11 +1940,19 @@ class CompileRegistry {
                     return linkFnRecord._fn(linkScope, node, ...linkTailArgs);
                 }
                 /** Shared post-link executor for text interpolation directives. */
+                function applyDirectTextInterpolationValue(value, _originalTarget, context) {
+                    applyTextInterpolationValue(context, stringify(value));
+                }
+                /** Shared post-link executor for text interpolation directives. */
                 function textInterpolateLinkFn(linkState, scope, node) {
                     if (linkState._singleExpression) {
-                        scope.watch(linkState._watchExpression, (value) => {
-                            applyTextInterpolationValue(node, stringify(value));
-                        });
+                        const watchPlan = linkState._watchPlan;
+                        if (watchPlan) {
+                            scope._handler._watchPlannedImmediate(applyDirectTextInterpolationValue, node, watchPlan);
+                        }
+                        else {
+                            registerScopeWatch(scope, linkState._watchExpression, applyDirectTextInterpolationValue, false, false, true, undefined, false, node);
+                        }
                         return;
                     }
                     const bindingState = {
@@ -1855,9 +1961,9 @@ class CompileRegistry {
                         _node: node,
                     };
                     handleTextInterpolationWatch(bindingState);
-                    scope.watch(linkState._watchExpression, () => {
+                    registerScopeWatch(scope, linkState._watchExpression, () => {
                         handleTextInterpolationWatch(bindingState);
-                    });
+                    }, true);
                 }
                 /** Re-applies text interpolation using explicit per-link state. */
                 function handleTextInterpolationWatch(bindingState) {
@@ -1898,15 +2004,41 @@ class CompileRegistry {
                         return;
                     }
                     if (linkState._name === "srcset") {
-                        attr.setValue(node, linkState._name, linkState._isNgAttr
-                            ? toInterpolatedAttributeValue(value)
-                            : toInterpolatedAttributeValue(sanitizeSrcset(security.valueOf(value), "srcset")));
+                        attr.setValue(node, linkState._name, toInterpolatedAttributeValue(sanitizeSrcset(deProxy(value), "srcset")));
                         return;
                     }
-                    if ((linkState._trustedContext === SCE_CONTEXTS._URL ||
-                        linkState._trustedContext === SCE_CONTEXTS._MEDIA_URL) &&
-                        !(typeof value === "string" && value.startsWith("unsafe:"))) {
-                        value = toInterpolatedAttributeValue(security.getTrusted(linkState._trustedContext, value));
+                    if (linkState._trustedContext === "resourceUrl" &&
+                        (linkState._name === "ngSrc" || linkState._name === "ngHref")) {
+                        setNormalizedAttr(node, linkState._name === "ngSrc" ? "src" : "href", toInterpolatedAttributeValue(value));
+                        return;
+                    }
+                    if (linkState._trustedContext === "scriptUrl" ||
+                        linkState._trustedContext === "html") {
+                        const element = getDirectiveHostElement(node);
+                        if (element &&
+                            linkState._trustedContext === "scriptUrl" &&
+                            (value === null || value === undefined)) {
+                            element.removeAttribute(linkState._name === "src" || linkState._name === "ngSrc"
+                                ? "src"
+                                : "href");
+                            return;
+                        }
+                        if (element &&
+                            (linkState._name === "href" || linkState._name === "ngHref") &&
+                            getNodeName(element) === "script") {
+                            element.setAttribute("href", value);
+                            return;
+                        }
+                        if (element &&
+                            (linkState._name === "src" || linkState._name === "ngSrc") &&
+                            getNodeName(element) === "script") {
+                            element.src = value;
+                            return;
+                        }
+                        if (element && linkState._name === "srcdoc") {
+                            element.srcdoc = value;
+                            return;
+                        }
                     }
                     attr.setValue(node, linkState._name, toInterpolatedAttributeValue(value));
                 }
@@ -1924,17 +2056,77 @@ class CompileRegistry {
                     bindingState._lastValue = value;
                     applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, bindingState._node, value);
                 }
+                /** Links an unchanged whole-class interpolation without generic attribute state setup. */
+                function wholeClassInterpolatePreLinkFn(linkState, scope, node) {
+                    const classElement = getDirectiveHostElement(node);
+                    const interpolateFn = linkState._interpolateFn;
+                    const expressions = interpolateFn?.expressions;
+                    const linkedClass = classElement?.getAttribute("class");
+                    const targetScope = (classElement
+                        ? compileAttributeObserverScopes.get(classElement)?.get("class")
+                        : undefined) ?? scope;
+                    if (!classElement ||
+                        (linkedClass !== linkState._value &&
+                            !(linkState._wholeClassTemplateCleared && linkedClass === "")) ||
+                        expressions?.length !== 1 ||
+                        targetScope !== scope ||
+                        !linkState._watchPlan) {
+                        attrInterpolatePreLinkFn(linkState, scope, node);
+                        return;
+                    }
+                    if (!linkState._wholeClassTemplateCleared) {
+                        const templateElement = linkState._wholeClassTemplateElement;
+                        if (templateElement &&
+                            templateElement.getAttribute("class") === linkState._value) {
+                            templateElement.setAttribute("class", "");
+                            linkState._wholeClassTemplateCleared = true;
+                        }
+                    }
+                    let listener = linkState._wholeClassListener;
+                    if (!listener) {
+                        const attr = assertInvariantDefined(linkState._sharedAttr ?? linkState._attr);
+                        listener = linkState._wholeClassListener = (value, _originalTarget, context) => {
+                            applyInterpolatedAttrValue(linkState, attr, context, stringify(value));
+                        };
+                    }
+                    const initialValue = linkState._watchPlan._watchFn(scope._target);
+                    const initialClass = typeof initialValue === "string"
+                        ? initialValue
+                        : stringify(initialValue);
+                    const currentClass = classElement.className;
+                    if (typeof currentClass === "string") {
+                        if (currentClass !== initialClass) {
+                            classElement.className = initialClass;
+                        }
+                    }
+                    else {
+                        if (classElement.getAttribute("class") !== initialClass) {
+                            classElement.setAttribute("class", initialClass);
+                        }
+                    }
+                    scope._handler._watchPlanned(assertInvariantDefined(expressions[0]), listener, true, true, initialValue, true, node, linkState._watchPlan);
+                }
                 /**
                  * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
                  * current interpolation function in sync if an earlier compile step rewrites the attribute.
                  */
                 function attrInterpolatePreLinkFn(linkState, scope, node) {
-                    const attr = assertInvariantDefined(linkState._attr);
+                    const attr = assertInvariantDefined(linkState._attr ?? linkState._sharedAttr);
                     // Recompute interpolation if another compile step rewrote the attribute value.
                     const name = linkState._name;
-                    const newValue = linkState._isNgAttr
-                        ? readSourceElementAttribute(attr, node, name)
-                        : readNormalizedElementAttribute(node, name);
+                    const classElement = name === "class" ? getDirectiveHostElement(node) : undefined;
+                    const newValue = classElement
+                        ? classElement.getAttribute("class")
+                        : linkState._isNgAttr
+                            ? readSourceElementAttribute(attr, node, name)
+                            : readNormalizedElementAttribute(node, name);
+                    if (linkState._isWholeClassInterpolation &&
+                        newValue === linkState._value &&
+                        typeof newValue === "string") {
+                        if (classElement) {
+                            classElement.setAttribute("class", "");
+                        }
+                    }
                     if (newValue !== linkState._value) {
                         linkState._interpolateFn = newValue
                             ? $interpolate(stringify(newValue), true, linkState._trustedContext, linkState._allOrNothing)
@@ -1946,28 +2138,61 @@ class CompileRegistry {
                     }
                     const interpolateFn = linkState._interpolateFn;
                     const { expressions } = interpolateFn;
-                    CompileAttributeState.markElementAttributeInterpolated(node, name);
-                    const bindingState = {
-                        _linkState: linkState,
-                        _scope: scope,
-                        _node: node,
-                        _attr: attr,
-                    };
                     if (expressions.length > 0) {
                         const targetScope = getCompileAttributeObserverScope(node, name) ?? scope;
+                        if (linkState._isWholeClassInterpolation &&
+                            expressions.length === 1 &&
+                            targetScope === scope) {
+                            const watchPlan = linkState._watchPlan;
+                            if (watchPlan) {
+                                const listener = (linkState._wholeClassListener ?? (linkState._wholeClassListener = (value, _originalTarget, context) => {
+                                    applyInterpolatedAttrValue(linkState, attr, context, stringify(value));
+                                }));
+                                scope._handler._watchPlanned(assertInvariantDefined(expressions[0]), listener, false, true, undefined, false, node, watchPlan);
+                            }
+                            else {
+                                const listener = (value) => {
+                                    applyInterpolatedAttrValue(linkState, attr, node, stringify(value));
+                                };
+                                registerScopeWatch(scope, assertInvariantDefined(expressions[0]), listener, false, false, true);
+                            }
+                            return;
+                        }
+                        CompileAttributeState.markElementAttributeInterpolated(node, name);
+                        const bindingState = {
+                            _linkState: linkState,
+                            _scope: scope,
+                            _node: node,
+                            _attr: attr,
+                        };
                         const watchExpression = buildInterpolationWatchExpression(expressions);
-                        targetScope.watch(watchExpression, () => {
+                        registerScopeWatch(targetScope, watchExpression, () => {
                             handleAttrInterpolationWatch(bindingState);
                         });
                     }
                     else {
+                        CompileAttributeState.markElementAttributeInterpolated(node, name);
+                        const bindingState = {
+                            _linkState: linkState,
+                            _scope: scope,
+                            _node: node,
+                            _attr: attr,
+                        };
                         handleAttrInterpolationWatch(bindingState);
                     }
                 }
                 /** Applies the current `ng-prop-*` value from explicit per-link state. */
                 function updatePropertyDirectiveValue(bindingState) {
                     const linkState = bindingState._linkState;
-                    bindingState._element[linkState._propName] = linkState._sanitizer(linkState._ngPropGetter(bindingState._scope));
+                    const value = linkState._sanitizer(linkState._ngPropGetter(bindingState._scope));
+                    const element = bindingState._element;
+                    if ((value === null || value === undefined) &&
+                        element.localName === "script" &&
+                        (linkState._propName === "src" || linkState._propName === "href")) {
+                        element.removeAttribute(linkState._propName);
+                        return;
+                    }
+                    bindingState._element[linkState._propName] = value;
                 }
                 /** Shared watch callback for property-name watchers. */
                 function handlePropertyDirectiveValueWatch(bindingState) {
@@ -1975,7 +2200,6 @@ class CompileRegistry {
                 }
                 /** Shared watch callback for backing attribute-expression watchers. */
                 function handlePropertyDirectiveAttrWatch(bindingState, value) {
-                    security.valueOf(value);
                     updatePropertyDirectiveValue(bindingState);
                 }
                 /** Invokes an expression binding against the stored parent getter and scope target. */
@@ -1993,12 +2217,12 @@ class CompileRegistry {
                         _element: $element,
                     };
                     updatePropertyDirectiveValue(bindingState);
-                    scope.watch(linkState._propName, () => {
+                    registerScopeWatch(scope, linkState._propName, () => {
                         handlePropertyDirectiveValueWatch(bindingState);
-                    });
-                    scope.watch(linkState._attrExpression, (val) => {
-                        handlePropertyDirectiveAttrWatch(bindingState, val);
-                    });
+                    }, true);
+                    registerScopeWatch(scope, linkState._attrExpression, (val) => {
+                        handlePropertyDirectiveAttrWatch(bindingState);
+                    }, true);
                 }
                 /**
                  * Links against a resolved async template using the already materialized node.
@@ -2221,7 +2445,7 @@ class CompileRegistry {
                     $exceptionHandler(error);
                 }
                 /** Handles `$transclude(...)` calls for the shared node-link executor. */
-                function invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName) {
+                function invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName, externalNodeOwner = false) {
                     if (transcludeState._destroyed) {
                         return undefined;
                     }
@@ -2240,7 +2464,7 @@ class CompileRegistry {
                     if (requestedSlotName) {
                         const slotTranscludeFn = boundTranscludeFn._slots[requestedSlotName];
                         if (slotTranscludeFn) {
-                            return slotTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild);
+                            return slotTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild, externalNodeOwner);
                         }
                         if (slotTranscludeFn === undefined) {
                             throw $compileError("noslot", 'No parent directive that requires a transclusion with slot name "{0}". ' +
@@ -2248,11 +2472,11 @@ class CompileRegistry {
                         }
                         return undefined;
                     }
-                    return boundTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild);
+                    return boundTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild, externalNodeOwner);
                 }
                 function createControllersBoundTranscludeFn(transcludeState) {
-                    const wrapper = function wrapper(scopeParam, cloneAttachFn, _futureParentElement, slotName) {
-                        return invokeControllersBoundTransclude(assertInvariantDefined(wrapper._state), scopeParam, cloneAttachFn, _futureParentElement, slotName);
+                    const wrapper = function wrapper(scopeParam, cloneAttachFn, _futureParentElement, slotName, externalNodeOwner) {
+                        return invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName, externalNodeOwner);
                     };
                     wrapper._state = transcludeState;
                     wrapper._boundTransclude = transcludeState._boundTranscludeFn;
@@ -2270,13 +2494,93 @@ class CompileRegistry {
                  * state explicitly instead of closing over it in a per-node function.
                  */
                 function executeStoredNodeLinkPlan(nodeLinkState, childLinkExecutor, scope, linkNode, boundTranscludeFn) {
+                    const simpleLinkMode = nodeLinkState._simpleLink;
+                    if (simpleLinkMode === 2) {
+                        const linkFnRecord = nodeLinkState._preLinkFns[0];
+                        try {
+                            linkFnRecord._fn(linkFnRecord._linkCtx, scope, linkNode);
+                        }
+                        catch (err) {
+                            $exceptionHandler(err);
+                        }
+                        if (childLinkExecutor) {
+                            const childNodes = linkNode.childNodes;
+                            if (childNodes.length) {
+                                childLinkExecutor(scope, childNodes, boundTranscludeFn);
+                            }
+                        }
+                        return;
+                    }
+                    if (simpleLinkMode === 3) {
+                        if (childLinkExecutor) {
+                            const childNodes = linkNode.childNodes;
+                            if (childNodes.length) {
+                                childLinkExecutor(scope, childNodes, boundTranscludeFn);
+                            }
+                        }
+                        const linkFnRecord = nodeLinkState._postLinkFns[0];
+                        try {
+                            linkFnRecord._fn(linkFnRecord._linkCtx, scope, linkNode);
+                        }
+                        catch (err) {
+                            $exceptionHandler(err);
+                        }
+                        return;
+                    }
+                    if (simpleLinkMode) {
+                        const attrs = nodeLinkState._templateAttrs;
+                        const transcludeFn = nodeLinkState._transcludeFn;
+                        for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
+                            try {
+                                const linkFnRecord = nodeLinkState._preLinkFns[i];
+                                if (linkFnRecord._linkCtx !== undefined &&
+                                    !linkFnRecord._require &&
+                                    !linkFnRecord._isolateScope &&
+                                    !transcludeFn &&
+                                    !hasLinkContextAttr(linkFnRecord._linkCtx)) {
+                                    linkFnRecord._fn(linkFnRecord._linkCtx, scope, linkNode);
+                                }
+                                else {
+                                    invokeLinkFnRecord(linkFnRecord, undefined, scope, linkNode, attrs, undefined, transcludeFn);
+                                }
+                            }
+                            catch (err) {
+                                $exceptionHandler(err);
+                            }
+                        }
+                        if (childLinkExecutor) {
+                            const childNodes = linkNode.childNodes;
+                            if (childNodes.length) {
+                                childLinkExecutor(scope, childNodes, boundTranscludeFn);
+                            }
+                        }
+                        for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
+                            try {
+                                const linkFnRecord = nodeLinkState._postLinkFns[i];
+                                if (linkFnRecord._linkCtx !== undefined &&
+                                    !linkFnRecord._require &&
+                                    !linkFnRecord._isolateScope &&
+                                    !transcludeFn &&
+                                    !hasLinkContextAttr(linkFnRecord._linkCtx)) {
+                                    linkFnRecord._fn(linkFnRecord._linkCtx, scope, linkNode);
+                                }
+                                else {
+                                    invokeLinkFnRecord(linkFnRecord, undefined, scope, linkNode, attrs, undefined, transcludeFn);
+                                }
+                            }
+                            catch (err) {
+                                $exceptionHandler(err);
+                            }
+                        }
+                        return;
+                    }
                     let isolateScope;
                     let controllerScope;
-                    let elementControllers = nullObject();
+                    let elementControllers = EMPTY_ELEMENT_CONTROLLERS;
                     let scopeToChild = scope;
                     const elementNode = linkNode;
-                    let scopeBindingInfo;
-                    const attrs = nodeLinkState._compileNode === linkNode
+                    const attrs = nodeLinkState._compileNode === linkNode ||
+                        !nodeLinkState._needsLinkAttributeState
                         ? nodeLinkState._templateAttrs
                         : new CompileAttributeState($injector, $exceptionHandler, nodeLinkState._templateAttrs);
                     const element = elementNode.nodeType === NodeType._ELEMENT_NODE
@@ -2292,7 +2596,7 @@ class CompileRegistry {
                     controllerScope = controllerScope ?? scope;
                     let transcludeFn = nodeLinkState._transcludeFn;
                     let transcludeState;
-                    if (boundTranscludeFn) {
+                    if (boundTranscludeFn && nodeLinkState._needsBoundTransclude) {
                         transcludeState = {
                             _boundTranscludeFn: boundTranscludeFn,
                             _elementControllers: elementControllers,
@@ -2301,26 +2605,67 @@ class CompileRegistry {
                             _elementNode: elementNode,
                         };
                         const currentTranscludeState = transcludeState;
-                        scope.on("$destroy", () => {
+                        registerScopeDestroyCallback(scope, () => {
                             releaseControllersBoundTranscludeState(currentTranscludeState);
                         });
                         transcludeFn = createControllersBoundTranscludeFn(transcludeState);
                     }
-                    const controllerDirectives = nodeLinkState._controllerDirectives ?? nullObject();
                     if (nodeLinkState._controllerDirectives) {
-                        elementControllers = setupControllers(elementNode, attrs, transcludeFn, nodeLinkState._controllerDirectives, isolateScope ?? scope, scope, nodeLinkState._newIsolateScopeDirective);
+                        elementControllers = initializeNodeControllers(nodeLinkState, scope, controllerScope, elementNode, element, attrs, transcludeFn, isolateScope, scopeToChild, transcludeState);
+                    }
+                    else if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
+                        initializeNodeIsolateBindings(scope, attrs, isolateScope, nodeLinkState._newIsolateScopeDirective, elementNode);
+                    }
+                    for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
+                        const preLinkFn = nodeLinkState._preLinkFns[i];
+                        const controllers = preLinkFn._require &&
+                            getControllers(preLinkFn._directiveName, preLinkFn._require, element, elementControllers);
+                        try {
+                            invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
+                        }
+                        catch (err) {
+                            $exceptionHandler(err);
+                        }
+                    }
+                    if (nodeLinkState._newIsolateScopeDirective &&
+                        (nodeLinkState._newIsolateScopeDirective.template ||
+                            nodeLinkState._newIsolateScopeDirective.templateUrl === null)) {
+                        scopeToChild = isolateScope ?? scope;
                         if (transcludeState) {
                             syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, elementNode);
                         }
                     }
-                    if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
-                        isolateScope._target._isolateBindings =
-                            nodeLinkState._newIsolateScopeDirective._isolateBindings;
-                        scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope._target
-                            ._isolateBindings, nodeLinkState._newIsolateScopeDirective, elementNode);
-                        if (scopeBindingInfo._removeWatches) {
-                            isolateScope.on("$destroy", scopeBindingInfo._removeWatches);
+                    if (childLinkExecutor && linkNode.childNodes.length) {
+                        childLinkExecutor(scopeToChild, linkNode.childNodes, boundTranscludeFn);
+                    }
+                    for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
+                        const postLinkFn = nodeLinkState._postLinkFns[i];
+                        const controllers = postLinkFn._require &&
+                            getControllers(postLinkFn._directiveName, postLinkFn._require, elementNode, elementControllers);
+                        try {
+                            if (postLinkFn._isolateScope && isolateScope) {
+                                deleteCacheData(element, _scope);
+                                setIsolateScope(element, isolateScope);
+                            }
+                            invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
                         }
+                        catch (err) {
+                            $exceptionHandler(err);
+                        }
+                    }
+                    if (nodeLinkState._controllerDirectives) {
+                        finalizeNodeControllers(elementControllers, controllerScope);
+                    }
+                }
+                /** Initializes controller-bearing nodes outside the controller-free link hot path. */
+                function initializeNodeControllers(nodeLinkState, scope, controllerScope, elementNode, element, attrs, transcludeFn, isolateScope, scopeToChild, transcludeState) {
+                    const controllerDirectives = assertInvariantDefined(nodeLinkState._controllerDirectives);
+                    const elementControllers = setupControllers(elementNode, attrs, transcludeFn, controllerDirectives, isolateScope ?? scope, scope, nodeLinkState._newIsolateScopeDirective);
+                    if (transcludeState) {
+                        syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, elementNode);
+                    }
+                    if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
+                        initializeNodeIsolateBindings(scope, attrs, isolateScope, nodeLinkState._newIsolateScopeDirective, elementNode);
                     }
                     for (const name in elementControllers) {
                         const controllerDirective = controllerDirectives[name];
@@ -2344,21 +2689,17 @@ class CompileRegistry {
                         setCacheData(elementNode, `$${controllerDirective.name}Controller`, controller._instance);
                         controller._bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller._instance, bindings, controllerDirective, elementNode);
                     }
-                    if (nodeLinkState._controllerDirectives) {
-                        setCacheData(elementNode, AFTER_RENDER_EVENT_SCHEDULER_KEY, () => {
-                            scheduleElementControllersAfterRender(elementControllers, controllerScope);
-                        });
-                    }
-                    if (nodeLinkState._controllerDirectives) {
-                        for (const name in controllerDirectives) {
-                            const controllerDirective = controllerDirectives[name];
-                            const { require } = controllerDirective;
-                            if (controllerDirective.bindToController &&
-                                !isArray(require) &&
-                                require &&
-                                typeof require === "object") {
-                                extend(assertInvariantDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
-                            }
+                    setCacheData(elementNode, AFTER_RENDER_EVENT_SCHEDULER_KEY, () => {
+                        scheduleElementControllersAfterRender(elementControllers, controllerScope);
+                    });
+                    for (const name in controllerDirectives) {
+                        const controllerDirective = controllerDirectives[name];
+                        const { require } = controllerDirective;
+                        if (controllerDirective.bindToController &&
+                            !isArray(require) &&
+                            require &&
+                            typeof require === "object") {
+                            extend(assertInvariantDefined(elementControllers[name])._instance, getControllers(name, require, element, elementControllers));
                         }
                     }
                     for (const name in elementControllers) {
@@ -2410,43 +2751,20 @@ class CompileRegistry {
                             }
                         });
                     }
-                    for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
-                        const preLinkFn = nodeLinkState._preLinkFns[i];
-                        const controllers = preLinkFn._require &&
-                            getControllers(preLinkFn._directiveName, preLinkFn._require, element, elementControllers);
-                        try {
-                            invokeLinkFnRecord(preLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
-                        }
-                        catch (err) {
-                            $exceptionHandler(err);
-                        }
+                    return elementControllers;
+                }
+                /** Initializes bindings for a node-owned isolate scope. */
+                function initializeNodeIsolateBindings(scope, attrs, isolateScope, isolateScopeDirective, elementNode) {
+                    isolateScope._target._isolateBindings =
+                        isolateScopeDirective._isolateBindings;
+                    const scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope._target
+                        ._isolateBindings, isolateScopeDirective, elementNode);
+                    if (scopeBindingInfo._removeWatches) {
+                        isolateScope.on("$destroy", scopeBindingInfo._removeWatches);
                     }
-                    if (nodeLinkState._newIsolateScopeDirective &&
-                        (nodeLinkState._newIsolateScopeDirective.template ||
-                            nodeLinkState._newIsolateScopeDirective.templateUrl === null)) {
-                        scopeToChild = isolateScope ?? scope;
-                        if (transcludeState) {
-                            syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, elementNode);
-                        }
-                    }
-                    if (childLinkExecutor && linkNode.childNodes.length) {
-                        childLinkExecutor(scopeToChild, linkNode.childNodes, boundTranscludeFn);
-                    }
-                    for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
-                        const postLinkFn = nodeLinkState._postLinkFns[i];
-                        const controllers = postLinkFn._require &&
-                            getControllers(postLinkFn._directiveName, postLinkFn._require, elementNode, elementControllers);
-                        try {
-                            if (postLinkFn._isolateScope && isolateScope) {
-                                deleteCacheData(element, _scope);
-                                setIsolateScope(element, isolateScope);
-                            }
-                            invokeLinkFnRecord(postLinkFn, isolateScope, scope, elementNode, attrs, controllers, transcludeFn);
-                        }
-                        catch (err) {
-                            $exceptionHandler(err);
-                        }
-                    }
+                }
+                /** Runs controller post-link hooks after child and directive linking. */
+                function finalizeNodeControllers(elementControllers, controllerScope) {
                     for (const name in elementControllers) {
                         const controller = assertInvariantDefined(elementControllers[name]);
                         const controllerInstance = controller._instance;
@@ -2558,7 +2876,7 @@ class CompileRegistry {
                 function applyTransclusionDirective(directive, directiveName, directiveValue, compileNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, hasElementTranscludeDirective, terminalPriority, mightHaveMultipleTransclusionError, previousCompileContext) {
                     const nextNonTlbTranscludeDirective = applyDirectiveTransclusionOwnershipEffect(directive, directiveName, compileNode, nonTlbTranscludeDirective);
                     if (directiveValue === "element") {
-                        const elementTransclusion = applyElementTransclusionDirective(compileNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nextNonTlbTranscludeDirective, mightHaveMultipleTransclusionError);
+                        const elementTransclusion = applyElementTransclusionDirective(directiveName, compileNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nextNonTlbTranscludeDirective, mightHaveMultipleTransclusionError);
                         return {
                             _compileNode: elementTransclusion._compileNode,
                             _childTranscludeFn: elementTransclusion._childTranscludeFn,
@@ -2657,6 +2975,13 @@ class CompileRegistry {
                     };
                 }
                 function createStoredNodeLinkState(compileNode, templateAttrs, transcludeFn, controllerDirectives, newIsolateScopeDirective, newScopeDirective, hasElementTranscludeDirective, preLinkFns, postLinkFns) {
+                    const needsBoundTransclude = !!controllerDirectives ||
+                        linkFnsNeedBoundTransclude(preLinkFns) ||
+                        linkFnsNeedBoundTransclude(postLinkFns);
+                    const needsLinkAttributeState = !!controllerDirectives ||
+                        !!newIsolateScopeDirective ||
+                        linkFnsNeedAttributeState(preLinkFns) ||
+                        linkFnsNeedAttributeState(postLinkFns);
                     return {
                         _compileNode: compileNode,
                         _templateAttrs: templateAttrs,
@@ -2665,9 +2990,55 @@ class CompileRegistry {
                         _newIsolateScopeDirective: newIsolateScopeDirective,
                         _newScopeDirective: newScopeDirective,
                         _hasElementTranscludeDirective: hasElementTranscludeDirective,
+                        _needsBoundTransclude: needsBoundTransclude,
+                        _needsLinkAttributeState: needsLinkAttributeState,
+                        _simpleLink: !controllerDirectives &&
+                            !newIsolateScopeDirective &&
+                            !newScopeDirective &&
+                            !needsBoundTransclude &&
+                            !needsLinkAttributeState &&
+                            linkFnsCanUseSimpleLink(preLinkFns) &&
+                            linkFnsCanUseSimpleLink(postLinkFns)
+                            ? !transcludeFn &&
+                                preLinkFns.length === 1 &&
+                                postLinkFns.length === 0
+                                ? 2
+                                : !transcludeFn &&
+                                    preLinkFns.length === 0 &&
+                                    postLinkFns.length === 1
+                                    ? 3
+                                    : 1
+                            : 0,
                         _preLinkFns: preLinkFns,
                         _postLinkFns: postLinkFns,
                     };
+                }
+                function linkFnsCanUseSimpleLink(linkFns) {
+                    for (const linkFn of linkFns) {
+                        if (linkFn._require || linkFn._isolateScope) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                /** Keeps public directive links on the controller-bound transclusion path. */
+                function linkFnsNeedBoundTransclude(linkFns) {
+                    for (const linkFn of linkFns) {
+                        if (linkFn._linkCtx === undefined) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                /** Keeps mutable per-link attrs for public and attr-aware directive links. */
+                function linkFnsNeedAttributeState(linkFns) {
+                    for (const linkFn of linkFns) {
+                        if (linkFn._linkCtx === undefined ||
+                            hasLinkContextAttr(linkFn._linkCtx)) {
+                            return true;
+                        }
+                    }
+                    return false;
                 }
                 function createNodeLinkPlan(nodeLinkFn, nodeLinkFnState, terminal, transcludeFn, transcludeOnThisElement, templateOnThisElement, newScopeDirective) {
                     return {
@@ -2690,15 +3061,15 @@ class CompileRegistry {
                     const state = nodeLinkPlan?._nodeLinkFnState;
                     return isNodeLinkState(state) ? state._compileNode : fallback;
                 }
-                function applyElementTransclusionDirective(templateNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, mightHaveMultipleTransclusionError) {
+                function applyElementTransclusionDirective(directiveName, templateNode, templateAttrs, contextNodeList, index, transcludeFn, directivePriority, replaceDirective, nonTlbTranscludeDirective, mightHaveMultipleTransclusionError) {
                     const transcludedTemplateElement = templateNode;
                     const compileNode = document.createComment("");
-                    setTranscludedHostElement(compileNode, transcludedTemplateElement);
                     if (contextNodeList) {
                         setTrackedNodeAt(contextNodeList, index, compileNode);
                     }
                     replaceWith(transcludedTemplateElement, compileNode, index);
-                    const childTranscludeFn = compilationGenerator(mightHaveMultipleTransclusionError, transcludedTemplateElement, transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
+                    setTranscludedHostElement(compileNode, transcludedTemplateElement);
+                    const childTranscludeFn = compilationGenerator(directiveName === "ngRepeat" || mightHaveMultipleTransclusionError, transcludedTemplateElement, transcludeFn, directivePriority, replaceDirective ? replaceDirective.name : undefined, {
                         // Don't pass controller/scope/template directives through element transclusion:
                         // the transcluded template will compile against its own directive context.
                         _nonTlbTranscludeDirective: nonTlbTranscludeDirective,
@@ -3283,11 +3654,15 @@ class CompileRegistry {
                     }
                     const { expressions } = interpolateFn;
                     const watchExpression = buildInterpolationWatchExpression(expressions);
+                    const singleExpression = expressions.length === 1 &&
+                        text === startSymbol + watchExpression + endSymbol;
                     const linkState = {
                         _interpolateFn: interpolateFn,
                         _watchExpression: watchExpression,
-                        _singleExpression: expressions.length === 1 &&
-                            text === startSymbol + watchExpression + endSymbol,
+                        _singleExpression: singleExpression,
+                        _watchPlan: singleExpression
+                            ? createScopeWatchPlan($parse, watchExpression)
+                            : undefined,
                     };
                     return {
                         priority: 0,
@@ -3304,20 +3679,34 @@ class CompileRegistry {
                 }
                 /** Determines the trust context required for a DOM attribute binding. */
                 function getTrustedAttrContext(nodeName, attrNormalizedName) {
+                    if (nodeName === "script" &&
+                        ["src", "ngSrc", "href", "ngHref"].includes(attrNormalizedName))
+                        return "scriptUrl";
+                    // Alias directives validate the completed value at the actual sink.
+                    if (attrNormalizedName === "ngHref" &&
+                        ["base", "link"].includes(nodeName))
+                        return "resourceUrl";
+                    if (attrNormalizedName === "ngHref" ||
+                        (attrNormalizedName === "ngSrc" &&
+                            ["img", "video", "audio", "source", "track"].includes(nodeName)))
+                        return undefined;
+                    if (attrNormalizedName === "srcset" ||
+                        attrNormalizedName === "ngSrcset")
+                        return undefined;
                     if (attrNormalizedName === "srcdoc") {
-                        return SCE_CONTEXTS._HTML;
+                        return "html";
                     }
                     // All nodes with src attributes require a RESOURCE_URL value, except for
                     // img and various html5 media nodes, which require the MEDIA_URL context.
                     if (attrNormalizedName === "src" || attrNormalizedName === "ngSrc") {
                         if (!["img", "video", "audio", "source", "track"].includes(nodeName)) {
-                            return SCE_CONTEXTS._RESOURCE_URL;
+                            return "resourceUrl";
                         }
-                        return SCE_CONTEXTS._MEDIA_URL;
+                        return "mediaUrl";
                     }
                     if (nodeName === "image" &&
                         (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
-                        return SCE_CONTEXTS._MEDIA_URL;
+                        return "mediaUrl";
                     }
                     if (
                     // Formaction
@@ -3327,13 +3716,13 @@ class CompileRegistry {
                         (nodeName === "base" && attrNormalizedName === "href") ||
                         // links can be stylesheets or imports, which can run script in the current origin
                         (nodeName === "link" && attrNormalizedName === "href")) {
-                        return SCE_CONTEXTS._RESOURCE_URL;
+                        return "resourceUrl";
                     }
                     if (nodeName === "a" &&
                         (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
-                        return SCE_CONTEXTS._URL;
+                        return "url";
                     }
-                    return undefined;
+                    return getTrustedPropContext(nodeName, attrNormalizedName);
                 }
                 /** Determines the trust context required for a DOM property binding. */
                 function getTrustedPropContext(nodeName, propNormalizedName) {
@@ -3349,12 +3738,7 @@ class CompileRegistry {
                     if (typeof value !== "string") {
                         throw $compileError("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, stringify(value));
                     }
-                    // Such values are a bit too complex to handle automatically inside the security adapter.
-                    // Instead, we sanitize each of the URIs individually, which works, even dynamically.
-                    // A single trusted media URL cannot represent a whole srcset list.
-                    // If you want to programmatically set explicitly trusted unsafe URLs, you should use
-                    // a trusted/sanitized HTML binding for the whole `img` tag and inject it using the
-                    // `ng-bind-html` directive.
+                    // A srcset policy must validate each candidate rather than the list as one URL.
                     let result = "";
                     // first check if there are spaces because it's not the same pattern
                     const trimmedSrcset = trim(value);
@@ -3374,7 +3758,7 @@ class CompileRegistry {
                         // sanitize the uri
                         result += uri.startsWith("unsafe:")
                             ? uri
-                            : String(security.getTrustedMediaUrl(uri));
+                            : String(policies._apply("mediaUrl", uri));
                         // add the descriptor
                         result += ` ${trim(rawUris[innerIdx + 1])}`;
                     }
@@ -3384,7 +3768,7 @@ class CompileRegistry {
                     const uri = trim(lastTuple[0]);
                     result += uri.startsWith("unsafe:")
                         ? uri
-                        : String(security.getTrustedMediaUrl(uri));
+                        : String(policies._apply("mediaUrl", uri));
                     // and add the last descriptor if any
                     if (lastTuple.length === 2) {
                         result += ` ${trim(lastTuple[1])}`;
@@ -3402,10 +3786,11 @@ class CompileRegistry {
                     // Sanitize img[srcset] + source[srcset] values.
                     if (propName === "srcset" &&
                         (nodeName === "img" || nodeName === "source")) {
-                        sanitizer = (value) => sanitizeSrcset(security.valueOf(value), "ng-prop-srcset");
+                        sanitizer = (value) => sanitizeSrcset(deProxy(value), "ng-prop-srcset");
                     }
                     else if (trustedContext) {
-                        sanitizer = (value) => security.getTrusted(trustedContext, value);
+                        const platformWindow = node.ownerDocument.defaultView ?? window;
+                        sanitizer = (value) => policies._apply(trustedContext, value, platformWindow);
                     }
                     const directive = {
                         priority: 100,
@@ -3449,6 +3834,12 @@ class CompileRegistry {
                     if (!interpolateFn) {
                         return false;
                     }
+                    const trimmedValue = value.trim();
+                    const interpolationEnd = trimmedValue.indexOf(endSymbol, startSymbol.length);
+                    const isWholeClassInterpolation = name === "class" &&
+                        interpolateFn.expressions.length === 1 &&
+                        trimmedValue.startsWith(startSymbol) &&
+                        interpolationEnd === trimmedValue.length - endSymbol.length;
                     if (name === "multiple" && nodeName === "select") {
                         throw $compileError("selmulti", "Binding to the 'multiple' attribute is not supported. Element: {0}", startingTag(node.outerHTML));
                     }
@@ -3466,6 +3857,10 @@ class CompileRegistry {
                             _allOrNothing: allOrNothing,
                             _isNgAttr: isNgAttr,
                             _interpolateFn: interpolateFn,
+                            _isWholeClassInterpolation: isWholeClassInterpolation,
+                            _watchPlan: isWholeClassInterpolation
+                                ? createScopeWatchPlan($parse, assertInvariantDefined(interpolateFn.expressions[0]))
+                                : undefined,
                         },
                     };
                     directives.push(directive);
@@ -3473,11 +3868,16 @@ class CompileRegistry {
                 }
                 /** Shared compile function for synthetic interpolated-attribute directives. */
                 function compileAttrInterpolateDirective(_element, attr) {
+                    const isWholeClassInterpolation = this._compileState._isWholeClassInterpolation;
                     return {
-                        pre: attrInterpolatePreLinkFn,
+                        pre: isWholeClassInterpolation
+                            ? wholeClassInterpolatePreLinkFn
+                            : attrInterpolatePreLinkFn,
                         _preLinkCtx: {
                             ...this._compileState,
-                            _attr: attr,
+                            ...(isWholeClassInterpolation
+                                ? { _sharedAttr: attr, _wholeClassTemplateElement: _element }
+                                : { _attr: attr }),
                         },
                     };
                 }
@@ -3811,10 +4211,10 @@ function buildInterpolationWatchExpression(expressions) {
 function applyTextInterpolationValue(node, value) {
     switch (node.nodeType) {
         case NodeType._ELEMENT_NODE:
-            node.innerHTML = value;
+            node.textContent = value;
             break;
         default:
-            node.nodeValue = value;
+            node.data = value;
     }
 }
 /**

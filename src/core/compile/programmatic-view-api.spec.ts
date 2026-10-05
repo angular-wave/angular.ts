@@ -555,20 +555,41 @@ describe("programmatic view API", () => {
 
   it("applies trusted deferred static HTML properties", () => {
     bootstrap("<div trusted-static></div>", (module) => {
-      module.directive("trustedStatic", [
-        "$sce",
-        ($sce) => ({
-          view: () =>
-            tags.div(
-              props({
-                innerHTML: $sce.trustAsHtml("<strong>trusted</strong>"),
-              }),
-            ),
-        }),
-      ]);
+      module
+        .config({ $compile: { htmlPolicy: (html) => html } })
+        .directive("trustedStatic", [
+          () => ({
+            view: () =>
+              tags.div(
+                props({
+                  innerHTML: "<strong>trusted</strong>",
+                }),
+              ),
+          }),
+        ]);
     });
 
     expect(host.querySelector("strong").textContent).toBe("trusted");
+  });
+
+  it("validates static resource and link properties before insertion", () => {
+    const errors: Error[] = [];
+    bootstrap("<static-url-view></static-url-view>", (module) => {
+      module
+        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .component("staticUrlView", {
+          view: () =>
+            tags.div(
+              tags.a(props({ href: "javascript:alert(1)" }), "link"),
+              tags.iframe(props({ src: "https://external.example/" })),
+            ),
+        });
+    });
+    expect(host.querySelector("a").getAttribute("href")).toBe(
+      "unsafe:javascript:alert(1)",
+    );
+    expect(host.querySelector("iframe").getAttribute("src")).toBeNull();
+    expect(errors.some((error) => /insecurl/.test(error.message))).toBeTrue();
   });
 
   it("routes deferred static assignment failures", () => {
@@ -587,7 +608,7 @@ describe("programmatic view API", () => {
         });
     });
 
-    expect(errors[0].message).toContain("$sce:unsafe");
+    expect(errors[0].message).toContain("static assignment failed");
   });
 
   it("routes deferred read-only property failures", () => {
@@ -612,14 +633,10 @@ describe("programmatic view API", () => {
     bootstrap("<div readonly-static></div>", (module) => {
       module
         .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .config({ $compile: { htmlPolicy: (html) => html } })
         .directive("readonlyStatic", [
-          "$sce",
-          ($sce) => ({
-            view: () =>
-              tag(
-                name,
-                props({ innerHTML: $sce.trustAsHtml("<b>trusted</b>") }),
-              ),
+          () => ({
+            view: () => tag(name, props({ innerHTML: "<b>trusted</b>" })),
           }),
         ]);
     });

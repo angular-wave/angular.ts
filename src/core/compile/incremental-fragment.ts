@@ -38,6 +38,8 @@ export interface CompiledFragmentRecord {
   readonly diagnostics: CompiledFragmentDiagnostics;
   linked: boolean;
   disposed: boolean;
+  /** @internal */
+  _scopeDestroyDeregister?: () => void;
   dispose(): void;
 }
 
@@ -87,6 +89,9 @@ interface RootCompiledFragmentState {
 }
 
 let nextFragmentId = 1;
+let compiledFragmentRetentionConsumers = 0;
+
+const emptyFragmentRetentionDomWork: Array<() => void> = [];
 
 const compiledFragmentsByNode = new WeakMap<Node, CompiledFragmentRecord>();
 
@@ -105,10 +110,18 @@ const compiledFragmentStatesByRoot = new WeakMap<
   RootCompiledFragmentState
 >();
 
-const compiledFragmentScopeDestroyDeregisters = new WeakMap<
-  CompiledFragmentRecord,
-  () => void
->();
+/** @internal Enables retained-view DOM scheduling while a supporting runtime is active. */
+export function enableCompiledFragmentRetention(): () => void {
+  compiledFragmentRetentionConsumers++;
+  let enabled = true;
+
+  return (): void => {
+    if (!enabled) return;
+
+    enabled = false;
+    compiledFragmentRetentionConsumers--;
+  };
+}
 
 export function createPublicLinkCompiledFragmentRecord(
   root: AppRootRecord,
@@ -116,7 +129,7 @@ export function createPublicLinkCompiledFragmentRecord(
   nodes: Iterable<Node>,
   ownsNodes = true,
 ): CompiledFragmentRecord {
-  const id = getInitialFragmentId({});
+  const id = getNextFragmentId();
 
   ensureLinkedFragmentCanBeCreated(id, root, true);
 
@@ -130,6 +143,7 @@ export function createPublicLinkCompiledFragmentRecord(
     diagnostics: createPublicLinkDiagnostics(root),
     linked: true,
     disposed: false,
+    _scopeDestroyDeregister: undefined,
     dispose: disposeCompiledFragmentRecordSelf,
   };
 
@@ -145,7 +159,7 @@ export function createPublicLinkSingleNodeCompiledFragmentRecord(
   node: Node,
   ownsNodes = true,
 ): CompiledFragmentRecord {
-  const id = getInitialFragmentId({});
+  const id = getNextFragmentId();
 
   ensureLinkedFragmentCanBeCreated(id, root, true);
 
@@ -159,6 +173,7 @@ export function createPublicLinkSingleNodeCompiledFragmentRecord(
     diagnostics: createPublicLinkDiagnostics(root),
     linked: true,
     disposed: false,
+    _scopeDestroyDeregister: undefined,
     dispose: disposeCompiledFragmentRecordSelf,
   };
 
@@ -197,6 +212,7 @@ export function createCompiledFragmentRecord(
     },
     linked,
     disposed: false,
+    _scopeDestroyDeregister: undefined,
     dispose: disposeCompiledFragmentRecordSelf,
   };
 
@@ -234,6 +250,7 @@ export function createSingleNodeCompiledFragmentRecord(
     },
     linked,
     disposed: false,
+    _scopeDestroyDeregister: undefined,
     dispose: disposeCompiledFragmentRecordSelf,
   };
 
@@ -798,7 +815,11 @@ function clearFragmentArray(
 function getInitialFragmentId(
   options: Pick<CompiledFragmentRecordOptions, "id">,
 ): string {
-  return options.id ?? `fragment:${String(nextFragmentId++)}`;
+  return options.id ?? getNextFragmentId();
+}
+
+function getNextFragmentId(): string {
+  return `fragment:${String(nextFragmentId++)}`;
 }
 
 function ensureLinkedFragmentCanBeCreated(
@@ -844,7 +865,7 @@ function registerCompiledFragmentRecord(
     registerCompiledFragmentScopeLifecycle(record);
   }
 
-  return retentionAware
+  return retentionAware && compiledFragmentRetentionConsumers > 0
     ? registerCompiledFragmentRetentionDomAdapter(record)
     : record;
 }
@@ -858,25 +879,28 @@ function registerCompiledFragmentScopeLifecycle(
   if (!parentScope || !root || parentScope === root.rootScope) return;
 
   const deregister = parentScope.on("$destroy", () => {
-    compiledFragmentScopeDestroyDeregisters.delete(record);
+    record._scopeDestroyDeregister = undefined;
     disposeCompiledFragmentRecord(record, false);
   });
 
-  compiledFragmentScopeDestroyDeregisters.set(record, deregister);
+  record._scopeDestroyDeregister = deregister;
+  unregisterRootCompiledFragment(record, record.root);
 }
 
 function disposeCompiledFragmentScopeLifecycle(
   record: CompiledFragmentRecord,
 ): void {
-  const deregister = compiledFragmentScopeDestroyDeregisters.get(record);
+  const deregister = record._scopeDestroyDeregister;
 
   if (!deregister) return;
 
-  compiledFragmentScopeDestroyDeregisters.delete(record);
+  record._scopeDestroyDeregister = undefined;
   deregister();
 }
 
 function registerRootCompiledFragment(record: CompiledFragmentRecord): void {
+  if (record._scopeDestroyDeregister) return;
+
   const root = assertInvariantDefined(record.root);
 
   let state = compiledFragmentStatesByRoot.get(root);
@@ -957,13 +981,14 @@ function registerCompiledFragmentRetentionDomAdapter(
 
   const state: FragmentRetentionDomState = {
     paused: false,
-    pending: [],
+    pending: emptyFragmentRetentionDomWork,
     deferredPrefixCount: 0,
     deregisterPause: parentScope.on("$viewRetentionPause", (...args) => {
       if (!shouldHandleViewRetentionPause(args, "schedulers")) {
         return;
       }
 
+      state.pending = [];
       state.paused = true;
       state.deferredPrefixCount = 0;
     }),

@@ -1,6 +1,8 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
 import "./storage.spec.ts";
+import "../core/compile/html-policy.spec.ts";
+import "../core/compile/binding-policy.spec.ts";
 import { createAngular } from "./index.ts";
 import {
   machineModule,
@@ -19,12 +21,14 @@ import { wasmModule } from "./wasm.ts";
 import { defineAngularElement } from "./web-component.ts";
 import {
   ngBindDirective,
+  ngBindHtmlDirective,
   ngBrowserProviders,
   ngEventDirectives,
   ngRepeatDirective,
 } from "../ng.ts";
 import { createElementFromHTML, dealoc, getScope } from "../shared/dom.ts";
 import { wait, waitUntil } from "../shared/test-utils.ts";
+import { props, tags } from "../core/compile/programmatic-view.ts";
 
 describe("custom runtime", () => {
   let element;
@@ -67,6 +71,116 @@ describe("custom runtime", () => {
     expect(element.textContent).toBe("ab");
   });
 
+  for (const attribute of ["ng-bind-html", "ng-prop-inner_h_t_m_l"]) {
+    it(`applies the HTML policy to ${attribute} without SCE providers`, async () => {
+      const angular = createAngular({
+        directives: { ngBindHtml: ngBindHtmlDirective },
+      });
+      const htmlPolicy = jasmine
+        .createSpy("htmlPolicy")
+        .and.callFake((html) => html.replace(/</g, "&lt;"));
+
+      angular
+        .createModule("htmlPolicyApp", [])
+        .config({ $compile: { htmlPolicy } });
+      const injector = angular.injector(["ng", "htmlPolicyApp"]);
+      const root = injector.get("$rootScope");
+      const compile = injector.get("$compile");
+      const assignments = [];
+      const descriptor = Object.getOwnPropertyDescriptor(
+        Element.prototype,
+        "innerHTML",
+      );
+
+      element = createElementFromHTML(`<div ${attribute}="html"></div>`);
+      Object.defineProperty(element, "innerHTML", {
+        get() {
+          return descriptor.get.call(this);
+        },
+        set(value) {
+          assignments.push(value);
+          descriptor.set.call(this, value);
+        },
+      });
+      root.html = '<img src=x onerror="alert(1)">';
+
+      try {
+        expect(injector.has("$sce")).toBeFalse();
+        expect(injector.has("$sceDelegate")).toBeFalse();
+        compile(element)(root);
+        await wait();
+
+        expect(element.querySelector("img")).toBeNull();
+        expect(element.textContent).toBe(root.html);
+        expect(htmlPolicy).toHaveBeenCalledWith(root.html);
+        if (window.trustedTypes) {
+          expect(window.trustedTypes.isHTML(assignments.at(-1))).toBeTrue();
+        }
+
+        root.html = "<b>updated</b>";
+        await wait();
+        expect(element.textContent).toBe("<b>updated</b>");
+        root.html = null;
+        await wait();
+        expect(element.innerHTML).toBe("");
+
+        if (window.trustedTypes) {
+          const trusted = compile._prepareHtml("<b>native</b>", window);
+          htmlPolicy.calls.reset();
+          root.html = trusted;
+          await wait();
+          expect(assignments.at(-1)).toBe(trusted);
+          expect(htmlPolicy).not.toHaveBeenCalled();
+        }
+      } finally {
+        dealoc(element);
+        angular._composition.destroy();
+      }
+    });
+  }
+
+  it("applies the HTML policy to static and reactive programmatic properties", async () => {
+    const angular = createAngular();
+    const htmlPolicy = jasmine
+      .createSpy("htmlPolicy")
+      .and.callFake((html) => html.replace(/</g, "&lt;"));
+    let componentScope;
+
+    angular
+      .createModule("programmaticHtmlApp", [])
+      .config({ $compile: { htmlPolicy } })
+      .component("htmlView", {
+        view({ scope }) {
+          componentScope = scope;
+          scope.html = "<b>reactive</b>";
+
+          return tags.section(
+            tags.div(props({ innerHTML: "<b>static</b>" })),
+            tags.div({ innerHTML: () => scope.html }),
+          );
+        },
+      });
+    element = createElementFromHTML("<html-view></html-view>");
+
+    try {
+      const injector = angular.bootstrap(element, ["programmaticHtmlApp"]);
+      await wait();
+
+      expect(injector.has("$sce")).toBeFalse();
+      expect(element.querySelector("b")).toBeNull();
+      expect(element.textContent).toBe("<b>static</b><b>reactive</b>");
+      expect(htmlPolicy).toHaveBeenCalledWith("<b>static</b>");
+      expect(htmlPolicy).toHaveBeenCalledWith("<b>reactive</b>");
+
+      componentScope.html = "<i>updated</i>";
+      await wait();
+      expect(element.textContent).toBe("<b>static</b><i>updated</i>");
+    } finally {
+      dealoc(element);
+      angular._composition.destroy();
+    }
+  });
+
   it("allows Beacon logging when a custom composition omits security", () => {
     const sendBeacon = spyOn(window.navigator, "sendBeacon").and.returnValue(
       true,
@@ -107,7 +221,7 @@ describe("custom runtime", () => {
     angular._composition.destroy();
   });
 
-  it("compiles controlled bindings without an SCE provider", async () => {
+  it("protects URL bindings without a security injectable", async () => {
     const angular = createAngular();
 
     const injector = angular.injector(["ng"]);
@@ -124,7 +238,7 @@ describe("custom runtime", () => {
     $compile(element)($rootScope);
     await wait();
 
-    expect(element.getAttribute("href")).toBe("javascript:controlled()");
+    expect(element.getAttribute("href")).toBe("unsafe:javascript:controlled()");
   });
 
   it("allows custom runtimes to opt into the orchestration module", () => {

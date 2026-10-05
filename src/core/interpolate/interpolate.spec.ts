@@ -3,7 +3,7 @@
 import { createInjector } from "../di/injector.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
-import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
+import { createBindingPolicies } from "../compile/binding-policy.ts";
 import {
   applyInterpolateConfiguration,
   createInterpolateRuntimeState,
@@ -12,14 +12,13 @@ import {
 } from "./interpolate.ts";
 
 describe("$interpolate", () => {
-  let $interpolate, $injector, $rootScope, $sce;
+  let $interpolate, $injector, $rootScope;
 
   beforeEach(() => {
     window.angular = new Angular();
     $injector = createInjector(["ng"]);
     $interpolate = $injector.get("$interpolate");
     $rootScope = $injector.get("$rootScope");
-    $sce = $injector.get("$sce");
   });
 
   it("produces an identity function for static content", function () {
@@ -424,57 +423,6 @@ describe("$interpolate", () => {
     expect($interpolate("{{unfinished", true)).toBeUndefined();
   });
 
-  describe("interpolating in a trusted context", () => {
-    let sce;
-
-    beforeEach(() => {
-      angular
-        .createModule("customInterpolationApp", ["ng"])
-        .config({ $sce: { enabled: true } });
-
-      $injector = createInjector(["customInterpolationApp"]);
-      $interpolate = $injector.get("$interpolate");
-      $rootScope = $injector.get("$rootScope");
-      sce = $injector.get("$sce");
-    });
-
-    it("should NOT interpolate non-trusted expressions", () => {
-      const scope = $rootScope.new();
-
-      scope.foo = "foo";
-      expect(() =>
-        $interpolate("{{foo}}", true, SCE_CONTEXTS._HTML)(scope),
-      ).toThrowError(/unsafe value/);
-    });
-
-    it("should interpolate trusted expressions in a regular context", () => {
-      const foo = sce.trustAsHtml("foo");
-
-      expect($interpolate("{{foo}}", true)({ foo })).toBe("foo");
-    });
-
-    it("should interpolate trusted expressions in a specific trustedContext", () => {
-      const foo = sce.trustAsHtml("foo");
-
-      expect($interpolate("{{foo}}", true, SCE_CONTEXTS._HTML)({ foo })).toBe(
-        "foo",
-      );
-    });
-
-    // The concatenation of trusted values does not necessarily result in a trusted value.  (For
-    // instance, you can construct unsafe markup by putting together pieces that are
-    // themselves safe to render in isolation). Therefore, some contexts disable it, such as HTML.
-    it("should NOT interpolate trusted expressions with multiple parts", () => {
-      const foo = sce.trustAsHtml("foo");
-
-      const bar = sce.trustAsHtml("bar");
-
-      expect(() =>
-        $interpolate("{{foo}}{{bar}}", true, SCE_CONTEXTS._HTML)({ foo, bar }),
-      ).toThrowError(/Error while interpolating/);
-    });
-  });
-
   describe("custom delimiters", () => {
     beforeEach(() => {
       angular.createModule("customInterpolationApp", ["ng"]).config({
@@ -570,7 +518,7 @@ describe("$interpolate", () => {
 
   describe("isTrustedContext", () => {
     it("should NOT interpolate a multi-part expression when isTrustedContext is RESOURCE_URL", () => {
-      const isTrustedContext = SCE_CONTEXTS._RESOURCE_URL;
+      const isTrustedContext = "resourceUrl";
 
       expect(() => {
         $interpolate("constant/{{var}}", true, isTrustedContext)("val");
@@ -590,17 +538,15 @@ describe("$interpolate", () => {
     });
 
     it("should interpolate a multi-part expression when isTrustedContext is URL", () => {
-      expect($interpolate("some/{{id}}", true, SCE_CONTEXTS._URL)({})).toEqual(
-        "some/",
+      expect($interpolate("some/{{id}}", true, "url")({})).toEqual("some/");
+      expect($interpolate("some/{{id}}", true, "url")({ id: 1 })).toEqual(
+        "some/1",
       );
-      expect(
-        $interpolate("some/{{id}}", true, SCE_CONTEXTS._URL)({ id: 1 }),
-      ).toEqual("some/1");
       expect(
         $interpolate(
           "{{foo}}{{bar}}",
           true,
-          SCE_CONTEXTS._URL,
+          "url",
         )({
           foo: 1,
           bar: 2,
@@ -609,14 +555,12 @@ describe("$interpolate", () => {
     });
 
     it("should interpolate and sanitize a multi-part expression when isTrustedContext is URL", () => {
-      expect($interpolate("some/{{id}}", true, SCE_CONTEXTS._URL)({})).toEqual(
-        "some/",
-      );
+      expect($interpolate("some/{{id}}", true, "url")({})).toEqual("some/");
       expect(
         $interpolate(
           "some/{{id}}",
           true,
-          SCE_CONTEXTS._URL,
+          "url",
         )({
           id: "javascript:",
         }),
@@ -625,7 +569,7 @@ describe("$interpolate", () => {
         $interpolate(
           "{{foo}}{{bar}}",
           true,
-          SCE_CONTEXTS._URL,
+          "url",
         )({ foo: "javascript:", bar: "javascript:" }),
       ).toEqual("unsafe:javascript:javascript:");
     });
@@ -670,27 +614,31 @@ describe("$interpolate", () => {
         "Interpolation runtime has already been disposed.",
       );
       expect(() =>
-        createInterpolateService(state, () => undefined, {
-          getTrusted: (_context, value) => value,
-          getTrustedMediaUrl: (value) => value,
-          valueOf: (value) => value,
-        }),
+        createInterpolateService(
+          state,
+          () => undefined,
+          createBindingPolicies(),
+        ),
       ).toThrowError("Interpolation runtime has already been disposed.");
     });
 
-    it("contains security adapter failures while stringifying", () => {
+    it("reports policy rejection during interpolation", () => {
       const state = createInterpolateRuntimeState();
-      const service = createInterpolateService(state, $injector.get("$parse"), {
-        getTrusted: (_context, value) => value,
-        getTrustedMediaUrl: (value) => value,
-        valueOf() {
-          throw new Error("security adapter failed");
+      const policies = createBindingPolicies();
+      policies._configure({
+        urlPolicy() {
+          throw new Error("URL policy rejected");
         },
       });
+      const service = createInterpolateService(
+        state,
+        $injector.get("$parse"),
+        policies,
+      );
 
       expect(() =>
-        service("value={{value}}")?.({ value: "unsafe" }),
-      ).toThrowError(/security adapter failed/);
+        service("{{value}}", true, "url")?.({ value: "unsafe" }),
+      ).toThrowError(/URL policy rejected/);
       destroyInterpolateRuntimeState(state);
     });
   });

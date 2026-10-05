@@ -1,3 +1,4 @@
+import { enableCompiledFragmentRetention } from '../../core/compile/incremental-fragment.js';
 import { _transitions, _stateRegistry, _injector, _templateRequest, _compile, _controller, _rootScope, _location, _rootElement, _security } from '../../injection-tokens.js';
 import { RouterRuntimeState } from '../router.js';
 import { StateRegistryRuntime } from '../state/state-registry.js';
@@ -28,6 +29,7 @@ function applyRouterRuntimeCommand(runtime, command) {
 }
 /** @internal */
 function createRouterRuntime(dependencies) {
+    const disableCompiledFragmentRetention = enableCompiledFragmentRetention();
     const routerState = new RouterRuntimeState(dependencies.locationConfig);
     const stateRegistry = new StateRegistryRuntime(routerState, dependencies.compileRegistry);
     const transitions = new TransitionRuntime(routerState, dependencies.exceptionHandler, dependencies.securityPolicy);
@@ -72,6 +74,7 @@ function createRouterRuntime(dependencies) {
             if (destroyed)
                 return;
             destroyed = true;
+            disableCompiledFragmentRetention();
             stateService._destroyRuntime();
             viewService?.destroy();
         },

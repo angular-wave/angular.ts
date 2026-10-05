@@ -1,11 +1,13 @@
-import { _parse } from '../../injection-tokens.js';
-import { isString, stringify, deProxy, isUndefined, isNull, directiveNormalize, isNullOrUndefined } from '../../shared/utils.js';
+import { _parse, _compile } from '../../injection-tokens.js';
+import { getNodeName, isString, stringify, deProxy, directiveNormalize, isNullOrUndefined } from '../../shared/utils.js';
 import { getNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
 
 /** Binds the watched expression as plain text content. */
 function ngBindDirective() {
     return {
         link(scope, element) {
+            if (getNodeName(element) === "script")
+                throw new TypeError("Use ng-prop-text with a scriptPolicy for script source.");
             const expression = getNormalizedAttr(element, "ngBind");
             if (!isString(expression))
                 return;
@@ -20,6 +22,8 @@ function ngBindDirective() {
 function ngBindTemplateDirective() {
     return {
         link(scope, element) {
+            if (getNodeName(element) === "script")
+                throw new TypeError("Use ng-prop-text with a scriptPolicy for script source.");
             const syncTemplate = () => {
                 const value = getNormalizedAttr(element, "ngBindTemplate");
                 element.textContent = isNullOrUndefined(value) ? "" : value;
@@ -45,12 +49,14 @@ function ngBindTemplateDirective() {
         },
     };
 }
-ngBindHtmlDirective.$inject = [_parse];
+ngBindHtmlDirective.$inject = [_parse, _compile];
 /** Binds trusted HTML into the element while still validating the expression. */
-function ngBindHtmlDirective($parse) {
+function ngBindHtmlDirective($parse, $compile) {
     return {
         restrict: "A",
         compile(tElement) {
+            if (getNodeName(tElement) === "script")
+                throw new TypeError("Use ng-prop-text with a scriptPolicy for script source.");
             const expression = getNormalizedAttr(tElement, "ngBindHtml");
             if (!isString(expression))
                 return () => undefined;
@@ -59,8 +65,9 @@ function ngBindHtmlDirective($parse) {
             /** Watches the expression and writes the resulting HTML into the element. */
             (scope, element) => {
                 scope.watch(expression, (val) => {
-                    const html = isUndefined(val) || isNull(val) ? "" : stringify(deProxy(val));
-                    element.innerHTML = isString(html) ? html : "";
+                    const html = $compile._prepareHtml(val, element.ownerDocument.defaultView ?? window);
+                    // TypeScript's DOM declarations do not include TrustedHTML yet.
+                    element.innerHTML = html;
                 }, false, true);
             });
         },

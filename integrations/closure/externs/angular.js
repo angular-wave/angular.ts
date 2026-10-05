@@ -1297,9 +1297,14 @@ ng.Scope.prototype.batch = function(fn) {};
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
  * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
  * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
+ * @param {(boolean|undefined)} returnDeregister Value supplied for the returnDeregister parameter.
+ * @param {(boolean|undefined)} synchronousInitial Value supplied for the synchronousInitial parameter.
+ * @param {(?|undefined)} resolvedValue Value supplied for the resolvedValue parameter.
+ * @param {(boolean|undefined)} hasResolvedValue Value supplied for the hasResolvedValue parameter.
+ * @param {(?|undefined)} listenerContext Value supplied for the listenerContext parameter.
  * @return {(function(): void|undefined)}
  */
-ng.Scope.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.Scope.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf, returnDeregister, synchronousInitial, resolvedValue, hasResolvedValue, listenerContext) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -1501,6 +1506,78 @@ ng.InterpolateConfig.prototype.startSymbol;
  * @type {(string|undefined)}
  */
 ng.InterpolateConfig.prototype.endSymbol;
+
+/**
+ * The destination-specific policy required by a DOM binding.
+ * @typedef {string}
+ */
+ng.BindingContext;
+
+/**
+ * Policy callbacks accepted by `$compile` configuration.
+ * @record
+ */
+ng.BindingPolicyConfig = function() {};
+
+/**
+ * Sanitizes HTML strings or throws to reject them.
+ * @type {(function(string): string|undefined)}
+ */
+ng.BindingPolicyConfig.prototype.htmlPolicy;
+
+/**
+ * Validates link URLs. The default blocks dangerous schemes.
+ * @type {(function(string): string|undefined)}
+ */
+ng.BindingPolicyConfig.prototype.urlPolicy;
+
+/**
+ * Validates media URLs, including each URL in `srcset`.
+ * @type {(function(string): string|undefined)}
+ */
+ng.BindingPolicyConfig.prototype.mediaUrlPolicy;
+
+/**
+ * Validates resource URLs. The default permits same-origin resources.
+ * @type {(function(string): string|undefined)}
+ */
+ng.BindingPolicyConfig.prototype.resourceUrlPolicy;
+
+/**
+ * Approves executable source. Nonempty strings are rejected by default.
+ * @type {(function(string): string|undefined)}
+ */
+ng.BindingPolicyConfig.prototype.scriptPolicy;
+
+/**
+ * Validates script-loading URLs. The default permits same-origin scripts.
+ * @type {(function(string): string|undefined)}
+ */
+ng.BindingPolicyConfig.prototype.scriptUrlPolicy;
+
+/**
+ * Sanitizes HTML or throws to reject it before it reaches an HTML binding.
+ * @typedef {function(string): string}
+ */
+ng.HtmlPolicy;
+
+/**
+ * Approves JavaScript source or throws to reject it.
+ * @typedef {function(string): string}
+ */
+ng.ScriptPolicy;
+
+/**
+ * Validates a script URL or throws to reject it.
+ * @typedef {function(string): string}
+ */
+ng.ScriptUrlPolicy;
+
+/**
+ * Validates or normalizes a URL, or throws to reject it.
+ * @typedef {function(string): string}
+ */
+ng.UrlPolicy;
 
 /**
  * Main AngularTS runtime entry point with the full built-in `ng` module configured by default.
@@ -1760,9 +1837,14 @@ ng.ScopeService.prototype.batch = function(fn) {};
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
  * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
  * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
+ * @param {(boolean|undefined)} returnDeregister Value supplied for the returnDeregister parameter.
+ * @param {(boolean|undefined)} synchronousInitial Value supplied for the synchronousInitial parameter.
+ * @param {(?|undefined)} resolvedValue Value supplied for the resolvedValue parameter.
+ * @param {(boolean|undefined)} hasResolvedValue Value supplied for the hasResolvedValue parameter.
+ * @param {(?|undefined)} listenerContext Value supplied for the listenerContext parameter.
  * @return {(function(): void|undefined)}
  */
-ng.ScopeService.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.ScopeService.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf, returnDeregister, synchronousInitial, resolvedValue, hasResolvedValue, listenerContext) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -1907,9 +1989,14 @@ ng.RootScopeService.prototype.batch = function(fn) {};
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
  * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
  * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
+ * @param {(boolean|undefined)} returnDeregister Value supplied for the returnDeregister parameter.
+ * @param {(boolean|undefined)} synchronousInitial Value supplied for the synchronousInitial parameter.
+ * @param {(?|undefined)} resolvedValue Value supplied for the resolvedValue parameter.
+ * @param {(boolean|undefined)} hasResolvedValue Value supplied for the hasResolvedValue parameter.
+ * @param {(?|undefined)} listenerContext Value supplied for the listenerContext parameter.
  * @return {(function(): void|undefined)}
  */
-ng.RootScopeService.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.RootScopeService.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf, returnDeregister, synchronousInitial, resolvedValue, hasResolvedValue, listenerContext) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -2937,18 +3024,6 @@ ng.InjectionTokenMap.prototype.$rootElement;
 ng.InjectionTokenMap.prototype.$rootScope;
 
 /**
- * Public InjectionTokenMap.$sce member exposed by the AngularTS namespace contract.
- * @type {!ng.SceService}
- */
-ng.InjectionTokenMap.prototype.$sce;
-
-/**
- * Public InjectionTokenMap.$sceDelegate member exposed by the AngularTS namespace contract.
- * @type {!ng.SceDelegateService}
- */
-ng.InjectionTokenMap.prototype.$sceDelegate;
-
-/**
  * Public InjectionTokenMap.$security member exposed by the AngularTS namespace contract.
  * @type {!ng.SecurityPolicy}
  */
@@ -3147,9 +3222,14 @@ ng.Model.prototype.batch = function(fn) {};
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
  * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
  * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
+ * @param {(boolean|undefined)} returnDeregister Value supplied for the returnDeregister parameter.
+ * @param {(boolean|undefined)} synchronousInitial Value supplied for the synchronousInitial parameter.
+ * @param {(?|undefined)} resolvedValue Value supplied for the resolvedValue parameter.
+ * @param {(boolean|undefined)} hasResolvedValue Value supplied for the hasResolvedValue parameter.
+ * @param {(?|undefined)} listenerContext Value supplied for the listenerContext parameter.
  * @return {(function(): void|undefined)}
  */
-ng.Model.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.Model.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf, returnDeregister, synchronousInitial, resolvedValue, hasResolvedValue, listenerContext) {};
 
 /**
  * Creates a prototypically inherited child scope.
@@ -3746,162 +3826,6 @@ ng.EventDeliveryPolicyContext.prototype.operation;
  * @type {(!Object<string, ?>|undefined)}
  */
 ng.EventDeliveryPolicyContext.prototype.meta;
-
-/**
- * Public AngularTS SceService contract exposed through the global ng namespace for Closure-annotated applications.
- * @record
- */
-ng.SceService = function() {};
-
-/**
- * Public SceService.getTrusted member exposed by the AngularTS namespace contract.
- * @param {string} type Value supplied for the type parameter.
- * @param {?} mayBeTrusted Value supplied for the mayBeTrusted parameter.
- * @return {?}
- */
-ng.SceService.prototype.getTrusted = function(type, mayBeTrusted) {};
-
-/**
- * Public SceService.getTrustedHtml member exposed by the AngularTS namespace contract.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.getTrustedHtml = function(value) {};
-
-/**
- * Public SceService.getTrustedResourceUrl member exposed by the AngularTS namespace contract.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.getTrustedResourceUrl = function(value) {};
-
-/**
- * Public SceService.getTrustedUrl member exposed by the AngularTS namespace contract.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.getTrustedUrl = function(value) {};
-
-/**
- * Public SceService.getTrustedMediaUrl member exposed by the AngularTS namespace contract.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.getTrustedMediaUrl = function(value) {};
-
-/**
- * Public SceService.parse member exposed by the AngularTS namespace contract.
- * @param {string} type Value supplied for the type parameter.
- * @param {string} expression Value supplied for the expression parameter.
- * @return {!Object}
- */
-ng.SceService.prototype.parse = function(type, expression) {};
-
-/**
- * Public SceService.parseAsHtml member exposed by the AngularTS namespace contract.
- * @param {string} expression Value supplied for the expression parameter.
- * @return {!Object}
- */
-ng.SceService.prototype.parseAsHtml = function(expression) {};
-
-/**
- * Public SceService.parseAsResourceUrl member exposed by the AngularTS namespace contract.
- * @param {string} expression Value supplied for the expression parameter.
- * @return {!Object}
- */
-ng.SceService.prototype.parseAsResourceUrl = function(expression) {};
-
-/**
- * Public SceService.parseAsUrl member exposed by the AngularTS namespace contract.
- * @param {string} expression Value supplied for the expression parameter.
- * @return {!Object}
- */
-ng.SceService.prototype.parseAsUrl = function(expression) {};
-
-/**
- * Public SceService.parseAsMediaUrl member exposed by the AngularTS namespace contract.
- * @param {string} expression Value supplied for the expression parameter.
- * @return {!Object}
- */
-ng.SceService.prototype.parseAsMediaUrl = function(expression) {};
-
-/**
- * Public SceService.trustAs member exposed by the AngularTS namespace contract.
- * @param {string} type Value supplied for the type parameter.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.trustAs = function(type, value) {};
-
-/**
- * Public SceService.trustAsHtml member exposed by the AngularTS namespace contract.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.trustAsHtml = function(value) {};
-
-/**
- * Public SceService.trustAsResourceUrl member exposed by the AngularTS namespace contract.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.trustAsResourceUrl = function(value) {};
-
-/**
- * Public SceService.trustAsUrl member exposed by the AngularTS namespace contract.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.trustAsUrl = function(value) {};
-
-/**
- * Public SceService.trustAsMediaUrl member exposed by the AngularTS namespace contract.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.trustAsMediaUrl = function(value) {};
-
-/**
- * Public SceService.isEnabled member exposed by the AngularTS namespace contract.
- * @return {boolean}
- */
-ng.SceService.prototype.isEnabled = function() {};
-
-/**
- * Public SceService.valueOf member exposed by the AngularTS namespace contract.
- * @param {(?|undefined)} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceService.prototype.valueOf = function(value) {};
-
-/**
- * Public AngularTS SceDelegateService contract exposed through the global ng namespace for Closure-annotated applications.
- * @record
- */
-ng.SceDelegateService = function() {};
-
-/**
- * Public SceDelegateService.getTrusted member exposed by the AngularTS namespace contract.
- * @param {string} type Value supplied for the type parameter.
- * @param {?} mayBeTrusted Value supplied for the mayBeTrusted parameter.
- * @return {?}
- */
-ng.SceDelegateService.prototype.getTrusted = function(type, mayBeTrusted) {};
-
-/**
- * Public SceDelegateService.trustAs member exposed by the AngularTS namespace contract.
- * @param {string} type Value supplied for the type parameter.
- * @param {?} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceDelegateService.prototype.trustAs = function(type, value) {};
-
-/**
- * Public SceDelegateService.valueOf member exposed by the AngularTS namespace contract.
- * @param {(?|undefined)} value Value supplied for the value parameter.
- * @return {?}
- */
-ng.SceDelegateService.prototype.valueOf = function(value) {};
 
 /**
  * $sse service type Returns a managed SSE connection that automatically reconnects when needed.
@@ -10436,9 +10360,14 @@ ng.WasmTarget.prototype.batch = function(fn) {};
  * @param {(function((?|undefined), (?|undefined)): void|undefined)} listenerFn A function to execute when changes are detected on watched context.
  * @param {(boolean|undefined)} lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
  * @param {(boolean|undefined)} directLeaf Value supplied for the directLeaf parameter.
+ * @param {(boolean|undefined)} returnDeregister Value supplied for the returnDeregister parameter.
+ * @param {(boolean|undefined)} synchronousInitial Value supplied for the synchronousInitial parameter.
+ * @param {(?|undefined)} resolvedValue Value supplied for the resolvedValue parameter.
+ * @param {(boolean|undefined)} hasResolvedValue Value supplied for the hasResolvedValue parameter.
+ * @param {(?|undefined)} listenerContext Value supplied for the listenerContext parameter.
  * @return {(function(): void|undefined)}
  */
-ng.WasmTarget.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf) {};
+ng.WasmTarget.prototype.watch = function(watchProp, listenerFn, lazy, directLeaf, returnDeregister, synchronousInitial, resolvedValue, hasResolvedValue, listenerContext) {};
 
 /**
  * Creates a prototypically inherited child scope.

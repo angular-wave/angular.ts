@@ -8,7 +8,10 @@ describe("ngBindHtml", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    createInjector(["ng"]).invoke([
+    window.angular
+      .createModule("htmlBindings", ["ng"])
+      .config({ $compile: { htmlPolicy: (html) => html } });
+    createInjector(["htmlBindings"]).invoke([
       "$rootScope",
       "$compile",
       (_$rootScope_: any, _$compile_: any) => {

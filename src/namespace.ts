@@ -92,10 +92,6 @@ import type {
   WorkflowSupervisorSnapshot as TWorkflowSupervisorSnapshot,
 } from "./services/workflow/workflow.ts";
 import type {
-  SceDelegateService as TSceDelegateService,
-  SceService as TSceService,
-} from "./services/sce/sce.ts";
-import type {
   LogBeaconConfig as TLogBeaconConfig,
   LogBeaconSerializer as TLogBeaconSerializer,
   LogEntry as TLogEntry,
@@ -154,6 +150,16 @@ import type {
   LinkFn as TLinkFn,
   TranscludeFn as TTranscludeFn,
 } from "./core/compile/compile.ts";
+import type {
+  BindingContext as TBindingContext,
+  BindingPolicyConfig as TBindingPolicyConfig,
+  UrlPolicy as TUrlPolicy,
+} from "./core/compile/binding-policy.ts";
+import type { HtmlPolicy as THtmlPolicy } from "./core/compile/html-policy.ts";
+import type {
+  ScriptPolicy as TScriptPolicy,
+  ScriptUrlPolicy as TScriptUrlPolicy,
+} from "./core/compile/script-policy.ts";
 import type {
   RealtimeProtocolEventDetail as TRealtimeProtocolEventDetail,
   RealtimeProtocolMessage as TRealtimeProtocolMessage,
@@ -462,6 +468,18 @@ declare global {
 
     export type InterpolateConfig = TInterpolateConfig;
 
+    export type BindingContext = TBindingContext;
+
+    export type BindingPolicyConfig = TBindingPolicyConfig;
+
+    export type HtmlPolicy = THtmlPolicy;
+
+    export type ScriptPolicy = TScriptPolicy;
+
+    export type ScriptUrlPolicy = TScriptUrlPolicy;
+
+    export type UrlPolicy = TUrlPolicy;
+
     // Services
     export type AngularService = TAngular;
 
@@ -570,10 +588,6 @@ declare global {
     export type EventDeliveryPolicy = TEventDeliveryPolicy;
 
     export type EventDeliveryPolicyContext = TEventDeliveryPolicyContext;
-
-    export type SceService = TSceService;
-
-    export type SceDelegateService = TSceDelegateService;
 
     export type SseService = TSseService;
 

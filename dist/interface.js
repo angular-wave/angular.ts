@@ -1,4 +1,4 @@
-import { _injector, _workflowSupervisor, _workflow, _wasm, _worker, _websocket, _webTransport, _webComponent, _window, _transitions, _templateRequest, _templateCache, _sse, _stream, _storage, _stateRegistry, _state, _serviceWorker, _security, _sceDelegate, _sce, _rootElement, _rootScope, _rest, _parse, _native, _machine, _log, _location, _interpolate, _httpParamSerializer, _http, _htmlCanvas, _filter, _exceptionHandler, _eventBus, _document, _controller, _cookie, _compile, _aria, _animate, _anchorScroll, _element, _scope, _angular } from './injection-tokens.js';
+import { _injector, _workflowSupervisor, _workflow, _wasm, _worker, _websocket, _webTransport, _webComponent, _window, _transitions, _templateRequest, _templateCache, _sse, _stream, _storage, _stateRegistry, _state, _serviceWorker, _security, _rootElement, _rootScope, _rest, _parse, _native, _machine, _log, _location, _interpolate, _httpParamSerializer, _http, _htmlCanvas, _filter, _exceptionHandler, _eventBus, _document, _controller, _cookie, _compile, _aria, _animate, _anchorScroll, _element, _scope, _angular } from './injection-tokens.js';
 
 const PublicInjectionTokens = {
     $angular: _angular,
@@ -26,8 +26,6 @@ const PublicInjectionTokens = {
     $rest: _rest,
     $rootScope: _rootScope,
     $rootElement: _rootElement,
-    $sce: _sce,
-    $sceDelegate: _sceDelegate,
     $security: _security,
     $serviceWorker: _serviceWorker,
     $state: _state,

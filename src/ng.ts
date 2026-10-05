@@ -16,8 +16,6 @@ import {
   _parse,
   _rootElement,
   _rootScope,
-  _sce,
-  _sceDelegate,
   _security,
   _serviceWorker,
   _sse,
@@ -247,12 +245,6 @@ import {
   type ServiceWorkerConfig,
   type ServiceWorkerService,
 } from "./services/service-worker/service-worker.ts";
-import {
-  SceConfiguration,
-  type SceConfig,
-  SceDelegateConfiguration,
-  type SceDelegateConfig,
-} from "./services/sce/sce.ts";
 import {
   applySseConfiguration,
   createSseRuntimeConfiguration,
@@ -506,9 +498,12 @@ const interpolateRuntimeRegistration: RuntimeRegistrationRecipe = {
 
     return registry.factory(name, [
       _parse,
-      _sce,
-      ($parse: ng.ParseService, $sce: ng.SceService) =>
-        createInterpolateService(state, $parse, $sce),
+      ($parse: ng.ParseService) =>
+        createInterpolateService(
+          state,
+          $parse,
+          context.compileRegistry._bindingPolicies,
+        ),
     ]);
   },
 };
@@ -712,7 +707,16 @@ const templateRequestRuntimeRegistration: RuntimeRegistrationRecipe = {
       _templateCache,
       _http,
       ($templateCache: ng.TemplateCacheService, $http: ng.HttpService) =>
-        createTemplateRequestService($templateCache, $http, httpOptions),
+        createTemplateRequestService(
+          $templateCache,
+          $http,
+          httpOptions,
+          (url) =>
+            context.compileRegistry._bindingPolicies._resourceUrl(
+              url,
+              context.platform.window,
+            ),
+        ),
     ]);
   },
 };
@@ -735,20 +739,17 @@ const httpRuntimeRegistration: RuntimeRegistrationRecipe = {
 
     return registry.factory(name, [
       _injector,
-      _sce,
       _cookie,
       _security,
       _stream,
       (
         $injector: ng.InjectorService,
-        $sce: ng.SceService,
         $cookie: ng.CookieService,
         $security: ng.SecurityPolicy,
         $stream: ng.StreamService,
       ) =>
         createHttpService(
           $injector,
-          $sce,
           $cookie,
           $security,
           $stream,
@@ -849,64 +850,6 @@ export const ngBrowserProviders = {
   $templateRequest: templateRequestRuntimeRegistration,
 } satisfies ProviderGroup;
 
-/** Strict contextual escaping providers. */
-const sceRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    const configuration = new SceConfiguration();
-
-    context.runtime.configRegistry.register(name, (value) => {
-      const config = value as SceConfig;
-
-      if (config.enabled !== undefined) {
-        configuration.setEnabled(config.enabled);
-      }
-    });
-
-    return registry.factory(name, [
-      _parse,
-      _sceDelegate,
-      ($parse: ng.ParseService, $sceDelegate: ng.SceDelegateService) =>
-        configuration.createService($parse, $sceDelegate),
-    ]);
-  },
-};
-
-const sceDelegateRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    const configuration = new SceDelegateConfiguration();
-
-    context.runtime.configRegistry.register(name, (value) => {
-      const config = value as SceDelegateConfig;
-
-      if (config.trustedResourceUrlList !== undefined) {
-        configuration.setTrustedResourceUrlList(config.trustedResourceUrlList);
-      }
-      if (config.bannedResourceUrlList !== undefined) {
-        configuration.setBannedResourceUrlList(config.bannedResourceUrlList);
-      }
-      if (config.aHrefSanitizationTrustedUrlList !== undefined) {
-        configuration.setAHrefSanitizationTrustedUrlList(
-          config.aHrefSanitizationTrustedUrlList,
-        );
-      }
-      if (config.imgSrcSanitizationTrustedUrlList !== undefined) {
-        configuration.setImgSrcSanitizationTrustedUrlList(
-          config.imgSrcSanitizationTrustedUrlList,
-        );
-      }
-    });
-
-    return registry.factory(name, [
-      _injector,
-      _window,
-      ($injector: ng.InjectorService, $window: Window) =>
-        configuration.createService($injector, $window),
-    ]);
-  },
-};
-
 const securityRuntimeRegistration: RuntimeRegistrationRecipe = {
   /** @internal */
   _register(registry, name, context): unknown {
@@ -927,8 +870,6 @@ const securityRuntimeRegistration: RuntimeRegistrationRecipe = {
 
 export const ngSecurityProviders = {
   $security: securityRuntimeRegistration,
-  $sce: sceRuntimeRegistration,
-  $sceDelegate: sceDelegateRuntimeRegistration,
 } satisfies ProviderGroup;
 
 /** Native animation service composition. */
@@ -1400,7 +1341,6 @@ export function registerNgModule(angular: AngularRuntime): ng.NgModule {
     registry.factory(_compile, [
       _injector,
       _interpolate,
-      _sce,
       _exceptionHandler,
       _parse,
       _controller,
@@ -1408,7 +1348,6 @@ export function registerNgModule(angular: AngularRuntime): ng.NgModule {
       (
         $injector: ng.InjectorService,
         $interpolate: ng.InterpolateService,
-        $sce: ng.SceService,
         $exceptionHandler: ng.ExceptionHandlerService,
         $parse: ng.ParseService,
         $controller: ng.ControllerService,
@@ -1417,7 +1356,6 @@ export function registerNgModule(angular: AngularRuntime): ng.NgModule {
         compileRegistry.createService(
           $injector,
           $interpolate,
-          $sce,
           $exceptionHandler,
           $parse,
           $controller,

@@ -37,6 +37,8 @@ let cacheSize = 0;
 
 const transcludedHostElements = new WeakMap<Node, Element>();
 
+const transcludedHostSubtrees = new WeakSet<Node>();
+
 const htmlParseCache = new Map<string, DocumentFragment>();
 
 type ExpandoOwner = Node | Window;
@@ -368,7 +370,10 @@ export function setCacheData(
   key: string,
   value?: unknown,
 ): void {
-  if (elementAcceptsData(element)) {
+  if (
+    element.nodeType === NodeType._ELEMENT_NODE ||
+    elementAcceptsData(element)
+  ) {
     const expandoStore = getExpando(element, true);
 
     assertInvariantDefined(expandoStore)[kebabToCamel(key)] = value;
@@ -407,6 +412,13 @@ export function setTranscludedHostElement(
   hostElement: Element,
 ): void {
   transcludedHostElements.set(anchor, hostElement);
+
+  let node: Node | null = anchor;
+
+  while (node) {
+    transcludedHostSubtrees.add(node);
+    node = node.parentNode;
+  }
 }
 
 /** Returns the original element replaced by an element-transclusion anchor. */
@@ -414,8 +426,17 @@ export function getTranscludedHostElement(anchor: Node): Element | undefined {
   return transcludedHostElements.get(anchor);
 }
 
+/** Returns whether a node tree contains element-transclusion host metadata. */
+export function hasTranscludedHostElements(node: Node): boolean {
+  return transcludedHostSubtrees.has(node);
+}
+
 /** Copies element-transclusion host metadata from an original node tree to its clone. */
 export function cloneTranscludedHostElements(source: Node, clone: Node): void {
+  if (!transcludedHostSubtrees.has(source)) return;
+
+  transcludedHostSubtrees.add(clone);
+
   const hostElement = transcludedHostElements.get(source);
 
   if (hostElement instanceof Element) {
@@ -488,8 +509,26 @@ export function getScope(element: Element): ng.Scope {
 export function setScope(
   element: Element | Node | ChildNode,
   scope: ng.Scope,
+  cacheKey?: string,
+  cacheValue?: unknown,
 ): void {
+  if (element.nodeType === NodeType._ELEMENT_NODE) {
+    const expandoStore = getExpando(element as Element, true);
+
+    assertInvariantDefined(expandoStore)[SCOPE_KEY] = scope;
+
+    if (cacheKey) {
+      expandoStore[cacheKey] = cacheValue;
+    }
+
+    return;
+  }
+
   setCacheData(element, SCOPE_KEY, scope);
+
+  if (cacheKey) {
+    setCacheData(element, cacheKey, cacheValue);
+  }
 }
 
 /**
@@ -499,7 +538,9 @@ export function setScope(
  * @param scope - The isolate scope to attach to this element.
  */
 export function setIsolateScope(element: Element, scope: ng.Scope): void {
-  setCacheData(element, ISOLATE_SCOPE_KEY, scope);
+  const expandoStore = getExpando(element, true);
+
+  assertInvariantDefined(expandoStore)[ISOLATE_SCOPE_KEY] = scope;
 }
 
 /**

@@ -5,6 +5,7 @@ import { isObject } from '../../shared/utils.js';
 import { getEventNameForElement } from '../events/event-name.js';
 import { nativeElements } from '../../runtime/native-elements.js';
 import { readNativeStyle } from './native-element.js';
+import { HarmonyNativeEmbedBinding } from './native-embed.js';
 
 /** Calls a native capability from HTML. */
 function ngNativeDirective(native, parse, exceptionHandler) {
@@ -147,6 +148,7 @@ function ngNativeComponentDirective(native, parse, exceptionHandler, runtimeWind
                         name,
                         props: nativeProperties,
                         rect: readElementRect(element, view),
+                        embedId: embed.id,
                     };
                     const serialized = JSON.stringify(payload);
                     if (mounted && serialized === lastPayload)
@@ -173,6 +175,7 @@ function ngNativeComponentDirective(native, parse, exceptionHandler, runtimeWind
                     void update();
                 });
             };
+            const embed = new HarmonyNativeEmbedBinding(element, id, view, scheduleUpdate);
             const ResizeObserverType = view.ResizeObserver;
             const resizeObserver = ResizeObserverType
                 ? new ResizeObserverType(scheduleUpdate)
@@ -225,6 +228,7 @@ function ngNativeComponentDirective(native, parse, exceptionHandler, runtimeWind
                 if (disposed)
                     return;
                 disposed = true;
+                embed.dispose();
                 if (scheduled)
                     view.cancelAnimationFrame(scheduled);
                 resizeObserver?.disconnect();

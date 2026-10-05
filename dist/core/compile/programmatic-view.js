@@ -1,7 +1,7 @@
 import { _compile, _exceptionHandler } from '../../injection-tokens.js';
 import { getCacheData, addElementDisposer, dealoc } from '../../shared/dom.js';
-import { isFunction, isArray } from '../../shared/utils.js';
-import { observeScopeExpression, createScope, getArrayMutationMeta } from '../scope/scope.js';
+import { isFunction, isArray, getNodeName } from '../../shared/utils.js';
+import { observeScopeExpression, createScopeExpressionValue, getArrayMutationMeta } from '../scope/scope.js';
 import { addCompiledFragmentDisposer, getCompiledFragmentRecord, disposeCompiledFragmentRecords } from './incremental-fragment.js';
 import { planKeyedReconciliation } from './keyed-reconciler.js';
 
@@ -59,6 +59,19 @@ function each(read, key, render) {
         _kind: "keyed-child",
         _binding: binding,
     });
+}
+function handleProgrammaticEvent(eventValue) {
+    try {
+        if (isFunction(this._listener)) {
+            Reflect.apply(this._listener, eventValue.currentTarget, [eventValue]);
+        }
+        else {
+            this._listener.handleEvent(eventValue);
+        }
+    }
+    catch (error) {
+        this._exceptionHandler?.(error);
+    }
 }
 function firstKeyedStateNode(state) {
     for (let index = 0; index < state._children.length; index++) {
@@ -140,6 +153,12 @@ function isPropertyGroup(value) {
         (attributeGroup in value || propertyGroup in value));
 }
 function setDomProperty(element, name, value) {
+    if (getNodeName(element) === "script" &&
+        (name === "src" || name === "href") &&
+        (value === null || value === undefined)) {
+        element.removeAttribute(name);
+        return;
+    }
     if (name in element && Reflect.set(element, name, value)) {
         return;
     }
@@ -147,11 +166,7 @@ function setDomProperty(element, name, value) {
         element.removeAttribute(name);
         return;
     }
-    element.setAttribute(name, value === true
-        ? ""
-        : typeof value === "string"
-            ? value
-            : String(value));
+    element.setAttribute(name, (value === true ? "" : value));
 }
 const booleanAttributes = new Set([
     "allowfullscreen",
@@ -180,7 +195,32 @@ const booleanAttributes = new Set([
     "reversed",
     "selected",
 ]);
-const deferredStaticProperties = new Set(["innerhtml", "outerhtml", "srcdoc"]);
+const deferredStaticProperties = new Set([
+    "innerhtml",
+    "outerhtml",
+    "srcdoc",
+    "src",
+    "srcset",
+    "href",
+    "action",
+    "formaction",
+    "data",
+    "codebase",
+    "poster",
+    "background",
+    "cite",
+    "longdesc",
+    "usemap",
+    "ping",
+    "manifest",
+    "profile",
+]);
+function requiresBindingPolicy(element, name) {
+    const property = name.toLowerCase();
+    return (deferredStaticProperties.has(property) ||
+        (element.localName === "script" &&
+            ["text", "textcontent", "innertext"].includes(property)));
+}
 function setDomAttribute(element, name, value) {
     if (value === null ||
         value === undefined ||
@@ -190,9 +230,15 @@ function setDomAttribute(element, name, value) {
     }
     element.setAttribute(name, value === true && booleanAttributes.has(name.toLowerCase())
         ? ""
-        : String(value));
+        : value);
 }
 function setExplicitDomProperty(element, name, value) {
+    if ((value === null || value === undefined) &&
+        element.localName === "script" &&
+        (name === "src" || name === "href")) {
+        element.removeAttribute(name);
+        return;
+    }
     if (!Reflect.set(element, name, value)) {
         throw new TypeError(`DOM property '${name}' cannot be assigned.`);
     }
@@ -210,7 +256,7 @@ function setDomValue(element, name, value, target) {
 }
 function applyProperty(element, propertyName, propertyValue, target) {
     if (target === "property") {
-        if (deferredStaticProperties.has(propertyName.toLowerCase())) {
+        if (requiresBindingPolicy(element, propertyName)) {
             addPendingBinding(element, {
                 _kind: "static-property",
                 _name: propertyName,
@@ -249,6 +295,7 @@ function applyProperty(element, propertyName, propertyValue, target) {
                     : normalizedEventProperty.slice(2),
                 _listener: propertyValue,
                 _options: metadata?._kind === "event" ? metadata._options : undefined,
+                handleEvent: handleProgrammaticEvent,
             });
         }
     }
@@ -260,7 +307,7 @@ function applyProperty(element, propertyName, propertyValue, target) {
             _target: target === "auto" && propertyName !== "class" ? "property" : target,
         });
     }
-    else if (deferredStaticProperties.has(propertyName.toLowerCase())) {
+    else if (requiresBindingPolicy(element, propertyName)) {
         addPendingBinding(element, {
             _kind: "static-property",
             _name: propertyName,
@@ -321,12 +368,41 @@ function materializeProgrammaticView(value) {
     return nodes;
 }
 function appendChildren(element, children, startIndex) {
-    const nodes = [];
     for (let index = startIndex; index < children.length; index++) {
-        materializeChild(children[index], nodes);
+        appendChild(element, children[index]);
     }
-    for (let index = 0; index < nodes.length; index++) {
-        element.appendChild(nodes[index]);
+}
+function appendChild(element, value) {
+    if (isArray(value)) {
+        for (let index = 0; index < value.length; index++) {
+            appendChild(element, value[index]);
+        }
+        return;
+    }
+    if (value instanceof Node) {
+        element.appendChild(value);
+        return;
+    }
+    if (isFunction(value)) {
+        const metadata = getBindingMetadata(value);
+        const anchor = document.createComment(metadata?._kind === "keyed-child" ? "ng-view-each" : "ng-view-binding");
+        if (metadata?._kind === "keyed-child") {
+            addPendingBinding(anchor, {
+                _kind: "keyed-child",
+                _binding: metadata._binding,
+            });
+        }
+        else {
+            addPendingBinding(anchor, {
+                _kind: "child",
+                _read: value,
+            });
+        }
+        element.appendChild(anchor);
+        return;
+    }
+    if (value !== null && value !== undefined && typeof value !== "boolean") {
+        element.appendChild(document.createTextNode(String(value)));
     }
 }
 function createTag(namespaceUri, name, ...args) {
@@ -596,7 +672,7 @@ function disposeLinkedChildren(children) {
 function linkChildValue(value, parent, anchor, runtime) {
     return linkMaterializedChildren(materializeProgrammaticView(value), parent, anchor, runtime);
 }
-function linkMaterializedChildren(rawNodes, parent, anchor, runtime) {
+function linkMaterializedChildren(rawNodes, parent, anchor, runtime, ownBindings = false) {
     const children = [];
     for (let index = 0; index < rawNodes.length; index++) {
         const rawNode = rawNodes[index];
@@ -621,7 +697,7 @@ function linkMaterializedChildren(rawNodes, parent, anchor, runtime) {
         children.push({
             _nodes: linkedNodes,
             _records: uniqueRecords(linkedNodes),
-            _disposeBindings: activateProgrammaticBindings(linkedNodes, runtime),
+            _disposeBindings: activateProgrammaticBindings(linkedNodes, runtime, ownBindings),
         });
     }
     return children;
@@ -847,7 +923,7 @@ function activateKeyedChildBinding(anchor, binding, runtime) {
                 const replacements = new Array(items.length);
                 for (let index = 0; index < items.length; index++) {
                     const item = items[index];
-                    const holder = createScope({ value: item }, runtime._scope._handler);
+                    const holder = createScopeExpressionValue(item);
                     replacements[index] = {
                         _holder: holder,
                         _nodes: materializeProgrammaticView(binding._render(() => holder.value)),
@@ -893,7 +969,7 @@ function activateKeyedChildBinding(anchor, binding, runtime) {
             for (let index = retainedLength; index < items.length; index++) {
                 const item = items[index];
                 const key = appendedKeys[index - retainedLength];
-                const holder = createScope({ value: item }, runtime._scope._handler);
+                const holder = createScopeExpressionValue(item);
                 const children = linkMaterializedChildren(materializeProgrammaticView(binding._render(() => holder.value)), parent, anchor, runtime);
                 states.set(key, {
                     _key: key,
@@ -906,7 +982,7 @@ function activateKeyedChildBinding(anchor, binding, runtime) {
             return;
         }
         const plan = planKeyedReconciliation(items, states, binding._key, (state) => state._index, (item) => {
-            const holder = createScope({ value: item }, runtime._scope._handler);
+            const holder = createScopeExpressionValue(item);
             return {
                 _holder: holder,
                 _nodes: materializeProgrammaticView(binding._render(() => holder.value)),
@@ -992,22 +1068,11 @@ function activateNodeBindings(node, runtime, disposers) {
             const binding = multipleBindings ? bindings[index] : bindings;
             if (binding._kind === "event") {
                 const eventTarget = node;
-                const listener = function (eventValue) {
-                    try {
-                        if (isFunction(binding._listener)) {
-                            Reflect.apply(binding._listener, this, [eventValue]);
-                        }
-                        else {
-                            binding._listener.handleEvent(eventValue);
-                        }
-                    }
-                    catch (error) {
-                        runtime._exceptionHandler(error);
-                    }
-                };
-                eventTarget.addEventListener(binding._name, listener, binding._options);
+                binding._exceptionHandler = runtime._exceptionHandler;
+                eventTarget.addEventListener(binding._name, binding, binding._options);
                 disposers.push(() => {
-                    eventTarget.removeEventListener(binding._name, listener, binding._options);
+                    eventTarget.removeEventListener(binding._name, binding, binding._options);
+                    binding._exceptionHandler = undefined;
                 });
             }
             else if (binding._kind === "static-property") {
@@ -1051,7 +1116,7 @@ function activateNodeBindings(node, runtime, disposers) {
         activateNodeBindings(snapshot[index], runtime, disposers);
     }
 }
-function activateProgrammaticBindings(nodes, runtime) {
+function activateProgrammaticBindings(nodes, runtime, ownBindings) {
     const disposers = [];
     for (let index = 0; index < nodes.length; index++) {
         activateNodeBindings(nodes[index], runtime, disposers);
@@ -1062,8 +1127,8 @@ function activateProgrammaticBindings(nodes, runtime) {
         }
         disposers.length = 0;
     };
-    const release = runtime._ownDisposer(dispose);
-    disposers.push(release);
+    if (ownBindings)
+        disposers.push(runtime._ownDisposer(dispose));
     const owner = uniqueRecords(nodes).at(0);
     if (owner)
         addCompiledFragmentDisposer(owner, dispose);
@@ -1188,7 +1253,7 @@ function createProgrammaticDirectiveCompile(options) {
                 },
             };
             const boundary = marker.nextSibling;
-            linkMaterializedChildren(rawNodes, element, boundary, runtime);
+            linkMaterializedChildren(rawNodes, element, boundary, runtime, true);
         };
         const post = (_scope, element) => {
             findMarker(element)?.remove();

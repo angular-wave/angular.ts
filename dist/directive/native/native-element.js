@@ -1,6 +1,7 @@
 import { _native, _parse, _exceptionHandler, _window } from '../../injection-tokens.js';
 import { nativeElements } from '../../runtime/native-elements.js';
 import { isObject } from '../../shared/utils.js';
+import { HarmonyNativeEmbedBinding } from './native-embed.js';
 
 const bindings = new WeakMap();
 const rootSchedules = new WeakMap();
@@ -82,6 +83,7 @@ function mountNativeRoot(root, native, parse, exceptionHandler, runtimeWindow) {
                 name: descriptor.name,
                 props: descriptor.props,
                 rect: readElementRect(element, runtimeWindow),
+                embedId: embed.id,
             };
             const serialized = JSON.stringify(payload);
             if (serialized === lastPayload)
@@ -104,6 +106,7 @@ function mountNativeRoot(root, native, parse, exceptionHandler, runtimeWindow) {
             void render();
         });
     };
+    const embed = new HarmonyNativeEmbedBinding(element, id, runtimeWindow, schedule);
     rootSchedules.set(element, schedule);
     const eventNames = new Set([
         "childEvent",
@@ -140,6 +143,7 @@ function mountNativeRoot(root, native, parse, exceptionHandler, runtimeWindow) {
         if (disposed)
             return;
         disposed = true;
+        embed.dispose();
         resizeObserver?.disconnect();
         mutationObserver?.disconnect();
         runtimeWindow.removeEventListener("resize", schedule);

@@ -125,10 +125,46 @@ export function updateClass(
 ): void {
   if (newClasses === oldClasses) return;
 
-  setClass(
-    element,
-    tokenDifference(newClasses, oldClasses).join(" "),
-    tokenDifference(oldClasses, newClasses).join(" "),
-    getAnimate,
-  );
+  const newTokens = tokenizeClassString(newClasses);
+  const oldTokens = tokenizeClassString(oldClasses);
+  let toAdd: string[];
+  let toRemove: string[];
+
+  if (oldTokens.length === 0) {
+    toAdd = newTokens;
+    toRemove = [];
+  } else if (newTokens.length === 0) {
+    toAdd = [];
+    toRemove = oldTokens;
+  } else {
+    const newTokenSet = new Set(newTokens);
+    const oldTokenSet = new Set(oldTokens);
+
+    toAdd = [];
+    toRemove = [];
+
+    for (const token of newTokenSet) {
+      if (!oldTokenSet.has(token)) toAdd.push(token);
+    }
+
+    for (const token of oldTokenSet) {
+      if (!newTokenSet.has(token)) toRemove.push(token);
+    }
+  }
+
+  if (toAdd.length === 0 && toRemove.length === 0) return;
+
+  const targetElement = getDirectiveHostElement(element);
+
+  if (!targetElement) return;
+
+  const animate = getAnimateForNode(getAnimate, targetElement);
+
+  if (animate) {
+    animate.setClass(targetElement, toAdd.join(" "), toRemove.join(" "));
+    return;
+  }
+
+  if (toAdd.length) targetElement.classList.add(...toAdd);
+  if (toRemove.length) targetElement.classList.remove(...toRemove);
 }

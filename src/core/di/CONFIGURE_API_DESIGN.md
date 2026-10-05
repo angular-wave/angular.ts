@@ -30,10 +30,6 @@ Implemented config keys:
       `docs/static/examples/config/exception-handler.js`
 - [x] `$location`: `docs/content/docs/service/location.md`,
       `docs/static/examples/config/location.js`
-- [x] `$sce`: `docs/content/docs/service/sce.md`,
-      `docs/static/examples/config/sce.js`
-- [x] `$sceDelegate`: `docs/content/docs/service/sce.md`,
-      `docs/static/examples/config/sce.js`
 - [x] `$http`: `docs/content/docs/service/http.md`,
       `docs/static/examples/config/http.js`
 - [x] `$rest`: `docs/content/docs/services/rest.md`,
@@ -100,8 +96,6 @@ export interface AngularConfigMap {
   $log?: LogConfig;
   $rest?: RestConfig;
   $security?: SecurityConfig;
-  $sce?: SceConfig;
-  $sceDelegate?: SceDelegateConfig;
   $sse?: { defaults?: SseConfig };
   $templateCache?: TemplateCacheConfig;
   $templateRequest?: TemplateRequestConfig;
@@ -176,7 +170,7 @@ An implementation slice for any key must document:
 
 Security-sensitive config must stay explicit and reviewable.
 
-- `sce` and `sceDelegate` config must not be hidden behind broad presets.
+- Compiler binding policies must not be hidden behind broad presets.
 - Trust lists must remain literal and auditable where practical.
 - Config that disables security must use a direct field name such as
   `enabled: false`; it must not be implied by another option.
@@ -206,7 +200,7 @@ Implement config through small, testable pilots:
 1. `log`: smallest policy provider; proves object config.
 2. `cookie`: simple defaults object; proves merge semantics.
 3. `location`: browser policy; proves object-or-boolean normalization.
-4. `sce`/`sceDelegate`: security-sensitive config; proves explicit policy.
+4. `$compile` binding policies: explicit sanitization and destination validation.
 5. `http`: broad defaults/interceptor surface; implement after small pilots.
 6. Realtime config: done for `$sse`, `$websocket`, and `$webTransport` after
    lifecycle policy hardening.

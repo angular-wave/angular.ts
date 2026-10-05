@@ -56,6 +56,16 @@ export const angular = new Angular();
 scheduleAutoBootstrap(angular, document, window);
 
 export { AngularRuntime, createAngular } from "./runtime/index.ts";
+export type { HtmlPolicy } from "./core/compile/html-policy.ts";
+export type {
+  BindingContext,
+  BindingPolicyConfig,
+  UrlPolicy,
+} from "./core/compile/binding-policy.ts";
+export type {
+  ScriptPolicy,
+  ScriptUrlPolicy,
+} from "./core/compile/script-policy.ts";
 export { afterRender, queueAfterRender } from "./core/render/after-render.ts";
 export {
   a,

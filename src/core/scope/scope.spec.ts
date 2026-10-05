@@ -4863,7 +4863,7 @@ describe("Scope", () => {
 
       const child = scope.new();
 
-      const originalDestroy = child._handler._propertyMap.destroy;
+      const originalDestroy = child.destroy;
 
       const destroySpy = jasmine
         .createSpy("bound child destroy")
@@ -4882,7 +4882,7 @@ describe("Scope", () => {
 
       const child = scope.new();
 
-      const originalDestroy = child._handler._propertyMap.destroy;
+      const originalDestroy = child.destroy;
 
       const destroySpy = jasmine
         .createSpy("bound child destroy on undefined")
@@ -6277,7 +6277,7 @@ describe("Scope optimizations", () => {
       const parent = createScope({});
       const child = parent.new({});
 
-      parent._handler._childIndices.delete(child);
+      child._handler._parentIndex = -1;
       child.destroy();
 
       expect(parent._handler._children).not.toContain(child);

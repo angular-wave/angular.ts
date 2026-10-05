@@ -9,7 +9,12 @@ import {
   AFTER_RENDER_EVENT_SCHEDULER_KEY,
   type AfterRenderEventScheduler,
 } from "../../core/render/after-render.ts";
-import { addScopeEventListener } from "../../core/render/event-dispatcher.ts";
+import {
+  addScopeDelegatedEventListener,
+  addScopeEventListener,
+  canDelegateEvent,
+} from "../../core/render/event-dispatcher.ts";
+import { EVENT_SCOPE } from "../../core/scope/scope.ts";
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
  * AngularTS expressions and are compiled and executed within the current scope.
@@ -53,9 +58,20 @@ interface EventBehavior {
   _listenerOptions?: AddEventListenerOptions;
 }
 
+interface EventLinkState {
+  _delegated: boolean;
+  _eventBehavior: EventBehavior;
+  _eventName: string;
+  _exceptionHandler: ng.ExceptionHandlerService;
+  _fn: ReturnType<ng.ParseService>;
+  _handler?: EventListener;
+}
+
 function directiveNameForEvent(eventName: NgEventName): NgEventDirectiveName {
   return directiveNormalize(`ng-${eventName}`) as NgEventDirectiveName;
 }
+
+type EventScopeTarget = Element & { [EVENT_SCOPE]?: ng.Scope };
 
 function createEventDirectiveFactory(
   eventName: NgEventName,
@@ -116,37 +132,72 @@ export function createEventDirective(
 
       const eventBehavior = readEventBehavior(element);
 
-      const fn = $parse(expression);
-
-      return (scope: ng.Scope, element: Element): void => {
-        const handler = (event: Event): void => {
-          if (eventBehavior._prevent) {
-            event.preventDefault();
-          }
-
-          if (eventBehavior._stop) {
-            event.stopPropagation();
-          }
-
-          try {
-            fn(scope, { $event: event });
-          } catch (error) {
-            $exceptionHandler(error);
-          } finally {
-            scheduleEventAfterRender(scope, element);
-          }
-        };
-
-        addScopeEventListener(
-          scope,
-          element,
-          eventName,
-          handler,
-          eventBehavior._listenerOptions,
-        );
-      };
+      return {
+        post: linkEventDirective,
+        _postLinkCtx: {
+          _delegated:
+            eventBehavior._listenerOptions === undefined &&
+            canDelegateEvent(eventName),
+          _eventBehavior: eventBehavior,
+          _eventName: eventName,
+          _exceptionHandler: $exceptionHandler,
+          _fn: $parse(expression),
+        },
+      } as unknown as ng.DirectivePrePost;
     },
   };
+}
+
+/** Links an event directive from immutable compile-time state. */
+function linkEventDirective(
+  linkState: EventLinkState,
+  scope: ng.Scope,
+  element: Element,
+): void {
+  const eventTarget = element as EventScopeTarget;
+  eventTarget[EVENT_SCOPE] = scope;
+
+  const handler = (linkState._handler ??= function eventHandler(
+    this: EventScopeTarget,
+    event: Event,
+  ): void {
+    const linkedScope = this[EVENT_SCOPE];
+
+    if (!linkedScope) return;
+
+    if (linkState._eventBehavior._prevent) {
+      event.preventDefault();
+    }
+
+    if (linkState._eventBehavior._stop) {
+      event.stopPropagation();
+    }
+
+    try {
+      linkState._fn(linkedScope, { $event: event });
+    } catch (error) {
+      linkState._exceptionHandler(error);
+    } finally {
+      scheduleEventAfterRender(linkedScope, this);
+    }
+  });
+
+  if (linkState._delegated) {
+    addScopeDelegatedEventListener(
+      scope,
+      element,
+      linkState._eventName,
+      handler,
+    );
+  } else {
+    addScopeEventListener(
+      scope,
+      element,
+      linkState._eventName,
+      handler,
+      linkState._eventBehavior._listenerOptions,
+    );
+  }
 }
 
 function readEventBehavior(element: Element): EventBehavior {

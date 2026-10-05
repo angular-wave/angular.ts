@@ -30,8 +30,6 @@ export const _parse = "$parse" as const;
 export const _rest = "$rest" as const;
 export const _rootScope = "$rootScope" as const;
 export const _rootElement = "$rootElement" as const;
-export const _sce = "$sce" as const;
-export const _sceDelegate = "$sceDelegate" as const;
 export const _state = "$state" as const;
 export const _stateRegistry = "$stateRegistry" as const;
 export const _storage = "$storage" as const;
@@ -82,8 +80,6 @@ export const $injectTokens = {
   _rest,
   _rootScope,
   _rootElement,
-  _sce,
-  _sceDelegate,
   _security,
   _serviceWorker,
   _state,

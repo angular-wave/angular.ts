@@ -1,4 +1,4 @@
-import { _injector, _templateCache, _http, _security, _rootScope, _rootElement, _exceptionHandler, _sce, _cookie, _stream, _log, _location, _document, _window, _parse, _workflowSupervisor, _workflow, _machine, _storage, _filter, _sceDelegate, _state, _worker, _webTransport, _websocket, _webComponent, _sse, _serviceWorker, _eventBus, _compile, _angular, _interpolate, _controller } from './injection-tokens.js';
+import { _injector, _templateCache, _http, _security, _rootScope, _rootElement, _exceptionHandler, _cookie, _stream, _log, _location, _document, _window, _parse, _workflowSupervisor, _workflow, _machine, _storage, _filter, _state, _worker, _webTransport, _websocket, _webComponent, _sse, _serviceWorker, _eventBus, _compile, _angular, _interpolate, _controller } from './injection-tokens.js';
 import { geolocationDirective } from './directive/geolocation/geolocation.js';
 import { createAnimateService, AnimationRegistry } from './animations/animate.js';
 import { createControllerService } from './core/controller/controller.js';
@@ -71,7 +71,6 @@ import { applyEventBusConfiguration, destroyEventBusRuntimeState, createEventBus
 import { createRestFactory } from './services/rest/rest.js';
 import { applySecurityConfiguration, createSecurityPolicy, createSecurityRuntimeConfiguration } from './services/security/security.js';
 import { applyServiceWorkerConfiguration, createServiceWorkerService, destroyServiceWorkerService, createServiceWorkerRuntimeConfiguration } from './services/service-worker/service-worker.js';
-import { SceDelegateConfiguration, SceConfiguration } from './services/sce/sce.js';
 import { applySseConfiguration, destroySseRuntimeConfiguration, createSseService, createSseRuntimeConfiguration } from './services/sse/sse.js';
 import { createStreamService } from './services/stream/readable-stream.js';
 import { applyTemplateRequestConfig, createTemplateRequestService, createTemplateRequestHttpOptions } from './services/template-request/template-request.js';
@@ -132,8 +131,7 @@ const interpolateRuntimeRegistration = {
         });
         return registry.factory(name, [
             _parse,
-            _sce,
-            ($parse, $sce) => createInterpolateService(state, $parse, $sce),
+            ($parse) => createInterpolateService(state, $parse, context.compileRegistry._bindingPolicies),
         ]);
     },
 };
@@ -286,7 +284,7 @@ const templateRequestRuntimeRegistration = {
         return registry.factory(name, [
             _templateCache,
             _http,
-            ($templateCache, $http) => createTemplateRequestService($templateCache, $http, httpOptions),
+            ($templateCache, $http) => createTemplateRequestService($templateCache, $http, httpOptions, (url) => context.compileRegistry._bindingPolicies._resourceUrl(url, context.platform.window)),
         ]);
     },
 };
@@ -305,11 +303,10 @@ const httpRuntimeRegistration = {
         });
         return registry.factory(name, [
             _injector,
-            _sce,
             _cookie,
             _security,
             _stream,
-            ($injector, $sce, $cookie, $security, $stream) => createHttpService($injector, $sce, $cookie, $security, $stream, configuration),
+            ($injector, $cookie, $security, $stream) => createHttpService($injector, $cookie, $security, $stream, configuration),
         ]);
     },
 };
@@ -384,50 +381,6 @@ const ngBrowserProviders = {
     $templateCache: templateCacheRuntimeRegistration,
     $templateRequest: templateRequestRuntimeRegistration,
 };
-/** Strict contextual escaping providers. */
-const sceRuntimeRegistration = {
-    /** @internal */
-    _register(registry, name, context) {
-        const configuration = new SceConfiguration();
-        context.runtime.configRegistry.register(name, (value) => {
-            const config = value;
-            if (config.enabled !== undefined) {
-                configuration.setEnabled(config.enabled);
-            }
-        });
-        return registry.factory(name, [
-            _parse,
-            _sceDelegate,
-            ($parse, $sceDelegate) => configuration.createService($parse, $sceDelegate),
-        ]);
-    },
-};
-const sceDelegateRuntimeRegistration = {
-    /** @internal */
-    _register(registry, name, context) {
-        const configuration = new SceDelegateConfiguration();
-        context.runtime.configRegistry.register(name, (value) => {
-            const config = value;
-            if (config.trustedResourceUrlList !== undefined) {
-                configuration.setTrustedResourceUrlList(config.trustedResourceUrlList);
-            }
-            if (config.bannedResourceUrlList !== undefined) {
-                configuration.setBannedResourceUrlList(config.bannedResourceUrlList);
-            }
-            if (config.aHrefSanitizationTrustedUrlList !== undefined) {
-                configuration.setAHrefSanitizationTrustedUrlList(config.aHrefSanitizationTrustedUrlList);
-            }
-            if (config.imgSrcSanitizationTrustedUrlList !== undefined) {
-                configuration.setImgSrcSanitizationTrustedUrlList(config.imgSrcSanitizationTrustedUrlList);
-            }
-        });
-        return registry.factory(name, [
-            _injector,
-            _window,
-            ($injector, $window) => configuration.createService($injector, $window),
-        ]);
-    },
-};
 const securityRuntimeRegistration = {
     /** @internal */
     _register(registry, name, context) {
@@ -442,8 +395,6 @@ const securityRuntimeRegistration = {
 };
 const ngSecurityProviders = {
     $security: securityRuntimeRegistration,
-    $sce: sceRuntimeRegistration,
-    $sceDelegate: sceDelegateRuntimeRegistration,
 };
 /** Native animation service composition. */
 const animateRuntimeRegistration = {
@@ -781,12 +732,11 @@ function registerNgModule(angular) {
         registry.factory(_compile, [
             _injector,
             _interpolate,
-            _sce,
             _exceptionHandler,
             _parse,
             _controller,
             _rootScope,
-            ($injector, $interpolate, $sce, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, $sce, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
+            ($injector, $interpolate, $exceptionHandler, $parse, $controller, $rootScope) => compileRegistry.createService($injector, $interpolate, $exceptionHandler, $parse, $controller, requireAppRoot(composition.appContext, $rootScope)),
         ]);
         const registeredProviders = new Map();
         ngDefaultProviderGroups.forEach((providers) => {

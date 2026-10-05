@@ -1,5 +1,5 @@
 import { mergeHttpHeaderDefaults, defaultHttpResponseTransform } from '../http/http.js';
-import { isArray, extend } from '../../shared/utils.js';
+import { isString, isArray, extend } from '../../shared/utils.js';
 
 /** @internal */
 function createTemplateRequestHttpOptions() {
@@ -26,9 +26,21 @@ function applyTemplateRequestConfig(current, config) {
     return next;
 }
 /** @internal */
-function createTemplateRequestService($templateCache, $http, httpOptions) {
+function createTemplateRequestService($templateCache, $http, httpOptions, resourceUrlPolicy) {
     const pendingRequests = new Map();
     return (templateUrl) => {
+        try {
+            if (!isString(templateUrl))
+                throw new TypeError("Template URL must be a string.");
+            templateUrl = resourceUrlPolicy(templateUrl);
+            if (!isString(templateUrl))
+                throw new TypeError("$compile.resourceUrlPolicy must return a string.");
+        }
+        catch (error) {
+            return Promise.resolve().then(() => {
+                throw error;
+            });
+        }
         const pendingRequest = pendingRequests.get(templateUrl);
         if (pendingRequest)
             return pendingRequest;
