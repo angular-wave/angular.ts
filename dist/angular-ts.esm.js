@@ -2707,7 +2707,14 @@ function registerScopeEventCleanup(scope, target, type, listener, options) {
 }
 /** @internal Registers scope metadata cleanup for a delegated DOM event target. */
 function registerScopeDelegatedEventCleanup(scope, target) {
-    getScopeHandler(scope)._registerDelegatedEventCleanup(target);
+    const handler = getOptionalScopeHandler(scope);
+    if (handler) {
+        handler._registerDelegatedEventCleanup(target);
+        return;
+    }
+    registerScopeDestroyCallback(scope, () => {
+        deleteProperty(target, EVENT_SCOPE);
+    });
 }
 let nextListenerId = 0;
 function getListenerOwnerTarget(listener) {
@@ -3469,51 +3476,6 @@ function collectForeignWatchDescriptors(node, listener, keySet, seenKeys) {
         }
     }
 }
-function collectStandaloneListenerKeys(node, standaloneKeys) {
-    if (!node || node._type === ASTType._Literal)
-        return;
-    if (node._type === ASTType._Identifier) {
-        const key = getNodeName(node);
-        if (key)
-            standaloneKeys.add(key);
-        return;
-    }
-    if (node._type === ASTType._MemberExpression) {
-        collectStandaloneListenerKeys(node._object, standaloneKeys);
-        if (node._computed) {
-            collectStandaloneListenerKeys(node._property, standaloneKeys);
-        }
-        return;
-    }
-    if (node._type === ASTType._CallExpression) {
-        collectStandaloneListenerKeys(node._callee, standaloneKeys);
-        const callArguments = node._arguments ?? [];
-        for (let i = 0, l = callArguments.length; i < l; i++) {
-            collectStandaloneListenerKeys(callArguments[i], standaloneKeys);
-        }
-        return;
-    }
-    if (node._type === ASTType._LogicalExpression) {
-        collectStandaloneListenerKeys(node._left, standaloneKeys);
-        collectStandaloneListenerKeys(node._right, standaloneKeys);
-        return;
-    }
-    if (node._type === ASTType._ConditionalExpression) {
-        collectStandaloneListenerKeys(node._test, standaloneKeys);
-        collectStandaloneListenerKeys(node._alternate, standaloneKeys);
-        collectStandaloneListenerKeys(node._consequent, standaloneKeys);
-        return;
-    }
-    const toWatch = node._toWatch;
-    if (!toWatch?.length)
-        return;
-    for (let i = 0, l = toWatch.length; i < l; i++) {
-        const watchTarget = toWatch[i];
-        if (watchTarget !== node) {
-            collectStandaloneListenerKeys(watchTarget, standaloneKeys);
-        }
-    }
-}
 /** @internal Builds reusable registration metadata for a compiled binding. */
 function createScopeWatchPlan(parse, watchProp) {
     const watchFn = parse(watchProp);
@@ -3526,21 +3488,8 @@ function createScopeWatchPlan(parse, watchProp) {
     const seenKeys = new Set();
     collectExpressionListenerKeys(expression, keys, seenKeys, listener);
     collectForeignWatchDescriptors(expression, listener, keys, seenKeys);
-    const descriptors = listener._foreignWatchDescriptors;
-    if (descriptors) {
-        const standaloneKeys = new Set();
-        collectStandaloneListenerKeys(expression, standaloneKeys);
-        if (standaloneKeys.size > 0) {
-            for (let i = 0, l = descriptors.length; i < l; i++) {
-                const descriptorKey = descriptors[i]._key;
-                if (standaloneKeys.has(descriptorKey))
-                    continue;
-                const keyIndex = keys.indexOf(descriptorKey);
-                if (keyIndex !== -1)
-                    keys.splice(keyIndex, 1);
-            }
-        }
-    }
+    // Leaf keys also notify bindings owned by this scope, including raw nested
+    // objects and services that schedule their own reactive property changes.
     if (keys.length === 0) {
         return undefined;
     }
@@ -5550,7 +5499,7 @@ class Scope {
             _watchFn: get,
             _parse: this._parse,
             _scopeId: this.id,
-            _id: nextUid(),
+            _id: ++nextListenerId,
         };
         if (listenerContext !== undefined) {
             listener._listenerContext = listenerContext;
@@ -5646,36 +5595,10 @@ class Scope {
             }
             // 6
             case ASTType._BinaryExpression: {
-                if (expr._isPure) {
-                    const [watch] = assertInvariantDefined(expr._toWatch);
-                    key = resolveNodeWatchKey(watch);
-                    if (!key) {
-                        throw new Error("Unable to determine key");
-                    }
-                    pushUniqueListenerKey(keySet, seenKeys, listener, key);
-                    collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
-                    this._bindForeignDependency(listener);
-                    break;
-                }
-                else {
-                    const toWatch = assertInvariantDefined(expr._toWatch);
-                    const keyList = new Array(toWatch.length);
-                    for (let i = 0, l = toWatch.length; i < l; i++) {
-                        const registerKey = resolveNodeWatchKey(toWatch[i]);
-                        if (!registerKey)
-                            throw new Error("Unable to determine key");
-                        keyList[i] = registerKey;
-                    }
-                    registerListenerKeys(this, listener, keyList, !lazy);
-                    collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
-                    if (!returnDeregister)
-                        return undefined;
-                    // Return deregistration function
-                    return () => {
-                        this._releaseForeignDependency(listener);
-                        deregisterListenerKeys(this, listener, keyList);
-                    };
-                }
+                collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
+                collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
+                this._bindForeignDependency(listener);
+                break;
             }
             // 7
             case ASTType._UnaryExpression: {
@@ -5928,7 +5851,7 @@ class Scope {
     /** Creates an isolate child scope that does not inherit watchable properties directly. */
     newIsolate(instance) {
         const child = instance ?? nullObject();
-        const handler = new Scope(this, this.root);
+        const handler = new Scope(this);
         const proxy = new Proxy(child, handler);
         handler._target = child;
         handler._scopeTarget = child;
@@ -6993,6 +6916,7 @@ function applyUrlPolicy(value, policy, context, platformWindow) {
 function createBindingPolicies() {
     let configuration = {};
     return {
+        /** @internal */
         _configure(config) {
             for (const key of policyKeys) {
                 if (config[key] !== undefined && !isFunction(config[key])) {
@@ -7004,6 +6928,7 @@ function createBindingPolicies() {
                     configuration[key] = config[key];
             }
         },
+        /** @internal */
         _apply(context, value, platformWindow = window) {
             value = deProxy(value);
             if (context === "html")
@@ -7020,9 +6945,11 @@ function createBindingPolicies() {
                 return value;
             return applyUrlPolicy(value, configuration[`${context}Policy`], context, platformWindow);
         },
+        /** @internal */
         _resourceUrl(value, platformWindow = window) {
             return applyUrlPolicy(value, configuration.resourceUrlPolicy, "resourceUrl", platformWindow);
         },
+        /** @internal */
         _destroy() {
             configuration = {};
         },
@@ -7311,20 +7238,34 @@ const DELEGATED_EVENT_LISTENER = Symbol();
 const DELEGATED_EVENT_LISTENERS = Symbol();
 const DELEGATED_EVENT_DOCUMENT = Symbol();
 const delegatedEvents = new WeakSet();
-const directEventTypes = new Set([
-    "abort",
-    "blur",
-    "error",
-    "focus",
-    "load",
-    "mouseenter",
-    "mouseleave",
-    "scroll",
+const delegatedEventTypes = new Set([
+    "change",
+    "click",
+    "copy",
+    "cut",
+    "dblclick",
+    "input",
+    "keydown",
+    "keyup",
+    "mousedown",
+    "mousemove",
+    "mouseout",
+    "mouseover",
+    "mouseup",
+    "paste",
+    "pointerdown",
+    "pointermove",
+    "pointerout",
+    "pointerover",
+    "pointerup",
+    "touchend",
+    "touchmove",
+    "touchstart",
 ]);
 const delegatedRootEvents = new WeakMap();
 /** Returns whether an event type can use element-to-root delegation. */
 function canDelegateEvent(type) {
-    return !directEventTypes.has(type);
+    return delegatedEventTypes.has(type);
 }
 function dispatchDelegatedEvent(event) {
     if (delegatedEvents.has(event))
@@ -7343,7 +7284,7 @@ function dispatchDelegatedEvent(event) {
             listener.call(target, event);
         // cancelBubble is the only observable signal that stopPropagation() was called.
         // eslint-disable-next-line @typescript-eslint/no-deprecated
-        if (event.cancelBubble)
+        if (event.cancelBubble || !event.bubbles)
             return;
     }
 }
@@ -7396,6 +7337,18 @@ function addDelegatedEventListener(target, type, listener) {
 /** Registers a delegated element event whose eligibility was resolved at compile time. */
 function addScopeDelegatedEventListener(scope, target, type, listener) {
     addDelegatedEventListener(target, type, listener);
+    // Linked nodes can later move into a shadow root or another document.
+    const linkedDocument = target.ownerDocument;
+    const directListener = (event) => {
+        if (!event.bubbles ||
+            !target.isConnected ||
+            target.ownerDocument !== linkedDocument ||
+            target.getRootNode() instanceof ShadowRoot) {
+            dispatchDelegatedEvent(event);
+        }
+    };
+    target.addEventListener(type, directListener);
+    registerScopeEventCleanup(scope, target, type, directListener);
     registerScopeDelegatedEventCleanup(scope, target);
 }
 function addScopeEventListener(scope, target, type, listener, options) {
@@ -7534,7 +7487,7 @@ function readEventBehavior(element) {
     return {
         _prevent: prevent,
         _stop: stop,
-        _listenerOptions: capture || once || passive
+        _listenerOptions: capture || once || passive || stop
             ? {
                 capture,
                 once,
@@ -29006,9 +28959,9 @@ function ngRepeatDirective($injector) {
                 let lastBlockMap = nullObject();
                 let lastBlockOrder = [];
                 let lastSeenArrayMutationVersion = 0;
-                // Scope proxy methods are lazily bound before being returned.
-                // eslint-disable-next-line @typescript-eslint/unbound-method
-                const createTranscludedScope = $scope.transcluded;
+                // Reading the method through its scope restores the parent target after
+                // collection proxy reads retarget the shared scope handler.
+                const createTranscludedScope = () => $scope.transcluded();
                 $scope.watch(rhs, (collection) => {
                     swap();
                     let index = 0;
@@ -33234,10 +33187,16 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                 _managedAriaCurrent: false,
             };
             const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
-            const rawDefKeyByAttr = {
-                ngState: "_ngState",
-                ngStateParams: "_ngStateParams",
-                ngStateOpts: "_ngStateOpts",
+            const setRawDefByAttr = {
+                ngState: (value) => {
+                    rawDef._ngState = value;
+                },
+                ngStateParams: (value) => {
+                    rawDef._ngStateParams = value;
+                },
+                ngStateOpts: (value) => {
+                    rawDef._ngStateOpts = value;
+                },
             };
             const watchDeregFns = {};
             inputAttrs.forEach((attr) => {
@@ -33264,10 +33223,9 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                     return getNormalizedAttr(element, field);
                 }
                 const initialExpr = readFieldExpression();
-                rawDef[rawDefKeyByAttr[field]] =
-                    initialExpr && !initialExpr.includes("{{")
-                        ? $parse(initialExpr)(scope)
-                        : undefined;
+                setRawDefByAttr[field](initialExpr && !initialExpr.includes("{{")
+                    ? $parse(initialExpr)(scope)
+                    : undefined);
                 const syncFieldExpression = () => {
                     const expr = readFieldExpression();
                     watchDeregFns[field]();
@@ -33277,8 +33235,7 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                     /* istanbul ignore next -- Scope.watch always returns a deregister function. */
                     watchDeregFns[field] =
                         scope.watch(expr, (newval) => {
-                            rawDef[rawDefKeyByAttr[field]] =
-                                newval;
+                            setRawDefByAttr[field](newval);
                             update();
                         }) ?? noopDeregister;
                 };

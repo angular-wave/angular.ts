@@ -1407,8 +1407,7 @@ final case class AngularConfig(
     interpolate: js.UndefOr[InterpolateConfig] = js.undefined,
     security: js.UndefOr[SecurityConfig] = js.undefined,
     router: js.UndefOr[RouterConfig] = js.undefined,
-    sce: js.UndefOr[SceConfig] = js.undefined,
-    sceDelegate: js.UndefOr[SceDelegateConfig] = js.undefined,
+    compile: js.UndefOr[BindingPolicyConfig] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
@@ -1417,8 +1416,7 @@ final case class AngularConfig(
       "$interpolate" -> interpolate.map(_.toJS),
       "$security" -> security.map(_.toJS),
       "$router" -> router.map(_.toJS),
-      "$sce" -> sce.map(_.toJS),
-      "$sceDelegate" -> sceDelegate.map(_.toJS),
+      "$compile" -> compile.map(_.toJS),
     )
 
 @js.native
@@ -2213,66 +2211,44 @@ trait LogService extends js.Object:
   def log(args: js.Any*): Unit = js.native
   def warn(args: js.Any*): Unit = js.native
 
-type SceContext = String
+/** Synchronous HTML sanitizer or validator. Throw to reject the input. */
+type HtmlPolicy = js.Function1[String, String]
 
-object SceContexts:
-  val Html: SceContext = "html"
-  val MediaUrl: SceContext = "mediaUrl"
-  val Url: SceContext = "url"
-  val ResourceUrl: SceContext = "resourceUrl"
+/** Synchronous URL validator. Throw to reject the input. */
+type UrlPolicy = js.Function1[String, String]
 
-@js.native
-trait SceService extends js.Object:
-  def getTrusted(context: SceContext, mayBeTrusted: js.Any): js.Any = js.native
-  def getTrustedHtml(value: js.Any): js.Any = js.native
-  def getTrustedResourceUrl(value: js.Any): js.Any = js.native
-  def getTrustedUrl(value: js.Any): js.Any = js.native
-  def getTrustedMediaUrl(value: js.Any): js.Any = js.native
-  def parse(context: SceContext, expression: String): js.Function = js.native
-  def parseAsHtml(expression: String): js.Function = js.native
-  def parseAsResourceUrl(expression: String): js.Function = js.native
-  def parseAsUrl(expression: String): js.Function = js.native
-  def parseAsMediaUrl(expression: String): js.Function = js.native
-  def trustAs(context: SceContext, value: js.Any): js.Any = js.native
-  def trustAsHtml(value: js.Any): js.Any = js.native
-  def trustAsResourceUrl(value: js.Any): js.Any = js.native
-  def trustAsUrl(value: js.Any): js.Any = js.native
-  def trustAsMediaUrl(value: js.Any): js.Any = js.native
-  def isEnabled(): Boolean = js.native
-  def valueOf(value: js.UndefOr[js.Any] = js.undefined): js.Any = js.native
+/** Synchronous executable-source validator. Throw to reject the input. */
+type ScriptPolicy = js.Function1[String, String]
 
-@js.native
-trait SceDelegateService extends js.Object:
-  def getTrusted(context: SceContext, mayBeTrusted: js.Any): js.Any = js.native
-  def trustAs(context: SceContext, value: js.Any): js.Any = js.native
-  def valueOf(value: js.UndefOr[js.Any] = js.undefined): js.Any = js.native
+/** Synchronous script-loading URL validator. Throw to reject the input. */
+type ScriptUrlPolicy = js.Function1[String, String]
 
-final case class SceConfig(
-    enabled: js.UndefOr[Boolean] = js.undefined,
+/** Destination-specific compiler binding context. */
+enum BindingContext(val value: String):
+  case Html extends BindingContext("html")
+  case Url extends BindingContext("url")
+  case MediaUrl extends BindingContext("mediaUrl")
+  case ResourceUrl extends BindingContext("resourceUrl")
+  case Script extends BindingContext("script")
+  case ScriptUrl extends BindingContext("scriptUrl")
+
+/** Compiler policy callbacks. Omitted callbacks retain framework defaults. */
+final case class BindingPolicyConfig(
+    htmlPolicy: js.UndefOr[HtmlPolicy] = js.undefined,
+    urlPolicy: js.UndefOr[UrlPolicy] = js.undefined,
+    mediaUrlPolicy: js.UndefOr[UrlPolicy] = js.undefined,
+    resourceUrlPolicy: js.UndefOr[UrlPolicy] = js.undefined,
+    scriptPolicy: js.UndefOr[ScriptPolicy] = js.undefined,
+    scriptUrlPolicy: js.UndefOr[ScriptUrlPolicy] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
-      "enabled" -> enabled,
-    )
-
-type SceResourceUrlMatcher = String | js.RegExp
-
-final case class SceDelegateConfig(
-    trustedResourceUrlList:
-        js.UndefOr[js.Array[SceResourceUrlMatcher] | Null] = js.undefined,
-    bannedResourceUrlList:
-        js.UndefOr[js.Array[SceResourceUrlMatcher] | Null] = js.undefined,
-    aHrefSanitizationTrustedUrlList: js.UndefOr[js.RegExp] = js.undefined,
-    imgSrcSanitizationTrustedUrlList: js.UndefOr[js.RegExp] = js.undefined,
-):
-  private[ts] def toJS: js.Object =
-    JsObjectBuilder(
-      "trustedResourceUrlList" -> trustedResourceUrlList
-        .asInstanceOf[js.UndefOr[js.Any]],
-      "bannedResourceUrlList" -> bannedResourceUrlList
-        .asInstanceOf[js.UndefOr[js.Any]],
-      "aHrefSanitizationTrustedUrlList" -> aHrefSanitizationTrustedUrlList,
-      "imgSrcSanitizationTrustedUrlList" -> imgSrcSanitizationTrustedUrlList,
+      "htmlPolicy" -> htmlPolicy,
+      "urlPolicy" -> urlPolicy,
+      "mediaUrlPolicy" -> mediaUrlPolicy,
+      "resourceUrlPolicy" -> resourceUrlPolicy,
+      "scriptPolicy" -> scriptPolicy,
+      "scriptUrlPolicy" -> scriptUrlPolicy,
     )
 
 enum EventDeliveryDecisionType(val value: String):

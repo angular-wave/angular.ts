@@ -8,6 +8,15 @@ test("web component unit tests contain no errors", async ({ page }) => {
   );
 });
 
+test("custom element bindings stay reactive in the regression order", async ({
+  page,
+}) => {
+  await expectNoJasmineFailures(
+    page,
+    "src/services/web-component/web-component.html?random=true&seed=61764",
+  );
+});
+
 test("react demo consumes an AngularTS custom element", async ({ page }) => {
   await page.goto("src/services/web-component/web-component-react-demo.html");
 

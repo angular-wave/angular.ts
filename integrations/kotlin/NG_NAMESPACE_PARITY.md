@@ -35,6 +35,12 @@ part of the Kotlin public facade.
 
 | ng type | Kotlin status |
 | --- | --- |
+| `BindingContext` | manual |
+| `BindingPolicyConfig` | generated |
+| `HtmlPolicy` | generated |
+| `ScriptPolicy` | generated |
+| `ScriptUrlPolicy` | generated |
+| `UrlPolicy` | generated |
 | `Angular` | generated |
 | `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | generated |
@@ -161,8 +167,6 @@ part of the Kotlin public facade.
 | `ServiceWorkerRequestOptions` | generated |
 | `ServiceWorkerService` | generated |
 | `ServiceWorkerUpdateState` | generated |
-| `SceDelegateService` | generated |
-| `SceService` | generated |
 | `StreamService` | generated |
 | `TemplateCacheService` | generated |
 | `TemplateRequestService` | generated |

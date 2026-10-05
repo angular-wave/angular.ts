@@ -56,6 +56,7 @@ spotless {
 }
 
 fun Lint.enforceStrictChecks() {
+    lintConfig = rootProject.file("lint.xml")
     abortOnError = true
     absolutePaths = false
     checkAllWarnings = true

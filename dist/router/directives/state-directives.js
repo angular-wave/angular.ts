@@ -327,10 +327,16 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                 _managedAriaCurrent: false,
             };
             const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
-            const rawDefKeyByAttr = {
-                ngState: "_ngState",
-                ngStateParams: "_ngStateParams",
-                ngStateOpts: "_ngStateOpts",
+            const setRawDefByAttr = {
+                ngState: (value) => {
+                    rawDef._ngState = value;
+                },
+                ngStateParams: (value) => {
+                    rawDef._ngStateParams = value;
+                },
+                ngStateOpts: (value) => {
+                    rawDef._ngStateOpts = value;
+                },
             };
             const watchDeregFns = {};
             inputAttrs.forEach((attr) => {
@@ -357,10 +363,9 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                     return getNormalizedAttr(element, field);
                 }
                 const initialExpr = readFieldExpression();
-                rawDef[rawDefKeyByAttr[field]] =
-                    initialExpr && !initialExpr.includes("{{")
-                        ? $parse(initialExpr)(scope)
-                        : undefined;
+                setRawDefByAttr[field](initialExpr && !initialExpr.includes("{{")
+                    ? $parse(initialExpr)(scope)
+                    : undefined);
                 const syncFieldExpression = () => {
                     const expr = readFieldExpression();
                     watchDeregFns[field]();
@@ -370,8 +375,7 @@ function StateRefDynamicDirective($aria, $state, $rootScope, $stateRegistry, $tr
                     /* istanbul ignore next -- Scope.watch always returns a deregister function. */
                     watchDeregFns[field] =
                         scope.watch(expr, (newval) => {
-                            rawDef[rawDefKeyByAttr[field]] =
-                                newval;
+                            setRawDefByAttr[field](newval);
                             update();
                         }) ?? noopDeregister;
                 };

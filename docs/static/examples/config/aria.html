@@ -1,7 +1,10 @@
 <!doctype html>
 <html>
   <head>
-    <script type="module" src="../../utils/source-bootstrap.js" data-angular-ts-entry="./aria.js"></script>
+    <script type="module">
+      import "../../utils/source-bootstrap.js";
+      import "./aria.js";
+    </script>
   </head>
   <body ng-app="ariaConfigDemo">
     <section ng-controller="AriaConfigCtrl as vm">

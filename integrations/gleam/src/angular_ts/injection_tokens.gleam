@@ -133,16 +133,6 @@ pub fn root_element() -> Token(namespace.RootElementService) {
   token.new("$rootElement")
 }
 
-/// Returns the typed token for the `$sce` AngularTS injectable.
-pub fn sce() -> Token(namespace.SceService) {
-  token.new("$sce")
-}
-
-/// Returns the typed token for the `$sceDelegate` AngularTS injectable.
-pub fn sce_delegate() -> Token(namespace.SceDelegateService) {
-  token.new("$sceDelegate")
-}
-
 /// Returns the typed token for the `$security` AngularTS injectable.
 pub fn security() -> Token(namespace.SecurityPolicy) {
   token.new("$security")

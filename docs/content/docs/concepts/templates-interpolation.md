@@ -224,31 +224,28 @@ that can be called with a context:
 | `_inputs`        | `any[]?`    | Sub-expressions tracked for change detection                    |
 | `_decoratedNode` | `BodyNode`  | The annotated AST for this expression                           |
 
-## Security and SCE
+## Security and binding policies
 
-When binding HTML content directly into the DOM, AngularTS enforces **Strict
-Contextual Escaping (SCE)**. Plain interpolation always produces text, never
-HTML. To bind HTML you must use `ng-bind-html` with a trusted value:
+Plain interpolation produces text. HTML bindings such as `ng-bind-html` use
+`$compile.htmlPolicy` to sanitize strings or reject them before insertion.
+Configure this callback with your application's HTML sanitizer:
+
+```ts
+angular.createModule('htmlApp', []).config({
+  $compile: {
+    htmlPolicy: (html) => DOMPurify.sanitize(html),
+  },
+});
+```
 
 ```html
 <p>{{ userComment }}</p>
-
-<!-- To render HTML, mark it as trusted first -->
-<p ng-bind-html="trustedHtml"></p>
+<p ng-bind-html="userComment"></p>
 ```
 
-```ts
-  '$scope', '$sce',
-  function ($scope, $sce) {
-    // Explicitly trust HTML from a known-safe source
-    $scope.trustedHtml = $sce.trustAsHtml('<strong>Bold</strong> text');
-  },
-]);
-```
-
-> **Warning:** Never call `$sce.trustAsHtml()` on user-provided input. Only use
-> it on HTML that your application controls — such as server-rendered content
-> that has already been sanitized.
+Without an HTML policy, nonempty HTML strings are rejected. The framework
+also accepts native `TrustedHTML`. See [binding policies](../../service/sce/)
+for URL and script contexts.
 
 ## Escaping interpolation delimiters
 

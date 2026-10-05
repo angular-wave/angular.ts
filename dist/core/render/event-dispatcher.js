@@ -1,24 +1,38 @@
-import { registerScopeDelegatedEventCleanup, registerScopeEventCleanup } from '../scope/scope.js';
+import { registerScopeEventCleanup, registerScopeDelegatedEventCleanup } from '../scope/scope.js';
 
 const DELEGATED_EVENT_TYPE = Symbol();
 const DELEGATED_EVENT_LISTENER = Symbol();
 const DELEGATED_EVENT_LISTENERS = Symbol();
 const DELEGATED_EVENT_DOCUMENT = Symbol();
 const delegatedEvents = new WeakSet();
-const directEventTypes = new Set([
-    "abort",
-    "blur",
-    "error",
-    "focus",
-    "load",
-    "mouseenter",
-    "mouseleave",
-    "scroll",
+const delegatedEventTypes = new Set([
+    "change",
+    "click",
+    "copy",
+    "cut",
+    "dblclick",
+    "input",
+    "keydown",
+    "keyup",
+    "mousedown",
+    "mousemove",
+    "mouseout",
+    "mouseover",
+    "mouseup",
+    "paste",
+    "pointerdown",
+    "pointermove",
+    "pointerout",
+    "pointerover",
+    "pointerup",
+    "touchend",
+    "touchmove",
+    "touchstart",
 ]);
 const delegatedRootEvents = new WeakMap();
 /** Returns whether an event type can use element-to-root delegation. */
 function canDelegateEvent(type) {
-    return !directEventTypes.has(type);
+    return delegatedEventTypes.has(type);
 }
 function dispatchDelegatedEvent(event) {
     if (delegatedEvents.has(event))
@@ -37,7 +51,7 @@ function dispatchDelegatedEvent(event) {
             listener.call(target, event);
         // cancelBubble is the only observable signal that stopPropagation() was called.
         // eslint-disable-next-line @typescript-eslint/no-deprecated
-        if (event.cancelBubble)
+        if (event.cancelBubble || !event.bubbles)
             return;
     }
 }
@@ -90,6 +104,18 @@ function addDelegatedEventListener(target, type, listener) {
 /** Registers a delegated element event whose eligibility was resolved at compile time. */
 function addScopeDelegatedEventListener(scope, target, type, listener) {
     addDelegatedEventListener(target, type, listener);
+    // Linked nodes can later move into a shadow root or another document.
+    const linkedDocument = target.ownerDocument;
+    const directListener = (event) => {
+        if (!event.bubbles ||
+            !target.isConnected ||
+            target.ownerDocument !== linkedDocument ||
+            target.getRootNode() instanceof ShadowRoot) {
+            dispatchDelegatedEvent(event);
+        }
+    };
+    target.addEventListener(type, directListener);
+    registerScopeEventCleanup(scope, target, type, directListener);
     registerScopeDelegatedEventCleanup(scope, target);
 }
 function addScopeEventListener(scope, target, type, listener, options) {

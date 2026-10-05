@@ -30,6 +30,27 @@ final class ViewController {
 }
 
 void main() {
+  test('binding policies preserve callbacks and omit unset defaults', () {
+    final config = ng.BindingPolicyConfig(
+      htmlPolicy: (value) => value.replaceAll('<script>', ''),
+      resourceUrlPolicy: (value) {
+        if (!value.startsWith('/')) throw ArgumentError('external resource');
+        return value;
+      },
+    ).toJsValue();
+    final html = config.getProperty<JSFunction>('htmlPolicy'.toJS);
+    expect(
+        (html.callAsFunction(null, '<script>content'.toJS) as JSString).toDart,
+        'content');
+    final resource = config.getProperty<JSFunction>('resourceUrlPolicy'.toJS);
+    expect(
+        (resource.callAsFunction(null, '/view.html'.toJS) as JSString).toDart,
+        '/view.html');
+    expect(() => resource.callAsFunction(null, 'https://external.test'.toJS),
+        throwsA(anything));
+    expect(config.hasProperty('scriptPolicy'.toJS).toDart, isFalse);
+  });
+
   test('model getters preserve the runtime proxy and token conversion', () {
     final previous = globalContext.getProperty<JSAny?>('angular'.toJS);
     final cart = JSObject()..setProperty('count'.toJS, 0.toJS);
@@ -318,39 +339,6 @@ void main() {
           'parseLinkUrl'.toJS, ((JSAny? _, JSAny? __) => true.toJS).toJS)
       ..setProperty('parse'.toJS, ((JSAny? _) => null).toJS);
     final locationService = ng.LocationService(locationServiceRaw);
-    final sceServiceRaw = JSObject()
-      ..setProperty(
-        'getTrusted'.toJS,
-        ((JSAny? _, JSAny? value) => value).toJS,
-      )
-      ..setProperty('getTrustedHtml'.toJS, ((JSAny? value) => value).toJS)
-      ..setProperty('getTrustedMediaUrl'.toJS, ((JSAny? value) => value).toJS)
-      ..setProperty(
-        'getTrustedResourceUrl'.toJS,
-        ((JSAny? value) => value).toJS,
-      )
-      ..setProperty('getTrustedUrl'.toJS, ((JSAny? value) => value).toJS)
-      ..setProperty('parse'.toJS, ((JSAny? _, JSAny? expr) => expr).toJS)
-      ..setProperty('parseAsHtml'.toJS, ((JSAny? expr) => expr).toJS)
-      ..setProperty('parseAsMediaUrl'.toJS, ((JSAny? expr) => expr).toJS)
-      ..setProperty('parseAsResourceUrl'.toJS, ((JSAny? expr) => expr).toJS)
-      ..setProperty('parseAsUrl'.toJS, ((JSAny? expr) => expr).toJS)
-      ..setProperty('trustAs'.toJS, ((JSAny? _, JSAny? value) => value).toJS)
-      ..setProperty('trustAsHtml'.toJS, ((JSAny? value) => value).toJS)
-      ..setProperty('trustAsMediaUrl'.toJS, ((JSAny? value) => value).toJS)
-      ..setProperty('trustAsResourceUrl'.toJS, ((JSAny? value) => value).toJS)
-      ..setProperty('trustAsUrl'.toJS, ((JSAny? value) => value).toJS)
-      ..setProperty('isEnabled'.toJS, (() => true.toJS).toJS)
-      ..setProperty('valueOf'.toJS, (([JSAny? value]) => value).toJS);
-    final sceService = ng.SceService(sceServiceRaw);
-    final sceDelegateServiceRaw = JSObject()
-      ..setProperty(
-        'getTrusted'.toJS,
-        ((JSAny? _, JSAny? value) => value).toJS,
-      )
-      ..setProperty('trustAs'.toJS, ((JSAny? _, JSAny? value) => value).toJS)
-      ..setProperty('valueOf'.toJS, (([JSAny? value]) => value).toJS);
-    final sceDelegateService = ng.SceDelegateService(sceDelegateServiceRaw);
     final elementConstructor = (() => null).toJS;
     final webComponentServiceRaw = JSObject()
       ..setProperty(
@@ -597,26 +585,6 @@ void main() {
     expect(locationService.getState(), isNotNull);
     expect(locationService.parseLinkUrl('/home', '/home'), isTrue);
     locationService.parse('/home');
-    expect(sceService.getTrusted('html', 'safe'), isNotNull);
-    expect(sceService.getTrustedHtml('safe'), isNotNull);
-    expect(sceService.getTrustedMediaUrl('safe'), isNotNull);
-    expect(sceService.getTrustedResourceUrl('safe'), isNotNull);
-    expect(sceService.getTrustedUrl('safe'), isNotNull);
-    expect(sceService.parse('html', 'expr'), isNotNull);
-    expect(sceService.parseAsHtml('expr'), isNotNull);
-    expect(sceService.parseAsMediaUrl('expr'), isNotNull);
-    expect(sceService.parseAsResourceUrl('expr'), isNotNull);
-    expect(sceService.parseAsUrl('expr'), isNotNull);
-    expect(sceService.trustAs('html', 'safe'), isNotNull);
-    expect(sceService.trustAsHtml('safe'), isNotNull);
-    expect(sceService.trustAsMediaUrl('safe'), isNotNull);
-    expect(sceService.trustAsResourceUrl('safe'), isNotNull);
-    expect(sceService.trustAsUrl('safe'), isNotNull);
-    expect(sceService.isEnabled(), isTrue);
-    expect(sceService.valueOf('safe'), isNotNull);
-    expect(sceDelegateService.getTrusted('html', 'safe'), isNotNull);
-    expect(sceDelegateService.trustAs('html', 'safe'), isNotNull);
-    expect(sceDelegateService.valueOf('safe'), isNotNull);
     expect(
       webComponentService.defineAppComponent(
         'x-demo-app',

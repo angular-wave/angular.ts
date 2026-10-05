@@ -136,18 +136,6 @@ final rootScopeToken = token<Scope<Object>>(
 /// The root element token.
 final rootElementToken = token<JSObject>('\$rootElement');
 
-/// The sce token.
-final sceToken = token<SceService>(
-  '\$sce',
-  fromJs: (value) => _facade(value, SceService.new),
-);
-
-/// The sce delegate token.
-final sceDelegateToken = token<SceDelegateService>(
-  '\$sceDelegate',
-  fromJs: (value) => _facade(value, SceDelegateService.new),
-);
-
 /// The state token.
 final stateToken = token<JSObject>('\$state');
 

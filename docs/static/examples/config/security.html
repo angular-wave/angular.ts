@@ -1,7 +1,10 @@
 <!doctype html>
 <html>
   <head>
-    <script type="module" src="../../utils/source-bootstrap.js" data-angular-ts-entry="./security.js"></script>
+    <script type="module">
+      import "../../utils/source-bootstrap.js";
+      import "./security.js";
+    </script>
   </head>
   <body ng-app="securityConfigDemo">
     <section ng-controller="SecurityConfigCtrl as vm">

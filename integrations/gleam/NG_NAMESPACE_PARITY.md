@@ -32,6 +32,12 @@ part of the Gleam public facade.
 
 | ng type | Gleam status |
 | --- | --- |
+| `BindingContext` | started |
+| `BindingPolicyConfig` | started |
+| `HtmlPolicy` | started |
+| `ScriptPolicy` | started |
+| `ScriptUrlPolicy` | started |
+| `UrlPolicy` | started |
 | `Angular` | inventory |
 | `AngularService` | inventory |
 | `AnnotatedDirectiveFactory` | inventory |
@@ -151,8 +157,6 @@ part of the Gleam public facade.
 | `EventBusConfig` | inventory |
 | `EventDeliveryPolicy` | inventory |
 | `EventDeliveryPolicyContext` | inventory |
-| `SceService` | inventory |
-| `SceDelegateService` | inventory |
 | `SecurityPolicy` | inventory |
 | `StreamService` | inventory |
 | `TemplateCacheService` | inventory |

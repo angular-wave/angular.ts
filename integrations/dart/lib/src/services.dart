@@ -175,18 +175,6 @@ final class RestServiceFacade extends GeneratedNgRestService {
   const RestServiceFacade(super.raw);
 }
 
-/// Represents sce service.
-final class SceService extends GeneratedNgSceService {
-  /// Creates a sce service.
-  const SceService(super.raw);
-}
-
-/// Represents sce delegate service.
-final class SceDelegateService extends GeneratedNgSceDelegateService {
-  /// Creates a sce delegate service.
-  const SceDelegateService(super.raw);
-}
-
 /// Represents sse service.
 final class SseService extends GeneratedNgSseService {
   /// Creates a sse service.

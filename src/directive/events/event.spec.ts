@@ -170,6 +170,27 @@ describe("event directives", () => {
     });
   });
 
+  it("dispatches events after a linked element moves into another document", () => {
+    const scope = $rootScope.new();
+    const destination =
+      document.implementation.createHTMLDocument("destination");
+
+    element = document.createElement("button");
+    element.setAttribute("ng-click", "clicked = true");
+    app.appendChild(element);
+    $compile(element)(scope);
+    destination.body.appendChild(element);
+
+    expect(element.isConnected).toBeTrue();
+    element.click();
+    expect(scope.clicked).toBeTrue();
+
+    scope.destroy();
+    scope.clicked = false;
+    element.click();
+    expect(scope.clicked).toBeFalse();
+  });
+
   it("should remove the event listener when the scope is destroyed", async () => {
     const scope = $rootScope.new();
 
@@ -208,7 +229,9 @@ describe("event directives", () => {
 
       button.setAttribute("ng-click", "click($event)");
 
-      const link = directive.compile(button);
+      const compiled = directive.compile(button);
+
+      const link = compiled.post.bind(undefined, compiled._postLinkCtx);
 
       scope.click = jasmine.createSpy("click");
 
@@ -270,7 +293,9 @@ describe("event directives", () => {
 
       button.setAttribute("ng-click", "click($event)");
 
-      const link = directive.compile(button);
+      const compiled = directive.compile(button);
+
+      const link = compiled.post.bind(undefined, compiled._postLinkCtx);
 
       const event = new Event("click");
 
@@ -300,7 +325,9 @@ describe("event directives", () => {
 
       button.setAttribute("ng-click", "click($event)");
 
-      const link = directive.compile(button);
+      const compiled = directive.compile(button);
+
+      const link = compiled.post.bind(undefined, compiled._postLinkCtx);
 
       link(scope, button);
       button.dispatchEvent(new Event("click"));
@@ -322,7 +349,9 @@ describe("event directives", () => {
 
       button.setAttribute("ng-click", "boom()");
 
-      const link = directive.compile(button);
+      const compiled = directive.compile(button);
+
+      const link = compiled.post.bind(undefined, compiled._postLinkCtx);
 
       scope.boom = () => {
         throw new Error("listener error");
@@ -380,7 +409,9 @@ describe("event directives", () => {
       button.setAttribute("data-event-once", "");
       button.setAttribute("data-event-passive", "");
 
-      const link = directive.compile(button);
+      const compiled = directive.compile(button);
+
+      const link = compiled.post.bind(undefined, compiled._postLinkCtx);
 
       spyOn(button, "addEventListener").and.callThrough();
       spyOn(button, "removeEventListener").and.callThrough();
@@ -437,7 +468,9 @@ describe("event directives", () => {
 
       setCacheData(button, AFTER_RENDER_EVENT_SCHEDULER_KEY, scheduler);
 
-      const link = directive.compile(button);
+      const compiled = directive.compile(button);
+
+      const link = compiled.post.bind(undefined, compiled._postLinkCtx);
       const clickHandler = jasmine.createSpy("clickHandler");
 
       scope.click = clickHandler;

@@ -26,6 +26,8 @@
     "js/ng.AppComponentOptions"
     "js/ng.AriaConfig"
     "js/ng.AriaService"
+    "js/ng.BindingContext"
+    "js/ng.BindingPolicyConfig"
     "js/ng.CachedRestBackendOptions"
     "js/ng.ClassMap"
     "js/ng.ClassValue"
@@ -68,6 +70,7 @@
     "js/ng.HtmlCanvasConfig"
     "js/ng.HtmlCanvasRuntimeSupport"
     "js/ng.HtmlCanvasService"
+    "js/ng.HtmlPolicy"
     "js/ng.HttpDefaults"
     "js/ng.HttpMethod"
     "js/ng.HttpParamSerializerService"
@@ -210,13 +213,13 @@
     "js/ng.RouterModule"
     "js/ng.RouterModuleDeclaration"
     "js/ng.RoutesOf"
-    "js/ng.SceDelegateService"
-    "js/ng.SceService"
     "js/ng.Scope"
     "js/ng.ScopeElement"
     "js/ng.ScopeElementConstructor"
     "js/ng.ScopeEvent"
     "js/ng.ScopeService"
+    "js/ng.ScriptPolicy"
+    "js/ng.ScriptUrlPolicy"
     "js/ng.SecurityConfig"
     "js/ng.SecurityCredentialsConfig"
     "js/ng.SecurityPolicy"
@@ -247,6 +250,7 @@
     "js/ng.Transition"
     "js/ng.TransitionRouteContract"
     "js/ng.TransitionsService"
+    "js/ng.UrlPolicy"
     "js/ng.Validator"
     "js/ng.WasmBinding"
     "js/ng.WasmBindingOptions"
@@ -326,6 +330,8 @@
      "js/ng.AppComponentOptions" "Public AngularTS AppComponentOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AriaConfig" "Public AngularTS AriaConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AriaService" "Public AngularTS AriaService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.BindingContext" "The destination-specific policy required by a DOM binding."
+     "js/ng.BindingPolicyConfig" "Policy callbacks accepted by `$compile` configuration."
      "js/ng.CachedRestBackendOptions" "Configuration for {@link CachedRestBackend}."
      "js/ng.ClassMap" "Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values add the class; `false`, `null`, and `undefined` remove it."
      "js/ng.ClassValue" "Public shape accepted by `ng-class` for class binding expressions."
@@ -368,6 +374,7 @@
      "js/ng.HtmlCanvasConfig" "Declarative config accepted by `NgModule.config({ $htmlCanvas: ... })`. The integration is disabled by default and has no AngularTS fallback."
      "js/ng.HtmlCanvasRuntimeSupport" "Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HtmlCanvasService" "Public AngularTS HtmlCanvasService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.HtmlPolicy" "Sanitizes HTML or throws to reject it before it reaches an HTML binding."
      "js/ng.HttpDefaults" "Default request settings configured through `app.config({ $http })` and exposed at runtime through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape only includes the fields that the runtime reads from provider-level defaults. https://docs.angularjs.org/api/ng/service/$http#defaults https://docs.angularjs.org/api/ng/service/$http#usage"
      "js/ng.HttpMethod" "Public AngularTS HttpMethod contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HttpParamSerializerService" "Function that serializes query params into a URL-encoded string."
@@ -510,13 +517,13 @@
      "js/ng.RouterModule" "Public AngularTS RouterModule contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.RouterModuleDeclaration" "Module-owned router state tree declaration. Use this with [[NgModule.router]] when a module owns a route subtree. Child state names are relative to their parent unless they contain a dot."
      "js/ng.RoutesOf" "Public AngularTS RoutesOf contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.SceDelegateService" "Public AngularTS SceDelegateService contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.SceService" "Public AngularTS SceService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Scope" "Reactive scope object used by AngularTS templates, directives, event propagation, listener registration, and queued change delivery."
      "js/ng.ScopeElement" "Public AngularTS ScopeElement contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ScopeElementConstructor" "Public AngularTS ScopeElementConstructor contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ScopeEvent" "Event object passed to `emit` and `broadcast` listeners. Tracks target scope, current scope, name, propagation/default flags, and control methods."
      "js/ng.ScopeService" "Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior."
+     "js/ng.ScriptPolicy" "Approves JavaScript source or throws to reject it."
+     "js/ng.ScriptUrlPolicy" "Validates a script URL or throws to reject it."
      "js/ng.SecurityConfig" "Public AngularTS SecurityConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SecurityCredentialsConfig" "Public AngularTS SecurityCredentialsConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SecurityPolicy" "Public AngularTS SecurityPolicy contract exposed through the global ng namespace for Closure-annotated applications."
@@ -547,6 +554,7 @@
      "js/ng.Transition" "Public AngularTS Transition contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.TransitionRouteContract" "Public AngularTS TransitionRouteContract contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.TransitionsService" "This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started."
+     "js/ng.UrlPolicy" "Validates or normalizes a URL, or throws to reject it."
      "js/ng.Validator" "Public AngularTS Validator contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WasmBinding" "Public AngularTS WasmBinding contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.WasmBindingOptions" "Options for binding one reactive target to a WebAssembly guest."
@@ -749,12 +757,6 @@
     "router-module-config"
     "router-module-router"
     "router-module-web-component"
-    "sce-service-is-enabled"
-    "sce-service-parse"
-    "sce-service-parse-as-html"
-    "sce-service-parse-as-media-url"
-    "sce-service-parse-as-resource-url"
-    "sce-service-parse-as-url"
     "scope-broadcast"
     "scope-destroy"
     "scope-element-attribute-changed-callback"
@@ -1003,8 +1005,6 @@
     "injection-token-map-native"
     "injection-token-map-root-element"
     "injection-token-map-root-scope"
-    "injection-token-map-sce"
-    "injection-token-map-sce-delegate"
     "injection-token-map-scope"
     "injection-token-map-security"
     "injection-token-map-service-worker"
@@ -2291,36 +2291,6 @@
   ^js/ng.NgModule [^js/ng.RouterModule target ^string name ^js/ng.ScopeElementConstructor elementClass]
   (.webComponent target name elementClass))
 
-(defn sce-service-is-enabled
-  "Public SceService.isEnabled member exposed by the AngularTS namespace contract.\n\nReturns: {boolean}"
-  ^boolean [^js/ng.SceService target]
-  (.isEnabled target))
-
-(defn sce-service-parse
-  "Public SceService.parse member exposed by the AngularTS namespace contract.\n\nParams:\n- type: {string} Value supplied for the type parameter.\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
-  ^js/Object [^js/ng.SceService target ^string type ^string expression]
-  (.parse target type expression))
-
-(defn sce-service-parse-as-html
-  "Public SceService.parseAsHtml member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
-  ^js/Object [^js/ng.SceService target ^string expression]
-  (.parseAsHtml target expression))
-
-(defn sce-service-parse-as-media-url
-  "Public SceService.parseAsMediaUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
-  ^js/Object [^js/ng.SceService target ^string expression]
-  (.parseAsMediaUrl target expression))
-
-(defn sce-service-parse-as-resource-url
-  "Public SceService.parseAsResourceUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
-  ^js/Object [^js/ng.SceService target ^string expression]
-  (.parseAsResourceUrl target expression))
-
-(defn sce-service-parse-as-url
-  "Public SceService.parseAsUrl member exposed by the AngularTS namespace contract.\n\nParams:\n- expression: {string} Value supplied for the expression parameter.\n\nReturns: {!Object}"
-  ^js/Object [^js/ng.SceService target ^string expression]
-  (.parseAsUrl target expression))
-
 (defn scope-broadcast
   "Broadcasts an event downward through the scope hierarchy.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- var_args: {...?} Value supplied for the args parameter.\n\nReturns: {!ng.ScopeEvent}"
   (^js/ng.ScopeEvent [^js/ng.Scope target ^string name]
@@ -3581,16 +3551,6 @@
   "Public InjectionTokenMap.$rootScope member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"
   ^js/ng.Scope [^js/ng.InjectionTokenMap target]
   (.-$rootScope target))
-
-(defn injection-token-map-sce
-  "Public InjectionTokenMap.$sce member exposed by the AngularTS namespace contract.\n\nType: {!ng.SceService}"
-  ^js/ng.SceService [^js/ng.InjectionTokenMap target]
-  (.-$sce target))
-
-(defn injection-token-map-sce-delegate
-  "Public InjectionTokenMap.$sceDelegate member exposed by the AngularTS namespace contract.\n\nType: {!ng.SceDelegateService}"
-  ^js/ng.SceDelegateService [^js/ng.InjectionTokenMap target]
-  (.-$sceDelegate target))
 
 (defn injection-token-map-scope
   "Public InjectionTokenMap.$scope member exposed by the AngularTS namespace contract.\n\nType: {!ng.Scope}"

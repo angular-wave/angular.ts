@@ -37,8 +37,6 @@ const typeMap = new Map(
     $rest: "namespace.RestFactory",
     $rootScope: "namespace.RootScopeService",
     $rootElement: "namespace.RootElementService",
-    $sce: "namespace.SceService",
-    $sceDelegate: "namespace.SceDelegateService",
     $security: "namespace.SecurityPolicy",
     $serviceWorker: "namespace.ServiceWorkerService",
     $state: "namespace.StateService(js.JsValue)",

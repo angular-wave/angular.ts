@@ -433,7 +433,7 @@ pub const Scope = struct {
 };
 
 pub fn lastError() AbiError {
-    return @enumFromInt(hostErrorCode());
+    return @fromBackingInt(@intCast(hostErrorCode()));
 }
 
 pub fn clearError() void {
@@ -1171,7 +1171,7 @@ test "event observers preserve synchronization origin" {
 test "host failures map to Zig errors" {
     resetNativeTestHost();
     configureNativeTestHost(42, 9);
-    setNativeTestError(@intFromEnum(AbiError.unsafe_path));
+    setNativeTestError(@backingInt(AbiError.unsafe_path));
 
     const scope = Scope.fromHandle(42);
     try std.testing.expectError(Error.UnsafePath, scope.setJson("unsafe", "true"));

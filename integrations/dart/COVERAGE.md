@@ -123,7 +123,6 @@ handwritten ergonomic coverage is still incomplete for several services:
 - `$location`
 - `$anchorScroll`
 - `$animate`
-- `$sce`
 - Router services such as `$state`, `$stateParams`, `$transitions`, and
   `$stateRegistry`.
 

@@ -32,6 +32,12 @@ part of the Dart public facade.
 
 | ng type | Dart status |
 | --- | --- |
+| `BindingContext` | started |
+| `BindingPolicyConfig` | started |
+| `HtmlPolicy` | started |
+| `ScriptPolicy` | started |
+| `ScriptUrlPolicy` | started |
+| `UrlPolicy` | started |
 | `Angular` | started |
 | `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | started |
@@ -140,8 +146,6 @@ part of the Dart public facade.
 | `WorkflowService` | started |
 | `WorkflowSupervisorService` | started |
 | `ParseService` | started |
-| `SceDelegateService` | started |
-| `SceService` | started |
 | `StreamService` | started |
 | `StorageService` | started |
 | `TemplateCacheService` | started |

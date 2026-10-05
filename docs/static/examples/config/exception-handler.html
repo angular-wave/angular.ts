@@ -1,7 +1,10 @@
 <!doctype html>
 <html>
   <head>
-    <script type="module" src="../../utils/source-bootstrap.js" data-angular-ts-entry="./exception-handler.js"></script>
+    <script type="module">
+      import "../../utils/source-bootstrap.js";
+      import "./exception-handler.js";
+    </script>
   </head>
   <body ng-app="exceptionConfigDemo">
     <section ng-controller="ExceptionCtrl as vm">

@@ -67,7 +67,7 @@ android {
         named("test") {
             java.directories.clear()
             java.directories.add("src/test/kotlin")
-            resources.directories.add("../protocol")
+            resources.directories.add("../../native/protocol")
         }
         named("debug") {
             java.directories.clear()
@@ -109,16 +109,16 @@ dependencies {
 
     // Exported AndroidX dependencies
     api("androidx.activity:activity-ktx:1.13.0")
-    api("androidx.fragment:fragment-ktx:1.9.0")
-    api("androidx.navigation:navigation-fragment-ktx:2.10.1")
-    api("androidx.navigation:navigation-ui-ktx:2.10.1")
+    api("androidx.fragment:fragment-ktx:1.9.1")
+    api("androidx.navigation:navigation-fragment-ktx:2.10.2")
+    api("androidx.navigation:navigation-ui-ktx:2.10.2")
 
     // Tests
     testImplementation("androidx.test:core:1.7.0") // Robolectric
     testImplementation("org.assertj:assertj-core:3.27.7")
-    testImplementation("androidx.navigation:navigation-testing:2.10.1")
+    testImplementation("androidx.navigation:navigation-testing:2.10.2")
     testImplementation("org.robolectric:robolectric:4.17")
-    testImplementation("org.mockito:mockito-core:5.23.0")
+    testImplementation("org.mockito:mockito-core:5.24.0")
     testImplementation("com.nhaarman:mockito-kotlin:1.6.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test:core:1.7.0")

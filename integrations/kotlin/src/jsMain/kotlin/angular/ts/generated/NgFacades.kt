@@ -1178,8 +1178,13 @@ public external interface Scope {
      * @param listenerFn A function to execute when changes are detected on watched context.
      * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
      * @param directLeaf Value supplied for the directLeaf parameter.
+     * @param returnDeregister Value supplied for the returnDeregister parameter.
+     * @param synchronousInitial Value supplied for the synchronousInitial parameter.
+     * @param resolvedValue Value supplied for the resolvedValue parameter.
+     * @param hasResolvedValue Value supplied for the hasResolvedValue parameter.
+     * @param listenerContext Value supplied for the listenerContext parameter.
      */
-    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally, returnDeregister: Boolean = definedExternally, synchronousInitial: Boolean = definedExternally, resolvedValue: dynamic = definedExternally, hasResolvedValue: Boolean = definedExternally, listenerContext: dynamic = definedExternally): () -> Unit
 }
 
 /**
@@ -1278,6 +1283,91 @@ public external interface InterpolateConfig {
      * Opening delimiter. Defaults to `{{`.
      */
     public var startSymbol: String
+}
+
+/**
+ * The destination-specific policy required by a DOM binding.
+ */
+public external interface BindingContext
+
+/**
+ * Policy callbacks accepted by `$compile` configuration.
+ */
+public external interface BindingPolicyConfig {
+    /**
+     * Sanitizes HTML strings or throws to reject them.
+     * @param html Value supplied for the html parameter.
+     */
+    public fun htmlPolicy(html: String = definedExternally): String
+    /**
+     * Validates media URLs, including each URL in `srcset`.
+     * @param url Value supplied for the url parameter.
+     */
+    public fun mediaUrlPolicy(url: String = definedExternally): String
+    /**
+     * Validates resource URLs. The default permits same-origin resources.
+     * @param url Value supplied for the url parameter.
+     */
+    public fun resourceUrlPolicy(url: String = definedExternally): String
+    /**
+     * Approves executable source. Nonempty strings are rejected by default.
+     * @param script Value supplied for the script parameter.
+     */
+    public fun scriptPolicy(script: String = definedExternally): String
+    /**
+     * Validates script-loading URLs. The default permits same-origin scripts.
+     * @param url Value supplied for the url parameter.
+     */
+    public fun scriptUrlPolicy(url: String = definedExternally): String
+    /**
+     * Validates link URLs. The default blocks dangerous schemes.
+     * @param url Value supplied for the url parameter.
+     */
+    public fun urlPolicy(url: String = definedExternally): String
+}
+
+/**
+ * Sanitizes HTML or throws to reject it before it reaches an HTML binding.
+ */
+public external interface HtmlPolicy {
+    /**
+     * Calls the ng.HtmlPolicy function.
+     * @param html Value supplied for the html parameter.
+     */
+    public operator fun invoke(html: String = definedExternally): String
+}
+
+/**
+ * Approves JavaScript source or throws to reject it.
+ */
+public external interface ScriptPolicy {
+    /**
+     * Calls the ng.ScriptPolicy function.
+     * @param script Value supplied for the script parameter.
+     */
+    public operator fun invoke(script: String = definedExternally): String
+}
+
+/**
+ * Validates a script URL or throws to reject it.
+ */
+public external interface ScriptUrlPolicy {
+    /**
+     * Calls the ng.ScriptUrlPolicy function.
+     * @param url Value supplied for the url parameter.
+     */
+    public operator fun invoke(url: String = definedExternally): String
+}
+
+/**
+ * Validates or normalizes a URL, or throws to reject it.
+ */
+public external interface UrlPolicy {
+    /**
+     * Calls the ng.UrlPolicy function.
+     * @param url Value supplied for the url parameter.
+     */
+    public operator fun invoke(url: String = definedExternally): String
 }
 
 /**
@@ -1547,8 +1637,13 @@ public external interface ScopeService {
      * @param listenerFn A function to execute when changes are detected on watched context.
      * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
      * @param directLeaf Value supplied for the directLeaf parameter.
+     * @param returnDeregister Value supplied for the returnDeregister parameter.
+     * @param synchronousInitial Value supplied for the synchronousInitial parameter.
+     * @param resolvedValue Value supplied for the resolvedValue parameter.
+     * @param hasResolvedValue Value supplied for the hasResolvedValue parameter.
+     * @param listenerContext Value supplied for the listenerContext parameter.
      */
-    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally, returnDeregister: Boolean = definedExternally, synchronousInitial: Boolean = definedExternally, resolvedValue: dynamic = definedExternally, hasResolvedValue: Boolean = definedExternally, listenerContext: dynamic = definedExternally): () -> Unit
 }
 
 /**
@@ -1663,8 +1758,13 @@ public external interface RootScopeService {
      * @param listenerFn A function to execute when changes are detected on watched context.
      * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
      * @param directLeaf Value supplied for the directLeaf parameter.
+     * @param returnDeregister Value supplied for the returnDeregister parameter.
+     * @param synchronousInitial Value supplied for the synchronousInitial parameter.
+     * @param resolvedValue Value supplied for the resolvedValue parameter.
+     * @param hasResolvedValue Value supplied for the hasResolvedValue parameter.
+     * @param listenerContext Value supplied for the listenerContext parameter.
      */
-    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally, returnDeregister: Boolean = definedExternally, synchronousInitial: Boolean = definedExternally, resolvedValue: dynamic = definedExternally, hasResolvedValue: Boolean = definedExternally, listenerContext: dynamic = definedExternally): () -> Unit
 }
 
 /**
@@ -2455,14 +2555,6 @@ public external interface InjectionTokenMap {
      */
     public var `$rootScope`: dynamic
     /**
-     * The $sce member of ng.InjectionTokenMap.
-     */
-    public var `$sce`: dynamic
-    /**
-     * The $sceDelegate member of ng.InjectionTokenMap.
-     */
-    public var `$sceDelegate`: dynamic
-    /**
      * The $scope member of ng.InjectionTokenMap.
      */
     public var `$scope`: dynamic
@@ -2681,8 +2773,13 @@ public external interface Model<T> {
      * @param listenerFn A function to execute when changes are detected on watched context.
      * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
      * @param directLeaf Value supplied for the directLeaf parameter.
+     * @param returnDeregister Value supplied for the returnDeregister parameter.
+     * @param synchronousInitial Value supplied for the synchronousInitial parameter.
+     * @param resolvedValue Value supplied for the resolvedValue parameter.
+     * @param hasResolvedValue Value supplied for the hasResolvedValue parameter.
+     * @param listenerContext Value supplied for the listenerContext parameter.
      */
-    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally, returnDeregister: Boolean = definedExternally, synchronousInitial: Boolean = definedExternally, resolvedValue: dynamic = definedExternally, hasResolvedValue: Boolean = definedExternally, listenerContext: dynamic = definedExternally): () -> Unit
 }
 
 /**
@@ -3123,122 +3220,6 @@ public external interface EventDeliveryPolicyContext {
      * The topic member of ng.EventDeliveryPolicyContext.
      */
     public var topic: String
-}
-
-/**
- * Public AngularTS SceService contract exposed through the ng namespace.
- */
-public external interface SceService {
-    /**
-     * The getTrusted member of ng.SceService.
-     * @param type Value supplied for the type parameter.
-     * @param mayBeTrusted Value supplied for the mayBeTrusted parameter.
-     */
-    public fun getTrusted(type: dynamic = definedExternally, mayBeTrusted: dynamic = definedExternally): dynamic
-    /**
-     * The getTrustedHtml member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun getTrustedHtml(value: dynamic = definedExternally): dynamic
-    /**
-     * The getTrustedMediaUrl member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun getTrustedMediaUrl(value: dynamic = definedExternally): dynamic
-    /**
-     * The getTrustedResourceUrl member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun getTrustedResourceUrl(value: dynamic = definedExternally): dynamic
-    /**
-     * The getTrustedUrl member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun getTrustedUrl(value: dynamic = definedExternally): dynamic
-    /**
-     * The isEnabled member of ng.SceService.
-     */
-    public fun isEnabled(): Boolean
-    /**
-     * The parse member of ng.SceService.
-     * @param type Value supplied for the type parameter.
-     * @param expression Value supplied for the expression parameter.
-     */
-    public fun parse(type: dynamic = definedExternally, expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    /**
-     * The parseAsHtml member of ng.SceService.
-     * @param expression Value supplied for the expression parameter.
-     */
-    public fun parseAsHtml(expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    /**
-     * The parseAsMediaUrl member of ng.SceService.
-     * @param expression Value supplied for the expression parameter.
-     */
-    public fun parseAsMediaUrl(expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    /**
-     * The parseAsResourceUrl member of ng.SceService.
-     * @param expression Value supplied for the expression parameter.
-     */
-    public fun parseAsResourceUrl(expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    /**
-     * The parseAsUrl member of ng.SceService.
-     * @param expression Value supplied for the expression parameter.
-     */
-    public fun parseAsUrl(expression: String = definedExternally): (dynamic, dynamic, dynamic) -> dynamic
-    /**
-     * The trustAs member of ng.SceService.
-     * @param type Value supplied for the type parameter.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun trustAs(type: dynamic = definedExternally, value: dynamic = definedExternally): dynamic
-    /**
-     * The trustAsHtml member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun trustAsHtml(value: dynamic = definedExternally): dynamic
-    /**
-     * The trustAsMediaUrl member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun trustAsMediaUrl(value: dynamic = definedExternally): dynamic
-    /**
-     * The trustAsResourceUrl member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun trustAsResourceUrl(value: dynamic = definedExternally): dynamic
-    /**
-     * The trustAsUrl member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun trustAsUrl(value: dynamic = definedExternally): dynamic
-    /**
-     * The valueOf member of ng.SceService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun valueOf(value: dynamic = definedExternally): dynamic
-}
-
-/**
- * Public AngularTS SceDelegateService contract exposed through the ng namespace.
- */
-public external interface SceDelegateService {
-    /**
-     * The getTrusted member of ng.SceDelegateService.
-     * @param type Value supplied for the type parameter.
-     * @param mayBeTrusted Value supplied for the mayBeTrusted parameter.
-     */
-    public fun getTrusted(type: dynamic = definedExternally, mayBeTrusted: dynamic = definedExternally): dynamic
-    /**
-     * The trustAs member of ng.SceDelegateService.
-     * @param type Value supplied for the type parameter.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun trustAs(type: dynamic = definedExternally, value: dynamic = definedExternally): dynamic
-    /**
-     * The valueOf member of ng.SceDelegateService.
-     * @param value Value supplied for the value parameter.
-     */
-    public fun valueOf(value: dynamic = definedExternally): dynamic
 }
 
 /**
@@ -8774,6 +8755,11 @@ public external interface WasmTarget {
      * @param listenerFn A function to execute when changes are detected on watched context.
      * @param lazy A flag to indicate if the listener should be invoked immediately. Defaults to false.
      * @param directLeaf Value supplied for the directLeaf parameter.
+     * @param returnDeregister Value supplied for the returnDeregister parameter.
+     * @param synchronousInitial Value supplied for the synchronousInitial parameter.
+     * @param resolvedValue Value supplied for the resolvedValue parameter.
+     * @param hasResolvedValue Value supplied for the hasResolvedValue parameter.
+     * @param listenerContext Value supplied for the listenerContext parameter.
      */
-    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally): () -> Unit
+    public fun watch(watchProp: String = definedExternally, listenerFn: (dynamic, dynamic) -> Unit = definedExternally, lazy: Boolean = definedExternally, directLeaf: Boolean = definedExternally, returnDeregister: Boolean = definedExternally, synchronousInitial: Boolean = definedExternally, resolvedValue: dynamic = definedExternally, hasResolvedValue: Boolean = definedExternally, listenerContext: dynamic = definedExternally): () -> Unit
 }

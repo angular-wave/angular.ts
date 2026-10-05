@@ -14,7 +14,6 @@ import {
   isProxySymbol,
   isUndefined,
   keys,
-  nextUid,
   nullObject,
   isString,
   assertInvariantDefined,
@@ -161,7 +160,16 @@ export function registerScopeDelegatedEventCleanup(
   scope: ng.Scope,
   target: EventTarget,
 ): void {
-  getScopeHandler(scope)._registerDelegatedEventCleanup(target);
+  const handler = getOptionalScopeHandler(scope);
+
+  if (handler) {
+    handler._registerDelegatedEventCleanup(target);
+    return;
+  }
+
+  registerScopeDestroyCallback(scope, () => {
+    deleteProperty(target, EVENT_SCOPE);
+  });
 }
 
 /**
@@ -1621,69 +1629,6 @@ function collectForeignWatchDescriptors(
   }
 }
 
-function collectStandaloneListenerKeys(
-  node: ASTNode | undefined,
-  standaloneKeys: Set<string>,
-): void {
-  if (!node || node._type === ASTType._Literal) return;
-
-  if (node._type === ASTType._Identifier) {
-    const key = getNodeName(node);
-
-    if (key) standaloneKeys.add(key);
-    return;
-  }
-
-  if (node._type === ASTType._MemberExpression) {
-    collectStandaloneListenerKeys(node._object, standaloneKeys);
-
-    if (node._computed) {
-      collectStandaloneListenerKeys(node._property, standaloneKeys);
-    }
-
-    return;
-  }
-
-  if (node._type === ASTType._CallExpression) {
-    collectStandaloneListenerKeys(node._callee, standaloneKeys);
-
-    const callArguments = node._arguments ?? [];
-
-    for (let i = 0, l = callArguments.length; i < l; i++) {
-      collectStandaloneListenerKeys(callArguments[i], standaloneKeys);
-    }
-
-    return;
-  }
-
-  if (node._type === ASTType._LogicalExpression) {
-    collectStandaloneListenerKeys(node._left, standaloneKeys);
-    collectStandaloneListenerKeys(node._right, standaloneKeys);
-
-    return;
-  }
-
-  if (node._type === ASTType._ConditionalExpression) {
-    collectStandaloneListenerKeys(node._test, standaloneKeys);
-    collectStandaloneListenerKeys(node._alternate, standaloneKeys);
-    collectStandaloneListenerKeys(node._consequent, standaloneKeys);
-
-    return;
-  }
-
-  const toWatch = node._toWatch;
-
-  if (!toWatch?.length) return;
-
-  for (let i = 0, l = toWatch.length; i < l; i++) {
-    const watchTarget = toWatch[i];
-
-    if (watchTarget !== node) {
-      collectStandaloneListenerKeys(watchTarget, standaloneKeys);
-    }
-  }
-}
-
 /** @internal Builds reusable registration metadata for a compiled binding. */
 export function createScopeWatchPlan(
   parse: ng.ParseService,
@@ -1703,26 +1648,8 @@ export function createScopeWatchPlan(
   collectExpressionListenerKeys(expression, keys, seenKeys, listener);
   collectForeignWatchDescriptors(expression, listener, keys, seenKeys);
 
-  const descriptors = listener._foreignWatchDescriptors;
-
-  if (descriptors) {
-    const standaloneKeys = new Set<string>();
-
-    collectStandaloneListenerKeys(expression, standaloneKeys);
-
-    if (standaloneKeys.size > 0) {
-      for (let i = 0, l = descriptors.length; i < l; i++) {
-        const descriptorKey = descriptors[i]._key;
-
-        if (standaloneKeys.has(descriptorKey)) continue;
-
-        const keyIndex = keys.indexOf(descriptorKey);
-
-        if (keyIndex !== -1) keys.splice(keyIndex, 1);
-      }
-    }
-  }
-
+  // Leaf keys also notify bindings owned by this scope, including raw nested
+  // objects and services that schedule their own reactive property changes.
   if (keys.length === 0) {
     return undefined;
   }
@@ -4816,7 +4743,7 @@ export class Scope {
       _watchFn: get,
       _parse: this._parse,
       _scopeId: this.id,
-      _id: nextUid(),
+      _id: ++nextListenerId,
     };
 
     if (listenerContext !== undefined) {
@@ -4946,41 +4873,11 @@ export class Scope {
       }
       // 6
       case ASTType._BinaryExpression: {
-        if (expr._isPure) {
-          const [watch] = assertInvariantDefined(expr._toWatch);
+        collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
+        collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
 
-          key = resolveNodeWatchKey(watch);
-
-          if (!key) {
-            throw new Error("Unable to determine key");
-          }
-          pushUniqueListenerKey(keySet, seenKeys, listener, key);
-          collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
-          this._bindForeignDependency(listener);
-          break;
-        } else {
-          const toWatch = assertInvariantDefined(expr._toWatch);
-
-          const keyList = new Array<string | undefined>(toWatch.length);
-
-          for (let i = 0, l = toWatch.length; i < l; i++) {
-            const registerKey = resolveNodeWatchKey(toWatch[i]);
-
-            if (!registerKey) throw new Error("Unable to determine key");
-            keyList[i] = registerKey;
-          }
-
-          registerListenerKeys(this, listener, keyList, !lazy);
-          collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
-
-          if (!returnDeregister) return undefined;
-
-          // Return deregistration function
-          return () => {
-            this._releaseForeignDependency(listener);
-            deregisterListenerKeys(this, listener, keyList);
-          };
-        }
+        this._bindForeignDependency(listener);
+        break;
       }
       // 7
       case ASTType._UnaryExpression: {
@@ -5303,7 +5200,7 @@ export class Scope {
   newIsolate(instance?: ng.Scope): ng.Scope {
     const child = instance ?? (nullObject() as ng.Scope);
 
-    const handler = new Scope(this, this.root as unknown as Scope);
+    const handler = new Scope(this);
     const proxy = new Proxy(child, handler as ProxyHandler<ng.Scope>);
 
     handler._target = child;

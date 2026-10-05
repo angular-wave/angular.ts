@@ -108,6 +108,24 @@ pub type AriaConfig
 /// Delimiter configuration accepted by `NgModule.config()`.
 pub type InterpolateConfig
 
+/// The destination-specific policy required by a DOM binding.
+pub type BindingContext
+
+/// Policy callbacks accepted by `$compile` configuration.
+pub type BindingPolicyConfig
+
+/// Sanitizes HTML or throws to reject it before it reaches an HTML binding.
+pub type HtmlPolicy
+
+/// Approves JavaScript source or throws to reject it.
+pub type ScriptPolicy
+
+/// Validates a script URL or throws to reject it.
+pub type ScriptUrlPolicy
+
+/// Validates or normalizes a URL, or throws to reject it.
+pub type UrlPolicy
+
 /// Main AngularTS runtime entry point with the full built-in `ng` module configured by default.
 pub type AngularService
 
@@ -290,12 +308,6 @@ pub type EventDeliveryPolicy
 
 /// Public AngularTS EventDeliveryPolicyContext contract exposed through the ng namespace.
 pub type EventDeliveryPolicyContext
-
-/// Public AngularTS SceService contract exposed through the ng namespace.
-pub type SceService
-
-/// Public AngularTS SceDelegateService contract exposed through the ng namespace.
-pub type SceDelegateService
 
 /// $sse service type Returns a managed SSE connection that automatically reconnects when needed.
 pub type SseService

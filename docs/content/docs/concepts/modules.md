@@ -177,7 +177,6 @@ bootstrap module list. It provides every core service and directive, including:
 | `$animate`     | Animation support               |
 | `$location`    | URL management                  |
 | `$machine`     | Reactive mode machines          |
-| `$sce`         | Strict contextual escaping      |
 | `$state`       | Router state service            |
 | `$eventBus`    | Pub/sub messaging               |
 

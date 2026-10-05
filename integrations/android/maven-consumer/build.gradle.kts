@@ -27,6 +27,7 @@ android {
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
     lint {
+        lintConfig = file("../lint.xml")
         abortOnError = true
         absolutePaths = false
         checkAllWarnings = true

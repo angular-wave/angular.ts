@@ -41,13 +41,17 @@ export interface BindingPolicyConfig {
 
 /** @internal */
 export interface BindingPolicies {
+  /** @internal */
   _configure(config: BindingPolicyConfig): void;
+  /** @internal */
   _apply(
     context: BindingContext | undefined,
     value: unknown,
     platformWindow?: Window,
   ): unknown;
+  /** @internal */
   _resourceUrl(value: string, platformWindow?: Window): string;
+  /** @internal */
   _destroy(): void;
 }
 
@@ -130,6 +134,7 @@ export function createBindingPolicies(): BindingPolicies {
   let configuration: BindingPolicyConfig = {};
 
   return {
+    /** @internal */
     _configure(config) {
       for (const key of policyKeys) {
         if (config[key] !== undefined && !isFunction(config[key])) {
@@ -141,6 +146,7 @@ export function createBindingPolicies(): BindingPolicies {
         if (config[key] !== undefined) configuration[key] = config[key];
       }
     },
+    /** @internal */
     _apply(context, value, platformWindow = window) {
       value = deProxy(value);
 
@@ -179,6 +185,7 @@ export function createBindingPolicies(): BindingPolicies {
         platformWindow,
       );
     },
+    /** @internal */
     _resourceUrl(value, platformWindow = window) {
       return applyUrlPolicy(
         value,
@@ -187,6 +194,7 @@ export function createBindingPolicies(): BindingPolicies {
         platformWindow,
       );
     },
+    /** @internal */
     _destroy() {
       configuration = {};
     },

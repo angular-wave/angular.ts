@@ -1,11 +1,10 @@
 <!doctype html>
 <html>
   <head>
-    <script
-      type="module"
-      src="../../utils/source-bootstrap.js"
-      data-angular-ts-entry="./settings-sync.js"
-    ></script>
+    <script type="module">
+      import "../../utils/source-bootstrap.js";
+      import "./settings-sync.js";
+    </script>
   </head>
   <body ng-app="settingsSyncDemo" ng-controller="SettingsCtrl as settings">
     <label>

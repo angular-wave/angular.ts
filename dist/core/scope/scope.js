@@ -1,4 +1,4 @@
-import { isFunction, isObject, assertInvariantDefined, isDefined, isArray, isProxy, isPromiseLike, hasOwn, keys, deleteProperty, isUndefined, isInstanceOf, isProxySymbol, isString, callFunction, createObject, simpleCompare, nextUid, nullObject, isNull } from '../../shared/utils.js';
+import { isFunction, isObject, assertInvariantDefined, isDefined, isArray, isProxy, isPromiseLike, hasOwn, keys, deleteProperty, isUndefined, isInstanceOf, isProxySymbol, isString, callFunction, createObject, simpleCompare, nullObject, isNull } from '../../shared/utils.js';
 import { ASTType } from '../parse/ast-type.js';
 
 /** @internal Scope associated with a directly linked DOM event target. */
@@ -48,7 +48,14 @@ function registerScopeEventCleanup(scope, target, type, listener, options) {
 }
 /** @internal Registers scope metadata cleanup for a delegated DOM event target. */
 function registerScopeDelegatedEventCleanup(scope, target) {
-    getScopeHandler(scope)._registerDelegatedEventCleanup(target);
+    const handler = getOptionalScopeHandler(scope);
+    if (handler) {
+        handler._registerDelegatedEventCleanup(target);
+        return;
+    }
+    registerScopeDestroyCallback(scope, () => {
+        deleteProperty(target, EVENT_SCOPE);
+    });
 }
 let nextListenerId = 0;
 function getListenerOwnerTarget(listener) {
@@ -810,51 +817,6 @@ function collectForeignWatchDescriptors(node, listener, keySet, seenKeys) {
         }
     }
 }
-function collectStandaloneListenerKeys(node, standaloneKeys) {
-    if (!node || node._type === ASTType._Literal)
-        return;
-    if (node._type === ASTType._Identifier) {
-        const key = getNodeName(node);
-        if (key)
-            standaloneKeys.add(key);
-        return;
-    }
-    if (node._type === ASTType._MemberExpression) {
-        collectStandaloneListenerKeys(node._object, standaloneKeys);
-        if (node._computed) {
-            collectStandaloneListenerKeys(node._property, standaloneKeys);
-        }
-        return;
-    }
-    if (node._type === ASTType._CallExpression) {
-        collectStandaloneListenerKeys(node._callee, standaloneKeys);
-        const callArguments = node._arguments ?? [];
-        for (let i = 0, l = callArguments.length; i < l; i++) {
-            collectStandaloneListenerKeys(callArguments[i], standaloneKeys);
-        }
-        return;
-    }
-    if (node._type === ASTType._LogicalExpression) {
-        collectStandaloneListenerKeys(node._left, standaloneKeys);
-        collectStandaloneListenerKeys(node._right, standaloneKeys);
-        return;
-    }
-    if (node._type === ASTType._ConditionalExpression) {
-        collectStandaloneListenerKeys(node._test, standaloneKeys);
-        collectStandaloneListenerKeys(node._alternate, standaloneKeys);
-        collectStandaloneListenerKeys(node._consequent, standaloneKeys);
-        return;
-    }
-    const toWatch = node._toWatch;
-    if (!toWatch?.length)
-        return;
-    for (let i = 0, l = toWatch.length; i < l; i++) {
-        const watchTarget = toWatch[i];
-        if (watchTarget !== node) {
-            collectStandaloneListenerKeys(watchTarget, standaloneKeys);
-        }
-    }
-}
 /** @internal Builds reusable registration metadata for a compiled binding. */
 function createScopeWatchPlan(parse, watchProp) {
     const watchFn = parse(watchProp);
@@ -867,21 +829,8 @@ function createScopeWatchPlan(parse, watchProp) {
     const seenKeys = new Set();
     collectExpressionListenerKeys(expression, keys, seenKeys, listener);
     collectForeignWatchDescriptors(expression, listener, keys, seenKeys);
-    const descriptors = listener._foreignWatchDescriptors;
-    if (descriptors) {
-        const standaloneKeys = new Set();
-        collectStandaloneListenerKeys(expression, standaloneKeys);
-        if (standaloneKeys.size > 0) {
-            for (let i = 0, l = descriptors.length; i < l; i++) {
-                const descriptorKey = descriptors[i]._key;
-                if (standaloneKeys.has(descriptorKey))
-                    continue;
-                const keyIndex = keys.indexOf(descriptorKey);
-                if (keyIndex !== -1)
-                    keys.splice(keyIndex, 1);
-            }
-        }
-    }
+    // Leaf keys also notify bindings owned by this scope, including raw nested
+    // objects and services that schedule their own reactive property changes.
     if (keys.length === 0) {
         return undefined;
     }
@@ -2891,7 +2840,7 @@ class Scope {
             _watchFn: get,
             _parse: this._parse,
             _scopeId: this.id,
-            _id: nextUid(),
+            _id: ++nextListenerId,
         };
         if (listenerContext !== undefined) {
             listener._listenerContext = listenerContext;
@@ -2987,36 +2936,10 @@ class Scope {
             }
             // 6
             case ASTType._BinaryExpression: {
-                if (expr._isPure) {
-                    const [watch] = assertInvariantDefined(expr._toWatch);
-                    key = resolveNodeWatchKey(watch);
-                    if (!key) {
-                        throw new Error("Unable to determine key");
-                    }
-                    pushUniqueListenerKey(keySet, seenKeys, listener, key);
-                    collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
-                    this._bindForeignDependency(listener);
-                    break;
-                }
-                else {
-                    const toWatch = assertInvariantDefined(expr._toWatch);
-                    const keyList = new Array(toWatch.length);
-                    for (let i = 0, l = toWatch.length; i < l; i++) {
-                        const registerKey = resolveNodeWatchKey(toWatch[i]);
-                        if (!registerKey)
-                            throw new Error("Unable to determine key");
-                        keyList[i] = registerKey;
-                    }
-                    registerListenerKeys(this, listener, keyList, !lazy);
-                    collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
-                    if (!returnDeregister)
-                        return undefined;
-                    // Return deregistration function
-                    return () => {
-                        this._releaseForeignDependency(listener);
-                        deregisterListenerKeys(this, listener, keyList);
-                    };
-                }
+                collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
+                collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
+                this._bindForeignDependency(listener);
+                break;
             }
             // 7
             case ASTType._UnaryExpression: {
@@ -3269,7 +3192,7 @@ class Scope {
     /** Creates an isolate child scope that does not inherit watchable properties directly. */
     newIsolate(instance) {
         const child = instance ?? nullObject();
-        const handler = new Scope(this, this.root);
+        const handler = new Scope(this);
         const proxy = new Proxy(child, handler);
         handler._target = child;
         handler._scopeTarget = child;

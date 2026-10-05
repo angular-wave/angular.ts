@@ -1,7 +1,10 @@
 <!doctype html>
 <html>
   <head>
-    <script type="module" src="../../utils/source-bootstrap.js" data-angular-ts-entry="./rest.js"></script>
+    <script type="module">
+      import "../../utils/source-bootstrap.js";
+      import "./rest.js";
+    </script>
   </head>
   <body ng-app="restConfigDemo">
     <section ng-controller="RestConfigCtrl as vm">

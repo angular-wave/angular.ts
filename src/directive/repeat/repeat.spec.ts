@@ -184,6 +184,42 @@ describe("ngRepeat", () => {
     expect(element.textContent).toEqual("shyam;");
   });
 
+  it("inherits parent methods after reading proxied collection items", async () => {
+    scope.items = [{ name: "first" }, { name: "second" }];
+    scope.owner = "parent";
+    scope.select = jasmine.createSpy("select");
+
+    const items = scope.items;
+
+    void items[0];
+    void items[0];
+
+    element = $compile(
+      '<ul><li ng-repeat="item in items">' +
+        '<button ng-click="select($index)">{{owner}}: {{item.name}}</button>' +
+        "</li></ul>",
+    )(scope);
+    document.getElementById("app").appendChild(element);
+    await wait();
+
+    const buttons = element.querySelectorAll("button");
+
+    expect(buttons[0].textContent).toBe("parent: first");
+    expect(buttons[1].textContent).toBe("parent: second");
+    buttons[0].click();
+    buttons[1].click();
+    expect(scope.select.calls.allArgs()).toEqual([[0], [1]]);
+
+    scope.items = [...scope.items, { name: "third" }];
+    await wait();
+
+    const lastButton = element.querySelectorAll("button")[2];
+
+    expect(lastButton.textContent).toBe("parent: third");
+    lastButton.click();
+    expect(scope.select).toHaveBeenCalledWith(2);
+  });
+
   it("should iterate over an array-like object", async () => {
     element = $compile(
       "<ul>" + '<li ng-repeat="item in items">{{item.name}};</li>' + "</ul>",

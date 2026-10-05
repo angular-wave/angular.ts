@@ -853,9 +853,9 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
         let lastSeenArrayMutationVersion = 0;
 
-        // Scope proxy methods are lazily bound before being returned.
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const createTranscludedScope = $scope.transcluded;
+        // Reading the method through its scope restores the parent target after
+        // collection proxy reads retarget the shared scope handler.
+        const createTranscludedScope = () => $scope.transcluded();
 
         $scope.watch(
           rhs,

@@ -1197,6 +1197,26 @@ describe("Scope", () => {
       expect(child.root).toEqual(scope.root);
     });
 
+    it("keeps nested isolate children attached to their owning scope", () => {
+      const parent = scope.new();
+      const sibling = scope.new();
+      const child = parent.newIsolate();
+      const survivingChild = parent.newIsolate();
+      const destroyed = jasmine.createSpy("destroyed");
+
+      parent.on("$destroy", destroyed);
+      survivingChild.on("$destroy", destroyed);
+      expect(child.parent).toBe(parent._handler);
+      expect(child.root).toBe(scope.root);
+
+      child.destroy();
+
+      expect(scope._children).toEqual([parent, sibling]);
+      expect(parent._children).toEqual([survivingChild]);
+      scope.destroy();
+      expect(destroyed).toHaveBeenCalledTimes(2);
+    });
+
     it("should use supplied isolate state as the scope target", () => {
       const state = { own: "value" };
       const child = scope.newIsolate(state);

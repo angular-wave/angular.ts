@@ -80,8 +80,6 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(Tokens.rest.name, "$rest")
     assertEquals(Tokens.security.name, "$security")
     assertEquals(Tokens.serviceWorker.name, "$serviceWorker")
-    assertEquals(Tokens.sce.name, "$sce")
-    assertEquals(Tokens.sceDelegate.name, "$sceDelegate")
     assertEquals(Tokens.stream.name, "$stream")
     assertEquals(Tokens.sse.name, "$sse")
     assertEquals(Tokens.state.name, "$state")
@@ -1936,22 +1934,16 @@ class AngularTSSuite extends munit.FunSuite:
       "request",
     )
 
-  test("aria, interpolate, and sce config builders emit runtime objects"):
-    val aria = AriaConfig(
-      ariaHidden = false,
-      ariaInvalid = true,
-      bindKeydown = false,
-    ).toJS.asInstanceOf[js.Dynamic]
-    val interpolate = InterpolateConfig(
-      startSymbol = "[[",
-      endSymbol = "]]",
-    ).toJS.asInstanceOf[js.Dynamic]
-    val sce = SceConfig(enabled = true).toJS.asInstanceOf[js.Dynamic]
-    val sceDelegate = SceDelegateConfig(
-      trustedResourceUrlList = js.Array("self"),
-      bannedResourceUrlList = js.Array(js.RegExp("^http://")),
-      aHrefSanitizationTrustedUrlList = js.RegExp("^https?:"),
-      imgSrcSanitizationTrustedUrlList = js.RegExp("^https?:"),
+  test("aria, interpolate, and binding policy config builders emit runtime objects"):
+    val aria = AriaConfig(ariaHidden = false, ariaInvalid = true, bindKeydown = false)
+      .toJS.asInstanceOf[js.Dynamic]
+    val interpolate = InterpolateConfig(startSymbol = "[[", endSymbol = "]]")
+      .toJS.asInstanceOf[js.Dynamic]
+    val policies = BindingPolicyConfig(
+      htmlPolicy = (value: String) => value.replace("<script>", ""),
+      resourceUrlPolicy = (value: String) =>
+        if !value.startsWith("/") then throw new IllegalArgumentException("external resource")
+        value,
     ).toJS.asInstanceOf[js.Dynamic]
 
     assertEquals(aria.selectDynamic("ariaHidden").asInstanceOf[Boolean], false)
@@ -1959,26 +1951,13 @@ class AngularTSSuite extends munit.FunSuite:
     assertEquals(aria.selectDynamic("bindKeydown").asInstanceOf[Boolean], false)
     assertEquals(interpolate.selectDynamic("startSymbol").asInstanceOf[String], "[[")
     assertEquals(interpolate.selectDynamic("endSymbol").asInstanceOf[String], "]]")
-    assertEquals(sce.selectDynamic("enabled").asInstanceOf[Boolean], true)
-    assertEquals(
-      sceDelegate
-        .selectDynamic("trustedResourceUrlList")
-        .asInstanceOf[js.Array[SceResourceUrlMatcher]]
-        .head
-        .asInstanceOf[String],
-      "self",
-    )
-    assert(
-      sceDelegate
-        .selectDynamic("bannedResourceUrlList")
-        .asInstanceOf[js.Array[SceResourceUrlMatcher]]
-        .head
-        .isInstanceOf[js.RegExp],
-    )
-    assert(sceDelegate.selectDynamic("aHrefSanitizationTrustedUrlList").isInstanceOf[js.RegExp])
-    assert(sceDelegate.selectDynamic("imgSrcSanitizationTrustedUrlList").isInstanceOf[js.RegExp])
-    assertEquals(SceContexts.Html, "html")
-    assertEquals(SceContexts.ResourceUrl, "resourceUrl")
+    val html = policies.selectDynamic("htmlPolicy").asInstanceOf[HtmlPolicy]
+    val resource = policies.selectDynamic("resourceUrlPolicy").asInstanceOf[UrlPolicy]
+    assertEquals(html("<script>content"), "content")
+    assertEquals(resource("/view.html"), "/view.html")
+    intercept[IllegalArgumentException](resource("https://external.test"))
+    assert(js.isUndefined(policies.selectDynamic("scriptPolicy")))
+    assertEquals(BindingContext.ResourceUrl.value, "resourceUrl")
 
   test("security config builder emits credentials and permissions"):
     val config = SecurityConfig(
@@ -2049,8 +2028,7 @@ class AngularTSSuite extends munit.FunSuite:
       aria = AriaConfig(tabindex = false),
       htmlCanvas = HtmlCanvasConfig(enabled = false),
       interpolate = InterpolateConfig(startSymbol = "[[", endSymbol = "]]"),
-      sce = SceConfig(enabled = false),
-      sceDelegate = SceDelegateConfig(trustedResourceUrlList = js.Array("self")),
+      compile = BindingPolicyConfig(htmlPolicy = (value: String) => value),
     ).toJS.asInstanceOf[js.Dynamic]
 
     assertEquals(
@@ -2068,18 +2046,10 @@ class AngularTSSuite extends munit.FunSuite:
         .asInstanceOf[String],
       "[[",
     )
-    assertEquals(
-      config.selectDynamic("$sce").selectDynamic("enabled").asInstanceOf[Boolean],
-      false,
-    )
-    assertEquals(
-      config
-        .selectDynamic("$sceDelegate")
-        .selectDynamic("trustedResourceUrlList")
-        .asInstanceOf[js.Array[String]]
-        .head,
-      "self",
-    )
+    val html = config.selectDynamic("$compile").selectDynamic("htmlPolicy")
+      .asInstanceOf[HtmlPolicy]
+    assertEquals(html("approved"), "approved")
+    assert(js.isUndefined(config.selectDynamic("$sce")))
 
   test("router config builder emits scroll and focus options"):
     val config = RouterConfig(

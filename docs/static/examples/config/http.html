@@ -1,7 +1,10 @@
 <!doctype html>
 <html>
   <head>
-    <script type="module" src="../../utils/source-bootstrap.js" data-angular-ts-entry="./http.js"></script>
+    <script type="module">
+      import "../../utils/source-bootstrap.js";
+      import "./http.js";
+    </script>
   </head>
   <body ng-app="httpConfigDemo">
     <section ng-controller="HttpConfigCtrl as vm">

@@ -52,6 +52,7 @@ function applyUrlPolicy(value, policy, context, platformWindow) {
 function createBindingPolicies() {
     let configuration = {};
     return {
+        /** @internal */
         _configure(config) {
             for (const key of policyKeys) {
                 if (config[key] !== undefined && !isFunction(config[key])) {
@@ -63,6 +64,7 @@ function createBindingPolicies() {
                     configuration[key] = config[key];
             }
         },
+        /** @internal */
         _apply(context, value, platformWindow = window) {
             value = deProxy(value);
             if (context === "html")
@@ -79,9 +81,11 @@ function createBindingPolicies() {
                 return value;
             return applyUrlPolicy(value, configuration[`${context}Policy`], context, platformWindow);
         },
+        /** @internal */
         _resourceUrl(value, platformWindow = window) {
             return applyUrlPolicy(value, configuration.resourceUrlPolicy, "resourceUrl", platformWindow);
         },
+        /** @internal */
         _destroy() {
             configuration = {};
         },

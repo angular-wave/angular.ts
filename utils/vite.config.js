@@ -95,6 +95,9 @@ export default defineConfig({
     port,
     strictPort: true,
     watch: {
+      // Test and integration servers share the OS watcher limit with editors and build tools.
+      usePolling: true,
+      interval: 1000,
       ignored: [
         "**/.coverage/**",
         "**/coverage/**",

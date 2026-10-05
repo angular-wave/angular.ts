@@ -1,4 +1,5 @@
 export 'src/animation.dart';
+export 'src/binding_policy.dart';
 export 'src/angular_element.dart';
 export 'src/connection.dart';
 export 'src/component.dart';

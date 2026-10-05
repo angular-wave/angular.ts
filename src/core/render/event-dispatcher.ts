@@ -9,15 +9,29 @@ const DELEGATED_EVENT_LISTENERS = Symbol();
 const DELEGATED_EVENT_DOCUMENT = Symbol();
 const delegatedEvents = new WeakSet<Event>();
 
-const directEventTypes = new Set([
-  "abort",
-  "blur",
-  "error",
-  "focus",
-  "load",
-  "mouseenter",
-  "mouseleave",
-  "scroll",
+const delegatedEventTypes = new Set([
+  "change",
+  "click",
+  "copy",
+  "cut",
+  "dblclick",
+  "input",
+  "keydown",
+  "keyup",
+  "mousedown",
+  "mousemove",
+  "mouseout",
+  "mouseover",
+  "mouseup",
+  "paste",
+  "pointerdown",
+  "pointermove",
+  "pointerout",
+  "pointerover",
+  "pointerup",
+  "touchend",
+  "touchmove",
+  "touchstart",
 ]);
 
 const delegatedRootEvents = new WeakMap<EventTarget, string | Set<string>>();
@@ -34,7 +48,7 @@ type DelegatedEventListener = EventListener & {
 
 /** Returns whether an event type can use element-to-root delegation. */
 export function canDelegateEvent(type: string): boolean {
-  return !directEventTypes.has(type);
+  return delegatedEventTypes.has(type);
 }
 
 function dispatchDelegatedEvent(event: Event): void {
@@ -57,7 +71,7 @@ function dispatchDelegatedEvent(event: Event): void {
     if (listener) listener.call(target, event);
     // cancelBubble is the only observable signal that stopPropagation() was called.
     // eslint-disable-next-line @typescript-eslint/no-deprecated
-    if (event.cancelBubble) return;
+    if (event.cancelBubble || !event.bubbles) return;
   }
 }
 
@@ -133,6 +147,21 @@ export function addScopeDelegatedEventListener(
   listener: EventListener,
 ): void {
   addDelegatedEventListener(target, type, listener);
+  // Linked nodes can later move into a shadow root or another document.
+  const linkedDocument = target.ownerDocument;
+  const directListener = (event: Event) => {
+    if (
+      !event.bubbles ||
+      !target.isConnected ||
+      target.ownerDocument !== linkedDocument ||
+      target.getRootNode() instanceof ShadowRoot
+    ) {
+      dispatchDelegatedEvent(event);
+    }
+  };
+
+  target.addEventListener(type, directListener);
+  registerScopeEventCleanup(scope, target, type, directListener);
   registerScopeDelegatedEventCleanup(scope, target);
 }
 

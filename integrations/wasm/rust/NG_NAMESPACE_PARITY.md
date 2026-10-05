@@ -52,7 +52,7 @@ surface are now covered: router/state, realtime, core REST facades, and the
 machine data/config/runtime facade. Forms and validation remain the next useful
 application-level gap. Other provider/config-time APIs, compile/link internals,
 browser object aliases, animation, worker, web component, REST cache/revalidation
-helpers, and parse/interpolate/filter/SCE/location APIs remain deferred unless a
+helpers, and parse/interpolate/filter/binding-policy/location APIs remain deferred unless a
 Rust reference example makes one necessary.
 
 ## Status Legend
@@ -68,6 +68,12 @@ Rust reference example makes one necessary.
 
 | ng type | Rust status |
 | --- | --- |
+| `BindingContext` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `BindingPolicyConfig` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `HtmlPolicy` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `ScriptPolicy` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `ScriptUrlPolicy` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `UrlPolicy` | deferred | Compiler binding policies are configured by the JavaScript host. |
 | `Angular` | deferred |
 | `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | deferred |
@@ -175,8 +181,6 @@ Rust reference example makes one necessary.
 | `WorkflowService` | deferred |
 | `WorkflowSupervisorService` | deferred |
 | `ParseService` | deferred |
-| `SceDelegateService` | deferred |
-| `SceService` | deferred |
 | `SecurityPolicy` | deferred |
 | `SecurityConfig` | deferred |
 | `SecurityCredentialsConfig` | deferred |

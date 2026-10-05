@@ -35,10 +35,7 @@ import type { StateObject } from "../state/state-object.ts";
 import type { StateRegistryRuntime } from "../state/state-registry.ts";
 import type { StateRuntime } from "../state/state-service.ts";
 import { _getRouterPrefetchDelay } from "../router.ts";
-import type {
-  InternalTransitionOptions,
-  TransitionOptions,
-} from "../transition/interface.ts";
+import type { InternalTransitionOptions } from "../transition/interface.ts";
 
 interface ParsedStateRef {
   _state: string | null;
@@ -561,11 +558,17 @@ export function StateRefDynamicDirective(
 
       const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"] as const;
 
-      const rawDefKeyByAttr = {
-        ngState: "_ngState",
-        ngStateParams: "_ngStateParams",
-        ngStateOpts: "_ngStateOpts",
-      } as const;
+      const setRawDefByAttr = {
+        ngState: (value: unknown) => {
+          rawDef._ngState = value as StateRefDefinition["_ngState"];
+        },
+        ngStateParams: (value: unknown) => {
+          rawDef._ngStateParams = value as StateRefDefinition["_ngStateParams"];
+        },
+        ngStateOpts: (value: unknown) => {
+          rawDef._ngStateOpts = value as StateRefDefinition["_ngStateOpts"];
+        },
+      };
 
       const watchDeregFns = {} as WatchDeregFns;
 
@@ -609,10 +612,11 @@ export function StateRefDynamicDirective(
 
         const initialExpr = readFieldExpression();
 
-        (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] =
+        setRawDefByAttr[field](
           initialExpr && !initialExpr.includes("{{")
-            ? ($parse(initialExpr)(scope) as TransitionOptions & RawParams)
-            : undefined;
+            ? $parse(initialExpr)(scope)
+            : undefined,
+        );
 
         const syncFieldExpression = () => {
           const expr = readFieldExpression();
@@ -626,8 +630,7 @@ export function StateRefDynamicDirective(
           /* istanbul ignore next -- Scope.watch always returns a deregister function. */
           watchDeregFns[field] =
             scope.watch(expr, (newval) => {
-              (rawDef as Record<string, unknown>)[rawDefKeyByAttr[field]] =
-                newval;
+              setRawDefByAttr[field](newval);
               update();
             }) ?? noopDeregister;
         };

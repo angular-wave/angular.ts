@@ -31,8 +31,6 @@ object Tokens:
   val rest: Token[RestFactory] = AngularTS.token("$rest")
   val security: Token[SecurityPolicyService] = AngularTS.token("$security")
   val serviceWorker: Token[ServiceWorkerService] = AngularTS.token("$serviceWorker")
-  val sce: Token[SceService] = AngularTS.token("$sce")
-  val sceDelegate: Token[SceDelegateService] = AngularTS.token("$sceDelegate")
   val stream: Token[StreamService] = AngularTS.token("$stream")
   val sse: Token[SseService] = AngularTS.token("$sse")
   val state: Token[StateService] = AngularTS.token("$state")

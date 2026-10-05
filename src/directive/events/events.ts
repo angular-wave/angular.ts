@@ -217,7 +217,7 @@ function readEventBehavior(element: Element): EventBehavior {
     _prevent: prevent,
     _stop: stop,
     _listenerOptions:
-      capture || once || passive
+      capture || once || passive || stop
         ? {
             capture,
             once,

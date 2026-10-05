@@ -32,7 +32,7 @@ runtime machine APIs instead.
 Forms and validation remain the next useful application-level gap. Provider/
 config-time APIs, compile/link internals, browser object aliases, animation,
 worker, web component, REST cache/revalidation helpers, WebTransport, and
-parse/interpolate/filter/SCE/location APIs remain deferred unless a Go
+parse/interpolate/filter/binding-policy/location APIs remain deferred unless a Go
 reference example makes one necessary.
 
 ## Status Legend
@@ -47,6 +47,12 @@ reference example makes one necessary.
 
 | ng type | Go status |
 | --- | --- |
+| `BindingContext` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `BindingPolicyConfig` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `HtmlPolicy` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `ScriptPolicy` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `ScriptUrlPolicy` | deferred | Compiler binding policies are configured by the JavaScript host. |
+| `UrlPolicy` | deferred | Compiler binding policies are configured by the JavaScript host. |
 | `Angular` | deferred |
 | `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | deferred |
@@ -161,8 +167,6 @@ reference example makes one necessary.
 | `EventBusConfig` | deferred |
 | `EventDeliveryPolicy` | deferred |
 | `EventDeliveryPolicyContext` | deferred |
-| `SceDelegateService` | deferred |
-| `SceService` | deferred |
 | `StorageService` | deferred |
 | `StreamService` | deferred |
 | `TemplateCacheService` | covered |

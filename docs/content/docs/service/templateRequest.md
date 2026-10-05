@@ -35,4 +35,5 @@ $templateRequest("./panel.html").then((template) => {
 ```
 
 `$templateRequest` assumes template URLs are trusted by the caller. Security
-policy for resource URLs belongs to `$sce` and `$sceDelegate`.
+policy for resource URLs belongs to `$compile.resourceUrlPolicy` when templates
+are loaded through compiler bindings such as `ng-include`.

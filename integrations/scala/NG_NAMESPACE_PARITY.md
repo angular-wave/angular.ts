@@ -42,6 +42,12 @@ Statuses:
 | `TranscludeFn` | A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive. | manual |
 | `AriaConfig` | Public AngularTS AriaConfig contract exposed through the ng namespace. | manual |
 | `InterpolateConfig` | Delimiter configuration accepted by `NgModule.config()`. | manual |
+| `BindingContext` | The destination-specific policy required by a DOM binding. | manual |
+| `BindingPolicyConfig` | Policy callbacks accepted by `$compile` configuration. | manual |
+| `HtmlPolicy` | Sanitizes HTML or throws to reject it before it reaches an HTML binding. | manual |
+| `ScriptPolicy` | Approves JavaScript source or throws to reject it. | manual |
+| `ScriptUrlPolicy` | Validates a script URL or throws to reject it. | manual |
+| `UrlPolicy` | Validates or normalizes a URL, or throws to reject it. | manual |
 | `AngularService` | Main AngularTS runtime entry point with the full built-in `ng` module configured by default. | planned |
 | `ScopeService` | Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior. | planned |
 | `RootScopeService` | Scope class for the Proxy. It intercepts operations like property access (get) and property setting (set), and adds support for deep change tracking and observer-like behavior. | planned |
@@ -96,8 +102,6 @@ Statuses:
 | `EventBusConfig` | Public AngularTS EventBusConfig contract exposed through the ng namespace. | manual |
 | `EventDeliveryPolicy` | Public AngularTS EventDeliveryPolicy contract exposed through the ng namespace. | manual |
 | `EventDeliveryPolicyContext` | Public AngularTS EventDeliveryPolicyContext contract exposed through the ng namespace. | manual |
-| `SceService` | Public AngularTS SceService contract exposed through the ng namespace. | manual |
-| `SceDelegateService` | Public AngularTS SceDelegateService contract exposed through the ng namespace. | manual |
 | `SseService` | $sse service type Returns a managed SSE connection that automatically reconnects when needed. | manual |
 | `SseConfig` | SSE-specific configuration | manual |
 | `SseConnection` | Managed SSE connection object returned by $sse. Provides a safe way to close the connection and stop reconnection attempts. | manual |
@@ -360,6 +364,12 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `AppComponentOptions.connected` | Called after the scope exists and the template has been linked. | `context: WebComponentContext<T>` - Value supplied for the context parameter. |
 | `AppComponentOptions.disconnected` | Called before the scope is destroyed. | `context: WebComponentContext<T>` - Value supplied for the context parameter. |
 | `AriaService.config` | Invokes the config member of ng.AriaService. | `key: K` - Value supplied for the key parameter. |
+| `BindingPolicyConfig.htmlPolicy` | Sanitizes HTML strings or throws to reject them. | `html: string` - Value supplied for the html parameter. |
+| `BindingPolicyConfig.mediaUrlPolicy` | Validates media URLs, including each URL in \`srcset\`. | `url: string` - Value supplied for the url parameter. |
+| `BindingPolicyConfig.resourceUrlPolicy` | Validates resource URLs. The default permits same-origin resources. | `url: string` - Value supplied for the url parameter. |
+| `BindingPolicyConfig.scriptPolicy` | Approves executable source. Nonempty strings are rejected by default. | `script: string` - Value supplied for the script parameter. |
+| `BindingPolicyConfig.scriptUrlPolicy` | Validates script-loading URLs. The default permits same-origin scripts. | `url: string` - Value supplied for the url parameter. |
+| `BindingPolicyConfig.urlPolicy` | Validates link URLs. The default blocks dangerous schemes. | `url: string` - Value supplied for the url parameter. |
 | `CachedRestBackendOptions.onRevalidate` | Notified after a stale-while-revalidate refresh succeeds. | `event: RestRevalidateEvent<unknown>` - Value supplied for the event parameter. |
 | `CachedRestBackendOptions.policy` | Runtime policy used to choose the read strategy for each cacheable request. | `context: RestCachePolicyContext` - Value supplied for the context parameter. |
 | `Component.view` | Programmatic real-DOM view factory. It runs during linking after controller bindings and \`onInit\`, and is mutually exclusive with template, templateUrl, and replace. | `context: ProgrammaticViewContext<TControllerInstance, undefined, TScopeInstance, TElement>` - Value supplied for the context parameter. |
@@ -409,7 +419,7 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `InjectionTokenMap.$filter` | Invokes the $filter member of ng.InjectionTokenMap. | `name: string` - Value supplied for the name parameter. |
 | `InjectionTokenMap.$http` | Invokes the $http member of ng.InjectionTokenMap. | `config: HttpRequestConfig` - Value supplied for the config parameter. |
 | `InjectionTokenMap.$httpParamSerializer` | Invokes the $httpParamSerializer member of ng.InjectionTokenMap. | `params: HttpParams` - Value supplied for the params parameter. |
-| `InjectionTokenMap.$interpolate` | Invokes the $interpolate member of ng.InjectionTokenMap. | `text: string` - Value supplied for the text parameter.<br>`mustHaveExpression: boolean` - Value supplied for the mustHaveExpression parameter.<br>`trustedContext: SceContext` - Value supplied for the trustedContext parameter.<br>`allOrNothing: boolean` - Value supplied for the allOrNothing parameter. |
+| `InjectionTokenMap.$interpolate` | Invokes the $interpolate member of ng.InjectionTokenMap. | `text: string` - Value supplied for the text parameter.<br>`mustHaveExpression: boolean` - Value supplied for the mustHaveExpression parameter.<br>`trustedContext: BindingContext` - Value supplied for the trustedContext parameter.<br>`allOrNothing: boolean` - Value supplied for the allOrNothing parameter. |
 | `InjectionTokenMap.$machine` | Invokes the $machine member of ng.InjectionTokenMap. | `config: { data: TData; } & Omit<MachineConfig<MachineContractOf<TData, MachineEventsFromStates<TStates>, Extract<keyof TStates, string>>>, "data" \| "initial" \| "states"> & { initial: Extract<keyof TStates, string>; states: TStates & MachineStateMap<MachineContractOf<TData, MachineEventsFromStates<TStates>, Extract<keyof TStates, string>>>; }` - Value supplied for the config parameter. |
 | `InjectionTokenMap.$parse` | Invokes the $parse member of ng.InjectionTokenMap. | `expression: string` - Value supplied for the expression parameter.<br>`interceptorFn: (value: unknown) => unknown` - Value supplied for the interceptorFn parameter. |
 | `InjectionTokenMap.$rest` | Invokes the $rest member of ng.InjectionTokenMap. | `baseUrl: string` - Value supplied for the baseUrl parameter.<br>`entityClass: EntityClass<T>` - Value supplied for the entityClass parameter.<br>`options: RestOptions` - Value supplied for the options parameter. |
@@ -524,26 +534,6 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `RestService.update` | Update a resource using \`PUT\`. | `id: ID` - Resource identifier appended to the base URL.<br>`item: Partial<T>` - Request body to send. |
 | `RouterModule.lazyState` | Register a lazy state namespace while preserving this module route map. | `prefix: LazyRoutePrefix<TRouteMap>` - Value supplied for the prefix parameter.<br>`loader: LazyStateLoader` - Value supplied for the loader parameter. |
 | `RouterModule.router` | Register a router tree while preserving this module's route map. | `declaration: TDeclaration & RouterDeclarationFor<TRouteMap, TDeclaration>` - Value supplied for the declaration parameter. |
-| `SceDelegateService.getTrusted` | Invokes the getTrusted member of ng.SceDelegateService. | `type: SceContext` - Value supplied for the type parameter.<br>`mayBeTrusted: unknown` - Value supplied for the mayBeTrusted parameter. |
-| `SceDelegateService.trustAs` | Invokes the trustAs member of ng.SceDelegateService. | `type: SceContext` - Value supplied for the type parameter.<br>`value: unknown` - Value supplied for the value parameter. |
-| `SceDelegateService.valueOf` | Invokes the valueOf member of ng.SceDelegateService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.getTrusted` | Invokes the getTrusted member of ng.SceService. | `type: SceContext` - Value supplied for the type parameter.<br>`mayBeTrusted: unknown` - Value supplied for the mayBeTrusted parameter. |
-| `SceService.getTrustedHtml` | Invokes the getTrustedHtml member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.getTrustedMediaUrl` | Invokes the getTrustedMediaUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.getTrustedResourceUrl` | Invokes the getTrustedResourceUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.getTrustedUrl` | Invokes the getTrustedUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.isEnabled` | Invokes the isEnabled member of ng.SceService. | None |
-| `SceService.parse` | Invokes the parse member of ng.SceService. | `type: SceContext` - Value supplied for the type parameter.<br>`expression: string` - Value supplied for the expression parameter. |
-| `SceService.parseAsHtml` | Invokes the parseAsHtml member of ng.SceService. | `expression: string` - Value supplied for the expression parameter. |
-| `SceService.parseAsMediaUrl` | Invokes the parseAsMediaUrl member of ng.SceService. | `expression: string` - Value supplied for the expression parameter. |
-| `SceService.parseAsResourceUrl` | Invokes the parseAsResourceUrl member of ng.SceService. | `expression: string` - Value supplied for the expression parameter. |
-| `SceService.parseAsUrl` | Invokes the parseAsUrl member of ng.SceService. | `expression: string` - Value supplied for the expression parameter. |
-| `SceService.trustAs` | Invokes the trustAs member of ng.SceService. | `type: SceContext` - Value supplied for the type parameter.<br>`value: unknown` - Value supplied for the value parameter. |
-| `SceService.trustAsHtml` | Invokes the trustAsHtml member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.trustAsMediaUrl` | Invokes the trustAsMediaUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.trustAsResourceUrl` | Invokes the trustAsResourceUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.trustAsUrl` | Invokes the trustAsUrl member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
-| `SceService.valueOf` | Invokes the valueOf member of ng.SceService. | `value: unknown` - Value supplied for the value parameter. |
 | `Scope.batch` | Runs synchronous scope mutations as one batch. Listener notifications are queued while the callback runs and flushed once after the outermost batch exits. Mutations are not rolled back if the callback throws. | `fn: () => T` - Value supplied for the fn parameter. |
 | `Scope.broadcast` | Broadcasts an event downward through the scope hierarchy. | `name: string` - Value supplied for the name parameter.<br>`args: unknown[]` - Value supplied for the args parameter. |
 | `Scope.deleteProperty` | Invokes the deleteProperty member of ng.Scope. | `target: ScopeTarget` - The target object.<br>`property: string \| number \| symbol` - The name of the property being deleted. |
@@ -558,7 +548,7 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `Scope.searchByName` | Searches the scope tree for a scope registered under the provided name. | `name: string` - Value supplied for the name parameter. |
 | `Scope.set` | Intercepts and handles property assignments on the target object. Scopeable objects are stored as raw model values and proxied lazily when read. | `target: ScopeTarget` - The target object.<br>`property: string` - The name of the property being set.<br>`value: unknown` - The new value being assigned to the property.<br>`proxy: Scope` - The proxy intercepting property access. |
 | `Scope.transcluded` | Creates a transcluded child scope linked to this scope and an optional parent instance. | `parentInstance: Scope` - Value supplied for the parentInstance parameter. |
-| `Scope.watch` | Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected. | `watchProp: string` - An expression to be watched in the context of this model.<br>`listenerFn: (newValue?: unknown, originalTarget?: object) => void` - A function to execute when changes are detected on watched context.<br>`lazy: boolean` - A flag to indicate if the listener should be invoked immediately. Defaults to false.<br>`directLeaf: boolean` - Value supplied for the directLeaf parameter. |
+| `Scope.watch` | Registers a watcher for a property along with a listener function. The listener function is invoked when changes to that property are detected. | `watchProp: string` - An expression to be watched in the context of this model.<br>`listenerFn: (newValue?: unknown, originalTarget?: object) => void` - A function to execute when changes are detected on watched context.<br>`lazy: boolean` - A flag to indicate if the listener should be invoked immediately. Defaults to false.<br>`directLeaf: boolean` - Value supplied for the directLeaf parameter.<br>`returnDeregister: boolean` - Value supplied for the returnDeregister parameter.<br>`synchronousInitial: boolean` - Value supplied for the synchronousInitial parameter.<br>`resolvedValue: unknown` - Value supplied for the resolvedValue parameter.<br>`hasResolvedValue: boolean` - Value supplied for the hasResolvedValue parameter.<br>`listenerContext: unknown` - Value supplied for the listenerContext parameter. |
 | `ScopeElement.attributeChanged` | Called after an observed input attribute changes. | `name: string` - Value supplied for the name parameter.<br>`oldValue: string` - Value supplied for the oldValue parameter.<br>`newValue: string` - Value supplied for the newValue parameter. |
 | `ScopeElement.attributeChangedCallback` | Invokes the attributeChangedCallback member of ng.ScopeElement. | `attribute: string` - Value supplied for the attribute parameter.<br>`oldValue: string` - Value supplied for the oldValue parameter.<br>`newValue: string` - Value supplied for the newValue parameter. |
 | `ScopeElement.connected` | Called after the AngularTS scope and template are connected. | None |

@@ -1330,6 +1330,46 @@ base class GeneratedNgAriaService extends GeneratedNgFacade {
   }
 }
 
+/// The destination-specific policy required by a DOM binding.
+///
+/// Raw JavaScript facade for `ng.BindingContext`.
+base class GeneratedNgBindingContext extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.BindingContext.
+  const GeneratedNgBindingContext(super.raw);
+}
+
+/// Policy callbacks accepted by `$compile` configuration.
+///
+/// Raw JavaScript facade for `ng.BindingPolicyConfig`.
+base class GeneratedNgBindingPolicyConfig extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.BindingPolicyConfig.
+  const GeneratedNgBindingPolicyConfig(super.raw);
+
+  /// Sanitizes HTML strings or throws to reject them.
+  Object? get htmlPolicy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('htmlPolicy'.toJS));
+
+  /// Validates link URLs. The default blocks dangerous schemes.
+  Object? get urlPolicy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('urlPolicy'.toJS));
+
+  /// Validates media URLs, including each URL in `srcset`.
+  Object? get mediaUrlPolicy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('mediaUrlPolicy'.toJS));
+
+  /// Validates resource URLs. The default permits same-origin resources.
+  Object? get resourceUrlPolicy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('resourceUrlPolicy'.toJS));
+
+  /// Approves executable source. Nonempty strings are rejected by default.
+  Object? get scriptPolicy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('scriptPolicy'.toJS));
+
+  /// Validates script-loading URLs. The default permits same-origin scripts.
+  Object? get scriptUrlPolicy =>
+      unsafe.jsToDart<Object?>(raw.getProperty('scriptUrlPolicy'.toJS));
+}
+
 /// Configuration for CachedRestBackend.
 ///
 /// Raw JavaScript facade for `ng.CachedRestBackendOptions`.
@@ -2802,6 +2842,25 @@ base class GeneratedNgHtmlCanvasService extends GeneratedNgFacade {
   }
 }
 
+/// Sanitizes HTML or throws to reject it before it reaches an HTML binding.
+///
+/// Raw JavaScript facade for `ng.HtmlPolicy`.
+base class GeneratedNgHtmlPolicy extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.HtmlPolicy.
+  const GeneratedNgHtmlPolicy(super.raw);
+
+  /// Calls the ng.HtmlPolicy function.
+  ///
+  /// Parameters:
+  /// - [html]: Value supplied for the html parameter.
+  String call(String html) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(html));
+
+    return _toDartString(_callFunction(raw as JSFunction, args))!;
+  }
+}
+
 /// Default request settings configured through `app.config({ $http })` and exposed at runtime
 /// through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape
 /// only includes the fields that the runtime reads from provider-level defaults.
@@ -3359,13 +3418,6 @@ base class GeneratedNgInjectionTokenMap extends GeneratedNgFacade {
   /// The $rootScope member of ng.InjectionTokenMap.
   Object? get $rootScope =>
       unsafe.jsToDart<Object?>(raw.getProperty('\$rootScope'.toJS));
-
-  /// The $sce member of ng.InjectionTokenMap.
-  Object? get $sce => unsafe.jsToDart<Object?>(raw.getProperty('\$sce'.toJS));
-
-  /// The $sceDelegate member of ng.InjectionTokenMap.
-  Object? get $sceDelegate =>
-      unsafe.jsToDart<Object?>(raw.getProperty('\$sceDelegate'.toJS));
 
   /// The $security member of ng.InjectionTokenMap.
   Object? get $security =>
@@ -4445,10 +4497,20 @@ base class GeneratedNgModel extends GeneratedNgFacade {
   /// - [listenerFn]: A function to execute when changes are detected on watched context.
   /// - [lazy]: A flag to indicate if the listener should be invoked immediately. Defaults to false.
   /// - [directLeaf]: Value supplied for the directLeaf parameter.
+  /// - [returnDeregister]: Value supplied for the returnDeregister parameter.
+  /// - [synchronousInitial]: Value supplied for the synchronousInitial parameter.
+  /// - [resolvedValue]: Value supplied for the resolvedValue parameter.
+  /// - [hasResolvedValue]: Value supplied for the hasResolvedValue parameter.
+  /// - [listenerContext]: Value supplied for the listenerContext parameter.
   Object? watch(String watchProp,
       [Object? listenerFn = _undefinedArgument,
       Object? lazy = _undefinedArgument,
-      Object? directLeaf = _undefinedArgument]) {
+      Object? directLeaf = _undefinedArgument,
+      Object? returnDeregister = _undefinedArgument,
+      Object? synchronousInitial = _undefinedArgument,
+      Object? resolvedValue = _undefinedArgument,
+      Object? hasResolvedValue = _undefinedArgument,
+      Object? listenerContext = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(watchProp));
     if (!identical(listenerFn, _undefinedArgument)) {
@@ -4459,6 +4521,21 @@ base class GeneratedNgModel extends GeneratedNgFacade {
     }
     if (!identical(directLeaf, _undefinedArgument)) {
       args.add(unsafe.dartToJs(directLeaf));
+    }
+    if (!identical(returnDeregister, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(returnDeregister));
+    }
+    if (!identical(synchronousInitial, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(synchronousInitial));
+    }
+    if (!identical(resolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(resolvedValue));
+    }
+    if (!identical(hasResolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(hasResolvedValue));
+    }
+    if (!identical(listenerContext, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(listenerContext));
     }
 
     return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('watch'.toJS, args));
@@ -8237,10 +8314,20 @@ base class GeneratedNgRootScopeService extends GeneratedNgFacade {
   /// - [listenerFn]: A function to execute when changes are detected on watched context.
   /// - [lazy]: A flag to indicate if the listener should be invoked immediately. Defaults to false.
   /// - [directLeaf]: Value supplied for the directLeaf parameter.
+  /// - [returnDeregister]: Value supplied for the returnDeregister parameter.
+  /// - [synchronousInitial]: Value supplied for the synchronousInitial parameter.
+  /// - [resolvedValue]: Value supplied for the resolvedValue parameter.
+  /// - [hasResolvedValue]: Value supplied for the hasResolvedValue parameter.
+  /// - [listenerContext]: Value supplied for the listenerContext parameter.
   Object? watch(String watchProp,
       [Object? listenerFn = _undefinedArgument,
       Object? lazy = _undefinedArgument,
-      Object? directLeaf = _undefinedArgument]) {
+      Object? directLeaf = _undefinedArgument,
+      Object? returnDeregister = _undefinedArgument,
+      Object? synchronousInitial = _undefinedArgument,
+      Object? resolvedValue = _undefinedArgument,
+      Object? hasResolvedValue = _undefinedArgument,
+      Object? listenerContext = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(watchProp));
     if (!identical(listenerFn, _undefinedArgument)) {
@@ -8251,6 +8338,21 @@ base class GeneratedNgRootScopeService extends GeneratedNgFacade {
     }
     if (!identical(directLeaf, _undefinedArgument)) {
       args.add(unsafe.dartToJs(directLeaf));
+    }
+    if (!identical(returnDeregister, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(returnDeregister));
+    }
+    if (!identical(synchronousInitial, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(synchronousInitial));
+    }
+    if (!identical(resolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(resolvedValue));
+    }
+    if (!identical(hasResolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(hasResolvedValue));
+    }
+    if (!identical(listenerContext, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(listenerContext));
     }
 
     return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('watch'.toJS, args));
@@ -9280,269 +9382,6 @@ base class GeneratedNgRoutesOf extends GeneratedNgFacade {
   const GeneratedNgRoutesOf(super.raw);
 }
 
-/// Public AngularTS SceDelegateService contract exposed through the ng namespace.
-///
-/// Raw JavaScript facade for `ng.SceDelegateService`.
-base class GeneratedNgSceDelegateService extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.SceDelegateService.
-  const GeneratedNgSceDelegateService(super.raw);
-
-  /// The getTrusted member of ng.SceDelegateService.
-  ///
-  /// Parameters:
-  /// - [typeValue]: Value supplied for the type parameter.
-  /// - [mayBeTrusted]: Value supplied for the mayBeTrusted parameter.
-  Object? getTrusted(String typeValue, Object? mayBeTrusted) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(typeValue));
-    args.add(unsafe.dartToJs(mayBeTrusted));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('getTrusted'.toJS, args));
-  }
-
-  /// The trustAs member of ng.SceDelegateService.
-  ///
-  /// Parameters:
-  /// - [typeValue]: Value supplied for the type parameter.
-  /// - [value]: Value supplied for the value parameter.
-  Object? trustAs(String typeValue, Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(typeValue));
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('trustAs'.toJS, args));
-  }
-
-  /// The valueOf member of ng.SceDelegateService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? valueOf([Object? value = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    if (!identical(value, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(value));
-    }
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('valueOf'.toJS, args));
-  }
-}
-
-/// Public AngularTS SceService contract exposed through the ng namespace.
-///
-/// Raw JavaScript facade for `ng.SceService`.
-base class GeneratedNgSceService extends GeneratedNgFacade {
-  /// Creates a generated raw facade for ng.SceService.
-  const GeneratedNgSceService(super.raw);
-
-  /// The getTrusted member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [typeValue]: Value supplied for the type parameter.
-  /// - [mayBeTrusted]: Value supplied for the mayBeTrusted parameter.
-  Object? getTrusted(String typeValue, Object? mayBeTrusted) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(typeValue));
-    args.add(unsafe.dartToJs(mayBeTrusted));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('getTrusted'.toJS, args));
-  }
-
-  /// The getTrustedHtml member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? getTrustedHtml(Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('getTrustedHtml'.toJS, args));
-  }
-
-  /// The getTrustedResourceUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? getTrustedResourceUrl(Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe.jsToDart<Object?>(
-        raw.callMethodVarArgs('getTrustedResourceUrl'.toJS, args));
-  }
-
-  /// The getTrustedUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? getTrustedUrl(Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('getTrustedUrl'.toJS, args));
-  }
-
-  /// The getTrustedMediaUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? getTrustedMediaUrl(Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe.jsToDart<Object?>(
-        raw.callMethodVarArgs('getTrustedMediaUrl'.toJS, args));
-  }
-
-  /// The parse member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [typeValue]: Value supplied for the type parameter.
-  /// - [expression]: Value supplied for the expression parameter.
-  Object? parse(String typeValue, String expression) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(typeValue));
-    args.add(unsafe.dartToJs(expression));
-
-    return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('parse'.toJS, args));
-  }
-
-  /// The parseAsHtml member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [expression]: Value supplied for the expression parameter.
-  Object? parseAsHtml(String expression) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(expression));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('parseAsHtml'.toJS, args));
-  }
-
-  /// The parseAsResourceUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [expression]: Value supplied for the expression parameter.
-  Object? parseAsResourceUrl(String expression) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(expression));
-
-    return unsafe.jsToDart<Object?>(
-        raw.callMethodVarArgs('parseAsResourceUrl'.toJS, args));
-  }
-
-  /// The parseAsUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [expression]: Value supplied for the expression parameter.
-  Object? parseAsUrl(String expression) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(expression));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('parseAsUrl'.toJS, args));
-  }
-
-  /// The parseAsMediaUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [expression]: Value supplied for the expression parameter.
-  Object? parseAsMediaUrl(String expression) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(expression));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('parseAsMediaUrl'.toJS, args));
-  }
-
-  /// The trustAs member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [typeValue]: Value supplied for the type parameter.
-  /// - [value]: Value supplied for the value parameter.
-  Object? trustAs(String typeValue, Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(typeValue));
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('trustAs'.toJS, args));
-  }
-
-  /// The trustAsHtml member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? trustAsHtml(Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('trustAsHtml'.toJS, args));
-  }
-
-  /// The trustAsResourceUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? trustAsResourceUrl(Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe.jsToDart<Object?>(
-        raw.callMethodVarArgs('trustAsResourceUrl'.toJS, args));
-  }
-
-  /// The trustAsUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? trustAsUrl(Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('trustAsUrl'.toJS, args));
-  }
-
-  /// The trustAsMediaUrl member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? trustAsMediaUrl(Object? value) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(value));
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('trustAsMediaUrl'.toJS, args));
-  }
-
-  /// The isEnabled member of ng.SceService.
-  bool isEnabled() {
-    return _toDartBool(
-        raw.callMethodVarArgs('isEnabled'.toJS, const <JSAny?>[]))!;
-  }
-
-  /// The valueOf member of ng.SceService.
-  ///
-  /// Parameters:
-  /// - [value]: Value supplied for the value parameter.
-  Object? valueOf([Object? value = _undefinedArgument]) {
-    final args = <JSAny?>[];
-    if (!identical(value, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(value));
-    }
-
-    return unsafe
-        .jsToDart<Object?>(raw.callMethodVarArgs('valueOf'.toJS, args));
-  }
-}
-
 /// Scope class for the Proxy. It intercepts operations like property access (get) and property
 /// setting (set), and adds support for deep change tracking and observer-like behavior.
 ///
@@ -9643,10 +9482,20 @@ base class GeneratedNgScope extends GeneratedNgFacade {
   /// - [listenerFn]: A function to execute when changes are detected on watched context.
   /// - [lazy]: A flag to indicate if the listener should be invoked immediately. Defaults to false.
   /// - [directLeaf]: Value supplied for the directLeaf parameter.
+  /// - [returnDeregister]: Value supplied for the returnDeregister parameter.
+  /// - [synchronousInitial]: Value supplied for the synchronousInitial parameter.
+  /// - [resolvedValue]: Value supplied for the resolvedValue parameter.
+  /// - [hasResolvedValue]: Value supplied for the hasResolvedValue parameter.
+  /// - [listenerContext]: Value supplied for the listenerContext parameter.
   Object? watch(String watchProp,
       [Object? listenerFn = _undefinedArgument,
       Object? lazy = _undefinedArgument,
-      Object? directLeaf = _undefinedArgument]) {
+      Object? directLeaf = _undefinedArgument,
+      Object? returnDeregister = _undefinedArgument,
+      Object? synchronousInitial = _undefinedArgument,
+      Object? resolvedValue = _undefinedArgument,
+      Object? hasResolvedValue = _undefinedArgument,
+      Object? listenerContext = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(watchProp));
     if (!identical(listenerFn, _undefinedArgument)) {
@@ -9657,6 +9506,21 @@ base class GeneratedNgScope extends GeneratedNgFacade {
     }
     if (!identical(directLeaf, _undefinedArgument)) {
       args.add(unsafe.dartToJs(directLeaf));
+    }
+    if (!identical(returnDeregister, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(returnDeregister));
+    }
+    if (!identical(synchronousInitial, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(synchronousInitial));
+    }
+    if (!identical(resolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(resolvedValue));
+    }
+    if (!identical(hasResolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(hasResolvedValue));
+    }
+    if (!identical(listenerContext, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(listenerContext));
     }
 
     return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('watch'.toJS, args));
@@ -10106,10 +9970,20 @@ base class GeneratedNgScopeService extends GeneratedNgFacade {
   /// - [listenerFn]: A function to execute when changes are detected on watched context.
   /// - [lazy]: A flag to indicate if the listener should be invoked immediately. Defaults to false.
   /// - [directLeaf]: Value supplied for the directLeaf parameter.
+  /// - [returnDeregister]: Value supplied for the returnDeregister parameter.
+  /// - [synchronousInitial]: Value supplied for the synchronousInitial parameter.
+  /// - [resolvedValue]: Value supplied for the resolvedValue parameter.
+  /// - [hasResolvedValue]: Value supplied for the hasResolvedValue parameter.
+  /// - [listenerContext]: Value supplied for the listenerContext parameter.
   Object? watch(String watchProp,
       [Object? listenerFn = _undefinedArgument,
       Object? lazy = _undefinedArgument,
-      Object? directLeaf = _undefinedArgument]) {
+      Object? directLeaf = _undefinedArgument,
+      Object? returnDeregister = _undefinedArgument,
+      Object? synchronousInitial = _undefinedArgument,
+      Object? resolvedValue = _undefinedArgument,
+      Object? hasResolvedValue = _undefinedArgument,
+      Object? listenerContext = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(watchProp));
     if (!identical(listenerFn, _undefinedArgument)) {
@@ -10120,6 +9994,21 @@ base class GeneratedNgScopeService extends GeneratedNgFacade {
     }
     if (!identical(directLeaf, _undefinedArgument)) {
       args.add(unsafe.dartToJs(directLeaf));
+    }
+    if (!identical(returnDeregister, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(returnDeregister));
+    }
+    if (!identical(synchronousInitial, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(synchronousInitial));
+    }
+    if (!identical(resolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(resolvedValue));
+    }
+    if (!identical(hasResolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(hasResolvedValue));
+    }
+    if (!identical(listenerContext, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(listenerContext));
     }
 
     return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('watch'.toJS, args));
@@ -10284,6 +10173,44 @@ base class GeneratedNgScopeService extends GeneratedNgFacade {
 
     return unsafe
         .jsToDart<Object?>(raw.callMethodVarArgs('searchByName'.toJS, args));
+  }
+}
+
+/// Approves JavaScript source or throws to reject it.
+///
+/// Raw JavaScript facade for `ng.ScriptPolicy`.
+base class GeneratedNgScriptPolicy extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ScriptPolicy.
+  const GeneratedNgScriptPolicy(super.raw);
+
+  /// Calls the ng.ScriptPolicy function.
+  ///
+  /// Parameters:
+  /// - [script]: Value supplied for the script parameter.
+  String call(String script) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(script));
+
+    return _toDartString(_callFunction(raw as JSFunction, args))!;
+  }
+}
+
+/// Validates a script URL or throws to reject it.
+///
+/// Raw JavaScript facade for `ng.ScriptUrlPolicy`.
+base class GeneratedNgScriptUrlPolicy extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ScriptUrlPolicy.
+  const GeneratedNgScriptUrlPolicy(super.raw);
+
+  /// Calls the ng.ScriptUrlPolicy function.
+  ///
+  /// Parameters:
+  /// - [url]: Value supplied for the url parameter.
+  String call(String url) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(url));
+
+    return _toDartString(_callFunction(raw as JSFunction, args))!;
   }
 }
 
@@ -11952,6 +11879,25 @@ base class GeneratedNgTransitionsService extends GeneratedNgFacade {
   }
 }
 
+/// Validates or normalizes a URL, or throws to reject it.
+///
+/// Raw JavaScript facade for `ng.UrlPolicy`.
+base class GeneratedNgUrlPolicy extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.UrlPolicy.
+  const GeneratedNgUrlPolicy(super.raw);
+
+  /// Calls the ng.UrlPolicy function.
+  ///
+  /// Parameters:
+  /// - [url]: Value supplied for the url parameter.
+  String call(String url) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(url));
+
+    return _toDartString(_callFunction(raw as JSFunction, args))!;
+  }
+}
+
 /// Public AngularTS Validator contract exposed through the ng namespace.
 ///
 /// Raw JavaScript facade for `ng.Validator`.
@@ -12311,10 +12257,20 @@ base class GeneratedNgWasmTarget extends GeneratedNgFacade {
   /// - [listenerFn]: A function to execute when changes are detected on watched context.
   /// - [lazy]: A flag to indicate if the listener should be invoked immediately. Defaults to false.
   /// - [directLeaf]: Value supplied for the directLeaf parameter.
+  /// - [returnDeregister]: Value supplied for the returnDeregister parameter.
+  /// - [synchronousInitial]: Value supplied for the synchronousInitial parameter.
+  /// - [resolvedValue]: Value supplied for the resolvedValue parameter.
+  /// - [hasResolvedValue]: Value supplied for the hasResolvedValue parameter.
+  /// - [listenerContext]: Value supplied for the listenerContext parameter.
   Object? watch(String watchProp,
       [Object? listenerFn = _undefinedArgument,
       Object? lazy = _undefinedArgument,
-      Object? directLeaf = _undefinedArgument]) {
+      Object? directLeaf = _undefinedArgument,
+      Object? returnDeregister = _undefinedArgument,
+      Object? synchronousInitial = _undefinedArgument,
+      Object? resolvedValue = _undefinedArgument,
+      Object? hasResolvedValue = _undefinedArgument,
+      Object? listenerContext = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(watchProp));
     if (!identical(listenerFn, _undefinedArgument)) {
@@ -12325,6 +12281,21 @@ base class GeneratedNgWasmTarget extends GeneratedNgFacade {
     }
     if (!identical(directLeaf, _undefinedArgument)) {
       args.add(unsafe.dartToJs(directLeaf));
+    }
+    if (!identical(returnDeregister, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(returnDeregister));
+    }
+    if (!identical(synchronousInitial, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(synchronousInitial));
+    }
+    if (!identical(resolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(resolvedValue));
+    }
+    if (!identical(hasResolvedValue, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(hasResolvedValue));
+    }
+    if (!identical(listenerContext, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(listenerContext));
     }
 
     return unsafe.jsToDart<Object?>(raw.callMethodVarArgs('watch'.toJS, args));
