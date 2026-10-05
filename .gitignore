@@ -12,6 +12,7 @@ tsconfig.tsbuildinfo
 .idea
 .metals
 .vscode
+.scala-build
 angular.ts.iml
 /@types/
 /.build/
