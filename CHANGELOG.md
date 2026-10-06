@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-10-06
+
+- Added `angular.getModel(name)` to lazily initialize and retrieve shared,
+  app-owned reactive models for updates from external code.
+- **Breaking:** Removed `$sce`, `$sceDelegate`, and their trusted-value wrappers.
+  Configure HTML, URL, resource, media, and script policies through `$compile`;
+  nonempty HTML and script strings require explicit policy callbacks.
+- Improved compiler binding plans and scope change scheduling, and fixed watcher
+  cleanup, repeat callback contexts, and nonbubbling or cross-document DOM events.
+- Fixed router paint scheduling when the animation frame scheduler changes
+  between frames.
+- Updated maintained language bindings and executable documentation for the
+  model getter and compiler binding policies.
+- Fixed browser test server crashes when editors or build tools exhaust the
+  system's file-watcher limit.
+- Updated Android dependencies and protocol test fixtures for strict lint,
+  isolated Maven consumer, reproducibility, and signing checks.
 - Added the portable Angular Native HarmonyOS bridge, ArkUI element contracts,
   navigation and capability adapters, package generation, release checks, and
   public integration guide.

@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.36.0
+## 0.37.0
 
 - Initial HarmonyOS NEXT package for AngularTS Native.
 

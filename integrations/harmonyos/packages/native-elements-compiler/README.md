@@ -5,7 +5,7 @@ Compile explicit custom native-element descriptors for the HarmonyOS renderer re
 ## Install
 
 ```sh
-ohpm install @angular-wave/angular-native-harmony-compiler@0.36.0
+ohpm install @angular-wave/angular-native-harmony-compiler@0.37.0
 ```
 
 ## Use

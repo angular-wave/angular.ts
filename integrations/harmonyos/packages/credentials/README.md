@@ -5,7 +5,7 @@ Use HarmonyOS passkeys through the AngularTS Native credential capability.
 ## Install
 
 ```sh
-ohpm install @angular-wave/angular-native-harmony-credentials@0.36.0
+ohpm install @angular-wave/angular-native-harmony-credentials@0.37.0
 ```
 
 ## Use

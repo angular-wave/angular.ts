@@ -5,7 +5,7 @@ Render the AngularTS Native map contract with Huawei Map Kit.
 ## Install
 
 ```sh
-ohpm install @angular-wave/angular-native-harmony-maps@0.36.0
+ohpm install @angular-wave/angular-native-harmony-maps@0.37.0
 ```
 
 ## Use

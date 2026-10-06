@@ -311,6 +311,7 @@ prepare-release: release-version-test release-notes-check
 	@$(MAKE) format-check
 	@$(MAKE) version
 	@$(MAKE) release-build
+	@$(MAKE) -C integrations/harmonyos generate
 	@$(MAKE) docs-requirement
 	@$(MAKE) size-html
 	@$(MAKE) release-check

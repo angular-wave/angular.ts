@@ -92,6 +92,42 @@ describe("TransitionHook", () => {
     }
   });
 
+  it("keeps the animation scheduler when the global changes between frames", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      window,
+      "requestAnimationFrame",
+    );
+    const frames: FrameRequestCallback[] = [];
+
+    Object.defineProperty(window, "requestAnimationFrame", {
+      configurable: true,
+      value: (callback: FrameRequestCallback) => {
+        frames.push(callback);
+        return frames.length;
+      },
+    });
+
+    try {
+      const task = afterPaintTask();
+      expect(frames.length).toBe(1);
+
+      Object.defineProperty(window, "requestAnimationFrame", {
+        configurable: true,
+        value: undefined,
+      });
+      frames.shift()!(0);
+      expect(frames.length).toBe(1);
+      frames.shift()!(16);
+
+      await task;
+      expect(frames.length).toBe(0);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(window, "requestAnimationFrame", descriptor);
+      }
+    }
+  });
+
   it("resolves scroll and focus targets through the document", () => {
     const target = document.createElement("button");
     target.id = "router-helper-target";

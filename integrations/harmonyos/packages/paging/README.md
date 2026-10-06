@@ -5,7 +5,7 @@ Apply keyed insert, move, update, and remove operations to lazy native collectio
 ## Install
 
 ```sh
-ohpm install @angular-wave/angular-native-harmony-paging@0.36.0
+ohpm install @angular-wave/angular-native-harmony-paging@0.37.0
 ```
 
 ## Use

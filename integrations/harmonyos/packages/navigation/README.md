@@ -5,7 +5,7 @@ Mirror AngularTS route operations into an ArkUI NavPathStack without moving rout
 ## Install
 
 ```sh
-ohpm install @angular-wave/angular-native-harmony-navigation@0.36.0
+ohpm install @angular-wave/angular-native-harmony-navigation@0.37.0
 ```
 
 ## Use

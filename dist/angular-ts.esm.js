@@ -1,4 +1,4 @@
-/* Version: 0.36.0 */
+/* Version: 0.37.0 */
 /**
  * Canonical token names for the built-in injectables exposed by the core `ng`
  * module.
@@ -15886,7 +15886,7 @@ class AngularRuntime extends EventTarget {
         this._bootsrappedModules = [];
         this._injectorCreated = false;
         /** AngularTS version string replaced at build time. */
-        this.version = "0.36.0";
+        this.version = "0.37.0";
         /** Retrieve the controller instance cached on a compiled DOM element. */
         this.getController = getController;
         /** Retrieve the injector cached on a bootstrapped DOM element. */
@@ -37162,14 +37162,17 @@ async function afterViewCommitTask() {
 }
 /** @internal */
 async function afterPaintTask() {
-    if (typeof requestAnimationFrame === "undefined") {
+    const scheduleFrame = typeof requestAnimationFrame === "function"
+        ? requestAnimationFrame.bind(globalThis)
+        : undefined;
+    if (!scheduleFrame) {
         return new Promise((resolve) => {
             setTimeout(resolve, 0);
         });
     }
     return new Promise((resolve) => {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
+        scheduleFrame(() => {
+            scheduleFrame(() => {
                 resolve();
             });
         });

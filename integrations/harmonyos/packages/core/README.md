@@ -5,7 +5,7 @@ Host AngularTS in ArkWeb and render declared native elements on the ArkUI same-l
 ## Install
 
 ```sh
-ohpm install @angular-wave/angular-native-harmony-core@0.36.0
+ohpm install @angular-wave/angular-native-harmony-core@0.37.0
 ```
 
 ## Use

@@ -5,7 +5,7 @@ Play media through one destination-owned HarmonyOS AVPlayer.
 ## Install
 
 ```sh
-ohpm install @angular-wave/angular-native-harmony-media@0.36.0
+ohpm install @angular-wave/angular-native-harmony-media@0.37.0
 ```
 
 ## Use

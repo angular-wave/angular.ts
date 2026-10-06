@@ -5,7 +5,7 @@ Open external HTTP and HTTPS locations through HarmonyOS while keeping packaged 
 ## Install
 
 ```sh
-ohpm install @angular-wave/angular-native-harmony-browser@0.36.0
+ohpm install @angular-wave/angular-native-harmony-browser@0.37.0
 ```
 
 ## Use

@@ -1,7 +1,7 @@
 {
   "modelVersion": "6.0.0",
   "name": "angular-native-harmony-kitchen-sink-workspace",
-  "version": "0.36.0",
+  "version": "0.37.0",
   "private": true,
   "license": "MIT",
   "dependencies": {},

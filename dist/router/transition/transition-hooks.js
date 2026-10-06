@@ -18,14 +18,17 @@ async function afterViewCommitTask() {
 }
 /** @internal */
 async function afterPaintTask() {
-    if (typeof requestAnimationFrame === "undefined") {
+    const scheduleFrame = typeof requestAnimationFrame === "function"
+        ? requestAnimationFrame.bind(globalThis)
+        : undefined;
+    if (!scheduleFrame) {
         return new Promise((resolve) => {
             setTimeout(resolve, 0);
         });
     }
     return new Promise((resolve) => {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
+        scheduleFrame(() => {
+            scheduleFrame(() => {
                 resolve();
             });
         });

@@ -1,7 +1,7 @@
 {
   "modelVersion": "6.0.0",
   "name": "@angular-wave/angular-native-harmony-maps",
-  "version": "0.36.0",
+  "version": "0.37.0",
   "description": "Map Kit native element support for AngularTS Native",
   "main": "Index.ets",
   "author": "Angular Wave",
@@ -14,6 +14,6 @@
     "native"
   ],
   "dependencies": {
-    "@angular-wave/angular-native-harmony-core": "0.36.0"
+    "@angular-wave/angular-native-harmony-core": "0.37.0"
   }
 }
