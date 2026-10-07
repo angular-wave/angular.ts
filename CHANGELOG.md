@@ -4,30 +4,22 @@
 
 ## [0.37.0] - 2026-10-06
 
-- Added `angular.getModel(name)` to lazily initialize and retrieve shared,
-  app-owned reactive models for updates from external code.
 - **Breaking:** Removed `$sce`, `$sceDelegate`, and their trusted-value wrappers.
   Configure HTML, URL, resource, media, and script policies through `$compile`;
   nonempty HTML and script strings require explicit policy callbacks.
-- Improved compiler binding plans and scope change scheduling, and fixed watcher
-  cleanup, repeat callback contexts, and nonbubbling or cross-document DOM events.
-- Fixed router paint scheduling when the animation frame scheduler changes
-  between frames.
-- Updated maintained language bindings and executable documentation for the
-  model getter and compiler binding policies.
-- Fixed browser test server crashes when editors or build tools exhaust the
-  system's file-watcher limit.
-- Updated Android dependencies and protocol test fixtures for strict lint,
-  isolated Maven consumer, reproducibility, and signing checks.
-- Added the portable Angular Native HarmonyOS bridge, ArkUI element contracts,
-  navigation and capability adapters, package generation, release checks, and
-  public integration guide.
-- Added version-pinned OHPM metadata, reviewed publication recovery, and clean
-  consumers for built and registry-hosted HarmonyOS packages.
-- Added checksum-verified hosted HarmonyOS CI and transactional destination
-  ownership for ArkUI navigation hosts.
-- Added a reusable ArkUI navigation host plus standalone, catalog-checked
-  HarmonyOS kitchen-sink and shared Pulse sample applications.
+- Added `angular.getModel(name)` to lazily create and retrieve shared reactive
+  models from external code. Updated language bindings and examples for the
+  getter and compiler policies.
+- Added the portable HarmonyOS bridge with ArkUI element contracts, navigation
+  and capability adapters, versioned HAR packages, and kitchen-sink and Pulse
+  samples. Added OHPM publication and consumer verification tooling.
+- Improved reactive bindings and scheduling. Fixed watcher cleanup, repeat
+  callback contexts, nonbubbling and cross-document events, and router paint
+  scheduling.
+- Updated Android dependencies and protocol fixtures, with strict lint, clean
+  Maven consumer, reproducibility, and signing checks.
+- Fixed browser test server crashes when the system's file-watcher limit is
+  exhausted.
 
 ## [0.36.0] - 2026-09-13
 
