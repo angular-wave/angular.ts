@@ -2961,11 +2961,11 @@ ng.InjectionTokenMap.prototype.$injector;
  * Public InjectionTokenMap.$interpolate member exposed by the AngularTS namespace contract.
  * @param {string} text Value supplied for the text parameter.
  * @param {(boolean|undefined)} mustHaveExpression Value supplied for the mustHaveExpression parameter.
- * @param {(string|undefined)} trustedContext Value supplied for the trustedContext parameter.
+ * @param {(string|undefined)} bindingContext Value supplied for the bindingContext parameter.
  * @param {(boolean|undefined)} allOrNothing Value supplied for the allOrNothing parameter.
  * @return {(!ng.InterpolationFunction|undefined)}
  */
-ng.InjectionTokenMap.prototype.$interpolate = function(text, mustHaveExpression, trustedContext, allOrNothing) {};
+ng.InjectionTokenMap.prototype.$interpolate = function(text, mustHaveExpression, bindingContext, allOrNothing) {};
 
 /**
  * Public InjectionTokenMap.$location member exposed by the AngularTS namespace contract.
@@ -3438,11 +3438,11 @@ ng.InterpolateService.prototype.startSymbol = function() {};
  * Invokes the callable InterpolateService contract.
  * @param {string} text Value supplied for the text parameter.
  * @param {(boolean|undefined)} mustHaveExpression Value supplied for the mustHaveExpression parameter.
- * @param {(string|undefined)} trustedContext Value supplied for the trustedContext parameter.
+ * @param {(string|undefined)} bindingContext Value supplied for the bindingContext parameter.
  * @param {(boolean|undefined)} allOrNothing Value supplied for the allOrNothing parameter.
  * @return {(!ng.InterpolationFunction|undefined)}
  */
-ng.InterpolateService.prototype.call = function(text, mustHaveExpression, trustedContext, allOrNothing) {};
+ng.InterpolateService.prototype.call = function(text, mustHaveExpression, bindingContext, allOrNothing) {};
 
 /**
  * Public AngularTS LocationService contract exposed through the global ng namespace for Closure-annotated applications.

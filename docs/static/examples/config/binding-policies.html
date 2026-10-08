@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+  <head>
+    <script type="module">
+      import "../../utils/source-bootstrap.js";
+      import "./binding-policies.js";
+    </script>
+  </head>
+  <body ng-app="bindingPoliciesConfigDemo">
+    <section ng-controller="BindingPoliciesConfigCtrl as vm">
+      <p ng-bind-html="vm.html"></p>
+    </section>
+  </body>
+</html>

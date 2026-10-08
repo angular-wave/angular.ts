@@ -3090,7 +3090,7 @@ trait InterpolateService extends js.Object:
   def apply(
       text: String,
       mustHaveExpression: Boolean,
-      trustedContext: String,
+      bindingContext: String,
       allOrNothing: Boolean,
   ): js.UndefOr[InterpolationFunction] = js.native
   def startSymbol(): String = js.native

@@ -8,9 +8,8 @@ function getWatchableContext(context) {
 }
 const $interpolateError = createErrorFactory("$interpolate");
 function throwNoconcat(text) {
-    throw $interpolateError("noconcat", "Error while interpolating: {0}\nSecurity contexts disallow " +
-        "interpolations that concatenate multiple expressions when a trusted value is " +
-        "required.", text);
+    throw $interpolateError("noconcat", "Error while interpolating: {0}\nThis binding context disallows " +
+        "interpolations that concatenate multiple expressions.", text);
 }
 function interr(text, err) {
     throw $interpolateError("interr", "Can't interpolate: {0}\n{1}", text, String(err));
@@ -63,21 +62,21 @@ function createInterpolateService(state, $parse, policies) {
             .replace(escapedStartRegexp, interpolationStartSymbol)
             .replace(escapedEndRegexp, interpolationEndSymbol);
     }
-    const $interpolate = (text, mustHaveExpression, trustedContext, allOrNothing) => {
-        const contextAllowsConcatenation = trustedContext === "url" || trustedContext === "mediaUrl";
+    const $interpolate = (text, mustHaveExpression, bindingContext, allOrNothing) => {
+        const contextAllowsConcatenation = bindingContext === "url" || bindingContext === "mediaUrl";
         if (!text.length || !text.includes(interpolationStartSymbol)) {
             if (mustHaveExpression) {
                 return undefined;
             }
             let unescapedText = unescapeText(text);
             if (contextAllowsConcatenation) {
-                unescapedText = policies._apply(trustedContext, unescapedText);
+                unescapedText = policies._apply(bindingContext, unescapedText);
             }
             const constantInterp = (() => unescapedText);
             constantInterp.exp = text;
             constantInterp.expressions = [];
-            if (trustedContext && !contextAllowsConcatenation)
-                unescapedText = policies._apply(trustedContext, unescapedText);
+            if (bindingContext && !contextAllowsConcatenation)
+                unescapedText = policies._apply(bindingContext, unescapedText);
             return constantInterp;
         }
         allOrNothing = !!allOrNothing;
@@ -129,7 +128,7 @@ function createInterpolateService(state, $parse, policies) {
                         const value = parseFn(context);
                         return allOrNothing && !isDefined(value)
                             ? value
-                            : policies._apply(trustedContext, deProxy(isFunction(value) ? value() : value) ?? "");
+                            : policies._apply(bindingContext, deProxy(isFunction(value) ? value() : value) ?? "");
                     };
                 const fn = ((context, cb) => {
                     try {
@@ -160,12 +159,12 @@ function createInterpolateService(state, $parse, policies) {
                     concat[expressionPositions[i]] = values[i];
                 }
                 if (contextAllowsConcatenation) {
-                    return policies._apply(trustedContext, concat.join(""));
+                    return policies._apply(bindingContext, concat.join(""));
                 }
-                if (trustedContext && concat.length > 1) {
+                if (bindingContext && concat.length > 1) {
                     throwNoconcat(text);
                 }
-                return trustedContext ? values[0] : concat.join("");
+                return bindingContext ? values[0] : concat.join("");
             };
             const fn = ((context, cb) => {
                 const values = new Array(expressions.length);
@@ -201,12 +200,12 @@ function createInterpolateService(state, $parse, policies) {
                 if (allOrNothing && !isDefined(value))
                     return value;
                 value =
-                    trustedContext && !contextAllowsConcatenation
-                        ? policies._apply(trustedContext, value)
+                    bindingContext && !contextAllowsConcatenation
+                        ? policies._apply(bindingContext, value)
                         : deProxy(value);
                 return allOrNothing && !isDefined(value)
                     ? value
-                    : trustedContext && !contextAllowsConcatenation
+                    : bindingContext && !contextAllowsConcatenation
                         ? value
                         : stringify(value);
             }

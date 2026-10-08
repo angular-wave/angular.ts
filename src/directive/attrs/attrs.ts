@@ -33,7 +33,7 @@ function sanitizeSrcset(
   if (!isString(value)) {
     throw $compileError(
       "srcset",
-      'Can\'t pass trusted values to `{0}`: "{1}"',
+      'Expected a string for `{0}`, received: "{1}"',
       invokeType,
       stringify(value),
     );

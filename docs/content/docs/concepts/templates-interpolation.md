@@ -148,10 +148,14 @@ evaluate an interpolation string programmatically.
 ```ts
   text: string,
   mustHaveExpression?: boolean,  // return undefined if no {{ }} found
-  trustedContext?: SceContext,   // SCE context for security checking
+  bindingContext?: BindingContext, // DOM destination for binding-policy checks
   allOrNothing?: boolean,        // return undefined if any expression is undefined
 ): InterpolationFunction | undefined
 ```
+
+`bindingContext` selects the compiler policy for a DOM destination, such as
+`html`, `url`, or `resourceUrl`. Configure those policies through `$compile`;
+omit the argument for ordinary text interpolation.
 
 The returned
 [`InterpolationFunction`](../../../typedoc/interfaces/InterpolationFunction.html)
@@ -244,7 +248,7 @@ angular.createModule('htmlApp', []).config({
 ```
 
 Without an HTML policy, nonempty HTML strings are rejected. The framework
-also accepts native `TrustedHTML`. See [binding policies](../../service/sce/)
+also accepts native `TrustedHTML`. See [binding policies](../../service/binding-policies/)
 for URL and script contexts.
 
 ## Escaping interpolation delimiters

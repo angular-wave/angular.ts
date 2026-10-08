@@ -1,5 +1,5 @@
 window.angular
-  .createModule('sceConfigDemo', [])
+  .createModule('bindingPoliciesConfigDemo', [])
   .config({
     $compile: {
       htmlPolicy: (html) => {
@@ -11,7 +11,7 @@ window.angular
     },
   })
   .controller(
-    'SceConfigCtrl',
+    'BindingPoliciesConfigCtrl',
     class {
       constructor() {
         this.html = '<strong>Approved content</strong>';

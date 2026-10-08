@@ -516,28 +516,34 @@ describe("$interpolate", () => {
     });
   });
 
-  describe("isTrustedContext", () => {
-    it("should NOT interpolate a multi-part expression when isTrustedContext is RESOURCE_URL", () => {
-      const isTrustedContext = "resourceUrl";
+  describe("bindingContext", () => {
+    it("leaves incomplete resource URL interpolations unresolved", () => {
+      const interpolate = $interpolate("{{resource", false, "resourceUrl");
+
+      expect(interpolate({ resource: "/template.html" })).toBeUndefined();
+    });
+
+    it("should reject a multi-part expression in the resourceUrl binding context", () => {
+      const bindingContext = "resourceUrl";
 
       expect(() => {
-        $interpolate("constant/{{var}}", true, isTrustedContext)("val");
+        $interpolate("constant/{{var}}", true, bindingContext)("val");
       }).toThrowError(/Can't interpolate:/);
       expect(() => {
-        $interpolate("{{var}}/constant", true, isTrustedContext)("val");
+        $interpolate("{{var}}/constant", true, bindingContext)("val");
       }).toThrowError(/Can't interpolate:/);
       expect(() => {
-        $interpolate("{{foo}}{{bar}}", true, isTrustedContext)("val");
+        $interpolate("{{foo}}{{bar}}", true, bindingContext)("val");
       }).toThrowError(/Can't interpolate:/);
     });
 
-    it("should interpolate a multi-part expression when isTrustedContext is false", () => {
+    it("should interpolate a multi-part expression without a binding context", () => {
       expect($interpolate("some/{{id}}")({})).toEqual("some/");
       expect($interpolate("some/{{id}}")({ id: 1 })).toEqual("some/1");
       expect($interpolate("{{foo}}{{bar}}")({ foo: 1, bar: 2 })).toEqual("12");
     });
 
-    it("should interpolate a multi-part expression when isTrustedContext is URL", () => {
+    it("should interpolate a multi-part expression in the url binding context", () => {
       expect($interpolate("some/{{id}}", true, "url")({})).toEqual("some/");
       expect($interpolate("some/{{id}}", true, "url")({ id: 1 })).toEqual(
         "some/1",
@@ -554,7 +560,7 @@ describe("$interpolate", () => {
       ).toEqual("12");
     });
 
-    it("should interpolate and sanitize a multi-part expression when isTrustedContext is URL", () => {
+    it("should interpolate and sanitize a multi-part expression in the url binding context", () => {
       expect($interpolate("some/{{id}}", true, "url")({})).toEqual("some/");
       expect(
         $interpolate(

@@ -10,7 +10,7 @@ function sanitizeSrcset($compile, value, invokeType) {
         return value;
     }
     if (!isString(value)) {
-        throw $compileError("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, stringify(value));
+        throw $compileError("srcset", 'Expected a string for `{0}`, received: "{1}"', invokeType, stringify(value));
     }
     let result = "";
     const trimmedSrcset = trim(value);

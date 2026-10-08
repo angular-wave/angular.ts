@@ -51,8 +51,6 @@ const allowedProperties = new Set([
   "$result",
   "$rootElement",
   "$rootScope",
-  "$sce",
-  "$sceDelegate",
   "$scope",
   "$security",
   "$serviceWorker",

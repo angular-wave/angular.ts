@@ -19,7 +19,7 @@ The Scala.js package currently covers:
   `README.md`;
 - public utility aliases and `NgModelController` facade already listed in
   `README.md`;
-- ARIA, interpolation, SCE, security policy/config builders, and
+- ARIA, interpolation, binding policies, security policy/config builders, and
   `NgModule.config(...)` bridges;
 - `$eventBus`, `$sse`, `$websocket`, `$webTransport`, and `$worker` facades
   plus config builders;

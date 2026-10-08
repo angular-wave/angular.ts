@@ -312,7 +312,7 @@ describe("ngProp*", () => {
   });
 
   describe("img[src] sanitization", () => {
-    it("should sanitize plain values through SCE", async () => {
+    it("should sanitize plain values through binding policies", async () => {
       app.innerHTML = '<img ng-prop-src="testUrl"></img>';
 
       $compile(app)($rootScope);
@@ -325,8 +325,8 @@ describe("ngProp*", () => {
   });
 
   describe("a[href] sanitization", () => {
-    it("should NOT require trusted values for trusted URI values", () => {
-      $rootScope.testUrl = "http://example.com/image.png"; // `http` is trusted
+    it("should accept allowed HTTP URLs without wrappers", () => {
+      $rootScope.testUrl = "http://example.com/image.png"; // `http` is allowed
       let element = $compile('<a ng-prop-href="testUrl"></a>')($rootScope);
 
       expect(element.href).toEqual("http://example.com/image.png");
@@ -335,8 +335,8 @@ describe("ngProp*", () => {
       expect(element.href).toEqual("http://example.com/image.png");
     });
 
-    it("should sanitize non-trusted values", () => {
-      $rootScope.testUrl = "javascript:foo()"; // `javascript` is not trusted
+    it("should sanitize unsafe URL values", () => {
+      $rootScope.testUrl = "javascript:foo()"; // `javascript` is blocked
       let element = $compile('<a ng-prop-href="testUrl"></a>')($rootScope);
 
       expect(element.href).toEqual("unsafe:javascript:foo()");
@@ -365,7 +365,7 @@ describe("ngProp*", () => {
       expect(element.title).toBe("javascript:doEvilStuff()");
     });
 
-    it("should sanitize plain values through SCE", async () => {
+    it("should sanitize plain values through binding policies", async () => {
       app.innerHTML = '<a ng-prop-href="testUrl"></a>';
       $compile(app)($rootScope);
       $rootScope.testUrl = "someUrl";

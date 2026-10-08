@@ -1818,9 +1818,9 @@
   (.$httpParamSerializer target params))
 
 (defn injection-token-map-interpolate
-  "Public InjectionTokenMap.$interpolate member exposed by the AngularTS namespace contract.\n\nParams:\n- text: {string} Value supplied for the text parameter.\n- mustHaveExpression: {(boolean|undefined)} Value supplied for the mustHaveExpression parameter.\n- trustedContext: {(string|undefined)} Value supplied for the trustedContext parameter.\n- allOrNothing: {(boolean|undefined)} Value supplied for the allOrNothing parameter.\n\nReturns: {(!ng.InterpolationFunction|undefined)}"
-  ^js/ng.InterpolationFunction [^js/ng.InjectionTokenMap target ^string text ^boolean mustHaveExpression ^string trustedContext ^boolean allOrNothing]
-  (.$interpolate target text mustHaveExpression trustedContext allOrNothing))
+  "Public InjectionTokenMap.$interpolate member exposed by the AngularTS namespace contract.\n\nParams:\n- text: {string} Value supplied for the text parameter.\n- mustHaveExpression: {(boolean|undefined)} Value supplied for the mustHaveExpression parameter.\n- bindingContext: {(string|undefined)} Value supplied for the bindingContext parameter.\n- allOrNothing: {(boolean|undefined)} Value supplied for the allOrNothing parameter.\n\nReturns: {(!ng.InterpolationFunction|undefined)}"
+  ^js/ng.InterpolationFunction [^js/ng.InjectionTokenMap target ^string text ^boolean mustHaveExpression ^string bindingContext ^boolean allOrNothing]
+  (.$interpolate target text mustHaveExpression bindingContext allOrNothing))
 
 (defn injection-token-map-machine
   "Public InjectionTokenMap.$machine member exposed by the AngularTS namespace contract.\n\nParams:\n- config: {!Object} Value supplied for the config parameter.\n\nReturns: {!ng.Machine<!Object>}"
@@ -1868,9 +1868,9 @@
   (.loadNewModules target mods))
 
 (defn interpolate-service-call
-  "Invokes the callable InterpolateService contract.\n\nParams:\n- text: {string} Value supplied for the text parameter.\n- mustHaveExpression: {(boolean|undefined)} Value supplied for the mustHaveExpression parameter.\n- trustedContext: {(string|undefined)} Value supplied for the trustedContext parameter.\n- allOrNothing: {(boolean|undefined)} Value supplied for the allOrNothing parameter.\n\nReturns: {(!ng.InterpolationFunction|undefined)}"
-  ^js/ng.InterpolationFunction [^js/ng.InterpolateService target ^string text ^boolean mustHaveExpression ^string trustedContext ^boolean allOrNothing]
-  (.call target text mustHaveExpression trustedContext allOrNothing))
+  "Invokes the callable InterpolateService contract.\n\nParams:\n- text: {string} Value supplied for the text parameter.\n- mustHaveExpression: {(boolean|undefined)} Value supplied for the mustHaveExpression parameter.\n- bindingContext: {(string|undefined)} Value supplied for the bindingContext parameter.\n- allOrNothing: {(boolean|undefined)} Value supplied for the allOrNothing parameter.\n\nReturns: {(!ng.InterpolationFunction|undefined)}"
+  ^js/ng.InterpolationFunction [^js/ng.InterpolateService target ^string text ^boolean mustHaveExpression ^string bindingContext ^boolean allOrNothing]
+  (.call target text mustHaveExpression bindingContext allOrNothing))
 
 (defn interpolate-service-end-symbol
   "Return the configured interpolation end delimiter.\n\nReturns: {string}"

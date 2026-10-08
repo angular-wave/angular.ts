@@ -2389,28 +2389,6 @@ describe("http", () => {
 //     let $httpBackend;
 //     let $http;
 //     let $rootScope;
-//     let $sce;
-
-//     app.config({
-//       $sceDelegate: {
-//         trustedResourceUrlList: ["http://special.trusted.resource.com/**"],
-//       },
-//     });
-
-//     beforeEach(inject([
-//       "$httpBackend",
-//       "$http",
-//       "$rootScope",
-//       "$sce",
-//       function ($hb, $h, $rs, $sc) {
-//         $httpBackend = $hb;
-//         $http = $h;
-//         $rootScope = $rs;
-//         $sce = $sc;
-//         spyOn($rootScope, "digest entry").and.callThrough();
-//       },
-//     ]));
-
 //     it("should throw error if the request configuration is not an object", () => {
 //       expect(() => {
 //         $http("/url");
@@ -2419,42 +2397,6 @@ describe("http", () => {
 //         "badreq",
 //         "Http request configuration must be an object.  Received: /url",
 //       );
-//     });
-
-//     it("should throw error if the request configuration url is not a string nor a trusted object", () => {
-//       expect(() => {
-//         await $http({ url: false });
-//       }).toThrow(
-//         "$http",
-//         "badreq",
-//         "Http request configuration url must be a string or a $sce trusted object.  Received: false",
-//       );
-//       expect(() => {
-//         await $http({ url: null });
-//       }).toThrow(
-//         "$http",
-//         "badreq",
-//         "Http request configuration url must be a string or a $sce trusted object.  Received: null",
-//       );
-//       expect(() => {
-//         await $http({ url: 42 });
-//       }).toThrow(
-//         "$http",
-//         "badreq",
-//         "Http request configuration url must be a string or a $sce trusted object.  Received: 42",
-//       );
-//       expect(() => {
-//         await $http({});
-//       }).toThrow(
-//         "$http",
-//         "badreq",
-//         "Http request configuration url must be a string or a $sce trusted object.  Received: undefined",
-//       );
-//     });
-
-//     it("should accept a $sce trusted object for the request configuration url", () => {
-//       $httpBackend.expect("GET", "/url").respond("");
-//       await $http({ url: $sce.trustAsResourceUrl("/url") });
 //     });
 
 //     it("should send GET requests if no method specified", () => {
@@ -2681,20 +2623,6 @@ describe("http", () => {
 //         expect(callback).toHaveBeenCalled();
 //       });
 
-//       it("should return empty object for jsonp request", () => {
-//         callback.and.callFake((r) => {
-//           expect(r.headers()).toEqual(Object.create(null));
-//         });
-
-//         $httpBackend
-//           .expect("JSONP", "/some?callback=JSON_CALLBACK")
-//           .respond(200);
-//         await $http({ url: $sce.trustAsResourceUrl("/some"), method: "JSONP" }).then(
-//           callback,
-//         );
-//         $httpBackend.flush();
-//         expect(callback).toHaveBeenCalled();
-//       });
 //     });
 
 //     describe("response headers parser", () =>
@@ -3727,26 +3655,6 @@ describe("http", () => {
 //         doFirstCacheRequest();
 
 //         await $http({ method: "get", url: "/url", cache }).then(callback);
-//         ;
-
-//         expect(callback).toHaveBeenCalled();
-//         expect(callback.calls.mostRecent().args[0].data).toBe("content");
-//       }));
-
-//       it("should cache JSONP request when cache is provided", inject((
-//         $rootScope,
-//       ) => {
-//         $httpBackend
-//           .expect("JSONP", "/url?callback=JSON_CALLBACK")
-//           .respond("content");
-//         await $http({ method: "JSONP", url: $sce.trustAsResourceUrl("/url"), cache });
-//         $httpBackend.flush();
-
-//         await $http({
-//           method: "JSONP",
-//           url: $sce.trustAsResourceUrl("/url"),
-//           cache,
-//         }).then(callback);
 //         ;
 
 //         expect(callback).toHaveBeenCalled();

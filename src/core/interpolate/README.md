@@ -15,12 +15,16 @@ functions that evaluate against a scope or another expression context.
 
 ## Public Surface
 
-- `$interpolate(text, mustHaveExpression?, trustedContext?, allOrNothing?)`
+- `$interpolate(text, mustHaveExpression?, bindingContext?, allOrNothing?)`
   compiles interpolation text.
 - `NgModule.config({ $interpolate: { startSymbol, endSymbol } })` configures
   application-wide delimiters before service construction.
 - `InterpolateService`, `InterpolationFunction`, and `InterpolateConfig`
   describe the public service and configuration contracts.
+
+`bindingContext` identifies the DOM destination whose compiler policy checks
+the interpolated value: `html`, `url`, `mediaUrl`, `resourceUrl`, `script`, or
+`scriptUrl`. Configure those policies through `$compile` configuration.
 
 The runtime state and service-registration helpers are internal composition
 details. Applications configure interpolation through their AngularTS module

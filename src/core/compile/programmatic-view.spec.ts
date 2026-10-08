@@ -546,7 +546,7 @@ describe("programmatic views", () => {
       expect(host.textContent).toBe("rendered");
     });
 
-    it("routes component properties through SCE and rejects view with replace", async () => {
+    it("routes component properties through binding policies and rejects view with replace", async () => {
       let controller;
 
       bootstrap("<safe-link></safe-link>", (module) => {

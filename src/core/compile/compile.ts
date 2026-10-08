@@ -1422,7 +1422,7 @@ export interface AttrInterpolateLinkState {
   /** @internal */
   _value: unknown;
   /** @internal */
-  _trustedContext?: BindingContext;
+  _bindingContext?: BindingContext;
   /** @internal */
   _allOrNothing: boolean;
   /** @internal */
@@ -1566,7 +1566,7 @@ export interface CompileConfig extends BindingPolicyConfig {
    */
   strictComponentBindingsEnabled?: boolean;
   /**
-   * Additional per-element/property SCE mappings for property binding.
+   * Additional per-element/property binding contexts for destination policy checks.
    */
   propertySecurityContexts?: CompilePropertySecurityContext[];
 }
@@ -2069,7 +2069,7 @@ export class CompileRegistry {
     ): unknown {
       const elementName = element.localName.toLowerCase();
       const normalizedPropertyName = propertyName.toLowerCase();
-      const trustedContext = (PROP_CONTEXTS[
+      const bindingContext = (PROP_CONTEXTS[
         `${elementName}|${normalizedPropertyName}`
       ] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]) as
         | BindingContext
@@ -2083,7 +2083,7 @@ export class CompileRegistry {
           policies._apply("mediaUrl", url, platformWindow),
         );
       }
-      return policies._apply(trustedContext, value, platformWindow);
+      return policies._apply(bindingContext, value, platformWindow);
     }
 
     function instantiateDirectiveDefinitions(
@@ -4665,7 +4665,7 @@ export class CompileRegistry {
             return;
           }
           if (
-            linkState._trustedContext === "resourceUrl" &&
+            linkState._bindingContext === "resourceUrl" &&
             (linkState._name === "ngSrc" || linkState._name === "ngHref")
           ) {
             setNormalizedAttr(
@@ -4677,13 +4677,13 @@ export class CompileRegistry {
           }
 
           if (
-            linkState._trustedContext === "scriptUrl" ||
-            linkState._trustedContext === "html"
+            linkState._bindingContext === "scriptUrl" ||
+            linkState._bindingContext === "html"
           ) {
             const element = getDirectiveHostElement(node);
             if (
               element &&
-              linkState._trustedContext === "scriptUrl" &&
+              linkState._bindingContext === "scriptUrl" &&
               (value === null || value === undefined)
             ) {
               element.removeAttribute(
@@ -4878,7 +4878,7 @@ export class CompileRegistry {
               ? $interpolate(
                   stringify(newValue),
                   true,
-                  linkState._trustedContext,
+                  linkState._bindingContext,
                   linkState._allOrNothing,
                 )
               : undefined;
@@ -8007,8 +8007,8 @@ export class CompileRegistry {
           >;
         }
 
-        /** Determines the trust context required for a DOM attribute binding. */
-        function getTrustedAttrContext(
+        /** Determines the destination context for a DOM attribute binding. */
+        function getAttrBindingContext(
           nodeName: string,
           attrNormalizedName: string,
         ): BindingContext | undefined {
@@ -8076,11 +8076,11 @@ export class CompileRegistry {
             return "url";
           }
 
-          return getTrustedPropContext(nodeName, attrNormalizedName);
+          return getPropBindingContext(nodeName, attrNormalizedName);
         }
 
-        /** Determines the trust context required for a DOM property binding. */
-        function getTrustedPropContext(
+        /** Determines the destination context for a DOM property binding. */
+        function getPropBindingContext(
           nodeName: string,
           propNormalizedName: string,
         ): BindingContext | undefined {
@@ -8090,7 +8090,7 @@ export class CompileRegistry {
             PROP_CONTEXTS[`*|${prop}`]) as BindingContext | undefined;
         }
 
-        /** Sanitizes a `srcset` string by trusting each URI entry individually. */
+        /** Applies the media URL policy to each `srcset` candidate individually. */
         function sanitizeSrcset(value: unknown, invokeType: string): unknown {
           if (!value) {
             return value;
@@ -8099,7 +8099,7 @@ export class CompileRegistry {
           if (typeof value !== "string") {
             throw $compileError(
               "srcset",
-              'Can\'t pass trusted values to `{0}`: "{1}"',
+              'Expected a string for `{0}`, received: "{1}"',
               invokeType,
               stringify(value),
             );
@@ -8174,7 +8174,7 @@ export class CompileRegistry {
 
           const nodeName = getNodeName(node);
 
-          const trustedContext = getTrustedPropContext(nodeName, propName);
+          const bindingContext = getPropBindingContext(nodeName, propName);
 
           let sanitizer = (x: unknown): unknown => x;
 
@@ -8185,10 +8185,10 @@ export class CompileRegistry {
           ) {
             sanitizer = (value): unknown =>
               sanitizeSrcset(deProxy(value), "ng-prop-srcset");
-          } else if (trustedContext) {
+          } else if (bindingContext) {
             const platformWindow = node.ownerDocument.defaultView ?? window;
             sanitizer = (value): unknown =>
-              policies._apply(trustedContext, value, platformWindow);
+              policies._apply(bindingContext, value, platformWindow);
           }
 
           const directive = {
@@ -8242,7 +8242,7 @@ export class CompileRegistry {
 
           const nodeName = getNodeName(node);
 
-          const trustedContext = getTrustedAttrContext(nodeName, name);
+          const bindingContext = getAttrBindingContext(nodeName, name);
 
           const mustHaveExpression = !isNgAttr;
 
@@ -8251,7 +8251,7 @@ export class CompileRegistry {
           const interpolateFn = $interpolate(
             value,
             mustHaveExpression,
-            trustedContext,
+            bindingContext,
             allOrNothing,
           );
 
@@ -8293,7 +8293,7 @@ export class CompileRegistry {
             _compileState: {
               _name: name,
               _value: value,
-              _trustedContext: trustedContext,
+              _bindingContext: bindingContext,
               _allOrNothing: allOrNothing,
               _isNgAttr: isNgAttr,
               _interpolateFn: interpolateFn,

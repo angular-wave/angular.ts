@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Updated compiler and interpolation terminology for binding policies, including
+  the `bindingContext` parameter, documentation, examples, and language bindings.
+
 ## [0.37.0] - 2026-10-06
 
 - **Breaking:** Removed `$sce`, `$sceDelegate`, and their trusted-value wrappers.

@@ -10015,13 +10015,13 @@
             function sanitizeProgrammaticProperty($injector, element, propertyName, value) {
                 const elementName = element.localName.toLowerCase();
                 const normalizedPropertyName = propertyName.toLowerCase();
-                const trustedContext = (PROP_CONTEXTS[`${elementName}|${normalizedPropertyName}`] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]);
+                const bindingContext = (PROP_CONTEXTS[`${elementName}|${normalizedPropertyName}`] ?? PROP_CONTEXTS[`*|${normalizedPropertyName}`]);
                 const platformWindow = element.ownerDocument.defaultView ?? window;
                 if (normalizedPropertyName === "srcset" &&
                     (elementName === "img" || elementName === "source")) {
                     return sanitizeProgrammaticSrcset(value, deProxy, (url) => policies._apply("mediaUrl", url, platformWindow));
                 }
-                return policies._apply(trustedContext, value, platformWindow);
+                return policies._apply(bindingContext, value, platformWindow);
             }
             function instantiateDirectiveDefinitions(name, $injector, $exceptionHandler) {
                 const directives = [];
@@ -11440,16 +11440,16 @@
                             attr.setValue(node, linkState._name, toInterpolatedAttributeValue(sanitizeSrcset(deProxy(value), "srcset")));
                             return;
                         }
-                        if (linkState._trustedContext === "resourceUrl" &&
+                        if (linkState._bindingContext === "resourceUrl" &&
                             (linkState._name === "ngSrc" || linkState._name === "ngHref")) {
                             setNormalizedAttr(node, linkState._name === "ngSrc" ? "src" : "href", toInterpolatedAttributeValue(value));
                             return;
                         }
-                        if (linkState._trustedContext === "scriptUrl" ||
-                            linkState._trustedContext === "html") {
+                        if (linkState._bindingContext === "scriptUrl" ||
+                            linkState._bindingContext === "html") {
                             const element = getDirectiveHostElement(node);
                             if (element &&
-                                linkState._trustedContext === "scriptUrl" &&
+                                linkState._bindingContext === "scriptUrl" &&
                                 (value === null || value === undefined)) {
                                 element.removeAttribute(linkState._name === "src" || linkState._name === "ngSrc"
                                     ? "src"
@@ -11562,7 +11562,7 @@
                         }
                         if (newValue !== linkState._value) {
                             linkState._interpolateFn = newValue
-                                ? $interpolate(stringify$1(newValue), true, linkState._trustedContext, linkState._allOrNothing)
+                                ? $interpolate(stringify$1(newValue), true, linkState._bindingContext, linkState._allOrNothing)
                                 : undefined;
                             linkState._value = newValue;
                         }
@@ -13110,8 +13110,8 @@
                             _postLinkCtx: this._compileState,
                         };
                     }
-                    /** Determines the trust context required for a DOM attribute binding. */
-                    function getTrustedAttrContext(nodeName, attrNormalizedName) {
+                    /** Determines the destination context for a DOM attribute binding. */
+                    function getAttrBindingContext(nodeName, attrNormalizedName) {
                         if (nodeName === "script" &&
                             ["src", "ngSrc", "href", "ngHref"].includes(attrNormalizedName))
                             return "scriptUrl";
@@ -13155,21 +13155,21 @@
                             (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
                             return "url";
                         }
-                        return getTrustedPropContext(nodeName, attrNormalizedName);
+                        return getPropBindingContext(nodeName, attrNormalizedName);
                     }
-                    /** Determines the trust context required for a DOM property binding. */
-                    function getTrustedPropContext(nodeName, propNormalizedName) {
+                    /** Determines the destination context for a DOM property binding. */
+                    function getPropBindingContext(nodeName, propNormalizedName) {
                         const prop = propNormalizedName.toLowerCase();
                         return (PROP_CONTEXTS[`${nodeName}|${prop}`] ??
                             PROP_CONTEXTS[`*|${prop}`]);
                     }
-                    /** Sanitizes a `srcset` string by trusting each URI entry individually. */
+                    /** Applies the media URL policy to each `srcset` candidate individually. */
                     function sanitizeSrcset(value, invokeType) {
                         if (!value) {
                             return value;
                         }
                         if (typeof value !== "string") {
-                            throw $compileError$1("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, stringify$1(value));
+                            throw $compileError$1("srcset", 'Expected a string for `{0}`, received: "{1}"', invokeType, stringify$1(value));
                         }
                         // A srcset policy must validate each candidate rather than the list as one URL.
                         let result = "";
@@ -13214,16 +13214,16 @@
                             throw $compileError$1("nodomevents", "Property bindings for HTML DOM event properties are disallowed");
                         }
                         const nodeName = getNodeName$1(node);
-                        const trustedContext = getTrustedPropContext(nodeName, propName);
+                        const bindingContext = getPropBindingContext(nodeName, propName);
                         let sanitizer = (x) => x;
                         // Sanitize img[srcset] + source[srcset] values.
                         if (propName === "srcset" &&
                             (nodeName === "img" || nodeName === "source")) {
                             sanitizer = (value) => sanitizeSrcset(deProxy(value), "ng-prop-srcset");
                         }
-                        else if (trustedContext) {
+                        else if (bindingContext) {
                             const platformWindow = node.ownerDocument.defaultView ?? window;
-                            sanitizer = (value) => policies._apply(trustedContext, value, platformWindow);
+                            sanitizer = (value) => policies._apply(bindingContext, value, platformWindow);
                         }
                         const directive = {
                             priority: 100,
@@ -13259,10 +13259,10 @@
                             return false;
                         }
                         const nodeName = getNodeName$1(node);
-                        const trustedContext = getTrustedAttrContext(nodeName, name);
+                        const bindingContext = getAttrBindingContext(nodeName, name);
                         const mustHaveExpression = !isNgAttr;
                         const allOrNothing = isNgAttr || isAllOrNothingAttr(name);
-                        const interpolateFn = $interpolate(value, mustHaveExpression, trustedContext, allOrNothing);
+                        const interpolateFn = $interpolate(value, mustHaveExpression, bindingContext, allOrNothing);
                         // no interpolation found -> ignore
                         if (!interpolateFn) {
                             return false;
@@ -13286,7 +13286,7 @@
                             _compileState: {
                                 _name: name,
                                 _value: value,
-                                _trustedContext: trustedContext,
+                                _bindingContext: bindingContext,
                                 _allOrNothing: allOrNothing,
                                 _isNgAttr: isNgAttr,
                                 _interpolateFn: interpolateFn,
@@ -14340,9 +14340,8 @@
     }
     const $interpolateError = createErrorFactory("$interpolate");
     function throwNoconcat(text) {
-        throw $interpolateError("noconcat", "Error while interpolating: {0}\nSecurity contexts disallow " +
-            "interpolations that concatenate multiple expressions when a trusted value is " +
-            "required.", text);
+        throw $interpolateError("noconcat", "Error while interpolating: {0}\nThis binding context disallows " +
+            "interpolations that concatenate multiple expressions.", text);
     }
     function interr(text, err) {
         throw $interpolateError("interr", "Can't interpolate: {0}\n{1}", text, String(err));
@@ -14395,21 +14394,21 @@
                 .replace(escapedStartRegexp, interpolationStartSymbol)
                 .replace(escapedEndRegexp, interpolationEndSymbol);
         }
-        const $interpolate = (text, mustHaveExpression, trustedContext, allOrNothing) => {
-            const contextAllowsConcatenation = trustedContext === "url" || trustedContext === "mediaUrl";
+        const $interpolate = (text, mustHaveExpression, bindingContext, allOrNothing) => {
+            const contextAllowsConcatenation = bindingContext === "url" || bindingContext === "mediaUrl";
             if (!text.length || !text.includes(interpolationStartSymbol)) {
                 if (mustHaveExpression) {
                     return undefined;
                 }
                 let unescapedText = unescapeText(text);
                 if (contextAllowsConcatenation) {
-                    unescapedText = policies._apply(trustedContext, unescapedText);
+                    unescapedText = policies._apply(bindingContext, unescapedText);
                 }
                 const constantInterp = (() => unescapedText);
                 constantInterp.exp = text;
                 constantInterp.expressions = [];
-                if (trustedContext && !contextAllowsConcatenation)
-                    unescapedText = policies._apply(trustedContext, unescapedText);
+                if (bindingContext && !contextAllowsConcatenation)
+                    unescapedText = policies._apply(bindingContext, unescapedText);
                 return constantInterp;
             }
             allOrNothing = !!allOrNothing;
@@ -14461,7 +14460,7 @@
                             const value = parseFn(context);
                             return allOrNothing && !isDefined(value)
                                 ? value
-                                : policies._apply(trustedContext, deProxy(isFunction(value) ? value() : value) ?? "");
+                                : policies._apply(bindingContext, deProxy(isFunction(value) ? value() : value) ?? "");
                         };
                     const fn = ((context, cb) => {
                         try {
@@ -14492,12 +14491,12 @@
                         concat[expressionPositions[i]] = values[i];
                     }
                     if (contextAllowsConcatenation) {
-                        return policies._apply(trustedContext, concat.join(""));
+                        return policies._apply(bindingContext, concat.join(""));
                     }
-                    if (trustedContext && concat.length > 1) {
+                    if (bindingContext && concat.length > 1) {
                         throwNoconcat(text);
                     }
-                    return trustedContext ? values[0] : concat.join("");
+                    return bindingContext ? values[0] : concat.join("");
                 };
                 const fn = ((context, cb) => {
                     const values = new Array(expressions.length);
@@ -14533,12 +14532,12 @@
                     if (allOrNothing && !isDefined(value))
                         return value;
                     value =
-                        trustedContext && !contextAllowsConcatenation
-                            ? policies._apply(trustedContext, value)
+                        bindingContext && !contextAllowsConcatenation
+                            ? policies._apply(bindingContext, value)
                             : deProxy(value);
                     return allOrNothing && !isDefined(value)
                         ? value
-                        : trustedContext && !contextAllowsConcatenation
+                        : bindingContext && !contextAllowsConcatenation
                             ? value
                             : stringify$1(value);
                 }
@@ -22121,7 +22120,7 @@
             return value;
         }
         if (!isString(value)) {
-            throw $compileError("srcset", 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, stringify$1(value));
+            throw $compileError("srcset", 'Expected a string for `{0}`, received: "{1}"', invokeType, stringify$1(value));
         }
         let result = "";
         const trimmedSrcset = trim(value);

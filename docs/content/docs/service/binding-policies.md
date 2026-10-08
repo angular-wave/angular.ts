@@ -47,4 +47,4 @@ Native `TrustedHTML`, `TrustedScript`, and `TrustedScriptURL` values are
 supported at their corresponding destinations. The framework does not create
 browser Trusted Types policies for the application.
 
-Executable sample: [`sce.html`](/examples/config/sce.html).
+Executable sample: [`binding-policies.html`](/examples/config/binding-policies.html).

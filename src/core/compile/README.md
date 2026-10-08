@@ -202,8 +202,8 @@ requests.
 - Internal attribute helpers: normalized attribute observation, interpolation
   metadata, and observer scope ownership.
 - Animation helpers: class mutations route through `$animate` when available.
-- Security adapter and SCE contexts: sanitize trusted attribute and property
-  bindings.
+- Binding policies and destination contexts: sanitize or validate attribute and
+  property values before DOM writes.
 - Scope internals: attach scopes to DOM, create inherited/isolate/transcluded
   scopes, and watch binding expressions.
 

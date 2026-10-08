@@ -2512,10 +2512,10 @@ public external interface InjectionTokenMap {
      * The $interpolate member of ng.InjectionTokenMap.
      * @param text Value supplied for the text parameter.
      * @param mustHaveExpression Value supplied for the mustHaveExpression parameter.
-     * @param trustedContext Value supplied for the trustedContext parameter.
+     * @param bindingContext Value supplied for the bindingContext parameter.
      * @param allOrNothing Value supplied for the allOrNothing parameter.
      */
-    public fun `$interpolate`(text: String = definedExternally, mustHaveExpression: Boolean = definedExternally, trustedContext: dynamic = definedExternally, allOrNothing: Boolean = definedExternally): (dynamic, (dynamic) -> Unit) -> dynamic
+    public fun `$interpolate`(text: String = definedExternally, mustHaveExpression: Boolean = definedExternally, bindingContext: dynamic = definedExternally, allOrNothing: Boolean = definedExternally): (dynamic, (dynamic) -> Unit) -> dynamic
     /**
      * The $location member of ng.InjectionTokenMap.
      */
@@ -2866,10 +2866,10 @@ public external interface InterpolateService {
      * Calls the ng.InterpolateService function.
      * @param text Value supplied for the text parameter.
      * @param mustHaveExpression Value supplied for the mustHaveExpression parameter.
-     * @param trustedContext Value supplied for the trustedContext parameter.
+     * @param bindingContext Value supplied for the bindingContext parameter.
      * @param allOrNothing Value supplied for the allOrNothing parameter.
      */
-    public operator fun invoke(text: String = definedExternally, mustHaveExpression: Boolean = definedExternally, trustedContext: dynamic = definedExternally, allOrNothing: Boolean = definedExternally): (dynamic, (dynamic) -> Unit) -> dynamic
+    public operator fun invoke(text: String = definedExternally, mustHaveExpression: Boolean = definedExternally, bindingContext: dynamic = definedExternally, allOrNothing: Boolean = definedExternally): (dynamic, (dynamic) -> Unit) -> dynamic
     /**
      * Return the configured interpolation start delimiter.
      */

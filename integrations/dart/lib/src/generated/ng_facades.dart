@@ -3615,19 +3615,19 @@ base class GeneratedNgInterpolateService extends GeneratedNgFacade {
   /// Parameters:
   /// - [text]: Value supplied for the text parameter.
   /// - [mustHaveExpression]: Value supplied for the mustHaveExpression parameter.
-  /// - [trustedContext]: Value supplied for the trustedContext parameter.
+  /// - [bindingContext]: Value supplied for the bindingContext parameter.
   /// - [allOrNothing]: Value supplied for the allOrNothing parameter.
   Object? call(String text,
       [Object? mustHaveExpression = _undefinedArgument,
-      Object? trustedContext = _undefinedArgument,
+      Object? bindingContext = _undefinedArgument,
       Object? allOrNothing = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(text));
     if (!identical(mustHaveExpression, _undefinedArgument)) {
       args.add(unsafe.dartToJs(mustHaveExpression));
     }
-    if (!identical(trustedContext, _undefinedArgument)) {
-      args.add(unsafe.dartToJs(trustedContext));
+    if (!identical(bindingContext, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(bindingContext));
     }
     if (!identical(allOrNothing, _undefinedArgument)) {
       args.add(unsafe.dartToJs(allOrNothing));

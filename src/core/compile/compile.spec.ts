@@ -15017,9 +15017,9 @@ describe("$compile", () => {
 
   ["img", "audio", "video"].forEach((tag) => {
     describe(`${tag}[src] context requirement`, () => {
-      it("should NOT require trusted values for trusted URIs", async () => {
+      it("should accept allowed HTTP URLs without wrappers", async () => {
         element = $compile(`<${tag} src="{{testUrl}}"></${tag}>`)($rootScope);
-        $rootScope.testUrl = "http://example.com/image.mp4"; // `http` is trusted
+        $rootScope.testUrl = "http://example.com/image.mp4"; // `http` is allowed
         await wait();
         expect(element.getAttribute("src")).toEqual(
           "http://example.com/image.mp4",
@@ -15030,11 +15030,11 @@ describe("$compile", () => {
 
   ["source", "track"].forEach((tag) => {
     describe(`${tag}[src]`, () => {
-      it("should NOT require trusted values for trusted URIs", async () => {
+      it("should accept allowed HTTP URLs without wrappers", async () => {
         element = $compile(
           `<video><${tag} src="{{testUrl}}"></${tag}></video>`,
         )($rootScope);
-        $rootScope.testUrl = "http://example.com/image.mp4"; // `http` is trusted
+        $rootScope.testUrl = "http://example.com/image.mp4"; // `http` is allowed
         await wait();
         expect(element.querySelector(tag).getAttribute("src")).toEqual(
           "http://example.com/image.mp4",
@@ -15051,7 +15051,7 @@ describe("$compile", () => {
       expect(element.getAttribute("title")).toBe("javascript:doEvilStuff()");
     });
 
-    it("should sanitize plain URL values through SCE", async () => {
+    it("should sanitize plain URL values through binding policies", async () => {
       initInjector("test1");
       $rootScope.testUrl = "javascript:foo()";
       element = $compile('<img src="{{testUrl}}"></img>')($rootScope);
@@ -15061,16 +15061,16 @@ describe("$compile", () => {
   });
 
   describe("img[srcset] sanitization", () => {
-    it("should NOT require trusted values for trusted URI values", async () => {
+    it("should accept allowed HTTP URLs without wrappers", async () => {
       element = $compile('<img srcset="{{testUrl}}"></img>')($rootScope);
-      $rootScope.testUrl = "http://example.com/image.png"; // `http` is trusted
+      $rootScope.testUrl = "http://example.com/image.png"; // `http` is allowed
       await wait();
       expect(element.getAttribute("srcset")).toEqual(
         "http://example.com/image.png",
       );
     });
 
-    it("should sanitize srcset URLs through SCE", async () => {
+    it("should sanitize srcset URLs through binding policies", async () => {
       initInjector("test1");
       element = $compile('<img srcset="{{testUrl}}"></img>')($rootScope);
       $rootScope.testUrl = "someUrl";
@@ -15202,8 +15202,8 @@ describe("$compile", () => {
   });
 
   describe("a[href] sanitization", () => {
-    it("should NOT require trusted values for trusted URI values", async () => {
-      $rootScope.testUrl = "http://example.com/image.png"; // `http` is trusted
+    it("should accept allowed HTTP URLs without wrappers", async () => {
+      $rootScope.testUrl = "http://example.com/image.png"; // `http` is allowed
       element = $compile('<a href="{{testUrl}}"></a>')($rootScope);
       await wait();
       expect(element.getAttribute("href")).toEqual(
@@ -15217,8 +15217,8 @@ describe("$compile", () => {
       );
     });
 
-    it("should sanitize non-trusted values", async () => {
-      $rootScope.testUrl = "javascript:foo()"; // `javascript` is not trusted
+    it("should sanitize unsafe URL values", async () => {
+      $rootScope.testUrl = "javascript:foo()"; // `javascript` is blocked
       element = $compile('<a href="{{testUrl}}"></a>')($rootScope);
       await wait();
       expect(element.getAttribute("href")).toEqual("unsafe:javascript:foo()");
@@ -15244,7 +15244,7 @@ describe("$compile", () => {
       expect(element.getAttribute("title")).toBe("javascript:doEvilStuff()");
     });
 
-    it("should sanitize plain href values through SCE", async () => {
+    it("should sanitize plain href values through binding policies", async () => {
       initInjector("test1");
       element = $compile('<a href="{{testUrl}}"></a>')($rootScope);
       $rootScope.testUrl = "someUrl";

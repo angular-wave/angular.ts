@@ -194,9 +194,10 @@ input({ value: () => controller.name });
 input(props({ value: () => controller.name }));
 ```
 
-Potentially dangerous properties such as `innerHTML` and `srcdoc` still pass
-through AngularTS contextual escaping. Use trusted SCE values only when the
-content has been reviewed and is intentionally trusted.
+HTML destinations such as `innerHTML` and `srcdoc` pass through the compiler's
+`htmlPolicy`. Configure that policy to sanitize or validate HTML strings;
+the default rejects nonempty strings. Native `TrustedHTML` is supported at HTML
+destinations. See [binding policies]({{< relref "/docs/service/binding-policies" >}}).
 
 ## Handle events
 
